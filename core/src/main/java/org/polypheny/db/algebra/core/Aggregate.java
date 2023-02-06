@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra.core;
@@ -61,7 +78,8 @@ import org.polypheny.db.util.Util;
 /**
  * Relational operator that eliminates duplicates and computes totals.
  *
- * It corresponds to the {@code GROUP BY} operator in a SQL query statement, together with the aggregate functions in the {@code SELECT} clause.
+ * It corresponds to the {@code GROUP BY} operator in a SQL query statement, together with the aggregate functions in
+ * the {@code SELECT} clause.
  *
  * Rules:
  *
@@ -260,7 +278,7 @@ public abstract class Aggregate extends SingleAlg {
     @Override
     public double estimateRowCount( AlgMetadataQuery mq ) {
         // Assume that each sort column has 50% of the value count.
-        // Therefore one sort column has .5 * rowCount, 2 sort columns give .75 * rowCount. Zero sort columns yields 1 row (or 0 if the input is empty).
+        // Therefore, one sort column has .5 * rowCount, 2 sort columns give .75 * rowCount. Zero sort columns yields 1 row (or 0 if the input is empty).
         final int groupCount = groupSet.cardinality();
         if ( groupCount == 0 ) {
             return 1;
@@ -280,7 +298,7 @@ public abstract class Aggregate extends SingleAlg {
         float multiplier = 1f + (float) aggCalls.size() * 0.125f;
         for ( AggregateCall aggCall : aggCalls ) {
             if ( aggCall.getAggregation().getName().equals( "SUM" ) ) {
-                // Pretend that SUM costs a little bit more than $SUM0, to make things deterministic.
+                // Pretend that SUM costs a bit more than $SUM0, to make things deterministic.
                 multiplier += 0.0125f;
             }
         }
@@ -295,7 +313,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
     /**
-     * Computes the row type of an {@code Aggregate} before it exists.
+     * Computes the row type of {@code Aggregate} before it exists.
      *
      * @param typeFactory Type factory
      * @param inputRowType Input row type
@@ -368,7 +386,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
     /**
-     * Returns whether the inferred type of an {@link AggregateCall} matches the type it was given when it was created.
+     * Returns whether the inferred type of {@link AggregateCall} matches the type it was given when it was created.
      *
      * @param aggCall Aggregate call
      * @param litmus What to do if an error is detected (types do not match)

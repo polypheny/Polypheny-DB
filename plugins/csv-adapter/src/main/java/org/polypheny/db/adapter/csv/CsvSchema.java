@@ -103,7 +103,7 @@ public class CsvSchema extends AbstractSchema {
 
 
     /**
-     * Creates different sub-type of table based on the "flavor" attribute.
+     * Creates different subtype of table based on the "flavor" attribute.
      */
     private CsvTable createTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
         switch ( flavor ) {

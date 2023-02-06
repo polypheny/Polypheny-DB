@@ -23,13 +23,10 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.SqlFunction;
-import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 
 
 /**
  * Converts an expression for a group window function (e.g. TUMBLE) into an expression for an auxiliary group function (e.g. TUMBLE_START).
- *
- * @see SqlStdOperatorTable#TUMBLE
  */
 public interface AuxiliaryConverter {
 

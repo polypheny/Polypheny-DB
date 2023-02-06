@@ -133,7 +133,7 @@ public class DateRangeRulesTest {
         final Fixture2 f = new Fixture2();
         // The following condition finds the 2 leap days between 2010 and 2020, namely 29th February 2012 and 2016.
         //
-        // Currently there are redundant conditions, e.g. "AND(>=($8, 2011-01-01), <($8, 2020-01-01))". We should remove them by folding intervals.
+        // Currently, there are redundant conditions, e.g. "AND(>=($8, 2011-01-01), <($8, 2020-01-01))". We should remove them by folding intervals.
         checkDateRange(
                 f,
                 f.and( f.gt( f.exYearD, f.literal( 2010 ) ), f.lt( f.exYearD, f.literal( 2020 ) ), f.eq( f.exMonthD, f.literal( 2 ) ), f.eq( f.exDayD, f.literal( 29 ) ) ),
@@ -396,7 +396,7 @@ public class DateRangeRulesTest {
                         f.ge( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 11 ) ),
                         f.eq( f.exDayTs, f.literal( 2 ) ) ),
-                // Since the year does not have a upper bound, MONTH and DAY cannot be replaced
+                // Since the year does not have an upper bound, MONTH and DAY cannot be replaced
                 is( "AND(>=($9, 2010-01-01 00:00:00), =(EXTRACT(FLAG(MONTH), $9), 11), =(EXTRACT(FLAG(DAY), $9), 2))" ) );
 
         // No lower/upper bound on YEAR for individual rexNodes.

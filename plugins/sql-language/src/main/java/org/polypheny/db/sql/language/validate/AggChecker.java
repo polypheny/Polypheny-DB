@@ -179,7 +179,7 @@ class AggChecker extends BasicNodeVisitor<Void> {
                 // group function, and
                 //   TUMBLE_START(rowtime, INTERVAL '1' HOUR)
                 // matches
-                //   TUMBLE(rowtime, INTERVAL '1' HOUR')
+                //   TUMBLE(rowtime, INTERVAL '1' HOUR)
                 return null;
             }
             throw validator.newValidationError(

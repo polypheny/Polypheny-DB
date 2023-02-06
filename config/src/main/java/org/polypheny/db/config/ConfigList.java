@@ -346,7 +346,6 @@ public class ConfigList extends Config {
 
         }
         setConfigObjectList( tempList, getTemplateClass() );
-
     }
 
 

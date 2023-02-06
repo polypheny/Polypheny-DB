@@ -107,9 +107,6 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
     /**
      * Calls the parent class method and mask Farrago exception thrown.
-     *
-     * @param scope
-     * @param operand
      */
     @Override
     public AlgDataType deriveType( ValidatorScope scope, Node operand ) {

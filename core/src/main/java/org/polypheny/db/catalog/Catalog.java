@@ -320,14 +320,14 @@ public abstract class Catalog implements ExtensionPoint {
      * Change owner of a schema
      *
      * @param schemaId The id of the schema
-     * @param ownerId Id of the new owner
+     * @param ownerId ID of the new owner
      */
     public abstract void setSchemaOwner( long schemaId, long ownerId );
 
     /**
      * Adds a new graph to the catalog, on the same layer as schema in relational.
      *
-     * @param databaseId Id of the graph, which is also the id of the database
+     * @param databaseId ID of the graph, which is also the id of the database
      * @param name The name of the graph
      * @param stores The datastores on which the graph is placed
      * @param modifiable If the graph is modifiable
@@ -566,7 +566,7 @@ public abstract class Catalog implements ExtensionPoint {
      * Change owner of a table
      *
      * @param tableId The if of the table
-     * @param ownerId Id of the new owner
+     * @param ownerId ID of the new owner
      */
     public abstract void setTableOwner( long tableId, int ownerId );
 
@@ -600,7 +600,7 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly );
 
     /**
-     * Gets a collective list of column placements per column on a adapter.
+     * Gets a collective list of column placements per column on an adapter.
      * Effectively used to retrieve all relevant placements including partitions.
      *
      * @param adapterId The id of the adapter
@@ -750,7 +750,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param columnId The id of the column
      * @param physicalSchemaName The physical schema name
      * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
+     * @param updatePhysicalColumnPosition Whether to reset the column position (the highest number in the table; represents that the column is now at the last position)
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
 
@@ -916,10 +916,10 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract boolean isForeignKey( long keyId );
 
     /**
-     * Check whether a key is a index
+     * Check whether a key is an index
      *
      * @param keyId The id of the key
-     * @return Whether the key is a index
+     * @return Whether the key is an index
      */
     public abstract boolean isIndex( long keyId );
 
@@ -1077,7 +1077,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param unique Weather the index is unique
      * @param method Name of the index method (e.g. btree_unique)
      * @param methodDisplayName Display name of the index method (e.g. BTREE)
-     * @param location Id of the data store where the index is located (0 for Polypheny-DB itself)
+     * @param location ID of the data store where the index is located (0 for Polypheny-DB itself)
      * @param type The type of index (manual, automatic)
      * @param indexName The name of the index
      * @return The id of the created index
@@ -1736,7 +1736,7 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId );
 
     /**
-     * Returns a list of all Partition Placements which currently reside on a adapter, disregarded of the table.
+     * Returns a list of all Partition Placements which currently reside on an adapter, disregarded of the table.
      *
      * @param adapterId The adapter on which the requested partition placements reside
      * @return A list of all Partition Placements, that are currently located  on that specific store
@@ -1744,11 +1744,11 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
 
     /**
-     * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.
+     * Returns a list of all Partition Placements which currently reside on an adapter, for a specific table.
      *
      * @param adapterId The adapter on which the requested partition placements reside
-     * @param tableId The table for which all partition placements on a adapter should be considered
-     * @return A list of all Partition Placements, that are currently located  on that specific store for a individual table
+     * @param tableId The table for which all partition placements on an adapter should be considered
+     * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( int adapterId, long tableId );
 
@@ -1761,10 +1761,10 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
 
     /**
-     * Get all Partition Placements which are associated with a individual partition Id.
+     * Get all Partition Placements which are associated with an individual partition ID.
      * Identifies on which locations and how often the individual partition is placed.
      *
-     * @param partitionId The requested partition Id
+     * @param partitionId The requested partition ID
      * @return A list of Partition Placements which are physically responsible for that partition
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
@@ -1779,19 +1779,19 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Registers a table to be considered for periodic processing
      *
-     * @param tableId Id of table to be considered for periodic processing
+     * @param tableId ID of table to be considered for periodic processing
      */
     public abstract void addTableToPeriodicProcessing( long tableId );
 
     /**
      * Remove a table from periodic background processing
      *
-     * @param tableId Id of table to be removed for periodic processing
+     * @param tableId ID of table to be removed for periodic processing
      */
     public abstract void removeTableFromPeriodicProcessing( long tableId );
 
     /**
-     * Probes if a Partition Placement on a adapter for a specific partition already exists.
+     * Probes if a Partition Placement on an adapter for a specific partition already exists.
      *
      * @param adapterId Adapter on which to check
      * @param partitionId Partition which to check
@@ -1833,7 +1833,7 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Add a new collection with the given parameters.
      *
-     * @param id Id of the collection to add, null if a new one needs to be generated
+     * @param id ID of the collection to add, null if a new one needs to be generated
      * @param name The name of the collection
      * @param schemaId The id of the namespace to which the collection is added
      * @param currentUserId The user, which adds the collection

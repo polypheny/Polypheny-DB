@@ -626,7 +626,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
     /**
      * Tests that IN can be un-parsed.
      *
-     * This cannot be tested using "sql", because because Polypheny-DB's SQL parser replaces INs with ORs or sub-queries.
+     * This cannot be tested using "sql", because Polypheny-DB's SQL parser replaces INs with ORs or sub-queries.
      */
     @Test
     public void testUnparseIn1() {

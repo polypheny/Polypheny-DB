@@ -340,7 +340,7 @@ public class AlgBuilder {
 
 
     /**
-     * Adds a alg node to the top of the stack while preserving the field names and aliases.
+     * Adds an alg node to the top of the stack while preserving the field names and aliases.
      */
     public void replaceTop( AlgNode node ) {
         final Frame frame = stack.pop();
@@ -780,7 +780,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a IS NULL.
+     * Creates an IS NULL.
      */
     public RexNode isNull( RexNode operand ) {
         return call( OperatorRegistry.get( OperatorName.IS_NULL ), operand );
@@ -788,7 +788,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a IS NOT NULL.
+     * Creates an IS NOT NULL.
      */
     public RexNode isNotNull( RexNode operand ) {
         return call( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), operand );
@@ -1595,7 +1595,7 @@ public class AlgBuilder {
     /**
      * Whether to attempt to merge consecutive {@link Project} operators.
      *
-     * The default implementation returns {@code true}; sub-classes may disable merge by overriding to return {@code false}.
+     * The default implementation returns {@code true}; subclasses may disable merge by overriding to return {@code false}.
      */
     @Experimental
     protected boolean shouldMergeProject() {
@@ -2088,7 +2088,7 @@ public class AlgBuilder {
      * The {@code values} array must have the same number of entries as {@code fieldNames}, or an integer multiple if you
      * wish to create multiple rows.
      *
-     * If there are zero rows, or if all values of a any column are null, this method cannot deduce the type of columns.
+     * If there are zero rows, or if all values of an any column are null, this method cannot deduce the type of columns.
      * For these cases, call {@link #values(Iterable, AlgDataType)}.
      *
      * @param fieldNames Field names

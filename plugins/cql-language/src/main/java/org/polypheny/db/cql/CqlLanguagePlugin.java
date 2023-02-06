@@ -52,10 +52,7 @@ public class CqlLanguagePlugin extends Plugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
-     * Your plugins have to provide constructor with this exact signature to
-     * be successfully loaded by manager.
-     *
-     * @param wrapper
+     * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
     public CqlLanguagePlugin( PluginWrapper wrapper ) {
         super( wrapper );

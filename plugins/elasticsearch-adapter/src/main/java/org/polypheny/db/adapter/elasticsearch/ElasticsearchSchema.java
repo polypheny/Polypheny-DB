@@ -132,7 +132,7 @@ public class ElasticsearchSchema extends AbstractSchema {
     /**
      * Queries {@code _mapping} definition to automatically detect all types for an index
      *
-     * @return list of types associated with this index
+     * @return Set of types associated with this index
      * @throws IOException for any IO related issues
      * @throws IllegalStateException if reply is not understood
      */

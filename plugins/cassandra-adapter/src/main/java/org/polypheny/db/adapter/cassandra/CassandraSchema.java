@@ -153,7 +153,8 @@ public class CassandraSchema extends AbstractSchema {
             columns = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get().getColumns();
         }
 
-        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
+        // Temporary type factory, just for the duration of this method. Allowable because we're creating a prototype,
+        // not a type; before being used, the prototype will be copied into a real type factory.
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 //        Pattern columnIdPattern = Pattern.compile( "^col([0-9]+)(r([0-9]+))?" );

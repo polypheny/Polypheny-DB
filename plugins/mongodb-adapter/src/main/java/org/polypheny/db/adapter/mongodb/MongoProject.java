@@ -76,7 +76,7 @@ public class MongoProject extends Project implements MongoAlg {
         final List<String> items = new ArrayList<>();
         final List<String> excludes = new ArrayList<>();
         final List<String> unwinds = new ArrayList<>();
-        // we us our specialized rowType to derive the mapped underlying column identifiers
+        // We use our specialized rowType to derive the mapped underlying column identifiers
         MongoRowType mongoRowType = null;
         if ( implementor.getStaticRowType() instanceof MongoRowType ) {
             mongoRowType = ((MongoRowType) implementor.getStaticRowType());
@@ -85,7 +85,7 @@ public class MongoProject extends Project implements MongoAlg {
         BsonDocument documents = new BsonDocument();
 
         if ( getNamedProjects().size() > 1 && getNamedProjects().get( 0 ).right.contains( "." ) && implementor.hasProject ) {
-            // we already cast so we can skip this whole iteration
+            // We already cast so we can skip this whole iteration
             return;
         }
 

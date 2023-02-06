@@ -225,7 +225,8 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
 
 
     /**
-     * Information about an aggregating scope that can only be determined after validation has occurred. Therefore it cannot be populated when the scope is created.
+     * Information about an aggregating scope that can only be determined after validation has occurred. Therefore, it
+     * cannot be populated when the scope is created.
      */
     public class Resolved {
 

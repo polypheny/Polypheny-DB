@@ -36,7 +36,7 @@ public interface SqlValidatorWithHints extends SqlValidator {
      *
      * @param topNode top of expression tree in which to lookup completion hints
      * @param pos indicates the position in the sql statement we want to get completion hints for. For example, "select a.ename, b.deptno from sales.emp a join sales.dept b "on a.deptno=b.deptno where empno=1"; setting pos to 'Line 1, Column 17' returns all the possible column names that can be selected from sales.dept table setting pos to 'Line 1, Column 31' returns all the possible table names in 'sales' schema
-     * @return an array of {@link Moniker} (sql identifiers) that can fill in at the indicated position
+     * @return A list of {@link Moniker} (sql identifiers) that can fill in at the indicated position
      */
     List<Moniker> lookupHints( SqlNode topNode, ParserPos pos );
 

@@ -174,7 +174,7 @@ public class ConstraintEnforceAttacher {
     /**
      * This method inserts a {@link LogicalConditionalExecute} on top of the initial DML query.
      * Additionally, it tries to build a DQL query as a left child of the {@link LogicalConditionalExecute},
-     * which emulates the result of the DML query on the right and checks if all constraints an valid.
+     * which emulates the result of the DML query on the right and checks if all constraints are valid.
      *
      * <code><pre>
      *

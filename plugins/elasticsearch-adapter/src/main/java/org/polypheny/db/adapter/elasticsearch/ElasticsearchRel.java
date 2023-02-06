@@ -41,8 +41,6 @@ import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
@@ -90,9 +88,8 @@ public interface ElasticsearchRel extends AlgNode {
         final List<String> groupBy = new ArrayList<>();
 
         /**
-         * Keeps mapping between Polypheny-DB expression identifier (like {@code EXPR$0}) and original item call like {@code _MAP['foo.bar']} ({@code foo.bar} really). This information otherwise might be lost during query translation.
-         *
-         * @see OperatorRegistry.get( OperatorName.ITEM )
+         * Keeps mapping between Polypheny-DB expression identifier (like {@code EXPR$0}) and original item call like
+         * {@code _MAP['foo.bar']} ({@code foo.bar} really). This information otherwise might be lost during query translation.
          */
         final Map<String, String> expressionItemMap = new LinkedHashMap<>();
 

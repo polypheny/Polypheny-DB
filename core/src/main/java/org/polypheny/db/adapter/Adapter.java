@@ -465,7 +465,7 @@ public abstract class Adapter {
 
 
     /**
-     * Builds and adds an new information group, observing physical naming of columns, to the provided information objects
+     * Builds and adds a new information group, observing physical naming of columns, to the provided information objects
      */
     public void addInformationPhysicalNames() {
         InformationGroup group = new InformationGroup( informationPage, "Physical Names" );
@@ -607,7 +607,7 @@ public abstract class Adapter {
          *
          * @param settings already correctly sorted settings
          * @param deployModes the deployment modes which are supported by this specific adapter
-         * @param setting the setting which is merge into the map
+         * @param setting the setting which is merged into the map
          */
         private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, DeployMode[] deployModes, AbstractAdapterSetting setting ) {
             // we need to unpack the underlying DeployModes

@@ -280,7 +280,7 @@ public class SqlAdvisor implements Advisor {
      * @param sql A syntactically correct sql statement for which to retrieve completion hints
      * @param pos to indicate the line and column position in the query at which completion hints need to be retrieved. For example, "select a.ename, b.deptno from sales.emp a join sales.dept b "on a.deptno=b.deptno where empno=1"; setting pos to 'Line 1, Column 17' returns all the possible column names that can be selected
      * from sales.dept table setting pos to 'Line 1, Column 31' returns all the possible table names in 'sales' schema
-     * @return an array of hints ({@link Moniker}) that can fill in at the indicated position
+     * @return A list of hints ({@link Moniker}) that can fill in at the indicated position
      */
     public List<Moniker> getCompletionHints( String sql, ParserPos pos ) {
         // First try the statement they gave us. If this fails, just return

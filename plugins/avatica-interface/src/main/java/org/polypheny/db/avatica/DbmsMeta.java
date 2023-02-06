@@ -689,7 +689,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "LITERAL_SUFFIX",      // Suffix used to quote a literal
                     "CREATE_PARAMS",       // Parameters used in creating the type --> not used, always null
                     "NULLABLE",            // Indicates if the column can contain a null value (1: means type can contain null, 0 not). --> Currently 1 for all types
-                    "CASE_SENSITIVE",      // Indicates if the data type is case sensitive. "true" if the type is case sensitive; otherwise, "false".
+                    "CASE_SENSITIVE",      // Indicates if the data type is case-sensitive. "true" if the type is case-sensitive; otherwise, "false".
                     "SEARCHABLE",          // Indicates if (and how) the column can be used in a SQL WHERE clause. 0: none, 1: char, 2: basic, 3: searchable
                     "UNSIGNED_ATTRIBUTE",  // Indicates the sign of the data type. "true" if the type is unsigned; otherwise, "false". --> Currently false for all types
                     "FIXED_PREC_SCALE",    // Indicates that the data type can be a money value. "true" if the data type is money type; otherwise, "false".

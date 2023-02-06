@@ -82,8 +82,6 @@ public interface SqlTester extends AutoCloseable, Tester {
 
     /**
      * Returns a tester that tests conformance to a particular SQL language version.
-     *
-     * @param conformance
      */
     SqlTester withConformance( Conformance conformance );
 

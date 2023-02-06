@@ -96,7 +96,7 @@ public abstract class Config {
 
     /**
      * List of observers.
-     * Field is transient, so it will not be (de)serialized by Gson and produce a "Unable to invoke no-args constructor" error.
+     * Field is transient, so it will not be (de)serialized by Gson and produce an "Unable to invoke no-args constructor" error.
      */
     private transient final Map<Integer, ConfigListener> listeners = new HashMap<>();
 
@@ -368,7 +368,7 @@ public abstract class Config {
     /**
      * Get a set af valid enum values.
      *
-     * @return List of enum values
+     * @return Set of enum values
      * @throws ConfigRuntimeException If config value can not be converted into a Enum value representation.
      */
     public Set<Enum> getEnumValues() {

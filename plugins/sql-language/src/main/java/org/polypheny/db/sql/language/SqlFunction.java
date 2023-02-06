@@ -142,7 +142,7 @@ public class SqlFunction extends SqlOperator implements Function {
 
 
     /**
-     * @return array of parameter types, or null for builtin function
+     * @return List of parameter types, or null for builtin function
      */
     public List<AlgDataType> getParamTypes() {
         return paramTypes;

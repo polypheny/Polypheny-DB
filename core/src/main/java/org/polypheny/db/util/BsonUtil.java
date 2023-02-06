@@ -485,7 +485,7 @@ public class BsonUtil {
 
         if ( obj instanceof Timestamp ) {
             // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
-            // an one hour shift, as we lose this timezone information on retrieval
+            // a one-hour shift, as we lose this timezone information on retrieval
             // we have to include it into the time itself
             int offset = Calendar.getInstance().getTimeZone().getRawOffset();
             return new BsonInt64( ((Timestamp) obj).getTime() + offset );
@@ -666,7 +666,7 @@ public class BsonUtil {
 
         return new BsonDocument()
                 .append( "$regex", new BsonString( input ) )
-                // Polypheny is case insensitive and therefore we have to set the "i" option
+                // Polypheny is case-insensitive and therefore we have to set the "i" option
                 .append( "$options", new BsonString( "i" ) );
     }
 

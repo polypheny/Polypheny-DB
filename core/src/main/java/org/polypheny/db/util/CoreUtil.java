@@ -327,7 +327,7 @@ public class CoreUtil {
 
 
     /**
-     * @return the character-set prefix of an sql string literal; returns null if there is none
+     * @return the character-set prefix of an SQL string literal; returns null if there is none
      */
     public static String getCharacterSet( String s ) {
         if ( s.charAt( 0 ) == '\'' ) {
@@ -342,7 +342,8 @@ public class CoreUtil {
 
 
     /**
-     * Converts the contents of an sql quoted string literal into the corresponding Java string representation (removing leading and trailing quotes and unescaping internal doubled quotes).
+     * Converts the contents of an SQL quoted string literal into the corresponding Java string representation
+     * (removing leading and trailing quotes and unescaping internal doubled quotes).
      */
     public static String parseString( String s ) {
         int i = s.indexOf( "'" ); // start of body

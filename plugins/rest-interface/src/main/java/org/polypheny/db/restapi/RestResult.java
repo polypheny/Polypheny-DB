@@ -56,7 +56,7 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class RestResult {
 
-    private final Kind Kind;
+    private final Kind kind;
     private final Iterator<Object> iterator;
     private final AlgDataType dataType;
     List<ColumnMetaData> columns;
@@ -71,7 +71,7 @@ public class RestResult {
 
 
     public RestResult( Kind Kind, Iterator<Object> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
-        this.Kind = Kind;
+        this.kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
         this.columns = columns;
@@ -79,7 +79,7 @@ public class RestResult {
 
 
     public RestResult transform() {
-        if ( Kind.belongsTo( Kind.DML ) ) {
+        if ( kind.belongsTo( Kind.DML ) ) {
             transformDML();
         } else {
             transformNonDML();

@@ -43,7 +43,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
 
     /**
-     * Creates a {@link LpgUnwind}. The operator tries to "unpack" an value in a property if it is an array.
+     * Creates a {@link LpgUnwind}. The operator tries to "unpack" a value in a property if it is an array.
      *
      * @param cluster Cluster this relational expression belongs to
      * @param traits

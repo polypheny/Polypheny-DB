@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra.metadata;
@@ -275,7 +292,7 @@ public class AlgMdUtil {
         // The formula for this is:
         // 1. Assume we pick 80 random values between 1 and 100.
         // 2. The chance we skip any given value is .99 ^ 80
-        // 3. Thus on average we will skip .99 ^ 80 percent of the values in the domain
+        // 3. Thus, on average we will skip .99 ^ 80 percent of the values in the domain
         // 4. Generalized, we skip ( (n-1)/n ) ^ k values where n is the number of possible values and k is the number we are selecting
         // 5. This can be rewritten via approximation (if you want to know why approximation is called for here, ask Bill Keese):
         //  ((n-1)/n) ^ k

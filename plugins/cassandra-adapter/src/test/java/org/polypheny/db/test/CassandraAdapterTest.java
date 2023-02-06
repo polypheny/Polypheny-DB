@@ -50,7 +50,7 @@ public class CassandraAdapterTest {
      * Whether to run this test.
      * Enabled by default, unless explicitly disabled from command line ({@code -Dpolyphenydb.test.cassandra=false}) or running on incompatible JDK version (see below).
      *
-     * As of this wiring Cassandra 4.x is not yet released and we're using 3.x (which fails on JDK11 and JDK12). All cassandra tests will be skipped if running on JDK11 and JDK12.
+     * As of this wiring Cassandra 4.x is not yet released, and we're using 3.x (which fails on JDK11 and JDK12). All cassandra tests will be skipped if running on JDK11 and JDK12.
      *
      * @return {@code true} if test is compatible with current environment, {@code false} otherwise
      * @see <a href="https://issues.apache.org/jira/browse/CASSANDRA-9608">CASSANDRA-9608</a>

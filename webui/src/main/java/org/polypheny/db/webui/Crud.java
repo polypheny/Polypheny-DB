@@ -2015,8 +2015,8 @@ public class Crud implements InformationObserver {
 
                 String defaultValue = currentColumn.getDefaultValue();
 
-                //Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
-                //enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
+                // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+                // enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
                 if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
 
                     if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {

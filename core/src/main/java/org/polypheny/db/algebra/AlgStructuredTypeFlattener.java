@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra;
@@ -115,9 +132,13 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * AlgStructuredTypeFlattener removes all structured types from a tree of relational expressions. Because it must operate globally on the tree, it is implemented as an explicit self-contained rewrite operation instead of via normal optimizer rules. This approach has the benefit that real optimizer and codegen rules never have to deal with structured types.
+ * AlgStructuredTypeFlattener removes all structured types from a tree of relational expressions. Because it must operate
+ * globally on the tree, it is implemented as an explicit self-contained rewrite operation instead of via normal optimizer
+ * rules. This approach has the benefit that real optimizer and codegen rules never have to deal with structured types.
  * <p>
- * As an example, suppose we have a structured type <code>ST(A1 smallint, A2 bigint)</code>, a table <code>T(c1 ST, c2 double)</code>, and a query <code>select t.c2, t.c1.a2 from t</code>. After SqlToRelConverter executes, the unflattened tree looks like:
+ * As an example, suppose we have a structured type <code>ST(A1 smallint, A2 bigint)</code>,
+ * a table <code>T(c1 ST, c2 double)</code>, and a query <code>select t.c2, t.c1.a2 from t</code>. After SqlToRelConverter
+ * executes, the unflattened tree looks like:
  *
  * <blockquote><pre><code>
  * LogicalProject(C2=[$1], A2=[$0.A2])
@@ -131,7 +152,8 @@ import org.polypheny.db.util.mapping.Mappings;
  *   FtrsIndexScanRel(table=[T], index=[clustered])
  * </code></pre></blockquote>
  * <p>
- * The index scan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null indicator for c1), and the projection picks out the desired attributes (omitting <code>$0</code> and
+ * The index scan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null
+ * indicator for c1), and the projection picks out the desired attributes (omitting <code>$0</code> and
  * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index scan,
  * resulting in a final tree like
  *
