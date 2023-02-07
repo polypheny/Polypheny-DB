@@ -40,7 +40,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER ADAPTERS ADD uniqueName USING adapterClass WITH config} statement.
+ * Parse tree for {@code ALTER ADAPTERS ADD [uniqueName] USING [AdapterIdentifier e.g. "HSQLDB"] AS ["STORE"|"SOURCE"] WITH [config]} statement.
  */
 @Slf4j
 public class SqlAlterAdaptersAdd extends SqlAlter {
