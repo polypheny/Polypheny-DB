@@ -154,17 +154,17 @@ public class SqlDistanceFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knninttest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knndoubletest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knnbigtest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knnbigtest ORDER BY id" ),
                         expectedResult
                 );
             }
@@ -185,17 +185,17 @@ public class SqlDistanceFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knninttest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knndoubletest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knndoubletest ORDER BY id" ),
                         expectedResult
                 );
             }
@@ -216,17 +216,17 @@ public class SqlDistanceFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knninttest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knndoubletest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knndoubletest ORDER BY id" ),
                         expectedResult
                 );
             }
@@ -258,7 +258,7 @@ public class SqlDistanceFunctionTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, distance(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as dist FROM knninttest" );
+                PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, distance(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as dist FROM knninttest ORDER BY id" );
 
                 final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
                 preparedStatement.setArray( 1, arrayFactory.createArray(
