@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ public class LogicalDocumentScan extends DocumentScan implements RelationalTrans
      * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
-        super( cluster, traitSet, document );
+        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), document );
     }
 
 

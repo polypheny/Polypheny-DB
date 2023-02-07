@@ -1,0 +1,80 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":plugins:jdbc-adapter-framework")
+
+    // JDBC Driver
+    implementation group: "org.mariadb.jdbc", name: "mariadb-java-client", version: mariadb_version // LGPL 2.1
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":plugins:sql-language", configuration: "tests")
+
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+}
+
+compileTestJava {
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+javadoc {
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+}
+
+licensee {
+    allowDependency('org.mariadb.jdbc', 'mariadb-java-client', '2.7.2') { because 'removed on release branches' }
+}
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public class SortState {
 
 
     public static TypeAdapter<SortState> getSerializer() {
-        return new TypeAdapter<SortState>() {
+        return new TypeAdapter<>() {
             @Override
             public void write( JsonWriter out, SortState state ) throws IOException {
                 if ( state == null ) {

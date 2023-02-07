@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,17 +34,13 @@
 package org.polypheny.db.type;
 
 
-import java.nio.charset.Charset;
-import java.util.List;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.*;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Util;
+
+import java.nio.charset.Charset;
+import java.util.List;
 
 
 /**
@@ -135,7 +131,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
 
 
     @Override
-    public AlgDataType createSqlIntervalType( IntervalQualifier intervalQualifier ) {
+    public AlgDataType createIntervalType( IntervalQualifier intervalQualifier ) {
         AlgDataType newType = new IntervalPolyType( typeSystem, intervalQualifier, false );
         return canonize( newType );
     }
@@ -493,7 +489,6 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     private AlgDataType copyObjectType( AlgDataType type, boolean nullable ) {
         return new ObjectPolyType(
                 type.getPolyType(),
-                type.getSqlIdentifier(),
                 nullable,
                 type.getFieldList(),
                 type.getComparability() );

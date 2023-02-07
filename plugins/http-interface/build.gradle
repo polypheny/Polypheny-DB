@@ -1,0 +1,68 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":webui")
+
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude(group: "org.slf4j")
+    } // Apache 2.0
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    // BSD 3-clause
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+}
+
+compileJava {
+    dependsOn(":webui:processResources")
+}
+
+
+delombok {
+    dependsOn(":webui:processResources")
+}
+
+javadoc {
+    dependsOn(":plugins:http-interface:compileTestJava")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+    dependsOn(compileTestJava)
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+
+    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
+
+    allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
+        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
+    }
+}
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -43,7 +43,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
 
     /**
-     * Creates a {@link LpgUnwind}. The operator tries to "unpack" an value in a property if it is an array.
+     * Creates a {@link LpgUnwind}. The operator tries to "unpack" a value in a property if it is an array.
      *
      * @param cluster Cluster this relational expression belongs to
      * @param traits
@@ -66,7 +66,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
         RexNode ref = input.getCluster().getRexBuilder().makeInputRef( field.getType(), field.getIndex() );
         // we wrap the field in a to-list operation, which wraps single values as list, leaves lists and replaces null with an empty list
         AlgDataType arrayType = input.getCluster().getTypeFactory().createArrayType( ref.getType(), -1 );
-        ref = input.getCluster().getRexBuilder().makeCall( arrayType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_TO_LIST ), List.of( ref ) );
+        ref = input.getCluster().getRexBuilder().makeCall( arrayType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_TO_LIST ), List.of( ref ) );
         return new LogicalLpgProject( input.getCluster(), input.getTraitSet(), input, Collections.singletonList( ref ), Collections.singletonList( field.getName() ) );
     }
 

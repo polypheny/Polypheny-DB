@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
+import io.javalin.http.Context;
 import io.javalin.plugin.json.JsonMapper;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
@@ -31,6 +32,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.servlet.ServletException;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +56,7 @@ import org.polypheny.db.information.InformationDuration.Duration;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
+import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.Result;
@@ -111,8 +115,24 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( InformationPage.class, InformationPage.getSerializer() )
                 .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
                 .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
+                .registerTypeAdapter( PluginStatus.class, PluginStatus.getSerializer() )
                 .create();
     }
+
+
+    private static HttpServer INSTANCE = null;
+
+
+    public static HttpServer getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( "HttpServer is not yet created." );
+        }
+        return INSTANCE;
+    }
+
+
+    private Javalin server;
+    private Crud crud;
 
 
     public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator ) {
@@ -139,13 +159,13 @@ public class HttpServer implements Runnable {
             }
 
         };
-        Javalin server = Javalin.create( config -> {
+        this.server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();
             config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
-        Crud crud = new Crud(
+        this.crud = new Crud(
                 transactionManager,
                 Catalog.defaultUserId,
                 Catalog.defaultDatabaseId );
@@ -169,6 +189,8 @@ public class HttpServer implements Runnable {
         crudRoutes( server, crud );
 
         StatusService.printInfo( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
+
+        INSTANCE = this;
     }
 
 
@@ -208,14 +230,6 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/updateRow", crud::updateRow );
 
         webuiServer.post( "/batchUpdate", crud::batchUpdate );
-
-        webuiServer.post( "/classifyData", crud::classifyData );
-
-        webuiServer.post( "/getExploreTables", crud::getExploreTables );
-
-        webuiServer.post( "/createInitialExploreQuery", crud::createInitialExploreQuery );
-
-        webuiServer.post( "/exploration", crud::exploration );
 
         webuiServer.post( "/allStatistics", ( ctx ) -> crud.statisticCrud.getStatistics( ctx, gsonExpose ) );
 
@@ -301,10 +315,6 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getForeignKeyActions", crud::getForeignKeyActions );
 
-        webuiServer.post( "/importDataset", crud::importDataset );
-
-        webuiServer.post( "/exportTable", crud::exportTable );
-
         webuiServer.get( "/getStores", crud::getStores );
 
         webuiServer.get( "/getSources", crud::getSources );
@@ -341,6 +351,37 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
+        webuiServer.post( "/loadPlugins", crud::loadPlugins );
+
+        webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
+
+        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
+
+    }
+
+
+    public void addSerializedRoute( String route, BiConsumer<Context, Crud> action, HandlerType type ) {
+        log.info( "Added route: {}", route );
+        switch ( type ) {
+            case GET:
+                server.get( route, r -> action.accept( r, crud ) );
+                break;
+            case POST:
+                server.post( route, r -> action.accept( r, crud ) );
+                break;
+            case PUT:
+                server.put( route, r -> action.accept( r, crud ) );
+                break;
+            case DELETE:
+                server.delete( route, r -> action.accept( r, crud ) );
+                break;
+        }
+    }
+
+
+    public <T> void addRoute( String route, BiFunction<T, Crud, Object> action, Class<T> requestClass, HandlerType type ) {
+        BiConsumer<Context, Crud> func = ( r, c ) -> r.json( action.apply( r.bodyAsClass( requestClass ), crud ) );
+        addSerializedRoute( route, func, type );
     }
 
 
@@ -407,5 +448,17 @@ public class HttpServer implements Runnable {
         } );
     }
 
+
+    public void removeRoute( String route, HandlerType type ) {
+        addRoute( route, ( ctx, crud ) -> null, Object.class, type );
+    }
+
+
+    public enum HandlerType {
+        POST,
+        GET,
+        PUT,
+        DELETE
+    }
 
 }

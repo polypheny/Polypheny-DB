@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,7 +127,7 @@ public class SortProjectTransposeRule extends AlgOptRule {
         // Not only is newProject equivalent to sort; newSort is equivalent to project's input (but only if the sort is not also applying an offset/limit).
         Map<AlgNode, AlgNode> equiv;
         if ( sort.offset == null && sort.fetch == null && cluster.getPlanner().getAlgTraitDefs().contains( AlgCollationTraitDef.INSTANCE ) ) {
-            equiv = ImmutableMap.of( (AlgNode) newSort, project.getInput() );
+            equiv = ImmutableMap.of( newSort, project.getInput() );
         } else {
             equiv = ImmutableMap.of();
         }

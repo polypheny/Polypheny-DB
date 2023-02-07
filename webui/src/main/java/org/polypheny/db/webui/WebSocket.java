@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,19 @@ import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsMessageContext;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
@@ -52,7 +51,7 @@ public class WebSocket implements Consumer<WsConfig> {
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final Crud crud;
-    private final HashMap<Session, Set<String>> queryAnalyzers = new HashMap<>();
+    private final ConcurrentHashMap<String, Set<String>> queryAnalyzers = new ConcurrentHashMap<>();
     private final Gson gson;
 
 
@@ -71,7 +70,7 @@ public class WebSocket implements Consumer<WsConfig> {
     public void closed( WsCloseContext ctx ) {
         log.debug( "UI disconnected from WebSocket" );
         sessions.remove( ctx.session );
-        cleanup( ctx.session );
+        Crud.cleanupOldSession( queryAnalyzers, ctx.getSessionId() );
     }
 
 
@@ -100,7 +99,7 @@ public class WebSocket implements Consumer<WsConfig> {
             return;
         }
         //close analyzers of a previous query that was sent over the same socket.
-        cleanup( ctx.session );
+        Crud.cleanupOldSession( queryAnalyzers, ctx.getSessionId() );
 
         UIRequest request = ctx.messageAsClass( UIRequest.class );
         Set<String> xIds = new HashSet<>();
@@ -153,10 +152,10 @@ public class WebSocket implements Consumer<WsConfig> {
                                 result = crud.getTable( uiRequest );
                                 break;
                             case DOCUMENT:
-                                result = LanguageCrud.anyMongoQuery( ctx.session, new QueryRequest( String.format( "db.%s.find({})", uiRequest.getTableName() ), false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
+                                result = LanguageCrud.anyQuery( QueryLanguage.from( "mongo" ), ctx.session, new QueryRequest( String.format( "db.%s.find({})", uiRequest.getTableName() ), false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
                                 break;
                             case GRAPH:
-                                result = LanguageCrud.anyCypherQuery( ctx.session, new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
+                                result = LanguageCrud.anyQuery( QueryLanguage.from( "cypher" ), ctx.session, new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
                                 break;
                         }
                         if ( result == null ) {
@@ -176,22 +175,7 @@ public class WebSocket implements Consumer<WsConfig> {
             default:
                 throw new RuntimeException( "Unexpected WebSocket request: " + request.requestType );
         }
-        queryAnalyzers.put( ctx.session, xIds );
-    }
-
-
-    /**
-     * Closes queryAnalyzers and deletes temporary files.
-     */
-    private void cleanup( final Session session ) {
-        Set<String> xIds = queryAnalyzers.remove( session );
-        if ( xIds == null || xIds.size() == 0 ) {
-            return;
-        }
-        for ( String xId : xIds ) {
-            InformationManager.close( xId );
-            TemporalFileManager.deleteFilesOfTransaction( xId );
-        }
+        queryAnalyzers.put( ctx.getSessionId(), xIds );
     }
 
 

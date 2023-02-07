@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
-@Category({ AdapterTestSuite.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class }) // cassandra can only compare primary key equality, but for streamer each key has to be compared
 public class DdlTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";
@@ -55,24 +55,25 @@ public class DdlTest extends MqlTestTemplate {
     @Test
     public void addCollectionTest() throws UnknownSchemaException {
         Catalog catalog = Catalog.getInstance();
+        String name = "testCollection";
 
         CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
         int size = catalog.getCollections( namespace.id, null ).size();
 
-        execute( "db.createCollection(\"" + collectionName + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
         assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
 
-        execute( String.format( "db.%s.drop()", collectionName ) );
+        execute( String.format( "db.%s.drop()", name ) );
 
         assertEquals( size, catalog.getCollections( namespace.id, null ).size() );
 
-        execute( "db.createCollection(\"" + collectionName + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
         assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
 
-        execute( String.format( "db.%s.drop()", collectionName ) );
+        execute( String.format( "db.%s.drop()", name ) );
     }
 
 
@@ -147,7 +148,6 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(CassandraExcluded.class)
     public void deletePlacementDataTest() throws SQLException {
 
         String placement = "store1";
@@ -184,7 +184,7 @@ public class DdlTest extends MqlTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
             }

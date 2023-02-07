@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,8 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 
@@ -181,7 +177,7 @@ public class PolyTypeAssignmentRules {
         rule.clear();
         rule.add( PolyType.IMAGE );
         rule.add( PolyType.VIDEO );
-        rule.add( PolyType.SOUND );
+        rule.add( PolyType.AUDIO );
         rules.add( PolyType.FILE, rule );
 
         // DATE is assignable from...
@@ -289,6 +285,7 @@ public class PolyTypeAssignmentRules {
                         .add( PolyType.DATE )
                         .add( PolyType.TIME )
                         .add( PolyType.TIMESTAMP )
+                        .add( PolyType.DOCUMENT )
                         .addAll( PolyType.INTERVAL_TYPES )
                         .build() );
 

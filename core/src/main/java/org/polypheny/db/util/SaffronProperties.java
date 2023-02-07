@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ package org.polypheny.db.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.AccessControlException;
 import java.util.Enumeration;
 import java.util.Properties;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
@@ -59,7 +58,7 @@ import org.polypheny.db.runtime.Resources.StringProp;
  * <code>"saffron.properties"</code> in the current directory, it is read too.
  *
  * <p>Every property used in saffron code must have a method in this interface.
- * The method must return a sub-class of
+ * The method must return a subclass of
  * {@link org.polypheny.db.runtime.Resources.Prop}. The javadoc
  * comment must describe the name of the property (for example,
  * "net.sf.saffron.connection.PoolSize") and the default value, if any. <em>
@@ -154,13 +153,11 @@ public interface SaffronProperties {
                 }
             } catch ( IOException e ) {
                 throw new RuntimeException( "while reading from saffron.properties file", e );
-            } catch ( AccessControlException e ) {
-                // we're in a sandbox
             }
 
             // copy in all system properties which start with "saffron."
             Properties source = System.getProperties();
-            for ( Enumeration keys = source.keys(); keys.hasMoreElements(); ) {
+            for ( Enumeration<?> keys = source.keys(); keys.hasMoreElements(); ) {
                 String key = (String) keys.nextElement();
                 String value = source.getProperty( key );
                 if ( key.startsWith( "saffron." ) || key.startsWith( "net.sf.saffron." ) ) {

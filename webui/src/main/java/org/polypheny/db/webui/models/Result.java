@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.webui.models;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
@@ -32,7 +31,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -116,7 +115,7 @@ public class Result {
      * language type of result MQL/SQL/CQL
      */
     @Setter
-    private QueryLanguage language = QueryLanguage.SQL;
+    private QueryLanguage language = QueryLanguage.from( "sql" );
 
     /**
      * Indicate that only a subset of the specified query is being displayed.
@@ -245,8 +244,9 @@ public class Result {
                     break;
                 case "namespaceName":
                     namespaceName = in.nextString();
+                    break;
                 case "language":
-                    language = extractEnum( in, QueryLanguage::valueOf );
+                    language = QueryLanguage.getSerializer().read( in );
                     break;
                 case "hasMoreRows":
                     hasMoreRows = in.nextBoolean();
@@ -254,7 +254,7 @@ public class Result {
                 case "classificationInfo":
                     classificationInfo = in.nextString();
                     break;
-                case "explorerInd":
+                case "explorerId":
                     explorerId = in.nextInt();
                     break;
                 case "includesClassificationInfo":
@@ -289,7 +289,19 @@ public class Result {
             rawData.add( list );
         }
         in.endArray();
-        return rawData.toArray( new String[0][] );
+        return toNestedArray( rawData );
+    }
+
+
+    private static String[][] toNestedArray( List<List<String>> nestedList ) {
+        String[][] array = new String[nestedList.size()][];
+        int i = 0;
+        for ( List<String> list : nestedList ) {
+            array[i] = list.toArray( new String[0] );
+            i++;
+        }
+
+        return array;
     }
 
 
@@ -302,7 +314,14 @@ public class Result {
         List<String> list = new ArrayList<>();
         in.beginArray();
         while ( in.peek() != JsonToken.END_ARRAY ) {
-            list.add( in.nextString() );
+            if ( in.peek() == JsonToken.NULL ) {
+                in.nextNull();
+                list.add( null );
+            } else if ( in.peek() == JsonToken.STRING ) {
+                list.add( in.nextString() );
+            } else {
+                throw new RuntimeException( "Error while un-parsing Result." );
+            }
         }
         in.endArray();
         return list;
@@ -403,9 +422,7 @@ public class Result {
 
 
     public static TypeAdapter<Result> getSerializer() {
-        return new TypeAdapter<Result>() {
-            final ObjectMapper mapper = new ObjectMapper();
-
+        return new TypeAdapter<>() {
 
             @Override
             public void write( JsonWriter out, Result result ) throws IOException {
@@ -444,7 +461,7 @@ public class Result {
                 out.name( "namespaceName" );
                 out.value( result.namespaceName );
                 out.name( "language" );
-                handleEnum( out, result.language );
+                QueryLanguage.getSerializer().write( out, result.language );
                 out.name( "hasMoreRows" );
                 out.value( result.hasMoreRows );
                 out.name( "classificationInfo" );

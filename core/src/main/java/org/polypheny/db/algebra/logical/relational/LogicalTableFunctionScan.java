@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.logical.relational;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
@@ -68,14 +67,6 @@ public class LogicalTableFunctionScan extends TableFunctionScan {
      */
     public LogicalTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traitSet, inputs, rexCall, elementType, rowType, columnMappings );
-    }
-
-
-    /**
-     * Creates a LogicalTableFunctionScan by parsing serialized output.
-     */
-    public LogicalTableFunctionScan( AlgInput input ) {
-        super( input );
     }
 
 

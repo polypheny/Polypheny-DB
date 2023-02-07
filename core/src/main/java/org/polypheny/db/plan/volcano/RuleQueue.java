@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,6 @@ import org.polypheny.db.algebra.AlgNodes;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.util.ChunkList;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -313,10 +312,11 @@ class RuleQueue {
     void addMatch( VolcanoRuleMatch match ) {
         final String matchName = match.toString();
         for ( PhaseMatchList matchList : matchListMap.values() ) {
-            if ( !matchList.names.add( matchName ) ) {
+            if ( matchList.names.contains( matchName ) ) {
                 // Identical match has already been added.
                 continue;
             }
+            matchList.names.add( matchName );
 
             String ruleClassName = match.getRule().getClass().getSimpleName();
 
@@ -627,7 +627,7 @@ class RuleQueue {
          * Current list of VolcanoRuleMatches for this phase. New rule-matches are appended to the end of this list. When removing a rule-match, the list is sorted and the highest
          * importance rule-match removed. It is important for performance that this list remain mostly sorted.
          *
-         * Use a {@link ChunkList} because {@link java.util.ArrayList} does not implement remove(0) efficiently.
+         * Use a {@link ArrayList} because {@link java.util.ArrayList} does not implement remove(0) efficiently.
          * NOTE DL: This seems to generate a lot of overhead (especially on retrieval), not sure if the above claim is correct
          * and even if it is necessary for the used task
          */

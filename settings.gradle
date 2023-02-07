@@ -1,33 +1,55 @@
 rootProject.name = 'Polypheny-DB'
 
+// core modules
 include 'core'
-include 'sql-language'
-include 'mql-language'
-include 'pig-language'
-include 'cql-language'
-include 'cypher-language'
-include 'cassandra-adapter'
-include 'csv-adapter'
-include 'druid-adapter'
-include 'elasticsearch-adapter'
-include 'html-adapter'
-include 'geode-adapter'
-include 'mongodb-adapter'
-include 'http-interface'
-include 'file-adapter'
-include 'jdbc-adapter'
-include 'neo4j-adapter'
-include 'pig-adapter'
-include 'avatica-interface'
-include 'webui'
-include 'catalog'
 include 'config'
 include 'information'
 include 'monitoring'
-include 'explore-by-example'
-include 'rest-interface'
-include 'cottontail-adapter'
-include 'ethereum-adapter'
-
+include 'webui'
 
 include 'dbms'
+
+include 'plugins'
+
+// catalog
+include 'plugins:mapdb-catalog'
+
+include 'plugins:mapdb-monitoring'
+
+// language plugins
+include 'plugins:sql-language'
+include 'plugins:mql-language'
+include 'plugins:pig-language'
+include 'plugins:cql-language'
+include 'plugins:cypher-language'
+
+
+include 'plugins:jdbc-adapter-framework'
+
+// interface plugins
+include 'plugins:avatica-interface'
+include 'plugins:rest-interface'
+include 'plugins:http-interface'
+
+// adapters plugins
+include 'plugins:hsqldb-adapter'
+include 'plugins:neo4j-adapter'
+include 'plugins:cottontail-adapter'
+include 'plugins:ethereum-adapter'
+include 'plugins:cassandra-adapter'
+include 'plugins:csv-adapter'
+include 'plugins:mysql-adapter'
+include 'plugins:postgres-adapter'
+include 'plugins:monetdb-adapter'
+include 'plugins:mongodb-adapter'
+include 'plugins:file-adapter'
+
+// other plugins
+include 'plugins:explore-by-example'
+
+// disabled adapter plugins
+include 'plugins:pig-adapter'
+include 'plugins:html-adapter'
+include 'plugins:druid-adapter'
+include 'plugins:elasticsearch-adapter'
+include 'plugins:geode-adapter'

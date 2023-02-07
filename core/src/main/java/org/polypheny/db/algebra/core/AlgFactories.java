@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,7 +202,7 @@ public class AlgFactories {
     public interface ExchangeFactory {
 
         /**
-         * Creates a Exchange.
+         * Creates an Exchange.
          */
         AlgNode createExchange( AlgNode input, AlgDistribution distribution );
 
@@ -596,7 +596,7 @@ public class AlgFactories {
             final TranslatableTable translatableTable = table.unwrap( TranslatableTable.class );
             if ( translatableTable != null ) {
                 final ToAlgContext toAlgContext = () -> cluster;
-                return translatableTable.toAlg( toAlgContext, table );
+                return translatableTable.toAlg( toAlgContext, table, cluster.traitSet() );
             }
             return scanFactory.createScan( cluster, table );
         };

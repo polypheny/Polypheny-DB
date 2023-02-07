@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@
 
 package org.polypheny.db.util;
 
-
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -63,7 +62,7 @@ public interface ReflectiveVisitDispatcher<R extends ReflectiveVisitor, E> {
             Class<? extends R> visitorClass,
             Class<? extends E> visiteeClass,
             String visitMethodName,
-            List<Class> additionalParameterTypes );
+            List<Class<?>> additionalParameterTypes );
 
     /**
      * Looks up a visit method.
@@ -94,5 +93,5 @@ public interface ReflectiveVisitDispatcher<R extends ReflectiveVisitor, E> {
             R visitor,
             E visitee,
             String visitMethodName );
-}
 
+}

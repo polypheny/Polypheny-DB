@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -53,7 +52,7 @@ class EnumerableProjectRule extends ConverterRule {
     EnumerableProjectRule() {
         super(
                 LogicalProject.class,
-                (Predicate<LogicalProject>) AlgOptUtil::containsMultisetOrWindowedAgg,
+                AlgOptUtil::containsMultisetOrWindowedAgg,
                 Convention.NONE,
                 EnumerableConvention.INSTANCE,
                 AlgFactories.LOGICAL_BUILDER,

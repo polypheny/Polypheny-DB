@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.github.rvesse.airline.annotations.OptionType;
 import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
+import java.util.List;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,8 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogImpl;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -45,8 +47,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.exploreByExample.ExploreManager;
-import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -54,7 +54,6 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.language.LanguageManagerImpl;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
@@ -63,8 +62,10 @@ import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
+import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -118,13 +119,14 @@ public class PolyphenyDb {
     @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)
     protected String applicationConfPath;
 
-    @Option(name = {"-v", "--version"}, description = "Current version of Polypheny-DB")
+    @Option(name = { "-v", "--version" }, description = "Current version of Polypheny-DB")
     public boolean versionOptionEnabled = false;
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
     private SplashHelper splashScreen;
+    private Catalog catalog;
 
 
     public static void main( final String[] args ) {
@@ -146,7 +148,7 @@ public class PolyphenyDb {
             }
 
             if ( polyphenyDb.versionOptionEnabled ) {
-                System.out.println("v" + polyphenyDb.getClass().getPackage().getImplementationVersion());
+                System.out.println( "v" + polyphenyDb.getClass().getPackage().getImplementationVersion() );
                 return;
             }
 
@@ -234,7 +236,8 @@ public class PolyphenyDb {
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
         if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().checkIfExists( applicationConfPath ) ) {
-            ConfigManager.getInstance().setApplicationConfFile( new File( applicationConfPath ) );
+            ConfigManager.getInstance();
+            ConfigManager.setApplicationConfFile( new File( applicationConfPath ) );
         }
 
         class ShutdownHelper implements Runnable {
@@ -274,7 +277,7 @@ public class PolyphenyDb {
 
             public void join( final long millis ) throws InterruptedException {
                 synchronized ( joinOnNotStartedLock ) {
-                    while ( alreadyRunning == false ) {
+                    while ( !alreadyRunning ) {
                         joinOnNotStartedLock.wait( 0 );
                     }
                 }
@@ -287,9 +290,6 @@ public class PolyphenyDb {
 
         final ShutdownHelper sh = new ShutdownHelper();
         // shutdownHookId = addShutdownHook( "Component Terminator", sh );
-
-        final LanguageManagerImpl languageManager = new LanguageManagerImpl();
-        LanguageManager.setAndGetInstance( languageManager );
 
         // Start config server and information server
         new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
@@ -319,26 +319,32 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
+        PolyPluginManager.init();
+
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl( statisticQueryProcessor ) );
+        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl<>( statisticQueryProcessor ) );
 
         // Initialize MaterializedViewManager
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 
         // Startup and restore catalog
-        Catalog catalog;
         Transaction trx = null;
         try {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
             Catalog.testMode = testMode;
             Catalog.resetDocker = resetDocker;
-            Catalog.defaultStore = Adapter.fromString( defaultStoreName );
-            Catalog.defaultSource = Adapter.fromString( defaultSourceName );
-            catalog = Catalog.setAndGetInstance( new CatalogImpl() );
+            Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
+            Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
+            catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
+            if ( catalog == null ) {
+                throw new RuntimeException( "There was no catalog submitted, aborting." );
+            }
+
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
+            loadDefaults();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
@@ -376,6 +382,15 @@ public class PolyphenyDb {
             log.warn( "Interrupted on join()", e );
         }
 
+        // temporary add sql and rel here
+        LanguageManager.getINSTANCE().addQueryLanguage(
+                NamespaceType.RELATIONAL,
+                "rel",
+                List.of( "rel", "relational" ),
+                null,
+                JsonRelProcessorImpl::new,
+                null );
+
         // Initialize index manager
         try {
             IndexManager.getInstance().initialize( transactionManager );
@@ -386,10 +401,6 @@ public class PolyphenyDb {
 
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
-
-        final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
-        ExploreManager explore = ExploreManager.getInstance();
-        explore.setExploreQueryProcessor( exploreQueryProcessor );
 
         // Add config and monitoring test page for UI testing
         if ( testMode ) {
@@ -406,6 +417,8 @@ public class PolyphenyDb {
             // Init TrayGUI
             TrayGui.getInstance();
         }
+
+        PolyPluginManager.startUp( transactionManager, authenticator );
 
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
@@ -439,6 +452,11 @@ public class PolyphenyDb {
         if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
         }
+    }
+
+
+    public void loadDefaults() {
+        Catalog.getInstance().restoreInterfacesIfNecessary();
     }
 
 }

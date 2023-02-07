@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.polypheny.db.runtime;
 
 import com.drew.lang.annotations.NotNull;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,6 +36,9 @@ import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.BuiltInMethod;
 
 public class PolyCollections {
+
+    private static Gson gson = new GsonBuilder().serializeNulls().enableComplexMapKeySerialization().create();
+
 
     public static class PolyList<T extends Comparable<?>> extends ArrayList<T> implements Comparable<PolyList<T>>, Collection<T>, ExpressionTransformable {
 
@@ -144,6 +149,16 @@ public class PolyCollections {
 
             return hashCode() >= directory.hashCode() ? 1 : -1;
 
+        }
+
+
+        public String toString() {
+            return gson.toJson( this );
+        }
+
+
+        public static PolyDictionary fromString( String json ) {
+            return gson.fromJson( json, PolyDictionary.class );
         }
 
 

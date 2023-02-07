@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.polypheny.db.monitoring.statistics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
@@ -27,6 +28,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -117,10 +119,13 @@ public class StatisticQueryProcessor {
     public List<QueryResult> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumn> catalogColumns = catalog.getColumns(
-                null,
-                null,
-                null,
-                null );
+                        null,
+                        null,
+                        null,
+                        null )
+                .stream()
+                .filter( c -> c.getNamespaceType() == NamespaceType.RELATIONAL )
+                .collect( Collectors.toList() );
         List<QueryResult> allColumns = new ArrayList<>();
 
         for ( CatalogColumn catalogColumn : catalogColumns ) {

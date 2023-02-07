@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -17,21 +34,10 @@
 package org.polypheny.db.misc;
 
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Arrays;
-import java.util.List;
-import java.util.TreeSet;
 import lombok.extern.slf4j.Slf4j;
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
@@ -63,7 +69,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.language.SqlMatchRecognize;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -76,6 +81,18 @@ import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
+import java.util.TreeSet;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 
 /**
@@ -2281,6 +2298,26 @@ public class AlgBuilderTest {
     }
 
 
+    public enum AfterOption {
+        SKIP_TO_NEXT_ROW( "SKIP TO NEXT ROW" ),
+        SKIP_PAST_LAST_ROW( "SKIP PAST LAST ROW" );
+
+        private final String sql;
+
+
+        AfterOption( String sql ) {
+            this.sql = sql;
+        }
+
+
+        @Override
+        public String toString() {
+            return sql;
+        }
+
+    }
+
+
     @Test
     public void testMatchRecognize() {
         // Equivalent SQL:
@@ -2349,8 +2386,7 @@ public class AlgBuilderTest {
                                 builder.literal( 0 ) ),
                         "bottom_nw" ) );
 
-        RexNode after = builder.getRexBuilder().makeFlag(
-                SqlMatchRecognize.AfterOption.SKIP_TO_NEXT_ROW );
+        RexNode after = builder.getRexBuilder().makeFlag( AfterOption.SKIP_TO_NEXT_ROW );
 
         ImmutableList.Builder<RexNode> partitionKeysBuilder = new ImmutableList.Builder<>();
         partitionKeysBuilder.add( builder.field( "deptno" ) );

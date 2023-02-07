@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,27 +33,15 @@
 
 package org.polypheny.db.type;
 
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
+import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.util.Util;
+
 import java.math.BigDecimal;
 import java.sql.Types;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.Literal;
-import org.polypheny.db.util.Util;
+import java.util.*;
 
 
 /**
@@ -388,7 +376,7 @@ public enum PolyType {
             PolyTypeFamily.MULTIMEDIA
     ),
 
-    SOUND(
+    AUDIO(
             PrecScale.NO_NO,
             true,
             Types.BINARY,
@@ -422,7 +410,7 @@ public enum PolyType {
     // SqlTypeFamily.ANY
     public static final List<PolyType> ALL_TYPES =
             ImmutableList.of(
-                    BOOLEAN, INTEGER, VARCHAR, JSON, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, FILE, IMAGE, VIDEO, SOUND,
+                    BOOLEAN, INTEGER, VARCHAR, JSON, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO,
                     TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY,
                     INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE,
                     INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND, TIME_WITH_LOCAL_TIME_ZONE,
@@ -448,7 +436,9 @@ public enum PolyType {
 
     public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );
 
-    public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY );
+    public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY, DOCUMENT );
+
+    public static final List<PolyType> JSON_TYPES = combine( DOCUMENT_TYPES, STRING_TYPES );
 
     public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, EDGE );
 
@@ -1163,11 +1153,6 @@ public enum PolyType {
     }
 
 
-    public Literal createLiteral( Object o, ParserPos pos ) {
-        return LanguageManager.getInstance().createLiteral( QueryLanguage.SQL, this, o, pos );
-    }
-
-
     /**
      * @return name of this type
      */
@@ -1177,7 +1162,7 @@ public enum PolyType {
 
 
     public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, SOUND );
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, AUDIO );
     }
 
 

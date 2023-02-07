@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Values;
@@ -69,14 +68,6 @@ public class LogicalValues extends Values {
      */
     public LogicalValues( AlgOptCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
         super( cluster, rowType, tuples, traitSet.replace( ModelTrait.RELATIONAL ) );
-    }
-
-
-    /**
-     * Creates a LogicalValues by parsing serialized output.
-     */
-    public LogicalValues( AlgInput input ) {
-        super( input );
     }
 
 

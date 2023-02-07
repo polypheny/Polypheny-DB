@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ package org.polypheny.db.algebra.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
@@ -185,17 +184,10 @@ public interface AlgDataType {
     /**
      * Gets the {@link PolyType} of this type.
      *
-     * @return PolyType, or null if this is not an predefined type
+     * @return PolyType, or null if this is not a predefined type
      */
     PolyType getPolyType();
 
-    /**
-     * Gets the {#@link SqlIdentifier} associated with this type. For a predefined type, this is a simple identifier based on
-     * {@link #getPolyType}. For a user-defined type, this is a compound identifier which uniquely names the type.
-     *
-     * @return SqlIdentifier, or null if this is not an SQL type
-     */
-    Identifier getSqlIdentifier();
 
     /**
      * Gets a string representation of this type without detail such as character set and nullability.

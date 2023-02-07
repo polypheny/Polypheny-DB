@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class PostgresSourceTest extends AbstractSourceTest {
                 settings.put( "transactionIsolation", "SERIALIZABLE" );
                 settings.put( "tables", "public.auction,public.bid,public.category,public.picture,public.user" );
                 Gson gson = new Gson();
-                statement.executeUpdate( "ALTER ADAPTERS ADD postgresunit USING 'org.polypheny.db.adapter.jdbc.sources.PostgresqlSource' WITH '" + gson.toJson( settings ) + "'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD postgresunit USING 'Postgresql' AS 'Source' WITH '" + gson.toJson( settings ) + "'" );
             }
         }
     }

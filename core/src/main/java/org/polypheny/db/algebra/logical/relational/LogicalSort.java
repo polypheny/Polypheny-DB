@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.logical.relational;
 
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
@@ -53,14 +52,6 @@ public final class LogicalSort extends Sort {
     private LogicalSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input, collation, offset, fetch );
         assert traitSet.containsIfApplicable( Convention.NONE );
-    }
-
-
-    /**
-     * Creates a LogicalSort by parsing serialized output.
-     */
-    public LogicalSort( AlgInput input ) {
-        super( input );
     }
 
 

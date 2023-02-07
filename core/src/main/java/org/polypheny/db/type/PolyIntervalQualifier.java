@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.nodes.IntervalQualifier;
 
+
 public class PolyIntervalQualifier {
 
     public PolyIntervalQualifier( int startPrecision, TimeUnitRange timeUnitRange, int fractionalSecondPrecision ) {
@@ -52,7 +53,10 @@ public class PolyIntervalQualifier {
 
 
     public static PolyIntervalQualifier fromSqlQualifier( IntervalQualifier intervalQualifier ) {
-        return new PolyIntervalQualifier( intervalQualifier.getStartPrecisionPreservingDefault(), intervalQualifier.getTimeUnitRange(), intervalQualifier.getFractionalSecondPrecisionPreservingDefault() );
+        return new PolyIntervalQualifier(
+                intervalQualifier.getStartPrecisionPreservingDefault(),
+                intervalQualifier.getTimeUnitRange(),
+                intervalQualifier.getFractionalSecondPrecisionPreservingDefault() );
     }
 
 
@@ -163,49 +167,7 @@ public class PolyIntervalQualifier {
 
 
     public PolyType typeName() {
-        switch ( timeUnitRange ) {
-            case YEAR:
-            case ISOYEAR:
-            case CENTURY:
-            case DECADE:
-            case MILLENNIUM:
-                return PolyType.INTERVAL_YEAR;
-            case YEAR_TO_MONTH:
-                return PolyType.INTERVAL_YEAR_MONTH;
-            case MONTH:
-            case QUARTER:
-                return PolyType.INTERVAL_MONTH;
-            case DOW:
-            case ISODOW:
-            case DOY:
-            case DAY:
-            case WEEK:
-                return PolyType.INTERVAL_DAY;
-            case DAY_TO_HOUR:
-                return PolyType.INTERVAL_DAY_HOUR;
-            case DAY_TO_MINUTE:
-                return PolyType.INTERVAL_DAY_MINUTE;
-            case DAY_TO_SECOND:
-                return PolyType.INTERVAL_DAY_SECOND;
-            case HOUR:
-                return PolyType.INTERVAL_HOUR;
-            case HOUR_TO_MINUTE:
-                return PolyType.INTERVAL_HOUR_MINUTE;
-            case HOUR_TO_SECOND:
-                return PolyType.INTERVAL_HOUR_SECOND;
-            case MINUTE:
-                return PolyType.INTERVAL_MINUTE;
-            case MINUTE_TO_SECOND:
-                return PolyType.INTERVAL_MINUTE_SECOND;
-            case SECOND:
-            case MILLISECOND:
-            case EPOCH:
-            case MICROSECOND:
-            case NANOSECOND:
-                return PolyType.INTERVAL_SECOND;
-            default:
-                throw new AssertionError( timeUnitRange );
-        }
+        return IntervalQualifier.getRangePolyType( timeUnitRange );
     }
 
 }

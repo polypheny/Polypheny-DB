@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -54,8 +53,6 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
@@ -67,8 +64,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.type.checker.OperandTypes;
-import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
 import org.polypheny.db.util.NumberUtil;
@@ -79,15 +74,7 @@ import org.polypheny.db.util.NumberUtil;
  */
 public class AlgMdUtil {
 
-    public static final Operator ARTIFICIAL_SELECTIVITY_FUNC =
-            LanguageManager.getInstance().createFunction(
-                    QueryLanguage.SQL,
-                    "ARTIFICIAL_SELECTIVITY",
-                    Kind.OTHER_FUNCTION,
-                    ReturnTypes.BOOLEAN, // returns boolean since we'll AND it
-                    null,
-                    OperandTypes.NUMERIC, // takes a numeric param
-                    FunctionCategory.SYSTEM );
+    public static final Operator ARTIFICIAL_SELECTIVITY_FUNC = new ArtificialSelectivityOperator();
 
 
     private AlgMdUtil() {
@@ -305,7 +292,7 @@ public class AlgMdUtil {
         // The formula for this is:
         // 1. Assume we pick 80 random values between 1 and 100.
         // 2. The chance we skip any given value is .99 ^ 80
-        // 3. Thus on average we will skip .99 ^ 80 percent of the values in the domain
+        // 3. Thus, on average we will skip .99 ^ 80 percent of the values in the domain
         // 4. Generalized, we skip ( (n-1)/n ) ^ k values where n is the number of possible values and k is the number we are selecting
         // 5. This can be rewritten via approximation (if you want to know why approximation is called for here, ask Bill Keese):
         //  ((n-1)/n) ^ k

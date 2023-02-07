@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,10 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -90,13 +89,14 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
-public abstract class Catalog {
+public abstract class Catalog implements ExtensionPoint {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;
@@ -156,6 +156,11 @@ public abstract class Catalog {
         listeners.removePropertyChangeListener( listener );
     }
 
+
+    /**
+     * Restores all interfaces if none are present
+     */
+    public abstract void restoreInterfacesIfNecessary();
 
     /**
      * Validates that all columns have a valid placement,
@@ -315,14 +320,14 @@ public abstract class Catalog {
      * Change owner of a schema
      *
      * @param schemaId The id of the schema
-     * @param ownerId Id of the new owner
+     * @param ownerId ID of the new owner
      */
     public abstract void setSchemaOwner( long schemaId, long ownerId );
 
     /**
      * Adds a new graph to the catalog, on the same layer as schema in relational.
      *
-     * @param databaseId Id of the graph, which is also the id of the database
+     * @param databaseId ID of the graph, which is also the id of the database
      * @param name The name of the graph
      * @param stores The datastores on which the graph is placed
      * @param modifiable If the graph is modifiable
@@ -561,7 +566,7 @@ public abstract class Catalog {
      * Change owner of a table
      *
      * @param tableId The if of the table
-     * @param ownerId Id of the new owner
+     * @param ownerId ID of the new owner
      */
     public abstract void setTableOwner( long tableId, int ownerId );
 
@@ -595,7 +600,7 @@ public abstract class Catalog {
     public abstract void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly );
 
     /**
-     * Gets a collective list of column placements per column on a adapter.
+     * Gets a collective list of column placements per column on an adapter.
      * Effectively used to retrieve all relevant placements including partitions.
      *
      * @param adapterId The id of the adapter
@@ -745,7 +750,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param physicalSchemaName The physical schema name
      * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
+     * @param updatePhysicalColumnPosition Whether to reset the column position (the highest number in the table; represents that the column is now at the last position)
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
 
@@ -911,10 +916,10 @@ public abstract class Catalog {
     public abstract boolean isForeignKey( long keyId );
 
     /**
-     * Check whether a key is a index
+     * Check whether a key is an index
      *
      * @param keyId The id of the key
-     * @return Whether the key is a index
+     * @return Whether the key is an index
      */
     public abstract boolean isIndex( long keyId );
 
@@ -1072,7 +1077,7 @@ public abstract class Catalog {
      * @param unique Weather the index is unique
      * @param method Name of the index method (e.g. btree_unique)
      * @param methodDisplayName Display name of the index method (e.g. BTREE)
-     * @param location Id of the data store where the index is located (0 for Polypheny-DB itself)
+     * @param location ID of the data store where the index is located (0 for Polypheny-DB itself)
      * @param type The type of index (manual, automatic)
      * @param indexName The name of the index
      * @return The id of the created index
@@ -1731,7 +1736,7 @@ public abstract class Catalog {
     public abstract CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId );
 
     /**
-     * Returns a list of all Partition Placements which currently reside on a adapter, disregarded of the table.
+     * Returns a list of all Partition Placements which currently reside on an adapter, disregarded of the table.
      *
      * @param adapterId The adapter on which the requested partition placements reside
      * @return A list of all Partition Placements, that are currently located  on that specific store
@@ -1739,11 +1744,11 @@ public abstract class Catalog {
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
 
     /**
-     * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.
+     * Returns a list of all Partition Placements which currently reside on an adapter, for a specific table.
      *
      * @param adapterId The adapter on which the requested partition placements reside
-     * @param tableId The table for which all partition placements on a adapter should be considered
-     * @return A list of all Partition Placements, that are currently located  on that specific store for a individual table
+     * @param tableId The table for which all partition placements on an adapter should be considered
+     * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( int adapterId, long tableId );
 
@@ -1756,10 +1761,10 @@ public abstract class Catalog {
     public abstract List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
 
     /**
-     * Get all Partition Placements which are associated with a individual partition Id.
+     * Get all Partition Placements which are associated with an individual partition ID.
      * Identifies on which locations and how often the individual partition is placed.
      *
-     * @param partitionId The requested partition Id
+     * @param partitionId The requested partition ID
      * @return A list of Partition Placements which are physically responsible for that partition
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
@@ -1774,19 +1779,19 @@ public abstract class Catalog {
     /**
      * Registers a table to be considered for periodic processing
      *
-     * @param tableId Id of table to be considered for periodic processing
+     * @param tableId ID of table to be considered for periodic processing
      */
     public abstract void addTableToPeriodicProcessing( long tableId );
 
     /**
      * Remove a table from periodic background processing
      *
-     * @param tableId Id of table to be removed for periodic processing
+     * @param tableId ID of table to be removed for periodic processing
      */
     public abstract void removeTableFromPeriodicProcessing( long tableId );
 
     /**
-     * Probes if a Partition Placement on a adapter for a specific partition already exists.
+     * Probes if a Partition Placement on an adapter for a specific partition already exists.
      *
      * @param adapterId Adapter on which to check
      * @param partitionId Partition which to check
@@ -1828,7 +1833,7 @@ public abstract class Catalog {
     /**
      * Add a new collection with the given parameters.
      *
-     * @param id Id of the collection to add, null if a new one needs to be generated
+     * @param id ID of the collection to add, null if a new one needs to be generated
      * @param name The name of the collection
      * @param schemaId The id of the namespace to which the collection is added
      * @param currentUserId The user, which adds the collection
@@ -2030,52 +2035,6 @@ public abstract class Catalog {
                 return ModelTrait.GRAPH;
             }
             throw new RuntimeException( "Not found a suitable NamespaceType." );
-        }
-    }
-
-
-    public enum QueryLanguage {
-        @SerializedName("sql")
-        SQL( NamespaceType.RELATIONAL ),
-        @SerializedName("mql")
-        MONGO_QL( NamespaceType.DOCUMENT ),
-        @SerializedName("cql")
-        CQL( NamespaceType.RELATIONAL ),
-        @SerializedName("rel")
-        REL_ALG( NamespaceType.RELATIONAL ),
-        @SerializedName("pig")
-        PIG( NamespaceType.RELATIONAL ),
-        @SerializedName("cypher")
-        CYPHER( NamespaceType.GRAPH );
-
-
-        @Getter
-        private final NamespaceType namespaceType;
-
-
-        QueryLanguage( NamespaceType namespaceType ) {
-            this.namespaceType = namespaceType;
-        }
-
-
-        public static QueryLanguage from( String name ) {
-            String normalized = name.toLowerCase( Locale.ROOT );
-            switch ( normalized ) {
-                case "mql":
-                case "mongoql":
-                    return MONGO_QL;
-                case "sql":
-                    return SQL;
-                case "cql":
-                    return CQL;
-                case "pig":
-                    return PIG;
-                case "opencypher":
-                case "cypher":
-                    return CYPHER;
-            }
-
-            throw new RuntimeException( "The query language seems not to be supported!" );
         }
     }
 

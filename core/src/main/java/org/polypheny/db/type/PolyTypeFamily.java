@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,14 +33,14 @@
 
 package org.polypheny.db.type;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+
 import java.sql.Types;
 import java.util.Collection;
 import java.util.Map;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 
 
 /**
@@ -191,7 +191,7 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
             case COLUMN_LIST:
                 return ImmutableList.of( PolyType.COLUMN_LIST );
             case MULTIMEDIA:
-                return ImmutableList.of( PolyType.FILE, PolyType.IMAGE, PolyType.VIDEO, PolyType.SOUND );
+                return ImmutableList.of( PolyType.FILE, PolyType.IMAGE, PolyType.VIDEO, PolyType.AUDIO );
             default:
                 throw new IllegalArgumentException();
         }

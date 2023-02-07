@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@
 
 package org.polypheny.db.algebra;
 
+
+import static org.slf4j.LoggerFactory.getLogger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -68,8 +70,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -149,7 +149,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         if ( !trimResult.right.isIdentity() ) {
             throw new IllegalArgumentException();
         }
-        Logger logger = LanguageManager.getInstance().getLogger( QueryLanguage.SQL, AlgNode.class );
+        Logger logger = getLogger( AlgNode.class );
         if ( logger.isDebugEnabled() ) {
             logger.debug(
                     AlgOptUtil.dumpPlan(
@@ -204,7 +204,8 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
     /**
      * Trims a child relational expression, then adds back a dummy project to restore the fields that were removed.
      *
-     * Sounds pointless? It causes unused fields to be removed further down the tree (towards the leaves), but it ensure that the consuming relational expression continues to see the same fields.
+     * Sounds pointless? It causes unused fields to be removed further down the tree (towards the leaves), but it ensures
+     * that the consuming relational expression continues to see the same fields.
      *
      * @param alg Relational expression
      * @param input Input relational expression, whose fields to trim

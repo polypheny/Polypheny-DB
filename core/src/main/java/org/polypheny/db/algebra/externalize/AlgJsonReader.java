@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -50,23 +49,17 @@ import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -77,7 +70,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgJsonReader {
 
-    private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<LinkedHashMap<String, Object>>() {
+    private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<>() {
     };
 
     private final AlgOptCluster cluster;
@@ -174,28 +167,8 @@ public class AlgJsonReader {
 
 
             @Override
-            public RexNode getExpression( String tag ) {
-                return algJson.toRex( this, jsonAlg.get( tag ) );
-            }
-
-
-            @Override
             public ImmutableBitSet getBitSet( String tag ) {
                 return ImmutableBitSet.of( getIntegerList( tag ) );
-            }
-
-
-            @Override
-            public List<ImmutableBitSet> getBitSetList( String tag ) {
-                List<List<Integer>> list = getIntegerListList( tag );
-                if ( list == null ) {
-                    return null;
-                }
-                final ImmutableList.Builder<ImmutableBitSet> builder = ImmutableList.builder();
-                for ( List<Integer> integers : list ) {
-                    builder.add( ImmutableBitSet.of( integers ) );
-                }
-                return builder.build();
             }
 
 
@@ -217,17 +190,6 @@ public class AlgJsonReader {
             public List<List<Integer>> getIntegerListList( String tag ) {
                 //noinspection unchecked
                 return (List<List<Integer>>) jsonAlg.get( tag );
-            }
-
-
-            @Override
-            public List<AggregateCall> getAggregateCalls( String tag ) {
-                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonAggs = (List) jsonAlg.get( tag );
-                final List<AggregateCall> inputs = new ArrayList<>();
-                for ( Map<String, Object> jsonAggCall : jsonAggs ) {
-                    inputs.add( toAggCall( jsonAggCall ) );
-                }
-                return inputs;
             }
 
 
@@ -263,40 +225,9 @@ public class AlgJsonReader {
 
 
             @Override
-            public List<RexNode> getExpressionList( String tag ) {
-                @SuppressWarnings("unchecked") final List<Object> jsonNodes = (List) jsonAlg.get( tag );
-                final List<RexNode> nodes = new ArrayList<>();
-                for ( Object jsonNode : jsonNodes ) {
-                    nodes.add( algJson.toRex( this, jsonNode ) );
-                }
-                return nodes;
-            }
-
-
-            @Override
             public AlgDataType getRowType( String tag ) {
                 final Object o = jsonAlg.get( tag );
                 return algJson.toType( cluster.getTypeFactory(), o );
-            }
-
-
-            @Override
-            public AlgDataType getRowType( String expressionsTag, String fieldsTag ) {
-                final List<RexNode> expressionList = getExpressionList( expressionsTag );
-                @SuppressWarnings("unchecked") final List<String> names = (List<String>) get( fieldsTag );
-                return cluster.getTypeFactory().createStructType(
-                        new AbstractList<Map.Entry<String, AlgDataType>>() {
-                            @Override
-                            public Map.Entry<String, AlgDataType> get( int index ) {
-                                return Pair.of( names.get( index ), expressionList.get( index ).getType() );
-                            }
-
-
-                            @Override
-                            public int size() {
-                                return names.size();
-                            }
-                        } );
             }
 
 
@@ -312,26 +243,6 @@ public class AlgJsonReader {
                 return algJson.toDistribution( get( "distribution" ) );
             }
 
-
-            @Override
-            public ImmutableList<ImmutableList<RexLiteral>> getTuples( String tag ) {
-                //noinspection unchecked
-                final List<List> jsonTuples = (List) get( tag );
-                final ImmutableList.Builder<ImmutableList<RexLiteral>> builder = ImmutableList.builder();
-                for ( List jsonTuple : jsonTuples ) {
-                    builder.add( getTuple( jsonTuple ) );
-                }
-                return builder.build();
-            }
-
-
-            public ImmutableList<RexLiteral> getTuple( List jsonTuple ) {
-                final ImmutableList.Builder<RexLiteral> builder = ImmutableList.builder();
-                for ( Object jsonValue : jsonTuple ) {
-                    builder.add( (RexLiteral) algJson.toRex( this, jsonValue ) );
-                }
-                return builder.build();
-            }
         };
         try {
             final AlgNode alg = (AlgNode) constructor.newInstance( input );
@@ -346,17 +257,6 @@ public class AlgJsonReader {
             }
             throw new RuntimeException( e2 );
         }
-    }
-
-
-    private AggregateCall toAggCall( Map<String, Object> jsonAggCall ) {
-        final String aggName = (String) jsonAggCall.get( "agg" );
-        final AggFunction aggregation = algJson.toAggregation( aggName, jsonAggCall );
-        final Boolean distinct = (Boolean) jsonAggCall.get( "distinct" );
-        @SuppressWarnings("unchecked") final List<Integer> operands = (List<Integer>) jsonAggCall.get( "operands" );
-        final Integer filterOperand = (Integer) jsonAggCall.get( "filter" );
-        final AlgDataType type = algJson.toType( cluster.getTypeFactory(), jsonAggCall.get( "type" ) );
-        return AggregateCall.create( aggregation, distinct, false, operands, filterOperand == null ? -1 : filterOperand, AlgCollations.EMPTY, type, null );
     }
 
 

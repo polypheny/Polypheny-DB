@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1233,6 +1233,8 @@ public enum Kind {
      * enum values for your object types. Just ask!
      */
     OTHER_DDL,
+
+    CROSS_MODEL_ITEM,
 
     /**
      * Document model transform document into string representation

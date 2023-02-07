@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -41,7 +43,7 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
 @Slf4j
-public abstract class DataStore extends Adapter {
+public abstract class DataStore extends Adapter implements ExtensionPoint {
 
     @Getter
     private final boolean persistent;
@@ -229,15 +231,20 @@ public abstract class DataStore extends Adapter {
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
-            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
+            jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
-            jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
+            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
+            jsonStore.addProperty( "type", src.getAdapterType().name() );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
             jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
+    }
+
+
+    private AdapterType getAdapterType() {
+        return AdapterType.STORE;
     }
 
 }

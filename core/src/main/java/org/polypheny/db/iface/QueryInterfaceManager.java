@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.iface;
 
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -30,21 +29,25 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.transaction.TransactionManager;
-import org.reflections.Reflections;
 
 
 @Slf4j
 public class QueryInterfaceManager {
 
     private static QueryInterfaceManager INSTANCE;
+
+    @Getter
+    private static final Map<String, QueryInterfaceType> REGISTER = new ConcurrentHashMap<>();
 
     private final Map<Integer, QueryInterface> interfaceById = new HashMap<>();
     private final Map<String, QueryInterface> interfaceByName = new HashMap<>();
@@ -79,6 +82,21 @@ public class QueryInterfaceManager {
     }
 
 
+    public static void addInterfaceType( String interfaceName, Class<? extends QueryInterface> clazz, Map<String, String> defaultSettings ) {
+        REGISTER.put( clazz.getSimpleName(), new QueryInterfaceType( clazz, interfaceName, defaultSettings ) );
+    }
+
+
+    public static void removeInterfaceType( Class<? extends QueryInterface> clazz ) {
+        for ( CatalogQueryInterface queryInterface : Catalog.getInstance().getQueryInterfaces() ) {
+            if ( queryInterface.clazz.equals( clazz.getName() ) ) {
+                throw new RuntimeException( "Cannot remove the interface type, there is still a interface active." );
+            }
+        }
+        REGISTER.remove( clazz.getSimpleName() );
+    }
+
+
     public QueryInterface getQueryInterface( int id ) {
         return interfaceById.get( id );
     }
@@ -90,12 +108,9 @@ public class QueryInterfaceManager {
 
 
     public List<QueryInterfaceInformation> getAvailableQueryInterfaceTypes() {
-        Reflections reflections = new Reflections( "org.polypheny.db" );
-        Set<Class> classes = ImmutableSet.copyOf( reflections.getSubTypesOf( QueryInterface.class ) );
         List<QueryInterfaceInformation> result = new LinkedList<>();
         try {
-            //noinspection unchecked
-            for ( Class<QueryInterface> clazz : classes ) {
+            for ( Class<? extends QueryInterface> clazz : REGISTER.values().stream().map( v -> v.clazz ).collect( Collectors.toList() ) ) {
                 // Exclude abstract classes
                 if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
                     String name = (String) clazz.getDeclaredField( "INTERFACE_NAME" ).get( null );
@@ -118,7 +133,9 @@ public class QueryInterfaceManager {
         try {
             List<CatalogQueryInterface> interfaces = catalog.getQueryInterfaces();
             for ( CatalogQueryInterface iface : interfaces ) {
-                Class<?> clazz = Class.forName( iface.clazz );
+                String[] split = iface.clazz.split( "\\$" );
+                split = split[split.length - 1].split( "\\." );
+                Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
                 Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
                 QueryInterface instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, iface.id, iface.name, iface.settings );
 
@@ -135,7 +152,7 @@ public class QueryInterfaceManager {
                 interfaceById.put( instance.getQueryInterfaceId(), instance );
                 interfaceThreadById.put( instance.getQueryInterfaceId(), thread );
             }
-        } catch ( NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
+        } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
             throw new RuntimeException( "Something went wrong while restoring query interfaces from the catalog.", e );
         }
     }
@@ -149,7 +166,9 @@ public class QueryInterfaceManager {
         QueryInterface instance;
         int ifaceId = -1;
         try {
-            Class<?> clazz = Class.forName( clazzName );
+            String[] split = clazzName.split( "\\$" );
+            split = split[split.length - 1].split( "\\." );
+            Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
             Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
             ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
             instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
@@ -171,7 +190,7 @@ public class QueryInterfaceManager {
                 catalog.deleteQueryInterface( ifaceId );
             }
             throw new RuntimeException( "Something went wrong while adding a new query interface: " + e.getCause().getMessage(), e );
-        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException e ) {
+        } catch ( NoSuchMethodException | IllegalAccessException | InstantiationException e ) {
             if ( ifaceId != -1 ) {
                 catalog.deleteQueryInterface( ifaceId );
             }
@@ -206,7 +225,7 @@ public class QueryInterfaceManager {
 
         public final String name;
         public final String description;
-        public final Class clazz;
+        public final Class<?> clazz;
         public final List<QueryInterfaceSetting> availableSettings;
 
 
@@ -234,6 +253,16 @@ public class QueryInterfaceManager {
         public String clazzName;
         public String uniqueName;
         public Map<String, String> currentSettings;
+
+    }
+
+
+    @AllArgsConstructor
+    public static class QueryInterfaceType {
+
+        public Class<? extends QueryInterface> clazz;
+        public String interfaceName;
+        public Map<String, String> defaultSettings;
 
     }
 

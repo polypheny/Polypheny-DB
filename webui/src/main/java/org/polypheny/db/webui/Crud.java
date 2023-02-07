@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.webui;
 
 
-import au.com.bytecode.opencsv.CSVReader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -26,31 +25,23 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PushbackInputStream;
 import java.io.RandomAccessFile;
-import java.io.Reader;
 import java.math.BigDecimal;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.ResultSetMetaData;
@@ -68,26 +59,23 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Part;
-import kong.unirest.HttpResponse;
-import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
@@ -115,7 +103,6 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -141,12 +128,9 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.exploreByExample.Explore;
-import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -157,6 +141,7 @@ import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.nodes.Node;
@@ -164,6 +149,9 @@ import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
+import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.transaction.Statement;
@@ -179,18 +167,12 @@ import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
-import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
-import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
-import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
-import org.polypheny.db.webui.models.HubMeta;
-import org.polypheny.db.webui.models.HubMeta.TableMapping;
-import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.MaterializedInfos;
 import org.polypheny.db.webui.models.PartitionFunctionModel;
@@ -204,22 +186,16 @@ import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
 import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.SortState;
-import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
-import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
-import org.polypheny.db.webui.models.requests.ExploreData;
-import org.polypheny.db.webui.models.requests.ExploreTables;
-import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
-import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
@@ -257,6 +233,21 @@ public class Crud implements InformationObserver {
 
 
     /**
+     * Closes analyzers and deletes temporary files.
+     */
+    public static void cleanupOldSession( ConcurrentHashMap<String, Set<String>> sessionXIds, final String sessionId ) {
+        Set<String> xIds = sessionXIds.remove( sessionId );
+        if ( xIds == null || xIds.size() == 0 ) {
+            return;
+        }
+        for ( String xId : xIds ) {
+            InformationManager.close( xId );
+            TemporalFileManager.deleteFilesOfTransaction( xId );
+        }
+    }
+
+
+    /**
      * Returns the content of a table with a maximum of PAGESIZE elements.
      */
     Result getTable( final UIRequest request ) {
@@ -286,7 +277,7 @@ public class Crud implements InformationObserver {
         }
 
         try {
-            result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit );
+            result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
             result.setXid( transaction.getXid().toString() );
         } catch ( Exception e ) {
             if ( request.filter != null ) {
@@ -717,8 +708,8 @@ public class Crud implements InformationObserver {
     /**
      * Run any query coming from the SQL console
      */
-    public ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session ) {
-        Transaction transaction = getTransaction( request.analyze, request.cache );
+    public static ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
+        Transaction transaction = getTransaction( request.analyze, request.cache, crud );
 
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
@@ -731,7 +722,7 @@ public class Crud implements InformationObserver {
         // and in case of auto commit of, the information is overwritten
         InformationManager queryAnalyzer = null;
         if ( request.analyze ) {
-            queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
+            queryAnalyzer = transaction.getQueryAnalyzer().observe( crud );
         }
 
         // TODO: make it possible to use pagination
@@ -758,14 +749,14 @@ public class Crud implements InformationObserver {
         for ( String query : queries ) {
             Result result;
             if ( !transaction.isActive() ) {
-                transaction = getTransaction( request.analyze, request.cache );
+                transaction = getTransaction( request.analyze, request.cache, crud );
             }
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
                     transaction.commit();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze, request.cache );
+                    transaction = getTransaction( request.analyze, request.cache, crud );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while committing a query from the console", e );
@@ -777,7 +768,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.rollback();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze, request.cache );
+                    transaction = getTransaction( request.analyze, request.cache, crud );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while rolling back a query from the console", e );
@@ -807,14 +798,14 @@ public class Crud implements InformationObserver {
                 }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit )
+                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit, crud )
                             .setGeneratedQuery( query )
                             .setXid( transaction.getXid().toString() );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze, request.cache );
+                        transaction = Crud.getTransaction( request.analyze, request.cache, crud );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -835,14 +826,14 @@ public class Crud implements InformationObserver {
             } else {
                 try {
                     temp = System.nanoTime();
-                    int numOfRows = executeSqlUpdate( transaction, query );
+                    int numOfRows = crud.executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
 
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze, request.cache );
+                        transaction = getTransaction( request.analyze, request.cache, crud );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -912,208 +903,6 @@ public class Crud implements InformationObserver {
         queryAnalyzer.addGroup( g3 );
         InformationText text3 = new InformationText( g3, commitStatus );
         queryAnalyzer.registerInformation( text3 );
-    }
-
-
-    /**
-     * Gets the classified Data from User
-     * return possibly interesting Data to User
-     */
-    public void classifyData( final Context ctx ) {
-        ClassifyAllData classifyAllData = ctx.bodyAsClass( ClassifyAllData.class );
-        ExploreManager exploreManager = ExploreManager.getInstance();
-
-        boolean isConvertedToSql = isClassificationToSql();
-
-        Explore explore = exploreManager.classifyData( classifyAllData.id, classifyAllData.classified, isConvertedToSql );
-
-        if ( isConvertedToSql ) {
-            Transaction transaction = getTransaction();
-            Statement statement = transaction.createStatement();
-            Result result;
-
-            try {
-                result = executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
-                transaction.commit();
-            } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
-                log.error( "Caught exception while executing a query from the console", e );
-                result = new Result( e ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rollback", ex );
-                }
-            }
-
-            result.setExplorerId( explore.getId() );
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
-
-            result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setConvertedToSql( isConvertedToSql );
-
-            ctx.json( result );
-        } else {
-            Result result = new Result( classifyAllData.header, Arrays.copyOfRange( explore.getData(), 0, 10 ) );
-
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setExplorerId( explore.getId() );
-
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
-            result.setHighestPage( (int) Math.ceil( (double) explore.getData().length / getPageSize() ) );
-            result.setConvertedToSql( isConvertedToSql );
-            ctx.json( result );
-        }
-
-    }
-
-
-    /**
-     * For pagination within the Explore-by-Example table
-     */
-    public void getExploreTables( final Context ctx ) {
-        ExploreTables exploreTables = ctx.bodyAsClass( ExploreTables.class );
-        Transaction transaction = getTransaction();
-        Statement statement = transaction.createStatement();
-
-        Result result;
-        ExploreManager exploreManager = ExploreManager.getInstance();
-        Explore explore = exploreManager.getExploreInformation( exploreTables.id );
-        String[][] paginationData;
-
-        String query = explore.getSqlStatement() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
-
-        if ( !explore.isConvertedToSql() && !explore.isClassificationPossible() ) {
-            int tablesize = explore.getData().length;
-
-            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
-                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
-            } else {
-                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
-            }
-            result = new Result( exploreTables.columns, paginationData );
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setExplorerId( explore.getId() );
-
-            result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
-            result.setHighestPage( (int) Math.ceil( (double) tablesize / getPageSize() ) );
-
-            ctx.json( result );
-        }
-
-        try {
-            result = executeSqlSelect( statement, exploreTables, query );
-        } catch ( QueryExecutionException e ) {
-            log.error( "Caught exception while fetching a table", e );
-            result = new Result( "Could not fetch table " + exploreTables.tableId );
-            try {
-                transaction.rollback();
-                ctx.status( 500 ).json( result );
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while committing transaction", e );
-        }
-        result.setExplorerId( explore.getId() );
-        result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
-        int tableSize = explore.getTableSize();
-
-        result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
-
-        if ( !explore.isClassificationPossible() ) {
-            result.setClassificationInfo( "NoClassificationPossible" );
-        } else {
-            result.setClassificationInfo( "ClassificationPossible" );
-        }
-        result.setIncludesClassificationInfo( explore.isDataAfterClassification );
-
-        if ( explore.isDataAfterClassification ) {
-            int tablesize = explore.getDataAfterClassification().size();
-            List<String[]> paginationDataList;
-            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
-                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
-            } else {
-                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
-            }
-
-            paginationData = new String[paginationDataList.size()][];
-            for ( int i = 0; i < paginationDataList.size(); i++ ) {
-                paginationData[i] = paginationDataList.get( i );
-            }
-
-            result.setClassifiedData( paginationData );
-        }
-        ctx.json( result );
-
-    }
-
-
-    /**
-     * Creates the initial query for the Explore-by-Example process
-     */
-    public void createInitialExploreQuery( final Context ctx ) {
-        QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
-        ExploreManager exploreManager = ExploreManager.getInstance();
-
-        Result result;
-
-        Explore explore = exploreManager.createSqlQuery( null, queryExplorationRequest.query );
-        if ( explore.getDataType() == null ) {
-            ctx.status( 400 ).json( new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" ) );
-            return;
-        }
-
-        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true, transactionManager, userId, databaseId, "Explore-by-Example" );
-        Statement statement = transaction.createStatement();
-        try {
-            String query = explore.getSqlStatement();
-            result = executeSqlSelect( statement, queryExplorationRequest, query, false ).setGeneratedQuery( query );
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", ex );
-            }
-        }
-
-        result.setExplorerId( explore.getId() );
-        if ( !explore.isClassificationPossible() ) {
-            result.setClassificationInfo( "NoClassificationPossible" );
-
-        } else {
-            result.setClassificationInfo( "ClassificationPossible" );
-        }
-        result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
-        result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
-
-        ctx.json( result );
-    }
-
-
-    /**
-     * Start Classification, classifies the initial dataset, to show what would be within the final result set
-     */
-    public void exploration( final Context ctx ) {
-        ExploreData exploreData = ctx.bodyAsClass( ExploreData.class );
-
-        String[] dataType = new String[exploreData.header.length + 1];
-        for ( int i = 0; i < exploreData.header.length; i++ ) {
-            dataType[i] = exploreData.header[i].dataType;
-        }
-        dataType[exploreData.header.length] = "VARCHAR";
-
-        ExploreManager e = ExploreManager.getInstance();
-        Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType );
-
-        ctx.json( new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() ) );
     }
 
 
@@ -2130,7 +1919,7 @@ public class Crud implements InformationObserver {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                     p.addAdapter( new RelationalStore(
                             adapter.getUniqueName(),
-                            adapter.getAdapterName(),
+                            adapter.getUniqueName(),
                             catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
                             catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
                             table.partitionProperty.numPartitionGroups,
@@ -2226,8 +2015,8 @@ public class Crud implements InformationObserver {
 
                 String defaultValue = currentColumn.getDefaultValue();
 
-                //Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
-                //enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
+                // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+                // enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
                 if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
 
                     if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
@@ -2558,7 +2347,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, Crud.gson.toJson( settings ) );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.uniqueName, a.adapterName, a.adapterType, Crud.gson.toJson( settings ) );
         Transaction transaction = getTransaction();
         try {
             int numRows = executeSqlUpdate( transaction, query );
@@ -2801,7 +2590,7 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-        Transaction transaction = getTransaction( request.analyze, request.useCache );
+        Transaction transaction = getTransaction( request.analyze, request.useCache, this );
         transaction.getQueryAnalyzer().setSession( session );
 
         Statement statement = transaction.createStatement();
@@ -2876,7 +2665,7 @@ public class Crud implements InformationObserver {
                             columns,
                             materializedCriteria,
                             gson.toJson( request.topNode ),
-                            Catalog.QueryLanguage.REL_ALG,
+                            QueryLanguage.from( "rel" ),
                             false,
                             false
                     );
@@ -2917,7 +2706,7 @@ public class Crud implements InformationObserver {
                             placementType,
                             columns,
                             gson.toJson( request.topNode ),
-                            Catalog.QueryLanguage.REL_ALG
+                            QueryLanguage.from( "rel" )
                     );
                 } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                     log.error( "Not possible to create View because the Name is already used", e );
@@ -3084,12 +2873,12 @@ public class Crud implements InformationObserver {
     private void handleGraphDdl( Schema schema, Transaction transaction, Context ctx ) {
         if ( schema.isCreate() && !schema.isDrop() ) {
             Statement statement = transaction.createStatement();
-            Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
+            Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
 
             String query = String.format( "CREATE DATABASE %s", schema.getName() );
 
             List<? extends Node> nodes = processor.parse( query );
-            CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
             try {
                 PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
@@ -3106,12 +2895,12 @@ public class Crud implements InformationObserver {
             }
         } else if ( schema.isDrop() && !schema.isCreate() ) {
             Statement statement = transaction.createStatement();
-            Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
+            Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
 
             String query = String.format( "DROP DATABASE %s", schema.getName() );
 
             List<? extends Node> nodes = processor.parse( query );
-            CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
             try {
                 PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
@@ -3184,349 +2973,18 @@ public class Crud implements InformationObserver {
     }
 
 
-    /**
-     * Import a dataset from Polypheny-Hub into Polypheny-DB
-     */
-    void importDataset( final Context ctx ) {
-        HubRequest request = ctx.bodyAsClass( HubRequest.class );
-        String error = null;
-
-        String randomFileName = UUID.randomUUID().toString();
-        final String sysTempDir = System.getProperty( "java.io.tmpdir" );
-        final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
-        if ( !tempDir.mkdirs() ) { // create folder
-            log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
-            ctx.json( new HubResult( "Unable to create temp folder" ) );
-            return;
-        }
-
-        // see: https://www.baeldung.com/java-download-file
-        final File zipFile = new File( tempDir, "import.zip" );
-        Transaction transaction = null;
-        try (
-                BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
-                FileOutputStream fos = new FileOutputStream( zipFile )
-        ) {
-            byte[] dataBuffer = new byte[1024];
-            int bytesRead;
-            while ( (bytesRead = in.read( dataBuffer, 0, 1024 )) != -1 ) {
-                fos.write( dataBuffer, 0, bytesRead );
-            }
-
-            // extract zip, see https://www.baeldung.com/java-compress-and-uncompress
-            dataBuffer = new byte[1024];
-            final File extractedFolder = new File( tempDir, "import" );
-            if ( !extractedFolder.mkdirs() ) {
-                log.error( "Unable to create folder for extracting files: {}", tempDir.getAbsolutePath() );
-                ctx.json( new HubResult( "Unable to create folder for extracting files" ) );
-                return;
-            }
-            try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( zipFile ) ) ) {
-                ZipEntry zipEntry = zis.getNextEntry();
-                while ( zipEntry != null ) {
-                    File newFile = new File( extractedFolder, zipEntry.getName() );
-                    try ( FileOutputStream fosEntry = new FileOutputStream( newFile ) ) {
-                        int len;
-                        while ( (len = zis.read( dataBuffer )) > 0 ) {
-                            fosEntry.write( dataBuffer, 0, len );
-                        }
-                    }
-                    zipEntry = zis.getNextEntry();
-                }
-            }
-
-            // delete .zip after unzipping
-            if ( !zipFile.delete() ) {
-                log.error( "Unable to delete zip file: {}", zipFile.getAbsolutePath() );
-            }
-
-            Status status = new Status( "tableImport", request.tables.size() );
-            int ithTable = 0;
-            for ( TableMapping m : request.tables.values() ) {
-                //create table from json
-                Path jsonPath = Paths.get( new File( extractedFolder, m.initialName + ".json" ).getPath() );
-                String json = new String( Files.readAllBytes( jsonPath ), StandardCharsets.UTF_8 );
-                JsonTable table = gson.fromJson( json, JsonTable.class );
-                String newName = m.newName != null ? m.newName : table.tableName;
-                assert (table.tableName.equals( m.initialName ));
-
-                transaction = getTransaction();
-                HubResult createdTableError = createTableFromJson( json, newName, request, transaction );
-                transaction.commit();
-                if ( createdTableError != null ) {
-                    transaction.rollback();
-                    ctx.json( createdTableError );
-                    return;
-                    //todo check
-                }
-
-                // Import data from .csv file
-                transaction = getTransaction();
-                importCsvFile( m.initialName + ".csv", table, transaction, extractedFolder, request, newName, status, ithTable++ );
-                transaction.commit();
-            }
-        } catch ( IOException | TransactionException e ) {
-            log.error( "Could not import dataset", e );
-            error = "Could not import dataset" + e.getMessage();
-            if ( transaction != null ) {
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rolling back transaction", e );
-                }
-            }
-        } catch ( QueryExecutionException e ) {
-            log.error( "Could not create table from imported json file", e );
-            error = "Could not create table from imported json file" + e.getMessage();
-            if ( transaction != null ) {
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rolling back transaction", e );
-                }
-            }
-            //} catch ( CsvValidationException | GenericCatalogException e ) {
-        } finally {
-            // Delete temp folder
-            if ( !deleteDirectory( tempDir ) ) {
-                log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
-            }
-        }
-
-        if ( error != null ) {
-            ctx.json( new HubResult( error ) );
-        } else {
-            ctx.json( new HubResult().setMessage( String.format( "Imported dataset into entity %s on store %s", request.schema, request.store ) ) );
-        }
-    }
-
-
-    private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws QueryExecutionException {
-        // create table from .json file
-        List<CatalogTable> tablesInSchema = catalog.getTables( this.databaseId, new Catalog.Pattern( request.schema ), null );
-        int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
-        if ( tableAlreadyExists > 0 ) {
-            return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a entity with the name '%s'", request.schema, newName ) );
-        }
-
-        String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, newName, request.store );
-        executeSqlUpdate( transaction, createTable );
-        return null;
-    }
-
-
-    private void importCsvFile( final String csvFileName, final JsonTable table, final Transaction transaction, final File extractedFolder, final HubRequest request, final String tableName, final Status status, final int ithTable ) throws IOException, QueryExecutionException {
-        StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
-        for ( JsonColumn col : table.getColumns() ) {
-            columnJoiner.add( "\"" + col.columnName + "\"" );
-        }
-        String columns = columnJoiner.toString();
-        StringJoiner valueJoiner = new StringJoiner( ",", "VALUES", "" );
-        StringJoiner rowJoiner;
-
-        //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
-
-        final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
-        long csvCounter = 0;
-        try (
-                Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
-                CSVReader csvReader = new CSVReader( reader )
-        ) {
-            long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
-            String[] nextRecord;
-            while ( (nextRecord = csvReader.readNext()) != null ) {
-                rowJoiner = new StringJoiner( ",", "(", ")" );
-                for ( int i = 0; i < table.getColumns().size(); i++ ) {
-                    if ( PolyType.get( table.getColumns().get( i ).type ).getFamily() == PolyTypeFamily.CHARACTER ) {
-                        rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.DATE ) {
-                        rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIME ) {
-                        rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIMESTAMP ) {
-                        rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                    } else {
-                        rowJoiner.add( nextRecord[i] );
-                    }
-                }
-                valueJoiner.add( rowJoiner.toString() );
-                csvCounter++;
-                if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
-                    String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
-                    executeSqlUpdate( transaction, insertQuery );
-                    valueJoiner = new StringJoiner( ",", "VALUES", "" );
-                    status.setStatus( csvCounter, lineCount, ithTable );
-                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                }
-            }
-            if ( csvCounter % BATCH_SIZE != 0 ) {
-                String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
-                executeSqlUpdate( transaction, insertQuery );
-                status.setStatus( csvCounter, lineCount, ithTable );
-                WebSocket.broadcast( gson.toJson( status, Status.class ) );
-            }
-        }
-    }
-
-
-    /**
-     * Export a table into a .zip consisting of a json file containing information of the table and columns and a csv files with the data
-     */
-    void exportTable( final Context ctx ) {
-        HubRequest request = ctx.bodyAsClass( HubRequest.class );
-        Transaction transaction = getTransaction( false, true );
-        Statement statement = transaction.createStatement();
-        HubMeta metaData = new HubMeta( request.schema );
-
-        String randomFileName = UUID.randomUUID().toString();
-        final Charset charset = StandardCharsets.UTF_8;
-        final String sysTempDir = System.getProperty( "java.io.tmpdir" );
-        final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
-        if ( !tempDir.mkdirs() ) { // create folder
-            log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
-            ctx.json( new Result( "Unable to create temp folder" ) );
-            return;
-        }
-        File tableFile;
-        File catalogFile;
-        ArrayList<File> tableFiles = new ArrayList<>();
-        ArrayList<File> catalogFiles = new ArrayList<>();
-        final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
-        int ithTable = 0;
-        Status status = new Status( "tableExport", request.tables.size() );
-        try {
-            for ( TableMapping table : request.tables.values() ) {
-                tableFile = new File( tempDir, table.initialName + ".csv" );
-                catalogFile = new File( tempDir, table.initialName + ".json" );
-                tableFiles.add( tableFile );
-                catalogFiles.add( catalogFile );
-                OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
-                FileOutputStream tableStream = new FileOutputStream( tableFile );
-                log.info( String.format( "Exporting %s.%s", request.schema, table.initialName ) );
-                CatalogTable catalogTable = catalog.getTable( this.databaseId, request.schema, table.initialName );
-
-                catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
-                catalogWriter.flush();
-                catalogWriter.close();
-
-                String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, table.initialName );
-                // TODO use iterator instead of Result
-                Result tableData = executeSqlSelect( statement, new UIRequest(), query, true );
-
-                int totalRows = tableData.getData().length;
-                int counter = 0;
-                for ( String[] row : tableData.getData() ) {
-                    int cols = row.length;
-                    for ( int i = 0; i < cols; i++ ) {
-                        if ( row[i].contains( "\n" ) ) {
-                            String line = String.format( "\"%s\"", row[i] );
-                            tableStream.write( line.getBytes( charset ) );
-                        } else {
-                            tableStream.write( row[i].getBytes( charset ) );
-                        }
-                        if ( i != cols - 1 ) {
-                            tableStream.write( ",".getBytes( charset ) );
-                        } else {
-                            tableStream.write( "\n".getBytes( charset ) );
-                        }
-                    }
-                    counter++;
-                    if ( counter % BATCH_SIZE == 0 ) {
-                        status.setStatus( counter, totalRows, ithTable );
-                        WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                    }
-                }
-                status.setStatus( counter, totalRows, ithTable );
-                WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                tableStream.flush();
-                tableStream.close();
-                metaData.addTable( table.initialName, counter );
-                ithTable++;
-            }
-            status.complete();
-
-            File zipFile = new File( tempDir, "table.zip" );
-            FileOutputStream zipStream = new FileOutputStream( zipFile );
-            //from https://www.baeldung.com/java-compress-and-uncompress
-            ArrayList<File> allFiles = new ArrayList<>( tableFiles );
-            allFiles.addAll( catalogFiles );
-            try ( ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset ) ) {
-                for ( File fileToZip : allFiles ) {
-                    try ( FileInputStream fis = new FileInputStream( fileToZip ) ) {
-                        ZipEntry zipEntry = new ZipEntry( fileToZip.getName() );
-                        zipOut.putNextEntry( zipEntry );
-
-                        byte[] bytes = new byte[1024];
-                        int length;
-                        while ( (length = fis.read( bytes )) >= 0 ) {
-                            zipOut.write( bytes, 0, length );
-                        }
-                    }
-                }
-                zipOut.finish();
-            }
-            zipStream.close();
-
-            metaData.setFileSize( zipFile.length() );
-            File metaFile = new File( tempDir, "meta.json" );
-            FileOutputStream metaOutputStream = new FileOutputStream( metaFile );
-            metaOutputStream.write( gson.toJson( metaData, HubMeta.class ).getBytes() );
-            metaOutputStream.flush();
-            metaOutputStream.close();
-
-            //send file to php backend using Unirest
-            HttpResponse<String> jsonResponse = Unirest.post( request.hubLink )
-                    .field( "action", "uploadDataset" )
-                    .field( "userId", String.valueOf( request.userId ) )
-                    .field( "secret", request.secret )
-                    .field( "name", request.name )
-                    .field( "description", request.description )
-                    .field( "pub", String.valueOf( request.pub ) )
-                    .field( "dataset", zipFile )
-                    .field( "metaData", metaFile )
-                    .asString();
-
-            // Get result
-            String resultString = jsonResponse.getBody();
-            log.info( String.format( "Exported %s.[%s]", request.schema, request.tables.values().stream().map( n -> n.initialName ).collect( Collectors.joining( "," ) ) ) );
-
-            try {
-                ctx.result( resultString );
-            } catch ( JsonSyntaxException e ) {
-                ctx.json( new Result( resultString ) );
-            }
-        } catch ( IOException e ) {
-            log.error( "Failed to write temporary file", e );
-            ctx.status( 400 ).json( "Failed to write temporary file" );
-        } catch ( Exception e ) {
-            log.error( "Error while exporting table", e );
-            ctx.status( 400 ).json( new Result( "Error while exporting table" ) );
-        } finally {
-            // delete temp folder
-            if ( !deleteDirectory( tempDir ) ) {
-                log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
-            }
-            try {
-                transaction.commit();
-            } catch ( TransactionException e ) {
-                log.error( "Error while fetching table", e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException transactionException ) {
-                    log.error( "Exception while rollback", transactionException );
-                }
-            }
-        }
-    }
-
-
     void getFile( final Context ctx ) {
+        getFile( ctx, ".polypheny/tmp/", true );
+    }
+
+
+    private File getFile( Context ctx, String location, boolean sendBack ) {
         String fileName = ctx.pathParam( "file" );
-        File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + fileName );
+        File f = new File( System.getProperty( "user.home" ), location + fileName );
         if ( !f.exists() ) {
             ctx.status( 404 );
             ctx.result( "" );
-            return;
+            return f;
         } else if ( f.isDirectory() ) {
             getDirectory( f, ctx );
         }
@@ -3596,15 +3054,19 @@ public class Crud implements InformationObserver {
                 ctx.status( 500 );
             }
         } else {
-            ctx.res.setContentLengthLong( (int) fileLength );
-            try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res.getOutputStream() ) {
-                IOUtils.copyLarge( fis, os );
-                os.flush();
-            } catch ( IOException ignored ) {
-                ctx.status( 500 );
+            if ( sendBack ) {
+                ctx.res.setContentLengthLong( (int) fileLength );
+                try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res.getOutputStream() ) {
+                    IOUtils.copyLarge( fis, os );
+                    os.flush();
+                } catch ( IOException ignored ) {
+                    ctx.status( 500 );
+                }
             }
         }
         ctx.result( "" );
+
+        return f;
     }
 
 
@@ -3638,20 +3100,20 @@ public class Crud implements InformationObserver {
     /**
      * Execute a select statement with default limit
      */
-    private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
-        return executeSqlSelect( statement, request, sqlSelect, false );
+    public Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
+        return executeSqlSelect( statement, request, sqlSelect, false, this );
     }
 
 
-    private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
+    public static Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
         PolyImplementation result;
         List<List<Object>> rows;
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
-            result = processQuery( statement, sqlSelect, isAnalyze );
-            rows = result.getRows( statement, noLimit ? -1 : getPageSize(), true, isAnalyze );
+            result = crud.processQuery( statement, sqlSelect, isAnalyze );
+            rows = result.getRows( statement, noLimit ? -1 : crud.getPageSize(), true, isAnalyze );
             hasMoreRows = result.hasMoreRows();
 
         } catch ( Throwable t ) {
@@ -3672,7 +3134,7 @@ public class Crud implements InformationObserver {
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogTable = catalog.getTable( this.databaseId, t[0], t[1] );
+                catalogTable = crud.catalog.getTable( crud.databaseId, t[0], t[1] );
                 entityType = catalogTable.entityType;
             } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
@@ -3706,8 +3168,8 @@ public class Crud implements InformationObserver {
             // Get column default values
             if ( catalogTable != null ) {
                 try {
-                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                    if ( crud.catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                        CatalogColumn catalogColumn = crud.catalog.getColumn( catalogTable.id, columnName );
                         if ( catalogColumn.defaultValue != null ) {
                             dbCol.defaultValue = catalogColumn.defaultValue.value;
                         }
@@ -3722,10 +3184,10 @@ public class Crud implements InformationObserver {
         ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
         if ( entityType != null ) {
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.from( "sql" ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         } else {
             //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use EntityType.SOURCE
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.from( "sql" ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         }
     }
 
@@ -3774,7 +3236,7 @@ public class Crud implements InformationObserver {
                             break;
                         case "FILE":
                         case "IMAGE":
-                        case "SOUND":
+                        case "AUDIO":
                         case "VIDEO":
                             String columnName = String.valueOf( header.get( counter ).name.hashCode() );
                             File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
@@ -3794,7 +3256,7 @@ public class Crud implements InformationObserver {
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added;
-                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getAdapterName().equals( "QFS" ) ) ) {
+                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getUniqueName().equals( "QFS" ) ) ) {
                                         added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
                                     } else if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );
@@ -3904,7 +3366,7 @@ public class Crud implements InformationObserver {
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
-        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
         Node parsed = sqlProcessor.parse( sql ).get( 0 );
         if ( isAnalyze ) {
             statement.getOverviewDuration().stop( "Parsing" );
@@ -3995,13 +3457,8 @@ public class Crud implements InformationObserver {
     /**
      * Get the number of rows that should be displayed in one page in the data view
      */
-    private int getPageSize() {
+    public int getPageSize() {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
-    }
-
-
-    private boolean isClassificationToSql() {
-        return RuntimeConfig.EXPLORE_BY_EXAMPLE_TO_SQL.getBoolean();
     }
 
 
@@ -4049,7 +3506,7 @@ public class Crud implements InformationObserver {
 
 
     public Transaction getTransaction() {
-        return getTransaction( false, true );
+        return getTransaction( false, true, this );
     }
 
 
@@ -4069,8 +3526,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    public Transaction getTransaction( boolean analyze, boolean useCache ) {
-        return getTransaction( analyze, useCache, transactionManager, userId, databaseId );
+    public static Transaction getTransaction( boolean analyze, boolean useCache, Crud crud ) {
+        return getTransaction( analyze, useCache, crud.transactionManager, crud.userId, crud.databaseId );
     }
 
 
@@ -4093,21 +3550,6 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception", e );
         }
         return dataTypes;
-    }
-
-
-    /**
-     * Helper function to delete a directory.
-     * Taken from https://www.baeldung.com/java-delete-directory
-     */
-    boolean deleteDirectory( final File directoryToBeDeleted ) {
-        File[] allContents = directoryToBeDeleted.listFiles();
-        if ( allContents != null ) {
-            for ( File file : allContents ) {
-                deleteDirectory( file );
-            }
-        }
-        return directoryToBeDeleted.delete();
     }
 
 
@@ -4140,6 +3582,37 @@ public class Crud implements InformationObserver {
 
 
     /**
+     * Loads the plugin in the supplied path.
+     */
+    public void loadPlugins( final Context ctx ) {
+        ctx.uploadedFiles( "plugins" ).forEach( file -> {
+            String[] splits = file.getFilename().split( "/" );
+            String normalizedFileName = splits[splits.length - 1];
+            splits = normalizedFileName.split( "\\\\" );
+            normalizedFileName = splits[splits.length - 1];
+            File f = new File( System.getProperty( "user.home" ), ".polypheny/plugins/" + normalizedFileName );
+            try {
+                FileUtils.copyInputStreamToFile( file.getContent(), f );
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+            PolyPluginManager.loadAdditionalPlugin( f );
+        } );
+
+    }
+
+
+    /**
+     * Unload the plugin with the supplied pluginId.
+     */
+    public void unloadPlugin( final Context ctx ) {
+        String pluginId = ctx.bodyAsClass( String.class );
+
+        ctx.json( PolyPluginManager.unloadAdditionalPlugin( pluginId ) );
+    }
+
+
+    /**
      * Helper method to zip a directory
      * from https://stackoverflow.com/questions/2403830
      */
@@ -4163,6 +3636,16 @@ public class Crud implements InformationObserver {
                 fin.close();
             }
         }
+    }
+
+
+    public void getAvailablePlugins( Context ctx ) {
+        ctx.json( PolyPluginManager
+                .getPLUGINS()
+                .values()
+                .stream()
+                .map( PluginStatus::from )
+                .collect( Collectors.toList() ) );
     }
 
 

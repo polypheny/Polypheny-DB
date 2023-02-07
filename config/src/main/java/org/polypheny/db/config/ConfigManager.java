@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,6 +197,9 @@ public class ConfigManager {
                 if ( value instanceof ConfigDocker ) {
                     Map<String, String> settingsMap = ((ConfigDocker) value).getSettings();
                     myMap.put( ((ConfigObject) value).getKey(), settingsMap );
+                } else if ( value instanceof ConfigPlugin ) {
+                    Map<String, Object> plugin = ((ConfigPlugin) value).asMap();
+                    myMap.put( ((ConfigObject) value).getKey(), plugin );
                 } else if ( value instanceof Class ) {
                     String v = ((Class<?>) value).getName();
                     myList.add( v );

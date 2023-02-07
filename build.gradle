@@ -1,4 +1,4 @@
-import org.jetbrains.gradle.ext.Application
+import org.jetbrains.gradle.ext.Gradle
 
 buildscript {
     repositories {
@@ -80,7 +80,6 @@ allprojects {
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
     }
 
-
     tasks.withType(Javadoc) {
         if (JavaVersion.current().isJava9Compatible()) {
             options.addBooleanOption("html5", true)
@@ -134,6 +133,18 @@ allprojects {
         logLevel 'lifecycle'
     }
 
+    dependencies {
+        ////// PF4J
+        compileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+            exclude group: "org.slf4j"
+        }
+        annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+
+        testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+            exclude group: "org.slf4j"
+        }
+    }
+
 
     idea {
         module {
@@ -151,19 +162,23 @@ allprojects {
 
 }
 
+// plugin location
+ext.pluginsDir = rootProject.buildDir.path + '/plugins'
+
+build {
+    dependsOn(":plugins:build")
+}
+
 
 idea {
     project {
         settings {
             runConfigurations {
-                "Polypheny-DB"(Application) {
-                    mainClass = 'org.polypheny.db.PolyphenyDb'
-                    moduleName = getProject().idea.module.name + ".dbms.main"
+                "Polypheny-DB"(Gradle) {
+                    taskNames = ["assemblePlugins", "run"]
                 }
-                "Polypheny-DB (reset)"(Application) {
-                    mainClass = 'org.polypheny.db.PolyphenyDb'
-                    moduleName = getProject().idea.module.name + ".dbms.main"
-                    programParameters = '-resetCatalog'
+                "Polypheny-DB (reset)"(Gradle) {
+                    taskNames = ["assemblePlugins", ":dbms:runReset"]
                 }
             }
             copyright {

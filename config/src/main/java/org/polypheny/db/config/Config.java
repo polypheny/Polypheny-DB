@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public abstract class Config {
 
     /**
      * List of observers.
-     * Field is transient, so it will not be (de)serialized by Gson and produce a "Unable to invoke no-args constructor" error.
+     * Field is transient, so it will not be (de)serialized by Gson and produce an "Unable to invoke no-args constructor" error.
      */
     private transient final Map<Integer, ConfigListener> listeners = new HashMap<>();
 
@@ -368,7 +368,7 @@ public abstract class Config {
     /**
      * Get a set af valid enum values.
      *
-     * @return List of enum values
+     * @return Set of enum values
      * @throws ConfigRuntimeException If config value can not be converted into a Enum value representation.
      */
     public Set<Enum> getEnumValues() {
@@ -520,7 +520,7 @@ public abstract class Config {
      * @param clazz the class, which the raw values belong to
      * @return if the parsing and setting was successful
      */
-    public boolean setConfigObjectList( final List<Object> values, Class<? extends ConfigScalar> clazz ) {
+    public Feedback setConfigObjectList( final List<Object> values, Class<? extends ConfigScalar> clazz ) {
         throw new ConfigRuntimeException( "Not possible to set a list on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 

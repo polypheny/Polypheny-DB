@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Objects;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgWriter;
@@ -76,15 +75,6 @@ public final class LogicalFilter extends Filter {
         super( cluster, traitSet, child, condition );
         this.variablesSet = Objects.requireNonNull( variablesSet );
         assert isValid( Litmus.THROW, null );
-    }
-
-
-    /**
-     * Creates a LogicalFilter by parsing serialized output.
-     */
-    public LogicalFilter( AlgInput input ) {
-        super( input );
-        this.variablesSet = ImmutableSet.of();
     }
 
 

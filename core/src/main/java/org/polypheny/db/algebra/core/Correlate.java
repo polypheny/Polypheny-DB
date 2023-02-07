@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.core;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
@@ -101,23 +100,6 @@ public abstract class Correlate extends BiAlg {
         this.joinType = joinType;
         this.correlationId = correlationId;
         this.requiredColumns = requiredColumns;
-    }
-
-
-    /**
-     * Creates a Correlate by parsing serialized output.
-     *
-     * @param input Input representation
-     */
-    public Correlate( AlgInput input ) {
-        this(
-                input.getCluster(),
-                input.getTraitSet(),
-                input.getInputs().get( 0 ),
-                input.getInputs().get( 1 ),
-                new CorrelationId( (Integer) input.get( "correlationId" ) ),
-                input.getBitSet( "requiredColumns" ),
-                input.getEnum( "joinType", SemiJoinType.class ) );
     }
 
 

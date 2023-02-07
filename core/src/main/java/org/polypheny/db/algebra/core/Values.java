@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.ExplainLevel;
@@ -87,14 +86,6 @@ public abstract class Values extends AbstractAlgNode {
 
 
     /**
-     * Creates a Values by parsing serialized output.
-     */
-    public Values( AlgInput input ) {
-        this( input.getCluster(), input.getRowType( "type" ), input.getTuples( "tuples" ), input.getTraitSet() );
-    }
-
-
-    /**
      * Predicate, to be used when defining an operand of a {@link AlgOptRule}, that returns true if a Values contains zero tuples.
      *
      * This is the conventional way to represent an empty relational expression. There are several rules that recognize empty relational expressions and prune away that section of the tree.
@@ -111,11 +102,6 @@ public abstract class Values extends AbstractAlgNode {
      */
     public static boolean isNotEmpty( Values values ) {
         return !isEmpty( values );
-    }
-
-
-    public ImmutableList<ImmutableList<RexLiteral>> getTuples( AlgInput input ) {
-        return input.getTuples( "tuples" );
     }
 
 

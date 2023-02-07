@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ package org.polypheny.db.prepare;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.DatabaseMetaData;
@@ -45,17 +44,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.AvaticaType;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.Blocks;
@@ -70,21 +63,17 @@ import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -113,17 +102,13 @@ import org.polypheny.db.algebra.stream.StreamRules;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
-import org.polypheny.db.languages.NodeToAlgConverter.ConfigBuilder;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -138,11 +123,8 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.hep.HepPlanner;
-import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedExplain;
-import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
@@ -155,7 +137,6 @@ import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -189,14 +170,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     public static final boolean ENABLE_STREAM = true;
 
-    private static final Set<String> SIMPLE_SQLS =
-            ImmutableSet.of(
-                    "SELECT 1",
-                    "select 1",
-                    "SELECT 1 FROM DUAL",
-                    "select 1 from dual",
-                    "values 1",
-                    "VALUES 1" );
 
     public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
@@ -276,75 +249,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public PolyphenyDbPrepareImpl() {
     }
 
-
-    @Override
-    public ParseResult parse( Context context, String sql ) {
-        return parse_( context, sql, false, false, false );
-    }
-
-
-    @Override
-    public ConvertResult convert( Context context, String sql ) {
-        return (ConvertResult) parse_( context, sql, true, false, false );
-    }
-
-
-    /**
-     * Shared implementation for {@link #parse} and {@link #convert}.
-     */
-    private ParseResult parse_( Context context, String sql, boolean convert, boolean analyze, boolean fail ) {
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader(
-                context.getRootSchema(),
-                context.getDefaultSchemaPath(),
-                typeFactory );
-        Parser parser = createParser( sql );
-        Node sqlNode;
-        try {
-            sqlNode = parser.parseStmt();
-        } catch ( NodeParseException e ) {
-            throw new RuntimeException( "parse failed", e );
-        }
-        final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
-        Node sqlNode1 = validator.validate( sqlNode );
-        if ( convert ) {
-            return convert_( context, sql, analyze, fail, catalogReader, validator, sqlNode1 );
-        }
-        return new ParseResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ) );
-    }
-
-
-    private ParseResult convert_( Context context, String sql, boolean analyze, boolean fail, PolyphenyDbCatalogReader catalogReader, Validator validator, Node sqlNode1 ) {
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final Convention resultConvention =
-                enableBindable
-                        ? BindableConvention.INSTANCE
-                        : EnumerableConvention.INSTANCE;
-        final HepPlanner planner = new HepPlanner( new HepProgramBuilder().build() );
-        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
-
-        final ConfigBuilder configBuilder = NodeToAlgConverter.configBuilder().trimUnusedFields( true );
-        if ( analyze ) {
-            configBuilder.convertTableAccess( false );
-        }
-
-        final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt(
-                this,
-                context,
-                catalogReader,
-                typeFactory,
-                context.getRootSchema(),
-                null,
-                planner,
-                resultConvention,
-                createConvertletTable() );
-        final NodeToAlgConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, new ConfigBuilder().build() );
-
-        final AlgRoot root = converter.convertQuery( sqlNode1, false, true );
-        return new ConvertResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ), root );
-    }
-
-
     @Override
     public void executeDdl( Context context, Node node ) {
         if ( node instanceof ExecutableStatement ) {
@@ -357,68 +261,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
     /**
-     * Factory method for default SQL parser.
-     */
-    protected Parser createParser( String sql ) {
-        return createParser( sql, createParserConfig() );
-    }
-
-
-    /**
-     * Factory method for SQL parser with a given configuration.
-     */
-    protected Parser createParser( String sql, Parser.ConfigBuilder parserConfig ) {
-        return Parser.create( sql, parserConfig.build() );
-    }
-
-
-    /**
-     * Factory method for SQL parser configuration.
-     */
-    protected Parser.ConfigBuilder createParserConfig() {
-        return Parser.configBuilder();
-    }
-
-
-    /**
-     * Factory method for default convertlet table.
-     */
-    protected RexConvertletTable createConvertletTable() {
-        return LanguageManager.getInstance().getStandardConvertlet();
-    }
-
-
-    /**
      * Factory method for cluster.
      */
     protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder ) {
         return AlgOptCluster.create( planner, rexBuilder );
     }
-
-
-    /**
-     * Creates a collection of planner factories.
-     * <p>
-     * The collection must have at least one factory, and each factory must create a planner. If the collection has more
-     * than one planner, Polypheny-DB will try each planner in turn.
-     * <p>
-     * One of the things you can do with this mechanism is to try a simpler, faster, planner with a smaller rule set first,
-     * then fall back to a more complex planner for complex and costly queries.
-     * <p>
-     * The default implementation returns a factory that calls {@link #createPlanner(Context)}.
-     */
-    protected List<Function1<Context, AlgOptPlanner>> createPlannerFactories() {
-        return Collections.singletonList( context -> createPlanner( context, null, null ) );
-    }
-
-
-    /**
-     * Creates a query planner and initializes it with a default set of rules.
-     */
-    protected AlgOptPlanner createPlanner( Context prepareContext ) {
-        return createPlanner( prepareContext, null, null );
-    }
-
 
     /**
      * Creates a query planner and initializes it with a default set of rules.
@@ -480,191 +327,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         return planner;
     }
 
-
-    /**
-     * Deduces the broad type of statement. Currently returns SELECT for most statement types, but this may change.
-     *
-     * @param kind Kind of statement
-     */
-    private StatementType getStatementType( Kind kind ) {
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                return StatementType.IS_DML;
-            default:
-                return StatementType.SELECT;
-        }
-    }
-
-
-    /**
-     * Deduces the broad type of statement for a prepare result.
-     * Currently returns SELECT for most statement types, but this may change.
-     *
-     * @param preparedResult Prepare result
-     */
-    private StatementType getStatementType( PreparedResult preparedResult ) {
-        if ( preparedResult.isDml() ) {
-            return StatementType.IS_DML;
-        } else {
-            return StatementType.SELECT;
-        }
-    }
-
-
-    /*<T> PolyphenyDbSignature<T> prepare2_( Context context, Query<T> query, Type elementType, long maxRowCount, PolyphenyDbCatalogReader catalogReader, AlgOptPlanner planner ) {
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final Prefer prefer;
-        if ( elementType == Object[].class ) {
-            prefer = Prefer.ARRAY;
-        } else {
-            prefer = Prefer.CUSTOM;
-        }
-        final Convention resultConvention =
-                enableBindable
-                        ? BindableConvention.INSTANCE
-                        : EnumerableConvention.INSTANCE;
-        final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt(
-                this,
-                context,
-                catalogReader,
-                typeFactory,
-                context.getRootSchema(),
-                prefer,
-                planner,
-                resultConvention,
-                createConvertletTable() );
-
-        final AlgDataType x;
-        final PreparedResult preparedResult;
-        final StatementType statementType;
-        if ( query.sql != null ) {
-            final PolyphenyDbConnectionConfig config = context.config();
-            final Parser.ConfigBuilder parserConfig = createParserConfig()
-                    .setQuotedCasing( config.quotedCasing() )
-                    .setUnquotedCasing( config.unquotedCasing() )
-                    .setQuoting( config.quoting() )
-                    .setConformance( config.conformance() )
-                    .setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-            final ParserFactory parserFactory = config.parserFactory( ParserFactory.class, null );
-            if ( parserFactory != null ) {
-                parserConfig.setParserFactory( parserFactory );
-            }
-            Parser parser = createParser( query.sql, parserConfig );
-            Node sqlNode;
-            try {
-                sqlNode = parser.parseStmt();
-                statementType = getStatementType( sqlNode.getKind() );
-            } catch ( NodeParseException e ) {
-                throw new RuntimeException( "parse failed: " + e.getMessage(), e );
-            }
-
-            Hook.PARSE_TREE.run( new Object[]{ query.sql, sqlNode } );
-
-            if ( sqlNode.getKind().belongsTo( Kind.DDL ) ) {
-                executeDdl( context, sqlNode );
-
-                return new PolyphenyDbSignature<>(
-                        query.sql,
-                        ImmutableList.of(),
-                        ImmutableMap.of(),
-                        null,
-                        ImmutableList.of(),
-                        CursorFactory.OBJECT,
-                        null,
-                        ImmutableList.of(),
-                        -1,
-                        null,
-                        StatementType.OTHER_DDL,
-                        new ExecutionTimeMonitor(),
-                        NamespaceType.RELATIONAL );
-            }
-
-            final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
-            validator.setIdentifierExpansion( true );
-            validator.setDefaultNullCollation( config.defaultNullCollation() );
-
-            preparedResult = preparingStmt.prepareSql( sqlNode, Object.class, validator, true );
-            switch ( sqlNode.getKind() ) {
-                case INSERT:
-                case DELETE:
-                case UPDATE:
-                case EXPLAIN:
-                    // FIXME: getValidatedNodeType is wrong for DML
-                    x = AlgOptUtil.createDmlRowType( sqlNode.getKind(), typeFactory );
-                    break;
-                default:
-                    x = validator.getValidatedNodeType( sqlNode );
-            }
-        } else if ( query.queryable != null ) {
-            x = context.getTypeFactory().createType( elementType );
-            preparedResult = preparingStmt.prepareQueryable( query.queryable, x );
-            statementType = getStatementType( preparedResult );
-        } else {
-            assert query.alg != null;
-            x = query.alg.getRowType();
-            preparedResult = preparingStmt.prepareRel( query.alg );
-            statementType = getStatementType( preparedResult );
-        }
-
-        final List<AvaticaParameter> parameters = new ArrayList<>();
-        final AlgDataType parameterRowType = preparedResult.getParameterRowType();
-        for ( AlgDataTypeField field : parameterRowType.getFieldList() ) {
-            AlgDataType type = field.getType();
-            parameters.add(
-                    new AvaticaParameter(
-                            false,
-                            getPrecision( type ),
-                            getScale( type ),
-                            getTypeOrdinal( type ),
-                            getTypeName( type ),
-                            getClassName( type ),
-                            field.getName() ) );
-        }
-
-        AlgDataType jdbcType = makeStruct( typeFactory, x );
-        final List<List<String>> originList = preparedResult.getFieldOrigins();
-        final List<ColumnMetaData> columns = getColumnMetaDataList( typeFactory, x, jdbcType, originList );
-        Class resultClazz = null;
-        if ( preparedResult instanceof Typed ) {
-            resultClazz = (Class) ((Typed) preparedResult).getElementType();
-        }
-        final CursorFactory cursorFactory =
-                preparingStmt.resultConvention == BindableConvention.INSTANCE
-                        ? CursorFactory.ARRAY
-                        : CursorFactory.deduce( columns, resultClazz );
-        //noinspection unchecked
-        final Bindable<T> bindable = preparedResult.getBindable( cursorFactory );
-        return new PolyphenyDbSignature<>(
-                query.sql,
-                parameters,
-                preparingStmt.internalParameters,
-                jdbcType,
-                columns,
-                cursorFactory,
-                context.getRootSchema(),
-                preparedResult instanceof PreparedResultImpl
-                        ? ((PreparedResultImpl) preparedResult).collations
-                        : ImmutableList.of(),
-                maxRowCount,
-                bindable,
-                statementType,
-                new ExecutionTimeMonitor(),
-                NamespaceType.RELATIONAL );
-    }*/
-
-
-    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {
-        final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
-            final AlgDataTypeField field = pair.e;
-            final AlgDataType type = field.getType();
-            final AlgDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
-            columns.add( metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
-        }
-        return columns;
-    }
 
 
     private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, AlgDataType type, AlgDataType fieldType, List<String> origins ) {
@@ -737,11 +399,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private static String getClassName( AlgDataType type ) {
-        return Object.class.getName(); // POLYPHENYDB-2613
-    }
-
-
     private static int getScale( AlgDataType type ) {
         return type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED
                 ? 0
@@ -789,13 +446,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
     }
 
-
-    private static AlgDataType makeStruct( AlgDataTypeFactory typeFactory, AlgDataType type ) {
-        if ( type.isStruct() ) {
-            return type;
-        }
-        return typeFactory.builder().add( "$0", null, type ).build();
-    }
 
 
     /**
@@ -859,63 +509,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        public PreparedResult prepareQueryable( final Queryable queryable, AlgDataType resultType ) {
-            return prepare_( () -> {
-                final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
-                return new LixToAlgTranslator( cluster ).translate( queryable );
-            }, resultType );
-        }
-
-
-        public PreparedResult prepareRel( final AlgNode alg ) {
-            return prepare_( () -> alg, alg.getRowType() );
-        }
-
-
-        private PreparedResult prepare_( Supplier<AlgNode> fn, AlgDataType resultType ) {
-            Class runtimeContextClass = Object.class;
-            init( runtimeContextClass );
-
-            final AlgNode alg = fn.get();
-            final AlgDataType rowType = alg.getRowType();
-            final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-            final AlgCollation collation =
-                    alg instanceof Sort
-                            ? ((Sort) alg).collation
-                            : AlgCollations.EMPTY;
-            AlgRoot root = new AlgRoot( alg, resultType, Kind.SELECT, fields, collation );
-
-            if ( timingTracer != null ) {
-                timingTracer.traceTime( "end sql2rel" );
-            }
-
-            final AlgDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), resultType );
-            fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
-            parameterRowType = rexBuilder.getTypeFactory().builder().build();
-
-            // Structured type flattening, view expansion, and plugging in physical storage.
-            root = root.withAlg( flattenTypes( root.alg, true ) );
-
-            // Trim unused fields.
-            root = trimUnusedFields( root );
-
-            root = optimize( root );
-
-            if ( timingTracer != null ) {
-                timingTracer.traceTime( "end optimization" );
-            }
-
-            return implement( root );
-        }
-
-
-        @Override
-        protected NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config ) {
-            final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
-            return LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, validator, catalogReader, cluster, convertletTable, config );
-        }
-
-
         @Override
         public AlgNode flattenTypes( AlgNode rootRel, boolean restructure ) {
             return rootRel;
@@ -929,7 +522,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         protected Validator createSqlValidator( CatalogReader catalogReader ) {
-            return LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, (PolyphenyDbCatalogReader) catalogReader );
+            return QueryLanguage.from( "sql" ).getValidatorSupplier().apply( context, (PolyphenyDbCatalogReader) catalogReader );
         }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
@@ -40,8 +40,7 @@ public class CatalogView extends CatalogTable {
 
     @Getter
     protected final ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
-    @Getter
-    private final QueryLanguage language;
+    private final String language;
     @Getter
     private final AlgCollation algCollation;
     @Getter
@@ -64,12 +63,13 @@ public class CatalogView extends CatalogTable {
             AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            QueryLanguage language ) {
+            String language ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, entityType, primaryKey, dataPlacements,
                 modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
+        // mapdb cannot handle the class QueryLanguage, therefore we use the String here
         this.language = language;
     }
 
@@ -137,6 +137,11 @@ public class CatalogView extends CatalogTable {
                 connectedViews,
                 underlyingTables,
                 language );
+    }
+
+
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.from( language );
     }
 
 

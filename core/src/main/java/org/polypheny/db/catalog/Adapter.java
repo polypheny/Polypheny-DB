@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,108 +16,68 @@
 
 package org.polypheny.db.catalog;
 
-import java.util.HashMap;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
-public enum Adapter {
+public class Adapter {
 
-    MONGODB( "org.polypheny.db.adapter.mongodb.MongoStore" ),
-    HSQLDB( "org.polypheny.db.adapter.jdbc.stores.HsqldbStore" ),
-    CSV( "org.polypheny.db.adapter.csv.CsvSource" ),
-    CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore" ),
-    MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore" ),
-    COTTONTAIL( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
-    POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore" ),
-    NEO4J( "org.polypheny.db.adapter.neo4j.Neo4jStore" ),
-    FILE( "org.polypheny.db.adapter.file.FileStore" );
+    private static final Map<String, Adapter> REGISTER = new ConcurrentHashMap<>();
+
 
     @Getter
-    private final String path;
+    private final Map<String, String> defaultSettings;
+
     @Getter
     private final Class<?> clazz;
+    @Getter
+    private final String adapterName;
+    @Getter
+    private final AdapterType adapterType;
 
 
-    Adapter( String path ) {
-        this.path = path;
-        try {
-            this.clazz = Class.forName( path );
-        } catch ( ClassNotFoundException e ) {
-            throw new RuntimeException( "The supplied store name was not recognized: " + path );
-        }
+    public Adapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
+        this.adapterName = adapterName;
+        this.clazz = clazz;
+        this.defaultSettings = defaultSettings;
+        this.adapterType = getAdapterType( clazz );
     }
 
 
-    public static Adapter fromString( String storeName ) {
-        return Adapter.valueOf( storeName.toUpperCase( Locale.ROOT ) );
+    private static AdapterType getAdapterType( Class<?> clazz ) {
+        return DataStore.class.isAssignableFrom( clazz ) ? AdapterType.STORE : AdapterType.SOURCE;
     }
 
 
-    public Map<String, String> getDefaultSettings() {
-        Map<String, String> settings = new HashMap<>();
-        switch ( this ) {
+    public static Adapter fromString( String adapterName, AdapterType adapterType ) {
+        return REGISTER.get( adapterName.toUpperCase().split( "-DB" )[0] + "_" + adapterType );// todo dl fix on UI layer
+    }
 
-            case MONGODB:
-                settings.put( "persistent", "true" );
-                settings.put( "port", "27017" );
-                settings.put( "type", "mongo" );
-                settings.put( "instanceId", "0" );
-                settings.put( "mode", "docker" );
-                settings.put( "trxLifetimeLimit", "1209600" );
-                break;
-            case NEO4J:
-                settings.put( "persistent", "true" );
-                settings.put( "port", "7687" );
-                settings.put( "mode", "docker" );
-                settings.put( "instanceId", "0" );
-                settings.put( "type", "neo4j" );
-                break;
-            case HSQLDB:
-                settings.put( "type", "Memory" );
-                settings.put( "mode", "embedded" );
-                settings.put( "tableType", "Memory" );
-                settings.put( "maxConnections", "25" );
-                settings.put( "trxControlMode", "mvcc" );
-                settings.put( "trxIsolationLevel", "read_committed" );
-                break;
-            case CSV:
-                settings.put( "mode", "embedded" );
-                settings.put( "directory", "classpath://hr" );
-                settings.put( "maxStringLength", "255" );
-                break;
-            case CASSANDRA:
-                settings.put( "mode", "docker" );
-                settings.put( "instanceId", "0" );
-                settings.put( "port", "9042" );
-                break;
-            case MONETDB:
-                settings.put( "mode", "docker" );
-                settings.put( "instanceId", "0" );
-                settings.put( "password", "polypheny" );
-                settings.put( "maxConnections", "25" );
-                settings.put( "port", "5000" );
-                break;
-            case COTTONTAIL:
-                settings.put( "mode", "embedded" );
-                settings.put( "database", "cottontail" );
-                settings.put( "port", "1865" );
-                settings.put( "engine", "MAPDB" );
-                settings.put( "host", "localhost" );
-                break;
-            case POSTGRESQL:
-                settings.put( "mode", "docker" );
-                settings.put( "password", "polypheny" );
-                settings.put( "instanceId", "0" );
-                settings.put( "port", "3306" );
-                settings.put( "maxConnections", "25" );
-                break;
-            case FILE:
-                settings.put( "mode", "embedded" );
-                break;
+
+    public static void addAdapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
+        REGISTER.put( getKey( clazz, adapterName ), new Adapter( clazz, adapterName.toUpperCase(), defaultSettings ) );
+    }
+
+
+    public static void removeAdapter( Class<?> clazz, String adapterName ) {
+        if ( Catalog.getInstance().getAdapters().stream().anyMatch( a -> a.getAdapterTypeName().equals( adapterName ) ) ) {
+            throw new RuntimeException( "Adapter is still deployed!" );
         }
+        REGISTER.remove( getKey( clazz, adapterName ) );
+    }
 
-        return settings;
+
+    private static String getKey( Class<?> clazz, String adapterName ) {
+        return adapterName.toUpperCase() + "_" + getAdapterType( clazz );
+    }
+
+
+    public static List<Adapter> getAdapters( AdapterType adapterType ) {
+        return REGISTER.values().stream().filter( a -> a.adapterType == adapterType ).collect( Collectors.toList() );
     }
 
 }

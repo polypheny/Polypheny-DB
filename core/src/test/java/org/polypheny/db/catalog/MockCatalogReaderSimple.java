@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,16 +35,19 @@ package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
-import java.util.Arrays;
-import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.InitializerExpressionFactory;
-import org.polypheny.db.util.Litmus;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -72,11 +75,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
     @Override
     public AlgDataType getNamedType( Identifier typeName ) {
-        if ( typeName.equalsDeep( fixture.addressType.getSqlIdentifier(), Litmus.IGNORE ) ) {
-            return fixture.addressType;
-        } else {
-            return super.getNamedType( typeName );
-        }
+        return super.getNamedType( typeName );
     }
 
 
@@ -279,6 +278,12 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTablesWithRollUp( salesSchema, fixture );
         return this;
 
+    }
+
+
+    @Override
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+        throw new UnsupportedOperationException( "This operation is not longer supported" );
     }
 
 }
