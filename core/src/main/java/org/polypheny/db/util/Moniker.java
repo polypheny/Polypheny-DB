@@ -16,11 +16,11 @@
 
 package org.polypheny.db.util;
 
-
 import com.google.common.collect.Ordering;
+import org.polypheny.db.algebra.constant.MonikerType;
+
 import java.util.Comparator;
 import java.util.List;
-import org.polypheny.db.algebra.constant.MonikerType;
 
 
 /**

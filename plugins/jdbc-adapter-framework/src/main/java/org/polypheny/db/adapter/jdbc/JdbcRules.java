@@ -12,67 +12,44 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.adapter.jdbc;
 
-
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgWriter;
-import org.polypheny.db.algebra.InvalidAlgException;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Intersect;
-import org.polypheny.db.algebra.core.Join;
-import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.SemiJoin;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.*;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.*;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexMultisetUtil;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexOver;
-import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.rex.*;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.document.DocumentRules;
@@ -86,6 +63,11 @@ import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 
 
 /**

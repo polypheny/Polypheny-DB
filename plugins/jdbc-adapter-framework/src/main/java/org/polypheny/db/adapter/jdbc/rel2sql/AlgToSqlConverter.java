@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.adapter.jdbc.rel2sql;
@@ -20,66 +37,29 @@ package org.polypheny.db.adapter.jdbc.rel2sql;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.JoinConditionType;
 import org.polypheny.db.algebra.constant.JoinType;
-import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Intersect;
-import org.polypheny.db.algebra.core.Join;
-import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Match;
-import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.*;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexLocalRef;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.sql.language.SqlCall;
-import org.polypheny.db.sql.language.SqlDelete;
-import org.polypheny.db.sql.language.SqlDialect;
-import org.polypheny.db.sql.language.SqlIdentifier;
-import org.polypheny.db.sql.language.SqlInsert;
-import org.polypheny.db.sql.language.SqlIntervalLiteral;
-import org.polypheny.db.sql.language.SqlJoin;
-import org.polypheny.db.sql.language.SqlLiteral;
-import org.polypheny.db.sql.language.SqlMatchRecognize;
-import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlNodeList;
-import org.polypheny.db.sql.language.SqlSelect;
-import org.polypheny.db.sql.language.SqlSetOperator;
-import org.polypheny.db.sql.language.SqlUpdate;
+import org.polypheny.db.rex.*;
+import org.polypheny.db.sql.language.*;
 import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.ReflectiveVisitor;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**

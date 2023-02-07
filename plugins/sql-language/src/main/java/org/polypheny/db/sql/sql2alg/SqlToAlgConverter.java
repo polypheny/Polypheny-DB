@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.sql.sql2alg;
@@ -23,76 +40,15 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.util.AbstractList;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgDecorrelator;
-import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
-import org.polypheny.db.algebra.AlgFieldTrimmer;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
-import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.JoinConditionType;
-import org.polypheny.db.algebra.constant.JoinType;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.constant.SemiJoinType;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.constant.*;
+import org.polypheny.db.algebra.core.*;
 import org.polypheny.db.algebra.core.AlgFactories.FilterFactory;
-import org.polypheny.db.algebra.core.Collect;
-import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Join;
-import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.JoinInfo;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Sample;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.Uncollect;
-import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.*;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
@@ -107,120 +63,32 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.BasicNodeVisitor;
-import org.polypheny.db.nodes.Call;
-import org.polypheny.db.nodes.DataTypeSpec;
-import org.polypheny.db.nodes.DynamicParam;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.Literal;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.NodeList;
-import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.*;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSamplingParameters;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.*;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCallBinding;
-import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexFieldCollation;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexPatternFieldRef;
-import org.polypheny.db.rex.RexRangeRef;
-import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.LogicalRelView;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.sql.language.SqlAggFunction;
-import org.polypheny.db.sql.language.SqlBasicCall;
-import org.polypheny.db.sql.language.SqlCall;
-import org.polypheny.db.sql.language.SqlCallBinding;
-import org.polypheny.db.sql.language.SqlDelete;
-import org.polypheny.db.sql.language.SqlDynamicParam;
-import org.polypheny.db.sql.language.SqlFunction;
-import org.polypheny.db.sql.language.SqlIdentifier;
-import org.polypheny.db.sql.language.SqlInsert;
-import org.polypheny.db.sql.language.SqlIntervalQualifier;
-import org.polypheny.db.sql.language.SqlJoin;
-import org.polypheny.db.sql.language.SqlLiteral;
-import org.polypheny.db.sql.language.SqlMatchRecognize;
-import org.polypheny.db.sql.language.SqlMerge;
-import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlNodeList;
-import org.polypheny.db.sql.language.SqlNumericLiteral;
-import org.polypheny.db.sql.language.SqlOperator;
-import org.polypheny.db.sql.language.SqlOrderBy;
-import org.polypheny.db.sql.language.SqlSampleSpec;
-import org.polypheny.db.sql.language.SqlSelect;
-import org.polypheny.db.sql.language.SqlSelectKeyword;
-import org.polypheny.db.sql.language.SqlSetOperator;
-import org.polypheny.db.sql.language.SqlUnnestOperator;
-import org.polypheny.db.sql.language.SqlUpdate;
-import org.polypheny.db.sql.language.SqlUtil;
-import org.polypheny.db.sql.language.SqlValuesOperator;
-import org.polypheny.db.sql.language.SqlWindow;
-import org.polypheny.db.sql.language.SqlWith;
-import org.polypheny.db.sql.language.SqlWithItem;
-import org.polypheny.db.sql.language.fun.SqlCase;
-import org.polypheny.db.sql.language.fun.SqlCountAggFunction;
-import org.polypheny.db.sql.language.fun.SqlInOperator;
-import org.polypheny.db.sql.language.fun.SqlQuantifyOperator;
-import org.polypheny.db.sql.language.fun.SqlRowOperator;
-import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.language.validate.AggregatingSelectScope;
-import org.polypheny.db.sql.language.validate.CollectNamespace;
-import org.polypheny.db.sql.language.validate.DelegatingScope;
-import org.polypheny.db.sql.language.validate.ListScope;
-import org.polypheny.db.sql.language.validate.MatchRecognizeScope;
-import org.polypheny.db.sql.language.validate.ParameterScope;
-import org.polypheny.db.sql.language.validate.SelectScope;
-import org.polypheny.db.sql.language.validate.SqlQualified;
-import org.polypheny.db.sql.language.validate.SqlUserDefinedTableFunction;
-import org.polypheny.db.sql.language.validate.SqlUserDefinedTableMacro;
-import org.polypheny.db.sql.language.validate.SqlValidator;
-import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
-import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
-import org.polypheny.db.sql.language.validate.SqlValidatorScope;
-import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
+import org.polypheny.db.rex.*;
+import org.polypheny.db.schema.*;
+import org.polypheny.db.sql.language.*;
+import org.polypheny.db.sql.language.fun.*;
+import org.polypheny.db.sql.language.validate.*;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.type.inference.TableFunctionReturnTypeInference;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
-import org.polypheny.db.util.InitializerContext;
-import org.polypheny.db.util.InitializerExpressionFactory;
-import org.polypheny.db.util.Litmus;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.NullInitializerExpressionFactory;
-import org.polypheny.db.util.NumberUtil;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.*;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
+
+import javax.annotation.Nonnull;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**

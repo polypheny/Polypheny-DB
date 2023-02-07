@@ -12,17 +12,29 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.adapter.jdbc.rel2sql;
 
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.function.Function;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
@@ -55,29 +67,20 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
 import org.polypheny.db.sql.SqlLanguageDependent;
-import org.polypheny.db.sql.language.SqlCall;
-import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.*;
 import org.polypheny.db.sql.language.SqlDialect.Context;
 import org.polypheny.db.sql.language.SqlDialect.DatabaseProduct;
-import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlSelect;
-import org.polypheny.db.sql.language.SqlWriter;
-import org.polypheny.db.sql.language.dialect.HiveSqlDialect;
-import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
-import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
-import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.sql.language.dialect.*;
 import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.Matchers;
-import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.tools.FrameworkConfig;
-import org.polypheny.db.tools.Frameworks;
-import org.polypheny.db.tools.Planner;
-import org.polypheny.db.tools.Program;
-import org.polypheny.db.tools.Programs;
-import org.polypheny.db.tools.RuleSet;
-import org.polypheny.db.tools.RuleSets;
+import org.polypheny.db.tools.*;
 import org.polypheny.db.type.PolyType;
+
+import java.util.List;
+import java.util.function.Function;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 
 /**

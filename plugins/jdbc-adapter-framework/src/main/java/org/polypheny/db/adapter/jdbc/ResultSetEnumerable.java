@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.adapter.jdbc;
@@ -19,36 +36,6 @@ package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.NClob;
-import java.sql.PreparedStatement;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLXML;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ByteString;
@@ -65,12 +52,17 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.language.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.FileInputHandle;
-import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.Static;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.*;
+
+import java.io.*;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
 
 
 /**

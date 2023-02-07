@@ -33,14 +33,14 @@
 
 package org.polypheny.db.type;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+
 import java.sql.Types;
 import java.util.Collection;
 import java.util.Map;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 
 
 /**

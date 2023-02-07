@@ -12,24 +12,30 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.sql;
 
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.polypheny.db.plan.AlgOptRule.operand;
-
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -41,24 +47,14 @@ import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.constant.Lex;
+import org.polypheny.db.algebra.constant.*;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.algebra.rules.FilterMergeRule;
-import org.polypheny.db.algebra.rules.LoptOptimizeJoinRule;
-import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectToWindowRules;
-import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
-import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
-import org.polypheny.db.algebra.rules.SortRemoveRule;
+import org.polypheny.db.algebra.rules.*;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
@@ -69,20 +65,10 @@ import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitDef;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.*;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.schema.FoodmartSchema;
-import org.polypheny.db.schema.HrSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TpchSchema;
+import org.polypheny.db.schema.*;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
@@ -90,21 +76,20 @@ import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.util.ListSqlOperatorTable;
 import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.PolyphenyDbAssert;
-import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.tools.AlgConversionException;
-import org.polypheny.db.tools.FrameworkConfig;
-import org.polypheny.db.tools.Frameworks;
-import org.polypheny.db.tools.Planner;
-import org.polypheny.db.tools.Program;
-import org.polypheny.db.tools.Programs;
-import org.polypheny.db.tools.RuleSet;
-import org.polypheny.db.tools.RuleSets;
-import org.polypheny.db.tools.ValidationException;
+import org.polypheny.db.tools.*;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
+import static org.polypheny.db.plan.AlgOptRule.operand;
 
 
 /**

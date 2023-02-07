@@ -1,5 +1,6 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project (Modifications)
+ * Copyright (c) Neo4j Sweden AB (http://neo4j.com) (Original Version)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

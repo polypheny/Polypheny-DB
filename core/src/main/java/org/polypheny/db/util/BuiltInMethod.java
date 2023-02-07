@@ -12,53 +12,38 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.util;
 
 
 import com.google.common.collect.ImmutableMap;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.sql.ResultSet;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TimeZone;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.CorrelateJoinType;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.EnumerableDefaults;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.ExtendedEnumerable;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.EqualityComparer;
-import org.apache.calcite.linq4j.function.Function0;
-import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.function.Function2;
-import org.apache.calcite.linq4j.function.Predicate1;
-import org.apache.calcite.linq4j.function.Predicate2;
+import org.apache.calcite.linq4j.*;
+import org.apache.calcite.linq4j.function.*;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.AggregateLambdaFactory;
-import org.polypheny.db.adapter.enumerable.BatchIteratorEnumerable;
-import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
-import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
-import org.polypheny.db.adapter.enumerable.SourceSorter;
+import org.polypheny.db.adapter.enumerable.*;
 import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgMatch.MatchEnumerable;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
@@ -67,61 +52,30 @@ import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.ColumnOrigin;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.ColumnUniqueness;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.CumulativeCost;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.DistinctRowCount;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.Distribution;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExplainVisibility;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.MaxRowCount;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.Memory;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.MinRowCount;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.NodeTypes;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.NonCumulativeCost;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.PercentageOriginalRows;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.PopulationSize;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.Predicates;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.RowCount;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.Selectivity;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.*;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.ArrayBindable;
-import org.polypheny.db.runtime.BinarySearch;
-import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.runtime.Enumerables;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.RandomFunction;
-import org.polypheny.db.runtime.SortedMultiMap;
-import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.runtime.*;
 import org.polypheny.db.runtime.functions.CrossModelFunctions;
 import org.polypheny.db.runtime.functions.CypherFunctions;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.functions.MqlFunctions;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.graph.GraphPropertyHolder;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyGraph;
-import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.schema.*;
+import org.polypheny.db.schema.graph.*;
 import org.polypheny.db.type.PolyType;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.sql.ResultSet;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.*;
 
 
 /**

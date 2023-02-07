@@ -12,21 +12,29 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.adapter.mongodb;
 
 import com.google.common.collect.ImmutableList;
 import com.mongodb.client.gridfs.GridFSBucket;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -38,20 +46,10 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.InvalidAlgException;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.*;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -70,36 +68,23 @@ import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.*;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.rex.*;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.sql.language.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.BsonUtil;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.UnsupportedRexCallVisitor;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.*;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
+
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 
 /**

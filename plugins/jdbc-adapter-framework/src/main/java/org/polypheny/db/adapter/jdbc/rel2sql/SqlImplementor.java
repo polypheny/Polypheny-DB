@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.adapter.jdbc.rel2sql;
@@ -21,25 +38,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import java.math.BigDecimal;
-import java.util.AbstractList;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.IntFunction;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -61,40 +59,9 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexFieldCollation;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexLocalRef;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexOver;
-import org.polypheny.db.rex.RexPatternFieldRef;
-import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexWindow;
-import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.sql.language.SqlAggFunction;
-import org.polypheny.db.sql.language.SqlBasicCall;
-import org.polypheny.db.sql.language.SqlBinaryOperator;
-import org.polypheny.db.sql.language.SqlCall;
-import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.rex.*;
+import org.polypheny.db.sql.language.*;
 import org.polypheny.db.sql.language.SqlDialect.IntervalParameterStrategy;
-import org.polypheny.db.sql.language.SqlDynamicParam;
-import org.polypheny.db.sql.language.SqlIdentifier;
-import org.polypheny.db.sql.language.SqlIntervalQualifier;
-import org.polypheny.db.sql.language.SqlJoin;
-import org.polypheny.db.sql.language.SqlLiteral;
-import org.polypheny.db.sql.language.SqlMatchRecognize;
-import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlNodeList;
-import org.polypheny.db.sql.language.SqlOperator;
-import org.polypheny.db.sql.language.SqlSelect;
-import org.polypheny.db.sql.language.SqlSelectKeyword;
-import org.polypheny.db.sql.language.SqlSetOperator;
-import org.polypheny.db.sql.language.SqlWindow;
 import org.polypheny.db.sql.language.fun.SqlCase;
 import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
@@ -102,11 +69,13 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.*;
+
+import javax.annotation.Nonnull;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 
 /**

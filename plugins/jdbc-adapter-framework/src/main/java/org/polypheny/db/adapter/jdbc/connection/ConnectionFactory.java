@@ -16,9 +16,8 @@
 
 package org.polypheny.db.adapter.jdbc.connection;
 
-
-import java.sql.SQLException;
 import javax.transaction.xa.Xid;
+import java.sql.SQLException;
 
 
 public interface ConnectionFactory {
