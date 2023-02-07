@@ -75,6 +75,6 @@ javadoc {
 }
 
 licensee {
-    allow('LGPL-2.1') // lesser GNU
+    allowDependency('org.mariadb.jdbc', 'mariadb-java-client', '2.7.2') { because 'removed on release branches' }
 }
 

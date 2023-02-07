@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.prepare;
@@ -200,98 +183,6 @@ public abstract class Prepare {
     protected abstract PreparedResult implement( AlgRoot root );
 
 
-    /*public PreparedResult prepareSql( Node sqlQuery, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
-        return prepareSql( sqlQuery, sqlQuery, runtimeContextClass, validator, needsValidation );
-    }*/
-
-
-    /*public PreparedResult prepareSql( Node sqlQuery, Node sqlNodeOriginal, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
-        init( runtimeContextClass );
-
-        final NodeToAlgConverter.Config config =
-                NodeToAlgConverter.configBuilder()
-                        .trimUnusedFields( true )
-                        .expand( THREAD_EXPAND.get() )
-                        .explain( sqlQuery.getKind() == Kind.EXPLAIN ).build();
-        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, config );
-
-        Explain Explain = null;
-        if ( sqlQuery.getKind() == Kind.EXPLAIN ) {
-            // dig out the underlying SQL statement
-            Explain = (Explain) sqlQuery;
-            sqlQuery = Explain.getExplicandum();
-            sqlToRelConverter.setDynamicParamCountInExplain( Explain.getDynamicParamCount() );
-        }
-
-        AlgRoot root = sqlToRelConverter.convertQuery( sqlQuery, needsValidation, true );
-        Hook.CONVERTED.run( root.alg );
-
-        if ( timingTracer != null ) {
-            timingTracer.traceTime( "end sql2rel" );
-        }
-
-        final AlgDataType resultType = validator.getValidatedNodeType( sqlQuery );
-        fieldOrigins = validator.getFieldOrigins( sqlQuery );
-        assert fieldOrigins.size() == resultType.getFieldCount();
-
-        parameterRowType = validator.getParameterRowType( sqlQuery );
-
-        // Display logical plans before view expansion, plugging in physical storage and decorrelation
-        if ( Explain != null ) {
-            Explain.Depth explainDepth = Explain.getDepth();
-            ExplainFormat format = Explain.getFormat();
-            ExplainLevel detailLevel = Explain.getDetailLevel();
-            switch ( explainDepth ) {
-                case TYPE:
-                    return createPreparedExplanation( resultType, parameterRowType, null, format, detailLevel );
-                case LOGICAL:
-                    return createPreparedExplanation( null, parameterRowType, root, format, detailLevel );
-                default:
-            }
-        }
-
-        // Structured type flattening, view expansion, and plugging in physical storage.
-        root = root.withAlg( flattenTypes( root.alg, true ) );
-
-        if ( this.context.config().forceDecorrelate() ) {
-            // Sub-query decorrelation.
-            root = root.withAlg( decorrelate( sqlToRelConverter, sqlQuery, root.alg ) );
-        }
-
-        // Trim unused fields.
-        root = trimUnusedFields( root );
-
-        Hook.TRIMMED.run( root.alg );
-
-        // Display physical plan after decorrelation.
-        if ( Explain != null ) {
-            switch ( Explain.getDepth() ) {
-                case PHYSICAL:
-                default:
-                    root = optimize( root );
-                    return createPreparedExplanation(
-                            null,
-                            parameterRowType,
-                            root,
-                            Explain.getFormat(),
-                            Explain.getDetailLevel() );
-            }
-        }
-
-        root = optimize( root );
-
-        if ( timingTracer != null ) {
-            timingTracer.traceTime( "end optimization" );
-        }
-
-        // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE).  For anything else
-        // (e.g. CALL -> SELECT), use original kind.
-        if ( !root.kind.belongsTo( Kind.DML ) ) {
-            root = root.withKind( sqlNodeOriginal.getKind() );
-        }
-        return implement( root );
-    }*/
-
 
     protected LogicalModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
         if ( !isDml ) {
@@ -319,30 +210,6 @@ public abstract class Prepare {
     public abstract AlgNode flattenTypes( AlgNode rootRel, boolean restructure );
 
     protected abstract AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel );
-
-
-    /* /**
-     * Walks over a tree of relational expressions, replacing each {@link AlgNode} with a 'slimmed down' relational
-     * expression that projects only the columns required by its consumer.
-     *
-     * @param root Root of relational expression tree
-     * @return Trimmed relational expression
-     */
-    /* protected AlgRoot trimUnusedFields( AlgRoot root ) {
-        final NodeToAlgConverter.Config config = NodeToAlgConverter.configBuilder()
-                .trimUnusedFields( shouldTrim( root.alg ) )
-                .expand( THREAD_EXPAND.get() )
-                .build();
-        final NodeToAlgConverter converter = getSqlToRelConverter( getSqlValidator(), catalogReader, config );
-        final boolean ordered = !root.collation.getFieldCollations().isEmpty();
-        final boolean dml = Kind.DML.contains( root.kind );
-        return root.withAlg( converter.trimUnusedFields( dml || ordered, root.alg ) );
-    }*/
-    private boolean shouldTrim( AlgNode rootRel ) {
-        // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
-        // joins and seem to prevent join-reordering.
-        return THREAD_TRIM.get() || AlgOptUtil.countJoins( rootRel ) < 2;
-    }
 
 
     protected abstract void init( Class runtimeContextClass );

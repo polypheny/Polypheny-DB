@@ -101,8 +101,8 @@ licensee {
     allowUrl('https://golang.org/LICENSE')
     allowUrl('https://www.eclipse.org/licenses/edl-v10.html')
     allowUrl('http://www.opensource.org/licenses/bsd-license.php')
-    allowUrl('https://www.gnu.org/licenses/old-licenses/lgpl-2.1')
 
+    allowDependency('net.java.dev.jna', 'jna', '5.9.0') { because 'Dual license Lgpl before version 4.0, Apache after' }
     allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.67') { because 'MIT license' }
     allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.67') { because 'MIT license' }
 

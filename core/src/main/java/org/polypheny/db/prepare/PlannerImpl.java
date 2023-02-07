@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.prepare;
@@ -40,17 +23,12 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.Context;
-import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -58,7 +36,6 @@ import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Util;
 
 
@@ -76,10 +53,6 @@ public class PlannerImpl implements Planner {
      */
     private final ImmutableList<AlgTraitDef> traitDefs;
 
-    //private final ParserConfig parserConfig;
-    //private final NodeToAlgConverter.Config sqlToRelConverterConfig;
-    //private final RexConvertletTable convertletTable;
-
     private State state;
 
     // set in STATE_1_RESET
@@ -91,12 +64,6 @@ public class PlannerImpl implements Planner {
     private AlgOptPlanner planner;
     private RexExecutor executor;
 
-    // set in STATE_4_VALIDATE
-    private Validator validator;
-    private Node validatedSqlNode;
-
-    // set in STATE_5_CONVERT
-    private AlgRoot root;
 
 
     /**
@@ -106,13 +73,9 @@ public class PlannerImpl implements Planner {
     public PlannerImpl( FrameworkConfig config ) {
         this.config = config;
         this.defaultSchema = config.getDefaultSchema();
-        // this.operatorTable = config.getOperatorTable();
         this.programs = config.getPrograms();
-        // this.parserConfig = config.getParserConfig();
-        // this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
         this.state = State.STATE_0_CLOSED;
         this.traitDefs = config.getTraitDefs();
-        //this.convertletTable = config.getConvertletTable();
         this.executor = config.getExecutor();
         reset();
     }
@@ -202,18 +165,6 @@ public class PlannerImpl implements Planner {
     }
 
 
-    private Conformance conformance() {
-        final Context context = config.getContext();
-        if ( context != null ) {
-            final PolyphenyDbConnectionConfig connectionConfig = context.unwrap( PolyphenyDbConnectionConfig.class );
-            if ( connectionConfig != null ) {
-                return connectionConfig.conformance();
-            }
-        }
-        return config.getParserConfig().conformance();
-    }
-
-
     @Override
     public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );
@@ -221,30 +172,6 @@ public class PlannerImpl implements Planner {
     }
 
 
-    // PolyphenyDbCatalogReader is stateless; no need to store one
-    private PolyphenyDbCatalogReader createCatalogReader() {
-        final SchemaPlus rootSchema = rootSchema( defaultSchema );
-        return new PolyphenyDbCatalogReader(
-                PolyphenyDbSchema.from( rootSchema ),
-                PolyphenyDbSchema.from( defaultSchema ).path( null ),
-                typeFactory );
-    }
-
-
-    private static SchemaPlus rootSchema( SchemaPlus schema ) {
-        for ( ; ; ) {
-            if ( schema.getParentSchema() == null ) {
-                return schema;
-            }
-            schema = schema.getParentSchema();
-        }
-    }
-
-
-    // RexBuilder is stateless; no need to store one
-    private RexBuilder createRexBuilder() {
-        return new RexBuilder( typeFactory );
-    }
 
 
     @Override

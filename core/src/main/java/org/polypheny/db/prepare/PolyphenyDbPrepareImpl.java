@@ -12,30 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.prepare;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.DatabaseMetaData;
@@ -45,15 +27,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.AvaticaType;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.Blocks;
@@ -130,7 +108,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedExplain;
-import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
@@ -176,14 +153,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     public static final boolean ENABLE_STREAM = true;
 
-    private static final Set<String> SIMPLE_SQLS =
-            ImmutableSet.of(
-                    "SELECT 1",
-                    "select 1",
-                    "SELECT 1 FROM DUAL",
-                    "select 1 from dual",
-                    "values 1",
-                    "VALUES 1" );
 
     public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
@@ -263,73 +232,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public PolyphenyDbPrepareImpl() {
     }
 
-
-    /*@Override
-    public ParseResult parse( Context context, String sql ) {
-        return parse_( context, sql, false, false, false );
-    }*/
-
-
-    /*@Override
-    public ConvertResult convert( Context context, String sql ) {
-        return (ConvertResult) parse_( context, sql, true, false, false );
-    }*/
-
-
-    /**
-     * Shared implementation for {e} and {}.
-     */
-    /*private ParseResult parse_( Context context, String sql, boolean convert, boolean analyze, boolean fail ) {
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader(
-                context.getRootSchema(),
-                context.getDefaultSchemaPath(),
-                typeFactory );
-        Parser parser = createParser( sql );
-        Node sqlNode;
-        try {
-            sqlNode = parser.parseStmt();
-        } catch ( NodeParseException e ) {
-            throw new RuntimeException( "parse failed", e );
-        }
-        final Validator validator = QueryLanguage.from( "sql" ).getValidatorSupplier().apply( context, catalogReader );
-        Node sqlNode1 = validator.validate( sqlNode );
-        if ( convert ) {
-            return convert_( context, sql, analyze, fail, catalogReader, validator, sqlNode1 );
-        }
-        return new ParseResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ) );
-    }*/
-
-
-    /*private ParseResult convert_( Context context, String sql, boolean analyze, boolean fail, PolyphenyDbCatalogReader catalogReader, Validator validator, Node sqlNode1 ) {
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final Convention resultConvention =
-                enableBindable
-                        ? BindableConvention.INSTANCE
-                        : EnumerableConvention.INSTANCE;
-        final HepPlanner planner = new HepPlanner( new HepProgramBuilder().build() );
-        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
-
-        final ConfigBuilder configBuilder = NodeToAlgConverter.configBuilder().trimUnusedFields( true );
-        if ( analyze ) {
-            configBuilder.convertTableAccess( false );
-        }
-
-        final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt(
-                this,
-                context,
-                catalogReader,
-                typeFactory,
-                context.getRootSchema(),
-                null,
-                planner,
-                resultConvention,
-                createConvertletTable() );
-        final NodeToAlgConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, new ConfigBuilder().build() );
-
-        final AlgRoot root = converter.convertQuery( sqlNode1, false, true );
-        return new ConvertResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ), root );
-    }*/
     @Override
     public void executeDdl( Context context, Node node ) {
         if ( node instanceof ExecutableStatement ) {
@@ -347,31 +249,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder ) {
         return AlgOptCluster.create( planner, rexBuilder );
     }
-
-
-    /**
-     * Creates a collection of planner factories.
-     * <p>
-     * The collection must have at least one factory, and each factory must create a planner. If the collection has more
-     * than one planner, Polypheny-DB will try each planner in turn.
-     * <p>
-     * One of the things you can do with this mechanism is to try a simpler, faster, planner with a smaller rule set first,
-     * then fall back to a more complex planner for complex and costly queries.
-     * <p>
-     * The default implementation returns a factory that calls {@link #createPlanner(Context)}.
-     */
-    protected List<Function1<Context, AlgOptPlanner>> createPlannerFactories() {
-        return Collections.singletonList( context -> createPlanner( context, null, null ) );
-    }
-
-
-    /**
-     * Creates a query planner and initializes it with a default set of rules.
-     */
-    protected AlgOptPlanner createPlanner( Context prepareContext ) {
-        return createPlanner( prepareContext, null, null );
-    }
-
 
     /**
      * Creates a query planner and initializes it with a default set of rules.
@@ -433,49 +310,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         return planner;
     }
 
-
-    /**
-     * Deduces the broad type of statement. Currently returns SELECT for most statement types, but this may change.
-     *
-     * @param kind Kind of statement
-     */
-    private StatementType getStatementType( Kind kind ) {
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                return StatementType.IS_DML;
-            default:
-                return StatementType.SELECT;
-        }
-    }
-
-
-    /**
-     * Deduces the broad type of statement for a prepare result.
-     * Currently returns SELECT for most statement types, but this may change.
-     *
-     * @param preparedResult Prepare result
-     */
-    private StatementType getStatementType( PreparedResult preparedResult ) {
-        if ( preparedResult.isDml() ) {
-            return StatementType.IS_DML;
-        } else {
-            return StatementType.SELECT;
-        }
-    }
-
-
-    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {
-        final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
-            final AlgDataTypeField field = pair.e;
-            final AlgDataType type = field.getType();
-            final AlgDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
-            columns.add( metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
-        }
-        return columns;
-    }
 
 
     private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, AlgDataType type, AlgDataType fieldType, List<String> origins ) {
@@ -548,11 +382,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private static String getClassName( AlgDataType type ) {
-        return Object.class.getName(); // POLYPHENYDB-2613
-    }
-
-
     private static int getScale( AlgDataType type ) {
         return type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED
                 ? 0
@@ -600,13 +429,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
     }
 
-
-    private static AlgDataType makeStruct( AlgDataTypeFactory typeFactory, AlgDataType type ) {
-        if ( type.isStruct() ) {
-            return type;
-        }
-        return typeFactory.builder().add( "$0", null, type ).build();
-    }
 
 
     /**

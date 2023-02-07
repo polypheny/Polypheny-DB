@@ -250,14 +250,6 @@ public class PlannerImplMock implements Planner {
     }
 
 
-    /*@Override
-    public Pair<Node, AlgDataType> validateAndGetType( Node sqlNode ) throws ValidationException {
-        final Node validatedNode = this.validate( sqlNode );
-        final AlgDataType type = this.validator.getValidatedNodeType( validatedNode );
-        return Pair.of( validatedNode, type );
-    }*/
-
-
     @Override
     public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );

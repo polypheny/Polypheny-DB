@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,17 +108,17 @@ public class SqlDistanceFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knninttest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knndoubletest ORDER BY id" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knnbigtest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knnbigtest ORDER BY id" ),
                         expectedResult
                 );
 
