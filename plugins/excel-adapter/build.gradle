@@ -15,7 +15,6 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-
 }
 
 compileJava {

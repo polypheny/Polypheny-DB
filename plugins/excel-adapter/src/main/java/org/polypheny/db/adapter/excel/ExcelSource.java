@@ -16,26 +16,8 @@
 
 package org.polypheny.db.adapter.excel;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.*;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
@@ -58,6 +40,14 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Slf4j
 @AdapterProperties(
         name = "Excel",
@@ -76,48 +66,48 @@ public class ExcelSource extends DataSource {
     public String sheetName;
 
 
-    public ExcelSource( int storeId, String uniqueName, Map<String, String> settings ) {
+    public ExcelSource(int storeId, String uniqueName, Map<String, String> settings) {
 
-        super( storeId, uniqueName, settings, true );
+        super(storeId, uniqueName, settings, true);
 
         // Validate maxStringLength setting
-        maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+        maxStringLength = Integer.parseInt(settings.get("maxStringLength"));
 
-        if ( maxStringLength < 1 ) {
-            throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
+        if (maxStringLength < 1) {
+            throw new RuntimeException("Invalid value for maxStringLength: " + maxStringLength);
         }
-        this.sheetName = settings.get( "sheetName" );
+        this.sheetName = settings.get("sheetName");
 
-        setExcelDir( settings );
+        setExcelDir(settings);
         addInformationExportedColumns();
         enableInformationPage();
     }
 
 
-    private void setExcelDir( Map<String, String> settings ) {
+    private void setExcelDir(Map<String, String> settings) {
 
-        String dir = settings.get( "directory" );
-        if ( dir.startsWith( "classpath://" ) ) {
-            excelDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
+        String dir = settings.get("directory");
+        if (dir.startsWith("classpath://")) {
+            excelDir = this.getClass().getClassLoader().getResource(dir.replace("classpath://", "") + "/");
         } else {
             try {
-                excelDir = new File( dir ).toURI().toURL();
-            } catch ( MalformedURLException e ) {
-                throw new RuntimeException( e );
+                excelDir = new File(dir).toURI().toURL();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE, this.sheetName );
+    public void createNewSchema(SchemaPlus rootSchema, String name) {
+        currentSchema = new ExcelSchema(excelDir, Flavor.SCANNABLE, this.sheetName);
     }
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createExcelTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
+    public Table createTableSchema(CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement) {
+        return currentSchema.createExcelTable(catalogTable, columnPlacementsOnStore, this, partitionPlacement);
     }
 
 
@@ -128,27 +118,27 @@ public class ExcelSource extends DataSource {
 
 
     @Override
-    public void truncate( Context context, CatalogTable table ) {
-        throw new RuntimeException( "Excel adapter does not support truncate" );
+    public void truncate(Context context, CatalogTable table) {
+        throw new RuntimeException("Excel adapter does not support truncate");
     }
 
 
     @Override
-    public boolean prepare( PolyXid xid ) {
-        log.debug( "Excel Store does not support prepare()." );
+    public boolean prepare(PolyXid xid) {
+        log.debug("Excel Store does not support prepare().");
         return true;
     }
 
 
     @Override
-    public void commit( PolyXid xid ) {
-        log.debug( "Excel Store does not support commit()." );
+    public void commit(PolyXid xid) {
+        log.debug("Excel Store does not support commit().");
     }
 
 
     @Override
-    public void rollback( PolyXid xid ) {
-        log.debug( "Excel Store does not support rollback()." );
+    public void rollback(PolyXid xid) {
+        log.debug("Excel Store does not support rollback().");
     }
 
 
@@ -159,9 +149,9 @@ public class ExcelSource extends DataSource {
 
 
     @Override
-    protected void reloadSettings( List<String> updatedSettings ) {
-        if ( updatedSettings.contains( "directory" ) ) {
-            setExcelDir( settings );
+    protected void reloadSettings(List<String> updatedSettings) {
+        if (updatedSettings.contains("directory")) {
+            setExcelDir(settings);
         }
     }
 
@@ -170,84 +160,84 @@ public class ExcelSource extends DataSource {
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         String currentSheetName;
 
-        if ( exportedColumnCache != null ) {
+        if (exportedColumnCache != null) {
             return exportedColumnCache;
         }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
-        if ( excelDir.getProtocol().equals( "jar" ) ) {
+        if (excelDir.getProtocol().equals("jar")) {
             List<CatalogColumnPlacement> ccps = Catalog
                     .getInstance()
-                    .getColumnPlacementsOnAdapter( getAdapterId() );
+                    .getColumnPlacementsOnAdapter(getAdapterId());
             fileNames = new HashSet<>();
-            for ( CatalogColumnPlacement ccp : ccps ) {
-                fileNames.add( ccp.physicalSchemaName );
+            for (CatalogColumnPlacement ccp : ccps) {
+                fileNames.add(ccp.physicalSchemaName);
             }
         } else {
-            File[] files = Sources.of( excelDir )
+            File[] files = Sources.of(excelDir)
                     .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) || name.endsWith( ".xls" ) || name.endsWith( ".xls.gz" ) );
-            fileNames = Arrays.stream( files )
+                    .listFiles((d, name) -> name.endsWith(".xlsx") || name.endsWith(".xlsx.gz") || name.endsWith(".xls") || name.endsWith(".xls.gz"));
+            fileNames = Arrays.stream(files)
                     .sequential()
-                    .map( File::getName )
-                    .collect( Collectors.toSet() );
+                    .map(File::getName)
+                    .collect(Collectors.toSet());
         }
-        for ( String fileName : fileNames ) {
+        for (String fileName : fileNames) {
             // Compute physical table name
             String physicalTableName = fileName.toLowerCase();
-            if ( physicalTableName.endsWith( ".gz" ) ) {
-                physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
+            if (physicalTableName.endsWith(".gz")) {
+                physicalTableName = physicalTableName.substring(0, physicalTableName.length() - ".gz".length());
             }
-            if ( physicalTableName.endsWith( ".xlsx" ) ) {
+            if (physicalTableName.endsWith(".xlsx")) {
                 physicalTableName = physicalTableName
-                        .substring( 0, physicalTableName.length() - ".xlsx".length() )
+                        .substring(0, physicalTableName.length() - ".xlsx".length())
                         .trim()
-                        .replaceAll( "[^a-z0-9_]+", "" );
-            } else if ( physicalTableName.endsWith( ".xls" ) ) {
+                        .replaceAll("[^a-z0-9_]+", "");
+            } else if (physicalTableName.endsWith(".xls")) {
                 physicalTableName = physicalTableName
-                        .substring( 0, physicalTableName.length() - ".xls".length() )
+                        .substring(0, physicalTableName.length() - ".xls".length())
                         .trim()
-                        .replaceAll( "[^a-z0-9_]+", "" );
+                        .replaceAll("[^a-z0-9_]+", "");
             }
 
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
             try {
-                Source source = Sources.of( new URL( excelDir, fileName ) );
-                File file = new File( source.path() );   //creating a new file instance
-                FileInputStream fs = new FileInputStream( file );
+                Source source = Sources.of(new URL(excelDir, fileName));
+                File file = new File(source.path());   //creating a new file instance
+                FileInputStream fs = new FileInputStream(file);
 
-                Workbook workbook = WorkbookFactory.create( fs );
+                Workbook workbook = WorkbookFactory.create(fs);
                 Sheet sheet;
 
-                if ( this.sheetName.equals( "" ) ) {
-                    sheet = workbook.getSheetAt( 0 );
-                    currentSheetName = workbook.getSheetName( 0 );
+                if (this.sheetName.equals("")) {
+                    sheet = workbook.getSheetAt(0);
+                    currentSheetName = workbook.getSheetName(0);
 
                 } else {
-                    sheet = workbook.getSheet( this.sheetName );
+                    sheet = workbook.getSheet(this.sheetName);
                     currentSheetName = this.sheetName;
                 }
                 Iterator<Row> rowIterator = sheet.iterator();
 
                 // read first row to extract column attribute name and datatype
-                while ( rowIterator.hasNext() ) {
+                while (rowIterator.hasNext()) {
 
                     Row row = rowIterator.next();
                     //For each row, iterate through all the columns
                     Iterator<Cell> cellIterator = row.cellIterator();
 
-                    while ( cellIterator.hasNext() ) {
+                    while (cellIterator.hasNext()) {
 
                         Cell cell = cellIterator.next();
                         try {
-                            String[] colSplit = cell.getStringCellValue().split( ":" );
+                            String[] colSplit = cell.getStringCellValue().split(":");
                             String name = colSplit[0]
                                     .toLowerCase()
                                     .trim()
-                                    .replaceAll( "[^a-z0-9_]+", "" );
+                                    .replaceAll("[^a-z0-9_]+", "");
                             String typeStr = "string";
-                            if ( colSplit.length > 1 ) {
+                            if (colSplit.length > 1) {
                                 typeStr = colSplit[1].toLowerCase().trim();
                             }
                             PolyType collectionsType = null;
@@ -256,7 +246,7 @@ public class ExcelSource extends DataSource {
                             Integer scale = null;
                             Integer dimension = null;
                             Integer cardinality = null;
-                            switch ( typeStr.toLowerCase() ) {
+                            switch (typeStr.toLowerCase()) {
                                 case "int":
                                     type = PolyType.INTEGER;
                                     break;
@@ -288,10 +278,10 @@ public class ExcelSource extends DataSource {
                                     length = 0;
                                     break;
                                 default:
-                                    throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
+                                    throw new RuntimeException("Unknown type: " + typeStr.toLowerCase());
                             }
 
-                            list.add( new ExportedColumn(
+                            list.add(new ExportedColumn(
                                     name,
                                     type,
                                     collectionsType,
@@ -304,12 +294,12 @@ public class ExcelSource extends DataSource {
                                     physicalTableName,
                                     name,
                                     position,
-                                    position == 1 ) ); // TODO
+                                    position == 1)); // TODO
 
                             position++;
 
 
-                        } catch ( Exception e ) {
+                        } catch (Exception e) {
 
                         }
 
@@ -317,25 +307,25 @@ public class ExcelSource extends DataSource {
                     break;
                 }
 
-            } catch ( IOException e ) {
-                throw new RuntimeException( e );
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
 
-            exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
+            exportedColumnCache.put(physicalTableName + "_" + currentSheetName, list);
         }
         return exportedColumnCache;
     }
 
 
     private void addInformationExportedColumns() {
-        for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
-            informationGroups.add( group );
+        for (Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet()) {
+            InformationGroup group = new InformationGroup(informationPage, entry.getValue().get(0).physicalSchemaName);
+            informationGroups.add(group);
 
             InformationTable table = new InformationTable(
                     group,
-                    Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
-            for ( ExportedColumn exportedColumn : entry.getValue() ) {
+                    Arrays.asList("Position", "Column Name", "Type", "Nullable", "Filename", "Primary"));
+            for (ExportedColumn exportedColumn : entry.getValue()) {
                 table.addRow(
                         exportedColumn.physicalPosition,
                         exportedColumn.name,
@@ -345,7 +335,7 @@ public class ExcelSource extends DataSource {
                         exportedColumn.primary ? "✔" : ""
                 );
             }
-            informationElements.add( table );
+            informationElements.add(table);
         }
     }
 

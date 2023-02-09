@@ -16,8 +16,6 @@
 
 package org.polypheny.db.adapter.excel;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -25,6 +23,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.util.Source;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ExcelScannableTable extends ExcelTable implements ScannableTable {
 
@@ -34,14 +35,14 @@ public class ExcelScannableTable extends ExcelTable implements ScannableTable {
     /**
      * Creates a ExcelScannableTable.
      */
-    protected ExcelScannableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
-        super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+    protected ExcelScannableTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId) {
+        super(source, protoRowType, fieldTypes, fields, excelSource, tableId);
         this.sheet = "";
     }
 
 
-    protected ExcelScannableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
-        super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
+    protected ExcelScannableTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet) {
+        super(source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet);
         this.sheet = sheet;
     }
 
@@ -52,13 +53,13 @@ public class ExcelScannableTable extends ExcelTable implements ScannableTable {
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext dataContext ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( excelSource );
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
+    public Enumerable<Object[]> scan(DataContext dataContext) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter(excelSource);
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new ExcelEnumerator<>( source, cancelFlag, false, null, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
+                return new ExcelEnumerator<>(source, cancelFlag, false, null, new ExcelEnumerator.ArrayRowConverter(fieldTypes, fields), sheet);
             }
         };
     }

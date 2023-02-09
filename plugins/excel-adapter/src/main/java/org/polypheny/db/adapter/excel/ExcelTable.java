@@ -16,14 +16,15 @@
 
 package org.polypheny.db.adapter.excel;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Source;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExcelTable extends AbstractTable {
 
@@ -38,7 +39,7 @@ public class ExcelTable extends AbstractTable {
     /**
      * Creates a ExcelTable.
      */
-    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
+    ExcelTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId) {
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
@@ -49,7 +50,7 @@ public class ExcelTable extends AbstractTable {
     }
 
 
-    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
+    ExcelTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet) {
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
@@ -61,24 +62,24 @@ public class ExcelTable extends AbstractTable {
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        if ( protoRowType != null ) {
-            return protoRowType.apply( typeFactory );
+    public AlgDataType getRowType(AlgDataTypeFactory typeFactory) {
+        if (protoRowType != null) {
+            return protoRowType.apply(typeFactory);
         }
-        if ( this.sheet.equals( "" ) ) {
-            if ( fieldTypes == null ) {
+        if (this.sheet.equals("")) {
+            if (fieldTypes == null) {
                 fieldTypes = new ArrayList<>();
-                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
+                return ExcelEnumerator.deduceRowType((JavaTypeFactory) typeFactory, source, fieldTypes);
             } else {
-                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
+                return ExcelEnumerator.deduceRowType((JavaTypeFactory) typeFactory, source, null);
             }
         } else {
-            if ( fieldTypes == null ) {
+            if (fieldTypes == null) {
                 fieldTypes = new ArrayList<>();
-                ExcelEnumerator.setSheet( sheet );
-                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, sheet, fieldTypes );
+                ExcelEnumerator.setSheet(sheet);
+                return ExcelEnumerator.deduceRowType((JavaTypeFactory) typeFactory, source, sheet, fieldTypes);
             } else {
-                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, sheet, null );
+                return ExcelEnumerator.deduceRowType((JavaTypeFactory) typeFactory, source, sheet, null);
             }
         }
 
