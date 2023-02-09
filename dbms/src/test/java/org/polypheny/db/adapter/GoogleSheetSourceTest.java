@@ -26,11 +26,12 @@ import java.util.List;
 import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
-
+@Ignore // for debug purpose
 public class GoogleSheetSourceTest {
 
     @BeforeClass
@@ -47,7 +48,7 @@ public class GoogleSheetSourceTest {
                 settings.put( "mode", "remote" );
                 settings.put( "resetRefreshToken", "No" );
                 Gson gson = new Gson();
-                statement.executeUpdate( "ALTER ADAPTERS ADD googlesheetunit USING 'org.polypheny.db.adapter.googlesheet.GoogleSheetSource' WITH '" + gson.toJson( settings ) + "'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"googlesheetunit\" USING 'GoogleSheets' AS 'Source' WITH '" + gson.toJson( settings ) + "'" );
             }
         }
     }

@@ -43,7 +43,7 @@ public class GoogleSheetPlugin extends Plugin {
         settings.put( "mode", "remote" );
         settings.put( "resetRefreshToken", "No" );
 
-        Adapter.addAdapter( GoogleSheetSource.class, "GOOGLE", settings );
+        Adapter.addAdapter( GoogleSheetSource.class, "GOOGLESHEETS", settings );
     }
 
 
