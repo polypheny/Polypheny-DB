@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package org.polypheny.db.adapter.excel;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.poi.ss.usermodel.Cell;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
-import org.apache.poi.ss.usermodel.Cell;
 
 /**
  * Type of a field in a Excel file.

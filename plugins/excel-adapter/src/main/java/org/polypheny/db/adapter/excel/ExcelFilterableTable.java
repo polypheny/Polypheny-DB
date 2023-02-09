@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,16 +32,20 @@ import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.util.Source;
 
 public class ExcelFilterableTable extends ExcelTable implements FilterableTable {
+
     /**
      * Creates a ExcelFilterableTable.
      */
     private final String sheet;
 
-    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId) {
+
+    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
         super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
         this.sheet = "";
     }
-    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId,  String sheet ) {
+
+
+    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
         super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
         this.sheet = sheet;
     }
@@ -61,7 +65,7 @@ public class ExcelFilterableTable extends ExcelTable implements FilterableTable 
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new ExcelEnumerator<>( source, cancelFlag, false, filterValues, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ),sheet );
+                return new ExcelEnumerator<>( source, cancelFlag, false, filterValues, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
             }
         };
     }

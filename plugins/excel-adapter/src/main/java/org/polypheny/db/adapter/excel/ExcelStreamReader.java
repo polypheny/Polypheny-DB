@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package org.polypheny.db.adapter.excel;
 
 public class ExcelStreamReader {
+
     /**
      * The default file monitor delay.
      */
     public static final long DEFAULT_MONITOR_DELAY = 2000;
+
 }

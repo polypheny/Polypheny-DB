@@ -2,8 +2,8 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":sql-language")
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
@@ -16,33 +16,14 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
-    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
+compileJava {
+    dependsOn(":plugins:sql-language:processResources")
+}
 
-
-sourceSets {
-    main {
-        java {
-            srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
-        }
-        resources {
-            srcDirs = ["src/main/resources"]
-        }
-        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
-    }
-    test {
-        java {
-            srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
-        }
-        resources {
-            srcDirs = ["src/test/resources"]
-        }
-        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
-    }
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 
@@ -59,4 +40,14 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+    allow('MIT')
+
+    allowUrl('http://opensource.org/licenses/BSD-3-Clause') // BSD-3
+    allowUrl('https://raw.githubusercontent.com/monitorjbl/excel-streaming-reader/master/LICENSE') // Apache 2.0
+
+    allowDependency('xml-apis', 'xml-apis', '1.4.01') { because 'Apache 2.0 according to Maven' }
 }

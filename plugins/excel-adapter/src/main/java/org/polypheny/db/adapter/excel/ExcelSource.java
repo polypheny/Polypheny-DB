@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,7 +246,10 @@ public class ExcelSource extends DataSource {
                                     .toLowerCase()
                                     .trim()
                                     .replaceAll( "[^a-z0-9_]+", "" );
-                            String typeStr = colSplit[1].toLowerCase().trim();
+                            String typeStr = "string";
+                            if ( colSplit.length > 1 ) {
+                                typeStr = colSplit[1].toLowerCase().trim();
+                            }
                             PolyType collectionsType = null;
                             PolyType type;
                             Integer length = null;
