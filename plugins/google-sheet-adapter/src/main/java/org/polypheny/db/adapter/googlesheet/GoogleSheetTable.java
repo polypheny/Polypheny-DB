@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
@@ -129,7 +130,7 @@ public class GoogleSheetTable extends AbstractTable implements QueryableTable, T
 
 
     @Override
-    public AlgNode toAlg( AlgOptTable.ToAlgContext context, AlgOptTable algOptTable ) {
+    public AlgNode toAlg( AlgOptTable.ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         // Request all fields.
         return new GoogleSheetTableScanProject( context.getCluster(), algOptTable, this, fields );
     }

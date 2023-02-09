@@ -33,6 +33,7 @@
 
 package org.polypheny.db.adapter.csv;
 
+import java.util.List;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;

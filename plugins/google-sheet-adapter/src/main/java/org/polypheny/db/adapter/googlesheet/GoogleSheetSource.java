@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,16 +135,16 @@ public class GoogleSheetSource extends DataSource {
             int position = 0;
             for ( Object col : tableColumns ) {
                 String colStr = col.toString();
-                int colon_index =  colStr.indexOf( ':' );
+                int colon_index = colStr.indexOf( ':' );
 
                 String colName = colStr;
                 PolyType type = PolyType.VARCHAR;
                 Integer length = maxStringLength;
 
-                if (colon_index != -1) {
+                if ( colon_index != -1 ) {
                     colName = colStr.substring( 0, colon_index ).trim();
-                    String colType = colStr.substring( colon_index+1 ).toLowerCase( Locale.ROOT ).trim();
-                    switch (colType) {
+                    String colType = colStr.substring( colon_index + 1 ).toLowerCase( Locale.ROOT ).trim();
+                    switch ( colType ) {
                         case "int":
                             type = PolyType.INTEGER;
                             length = null;
