@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package org.polypheny.db.postgresql;
 
 import io.netty.channel.ChannelHandlerContext;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -28,6 +31,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
@@ -36,10 +40,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-
-import java.sql.ResultSetMetaData;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -116,7 +116,7 @@ public class PGInterfaceQueryHandler {
             }
 
             //get algRoot
-            Processor sqlProcessor = statement.getTransaction().getProcessor( Catalog.QueryLanguage.SQL );
+            Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
             Node sqlNode = sqlProcessor.parse( query ).get( 0 );
             QueryParameters parameters = new QueryParameters( query, Catalog.NamespaceType.RELATIONAL );
 

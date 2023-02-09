@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,16 @@
 
 package org.polypheny.db.postgres;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,12 +37,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
-import java.sql.*;
-import java.util.Properties;
-
-import static org.junit.Assert.assertEquals;
-
 //import static org.polypheny.db.postgresql.PGInterfaceInboundCommunicationHandler.ctx;
+
 
 /**
  * Tests the implementation of the PGInterface --> simulates a client that connects via JDBC
@@ -67,6 +72,7 @@ public class PGInterfaceIntegrationTests {
         }
 
     }
+
 
     /**
      * Cleans up after the tests
@@ -134,6 +140,7 @@ public class PGInterfaceIntegrationTests {
         }
     }
 
+
     /**
      * Tests if a prepared statement is correctly executed if the PREPARE and EXECUTE statement are sent seperately
      *
@@ -185,6 +192,7 @@ public class PGInterfaceIntegrationTests {
             }
         }
     }
+
 
     /**
      * This feature is not yet supported, but it tests if prepared statement are executed correctly using the JDBC framework

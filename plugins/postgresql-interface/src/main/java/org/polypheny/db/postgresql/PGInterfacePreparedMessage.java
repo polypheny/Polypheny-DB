@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,16 @@
 package org.polypheny.db.postgresql;
 
 import io.netty.channel.ChannelHandlerContext;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-
-import java.util.*;
 
 /**
  * Contains information for prepared queries, and also methods to handle the information

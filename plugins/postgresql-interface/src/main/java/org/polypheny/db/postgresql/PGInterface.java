@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,15 @@ package org.polypheny.db.postgresql;
 
 import com.google.common.collect.ImmutableList;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
-import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.StatusService;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.iface.QueryInterface;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.util.Util;
-
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -43,6 +35,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatusService;
+import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -161,6 +164,12 @@ public class PGInterface extends QueryInterface {
     }
 
 
+    @Override
+    public void languageChange() {
+
+    }
+
+
     private class MonitoringPage {
         //TODO(FF): vergliiche met anderne interfaces (zeigt infos em ui aah) --> sött glaubs ok sii??
 
@@ -201,7 +210,7 @@ public class PGInterface extends QueryInterface {
             DecimalFormat df = new DecimalFormat( "0.0", symbols );
             statementsTable.reset();
             for ( Map.Entry<QueryLanguage, AtomicLong> entry : statementCounters.entrySet() ) {
-                statementsTable.addRow( entry.getKey().name(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
+                statementsTable.addRow( entry.getKey().getSerializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
             }
         }
 

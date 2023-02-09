@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ package org.polypheny.db.postgresql;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.transaction.TransactionManager;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.transaction.TransactionManager;
 
 /**
  * Manages all incoming communication, not a handler from netty, but called by one
