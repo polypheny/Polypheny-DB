@@ -34,24 +34,36 @@
 package org.polypheny.db.test;
 
 
-import com.google.common.collect.Ordering;
-import org.junit.Assert;
-import org.junit.Test;
-import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
-import org.polypheny.db.util.Sources;
-import org.polypheny.db.util.Util;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.isA;
+import static org.junit.Assert.assertThat;
 
+import com.google.common.collect.Ordering;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.Util;
 
 
 /**
