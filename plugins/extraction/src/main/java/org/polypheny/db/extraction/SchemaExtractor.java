@@ -19,6 +19,9 @@ package org.polypheny.db.extraction;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObjectBuilder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
@@ -35,9 +38,16 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
-import org.polypheny.db.information.*;
+import org.polypheny.db.information.InformationAction;
+import org.polypheny.db.information.InformationCode;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationResponse;
+import org.polypheny.db.information.InformationText;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.schema.graph.PolyNode;
@@ -46,10 +56,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 public class SchemaExtractor {
@@ -99,14 +105,14 @@ public class SchemaExtractor {
     // For executing Cypher commands
     private PolyImplementation processCypherQuery(Statement statement, String cypherql, String namespaceName) {
         PolyImplementation result;
-        Processor cypherProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.CYPHER);
+        Processor cypherProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "cypher" ) );
 
         Node parsed = cypherProcessor.parse(cypherql).get(0);
 
         if (parsed.isA(Kind.DDL)) {
             throw new RuntimeException("No DDL expected here");
         } else {
-            AlgRoot logicalRoot = cypherProcessor.translate(statement, parsed, new CypherQueryParameters(cypherql, Catalog.NamespaceType.GRAPH, namespaceName));
+            AlgRoot logicalRoot = cypherProcessor.translate( statement, parsed, new ExtendedQueryParameters( cypherql, Catalog.NamespaceType.GRAPH, namespaceName ) );
 
             // Prepare
             result = statement.getQueryProcessor().prepareQuery(logicalRoot, true);
@@ -227,7 +233,7 @@ public class SchemaExtractor {
 
     private PolyImplementation processQuery(Statement statement, String sql) {
         PolyImplementation result;
-        Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
 
         Node parsed = sqlProcessor.parse(sql).get(0);
 

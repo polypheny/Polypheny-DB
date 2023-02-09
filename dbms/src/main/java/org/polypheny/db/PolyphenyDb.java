@@ -412,11 +412,6 @@ public class PolyphenyDb {
         MonitoringServiceProvider.resetRepository = resetCatalog;
         MonitoringServiceProvider.getInstance();
 
-        // Initialize schema extractor
-        SchemaExtractor extractor = SchemaExtractor.getInstance();
-        extractor.setTransactionManager( transactionManager );
-        extractor.startServer( transactionManager );
-
         // Add icon to system tray
         if ( trayMenu ) {
             // Init TrayGUI

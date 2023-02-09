@@ -3,9 +3,15 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":cypher-language")
+    implementation project(":plugins:sql-language")
+    implementation project(":plugins:cypher-language")
+
     implementation group: 'org.glassfish', name: 'jakarta.json', version: jakarta_json_version
     implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 
@@ -32,6 +38,19 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:cypher-language:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:cypher-language:processResources")
+}
+
 
 /**
  * JARs
@@ -47,5 +66,6 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
 
 
