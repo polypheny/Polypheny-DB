@@ -1,0 +1,75 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+
+
+    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
+
+    ////// SLF4J
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation group: "junit", name: "junit", version: junit_version
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+}
+
+delombok {
+    dependsOn(":core:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+    allow('MIT')
+
+    allowUrl('https://www.eclipse.org/licenses/edl-v10.html') // EDL 1.0
+
+    // Category B
+    allow('EPL-1.0')
+}

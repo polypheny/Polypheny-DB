@@ -13,6 +13,7 @@ include 'plugins'
 
 // catalog
 include 'plugins:mapdb-catalog'
+include 'plugins:poly-catalog'
 
 include 'plugins:mapdb-monitoring'
 
