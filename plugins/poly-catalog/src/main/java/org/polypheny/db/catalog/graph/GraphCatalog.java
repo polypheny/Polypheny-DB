@@ -18,28 +18,37 @@ package org.polypheny.db.catalog.graph;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.ModelCatalog;
 
 public class GraphCatalog implements ModelCatalog {
 
     public List<CatalogGraph> graphs = new ArrayList<>();
 
+    private boolean openChanges = false;
+
 
     @Override
     public void commit() {
 
+        openChanges = false;
     }
 
 
     @Override
     public void rollback() {
 
+        openChanges = false;
     }
 
 
     @Override
     public boolean hasUncommitedChanges() {
-        return false;
+        return openChanges;
+    }
+
+
+    public void addGraph( long id, String name, long databaseId, NamespaceType namespaceType ) {
     }
 
 }

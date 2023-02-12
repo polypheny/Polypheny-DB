@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.document;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.ModelCatalog;
 
 public class DocumentCatalog implements ModelCatalog {
@@ -26,21 +27,34 @@ public class DocumentCatalog implements ModelCatalog {
     Map<Long, CatalogCollection> collections = new HashMap<>();
 
 
+    private boolean openChanges = false;
+
+
     @Override
     public void commit() {
-
+        openChanges = false;
     }
 
 
     @Override
     public void rollback() {
 
+        openChanges = false;
     }
 
 
     @Override
     public boolean hasUncommitedChanges() {
         return false;
+    }
+
+
+    public void addDatabase( long id, String name, long databaseId, NamespaceType namespaceType ) {
+    }
+
+
+    public void addCollection( long id, String name, long namespaceId ) {
+
     }
 
 }

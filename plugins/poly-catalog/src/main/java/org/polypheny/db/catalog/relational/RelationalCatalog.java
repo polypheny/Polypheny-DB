@@ -18,6 +18,8 @@ package org.polypheny.db.catalog.relational;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.ModelCatalog;
 
 public class RelationalCatalog implements ModelCatalog {
@@ -28,22 +30,38 @@ public class RelationalCatalog implements ModelCatalog {
 
     private Map<Long, CatalogColumn> columns = new HashMap<>();
 
+    private boolean openChanges = false;
+
 
     @Override
     public void commit() {
 
+        openChanges = false;
     }
 
 
     @Override
     public void rollback() {
 
+        openChanges = false;
     }
 
 
     @Override
     public boolean hasUncommitedChanges() {
-        return false;
+        return openChanges;
+    }
+
+
+    public void addSchema( long id, String name, long databaseId, NamespaceType namespaceType ) {
+    }
+
+
+    public void addTable( long id, String name, long namespaceId ) {
+    }
+
+
+    public void addColumn( long id, String name, long entityId, AlgDataType type ) {
     }
 
 }
