@@ -67,6 +67,11 @@ public enum StructKind {
     NONE,
 
     /**
+     * This type might have some defined structure but also undefined parts.
+     */
+    SEMI,
+
+    /**
      * This is a traditional structured type, where each field must be referenced explicitly.
      *
      * Also, when referencing a struct column, you need to qualify it with the table alias, per standard SQL. For instance,

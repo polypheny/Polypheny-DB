@@ -20,10 +20,13 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -360,6 +363,24 @@ public class PolyImplementation {
                 }
             }
         }
+    }
+
+
+    public List<List<Object>> getDocRows( Statement statement, boolean noLimit ) {
+        bindable = null;
+        if ( !Kind.DDL.contains( kind ) ) {
+            bindable = preparedResult.getBindable( CursorFactory.ARRAY );
+        }
+
+        Iterator iterator = createIterator( getBindable(), statement, true );
+
+        final Iterable<Object> iterable = () -> iterator;
+
+        return StreamSupport
+                .stream( iterable.spliterator(), false )
+                .map( d -> Arrays.asList( (Object[]) d ) )
+                .collect( Collectors.toList() );
+
     }
 
 }

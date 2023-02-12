@@ -97,6 +97,7 @@ import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -216,10 +217,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         AlgNode flattened = getNewForOldRel( root );
         flattenedRootType = flattened.getRowType();
 
-        // If requested, add an additional projection which puts everything back into structured form for return to the client.
+        // If requested, add another projection which puts everything back into structured form for return to the client.
         restructured = false;
         List<RexNode> structuringExps = null;
-        if ( restructure ) {
+
+        if ( restructure && root.getRowType().getStructKind() != StructKind.SEMI ) {
             iRestructureInput = 0;
             structuringExps = restructureFields( root.getRowType() );
         }
@@ -772,7 +774,9 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             if ( !prefix.equals( "" ) ) {
                 fieldName = prefix + "$" + fieldName;
             }
-            flattenProjection( shuttle, exp, fieldName, flattenedExps );
+            if ( exp.getType().getStructKind() != StructKind.SEMI ) {
+                flattenProjection( shuttle, exp, fieldName, flattenedExps );
+            }
         }
     }
 

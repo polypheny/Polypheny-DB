@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.ValidatorUtil;
@@ -56,6 +57,8 @@ import org.polypheny.db.util.ValidatorUtil;
  * if and only if they are represented by the same Java object. This reduces memory consumption and comparison cost.
  */
 public interface AlgDataTypeFactory {
+
+    AlgDataTypeFactory DEFAULT = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
     /**
      * Returns the type system.

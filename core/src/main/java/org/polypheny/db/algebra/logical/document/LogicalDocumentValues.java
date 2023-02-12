@@ -30,22 +30,16 @@ import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BsonUtil;
 
 
 public class LogicalDocumentValues extends DocumentValues implements RelationalTransformable {
-
-    private final static PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
 
     /**
@@ -72,32 +66,22 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      * </pre></code>
      *
      * @param cluster the cluster, which holds the information regarding the ongoing operation
-     * @param defaultRowType, substitution rowType, which is "_id", "_data" and possible fixed columns if they exist
      * @param traitSet the used traitSet
      * @param tuples the documents in their native BSON format
      */
-    public LogicalDocumentValues( AlgOptCluster cluster, AlgDataType defaultRowType, AlgTraitSet traitSet, ImmutableList<BsonValue> tuples ) {
-        super( cluster, traitSet, defaultRowType, tuples );
+    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> tuples ) {
+        super( cluster, traitSet, tuples );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> values ) {
-        List<AlgDataTypeField> fields = new ArrayList<>();
-        fields.add( new AlgDataTypeFieldImpl( "d", 0, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );//typeFactory.createMapType( typeFactory.createPolyType( PolyType.VARCHAR, 2024 ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
-        AlgDataType defaultRowType = new AlgRecordType( fields );
-
-        return create( cluster, values, defaultRowType );
-    }
-
-
-    public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> tuples, AlgDataType defaultRowType ) {
+    public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> tuples ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalDocumentValues( cluster, defaultRowType, traitSet, tuples );
+        return new LogicalDocumentValues( cluster, traitSet, tuples );
     }
 
 
     public static AlgNode create( LogicalValues input ) {
-        return create( input.getCluster(), bsonify( input.getTuples(), input.getRowType() ), input.getRowType() );
+        return create( input.getCluster(), bsonify( input.getTuples(), input.getRowType() ) );
     }
 
 
@@ -149,7 +133,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
                         .add( "ZERO", null, PolyType.INTEGER )
                         .nullable( false )
                         .build();
-        return new LogicalDocumentValues( cluster, rowType, cluster.traitSet(), ImmutableList.<BsonValue>builder().build() );
+        return new LogicalDocumentValues( cluster, cluster.traitSet(), ImmutableList.<BsonValue>builder().build() );
     }
 
 
@@ -163,7 +147,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
-        return new LogicalDocumentValues( getCluster(), rowType, traitSet, documentTuples );
+        return new LogicalDocumentValues( getCluster(), traitSet, documentTuples );
     }
 
 

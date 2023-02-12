@@ -59,6 +59,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Permutation;
@@ -152,6 +153,9 @@ public abstract class Project extends SingleAlg {
 
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
+        if ( !traitSet.contains( ModelTrait.RELATIONAL ) ) {
+            return true; // for non-structured we have no guarantees
+        }
         if ( !super.isValid( litmus, context ) ) {
             return litmus.fail( null );
         }

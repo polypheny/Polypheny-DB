@@ -62,6 +62,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.FieldDef;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.DocumentStore;
@@ -178,25 +179,29 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
+    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
-        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        if ( language == QueryLanguage.from( "mql" ) ) {
+            return getDocResult( statement, request, query, implementation, transaction, noLimit );
+        }
 
-        boolean hasMoreRows = result.hasMoreRows();
+        List<List<Object>> rows = implementation.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+
+        boolean hasMoreRows = implementation.hasMoreRows();
 
         CatalogTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogTable = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
+                catalogTable = catalog.getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
             } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                 log.error( "Caught exception", e );
             }
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();
-        for ( AlgDataTypeField metaData : result.rowType.getFieldList() ) {
+        for ( AlgDataTypeField metaData : implementation.rowType.getFieldList() ) {
             String columnName = metaData.getName();
 
             String filter = "";
@@ -238,11 +243,30 @@ public class LanguageCrud {
         ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
         return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                .setNamespaceType( result.getNamespaceType() )
+                .setNamespaceType( implementation.getNamespaceType() )
                 .setNamespaceName( request.database )
                 .setLanguage( language )
                 .setAffectedRows( data.size() )
                 .setHasMoreRows( hasMoreRows )
+                .setXid( transaction.getXid().toString() )
+                .setGeneratedQuery( query );
+    }
+
+
+    private static Result getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
+
+        List<List<Object>> data = implementation.getDocRows( statement, noLimit );
+
+        List<FieldDef> header = new ArrayList<>();
+
+        header.add( new FieldDef() );
+
+        return new Result( header.toArray( new FieldDef[0] ), data.toArray( new String[0][] ) )
+                .setNamespaceType( implementation.getNamespaceType() )
+                .setNamespaceName( request.database )
+                .setLanguage( QueryLanguage.from( "mql" ) )
+                .setAffectedRows( data.size() )
+                .setHasMoreRows( implementation.hasMoreRows() )
                 .setXid( transaction.getXid().toString() )
                 .setGeneratedQuery( query );
     }

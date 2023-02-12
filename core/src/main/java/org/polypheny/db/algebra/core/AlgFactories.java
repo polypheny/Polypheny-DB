@@ -538,8 +538,7 @@ public class AlgFactories {
                 AlgDataType rowType ) {
             return LogicalDocumentValues.create(
                     cluster,
-                    ImmutableList.copyOf( tuples ),
-                    rowType );
+                    ImmutableList.copyOf( tuples ) );
         }
 
     }

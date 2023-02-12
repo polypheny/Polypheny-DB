@@ -35,6 +35,15 @@ package org.polypheny.db.adapter.mongodb;
 
 import com.google.common.collect.ImmutableList;
 import com.mongodb.client.gridfs.GridFSBucket;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -46,10 +55,20 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
-import org.polypheny.db.algebra.*;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.*;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -68,23 +87,36 @@ import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.*;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.sql.language.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.*;
+import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
-
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 
 /**
@@ -808,7 +840,6 @@ public class MongoRules {
             DocumentValues documentValues = (DocumentValues) alg;
             return new MongoDocuments(
                     alg.getCluster(),
-                    alg.getRowType(),
                     documentValues.getDocumentTuples(),
                     alg.getTraitSet().replace( out )
             );
@@ -822,8 +853,8 @@ public class MongoRules {
     public static class MongoDocuments extends DocumentValues implements MongoAlg {
 
 
-        public MongoDocuments( AlgOptCluster cluster, AlgDataType defaultRowType, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet ) {
-            super( cluster, traitSet, defaultRowType, documentTuples );
+        public MongoDocuments( AlgOptCluster cluster, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet ) {
+            super( cluster, traitSet, documentTuples );
         }
 
 

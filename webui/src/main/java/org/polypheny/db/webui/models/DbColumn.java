@@ -22,7 +22,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 
 
@@ -30,15 +29,7 @@ import lombok.experimental.Accessors;
  * Information about a column of a table for the header of a table in the UI
  */
 @Accessors(chain = true)
-public class DbColumn {
-
-    public String name;
-    @Setter
-    public String physicalName;
-
-    // for both
-    public String dataType; //varchar/int/etc
-    public String collectionsType;
+public class DbColumn extends FieldDef {
 
     // for the Data-Table in the UI
     public SortState sort;
@@ -170,6 +161,12 @@ public class DbColumn {
                     throw new RuntimeException( "There was an unrecognized column while deserializing DbColumn." );
             }
         }
+    }
+
+
+    @Override
+    public DbColumn setPhysicalName( String physicalName ) {
+        return (DbColumn) super.setPhysicalName( physicalName );
     }
 
 

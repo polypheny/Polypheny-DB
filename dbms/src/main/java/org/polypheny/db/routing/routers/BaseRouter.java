@@ -149,8 +149,8 @@ public abstract class BaseRouter implements Router {
                                 OperatorName.MQL_QUERY_VALUE ),
                         List.of(
                                 RexInputRef.of( 0, rowType ),
-                                rexBuilder.makeArray( rexBuilder.getTypeFactory().createArrayType(
-                                                rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ),
+                                rexBuilder.makeArray(
+                                        rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ),
                                         List.of( rexBuilder.makeLiteral( "_id" ) ) ) ) ),
                 (forceVarchar
                         ? rexBuilder.makeCall( data,
@@ -604,8 +604,9 @@ public abstract class BaseRouter implements Router {
     private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Integer adapterId, Statement statement, RoutedAlgBuilder builder ) {
         List<CatalogColumn> columns = catalog.getColumns( node.getCollection().getTable().getTableId() );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
-        builder.scan( getSubstitutionTable( statement, node.getCollection().getTable().getTableId(), columns.get( 0 ).id, adapterId ) );
-        builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
+        PreparingTable subTable = getSubstitutionTable( statement, node.getCollection().getTable().getTableId(), columns.get( 0 ).id, adapterId );
+        builder.scan( subTable );
+        builder.project( node.getCluster().getRexBuilder().makeInputRef( subTable.getRowType().getFieldList().get( 1 ).getType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false ) );
         return builder;
     }

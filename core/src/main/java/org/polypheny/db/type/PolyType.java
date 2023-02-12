@@ -33,15 +33,22 @@
 
 package org.polypheny.db.type;
 
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.util.Util;
-
 import java.math.BigDecimal;
 import java.sql.Types;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -280,7 +287,7 @@ public enum PolyType {
     DOCUMENT(
             PrecScale.NO_NO,
             false,
-            Types.OTHER,
+            Types.STRUCT,
             PolyTypeFamily.DOCUMENT ),
 
     GRAPH(

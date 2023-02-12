@@ -47,7 +47,7 @@ public class Result {
      */
     @Getter
     @Setter
-    private DbColumn[] header;
+    private FieldDef[] header;
     /**
      * The rows containing the fetched data
      */
@@ -167,7 +167,7 @@ public class Result {
      * @param header columns of the result
      * @param data data of the result
      */
-    public Result( final DbColumn[] header, final String[][] data ) {
+    public Result( final FieldDef[] header, final String[][] data ) {
         this.header = header;
         this.data = data;
     }
@@ -487,8 +487,10 @@ public class Result {
                 }
                 out.beginArray();
                 TypeAdapter<DbColumn> dbSerializer = DbColumn.getSerializer();
-                for ( DbColumn column : result.getHeader() ) {
-                    dbSerializer.write( out, column );
+                for ( FieldDef column : result.getHeader() ) {
+                    if ( column instanceof DbColumn ) {
+                        dbSerializer.write( out, (DbColumn) column );
+                    }
                 }
                 out.endArray();
             }

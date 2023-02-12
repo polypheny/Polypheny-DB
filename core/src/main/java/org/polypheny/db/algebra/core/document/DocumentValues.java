@@ -29,9 +29,7 @@ import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.AlgDocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -39,7 +37,6 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.type.PolyType;
 
 
 public abstract class DocumentValues extends AbstractAlgNode implements DocumentAlg {
@@ -52,9 +49,9 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
      * Creates a {@link DocumentValues}.
      * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which contains values.
      */
-    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<BsonValue> documentTuples ) {
+    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
         super( cluster, traitSet );
-        this.rowType = rowType;
+        this.rowType = new AlgDocumentType();
         this.documentTuples = validate( documentTuples );
     }
 
@@ -129,11 +126,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );
 
-        AlgRecordType rowType = new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( "_id_", 0, cluster.getTypeFactory().createPolyType( PolyType.VARCHAR, 24 ) ),
-                new AlgDataTypeFieldImpl( "_data_", 1, cluster.getTypeFactory().createPolyType( PolyType.VARCHAR, 2024 ) ) ) );
-
-        return new LogicalValues( cluster, out, rowType, relationalize( documentTuples, cluster.getRexBuilder() ) );
+        return new LogicalValues( cluster, out, ((AlgDocumentType) rowType).asRelational(), relationalize( documentTuples, cluster.getRexBuilder() ) );
     }
 
 

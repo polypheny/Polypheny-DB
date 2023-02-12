@@ -34,17 +34,59 @@
 package org.polypheny.db.tools;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.math.BigDecimal;
+import java.util.AbstractList;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.bson.BsonValue;
-import org.polypheny.db.algebra.*;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.SemiJoinType;
-import org.polypheny.db.algebra.core.*;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Intersect;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Match;
+import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.SemiJoin;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
@@ -60,11 +102,27 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.*;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.ModelTrait;
@@ -72,16 +130,20 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.*;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.Holder;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
-
-import javax.annotation.Nonnull;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
@@ -300,7 +362,7 @@ public class AlgBuilder {
      */
     public void replaceTop( AlgNode node ) {
         final Frame frame = stack.pop();
-        stack.push( new Frame( node, frame.fields ) );
+        stack.push( new Frame( node, frame.structured, null ) );
     }
 
 
@@ -312,7 +374,7 @@ public class AlgBuilder {
         for ( int i = 0; i < amount - 1; i++ ) {
             stack.pop();
         }
-        stack.push( new Frame( node, frame.fields ) );
+        stack.push( new Frame( node, frame.structured, null ) );
     }
 
 
@@ -455,7 +517,7 @@ public class AlgBuilder {
      */
     public RexInputRef field( int inputCount, int inputOrdinal, String fieldName ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
-        final List<String> fieldNames = Pair.left( frame.fields() );
+        final List<String> fieldNames = Pair.left( frame.relFields() );
         int i = fieldNames.indexOf( fieldName );
         if ( i >= 0 ) {
             return field( inputCount, inputOrdinal, i );
@@ -504,7 +566,7 @@ public class AlgBuilder {
         final AlgDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
         final int offset = inputOffset( inputCount, inputOrdinal );
         final RexInputRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
-        final AlgDataTypeField aliasField = frame.fields().get( fieldOrdinal );
+        final AlgDataTypeField aliasField = frame.relFields().get( fieldOrdinal );
         if ( !alias || field.getName().equals( aliasField.getName() ) ) {
             return ref;
         } else {
@@ -531,7 +593,7 @@ public class AlgBuilder {
         final List<String> fields = new ArrayList<>();
         for ( int inputOrdinal = 0; inputOrdinal < inputCount; ++inputOrdinal ) {
             final Frame frame = peek_( inputOrdinal );
-            for ( Ord<Field> p : Ord.zip( frame.fields ) ) {
+            for ( Ord<RelField> p : Ord.zip( frame.structured ) ) {
                 // If alias and field name match, reference that field.
                 if ( p.e.left.contains( alias ) && p.e.right.getName().equals( fieldName ) ) {
                     return field( inputCount, inputCount - 1 - inputOrdinal, p.i );
@@ -1362,7 +1424,7 @@ public class AlgBuilder {
         if ( !simplifiedPredicates.isAlwaysTrue() ) {
             final Frame frame = stack.pop();
             final AlgNode filter = filterFactory.createFilter( frame.alg, simplifiedPredicates );
-            stack.push( new Frame( filter, frame.fields ) );
+            stack.push( new Frame( filter, frame.structured, null ) );
         }
         return this;
     }
@@ -1464,21 +1526,21 @@ public class AlgBuilder {
 
             // Carefully build a list of fields, so that table aliases from the input can be seen for fields that are based on a RexInputRef.
             final Frame frame1 = stack.pop();
-            final List<Field> fields = new ArrayList<>();
+            final List<RelField> relFields = new ArrayList<>();
             for ( AlgDataTypeField f : project.getInput().getRowType().getFieldList() ) {
-                fields.add( new Field( ImmutableSet.of(), f ) );
+                relFields.add( new RelField( ImmutableSet.of(), f ) );
             }
-            for ( Pair<RexNode, Field> pair : Pair.zip( project.getProjects(), frame1.fields ) ) {
+            for ( Pair<RexNode, RelField> pair : Pair.zip( project.getProjects(), frame1.structured ) ) {
                 switch ( pair.left.getKind() ) {
                     case INPUT_REF:
                         final int i = ((RexInputRef) pair.left).getIndex();
-                        final Field field = fields.get( i );
+                        final RelField relField = relFields.get( i );
                         final ImmutableSet<String> aliases = pair.right.left;
-                        fields.set( i, new Field( aliases, field.right ) );
+                        relFields.set( i, new RelField( aliases, relField.right ) );
                         break;
                 }
             }
-            stack.push( new Frame( project.getInput(), ImmutableList.copyOf( fields ) ) );
+            stack.push( new Frame( project.getInput(), ImmutableList.copyOf( relFields ) ) );
             return project( newNodes, fieldNameList, force );
         }
 
@@ -1505,7 +1567,7 @@ public class AlgBuilder {
         for ( int i = 0; i < fieldNameList.size(); ++i ) {
             final RexNode node = nodeList.get( i );
             String name = fieldNameList.get( i );
-            Field field;
+            RelField relField;
             if ( name == null || uniqueNameList.contains( name ) ) {
                 int j = 0;
                 if ( name == null ) {
@@ -1521,14 +1583,14 @@ public class AlgBuilder {
                 case INPUT_REF:
                     // preserve alg aliases for INPUT_REF fields
                     final int index = ((RexInputRef) node).getIndex();
-                    field = new Field( frame.fields.get( index ).left, fieldType );
+                    relField = new RelField( frame.structured.get( index ).left, fieldType );
                     break;
                 default:
-                    field = new Field( ImmutableSet.of(), fieldType );
+                    relField = new RelField( ImmutableSet.of(), fieldType );
                     break;
             }
             uniqueNameList.add( name );
-            fields.add( field );
+            fields.add( relField );
         }
         if ( !force && RexUtil.isIdentity( nodeList, inputRowType ) ) {
             if ( fieldNameList.equals( inputRowType.getFieldNames() ) ) {
@@ -1600,7 +1662,7 @@ public class AlgBuilder {
                         childProject.getInput(),
                         childProject.getProjects(),
                         rowType );
-                stack.push( new Frame( newInput, frame.fields ) );
+                stack.push( new Frame( newInput, frame.structured, null ) );
             }
         } else {
             project( nodeList, rowType.getFieldNames(), force );
@@ -1655,7 +1717,7 @@ public class AlgBuilder {
         switch ( expr.getKind() ) {
             case INPUT_REF:
                 final RexInputRef ref = (RexInputRef) expr;
-                return stack.peek().fields.get( ref.getIndex() ).getValue().getName();
+                return stack.peek().structured.get( ref.getIndex() ).getValue().getName();
             case CAST:
                 return inferAlias( exprList, ((RexCall) expr).getOperands().get( 0 ), -1 );
             case AS:
@@ -1808,12 +1870,12 @@ public class AlgBuilder {
             final Kind kind = node.getKind();
             switch ( kind ) {
                 case INPUT_REF:
-                    fields.add( frame.fields.get( ((RexInputRef) node).getIndex() ) );
+                    fields.add( frame.unstructured.get( ((RexInputRef) node).getIndex() ) );
                     break;
                 default:
                     String name = aggregateFields.get( i ).getName();
                     AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( name, i, node.getType() );
-                    fields.add( new Field( ImmutableSet.of(), fieldType ) );
+                    fields.add( new RelField( ImmutableSet.of(), fieldType ) );
                     break;
             }
             i++;
@@ -1823,7 +1885,7 @@ public class AlgBuilder {
             for ( int j = 0; j < groupSet.cardinality(); ++j ) {
                 final AlgDataTypeField field = aggregateFields.get( i );
                 final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( field.getName(), i, field.getType() );
-                fields.add( new Field( ImmutableSet.of(), fieldType ) );
+                fields.add( new RelField( ImmutableSet.of(), fieldType ) );
                 i++;
             }
         }
@@ -1831,7 +1893,7 @@ public class AlgBuilder {
         for ( int j = 0; j < aggregateCalls.size(); ++j ) {
             final AggregateCall call = aggregateCalls.get( j );
             final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( aggregateFields.get( i + j ).getName(), i + j, call.getType() );
-            fields.add( new Field( ImmutableSet.of(), fieldType ) );
+            fields.add( new RelField( ImmutableSet.of(), fieldType ) );
         }
         stack.push( new Frame( aggregate, fields.build() ) );
         return this;
@@ -1978,8 +2040,8 @@ public class AlgBuilder {
             join = joinFactory.createJoin( left.alg, right.alg, condition, variablesSet, joinType, false );
         }
         final ImmutableList.Builder<Field> fields = ImmutableList.builder();
-        fields.addAll( left.fields );
-        fields.addAll( right.fields );
+        fields.addAll( left.structured );
+        fields.addAll( right.structured );
         stack.push( new Frame( join, fields.build() ) );
         filter( postCondition );
         return this;
@@ -2032,8 +2094,8 @@ public class AlgBuilder {
      */
     public AlgBuilder as( final String alias ) {
         final Frame pair = stack.pop();
-        List<Field> newFields = Util.transform( pair.fields, field -> field.addAlias( alias ) );
-        stack.push( new Frame( pair.alg, ImmutableList.copyOf( newFields ) ) );
+        List<RelField> newRelFields = Util.transform( pair.structured, relField -> relField.addAlias( alias ) );
+        stack.push( new Frame( pair.alg, ImmutableList.copyOf( newRelFields ) ) );
         return this;
     }
 
@@ -2802,27 +2864,56 @@ public class AlgBuilder {
     private static class Frame {
 
         final AlgNode alg;
-        final ImmutableList<Field> fields;
+        final ImmutableList<RelField> structured;
+        final ImmutableList<DocField> unstructured;
 
 
         private Frame( AlgNode alg, ImmutableList<Field> fields ) {
+
+            List<RelField> structured = new ArrayList<>();
+            List<DocField> unstructured = new ArrayList<>();
+            for ( Field field : fields ) {
+                if ( field.isStructured() ) {
+                    structured.add( (RelField) field );
+                } else {
+                    unstructured.add( (DocField) field );
+                }
+            }
             this.alg = alg;
-            this.fields = fields;
+            this.structured = ImmutableList.copyOf( structured );
+            this.unstructured = ImmutableList.copyOf( unstructured );
+        }
+
+
+        private Frame( AlgNode alg, ImmutableList<RelField> structured, ImmutableList<DocField> unstructured ) {
+            this.alg = alg;
+            this.structured = structured;
+            this.unstructured = unstructured;
         }
 
 
         private Frame( AlgNode alg ) {
             String tableAlias = deriveAlias( alg );
-            ImmutableList.Builder<Field> builder = ImmutableList.builder();
+
             ImmutableSet<String> aliases =
                     tableAlias == null
                             ? ImmutableSet.of()
                             : ImmutableSet.of( tableAlias );
+            if ( alg.getRowType().getStructKind() == StructKind.SEMI ) {
+                ImmutableList.Builder<DocField> builder = ImmutableList.builder();
+                this.alg = alg;
+                builder.add( new DocField( aliases ) );
+                this.structured = null;
+                this.unstructured = builder.build();
+                return;
+            }
+            ImmutableList.Builder<RelField> builder = ImmutableList.builder();
             for ( AlgDataTypeField field : alg.getRowType().getFieldList() ) {
-                builder.add( new Field( aliases, field ) );
+                builder.add( new RelField( aliases, field ) );
             }
             this.alg = alg;
-            this.fields = builder.build();
+            this.structured = builder.build();
+            this.unstructured = null;
         }
 
 
@@ -2837,9 +2928,17 @@ public class AlgBuilder {
         }
 
 
-        List<AlgDataTypeField> fields() {
-            return Pair.right( fields );
+        List<AlgDataTypeField> relFields() {
+            return Pair.right( structured );
         }
+
+
+    }
+
+
+    private interface Field {
+
+        boolean isStructured();
 
     }
 
@@ -2847,19 +2946,43 @@ public class AlgBuilder {
     /**
      * A field that belongs to a stack {@link Frame}.
      */
-    private static class Field extends Pair<ImmutableSet<String>, AlgDataTypeField> {
+    private static class RelField extends Pair<ImmutableSet<String>, AlgDataTypeField> implements Field {
 
-        Field( ImmutableSet<String> left, AlgDataTypeField right ) {
+        RelField( ImmutableSet<String> left, AlgDataTypeField right ) {
             super( left, right );
         }
 
 
-        Field addAlias( String alias ) {
+        RelField addAlias( String alias ) {
             if ( left.contains( alias ) ) {
                 return this;
             }
             final ImmutableSet<String> aliasList = ImmutableSet.<String>builder().addAll( left ).add( alias ).build();
-            return new Field( aliasList, right );
+            return new RelField( aliasList, right );
+        }
+
+
+        @Override
+        public boolean isStructured() {
+            return true;
+        }
+
+    }
+
+
+    private static class DocField implements Field {
+
+        private final ImmutableSet<String> aliases;
+
+
+        DocField( ImmutableSet<String> aliases ) {
+            this.aliases = aliases;
+        }
+
+
+        @Override
+        public boolean isStructured() {
+            return false;
         }
 
     }

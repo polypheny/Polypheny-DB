@@ -921,7 +921,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         names.add( "_data_" );
         List<RexNode> updates = addDocumentNodes( query.getRowType(), rexBuilder, false );
 
-        return LogicalProject.create( query, updates, names );
+        return LogicalDocumentProject.create( query, updates, names );
     }
 
 

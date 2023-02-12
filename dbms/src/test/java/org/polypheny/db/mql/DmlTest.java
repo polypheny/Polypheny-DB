@@ -41,6 +41,20 @@ import org.polypheny.db.webui.models.Result;
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class DmlTest extends MqlTestTemplate {
 
+    @Test
+    public void emptyTest() {
+        String name = "test";
+        execute( "db.createCollection(\"" + name + "\")" );
+
+        Result result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(), true ) );
+
+    }
+
 
     @Test
     public void insertTest() {
