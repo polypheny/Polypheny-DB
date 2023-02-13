@@ -51,4 +51,8 @@ public class GraphCatalog implements ModelCatalog {
     public void addGraph( long id, String name, long databaseId, NamespaceType namespaceType ) {
     }
 
+
+    public void addSubstitutionGraph( long id, String name, long namespaceId, NamespaceType document ) {
+    }
+
 }

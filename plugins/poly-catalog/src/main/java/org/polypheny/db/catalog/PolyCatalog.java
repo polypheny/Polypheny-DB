@@ -175,12 +175,23 @@ public class PolyCatalog {
 
 
     private void addDocumentEntity( long id, String name, long namespaceId ) {
+        // add target data model entity
         document.addCollection( id, name, namespaceId );
+
+        // add substitution entity
+        relational.addSubstitutionTable( id, name, namespaceId, NamespaceType.DOCUMENT );
+        graph.addSubstitutionGraph( id, name, namespaceId, NamespaceType.DOCUMENT );
     }
 
 
     private void addRelationalEntity( long id, String name, long namespaceId ) {
+        // add target data model entity
         relational.addTable( id, name, namespaceId );
+
+        // add substitution entity
+        graph.addSubstitutionGraph( id, name, namespaceId, NamespaceType.RELATIONAL );
+        document.addSubstitutionCollection( id, name, namespaceId, NamespaceType.RELATIONAL );
+
     }
 
 

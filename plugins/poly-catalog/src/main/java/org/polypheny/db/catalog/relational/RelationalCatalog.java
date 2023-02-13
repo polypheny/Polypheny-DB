@@ -64,4 +64,8 @@ public class RelationalCatalog implements ModelCatalog {
     public void addColumn( long id, String name, long entityId, AlgDataType type ) {
     }
 
+
+    public void addSubstitutionTable( long id, String name, long namespaceId, NamespaceType document ) {
+    }
+
 }

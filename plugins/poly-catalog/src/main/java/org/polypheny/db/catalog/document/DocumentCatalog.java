@@ -57,4 +57,8 @@ public class DocumentCatalog implements ModelCatalog {
 
     }
 
+
+    public void addSubstitutionCollection( long id, String name, long namespaceId, NamespaceType relational ) {
+    }
+
 }
