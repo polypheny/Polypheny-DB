@@ -39,6 +39,7 @@ import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.io.RandomAccessFile;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -3646,6 +3647,11 @@ public class Crud implements InformationObserver {
                 .stream()
                 .map( PluginStatus::from )
                 .collect( Collectors.toList() ) );
+    }
+
+
+    public Callback createAccessFile( UUID uuid, URL csvDir ) {
+
     }
 
 

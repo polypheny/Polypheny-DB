@@ -29,10 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
@@ -46,6 +48,7 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -59,11 +62,13 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
 @AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
+@AdapterSettingList(name = "mode", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).")
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class CsvSource extends DataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
+    private final String mode;
 
     private URL csvDir;
     private CsvSchema currentSchema;
@@ -74,13 +79,26 @@ public class CsvSource extends DataSource {
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 
+        setCsvDir( settings );
+
+        String mode = parseSetting( "mode", String.class );
+        this.mode = mode != null ? mode : "upload";
+
+        if ( this.mode.equals( "link" ) ) {
+            if ( !SecurityManager.getInstance().uiAccessPossible( this.csvDir ) ) {
+                throw new SecurityException( "Access to the directory or file was not possible due to permission." );
+            }
+
+        }
+
         // Validate maxStringLength setting
-        maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+        {
+            maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+        }
         if ( maxStringLength < 1 ) {
             throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
 
-        setCsvDir( settings );
         addInformationExportedColumns();
         enableInformationPage();
     }
@@ -97,6 +115,16 @@ public class CsvSource extends DataSource {
                 throw new RuntimeException( e );
             }
         }
+    }
+
+
+    @Nullable
+    public <T> T parseSetting( String key, Class<T> clazz ) {
+        if ( !settings.containsKey( key ) ) {
+            return null;
+        }
+
+        return clazz.cast( settings.get( key ) );
     }
 
 
@@ -143,6 +171,9 @@ public class CsvSource extends DataSource {
             File[] files = Sources.of( csvDir )
                     .file()
                     .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) );
+            if ( files == null ) {
+                throw new RuntimeException( "No .csv files where found." );
+            }
             fileNames = Arrays.stream( files )
                     .sequential()
                     .map( File::getName )
@@ -171,13 +202,13 @@ public class CsvSource extends DataSource {
                             .toLowerCase()
                             .trim()
                             .replaceAll( "[^a-z0-9_]+", "" );
-                    String typeStr = colSplit[1].toLowerCase().trim();
+                    String typeStr = "string";
+                    if ( colSplit.length > 1 ) {
+                        typeStr = colSplit[1].toLowerCase().trim();
+                    }
+
                     PolyType type;
-                    PolyType collectionsType = null;
                     Integer length = null;
-                    Integer scale = null;
-                    Integer dimension = null;
-                    Integer cardinality = null;
                     switch ( typeStr.toLowerCase() ) {
                         case "int":
                             type = PolyType.INTEGER;
@@ -215,17 +246,17 @@ public class CsvSource extends DataSource {
                     list.add( new ExportedColumn(
                             name,
                             type,
-                            collectionsType,
+                            null,
                             length,
-                            scale,
-                            dimension,
-                            cardinality,
+                            null,
+                            null,
+                            null,
                             false,
                             fileName,
                             physicalTableName,
                             name,
                             position,
-                            position == 1 ) ); // TODO
+                            position == 1 ) );
                     position++;
                 }
             } catch ( IOException e ) {
@@ -234,6 +265,7 @@ public class CsvSource extends DataSource {
 
             exportedColumnCache.put( physicalTableName, list );
         }
+        this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
     }
 
