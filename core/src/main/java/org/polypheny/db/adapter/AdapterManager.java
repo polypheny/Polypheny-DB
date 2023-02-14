@@ -159,6 +159,7 @@ public class AdapterManager {
                                 new AbstractAdapterSettingList(
                                         "mode",
                                         false,
+                                        null,
                                         true,
                                         true,
                                         Collections.singletonList( "default" ),
@@ -184,6 +185,7 @@ public class AdapterManager {
                                     "instanceId",
                                     "DockerInstance",
                                     false,
+                                    null,
                                     true,
                                     false,
                                     RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( ConfigDocker::isDockerRunning ).collect( Collectors.toList() ),
@@ -210,29 +212,20 @@ public class AdapterManager {
             throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
-        Constructor<?> ctor;
-        try {
-            //Class<?> clazz = Class.forName( clazzName );
-            org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName, adapterType );
-            Class<?> clazz = adapter.getClazz();
-            ctor = clazz.getConstructor( int.class, String.class, Map.class );
-        } catch ( NoSuchMethodException e ) {
-            throw new RuntimeException( "Something went wrong while adding a new adapter", e );
-        }
-
-        int adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
         Adapter instance;
+        Integer adapterId = null;
         try {
-            instance = (Adapter) ctor.newInstance( adapterId, uniqueName, settings );
+            adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
+            instance = instantiate( adapterId, adapterName, uniqueName, adapterType, settings );
         } catch ( Exception e ) {
-            Catalog.getInstance().deleteAdapter( adapterId );
+            if ( adapterId != null ) {
+                Catalog.getInstance().deleteAdapter( adapterId );
+            }
             if ( e instanceof InvocationTargetException ) {
                 Throwable t = ((InvocationTargetException) e).getTargetException();
                 if ( t instanceof RuntimeException ) {
                     throw (RuntimeException) t;
                 }
-            } else {
-                Catalog.getInstance().deleteAdapter( adapterId );
             }
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
@@ -275,14 +268,23 @@ public class AdapterManager {
         try {
             List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
             for ( CatalogAdapter adapter : adapters ) {
-                Constructor<?> ctor = org.polypheny.db.catalog.Adapter.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( int.class, String.class, Map.class );
-                Adapter instance = (Adapter) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
+                Adapter instance = instantiate( adapter.id, adapter.adapterName, adapter.uniqueName, adapter.type, adapter.settings );
                 adapterByName.put( instance.getUniqueName(), instance );
                 adapterById.put( instance.getAdapterId(), instance );
             }
         } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
             throw new RuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
         }
+    }
+
+
+    private static Adapter instantiate( int id, String adapterName, String uniqueName, AdapterType type, Map<String, String> settings ) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName, type );
+        if ( adapter.getPreEvaluation() != null ) {
+            adapter.getPreEvaluation().accept( settings );
+        }
+        Constructor<?> ctor = adapter.getClazz().getConstructor( int.class, String.class, Map.class );
+        return (Adapter) ctor.newInstance( id, uniqueName, settings );
     }
 
 

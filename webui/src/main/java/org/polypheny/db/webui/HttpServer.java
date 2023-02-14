@@ -331,6 +331,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/addAdapter", ( ctx ) -> crud.addAdapter( ctx, gson ) );
 
+        webuiServer.post( "/pathAccess", crud::startAccessRequest );
+
         webuiServer.get( "/getQueryInterfaces", crud::getQueryInterfaces );
 
         webuiServer.get( "/getAvailableQueryInterfaces", crud::getAvailableQueryInterfaces );

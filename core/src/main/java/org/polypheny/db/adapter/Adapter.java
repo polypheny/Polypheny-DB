@@ -117,6 +117,8 @@ public abstract class Adapter {
 
         DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
 
+        String subOf() default "";
+
         @Inherited
         @Target(ElementType.TYPE)
         @Retention(RetentionPolicy.RUNTIME)
@@ -139,6 +141,7 @@ public abstract class Adapter {
 
         boolean canBeNull() default false;
 
+
         boolean required() default true;
 
         boolean modifiable() default false;
@@ -150,6 +153,8 @@ public abstract class Adapter {
         int position() default 100;
 
         DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        String subOf() default "";
 
         @Inherited
         @Target(ElementType.TYPE)
@@ -184,6 +189,8 @@ public abstract class Adapter {
         int position() default 100;
 
         DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        String subOf() default "";
 
         @Inherited
         @Target(ElementType.TYPE)
@@ -222,6 +229,8 @@ public abstract class Adapter {
 
         DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
 
+        String subOf() default "";
+
         @Inherited
         @Target(ElementType.TYPE)
         @Retention(RetentionPolicy.RUNTIME)
@@ -253,6 +262,9 @@ public abstract class Adapter {
         int position() default 100;
 
         DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        String subOf();
+
 
         @Inherited
         @Target(ElementType.TYPE)
@@ -538,6 +550,7 @@ public abstract class Adapter {
 
         public final String name;
         public final boolean canBeNull;
+        public final String subOf;
         public final boolean required;
         public final boolean modifiable;
         public final String defaultValue;
@@ -549,14 +562,17 @@ public abstract class Adapter {
         private final List<DeploySetting> appliesTo;
 
 
-        public AbstractAdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
+        public AbstractAdapterSetting( final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
             this.name = name;
             this.canBeNull = canBeNull;
+            this.subOf = Objects.equals( subOf, "" ) ? null : subOf;
             this.required = required;
             this.modifiable = modifiable;
             this.position = position;
             this.appliesTo = appliesTo;
             this.defaultValue = defaultValue;
+            assert this.subOf == null || this.subOf.split( "_" ).length == 2
+                    : "SubOf needs to be null or has to be seperated by \"_\" and requires link and value due to limitation in Java";
         }
 
 
@@ -654,8 +670,8 @@ public abstract class Adapter {
         private final String type = "Integer";
 
 
-        public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, defaultValue.toString(), position );
+        public AbstractAdapterSettingInteger( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, subOf, required, modifiable, modes, defaultValue.toString(), position );
         }
 
 
@@ -663,6 +679,7 @@ public abstract class Adapter {
             return new AbstractAdapterSettingInteger(
                     annotation.name(),
                     annotation.canBeNull(),
+                    annotation.subOf(),
                     annotation.required(),
                     annotation.modifiable(),
                     annotation.defaultValue(),
@@ -684,8 +701,8 @@ public abstract class Adapter {
         private final String type = "String";
 
 
-        public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, defaultValue, position );
+        public AbstractAdapterSettingString( String name, boolean canBeNull, String sub, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, sub, required, modifiable, modes, defaultValue, position );
         }
 
 
@@ -693,6 +710,7 @@ public abstract class Adapter {
             return new AbstractAdapterSettingString(
                     annotation.name(),
                     annotation.canBeNull(),
+                    annotation.subOf(),
                     annotation.required(),
                     annotation.modifiable(),
                     annotation.defaultValue(),
@@ -714,8 +732,8 @@ public abstract class Adapter {
         private final String type = "Boolean";
 
 
-        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, String.valueOf( defaultValue ), position );
+        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, final String sub, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, sub, required, modifiable, modes, String.valueOf( defaultValue ), position );
         }
 
 
@@ -723,6 +741,7 @@ public abstract class Adapter {
             return new AbstractAdapterSettingBoolean(
                     annotation.name(),
                     annotation.canBeNull(),
+                    annotation.subOf(),
                     annotation.required(),
                     annotation.modifiable(),
                     annotation.defaultValue(),
@@ -747,8 +766,8 @@ public abstract class Adapter {
         public boolean dynamic = false;
 
 
-        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, String defaultValue, int position ) {
-            super( name, canBeNull, required, modifiable, modes, defaultValue, position );
+        public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, String defaultValue, int position ) {
+            super( name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
             this.options = options;
         }
 
@@ -757,6 +776,7 @@ public abstract class Adapter {
             return new AbstractAdapterSettingList(
                     annotation.name(),
                     annotation.canBeNull(),
+                    annotation.subOf(),
                     annotation.required(),
                     annotation.modifiable(),
                     Arrays.asList( annotation.options() ),
@@ -790,8 +810,8 @@ public abstract class Adapter {
         public RuntimeConfig boundConfig;
 
 
-        public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
-            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), null, 1000 );
+        public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
+            super( name, canBeNull, subOf, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), null, 1000 );
             this.mapper = mapper;
             this.clazz = clazz;
             this.dynamic = true;
@@ -850,8 +870,8 @@ public abstract class Adapter {
         public transient final Map<String, InputStream> inputStreams;
 
 
-        public AbstractAdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, null, position );
+        public AbstractAdapterSettingDirectory( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, subOf, required, modifiable, modes, null, position );
             //so it will be serialized
             this.directory = "";
             this.inputStreams = new HashMap<>();
@@ -862,6 +882,7 @@ public abstract class Adapter {
             return new AbstractAdapterSettingDirectory(
                     annotation.name(),
                     annotation.canBeNull(),
+                    annotation.subOf(),
                     annotation.required(),
                     annotation.modifiable(),
                     Arrays.asList( annotation.appliesTo() ),
@@ -889,7 +910,9 @@ public abstract class Adapter {
             boolean canBeNull = jsonObject.get( "canBeNull" ).getAsBoolean();
             boolean required = jsonObject.get( "required" ).getAsBoolean();
             boolean modifiable = jsonObject.get( "modifiable" ).getAsBoolean();
+            String subOf = jsonObject.has( "subOf" ) ? jsonObject.get( "subOf" ).getAsString() : null;
             int position = jsonObject.get( "position" ).getAsInt();
+            String defaultValue;
             String description = null;
             if ( jsonObject.get( "description" ) != null ) {
                 description = jsonObject.get( "description" ).getAsString();
@@ -899,25 +922,25 @@ public abstract class Adapter {
             switch ( type ) {
                 case "Integer":
                     Integer integer = jsonObject.get( "defaultValue" ).getAsInt();
-                    out = new AbstractAdapterSettingInteger( name, canBeNull, required, modifiable, integer, new ArrayList<>(), position );
+                    out = new AbstractAdapterSettingInteger( name, canBeNull, subOf, required, modifiable, integer, new ArrayList<>(), position );
                     break;
                 case "String":
                     String string = jsonObject.get( "defaultValue" ).getAsString();
-                    out = new AbstractAdapterSettingString( name, canBeNull, required, modifiable, string, new ArrayList<>(), position );
+                    out = new AbstractAdapterSettingString( name, canBeNull, subOf, required, modifiable, string, new ArrayList<>(), position );
                     break;
                 case "Boolean":
                     boolean bool = jsonObject.get( "defaultValue" ).getAsBoolean();
-                    out = new AbstractAdapterSettingBoolean( name, canBeNull, required, modifiable, bool, new ArrayList<>(), position );
+                    out = new AbstractAdapterSettingBoolean( name, canBeNull, subOf, required, modifiable, bool, new ArrayList<>(), position );
                     break;
                 case "List":
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
-                    String defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
-                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>(), defaultValue, position );
+                    defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
+                    out = new AbstractAdapterSettingList( name, canBeNull, subOf, required, modifiable, options, new ArrayList<>(), defaultValue, position );
                     break;
                 case "Directory":
                     String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
                     String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
-                    out = new AbstractAdapterSettingDirectory( name, canBeNull, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
+                    out = new AbstractAdapterSettingDirectory( name, canBeNull, subOf, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
                     break;
                 default:
                     throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );

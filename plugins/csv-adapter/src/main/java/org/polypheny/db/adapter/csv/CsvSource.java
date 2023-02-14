@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
@@ -48,7 +49,6 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -61,14 +61,14 @@ import org.slf4j.LoggerFactory;
         name = "CSV",
         description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
-@AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
-@AdapterSettingList(name = "mode", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).")
-@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
+@AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 2)
+@AdapterSettingString(subOf = "method_link", defaultValue = ".", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
+@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class CsvSource extends DataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
-    private final String mode;
 
     private URL csvDir;
     private CsvSchema currentSchema;
@@ -80,16 +80,6 @@ public class CsvSource extends DataSource {
         super( storeId, uniqueName, settings, true );
 
         setCsvDir( settings );
-
-        String mode = parseSetting( "mode", String.class );
-        this.mode = mode != null ? mode : "upload";
-
-        if ( this.mode.equals( "link" ) ) {
-            if ( !SecurityManager.getInstance().uiAccessPossible( this.csvDir ) ) {
-                throw new SecurityException( "Access to the directory or file was not possible due to permission." );
-            }
-
-        }
 
         // Validate maxStringLength setting
         {

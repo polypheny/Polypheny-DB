@@ -19,7 +19,9 @@ package org.polypheny.db.catalog;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -38,13 +40,21 @@ public class Adapter {
     private final String adapterName;
     @Getter
     private final AdapterType adapterType;
+    @Getter
+    private final Consumer<Map<String, String>> preEvaluation;
 
 
-    public Adapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
+    public Adapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings, @Nullable Consumer<Map<String, String>> preEvaluation ) {
         this.adapterName = adapterName;
         this.clazz = clazz;
         this.defaultSettings = defaultSettings;
         this.adapterType = getAdapterType( clazz );
+        this.preEvaluation = preEvaluation;
+    }
+
+
+    public Adapter( Class<?> clazz, String adapterName, Map<String, String> defaultSetting ) {
+        this( clazz, adapterName, defaultSetting, null );
     }
 
 
