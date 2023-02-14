@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,15 +34,14 @@
 package org.polypheny.db.type;
 
 
-import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.nodes.IntervalQualifierImpl;
+
+import java.util.Objects;
 
 
 /**
@@ -67,19 +66,58 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
-        LanguageManager.getInstance().createIntervalTypeString( sb, intervalQualifier );
+        // sb.append( intervalQualifier.typeName() );
+        sb.append( "INTERVAL " );
+        final String start = intervalQualifier.timeUnitRange.startUnit.name();
+        final int fractionalSecondPrecision = intervalQualifier.getFractionalSecondPrecision( typeSystem );
+        final int startPrecision = intervalQualifier.getStartPrecision( typeSystem );
+        if ( intervalQualifier.timeUnitRange.startUnit == TimeUnit.SECOND ) {
+            if ( !intervalQualifier.useDefaultFractionalSecondPrecision() ) {
+                sb.append( "(" );
+                sb.append( startPrecision );
+                sb.append( "," );
+                sb.append( intervalQualifier.getFractionalSecondPrecision( typeSystem ) );
+                sb.append( ")" );
+            } else if ( !intervalQualifier.useDefaultStartPrecision() ) {
+                sb.append( "(" );
+                sb.append( startPrecision );
+                sb.append( ")" );
+            } else {
+                sb.append( start );
+            }
+        } else {
+            if ( !intervalQualifier.useDefaultStartPrecision() ) {
+                sb.append( start );
+                sb.append( "(" );
+                sb.append( startPrecision );
+                sb.append( ")" );
+            } else {
+                sb.append( start );
+            }
+
+            if ( null != intervalQualifier.timeUnitRange.endUnit ) {
+                sb.append( " TO " );
+                final String end = intervalQualifier.timeUnitRange.endUnit.name();
+                if ( (TimeUnit.SECOND == intervalQualifier.timeUnitRange.endUnit) && (!intervalQualifier.useDefaultFractionalSecondPrecision()) ) {
+                    sb.append( "(" );
+                    sb.append( fractionalSecondPrecision );
+                    sb.append( ")" );
+                } else {
+                    sb.append( end );
+                }
+            }
+        }
+
     }
 
 
     @Override
     public IntervalQualifier getIntervalQualifier() {
-        return LanguageManager.getInstance().createIntervalQualifier(
-                QueryLanguage.SQL,
+        return new IntervalQualifierImpl(
                 intervalQualifier.timeUnitRange.startUnit,
                 intervalQualifier.startPrecision,
                 intervalQualifier.timeUnitRange.endUnit,
-                intervalQualifier.fractionalSecondPrecision,
-                ParserPos.ZERO );
+                intervalQualifier.fractionalSecondPrecision );
     }
 
 
@@ -125,13 +163,13 @@ public class IntervalPolyType extends AbstractPolyType {
             }
         }
 
-        AlgDataType intervalType = typeFactory.createSqlIntervalType( LanguageManager.getInstance().createIntervalQualifier(
-                QueryLanguage.SQL,
-                thisStart,
-                secondPrec,
-                thisEnd,
-                fracPrec,
-                ParserPos.ZERO ) );
+        AlgDataType intervalType = typeFactory.createIntervalType(
+                new IntervalQualifierImpl(
+                        thisStart,
+                        intervalQualifier.startPrecision,
+                        thisEnd,
+                        intervalQualifier.fractionalSecondPrecision )
+        );
         intervalType = typeFactory.createTypeWithNullability( intervalType, nullable );
         return (IntervalPolyType) intervalType;
     }

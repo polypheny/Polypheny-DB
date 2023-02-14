@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,17 @@ import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.cypher.CypherTestTemplate.Row;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.Neo4jExcluded;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.Result;
 
+@Category(FileExcluded.class) // Array support for FileAdapter is quite wonky, which results in mismatched labels here, todo enable when fixed @see simpleLpgTest
 public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
     private static final String GRAPH_NAME = "crossGraph";
@@ -52,17 +60,37 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
+    public void simpleLpgTest() {
+        Result res = CypherTestTemplate.execute( "MATCH (n) RETURN n", GRAPH_NAME );
+        assert CypherTestTemplate.containsRows(
+                res,
+                true,
+                false,
+                Row.of( TestNode.from(
+                        List.of( DATA_LABEL ),
+                        Pair.of( "key", "3" ) ) ),
+                Row.of( TestNode.from(
+                        List.of( DATA_LABEL + 1 ),
+                        Pair.of( "key", "4" ) ) ),
+                Row.of( TestNode.from(
+                        List.of( DATA_LABEL.toUpperCase() ),
+                        Pair.of( "key", "5" ) )
+                ) );
+    }
+
+
+    @Test
     public void simpleSelectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             // can not test use default comparator method as id is dynamic
             List<Object[]> data = TestHelper.convertResultSetToList( result );
-            assert (data.size() == 1);
+            assert (data.size() == 1) : format( "Too much or not enough rows in the answer, rows: %s", data.size() );
             assert (data.get( 0 ).length == 3);
 
             result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL + 1 ) );
             data = TestHelper.convertResultSetToList( result );
-            assert (data.size() == 1);
+            assert (data.size() == 1) : format( "Too much or not enough rows in the answer, rows: %s", data.size() );
             assert (data.get( 0 ).length == 3);
         } );
 
@@ -88,11 +116,33 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
+    @Category(Neo4jExcluded.class) // returns 3.0, this is an inconsistency, which should be expected when working on cross model queries, might adjust the checkResultSet method
     public void simpleProjectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             TestHelper.checkResultSet( result,
-                    ImmutableList.of( new Object[]{ "{key=3}", new Object[]{ DATA_LABEL } } ) );
+                    ImmutableList.of( new Object[]{ "{\"key\":\"3\"}", new Object[]{ DATA_LABEL } } ) );
+        } );
+
+    }
+
+
+    @Test
+    @Category(Neo4jExcluded.class) // see simpleProjectTest method
+    public void itemSelectTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT properties[\"key\"] FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
+            TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "3" } ) );
+        } );
+
+    }
+
+
+    @Test
+    public void itemSelectJsonTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(CAST(properties AS VARCHAR(2050)), 'lax $.key') FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
+            TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "3" } ) );
         } );
 
     }

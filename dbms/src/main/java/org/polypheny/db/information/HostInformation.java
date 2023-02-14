@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.polypheny.db.information;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import oshi.SystemInfo;
@@ -30,7 +30,7 @@ import oshi.hardware.HardwareAbstractionLayer;
 import oshi.hardware.NetworkIF;
 import oshi.software.os.OSProcess;
 import oshi.software.os.OperatingSystem;
-import oshi.software.os.OperatingSystem.ProcessSort;
+import oshi.software.os.OperatingSystem.ProcessSorting;
 
 
 public class HostInformation {
@@ -152,7 +152,7 @@ public class HostInformation {
         im.registerInformation( graph );
 
         processesGroup.setRefreshFunction( () -> {
-            List<OSProcess> procs = os.getProcesses( 5, ProcessSort.CPU );
+            List<OSProcess> procs = os.getProcesses( null, ProcessSorting.CPU_DESC, 5 );
 
             ArrayList<String> procNames = new ArrayList<>();
             ArrayList<Double> procPerc = new ArrayList<>();

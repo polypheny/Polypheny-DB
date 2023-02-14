@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,5 +56,33 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
             TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ TEST_DATA } } ) );
         } );
     }
+
+
+    @Test
+    public void itemSelectTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT d[\"test\"] FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
+            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ "3.0" } } ) );
+        } );
+    }
+
+
+    @Test
+    public void itemJsonSelectTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(CAST(d AS VARCHAR(2050)), 'lax $.test') FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
+            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ "3" } } ) );
+        } );
+    }
+
+
+    @Test
+    public void itemJsonSelectUnknownLaxTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(CAST(d AS VARCHAR(2050)), 'lax $.other') FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
+            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ null } } ) );
+        } );
+    }
+
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,7 +206,7 @@ public class BsonUtil {
                 return new BsonBoolean( (Boolean) obj );
             case BINARY:
                 return new BsonString( ((ByteString) obj).toBase64String() );
-            case SOUND:
+            case AUDIO:
             case IMAGE:
             case VIDEO:
             case FILE:
@@ -286,7 +286,7 @@ public class BsonUtil {
                 return BsonUtil::handleBoolean;
             case BINARY:
                 return BsonUtil::handleBinary;
-            case SOUND:
+            case AUDIO:
             case IMAGE:
             case VIDEO:
             case FILE:
@@ -485,7 +485,7 @@ public class BsonUtil {
 
         if ( obj instanceof Timestamp ) {
             // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
-            // an one hour shift, as we lose this timezone information on retrieval
+            // a one-hour shift, as we lose this timezone information on retrieval
             // we have to include it into the time itself
             int offset = Calendar.getInstance().getTimeZone().getRawOffset();
             return new BsonInt64( ((Timestamp) obj).getTime() + offset );
@@ -566,7 +566,7 @@ public class BsonUtil {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 return el.getValueAs( ByteString.class ).toBase64String();
             default:
                 return el.getValue();
@@ -635,7 +635,7 @@ public class BsonUtil {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 return PushbackInputStream.class;
             default:
                 throw new IllegalStateException( "Unexpected value: " + type );
@@ -666,7 +666,7 @@ public class BsonUtil {
 
         return new BsonDocument()
                 .append( "$regex", new BsonString( input ) )
-                // Polypheny is case insensitive and therefore we have to set the "i" option
+                // Polypheny is case-insensitive and therefore we have to set the "i" option
                 .append( "$options", new BsonString( "i" ) );
     }
 

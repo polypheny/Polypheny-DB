@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,8 @@ public class ConfigList extends Config {
             booleanList( key, (List<Boolean>) list );
         } else if ( clazz.equals( ConfigDocker.class ) ) {
             dockerList( key, (List<ConfigDocker>) list );
+        } else if ( clazz.equals( ConfigPlugin.class ) ) {
+            pluginList( key, (List<ConfigPlugin>) list );
         } else {
             throw new UnsupportedOperationException( "A ConfigList, which uses that that type is not supported." );
         }
@@ -157,6 +159,13 @@ public class ConfigList extends Config {
 
     private void dockerList( String key, final List<ConfigDocker> list ) {
         this.template = new ConfigDocker( "localhost", null, null );
+        this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
+        this.defaultList = ImmutableList.copyOf( this.list );
+    }
+
+
+    private void pluginList( String key, List<ConfigPlugin> list ) {
+        this.template = new ConfigPlugin( "", PluginStatus.UNLOADED, "", List.of(), "This is empty", "0.0.1", false, false );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
         this.defaultList = ImmutableList.copyOf( this.list );
     }
@@ -248,7 +257,7 @@ public class ConfigList extends Config {
 
 
     @Override
-    public boolean setConfigObjectList( List<Object> values, Class<? extends ConfigScalar> clazz ) {
+    public Feedback setConfigObjectList( List<Object> values, Class<? extends ConfigScalar> clazz ) {
         BiFunction<String, Object, ? extends ConfigScalar> setter;
         if ( clazz.equals( ConfigString.class ) ) {
             setter = ( key, value ) -> new ConfigString( key, (String) value );
@@ -264,8 +273,10 @@ public class ConfigList extends Config {
             setter = ( key, value ) -> new ConfigBoolean( key, (Boolean) value );
         } else if ( clazz.equals( ConfigDocker.class ) ) {
             setter = ( key, value ) -> ConfigDocker.fromMap( (Map<String, Object>) value );
+        } else if ( clazz.equals( ConfigPlugin.class ) ) {
+            setter = ( key, value ) -> ConfigPlugin.fromMap( (Map<String, Object>) value );
         } else {
-            return false;
+            return Feedback.of( false, "The element of the list of configs was not recognized." );
         }
         return setConfigObjectList( values, setter );
     }
@@ -287,7 +298,7 @@ public class ConfigList extends Config {
     }
 
 
-    private boolean setConfigObjectList( List<Object> values, BiFunction<String, Object, ? extends ConfigScalar> scalarGetter ) {
+    private Feedback setConfigObjectList( List<Object> values, BiFunction<String, Object, ? extends ConfigScalar> scalarGetter ) {
         List<ConfigScalar> temp = new ArrayList<>();
 
         if ( requiresRestart() ) {
@@ -301,7 +312,7 @@ public class ConfigList extends Config {
                 Map<String, Object> value = (Map<String, Object>) values.get( i );
                 temp.add( i, scalarGetter.apply( (String) value.get( "key" ), value.getOrDefault( "value", value ) ) );
             } else {
-                return false;
+                return Feedback.of( false, String.format( "Value %s is not valid for the given config.", values.get( i ) ) );
             }
         }
         this.list.forEach( val -> val.removeObserver( listener ) );
@@ -310,24 +321,31 @@ public class ConfigList extends Config {
         if ( this.oldList != null && this.oldList.equals( this.list ) ) {
             this.oldList = null;
         }
-        notifyConfigListeners();
-        return true;
+        try {
+            notifyConfigListeners();
+            return Feedback.of( true );
+        } catch ( Exception e ) {
+            return Feedback.of( false, e.getMessage() );
+        }
     }
 
 
     @Override
     void setValueFromFile( com.typesafe.config.Config conf ) {
-        if ( template instanceof ConfigDocker ) {
-            List<Object> tempList = new ArrayList<>();
-            com.typesafe.config.Config dockerInstancesConf = conf.getConfig( getKey() );
-            for ( Entry<String, Object> nestedConfObject : dockerInstancesConf.root().unwrapped().entrySet() ) {
-                String subInstanceKey = nestedConfObject.getKey();
-                tempList.add( ConfigDocker.parseConfigToMap( dockerInstancesConf.getConfig( subInstanceKey ) ) );
+
+        List<Object> tempList = new ArrayList<>();
+        com.typesafe.config.Config listConf = conf.getConfig( getKey() );
+        for ( Entry<String, Object> nested : listConf.root().unwrapped().entrySet() ) {
+            if ( template instanceof ConfigDocker ) {
+                tempList.add( ConfigDocker.parseConfigToMap( listConf.getConfig( nested.getKey() ) ) );
+            } else if ( template instanceof ConfigPlugin ) {
+                tempList.add( ConfigPlugin.parseConfigToMap( listConf.getConfig( nested.getKey() ) ) );
+            } else {
+                throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
             }
-            setConfigObjectList( tempList, getTemplateClass() );
-        } else {
-            throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
+
         }
+        setConfigObjectList( tempList, getTemplateClass() );
     }
 
 

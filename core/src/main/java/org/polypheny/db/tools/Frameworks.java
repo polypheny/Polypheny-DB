@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,16 +38,15 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -228,7 +227,7 @@ public class Frameworks {
      */
     public static class ConfigBuilder {
 
-        private RexConvertletTable convertletTable;
+        //private RexConvertletTable convertletTable;
         private OperatorTable operatorTable;
         private ImmutableList<Program> programs;
         private Context context;
@@ -246,8 +245,6 @@ public class Frameworks {
          * Creates a ConfigBuilder, initializing to defaults.
          */
         public ConfigBuilder() {
-            convertletTable = LanguageManager.getInstance().getStandardConvertlet();
-            operatorTable = LanguageManager.getInstance().getStdOperatorTable();
             programs = ImmutableList.of();
             parserConfig = ParserConfig.DEFAULT;
             sqlToRelConverterConfig = NodeToAlgConverter.Config.DEFAULT;
@@ -259,8 +256,8 @@ public class Frameworks {
          * Creates a ConfigBuilder, initializing from an existing config.
          */
         public ConfigBuilder( FrameworkConfig config ) {
-            convertletTable = config.getConvertletTable();
-            operatorTable = config.getOperatorTable();
+            //convertletTable = config.getConvertletTable();
+            // operatorTable = config.getOperatorTable();
             programs = config.getPrograms();
             context = config.getContext();
             traitDefs = config.getTraitDefs();
@@ -277,7 +274,7 @@ public class Frameworks {
         public FrameworkConfig build() {
             return new StdFrameworkConfig(
                     context,
-                    convertletTable,
+                    //convertletTable,
                     operatorTable,
                     programs,
                     traitDefs,
@@ -299,12 +296,6 @@ public class Frameworks {
 
         public ConfigBuilder executor( RexExecutor executor ) {
             this.executor = Objects.requireNonNull( executor );
-            return this;
-        }
-
-
-        public ConfigBuilder convertletTable( RexConvertletTable convertletTable ) {
-            this.convertletTable = Objects.requireNonNull( convertletTable );
             return this;
         }
 
@@ -394,25 +385,32 @@ public class Frameworks {
     /**
      * An implementation of {@link FrameworkConfig} that uses standard Polypheny-DB classes to provide basic planner functionality.
      */
+    @Getter
     public static class StdFrameworkConfig implements FrameworkConfig {
 
         private final Context context;
-        private final RexConvertletTable convertletTable;
         private final OperatorTable operatorTable;
         private final ImmutableList<Program> programs;
+
         private final ImmutableList<AlgTraitDef> traitDefs;
+
         private final ParserConfig parserConfig;
+
         private final NodeToAlgConverter.Config sqlToRelConverterConfig;
+
         private final SchemaPlus defaultSchema;
+
         private final AlgOptCostFactory costFactory;
+
         private final AlgDataTypeSystem typeSystem;
+
         private final RexExecutor executor;
+
         private final org.polypheny.db.prepare.Context prepareContext;
 
 
         public StdFrameworkConfig(
                 Context context,
-                RexConvertletTable convertletTable,
                 OperatorTable operatorTable,
                 ImmutableList<Program> programs,
                 ImmutableList<AlgTraitDef> traitDefs,
@@ -424,7 +422,6 @@ public class Frameworks {
                 RexExecutor executor,
                 org.polypheny.db.prepare.Context prepareContext ) {
             this.context = context;
-            this.convertletTable = convertletTable;
             this.operatorTable = operatorTable;
             this.programs = programs;
             this.traitDefs = traitDefs;
@@ -437,77 +434,6 @@ public class Frameworks {
             this.prepareContext = prepareContext;
         }
 
-
-        @Override
-        public ParserConfig getParserConfig() {
-            return parserConfig;
-        }
-
-
-        @Override
-        public NodeToAlgConverter.Config getSqlToRelConverterConfig() {
-            return sqlToRelConverterConfig;
-        }
-
-
-        @Override
-        public SchemaPlus getDefaultSchema() {
-            return defaultSchema;
-        }
-
-
-        @Override
-        public RexExecutor getExecutor() {
-            return executor;
-        }
-
-
-        @Override
-        public ImmutableList<Program> getPrograms() {
-            return programs;
-        }
-
-
-        @Override
-        public AlgOptCostFactory getCostFactory() {
-            return costFactory;
-        }
-
-
-        @Override
-        public ImmutableList<AlgTraitDef> getTraitDefs() {
-            return traitDefs;
-        }
-
-
-        @Override
-        public RexConvertletTable getConvertletTable() {
-            return convertletTable;
-        }
-
-
-        @Override
-        public Context getContext() {
-            return context;
-        }
-
-
-        @Override
-        public OperatorTable getOperatorTable() {
-            return operatorTable;
-        }
-
-
-        @Override
-        public AlgDataTypeSystem getTypeSystem() {
-            return typeSystem;
-        }
-
-
-        @Override
-        public org.polypheny.db.prepare.Context getPrepareContext() {
-            return prepareContext;
-        }
 
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ public class CrossModelFunctions {
             @Override
             public Enumerator<PolyNode> enumerator() {
                 return Linq4j.transform( enumerable.enumerator(), r -> {
-                    BsonDocument doc = BsonDocument.parse( (String) r );
+                    BsonDocument doc = BsonDocument.parse( r.toString() );
                     Map<String, Comparable<?>> map = new HashMap<>();
                     for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
                         if ( entry.getKey().equals( "_id" ) ) {
@@ -152,7 +152,7 @@ public class CrossModelFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Enumerable<?> nodesToCollection( Enumerable<PolyNode> enumerable ) {
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
                 return Linq4j.transform(
@@ -426,6 +426,13 @@ public class CrossModelFunctions {
     @SuppressWarnings("unused")
     public static Enumerable<?> mergeNodeCollections( List<Enumerable<PolyNode>> enumerables ) {
         return Linq4j.concat( enumerables );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Object docItem( String map, String key ) {
+        Object value = PolyDictionary.fromString( map ).getOrDefault( key, null );
+        return value != null ? value.toString() : null;
     }
 
 }

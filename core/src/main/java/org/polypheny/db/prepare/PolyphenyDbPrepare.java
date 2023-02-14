@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,9 +38,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function0;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -37,12 +52,8 @@ import org.polypheny.db.util.CyclicDefinitionException;
  */
 public interface PolyphenyDbPrepare {
 
-    Function0<PolyphenyDbPrepare> DEFAULT_FACTORY = PolyphenyDbPrepareImpl::new;
     ThreadLocal<Deque<Context>> THREAD_CONTEXT_STACK = ThreadLocal.withInitial( ArrayDeque::new );
 
-    ParseResult parse( Context context, String sql );
-
-    ConvertResult convert( Context context, String sql );
 
     /**
      * Executes a DDL statement.
@@ -130,21 +141,6 @@ public interface PolyphenyDbPrepare {
 
     }
 
-
-    /**
-     * The result of parsing and validating a SQL query and converting it to relational algebra.
-     */
-    class ConvertResult extends ParseResult {
-
-        public final AlgRoot root;
-
-
-        public ConvertResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, AlgDataType rowType, AlgRoot root ) {
-            super( prepare, validator, sql, sqlNode, rowType );
-            this.root = root;
-        }
-
-    }
 
 
     /**

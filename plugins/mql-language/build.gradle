@@ -1,0 +1,146 @@
+import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+
+group "org.polypheny"
+
+
+configurations {
+    javacc
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
+
+
+buildscript {
+    dependencies {
+        // JavaCC (https://github.com/johnmartel/javaccPlugin)
+        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
+        // Fmpp
+        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
+    }
+    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
+}
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":monitoring")
+    compileOnly project(":webui")
+    // implementation project(":sql-language")
+    compileOnly project(":dbms")
+
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
+
+    implementation group: 'org.eclipse.jetty.websocket', name: 'websocket-api', version: jetty_websocket_api_version
+
+    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion)
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+}
+
+
+
+task generateParser(type: CompileJavaccTask) {
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false"]
+    inputDirectory = file("src/main/codegen")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/mql/parser")
+}
+
+compileJava {
+    dependsOn("generateParser")
+    dependsOn(":core:processResources")
+    dependsOn(":config:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":monitoring:processResources")
+    dependsOn(":dbms:processResources")
+}
+
+delombok {
+    dependsOn(":dbms:processResources")
+}
+
+
+sourceSets {
+    main {
+        java {
+            //srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+            exclude "version/*.properties"
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            // We need the main resources for the tests as well.
+            srcDirs = ["src/test/resources", "src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+
+/**
+ * JavaDoc
+ */
+javadoc {
+    // suppress most of the warnings
+    options.addStringOption("Xdoclint:none", "-quiet")
+    // Include private fields in JavaDoc
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+    // Use HTML 5 for JavaDoc
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption("html5", true)
+    }
+    // Exclude build dir
+    exclude "fmpp/mql/javacc/**"
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier "sources"
+    from sourceSets.main.allSource
+}
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier "javadoc"
+    from javadoc.destinationDir
+}
+task testJar(type: Jar, dependsOn: testClasses) {
+    classifier 'tests'
+    from sourceSets.test.output
+}
+artifacts {
+    //archives jar // regular jar containing only the compiled source
+    archives sourcesJar // jar file containing the java doc files
+    archives javadocJar // jar file containing the source files
+    tests testJar // jar file containing the test classes
+}
+
+licensee {
+    allow('Apache-2.0')
+
+    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
+
+}
+

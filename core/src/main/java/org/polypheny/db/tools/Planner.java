@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,21 +37,18 @@ package org.polypheny.db.tools;
 import java.io.Reader;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.SourceStringReader;
 
 
 /**
- * A fa&ccedil;ade that covers Polypheny-DB's query planning process: parse SQL, validate the parse tree, convert the parse
- * tree to a relational expression, and optimize the relational expression.
+ * A fa&ccedil;ade that covers Polypheny-DB's query planning process: parse SQL, validate the parse tree, convert the
+ * parse tree to a relational expression, and optimize the relational expression.
  * <p>
- * Planner is NOT thread safe. However, it can be reused for different queries. The consumer of this interface is responsible
- * for calling reset() after each use of Planner that corresponds to a different query.
+ * Planner is NOT thread safe. However, it can be reused for different queries. The consumer of this interface is
+ * responsible for calling reset() after each use of Planner that corresponds to a different query.
  */
 public interface Planner extends AutoCloseable {
 
@@ -62,9 +59,7 @@ public interface Planner extends AutoCloseable {
      * @return The root node of the SQL parse tree.
      * @throws NodeParseException on parse error
      */
-    default Node parse( String sql ) throws NodeParseException {
-        return parse( new SourceStringReader( sql ) );
-    }
+    Node parse( String sql ) throws NodeParseException;
 
     /**
      * Parses and validates a SQL statement.
@@ -84,19 +79,11 @@ public interface Planner extends AutoCloseable {
      */
     Node validate( Node sqlNode ) throws ValidationException;
 
-    /**
-     * Validates a SQL statement.
-     *
-     * @param sqlNode Root node of the SQL parse tree.
-     * @return Validated node and its validated type.
-     * @throws ValidationException if not valid
-     */
-    Pair<Node, AlgDataType> validateAndGetType( Node sqlNode ) throws ValidationException;
 
     /**
      * Converts a SQL parse tree into a tree of relational expressions.
      *
-     * You must call {@link #validate(Node)} first.
+     * You must call {link validate(Node)} first.
      *
      * @param sql The root node of the SQL parse tree.
      * @return The root node of the newly generated {@link AlgNode} tree.
@@ -110,11 +97,12 @@ public interface Planner extends AutoCloseable {
     AlgDataTypeFactory getTypeFactory();
 
     /**
-     * Converts one relational expression tree into another relational expression based on a particular rule set and requires set of traits.
+     * Converts one relational expression tree into another relational expression based on a particular rule set and
+     * requires set of traits.
      *
-     * @param ruleSetIndex The RuleSet to use for conversion purposes.  Note that this is zero-indexed and is based on the list and order of RuleSets provided in the construction of this Planner.
+     * @param ruleSetIndex         The RuleSet to use for conversion purposes.  Note that this is zero-indexed and is based on the list and order of RuleSets provided in the construction of this Planner.
      * @param requiredOutputTraits The set of RelTraits required of the root node at the termination of the planning cycle.
-     * @param alg The root of the {@link AlgNode} tree to convert.
+     * @param alg                  The root of the {@link AlgNode} tree to convert.
      * @return The root of the new {@link AlgNode} tree.
      * @throws AlgConversionException on conversion error
      */

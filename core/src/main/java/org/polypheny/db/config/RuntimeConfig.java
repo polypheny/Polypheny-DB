@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
@@ -404,7 +405,7 @@ public enum RuntimeConfig {
             "Configure different docker instances, which can be used to place adapters on.",
             Collections.singletonList( new ConfigDocker( 0, "localhost", null, null, "localhost" )
                     .setDockerRunning( true ) ),
-            ConfigType.INSTANCE_LIST,
+            ConfigType.DOCKER_LIST,
             "dockerGroup" ),
 
     FILE_HANDLE_CACHE_SIZE(
@@ -454,7 +455,26 @@ public enum RuntimeConfig {
             "Enable output of catalog debug messages on the monitoring page.",
             false,
             ConfigType.BOOLEAN,
-            "monitoringGroup" );
+            "monitoringGroup" ),
+
+    AVAILABLE_PLUGINS(
+            "runtime/availablePlugins",
+            "All plugins, which are available, be it active, only loaded or unloaded.",
+            List.of(),
+            ConfigType.PLUGIN_LIST,
+            "pluginsGroup"
+    ),
+
+    BLOCKED_PLUGINS(
+            "runtime/blockedPlugins",
+            "All plugins, which are blocked by default.",
+            List.of( "druid-adapter",
+                    "elasticsearch-adapter",
+                    "geode-adapter",
+                    "html-adapter",
+                    "pig-adapter" ),
+            ConfigType.STRING_LIST
+    );
 
 
     private final String key;
@@ -525,11 +545,21 @@ public enum RuntimeConfig {
                 "dockerPage",
                 "Docker",
                 "Settings for the Docker-based data store deployment." );
-        //dockerPage.withIcon( "fa fa-cube" );
+
         final WebUiGroup dockerGroup = new WebUiGroup( "dockerGroup", dockerPage.getId() );
         dockerGroup.withTitle( "Docker" );
         configManager.registerWebUiPage( dockerPage );
         configManager.registerWebUiGroup( dockerGroup );
+
+        // Plugin Settings
+        final WebUiPage pluginPage = new WebUiPage(
+                "pluginsPage",
+                "Plugins",
+                "Settings regarding plugins." ).setFullWidth( true );
+
+        final WebUiGroup pluginGroup = new WebUiGroup( "pluginsGroup", pluginPage.getId() );
+        configManager.registerWebUiPage( pluginPage );
+        configManager.registerWebUiGroup( pluginGroup );
 
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(
@@ -673,8 +703,12 @@ public enum RuntimeConfig {
                 config = new ConfigList( key, (List<?>) defaultValue, String.class );
                 break;
 
-            case INSTANCE_LIST:
+            case DOCKER_LIST:
                 config = new ConfigList( key, (List<?>) defaultValue, ConfigDocker.class );
+                break;
+
+            case PLUGIN_LIST:
+                config = new ConfigList( key, (List<?>) defaultValue, ConfigPlugin.class );
                 break;
 
             default:
@@ -800,7 +834,41 @@ public enum RuntimeConfig {
 
 
     public enum ConfigType {
-        BOOLEAN, DECIMAL, DOUBLE, INTEGER, LONG, STRING, ENUM, BOOLEAN_TABLE, DECIMAL_TABLE, DOUBLE_TABLE, INTEGER_TABLE, LONG_TABLE, STRING_TABLE, BOOLEAN_ARRAY, DECIMAL_ARRAY, DOUBLE_ARRAY, INTEGER_ARRAY, LONG_ARRAY, STRING_ARRAY, STRING_LIST, INSTANCE_LIST
+        BOOLEAN,
+        DECIMAL,
+        DOUBLE,
+        INTEGER,
+        LONG,
+        STRING,
+        ENUM,
+        BOOLEAN_TABLE,
+        DECIMAL_TABLE,
+        DOUBLE_TABLE,
+        INTEGER_TABLE,
+        LONG_TABLE,
+        STRING_TABLE,
+        BOOLEAN_ARRAY,
+        DECIMAL_ARRAY,
+        DOUBLE_ARRAY,
+        INTEGER_ARRAY,
+        LONG_ARRAY,
+        STRING_ARRAY,
+        STRING_LIST,
+        DOCKER_LIST( ConfigDocker.class ),
+        PLUGIN_LIST( ConfigPlugin.class );
+
+        @Getter
+        private final Class<? extends ConfigObject> clazz;
+
+
+        ConfigType( Class<? extends ConfigObject> clazz ) {
+            this.clazz = clazz;
+        }
+
+
+        ConfigType() {
+            this.clazz = null;
+        }
     }
 
 }

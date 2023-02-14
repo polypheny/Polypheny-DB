@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
 package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.persistence.MapDbRepository;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.monitoring.statistics.StatisticRepository;
+import org.polypheny.db.plugins.PolyPluginManager;
 
 
 @Slf4j
 public class MonitoringServiceFactory {
 
-    public static MonitoringServiceImpl createMonitoringService( boolean resetRepository ) {
+    public static MonitoringService createMonitoringService( boolean resetRepository ) {
         // Create mapDB repository
-        MapDbRepository persistentRepo = new MapDbRepository();
+        PersistentMonitoringRepository persistentRepo = PolyPluginManager.getPERSISTENT_MONITORING();
         StatisticRepository statisticRepo = new StatisticRepository();
 
         // Initialize the mapDB repo and open connection
@@ -36,9 +37,8 @@ public class MonitoringServiceFactory {
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo );
 
         // Initialize the monitoringService
-        MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, persistentRepo );
 
-        return monitoringService;
+        return new MonitoringServiceImpl( queueWriteService, persistentRepo );
     }
 
 }

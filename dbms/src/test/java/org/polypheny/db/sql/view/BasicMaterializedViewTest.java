@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -520,7 +520,7 @@ public class BasicMaterializedViewTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Deploy additional store
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
@@ -570,10 +570,10 @@ public class BasicMaterializedViewTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Deploy additional store
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
                 // Deploy additional store
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );

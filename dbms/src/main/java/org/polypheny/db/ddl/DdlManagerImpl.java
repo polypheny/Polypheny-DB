@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,6 @@ import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -119,6 +118,7 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
@@ -230,9 +230,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addAdapter( String adapterName, String clazzName, Map<String, String> config ) {
-        adapterName = adapterName.toLowerCase();
-        Adapter adapter = AdapterManager.getInstance().addAdapter( clazzName, adapterName, config );
+    public void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config ) {
+        uniqueName = uniqueName.toLowerCase();
+        Adapter adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, config );
         if ( adapter instanceof DataSource ) {
             Map<String, List<ExportedColumn>> exportedColumns;
             try {
@@ -809,7 +809,7 @@ public class DdlManagerImpl extends DdlManager {
             // Abort if a manual partitionList has been specified even though the data placement has already been partitioned
             if ( isDataPlacementPartitioned ) {
                 throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                        + dataStore.getAdapterName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
+                        + dataStore.getUniqueName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
             }
 
             log.debug( "Table is partitioned and concrete partitionList has been specified " );
@@ -827,7 +827,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( isDataPlacementPartitioned ) {
                 throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                        + dataStore.getAdapterName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
+                        + dataStore.getUniqueName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
             }
 
             List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getPartitionGroups( tableId );
@@ -2258,8 +2258,10 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         long collectionId;
+        long partitionId;
         try {
             collectionId = catalog.addCollectionLogistics( schemaId, name, stores, false );
+            partitionId = catalog.getPartitionGroups( collectionId ).get( 0 ).id;
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
@@ -2362,7 +2364,9 @@ public class DdlManagerImpl extends DdlManager {
 
             catalog.dropCollectionPlacement( collection.id, store.getAdapterId() );
 
-            removeDocumentPlacementLogistics( collection, store, statement );
+            if ( !store.getSupportedSchemaType().contains( NamespaceType.DOCUMENT ) ) {
+                removeDocumentPlacementLogistics( collection, store, statement );
+            }
         }
 
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ package org.polypheny.db.algebra.logical.relational;
 
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Exchange;
@@ -53,14 +52,6 @@ public final class LogicalExchange extends Exchange {
     private LogicalExchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
         super( cluster, traitSet, input, distribution );
         assert traitSet.containsIfApplicable( Convention.NONE );
-    }
-
-
-    /**
-     * Creates a LogicalExchange by parsing serialized output.
-     */
-    public LogicalExchange( AlgInput input ) {
-        super( input );
     }
 
 

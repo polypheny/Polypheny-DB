@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,44 +33,27 @@
 
 package org.polypheny.db.type;
 
-
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.polypheny.db.algebra.type.*;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.util.*;
+
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import org.apache.commons.lang3.reflect.TypeUtils;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.nodes.DataTypeSpec;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.NumberUtil;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.ValidatorUtil;
+import java.util.*;
+
+import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
@@ -845,76 +828,6 @@ public abstract class PolyTypeUtil {
             }
         }
         return nested;
-    }
-
-
-    /**
-     * Converts an instance of RelDataType to an instance of SqlDataTypeSpec.
-     *
-     * @param type type descriptor
-     * @return corresponding parse representation
-     */
-    public static DataTypeSpec convertTypeToSpec( AlgDataType type ) {
-        PolyType typeName = type.getPolyType();
-
-        // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
-        assert typeName != null;
-        Identifier typeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, typeName.name(), ParserPos.ZERO );
-
-        String charSetName = null;
-
-        if ( inCharFamily( type ) ) {
-            charSetName = type.getCharset().name();
-            // TODO jvs: collation
-        }
-
-        // REVIEW jvs: discriminate between precision/scale zero and unspecified?
-
-        // REVIEW angel: Use neg numbers to indicate unspecified precision/scale
-
-        if ( typeName.allowsScale() ) {
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
-                    typeIdentifier,
-                    type.getPrecision(),
-                    type.getScale(),
-                    charSetName,
-                    null,
-                    ParserPos.ZERO );
-        } else if ( typeName.allowsPrec() ) {
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
-                    typeIdentifier,
-                    type.getPrecision(),
-                    -1,
-                    charSetName,
-                    null,
-                    ParserPos.ZERO );
-        } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
-            ArrayType arrayType = (ArrayType) type;
-            Identifier componentTypeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
-                    typeIdentifier,
-                    componentTypeIdentifier,
-                    arrayType.getComponentType().getPrecision(),
-                    arrayType.getComponentType().getScale(),
-                    (int) arrayType.getDimension(),
-                    (int) arrayType.getCardinality(),
-                    charSetName,
-                    null,
-                    arrayType.isNullable(),
-                    ParserPos.ZERO );
-        } else {
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
-                    typeIdentifier,
-                    -1,
-                    -1,
-                    charSetName,
-                    null,
-                    ParserPos.ZERO );
-        }
     }
 
 

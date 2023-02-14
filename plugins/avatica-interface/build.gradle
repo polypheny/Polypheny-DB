@@ -1,0 +1,97 @@
+group "org.polypheny"
+
+configurations {
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":monitoring")
+
+    ////// BYTE UNITS
+    implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version  // Apache 2.0
+
+    ////// APACHE CALCITE AVATICA
+    implementation(group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version) {
+        exclude(group: "org.slf4j")
+    }  // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+delombok {
+    dependsOn(":monitoring:processResources")
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":monitoring:processResources")
+}
+
+/**
+ * Tests
+ */
+test {
+    maxHeapSize = "2g" // Increase heap size (default is 512MB)
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+/**
+ * LICENSEE
+ */
+
+licensee {
+    allow('Apache-2.0')
+    allow('BSD-3-Clause')
+
+    // Category B
+    allow('EPL-1.0')
+
+    allowDependency('javax.servlet', 'javax.servlet-api', '4.0.1') {
+        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
+    }
+}
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.webui;
 
 import com.google.gson.Gson;
 import java.util.ArrayList;
-import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -110,9 +110,9 @@ public class QueryPlanBuilder {
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":
                 String[] field = node.field.split( "\\." );
-                if ( NumberUtils.isNumber( node.filter ) ) {
+                if ( NumberUtils.isCreatable( node.filter ) ) {
                     Number filter;
-                    Double dbl = Double.parseDouble( node.filter );
+                    double dbl = Double.parseDouble( node.filter );
                     filter = dbl;
                     if ( dbl % 1 == 0 ) {
                         filter = Integer.parseInt( node.filter );

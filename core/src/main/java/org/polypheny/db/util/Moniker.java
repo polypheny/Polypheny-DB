@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.polypheny.db.util;
 
-
 import com.google.common.collect.Ordering;
+import org.polypheny.db.algebra.constant.MonikerType;
+
 import java.util.Comparator;
 import java.util.List;
-import org.polypheny.db.algebra.constant.MonikerType;
 
 
 /**
@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.constant.MonikerType;
 public interface Moniker {
 
     Comparator<Moniker> COMPARATOR =
-            new Comparator<Moniker>() {
+            new Comparator<>() {
                 final Ordering<Iterable<String>> listOrdering = Ordering.<String>natural().lexicographical();
 
 

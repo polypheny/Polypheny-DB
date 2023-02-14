@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.Operator;
 
@@ -43,7 +42,7 @@ public class OperatorRegistry {
         // we register a new map for each language per default
         // the general operators are registered for null
         registry.put( null, new HashMap<>() );
-        for ( QueryLanguage language : QueryLanguage.values() ) {
+        for ( QueryLanguage language : LanguageManager.getLanguages() ) {
             registry.put( language, new HashMap<>() );
         }
     }
@@ -72,6 +71,10 @@ public class OperatorRegistry {
      */
     public synchronized static void register( QueryLanguage language, OperatorName name, Operator operator ) {
         operator.setOperatorName( name );
+        if ( !registry.containsKey( language ) ) {
+            registry.put( language, new HashMap<>() );
+        }
+
         registry.get( language ).put( name, operator );
     }
 
@@ -166,6 +169,11 @@ public class OperatorRegistry {
                 .stream()
                 .flatMap( e -> e.getValue().entrySet().stream() )
                 .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
+    }
+
+
+    public static void remove( QueryLanguage language ) {
+        registry.remove( language );
     }
 
 }

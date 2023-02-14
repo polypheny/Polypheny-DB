@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
@@ -52,6 +53,6 @@ public interface TranslatableTable extends Table {
     /**
      * Converts this table into a {@link AlgNode relational expression}.
      */
-    AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable );
+    AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet );
 
 }

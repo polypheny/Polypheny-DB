@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,70 +36,33 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import java.lang.reflect.Type;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgDistribution;
-import org.polypheny.db.algebra.AlgDistributions;
-import org.polypheny.db.algebra.AlgFieldCollation;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgReferentialConstraint;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeComparability;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
-import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.algebra.type.*;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
-import org.polypheny.db.schema.CustomColumnResolvingTable;
-import org.polypheny.db.schema.ExtensibleTable;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.StreamableTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.schema.*;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.test.JdbcTest;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.AccessType;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.InitializerExpressionFactory;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
-import org.polypheny.db.util.NullInitializerExpressionFactory;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.*;
+
+import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.util.*;
 
 
 /**
@@ -467,7 +447,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public AlgNode toAlg( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
             return LogicalScan.create( context.getCluster(), this );
         }
 
@@ -609,11 +589,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
          * Recreates an immutable rowType, if the table has Dynamic Record Type, when converts table to Rel.
          */
         @Override
-        public AlgNode toAlg( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
             if ( rowType.isDynamicStruct() ) {
                 rowType = new AlgRecordType( rowType.getFieldList() );
             }
-            return super.toAlg( context );
+            return super.toAlg( context, traitSet );
         }
 
     }
@@ -740,12 +720,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         @Override
         public PolyType getPolyType() {
             return delegate.getPolyType();
-        }
-
-
-        @Override
-        public Identifier getSqlIdentifier() {
-            return delegate.getSqlIdentifier();
         }
 
 

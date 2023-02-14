@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
@@ -99,14 +100,14 @@ public class TestHelper {
         while ( !polyphenyDb.isReady() ) {
             try {
                 TimeUnit.SECONDS.sleep( 1 );
-                if ( i++ > 180 ) {
+                if ( i++ > 300 ) {
                     if ( thread.getStackTrace().length > 0 ) {
                         System.err.println( "Stacktrace of Polypheny-DB thread:" );
                         for ( int j = 0; j < thread.getStackTrace().length; j++ ) {
                             System.err.println( "\tat " + thread.getStackTrace()[j] );
                         }
                     }
-                    throw new RuntimeException( "There seems to be an issue with Polypheny-DB. Waited 3 minutes for Polypheny-DB to get ready. Aborting tests." );
+                    throw new RuntimeException( "There seems to be an issue with Polypheny-DB. Waited 5 minutes for Polypheny-DB to get ready. Aborting tests." );
                 }
             } catch ( InterruptedException e ) {
                 log.error( "Interrupted exception", e );
@@ -312,7 +313,7 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static Gson gson = new Gson();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
         private MongoConnection() {
@@ -463,7 +464,7 @@ public class TestHelper {
 
     public static class CypherConnection extends HttpConnection {
 
-        static Gson gson = new Gson();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
         public static Result executeGetResponse( String query ) {

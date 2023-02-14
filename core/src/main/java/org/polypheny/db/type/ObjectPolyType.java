@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,21 +34,18 @@
 package org.polypheny.db.type;
 
 
-import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.nodes.Identifier;
+
+import java.util.List;
 
 
 /**
  * ObjectSqlType represents an SQL structured user-defined type.
  */
 public class ObjectPolyType extends AbstractPolyType {
-
-    @Getter
-    private final Identifier sqlIdentifier;
 
     @Getter
     private final AlgDataTypeComparability comparability;
@@ -61,18 +58,15 @@ public class ObjectPolyType extends AbstractPolyType {
      * Constructs an object type. This should only be called from a factory method.
      *
      * @param typeName PolyType for this type (either Distinct or Structured)
-     * @param sqlIdentifier identifier for this type
      * @param nullable whether type accepts nulls
      * @param fields object attribute definitions
      */
     public ObjectPolyType(
             PolyType typeName,
-            Identifier sqlIdentifier,
             boolean nullable,
             List<? extends AlgDataTypeField> fields,
             AlgDataTypeComparability comparability ) {
         super( typeName, nullable, fields );
-        this.sqlIdentifier = sqlIdentifier;
         this.comparability = comparability;
         computeDigest();
     }
@@ -88,7 +82,6 @@ public class ObjectPolyType extends AbstractPolyType {
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         // TODO: proper quoting; dump attributes withDetail?
         sb.append( "ObjectSqlType(" );
-        sb.append( sqlIdentifier.toString() );
         sb.append( ")" );
     }
 

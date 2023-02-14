@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,14 @@
 
 package org.polypheny.db.languages;
 
-import java.io.Reader;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.SourceStringReader;
 
 public interface Parser {
 
@@ -44,40 +41,6 @@ public interface Parser {
      */
     static ConfigBuilder configBuilder( ParserConfig sqlParserConfig ) {
         return new ConfigBuilder().setConfig( sqlParserConfig );
-    }
-
-    /**
-     * Creates a <code>Parser</code> to parse the given string using Polypheny-DB's parser implementation.
-     *
-     * @param s An SQL statement or expression to parse.
-     * @return A parser
-     */
-    static Parser create( String s ) {
-        return create( s, configBuilder().build() );
-    }
-
-    /**
-     * Creates a <code>Parser</code> to parse the given string using the parser implementation created from given {@link ParserFactory} with given quoting syntax and casing policies for identifiers.
-     *
-     * @param sql A SQL statement or expression to parse
-     * @param sqlParserConfig The parser configuration (identifier max length, etc.)
-     * @return A parser
-     */
-    static Parser create( String sql, ParserConfig sqlParserConfig ) {
-        return create( new SourceStringReader( sql ), sqlParserConfig );
-    }
-
-    /**
-     * Creates a <code>Parser</code> to parse the given string using the parser implementation created from given {@link ParserFactory} with given quoting syntax and casing policies for identifiers.
-     *
-     * Unlike {@link #create(String, ParserConfig)}, the parser is not able to return the original query string, but will instead return "?".
-     *
-     * @param reader The source for the SQL statement or expression to parse
-     * @param sqlParserConfig The parser configuration (identifier max length, etc.)
-     * @return A parser
-     */
-    static Parser create( Reader reader, ParserConfig sqlParserConfig ) {
-        return LanguageManager.getInstance().getParser( QueryLanguage.SQL, reader, sqlParserConfig );
     }
 
     Node parseQuery() throws NodeParseException;
@@ -140,7 +103,7 @@ public interface Parser {
 
 
         private ConfigBuilder() {
-            parserFactory = LanguageManager.getInstance().getFactory( QueryLanguage.SQL );
+            parserFactory = QueryLanguage.from( "sql" ).getFactory();
         }
 
 

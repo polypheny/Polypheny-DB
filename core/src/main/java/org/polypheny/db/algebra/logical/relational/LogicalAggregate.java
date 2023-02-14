@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import java.util.List;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -74,14 +73,6 @@ public final class LogicalAggregate extends Aggregate {
      */
     public LogicalAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
-    }
-
-
-    /**
-     * Creates a LogicalAggregate by parsing serialized output.
-     */
-    public LogicalAggregate( AlgInput input ) {
-        super( input );
     }
 
 

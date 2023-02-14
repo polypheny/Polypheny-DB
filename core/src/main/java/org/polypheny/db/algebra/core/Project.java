@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -93,14 +92,6 @@ public abstract class Project extends SingleAlg {
         this.exps = ImmutableList.copyOf( projects );
         this.rowType = rowType;
         assert isValid( Litmus.THROW, null );
-    }
-
-
-    /**
-     * Creates a Project by parsing serialized output.
-     */
-    protected Project( AlgInput input ) {
-        this( input.getCluster(), input.getTraitSet(), input.getInput(), input.getExpressionList( "exprs" ), input.getRowType( "exprs", "fields" ) );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,8 @@ public abstract class Adapter {
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
     private final List<NamespaceType> supportedNamespaceTypes;
+    @Getter
+    private final String adapterName;
 
 
     @Target(ElementType.TYPE)
@@ -211,7 +213,10 @@ public abstract class Adapter {
 
         String description() default "";
 
+        String defaultValue();
+
         String[] options();
+
 
         int position() default 100;
 
@@ -289,6 +294,7 @@ public abstract class Adapter {
 
         this.adapterId = adapterId;
         this.uniqueName = uniqueName;
+        this.adapterName = properties.name();
         // Make sure the settings are actually valid
         this.validateSettings( settings, true );
         this.settings = settings;
@@ -301,11 +307,6 @@ public abstract class Adapter {
         if ( deployMode == DeployMode.DOCKER ) {
             this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
-    }
-
-
-    public String getAdapterName() {
-        return properties.name();
     }
 
 
@@ -340,12 +341,21 @@ public abstract class Adapter {
     public abstract void rollback( PolyXid xid );
 
 
-    public List<AbstractAdapterSetting> getAvailableSettings() {
-        return AbstractAdapterSetting.fromAnnotations( getClass().getAnnotations(), properties )
+    public List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
+        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties )
                 .values()
                 .stream()
                 .flatMap( Collection::stream )
                 .collect( Collectors.toList() );
+    }
+
+
+    public static Map<String, String> getDefaultSettings( Class<DataStore> clazz ) {
+        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) )
+                .values()
+                .stream()
+                .flatMap( Collection::stream )
+                .collect( Collectors.toMap( e -> e.name, e -> e.defaultValue ) );
     }
 
 
@@ -403,7 +413,7 @@ public abstract class Adapter {
 
 
     protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
-        for ( AbstractAdapterSetting s : getAvailableSettings() ) {
+        for ( AbstractAdapterSetting s : getAvailableSettings( getClass() ) ) {
             // we only need to check settings which apply to the used mode
             if ( !s.appliesTo
                     .stream()
@@ -455,7 +465,7 @@ public abstract class Adapter {
 
 
     /**
-     * Builds and adds an new information group, observing physical naming of columns, to the provided information objects
+     * Builds and adds a new information group, observing physical naming of columns, to the provided information objects
      */
     public void addInformationPhysicalNames() {
         InformationGroup group = new InformationGroup( informationPage, "Physical Names" );
@@ -519,7 +529,7 @@ public abstract class Adapter {
      * @param c the new configuration of the corresponding Docker instance
      */
     protected void resetDockerConnection( ConfigDocker c ) {
-        throw new RuntimeException( getAdapterName() + " uses this Docker instance and does not support to dynamically change it." );
+        throw new RuntimeException( getUniqueName() + " uses this Docker instance and does not support to dynamically change it." );
     }
 
 
@@ -530,6 +540,7 @@ public abstract class Adapter {
         public final boolean canBeNull;
         public final boolean required;
         public final boolean modifiable;
+        public final String defaultValue;
         private final int position;
         @Setter
         public String description;
@@ -538,13 +549,14 @@ public abstract class Adapter {
         private final List<DeploySetting> appliesTo;
 
 
-        public AbstractAdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, int position ) {
+        public AbstractAdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
             this.name = name;
             this.canBeNull = canBeNull;
             this.required = required;
             this.modifiable = modifiable;
             this.position = position;
             this.appliesTo = appliesTo;
+            this.defaultValue = defaultValue;
         }
 
 
@@ -595,7 +607,7 @@ public abstract class Adapter {
          *
          * @param settings already correctly sorted settings
          * @param deployModes the deployment modes which are supported by this specific adapter
-         * @param setting the setting which is merge into the map
+         * @param setting the setting which is merged into the map
          */
         private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, DeployMode[] deployModes, AbstractAdapterSetting setting ) {
             // we need to unpack the underlying DeployModes
@@ -640,12 +652,10 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 
         private final String type = "Integer";
-        public final Integer defaultValue;
 
 
         public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, position );
-            this.defaultValue = defaultValue;
+            super( name, canBeNull, required, modifiable, modes, defaultValue.toString(), position );
         }
 
 
@@ -663,7 +673,7 @@ public abstract class Adapter {
 
         @Override
         public String getValue() {
-            return defaultValue.toString();
+            return defaultValue;
         }
 
     }
@@ -672,12 +682,10 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingString extends AbstractAdapterSetting {
 
         private final String type = "String";
-        public final String defaultValue;
 
 
         public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, position );
-            this.defaultValue = defaultValue;
+            super( name, canBeNull, required, modifiable, modes, defaultValue, position );
         }
 
 
@@ -704,12 +712,10 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
 
         private final String type = "Boolean";
-        public final boolean defaultValue;
 
 
         public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, position );
-            this.defaultValue = defaultValue;
+            super( name, canBeNull, required, modifiable, modes, String.valueOf( defaultValue ), position );
         }
 
 
@@ -727,7 +733,7 @@ public abstract class Adapter {
 
         @Override
         public String getValue() {
-            return Boolean.toString( defaultValue );
+            return defaultValue;
         }
 
     }
@@ -738,17 +744,12 @@ public abstract class Adapter {
 
         private final String type = "List";
         public List<String> options;
-        @Setter
-        String defaultValue;
         public boolean dynamic = false;
 
 
-        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, position );
+        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, String defaultValue, int position ) {
+            super( name, canBeNull, required, modifiable, modes, defaultValue, position );
             this.options = options;
-            if ( options.size() > 0 ) {
-                this.defaultValue = options.get( 0 );
-            }
         }
 
 
@@ -760,6 +761,7 @@ public abstract class Adapter {
                     annotation.modifiable(),
                     Arrays.asList( annotation.options() ),
                     Arrays.asList( annotation.appliesTo() ),
+                    annotation.defaultValue(),
                     annotation.position() );
         }
 
@@ -774,7 +776,7 @@ public abstract class Adapter {
 
     /**
      * BindableSettingsList which allows to configure mapped AdapterSettings, which expose an alias in the frontend
-     * but assign an corresponding id when the value is chosen
+     * but assign a corresponding id when the value is chosen
      *
      * @param <T>
      */
@@ -789,7 +791,7 @@ public abstract class Adapter {
 
 
         public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
-            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), 1000 );
+            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), null, 1000 );
             this.mapper = mapper;
             this.clazz = clazz;
             this.dynamic = true;
@@ -829,9 +831,6 @@ public abstract class Adapter {
             if ( boundConfig != null ) {
                 options = boundConfig.getList( clazz ).stream().map( ( el ) -> String.valueOf( el.id ) ).collect( Collectors.toList() );
                 alias = boundConfig.getList( clazz ).stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
-                if ( options.size() > 0 ) {
-                    this.defaultValue = options.get( 0 );
-                }
             }
         }
 
@@ -845,14 +844,14 @@ public abstract class Adapter {
         private final String type = "Directory";
         @Setter
         public String directory;
-        //This field is necessary for the the UI and needs to be initialized to be serialized to JSON.
+        //This field is necessary for the UI and needs to be initialized to be serialized to JSON.
         @Setter
         public String[] fileNames = new String[]{ "" };
         public transient final Map<String, InputStream> inputStreams;
 
 
         public AbstractAdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, required, modifiable, modes, position );
+            super( name, canBeNull, required, modifiable, modes, null, position );
             //so it will be serialized
             this.directory = "";
             this.inputStreams = new HashMap<>();
@@ -913,7 +912,7 @@ public abstract class Adapter {
                 case "List":
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
                     String defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
-                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>(), position ).setDefaultValue( defaultValue );
+                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>(), defaultValue, position );
                     break;
                 case "Directory":
                     String directory = context.deserialize( jsonObject.get( "directory" ), String.class );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,8 +66,10 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
-                minCache.add( val );
-                maxCache.add( val );
+                if ( val != null ) {
+                    minCache.add( val );
+                    maxCache.add( val );
+                }
             }
         } else {
             full = true;

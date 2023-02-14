@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.FilterableTable;
@@ -271,13 +272,13 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         // Make sure rowType's list is immutable. If rowType is DynamicRecordType, creates a new RelOptTable by replacing with
         // immutable RelRecordType using the same field list.
         if ( this.getRowType().isDynamicStruct() ) {
             final AlgDataType staticRowType = new AlgRecordType( getRowType().getFieldList() );
             final AlgOptTable algOptTable = this.copy( staticRowType );
-            return algOptTable.toAlg( context );
+            return algOptTable.toAlg( context, traitSet );
         }
 
         // If there are any virtual columns, create a copy of this table without those virtual columns.
@@ -299,11 +300,11 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
                             return super.unwrap( clazz );
                         }
                     };
-            return algOptTable.toAlg( context );
+            return algOptTable.toAlg( context, traitSet );
         }
 
         if ( table instanceof TranslatableTable ) {
-            return ((TranslatableTable) table).toAlg( context, this );
+            return ((TranslatableTable) table).toAlg( context, this, traitSet );
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {

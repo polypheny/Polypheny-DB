@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -71,14 +70,6 @@ public class Collect extends SingleAlg {
     public Collect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
         super( cluster, traitSet, child );
         this.fieldName = fieldName;
-    }
-
-
-    /**
-     * Creates a Collect by parsing serialized output.
-     */
-    public Collect( AlgInput input ) {
-        this( input.getCluster(), input.getTraitSet(), input.getInput(), input.getString( "field" ) );
     }
 
 

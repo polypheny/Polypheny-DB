@@ -1,7 +1,22 @@
+/*
+ * Copyright 2019-2023 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Constructor;
@@ -15,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
@@ -29,7 +43,6 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
-import org.reflections.Reflections;
 
 public class AdapterManager {
 
@@ -125,26 +138,18 @@ public class AdapterManager {
 
 
     public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
-        Reflections reflections = new Reflections( "org.polypheny.db" );
-        Set<Class> classes;
-        if ( adapterType == AdapterType.STORE ) {
-            classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataStore.class ) );
-        } else if ( adapterType == AdapterType.SOURCE ) {
-            classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataSource.class ) );
-        } else {
-            throw new RuntimeException( "Unknown adapter type: " + adapterType );
-        }
+        List<org.polypheny.db.catalog.Adapter> adapters = org.polypheny.db.catalog.Adapter.getAdapters( adapterType );
+
         List<AdapterInformation> result = new LinkedList<>();
 
-        //noinspection unchecked
-        for ( Class<DataStore> clazz : classes ) {
+        for ( org.polypheny.db.catalog.Adapter adapter : adapters ) {
             // Exclude abstract classes
-            if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
+            if ( !Modifier.isAbstract( adapter.getClazz().getModifiers() ) ) {
                 Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
-                AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+                AdapterProperties properties = adapter.getClazz().getAnnotation( AdapterProperties.class );
                 if ( properties == null ) {
-                    throw new RuntimeException( clazz.getSimpleName() + " does not annotate the adapter correctly" );
+                    throw new RuntimeException( adapter.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
 
                 // Used to evaluate which mode is used when deploying the adapter
@@ -158,6 +163,7 @@ public class AdapterManager {
                                         true,
                                         Collections.singletonList( "default" ),
                                         Collections.singletonList( DeploySetting.DEFAULT ),
+                                        "default",
                                         0 ) ) );
 
                 // Add empty list for each available mode
@@ -167,8 +173,8 @@ public class AdapterManager {
                 settings.put( "default", new ArrayList<>() );
 
                 // Merge annotated AdapterSettings into settings
-                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) );
-                annotatedSettings.forEach( settings::put );
+                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( adapter.getClazz().getAnnotations(), adapter.getClazz().getAnnotation( AdapterProperties.class ) );
+                settings.putAll( annotatedSettings );
 
                 // If the adapter uses docker add the dynamic docker setting
                 if ( settings.containsKey( "docker" ) ) {
@@ -187,7 +193,7 @@ public class AdapterManager {
                                     .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." ) );
                 }
 
-                result.add( new AdapterInformation( properties.name(), properties.description(), clazz, settings ) );
+                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings ) );
             }
         }
 
@@ -195,7 +201,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter addAdapter( String clazzName, String uniqueName, Map<String, String> settings ) {
+    public Adapter addAdapter( String adapterName, String uniqueName, AdapterType adapterType, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
@@ -205,24 +211,16 @@ public class AdapterManager {
         }
 
         Constructor<?> ctor;
-        AdapterType adapterType;
         try {
-            Class<?> clazz = Class.forName( clazzName );
+            //Class<?> clazz = Class.forName( clazzName );
+            org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName, adapterType );
+            Class<?> clazz = adapter.getClazz();
             ctor = clazz.getConstructor( int.class, String.class, Map.class );
-
-            // Determine adapter type
-            if ( DataStore.class.isAssignableFrom( clazz ) ) {
-                adapterType = AdapterType.STORE;
-            } else if ( DataSource.class.isAssignableFrom( clazz ) ) {
-                adapterType = AdapterType.SOURCE;
-            } else {
-                throw new RuntimeException( "Unknown type of adapter! Specified class is neither implementing DataStore nor DataSource." );
-            }
-        } catch ( NoSuchMethodException | ClassNotFoundException e ) {
+        } catch ( NoSuchMethodException e ) {
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
 
-        int adapterId = Catalog.getInstance().addAdapter( uniqueName, clazzName, adapterType, settings );
+        int adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
         Adapter instance;
         try {
             instance = (Adapter) ctor.newInstance( adapterId, uniqueName, settings );
@@ -277,13 +275,12 @@ public class AdapterManager {
         try {
             List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
             for ( CatalogAdapter adapter : adapters ) {
-                Class<?> clazz = Class.forName( adapter.adapterClazz );
-                Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
+                Constructor<?> ctor = org.polypheny.db.catalog.Adapter.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( int.class, String.class, Map.class );
                 Adapter instance = (Adapter) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
                 adapterByName.put( instance.getUniqueName(), instance );
                 adapterById.put( instance.getAdapterId(), instance );
             }
-        } catch ( NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
+        } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
             throw new RuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
         }
     }
@@ -294,7 +291,7 @@ public class AdapterManager {
 
         public final String name;
         public final String description;
-        public final Class clazz;
+        public final AdapterType type;
         public final Map<String, List<AbstractAdapterSetting>> settings;
 
 
@@ -303,7 +300,7 @@ public class AdapterManager {
                 JsonObject jsonStore = new JsonObject();
                 jsonStore.addProperty( "name", src.name );
                 jsonStore.addProperty( "description", src.description );
-                jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
+                jsonStore.addProperty( "type", src.type.name() );
                 jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
                 return jsonStore;
             };

@@ -1,0 +1,85 @@
+group "org.polypheny"
+
+
+apply plugin: "java-library"
+apply plugin: "idea"
+apply plugin: "io.freefair.lombok"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":monitoring")
+
+    implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation project(path: ":monitoring")
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":config")
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.7.0"// Apache 2.0
+
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":monitoring:processResources")
+}
+
+delombok {
+    dependsOn(":core:processResources")
+    dependsOn(":monitoring:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+    allow('MIT')
+
+    // Category B
+    allow('EPL-1.0')
+
+    allowUrl('https://www.eclipse.org/licenses/edl-v10.html') // EDL 1.0
+}
+
+

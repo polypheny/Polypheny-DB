@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 @EqualsAndHashCode
@@ -34,7 +35,7 @@ public class CatalogAdapter implements CatalogObject {
 
     public final int id;
     public final String uniqueName;
-    public final String adapterClazz;
+    public final String adapterName;
     public final AdapterType type;
     public final ImmutableMap<String, String> settings;
     private List<NamespaceType> supportedNamespaces;
@@ -45,12 +46,8 @@ public class CatalogAdapter implements CatalogObject {
     public String getAdapterTypeName() {
         if ( adapterTypeName == null ) {
             // General settings are provided by the annotations of the adapter class
-            try {
-                AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
-                this.adapterTypeName = annotations.name();
-            } catch ( ClassNotFoundException e ) {
-                throw new RuntimeException( "The provided adapter is not correctly annotated." );
-            }
+            AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
+            this.adapterTypeName = annotations.name();
         }
         return adapterTypeName;
 
@@ -64,12 +61,12 @@ public class CatalogAdapter implements CatalogObject {
     public CatalogAdapter(
             final int id,
             @NonNull final String uniqueName,
-            @NonNull final String adapterClazz,
+            @NonNull final String adapterName,
             @NonNull final AdapterType adapterType,
             @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.uniqueName = uniqueName;
-        this.adapterClazz = adapterClazz;
+        this.adapterName = adapterName;
         this.type = adapterType;
         this.settings = ImmutableMap.copyOf( settings );
     }
@@ -78,12 +75,8 @@ public class CatalogAdapter implements CatalogObject {
     public List<NamespaceType> getSupportedNamespaces() {
         if ( supportedNamespaces == null ) {
             // General settings are provided by the annotations of the adapter class
-            try {
-                AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
-                this.supportedNamespaces = List.of( annotations.supportedNamespaceTypes() );
-            } catch ( ClassNotFoundException e ) {
-                throw new RuntimeException( "The provided adapter is not correctly annotated." );
-            }
+            AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
+            this.supportedNamespaces = List.of( annotations.supportedNamespaceTypes() );
         }
         return supportedNamespaces;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
@@ -244,7 +240,7 @@ public interface AlgDataTypeFactory {
      * @param intervalQualifier contains information if it is a year-month or a day-time interval along with precision information
      * @return canonical type descriptor
      */
-    AlgDataType createSqlIntervalType( IntervalQualifier intervalQualifier );
+    AlgDataType createIntervalType( IntervalQualifier intervalQualifier );
 
     /**
      * Infers the return type of a decimal multiplication. Decimal multiplication involves at least one decimal operand and
@@ -360,10 +356,10 @@ public interface AlgDataTypeFactory {
         }
 
 
-        @Override
+        /*@Override
         public FieldInfoBuilder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
             return (FieldInfoBuilder) super.add( name, physicalName, startUnit, startPrecision, endUnit, fractionalSecondPrecision );
-        }
+        }*/
 
 
         @Override
@@ -495,16 +491,6 @@ public interface AlgDataTypeFactory {
          */
         public Builder add( String name, String physicalName, PolyType typeName, int precision, int scale ) {
             add( name, physicalName, typeFactory.createPolyType( typeName, precision, scale ) );
-            return this;
-        }
-
-
-        /**
-         * Adds a field with an interval type.
-         */
-        public Builder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
-            final IntervalQualifier q = LanguageManager.getInstance().createIntervalQualifier( QueryLanguage.SQL, startUnit, startPrecision, endUnit, fractionalSecondPrecision, ParserPos.ZERO );
-            add( name, physicalName, typeFactory.createSqlIntervalType( q ) );
             return this;
         }
 

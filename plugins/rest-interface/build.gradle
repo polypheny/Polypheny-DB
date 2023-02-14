@@ -1,0 +1,86 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":monitoring")
+
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude group: 'org.slf4j'
+    } // Apache 2.0
+    // implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
+
+    implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version // Apache 2.0
+    implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
+    implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version // Apache 2.0
+    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testCompileOnly group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":monitoring:processResources")
+}
+
+delombok {
+    dependsOn(":monitoring:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+
+    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
+
+    allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
+        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
+    }
+    allowDependency('com.j256.simplemagic', 'simplemagic', '1.16') { because 'ISC license' }
+}

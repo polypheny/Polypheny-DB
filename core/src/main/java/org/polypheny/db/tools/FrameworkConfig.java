@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
@@ -66,7 +65,8 @@ public interface FrameworkConfig {
     NodeToAlgConverter.Config getSqlToRelConverterConfig();
 
     /**
-     * Returns the default schema that should be checked before looking at the root schema.  Returns null to only consult the root schema.
+     * Returns the default schema that should be checked before looking at the root schema.
+     * Returns null to only consult the root schema.
      */
     SchemaPlus getDefaultSchema();
 
@@ -88,9 +88,6 @@ public interface FrameworkConfig {
      */
     ImmutableList<Program> getPrograms();
 
-    /**
-     * Returns operator table that should be used to resolve functions and operators during query validation.
-     */
     OperatorTable getOperatorTable();
 
     /**
@@ -114,7 +111,7 @@ public interface FrameworkConfig {
     /**
      * Returns the convertlet table that should be used when converting from SQL to row expressions
      */
-    RexConvertletTable getConvertletTable();
+    //RexConvertletTable getConvertletTable();
 
     /**
      * Returns the PlannerContext that should be made available during planning by calling {@link AlgOptPlanner#getContext()}.

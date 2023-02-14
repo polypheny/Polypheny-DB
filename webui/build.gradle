@@ -14,31 +14,18 @@ configurations {
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
-    implementation project(":mql-language")
-    implementation project(":pig-language")
-    implementation project(":cql-language")
-    implementation project(":cypher-language")
     implementation project(":monitoring")
-    implementation project(":explore-by-example")
 
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
     implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
-
-    implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
-    implementation group: "com.konghq", name: "unirest-java", version: unirest_version  // MIT
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
+    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":sql-language", configuration: "tests")
-
-    testImplementation group: "junit", name: "junit", version: junit_version
 }
 
 
@@ -66,16 +53,11 @@ sourceSets {
 }
 
 compileJava {
-    dependsOn(":cql-language:processResources")
-    dependsOn(":cypher-language:processResources")
-    dependsOn(":explore-by-example:processResources")
-    dependsOn(":mql-language:processResources")
-    dependsOn(":pig-language:processResources")
+    dependsOn(":monitoring:processResources")
 }
 
 processResources {
     dependsOn(":webui:unzipUiFiles")
-    dependsOn(":pig-language:processResources")
 }
 
 
@@ -89,9 +71,9 @@ task unzipUiFiles(type: Copy) {
                 toDir: "$buildDir/webapp/index/"
     }
 }
-task deleteUiFiles(type: Delete) {
+tasks.register('deleteUiFiles') {
     project.delete(
-            fileTree( "$buildDir/webapp" )
+            fileTree("$buildDir/webapp")
     )
 }
 unzipUiFiles.dependsOn(deleteUiFiles)

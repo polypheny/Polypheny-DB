@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgDistribution;
-import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgDistributions;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -76,18 +74,6 @@ public abstract class Exchange extends SingleAlg {
 
         assert traitSet.containsIfApplicable( distribution ) : "traits=" + traitSet + ", distribution" + distribution;
         assert distribution != AlgDistributions.ANY;
-    }
-
-
-    /**
-     * Creates an Exchange by parsing serialized output.
-     */
-    public Exchange( AlgInput input ) {
-        this(
-                input.getCluster(),
-                input.getTraitSet().plus( input.getCollation() ),
-                input.getInput(),
-                AlgDistributionTraitDef.INSTANCE.canonize( input.getDistribution() ) );
     }
 
 

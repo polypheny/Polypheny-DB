@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,7 +174,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
     public final AlgDataType createStructType( final List<? extends Map.Entry<String, AlgDataType>> fieldList ) {
         return canonize(
                 StructKind.FULLY_QUALIFIED,
-                new AbstractList<String>() {
+                new AbstractList<>() {
                     @Override
                     public String get( int index ) {
                         return fieldList.get( index ).getKey();
@@ -187,7 +187,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
                     }
                 },
                 // TODO MV: Using the logical names here might be wrong
-                new AbstractList<String>() {
+                new AbstractList<>() {
                     @Override
                     public String get( int index ) {
                         return fieldList.get( index ).getKey();
@@ -199,7 +199,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
                         return fieldList.size();
                     }
                 },
-                new AbstractList<AlgDataType>() {
+                new AbstractList<>() {
                     @Override
                     public AlgDataType get( int index ) {
                         return fieldList.get( index ).getValue();
@@ -249,7 +249,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
                     type0.getFieldList().get( j ).getName(),
                     null,
                     leastRestrictive(
-                            new AbstractList<AlgDataType>() {
+                            new AbstractList<>() {
                                 @Override
                                 public AlgDataType get( int index ) {
                                     return types.get( index ).getFieldList().get( k ).getType();
@@ -294,7 +294,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
 
         return createStructType(
                 type.getStructKind(),
-                new AbstractList<AlgDataType>() {
+                new AbstractList<>() {
                     @Override
                     public AlgDataType get( int index ) {
                         AlgDataType fieldType = type.getFieldList().get( index ).getType();

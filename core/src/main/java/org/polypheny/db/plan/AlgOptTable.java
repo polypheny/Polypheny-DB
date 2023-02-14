@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public interface AlgOptTable extends Wrapper {
      * relational expression, generally something abstract, such as a {@link LogicalScan}, then optimizes this
      * expression by applying {@link AlgOptRule rules} to transform it into more efficient access methods for this table.
      */
-    AlgNode toAlg( ToAlgContext context );
+    AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet );
 
     /**
      * Returns a description of the physical ordering (or orderings) of the rows returned from this table.

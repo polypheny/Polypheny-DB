@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,10 +128,11 @@ import org.polypheny.db.util.TimestampWithTimeZoneString;
 /**
  * Helper methods to implement SQL functions in generated code.
  *
- * Not present: and, or, not (builtin operators are better, because they use lazy evaluation. Implementations do not check for null values; the calling code must do that.
+ * Not present: and, or, not (builtin operators are better, because they use lazy evaluation. Implementations do not check
+ * for null values; the calling code must do that.
  *
- * Many of the functions do not check for null values. This is intentional. If null arguments are possible, the code-generation framework checks for
- * nulls before calling the functions.
+ * Many of the functions do not check for null values. This is intentional. If null arguments are possible, the
+ * code-generation framework checks for nulls before calling the functions.
  */
 @SuppressWarnings("UnnecessaryUnboxing")
 @Deterministic
@@ -3473,6 +3474,7 @@ public class Functions {
     }
 
 
+    @SuppressWarnings("unused")
     public static Object jsonValueExpressionExclude( String input, List<String> excluded ) {
         try {
             List<List<String>> collect = excluded.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() );

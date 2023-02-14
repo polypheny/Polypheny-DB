@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -116,7 +115,7 @@ final class Fixture {
         addressType =
                 new ObjectPolyType(
                         PolyType.STRUCTURED,
-                        new MockIdentifier( "ADDRESS", ParserPos.ZERO ),
+                        //new MockIdentifier( "ADDRESS", ParserPos.ZERO ),
                         false,
                         Arrays.asList(
                                 new AlgDataTypeFieldImpl( "STREET", 0, varchar20Type ),

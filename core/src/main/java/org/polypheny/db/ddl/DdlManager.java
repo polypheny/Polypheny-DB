@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -60,6 +60,7 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Literal;
@@ -122,11 +123,12 @@ public abstract class DdlManager {
     /**
      * Adds a new adapter (data store or data source)
      *
-     * @param adapterName unique name of the newly created adapter
-     * @param clazzName class to be used for creating the adapter instance
+     * @param uniqueName unique name of the newly created adapter
+     * @param adapterName name of adapter, which is used to create the adapter
+     * @param adapterType the specific {@link AdapterType} for the adapter to create
      * @param config configuration for the adapter
      */
-    public abstract void addAdapter( String adapterName, String clazzName, Map<String, String> config );
+    public abstract void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config );
 
     /**
      * Drop an adapter

@@ -1,0 +1,75 @@
+// licensee
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+    }
+    dependencies {
+        classpath group: "app.cash.licensee", name: "licensee-gradle-plugin", version: licensee_version
+        classpath group: "com.jaredsburrows", name: "gradle-license-plugin", version: license_report_version
+    }
+}
+
+subprojects {
+    // licensee
+    apply plugin: "app.cash.licensee"
+    apply plugin: "com.jaredsburrows.license"
+
+    dependencies {
+        testImplementation project(path: ":core", configuration: "tests")
+    }
+
+    // jar
+    jar {
+        manifest {
+            attributes 'Plugin-Class': "${pluginClass}",
+                    'Plugin-Id': "${pluginId}",
+                    'Plugin-Version': "${pluginVersion}",
+                    'Plugin-Provider': "${pluginProvider}",
+                    'Plugin-Dependencies': "${pluginDependencies}",
+                    'Plugin-Url-Path': "${pluginUrlPath}",
+                    'Plugin-Categories': "${pluginCategories}",
+                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}",
+                    'Plugin-System-Component': "${pluginIsSystemComponent}",
+                    'Plugin-Ui-Visible': "${pluginIsUiVisible}"
+        }
+    }
+
+    task plugin(type: Jar) {
+        manifest {
+            attributes 'Plugin-Class': "${pluginClass}",
+                    'Plugin-Id': "${pluginId}",
+                    'Plugin-Version': "${pluginVersion}",
+                    'Plugin-Provider': "${pluginProvider}",
+                    'Plugin-Dependencies': "${pluginDependencies}",
+                    'Plugin-Url-Path': "${pluginUrlPath}",
+                    'Plugin-Categories': "${pluginCategories}",
+                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}",
+                    'Plugin-System-Component': "${pluginIsSystemComponent}",
+                    'Plugin-Ui-Visible': "${pluginIsUiVisible}"
+        }
+        archiveBaseName = "plugin-${pluginId}"
+        into('classes') {
+            with jar
+        }
+        into('lib') {
+            from configurations.runtimeClasspath
+        }
+        extension('zip')
+    }
+
+    task assemblePlugin(type: Copy) {
+        from plugin
+        into pluginsDir
+    }
+}
+
+tasks.register('assemblePlugins') {
+    dependsOn subprojects.assemblePlugin
+}
+
+build.dependsOn project.tasks.assemblePlugins
+
+assemble.dependsOn project.tasks.assemblePlugins

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 
@@ -32,8 +32,7 @@ public class CatalogMaterializedView extends CatalogView {
 
     private static final long serialVersionUID = 4728996184367206274L;
 
-    @Getter
-    private final QueryLanguage language;
+    private final String language;
 
     @Getter
     private final AlgCollation algCollation;
@@ -64,7 +63,7 @@ public class CatalogMaterializedView extends CatalogView {
             AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            QueryLanguage language,
+            String language,
             MaterializedCriteria materializedCriteria,
             boolean ordered
     ) {
@@ -168,6 +167,11 @@ public class CatalogMaterializedView extends CatalogView {
     @Override
     public AlgNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
+    }
+
+
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.from( language );
     }
 
 }

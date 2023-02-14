@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
@@ -93,21 +92,6 @@ public abstract class TableFunctionScan extends AbstractAlgNode {
         this.rowType = rowType;
         this.inputs = ImmutableList.copyOf( inputs );
         this.columnMappings = columnMappings == null ? null : ImmutableSet.copyOf( columnMappings );
-    }
-
-
-    /**
-     * Creates a TableFunctionScan by parsing serialized output.
-     */
-    protected TableFunctionScan( AlgInput input ) {
-        this(
-                input.getCluster(),
-                input.getTraitSet(),
-                input.getInputs(),
-                input.getExpression( "invocation" ),
-                (Type) input.get( "elementType" ),
-                input.getRowType( "rowType" ),
-                ImmutableSet.of() );
     }
 
 

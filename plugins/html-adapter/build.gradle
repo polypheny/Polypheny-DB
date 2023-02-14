@@ -1,0 +1,95 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+
+    testImplementation 'org.hamcrest:hamcrest-core:amcrest_core_versio'  // BSD 3-clause
+    implementation(group: "com.joestelmach", name: "natty", version: natty_version) {
+        exclude(group: "org.slf4j")
+    }  // MIT
+    implementation group: "org.jsoup", name: "jsoup", version: jsoup_version  // MIT
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+}
+
+delombok {
+    dependsOn(":core:processResources")
+}
+
+
+/**
+ * Tests
+ */
+test {
+    include "**/FileSuite.class"
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+javadoc {
+    dependsOn(":core:processResources")
+}
+
+licensee {
+
+    ignoreDependencies('com.joestelmach') {
+        transitive = true
+        because "removed on release branches"
+    }
+
+    ignoreDependencies('org.jsoup') {
+        transitive = true
+        because "removed on release branches"
+    }
+
+}
+
+

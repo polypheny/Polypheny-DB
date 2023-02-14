@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,6 @@
 package org.polypheny.db.config;
 
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.Properties;
 import org.apache.calcite.avatica.ConnectionConfigImpl;
 import org.apache.calcite.avatica.util.Casing;
@@ -43,9 +41,6 @@ import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.NullCollation;
-import org.polypheny.db.algebra.operators.ChainedOperatorTable;
-import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.util.Conformance;
 
 
@@ -72,38 +67,6 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
     @Override
     public NullCollation defaultNullCollation() {
         return PolyphenyDbConnectionProperty.DEFAULT_NULL_COLLATION.wrap( properties ).getEnum( NullCollation.class, NullCollation.HIGH );
-    }
-
-
-    @Override
-    public <T> T fun( Class<T> operatorTableClass, T defaultOperatorTable ) {
-        final String fun = PolyphenyDbConnectionProperty.FUN.wrap( properties ).getString();
-        if ( fun == null || fun.equals( "" ) || fun.equals( "standard" ) ) {
-            return defaultOperatorTable;
-        }
-        final Collection<OperatorTable> tables = new LinkedHashSet<>();
-        for ( String s : fun.split( "," ) ) {
-            operatorTable( s, tables );
-        }
-        tables.add( LanguageManager.getInstance().getStdOperatorTable() );
-        return operatorTableClass.cast( ChainedOperatorTable.of( tables.toArray( new OperatorTable[0] ) ) );
-    }
-
-
-    private static void operatorTable( String s, Collection<OperatorTable> tables ) {
-        switch ( s ) {
-            case "standard":
-                tables.add( LanguageManager.getInstance().getStdOperatorTable() );
-                return;
-            case "oracle":
-                tables.add( LanguageManager.getInstance().getOracleOperatorTable() );
-                return;
-            //case "spatial":
-            //    tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
-            //    return;
-            default:
-                throw new IllegalArgumentException( "Unknown operator table: " + s );
-        }
     }
 
 

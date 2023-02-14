@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgFieldCollation;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -104,20 +102,6 @@ public abstract class Sort extends SingleAlg {
             builder.add( cluster.getRexBuilder().makeInputRef( child, index ) );
         }
         fieldExps = builder.build();
-    }
-
-
-    /**
-     * Creates a Sort by parsing serialized output.
-     */
-    public Sort( AlgInput input ) {
-        this(
-                input.getCluster(),
-                input.getTraitSet().plus( input.getCollation() ),
-                input.getInput(),
-                AlgCollationTraitDef.INSTANCE.canonize( input.getCollation() ),
-                input.getExpression( "offset" ),
-                input.getExpression( "fetch" ) );
     }
 
 

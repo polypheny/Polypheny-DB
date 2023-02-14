@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,8 +62,6 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
@@ -160,7 +158,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
             return;
         }
 
-        // If only one distinct aggregate and one or more non-distinct aggregates, we can generate multi-phase aggregates
+        // If only one distinct aggregate and one or more non-distinct aggregates, we can generate multiphase aggregates
         if ( distinctAggCallCount == 1 // one distinct aggregate
                 && filterCount == 0 // no filter
                 && unsupportedNonDistinctAggCallCount == 0 // sum/min/max/count in non-distinct aggregate
@@ -215,7 +213,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
 
 
     /**
-     * Converts an aggregate with one distinct aggregate and one or more non-distinct aggregates to multi-phase aggregates (see reference example below).
+     * Converts an aggregate with one distinct aggregate and one or more non-distinct aggregates to multiphase aggregates (see reference example below).
      *
      * @param algBuilder Contains the input relational expression
      * @param aggregate Original aggregate
@@ -295,9 +293,9 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                 final int arg = bottomGroups.size() + nonDistinctAggCallProcessedSoFar;
                 final List<Integer> newArgs = ImmutableList.of( arg );
                 if ( aggCall.getAggregation().getKind() == Kind.COUNT ) {
-                    newCall = AggregateCall.create( (Operator & AggFunction) LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.SQL ), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.getName() );
+                    newCall = AggregateCall.create( OperatorRegistry.getAgg( OperatorName.SUM0 ), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.name );
                 } else {
-                    newCall = AggregateCall.create( (Operator & AggFunction) aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.name );
+                    newCall = AggregateCall.create( aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.name );
                 }
                 nonDistinctAggCallProcessedSoFar++;
             }
@@ -530,7 +528,9 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         //   ON e.deptno = adsal.deptno
         //   GROUP BY e.deptno
         //
-        // Note that if a query contains no non-distinct aggregates, then the very first join/group by is omitted.  In the example above, if MAX(age) is removed, then the sub-select of "e" is not needed, and instead the two other group by's are joined to one another.
+        // Note that if a query contains no non-distinct aggregates, then the very first join/group by is omitted.
+        // In the example above, if MAX(age) is removed, then the sub-select of "e" is not needed, and instead the two
+        // other group by's are joined to one another.
 
         // Project the columns of the GROUP BY plus the arguments to the agg function.
         final Map<Integer, Integer> sourceOf = new HashMap<>();

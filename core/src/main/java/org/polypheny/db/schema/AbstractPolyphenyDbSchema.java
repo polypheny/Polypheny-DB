@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,24 +38,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
-import java.util.Objects;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.*;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -46,6 +51,9 @@ import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
 import org.polypheny.db.util.Pair;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -322,6 +330,10 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             fieldInfo.add( new AlgDataTypeFieldImpl( "labels", 2, typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ) ) );
 
             return new TableEntryImpl( this, tableName, new LogicalTable( -1, name, tableName, List.of(), List.of(), AlgDataTypeImpl.proto( fieldInfo.build() ), NamespaceType.GRAPH ) );
+        } else if ( namespaceType == NamespaceType.DOCUMENT ) {
+            for ( Map.Entry<String, TableEntry> entry : tableMap.map().entrySet().stream().filter( t -> t.getKey().split( "_" )[0].equalsIgnoreCase( tableName.split( "_" )[0] ) ).collect( Collectors.toList() ) ) {
+                return entry.getValue();
+            }
         }
         return null;
     }

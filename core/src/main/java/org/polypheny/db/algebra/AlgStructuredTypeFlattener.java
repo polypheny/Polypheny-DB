@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,9 +132,13 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * AlgStructuredTypeFlattener removes all structured types from a tree of relational expressions. Because it must operate globally on the tree, it is implemented as an explicit self-contained rewrite operation instead of via normal optimizer rules. This approach has the benefit that real optimizer and codegen rules never have to deal with structured types.
+ * AlgStructuredTypeFlattener removes all structured types from a tree of relational expressions. Because it must operate
+ * globally on the tree, it is implemented as an explicit self-contained rewrite operation instead of via normal optimizer
+ * rules. This approach has the benefit that real optimizer and codegen rules never have to deal with structured types.
  * <p>
- * As an example, suppose we have a structured type <code>ST(A1 smallint, A2 bigint)</code>, a table <code>T(c1 ST, c2 double)</code>, and a query <code>select t.c2, t.c1.a2 from t</code>. After SqlToRelConverter executes, the unflattened tree looks like:
+ * As an example, suppose we have a structured type <code>ST(A1 smallint, A2 bigint)</code>,
+ * a table <code>T(c1 ST, c2 double)</code>, and a query <code>select t.c2, t.c1.a2 from t</code>. After SqlToRelConverter
+ * executes, the unflattened tree looks like:
  *
  * <blockquote><pre><code>
  * LogicalProject(C2=[$1], A2=[$0.A2])
@@ -148,7 +152,8 @@ import org.polypheny.db.util.mapping.Mappings;
  *   FtrsIndexScanRel(table=[T], index=[clustered])
  * </code></pre></blockquote>
  * <p>
- * The index scan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null indicator for c1), and the projection picks out the desired attributes (omitting <code>$0</code> and
+ * The index scan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null
+ * indicator for c1), and the projection picks out the desired attributes (omitting <code>$0</code> and
  * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index scan,
  * resulting in a final tree like
  *
@@ -443,7 +448,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
         if ( !(scan.getTable() instanceof LogicalCollection) ) {
-            alg = scan.getCollection().toAlg( toAlgContext );
+            alg = scan.getCollection().toAlg( toAlgContext, scan.traitSet );
         }
         setNewForOldRel( scan, alg );
     }
@@ -855,7 +860,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( Scan alg ) {
-        AlgNode newAlg = alg.getTable().toAlg( toAlgContext );
+        AlgNode newAlg = alg.getTable().toAlg( toAlgContext, alg.traitSet );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(
