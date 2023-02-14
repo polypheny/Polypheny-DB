@@ -75,11 +75,6 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
     @Override
-    public long getNumberOfElementsInQueue(){
-        return monitoringQueue.getNumberOfElementsInQueue();
-    }
-
-    @Override
     public long getNumberOfElementsInQueue() {
         return monitoringQueue.getNumberOfElementsInQueue();
     }

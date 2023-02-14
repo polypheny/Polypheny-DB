@@ -28,7 +28,7 @@ include 'explore-by-example'
 include 'rest-interface'
 include 'cottontail-adapter'
 include 'ethereum-adapter'
-include 'adaptive-optimizer'
+include 'polyfier'
 
 
 include 'dbms'

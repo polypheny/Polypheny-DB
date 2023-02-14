@@ -41,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Triple;
-import org.polypheny.db.PolyResult;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
@@ -474,8 +473,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( results.stream().allMatch( Objects::nonNull ) && optimalNodeList.stream().allMatch( Objects::nonNull ) ) {
             return new ProposedImplementations(
                     proposedRoutingPlans,
-                    optimalNodeList.stream().filter( Objects::nonNull ).map( PhysicalPlan::fromAlg ).collect( Collectors.toList()),
                     results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                    optimalNodeList.stream().filter( Objects::nonNull ).map( PhysicalPlan::fromAlg ).collect( Collectors.toList()),
                     generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     logicalQueryInformation );
         }
@@ -573,8 +572,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations(
                 proposedRoutingPlans,
-                optimalNodeList.stream().filter( Objects::nonNull ).map( PhysicalPlan::fromAlg ).collect( Collectors.toList()),
                 results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                optimalNodeList.stream().filter( Objects::nonNull ).map( PhysicalPlan::fromAlg ).collect( Collectors.toList()),
                 generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 logicalQueryInformation );
     }
@@ -585,7 +584,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private static class ProposedImplementations {
 
         private final List<ProposedRoutingPlan> proposedRoutingPlans;
-        private final List<AlgNode> optimizedPlans;
+        // private final List<AlgNode> optimizedPlans;
         private final List<PolyImplementation> results;
         private final List<PhysicalPlan> physicalPlans;
         private final List<String> generatedCodes;
@@ -1506,7 +1505,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Lists should all be same size
         List<ProposedRoutingPlan> proposedRoutingPlans = proposedImplementations.getProposedRoutingPlans();
-        List<AlgNode> optimalAlgs = proposedImplementations.getOptimizedPlans();
+        //List<AlgNode> optimalAlgs = proposedImplementations.getOptimizedPlans();
         List<PolyImplementation> results = proposedImplementations.getResults();
         List<PhysicalPlan> physicalPlans = proposedImplementations.getPhysicalPlans();
         List<String> generatedCodes = proposedImplementations.getGeneratedCodes();

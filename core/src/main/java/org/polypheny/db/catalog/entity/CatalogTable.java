@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.schema.Schema;
 
 
 @EqualsAndHashCode
@@ -132,6 +133,12 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
     @SneakyThrows
     public String getNamespaceName() {
         return Catalog.getInstance().getSchema( namespaceId ).name;
+    }
+
+
+    @SneakyThrows
+    public CatalogSchema getSchema() {
+        return Catalog.getInstance().getSchema( namespaceId );
     }
 
 

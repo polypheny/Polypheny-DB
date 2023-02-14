@@ -39,13 +39,6 @@ public interface MonitoringService {
     <T extends MonitoringEvent> void monitorEvent( T eventData );
 
     /**
-     +     * Return current number of pending monitoring evens in the queue.
-     +     *
-     +     * @return number of pending events in the queue;
-     +     */
-    public long getNumberOfElementsInQueue();
-
-    /**
      * Get all data for given monitoring persistent type.
      *
      * @param dataPointClass DatapointClass of interest

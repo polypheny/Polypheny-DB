@@ -89,6 +89,7 @@ public class PhysicalPlan implements Serializable, Comparable<PhysicalPlan> {
      */
     public PhysicalPlan calculateCosts( AlgOptPlanner planner, Function<PhysicalPlan, Long> estimator, float weight ) {
         setEstimatedExecutionTime( estimator.apply( this ) );
+        weight = (getEstimatedExecutionTime() == 0L) ? 0 : weight;
         this.systemCost = this.root.computeSelfCost( planner, this.root.getCluster().getMetadataQuery() );
         AlgOptCost systemCostW = this.systemCost.multiplyBy( 1 - weight );
         this.weightedCost = systemCostW

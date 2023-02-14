@@ -44,7 +44,6 @@ public class LogicalDocumentScan extends DocumentScan implements RelationalTrans
         return new LogicalDocumentScan( cluster, cluster.traitSet(), collection );
     }
 
-
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader ) {
         return List.of( AlgOptRule.convert( LogicalScan.create( getCluster(), entities.get( 0 ) ), ModelTrait.RELATIONAL ) );
