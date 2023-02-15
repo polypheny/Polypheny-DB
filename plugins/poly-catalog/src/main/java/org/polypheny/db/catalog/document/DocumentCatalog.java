@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.document;
 
 import io.activej.serializer.BinarySerializer;
-import io.activej.serializer.SerializerBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
@@ -31,7 +30,7 @@ public class DocumentCatalog implements ModelCatalog, SerializableCatalog {
     Map<Long, CatalogCollection> collections = new HashMap<>();
 
     @Getter
-    BinarySerializer<DocumentCatalog> serializer = SerializerBuilder.create().build( DocumentCatalog.class );
+    BinarySerializer<DocumentCatalog> serializer = SerializableCatalog.builder.get().build( DocumentCatalog.class );
 
     private boolean openChanges = false;
 

@@ -16,9 +16,15 @@
 
 package org.polypheny.db.catalog;
 
+import io.activej.codegen.DefiningClassLoader;
 import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.SerializerBuilder;
+import java.util.function.Supplier;
+import org.polypheny.db.plugins.PolyPluginManager;
 
 public interface SerializableCatalog {
+
+    Supplier<SerializerBuilder> builder = () -> SerializerBuilder.create( DefiningClassLoader.create( PolyPluginManager.getMainClassLoader() ) );
 
     <T extends SerializableCatalog> BinarySerializer<T> getSerializer();
 
@@ -28,8 +34,8 @@ public interface SerializableCatalog {
         return buffer;
     }
 
-    default <T extends SerializableCatalog> SerializableCatalog deserialize( byte[] serialized, Class<T> clazz ) {
-        return getSerializer().decode( serialized, 0 );
+    default <T extends SerializableCatalog> T deserialize( byte[] serialized, Class<T> clazz ) {
+        return clazz.cast( getSerializer().decode( serialized, 0 ) );
     }
 
 }

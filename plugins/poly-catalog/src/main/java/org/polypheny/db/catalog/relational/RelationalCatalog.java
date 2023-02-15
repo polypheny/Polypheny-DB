@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.relational;
 
 import io.activej.serializer.BinarySerializer;
-import io.activej.serializer.SerializerBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
@@ -29,7 +28,7 @@ import org.polypheny.db.catalog.SerializableCatalog;
 public class RelationalCatalog implements ModelCatalog, SerializableCatalog {
 
     @Getter
-    BinarySerializer<RelationalCatalog> serializer = SerializerBuilder.create().build( RelationalCatalog.class );
+    BinarySerializer<RelationalCatalog> serializer = SerializableCatalog.builder.get().build( RelationalCatalog.class );
 
     private Map<Long, CatalogSchema> schemas = new HashMap<>();
 
@@ -61,6 +60,7 @@ public class RelationalCatalog implements ModelCatalog, SerializableCatalog {
 
 
     public void addSchema( long id, String name, long databaseId, NamespaceType namespaceType ) {
+        schemas.put( id, new CatalogSchema( id, name, databaseId ) );
     }
 
 

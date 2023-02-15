@@ -16,7 +16,16 @@
 
 package org.polypheny.db.catalog.relational;
 
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
 public class CatalogSchema {
+
+
+    private final long id;
+
+    private final String name;
+    private final long databaseId;
 
 
 }

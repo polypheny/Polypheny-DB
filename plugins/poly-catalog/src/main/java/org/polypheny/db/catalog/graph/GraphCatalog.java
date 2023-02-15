@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.graph;
 
 import io.activej.serializer.BinarySerializer;
-import io.activej.serializer.SerializerBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -30,7 +29,7 @@ public class GraphCatalog implements ModelCatalog, SerializableCatalog {
     public List<CatalogGraph> graphs = new ArrayList<>();
 
     @Getter
-    BinarySerializer<GraphCatalog> serializer = SerializerBuilder.create().build( GraphCatalog.class );
+    BinarySerializer<GraphCatalog> serializer = SerializableCatalog.builder.get().build( GraphCatalog.class );
 
     private boolean openChanges = false;
 
