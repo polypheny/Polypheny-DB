@@ -16,13 +16,20 @@
 
 package org.polypheny.db.catalog.relational;
 
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.SerializerBuilder;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.ModelCatalog;
+import org.polypheny.db.catalog.SerializableCatalog;
 
-public class RelationalCatalog implements ModelCatalog {
+public class RelationalCatalog implements ModelCatalog, SerializableCatalog {
+
+    @Getter
+    BinarySerializer<RelationalCatalog> serializer = SerializerBuilder.create().build( RelationalCatalog.class );
 
     private Map<Long, CatalogSchema> schemas = new HashMap<>();
 
@@ -48,7 +55,7 @@ public class RelationalCatalog implements ModelCatalog {
 
 
     @Override
-    public boolean hasUncommitedChanges() {
+    public boolean hasUncommittedChanges() {
         return openChanges;
     }
 

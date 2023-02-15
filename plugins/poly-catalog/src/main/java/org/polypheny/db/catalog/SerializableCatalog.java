@@ -16,13 +16,20 @@
 
 package org.polypheny.db.catalog;
 
-public interface ModelCatalog {
+import io.activej.serializer.BinarySerializer;
 
-    void commit();
+public interface SerializableCatalog {
 
-    void rollback();
+    <T extends SerializableCatalog> BinarySerializer<T> getSerializer();
 
-    boolean hasUncommittedChanges();
+    default <T extends SerializableCatalog> byte[] serialize( Class<T> clazz ) {
+        byte[] buffer = new byte[200];
+        getSerializer().encode( buffer, 0, this );
+        return buffer;
+    }
 
+    default <T extends SerializableCatalog> SerializableCatalog deserialize( byte[] serialized, Class<T> clazz ) {
+        return getSerializer().decode( serialized, 0 );
+    }
 
 }

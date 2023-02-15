@@ -16,14 +16,21 @@
 
 package org.polypheny.db.catalog.graph;
 
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.SerializerBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.ModelCatalog;
+import org.polypheny.db.catalog.SerializableCatalog;
 
-public class GraphCatalog implements ModelCatalog {
+public class GraphCatalog implements ModelCatalog, SerializableCatalog {
 
     public List<CatalogGraph> graphs = new ArrayList<>();
+
+    @Getter
+    BinarySerializer<GraphCatalog> serializer = SerializerBuilder.create().build( GraphCatalog.class );
 
     private boolean openChanges = false;
 
@@ -43,7 +50,7 @@ public class GraphCatalog implements ModelCatalog {
 
 
     @Override
-    public boolean hasUncommitedChanges() {
+    public boolean hasUncommittedChanges() {
         return openChanges;
     }
 

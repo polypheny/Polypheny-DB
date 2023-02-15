@@ -17,11 +17,18 @@
 package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.SerializerBuilder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.document.DocumentCatalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -32,6 +39,17 @@ import org.polypheny.db.catalog.mappings.CatalogGraphMapping;
 import org.polypheny.db.catalog.mappings.CatalogModelMapping;
 import org.polypheny.db.catalog.mappings.CatalogRelationalMapping;
 import org.polypheny.db.catalog.relational.RelationalCatalog;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.NameMatcher;
 
 
 /**
@@ -42,7 +60,10 @@ import org.polypheny.db.catalog.relational.RelationalCatalog;
  * Field -> Column (Relational), does not exist (Graph), Field (Document)
  */
 @Slf4j
-public class PolyCatalog {
+public class PolyCatalog implements SerializableCatalog, Prepare.CatalogReader {
+
+    @Getter
+    BinarySerializer<PolyCatalog> serializer = SerializerBuilder.create().build( PolyCatalog.class );
 
     private final RelationalCatalog relational;
     private final GraphCatalog graph;
@@ -71,13 +92,13 @@ public class PolyCatalog {
 
     public void commit() throws NoTablePrimaryKeyException {
         log.debug( "commit" );
-        catalogs.stream().filter( ModelCatalog::hasUncommitedChanges ).forEach( ModelCatalog::commit );
+        catalogs.stream().filter( ModelCatalog::hasUncommittedChanges ).forEach( ModelCatalog::commit );
     }
 
 
     public void rollback() {
         log.debug( "rollback" );
-        catalogs.stream().filter( ModelCatalog::hasUncommitedChanges ).forEach( ModelCatalog::rollback );
+        catalogs.stream().filter( ModelCatalog::hasUncommittedChanges ).forEach( ModelCatalog::rollback );
     }
 
 
@@ -216,5 +237,100 @@ public class PolyCatalog {
         relational.addColumn( id, name, entityId, type );
     }
 
+
+    @Override
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+
+    }
+
+
+    @Override
+    public List<Operator> getOperatorList() {
+        return null;
+    }
+
+
+    @Override
+    public AlgDataType getNamedType( Identifier typeName ) {
+        return null;
+    }
+
+
+    @Override
+    public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public List<List<String>> getSchemaPaths() {
+        return null;
+    }
+
+
+    @Override
+    public NameMatcher nameMatcher() {
+        return null;
+    }
+
+
+    @Override
+    public AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList ) {
+        return null;
+    }
+
+
+    @Override
+    public PolyphenyDbSchema getRootSchema() {
+        return null;
+    }
+
+
+    @Override
+    public AlgDataTypeFactory getTypeFactory() {
+        return null;
+    }
+
+
+    @Override
+    public void registerRules( AlgOptPlanner planner ) throws Exception {
+
+    }
+
+
+    @Override
+    public PreparingTable getTableForMember( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public CatalogReader withSchemaPath( List<String> schemaPath ) {
+        return null;
+    }
+
+
+    @Override
+    public PreparingTable getTable( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public AlgOptTable getCollection( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public Graph getGraph( String name ) {
+        return null;
+    }
+
+
+    @Override
+    public <C> C unwrap( Class<C> aClass ) {
+        return null;
+    }
 
 }
