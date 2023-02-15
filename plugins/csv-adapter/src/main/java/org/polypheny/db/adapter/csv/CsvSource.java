@@ -96,6 +96,10 @@ public class CsvSource extends DataSource {
 
     private void setCsvDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
+        if ( settings.containsKey( "method" ) && settings.get( "method" ).equalsIgnoreCase( "link" ) ) {
+            dir = settings.get( "directoryName" );
+        }
+
         if ( dir.startsWith( "classpath://" ) ) {
             csvDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
         } else {
@@ -144,20 +148,25 @@ public class CsvSource extends DataSource {
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        if ( exportedColumnCache != null ) {
+        if ( settings.get( "method" ).equalsIgnoreCase( "upload" ) && exportedColumnCache != null ) {
+            // if we upload, file will not be changed and we can cache the columns information, if "link" is used this is not advised
             return exportedColumnCache;
         }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
-            List<CatalogColumnPlacement> ccps = Catalog
+            List<CatalogColumnPlacement> placements = Catalog
                     .getInstance()
                     .getColumnPlacementsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
-            for ( CatalogColumnPlacement ccp : ccps ) {
+            for ( CatalogColumnPlacement ccp : placements ) {
                 fileNames.add( ccp.physicalSchemaName );
             }
+        } else if ( Sources.of( csvDir ).file().isFile() ) {
+            // single files
+            fileNames = Set.of( csvDir.getPath() );
         } else {
+            // multiple files
             File[] files = Sources.of( csvDir )
                     .file()
                     .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) );
@@ -170,15 +179,7 @@ public class CsvSource extends DataSource {
                     .collect( Collectors.toSet() );
         }
         for ( String fileName : fileNames ) {
-            // Compute physical table name
-            String physicalTableName = fileName.toLowerCase();
-            if ( physicalTableName.endsWith( ".gz" ) ) {
-                physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
-            }
-            physicalTableName = physicalTableName
-                    .substring( 0, physicalTableName.length() - ".csv".length() )
-                    .trim()
-                    .replaceAll( "[^a-z0-9_]+", "" );
+            String physicalTableName = computePhysicalEntityName( fileName );
 
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
@@ -257,6 +258,31 @@ public class CsvSource extends DataSource {
         }
         this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
+    }
+
+
+    private static String computePhysicalEntityName( String fileName ) {
+        // Compute physical table name
+        String physicalTableName = fileName.toLowerCase();
+        // remove gz
+        if ( physicalTableName.endsWith( ".gz" ) ) {
+            physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
+        }
+        // use only filename
+        if ( physicalTableName.contains( "/" ) ) {
+            String[] splits = physicalTableName.split( "/" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        if ( physicalTableName.contains( "\\" ) ) {
+            String[] splits = physicalTableName.split( "\\\\" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        return physicalTableName
+                .substring( 0, physicalTableName.length() - ".csv".length() )
+                .trim()
+                .replaceAll( "[^a-z0-9_]+", "" );
     }
 
 

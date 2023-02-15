@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -45,21 +46,38 @@ public class SecurityManager {
     }
 
 
+    @Nullable // if path has access already
     public UUID requestPathAccess( String uniqueName, String requester, Path path ) {
+        Path dir = path;
+        if ( dir.toFile().isFile() ) {
+            dir = dir.getParent();
+        }
+        if ( status.containsKey( dir ) ) {
+            // send old or done uuid
+            if ( status.get( dir ).step == AuthStep.SUCCESSFUL ) {
+                return null;
+            }
+            return status.get( dir ).uuid;
+        }
+
         UUID uuid = UUID.randomUUID();
-        status.put( path, new AuthStatus( uniqueName, uuid, path, requester ) );
+        status.put( dir, new AuthStatus( uniqueName, uuid, dir, requester ) );
 
         return uuid;
     }
 
 
     public boolean checkPathAccess( Path path ) {
-        AuthStatus status = this.status.get( path );
-
-        if ( status.step != AuthStep.INITIAL ) {
-            return false;
+        Path dir = path;
+        if ( dir.toFile().isFile() ) {
+            dir = dir.getParent();
         }
-        if ( Arrays.stream( Objects.requireNonNull( status.path.toFile().listFiles() ) ).noneMatch( f -> f.getName().equals( ".polypheny-access" ) && f.isFile() ) ) {
+        AuthStatus status = this.status.get( dir );
+
+        if ( status.step == AuthStep.SUCCESSFUL ) {
+            return true;
+        }
+        if ( Arrays.stream( Objects.requireNonNull( status.path.toFile().listFiles() ) ).noneMatch( f -> f.getName().equals( "polypheny.access" ) && f.isFile() ) ) {
             // todo: if more fine-grained access control is required, add as content of file
             return false;
         }

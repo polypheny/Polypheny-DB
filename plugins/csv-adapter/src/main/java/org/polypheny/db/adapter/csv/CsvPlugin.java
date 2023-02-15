@@ -38,6 +38,7 @@ public class CsvPlugin extends Plugin {
     public void start() {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "embedded",
+                "method", "upload",
                 "directory", "classpath://hr",
                 "maxStringLength", "255"
         );

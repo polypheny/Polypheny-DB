@@ -2372,7 +2372,12 @@ public class Crud implements InformationObserver {
     public void startAccessRequest( Context ctx ) {
         PathAccessRequest request = ctx.bodyAsClass( PathAccessRequest.class );
         UUID uuid = SecurityManager.getInstance().requestPathAccess( request.getName(), ctx.req.getSession().getId(), Path.of( request.getDirectoryName() ) );
-        ctx.json( uuid );
+        if ( uuid != null ) {
+            ctx.json( uuid );
+        } else {
+            ctx.result( "" );
+        }
+
     }
 
 
@@ -3688,7 +3693,6 @@ public class Crud implements InformationObserver {
                 .map( PluginStatus::from )
                 .collect( Collectors.toList() ) );
     }
-
 
 
     public static class QueryExecutionException extends Exception {
