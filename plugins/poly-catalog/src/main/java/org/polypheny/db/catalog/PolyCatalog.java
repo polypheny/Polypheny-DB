@@ -209,7 +209,7 @@ public class PolyCatalog implements SerializableCatalog, CatalogReader {
     }
 
 
-    public long addEntity( String name, long namespaceId, NamespaceType type, int ownerId ) {
+    public long addEntity( String name, long namespaceId, NamespaceType type, long ownerId ) {
         long id = idBuilder.getNewEntityId();
 
         switch ( type ) {

@@ -16,6 +16,38 @@
 
 package org.polypheny.db.catalog.document;
 
+import com.google.common.collect.ImmutableMap;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import java.util.Map;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+
 public class CatalogDocDatabase {
+
+    @Serialize
+    public final long id;
+    @Serialize
+    public final String name;
+    @Serialize
+    public final long databaseId;
+    @Serialize
+    public final NamespaceType namespaceType;
+
+    @Serialize
+    public final ImmutableMap<Long, CatalogCollection> collections;
+
+
+    public CatalogDocDatabase(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("databaseId") long databaseId,
+            @Deserialize("namespaceType") NamespaceType namespaceType,
+            @Deserialize("collections") Map<Long, CatalogCollection> collections ) {
+        this.id = id;
+        this.name = name;
+        this.databaseId = databaseId;
+        this.namespaceType = namespaceType;
+        this.collections = ImmutableMap.copyOf( collections );
+    }
 
 }

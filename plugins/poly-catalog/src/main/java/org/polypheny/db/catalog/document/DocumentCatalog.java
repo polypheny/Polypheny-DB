@@ -17,8 +17,10 @@
 package org.polypheny.db.catalog.document;
 
 import io.activej.serializer.BinarySerializer;
-import java.util.HashMap;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.ModelCatalog;
@@ -26,11 +28,27 @@ import org.polypheny.db.catalog.SerializableCatalog;
 
 public class DocumentCatalog implements ModelCatalog, SerializableCatalog {
 
-    Map<Long, CatalogDocDatabase> databases = new HashMap<>();
-    Map<Long, CatalogCollection> collections = new HashMap<>();
-
     @Getter
-    BinarySerializer<DocumentCatalog> serializer = SerializableCatalog.builder.get().build( DocumentCatalog.class );
+    public final BinarySerializer<DocumentCatalog> serializer = SerializableCatalog.builder.get().build( DocumentCatalog.class );
+
+    @Serialize
+    public final Map<Long, CatalogDocDatabase> databases;
+    @Serialize
+    public final Map<Long, CatalogCollection> collections;
+
+
+    public DocumentCatalog() {
+        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
+    }
+
+
+    public DocumentCatalog(
+            @Deserialize("databases") Map<Long, CatalogDocDatabase> databases,
+            @Deserialize("collections") Map<Long, CatalogCollection> collections ) {
+        this.databases = databases;
+        this.collections = collections;
+    }
+
 
     private boolean openChanges = false;
 
@@ -55,6 +73,7 @@ public class DocumentCatalog implements ModelCatalog, SerializableCatalog {
 
 
     public void addDatabase( long id, String name, long databaseId, NamespaceType namespaceType ) {
+        databases.put( id, new CatalogDocDatabase( id, name, databaseId, namespaceType, collections ) );
     }
 
 

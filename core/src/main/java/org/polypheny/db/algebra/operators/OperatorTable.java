@@ -44,7 +44,7 @@ public interface OperatorTable {
      *
      * @return list of SqlOperator objects
      */
-    List<Operator> getOperatorList();
+    List<? extends Operator> getOperatorList();
 
 }
 

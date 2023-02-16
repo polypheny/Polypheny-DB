@@ -29,7 +29,7 @@ public interface SerializableCatalog {
     <T extends SerializableCatalog> BinarySerializer<T> getSerializer();
 
     default <T extends SerializableCatalog> byte[] serialize( Class<T> clazz ) {
-        byte[] buffer = new byte[200];
+        byte[] buffer = new byte[1000];
         getSerializer().encode( buffer, 0, this );
         return buffer;
     }

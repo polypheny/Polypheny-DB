@@ -41,7 +41,9 @@ public class CatalogPlugin extends Plugin {
         long database = catalog.addDatabase( "APP", user );
 
         catalog.addNamespace( "test", database, user, NamespaceType.RELATIONAL );
-        catalog.addNamespace( "test2", database, user, NamespaceType.RELATIONAL );
+        long namespaceId = catalog.addNamespace( "test2", database, user, NamespaceType.RELATIONAL );
+
+        catalog.addEntity( "testTable", namespaceId, NamespaceType.RELATIONAL, user );
 
         byte[] buffer = catalog.serialize( PolyCatalog.class );
 

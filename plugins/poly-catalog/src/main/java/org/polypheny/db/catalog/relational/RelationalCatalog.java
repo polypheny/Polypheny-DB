@@ -80,15 +80,17 @@ public class RelationalCatalog implements ModelCatalog, SerializableCatalog {
 
 
     public void addSchema( long id, String name, long databaseId, NamespaceType namespaceType ) {
-        schemas.put( id, new CatalogSchema( id, name, databaseId ) );
+        schemas.put( id, new CatalogSchema( id, name, databaseId, tables ) );
     }
 
 
     public void addTable( long id, String name, long namespaceId ) {
+        schemas.put( id, schemas.get( namespaceId ).addTable( new CatalogTable( id, name, namespaceId ) ) );
     }
 
 
     public void addColumn( long id, String name, long entityId, AlgDataType type ) {
+
     }
 
 

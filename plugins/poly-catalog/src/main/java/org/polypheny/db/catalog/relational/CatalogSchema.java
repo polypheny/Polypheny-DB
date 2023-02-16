@@ -16,28 +16,45 @@
 
 package org.polypheny.db.catalog.relational;
 
+import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.Value;
 
+@Value
 public class CatalogSchema {
 
     @Serialize
-    public final long id;
+    public long id;
 
     @Serialize
-    public final String name;
+    public String name;
 
     @Serialize
-    public final long databaseId;
+    public long databaseId;
+
+    @Serialize
+    public ImmutableMap<Long, CatalogTable> tables;
 
 
     public CatalogSchema(
             @Deserialize("id") long id,
             @Deserialize("name") String name,
-            @Deserialize("databaseId") long databaseId ) {
+            @Deserialize("databaseId") long databaseId,
+            @Deserialize("tables") Map<Long, CatalogTable> tables ) {
         this.id = id;
         this.name = name;
         this.databaseId = databaseId;
+        this.tables = ImmutableMap.copyOf( tables );
+    }
+
+
+    public CatalogSchema addTable( CatalogTable catalogTable ) {
+        Map<Long, CatalogTable> newTables = new HashMap<>( tables );
+        newTables.put( catalogTable.id, catalogTable );
+        return new CatalogSchema( id, name, databaseId, newTables );
     }
 
 }

@@ -17,8 +17,10 @@
 package org.polypheny.db.catalog.graph;
 
 import io.activej.serializer.BinarySerializer;
-import java.util.ArrayList;
-import java.util.List;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.ModelCatalog;
@@ -26,12 +28,23 @@ import org.polypheny.db.catalog.SerializableCatalog;
 
 public class GraphCatalog implements ModelCatalog, SerializableCatalog {
 
-    public List<CatalogGraph> graphs = new ArrayList<>();
-
     @Getter
-    BinarySerializer<GraphCatalog> serializer = SerializableCatalog.builder.get().build( GraphCatalog.class );
+    public final BinarySerializer<GraphCatalog> serializer = SerializableCatalog.builder.get().build( GraphCatalog.class );
+
+    @Serialize
+    public Map<Long, CatalogGraph> graphs;
 
     private boolean openChanges = false;
+
+
+    public GraphCatalog() {
+        this( new ConcurrentHashMap<>() );
+    }
+
+
+    public GraphCatalog( @Deserialize("graphs") Map<Long, CatalogGraph> graphs ) {
+        this.graphs = graphs;
+    }
 
 
     @Override
@@ -55,6 +68,7 @@ public class GraphCatalog implements ModelCatalog, SerializableCatalog {
 
 
     public void addGraph( long id, String name, long databaseId, NamespaceType namespaceType ) {
+        graphs.put( id, new CatalogGraph( id, name, databaseId, namespaceType ) );
     }
 
 

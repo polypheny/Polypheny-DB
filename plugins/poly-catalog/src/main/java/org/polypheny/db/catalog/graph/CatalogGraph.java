@@ -16,6 +16,34 @@
 
 package org.polypheny.db.catalog.graph;
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+
 public class CatalogGraph {
+
+    @Serialize
+    public final long id;
+
+    @Serialize
+    public final String name;
+
+    @Serialize
+    public final long databaseId;
+
+    @Serialize
+    public final NamespaceType namespaceType;
+
+
+    public CatalogGraph(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("databaseId") long databaseId,
+            @Deserialize("namespaceType") NamespaceType namespaceType ) {
+        this.id = id;
+        this.name = name;
+        this.databaseId = databaseId;
+        this.namespaceType = namespaceType;
+    }
 
 }
