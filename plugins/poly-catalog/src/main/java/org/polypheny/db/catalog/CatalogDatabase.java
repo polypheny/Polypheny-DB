@@ -14,25 +14,30 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.mappings;
+package org.polypheny.db.catalog;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 
-public class CatalogDocumentMapping implements CatalogModelMapping {
+public class CatalogDatabase {
 
     @Serialize
     public final long id;
 
+    @Serialize
+    public final String name;
 
-    public CatalogDocumentMapping( @Deserialize("id") long id ) {
+    @Serialize
+    public final long ownerId;
+
+
+    public CatalogDatabase(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("ownerId") long ownerId ) {
         this.id = id;
-    }
-
-
-    @Override
-    public String getGraphLabel() {
-        return "_collection_" + id;
+        this.name = name;
+        this.ownerId = ownerId;
     }
 
 }

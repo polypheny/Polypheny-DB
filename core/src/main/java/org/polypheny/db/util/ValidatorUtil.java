@@ -303,11 +303,11 @@ public class ValidatorUtil {
                     getSchema(
                             catalogReader.getRootSchema(),
                             Iterables.concat( schemaPath, Util.skipLast( names ) ),
-                            catalogReader.nameMatcher() );
+                            catalogReader.nameMatcher );
             if ( schema == null ) {
                 continue;
             }
-            TableEntry entry = getTableEntryFrom( schema, Util.last( names ), catalogReader.nameMatcher().isCaseSensitive() );
+            TableEntry entry = getTableEntryFrom( schema, Util.last( names ), catalogReader.nameMatcher.isCaseSensitive() );
             if ( entry != null ) {
                 return entry;
             }

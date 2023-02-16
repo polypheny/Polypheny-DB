@@ -94,7 +94,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     private SqlValidatorNamespace resolveImpl( SqlIdentifier id ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
         final List<String> names = SqlIdentifier.toStar( id.names );
         try {

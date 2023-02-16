@@ -134,7 +134,7 @@ public abstract class ListScope extends DelegatingScope {
     @Override
     public Pair<String, SqlValidatorNamespace>
     findQualifyingTableName( final String columnName, SqlNode ctx ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
         final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, ctx, nameMatcher );
         switch ( map.size() ) {
             case 0:
@@ -215,7 +215,7 @@ public abstract class ListScope extends DelegatingScope {
 
     @Override
     public AlgDataType resolveColumn( String columnName, SqlNode ctx ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
         int found = 0;
         AlgDataType type = null;
         for ( ScopeChild child : children ) {

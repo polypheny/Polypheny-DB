@@ -16,12 +16,16 @@
 
 package org.polypheny.db.catalog.mappings;
 
-public class CatalogRelationalMapping extends CatalogModelMapping {
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 
-    private final long id;
+public class CatalogRelationalMapping implements CatalogModelMapping {
+
+    @Serialize
+    public final long id;
 
 
-    public CatalogRelationalMapping( long id ) {
+    public CatalogRelationalMapping( @Deserialize("id") long id ) {
         this.id = id;
     }
 

@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
-import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
@@ -83,21 +82,7 @@ public interface PolyphenyDbSchema {
 
     NavigableSet<String> getFunctionNames();
 
-    NavigableMap<String, Table> getTablesBasedOnNullaryFunctions();
-
     TableEntry getTableBasedOnNullaryFunction( String tableName, boolean caseSensitive );
-
-    @Experimental
-    boolean removeSubSchema( String name );
-
-    @Experimental
-    boolean removeTable( String name );
-
-    @Experimental
-    boolean removeFunction( String name );
-
-    @Experimental
-    boolean removeType( String name );
 
     NameMap<TableEntry> getTableMap();
 

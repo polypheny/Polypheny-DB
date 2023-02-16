@@ -16,16 +16,28 @@
 
 package org.polypheny.db.catalog.relational;
 
-import lombok.AllArgsConstructor;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 
-@AllArgsConstructor
 public class CatalogSchema {
 
+    @Serialize
+    public final long id;
 
-    private final long id;
+    @Serialize
+    public final String name;
 
-    private final String name;
-    private final long databaseId;
+    @Serialize
+    public final long databaseId;
 
+
+    public CatalogSchema(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("databaseId") long databaseId ) {
+        this.id = id;
+        this.name = name;
+        this.databaseId = databaseId;
+    }
 
 }

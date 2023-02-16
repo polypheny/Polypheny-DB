@@ -37,8 +37,11 @@ public class CatalogPlugin extends Plugin {
     @Override
     public void start() {
         PolyCatalog catalog = new PolyCatalog();
-        catalog.addNamespace( "test", 0, 0, NamespaceType.RELATIONAL );
-        catalog.addNamespace( "test2", 0, 0, NamespaceType.RELATIONAL );
+        long user = catalog.addUser( "admin" );
+        long database = catalog.addDatabase( "APP", user );
+
+        catalog.addNamespace( "test", database, user, NamespaceType.RELATIONAL );
+        catalog.addNamespace( "test2", database, user, NamespaceType.RELATIONAL );
 
         byte[] buffer = catalog.serialize( PolyCatalog.class );
 

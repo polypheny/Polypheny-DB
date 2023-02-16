@@ -47,7 +47,7 @@ public class MatchRecognizeScope extends ListScope {
     public MatchRecognizeScope( SqlValidatorScope parent, SqlMatchRecognize matchRecognize ) {
         super( parent );
         this.matchRecognize = matchRecognize;
-        patternVars = validator.getCatalogReader().nameMatcher().createSet();
+        patternVars = validator.getCatalogReader().nameMatcher.createSet();
         patternVars.add( STAR );
     }
 

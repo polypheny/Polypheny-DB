@@ -859,13 +859,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     @Override
     public void registerSchema( AlgOptSchema schema ) {
-        if ( registeredSchemas.add( schema ) ) {
-            try {
-                schema.registerRules( this );
-            } catch ( Exception e ) {
-                throw new AssertionError( "While registering schema " + schema, e );
-            }
-        }
+        registeredSchemas.add( schema );
     }
 
 

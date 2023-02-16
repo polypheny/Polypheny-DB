@@ -34,14 +34,23 @@
 package org.polypheny.db.schema;
 
 
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
+
 /**
  * Mix-in interface that allows you to find sub-objects.
  */
 public interface Wrapper {
 
-    /**
-     * Finds an instance of an interface implemented by this object, or returns null if this object does not support that interface.
-     */
-    <C> C unwrap( Class<C> aClass );
+    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
+
+    default <C> C unwrap( Class<C> aClass ) {
+        if ( aClass.isInstance( this ) ) {
+            return aClass.cast( this );
+        }
+        return null;
+    }
+
 }
 

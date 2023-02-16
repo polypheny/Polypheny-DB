@@ -23,7 +23,6 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.NameMatcher;
 
 
 /**
@@ -74,11 +73,6 @@ public interface ValidatorCatalogReader extends Wrapper {
      * @return paths of current schema and root schema
      */
     List<List<String>> getSchemaPaths();
-
-    /**
-     * Returns an implementation of {@link NameMatcher} that matches the case-sensitivity policy.
-     */
-    NameMatcher nameMatcher();
 
     AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList );
 

@@ -99,7 +99,7 @@ public class SqlValidatorUtil {
             if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
                 final TableNamespace tableNamespace = resolvedNamespace.unwrap( TableNamespace.class );
                 final ValidatorTable validatorTable = tableNamespace.getTable();
-                final AlgDataTypeFactory typeFactory = catalogReader.getTypeFactory();
+                final AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
                 final List<AlgDataTypeField> extendedFields =
                         dmlNamespace.extendList == null
                                 ? ImmutableList.of()
@@ -284,7 +284,7 @@ public class SqlValidatorUtil {
         final Table t = table == null ? null : table.unwrap( Table.class );
 
         if ( !(t instanceof CustomColumnResolvingTable) ) {
-            final NameMatcher nameMatcher = catalogReader.nameMatcher();
+            final NameMatcher nameMatcher = catalogReader.nameMatcher;
             AlgDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
 
             if ( typeField == null && isDocument ) {
@@ -312,7 +312,7 @@ public class SqlValidatorUtil {
      */
     public static SqlValidatorNamespace lookup( SqlValidatorScope scope, List<String> names ) {
         assert names.size() > 0;
-        final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
+        final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher;
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
         scope.resolve( ImmutableList.of( names.get( 0 ) ), nameMatcher, false, resolved );
         assert resolved.count() == 1;
@@ -505,7 +505,7 @@ public class SqlValidatorUtil {
             String originalRelName = expr.names.get( 0 );
             String originalFieldName = expr.names.get( 1 );
 
-            final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
+            final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher;
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
 

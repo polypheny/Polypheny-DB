@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.relational;
 
 import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
@@ -28,15 +30,33 @@ import org.polypheny.db.catalog.SerializableCatalog;
 public class RelationalCatalog implements ModelCatalog, SerializableCatalog {
 
     @Getter
-    BinarySerializer<RelationalCatalog> serializer = SerializableCatalog.builder.get().build( RelationalCatalog.class );
+    public final BinarySerializer<RelationalCatalog> serializer = SerializableCatalog.builder.get().build( RelationalCatalog.class );
 
-    private Map<Long, CatalogSchema> schemas = new HashMap<>();
+    @Serialize
+    public final Map<Long, CatalogSchema> schemas;
 
-    private Map<Long, CatalogTable> tables = new HashMap<>();
+    @Serialize
+    public final Map<Long, CatalogTable> tables;
 
-    private Map<Long, CatalogColumn> columns = new HashMap<>();
+    @Serialize
+    public final Map<Long, CatalogColumn> columns;
 
     private boolean openChanges = false;
+
+
+    public RelationalCatalog(
+            @Deserialize("schemas") Map<Long, CatalogSchema> schemas,
+            @Deserialize("tables") Map<Long, CatalogTable> tables,
+            @Deserialize("columns") Map<Long, CatalogColumn> columns ) {
+        this.schemas = schemas;
+        this.tables = tables;
+        this.columns = columns;
+    }
+
+
+    public RelationalCatalog() {
+        this( new HashMap<>(), new HashMap<>(), new HashMap<>() );
+    }
 
 
     @Override

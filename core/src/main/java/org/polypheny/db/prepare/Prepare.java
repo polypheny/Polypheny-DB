@@ -242,11 +242,6 @@ public abstract class Prepare {
         @Override
         PreparingTable getTableForMember( List<String> names );
 
-        /**
-         * Returns a catalog reader the same as this one but with a possibly different schema path.
-         */
-        CatalogReader withSchemaPath( List<String> schemaPath );
-
         @Override
         PreparingTable getTable( List<String> names );
 
@@ -352,12 +347,6 @@ public abstract class Prepare {
 
 
         @Override
-        public LogicalModify.Operation getTableModOp() {
-            return null;
-        }
-
-
-        @Override
         public List<List<String>> getFieldOrigins() {
             return Collections.singletonList( Collections.nCopies( 4, null ) );
         }
@@ -380,12 +369,6 @@ public abstract class Prepare {
          * containing the number of rows affected.
          */
         boolean isDml();
-
-        /**
-         * Returns the table modification operation corresponding to this statement if it is a table modification statement;
-         * otherwise null.
-         */
-        LogicalModify.Operation getTableModOp();
 
         /**
          * Returns a list describing, for each result field, the origin of the field as a 4-element list
@@ -414,7 +397,7 @@ public abstract class Prepare {
      */
     public abstract static class PreparedResultImpl implements PreparedResult, Typed {
 
-        protected final AlgNode rootRel;
+        protected final AlgNode rootAlg;
         protected final AlgDataType parameterRowType;
         protected final AlgDataType rowType;
         protected final boolean isDml;
@@ -428,14 +411,14 @@ public abstract class Prepare {
                 AlgDataType parameterRowType,
                 List<List<String>> fieldOrigins,
                 List<AlgCollation> collations,
-                AlgNode rootRel,
+                AlgNode rootAlg,
                 LogicalModify.Operation tableModOp,
                 boolean isDml ) {
             this.rowType = Objects.requireNonNull( rowType );
             this.parameterRowType = Objects.requireNonNull( parameterRowType );
             this.fieldOrigins = Objects.requireNonNull( fieldOrigins );
             this.collations = ImmutableList.copyOf( collations );
-            this.rootRel = Objects.requireNonNull( rootRel );
+            this.rootAlg = Objects.requireNonNull( rootAlg );
             this.tableModOp = tableModOp;
             this.isDml = isDml;
         }
@@ -444,12 +427,6 @@ public abstract class Prepare {
         @Override
         public boolean isDml() {
             return isDml;
-        }
-
-
-        @Override
-        public LogicalModify.Operation getTableModOp() {
-            return tableModOp;
         }
 
 
@@ -465,22 +442,8 @@ public abstract class Prepare {
         }
 
 
-        /**
-         * Returns the physical row type of this prepared statement. May not be identical to the row type returned by the
-         * validator; for example, the field names may have been made unique.
-         */
-        public AlgDataType getPhysicalRowType() {
-            return rowType;
-        }
-
-
         @Override
         public abstract Type getElementType();
-
-
-        public AlgNode getRootRel() {
-            return rootRel;
-        }
 
     }
 

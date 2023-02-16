@@ -16,16 +16,40 @@
 
 package org.polypheny.db.catalog.mappings;
 
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
-public class CatalogGraphMapping extends CatalogModelMapping {
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 
-    private final long id;
-    private final long nodesId;
-    private final long nodesPropertiesId;
-    private final long edgesId;
-    private final long edgesPropertiesId;
+public class CatalogGraphMapping implements CatalogModelMapping {
+
+    @Serialize
+    public final long id;
+
+    @Serialize
+    public final long nodesId;
+
+    @Serialize
+    public final long nodesPropertiesId;
+
+    @Serialize
+    public final long edgesId;
+
+    @Serialize
+    public final long edgesPropertiesId;
+
+
+    public CatalogGraphMapping(
+            @Deserialize("id") long id,
+            @Deserialize("nodesId") long nodesId,
+            @Deserialize("nodesPropertiesId") long nodesPropertiesId,
+            @Deserialize("edgesId") long edgesId,
+            @Deserialize("edgesPropertiesId") long edgesPropertiesId ) {
+        this.id = id;
+        this.nodesId = nodesId;
+        this.nodesPropertiesId = nodesPropertiesId;
+        this.edgesId = edgesId;
+        this.edgesPropertiesId = edgesPropertiesId;
+    }
 
 
     @Override

@@ -36,15 +36,38 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.*;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgDistributions;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.type.*;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeComparability;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.IntervalQualifier;
@@ -54,15 +77,28 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.schema.*;
+import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
+import org.polypheny.db.schema.CustomColumnResolvingTable;
+import org.polypheny.db.schema.ExtensibleTable;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Statistic;
+import org.polypheny.db.schema.StreamableTable;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.test.JdbcTest;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.*;
-
-import java.lang.reflect.Type;
-import java.nio.charset.Charset;
-import java.util.*;
+import org.polypheny.db.util.AccessType;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.InitializerExpressionFactory;
+import org.polypheny.db.util.NameMatchers;
+import org.polypheny.db.util.NullInitializerExpressionFactory;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
@@ -86,16 +122,10 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     public MockCatalogReader( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super(
                 AbstractPolyphenyDbSchema.createRootSchema( DEFAULT_CATALOG ),
-                NameMatchers.withCaseSensitive( caseSensitive ),
-                ImmutableList.of( PREFIX, ImmutableList.of() ),
+                PREFIX,
                 typeFactory );
     }
 
-
-    @Override
-    public NameMatcher nameMatcher() {
-        return nameMatcher;
-    }
 
 
     /**

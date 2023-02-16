@@ -66,40 +66,4 @@ abstract class SqlDropObject extends SqlDrop implements ExecutableStatement {
         }
         name.unparse( writer, leftPrec, rightPrec );
     }
-
-
-    /*
-    public void execute( Context context ) {
-        final List<String> path = context.getDefaultSchemaPath();
-        PolyphenyDbSchema schema = context.getRootSchema();
-        for ( String p : path ) {
-            schema = schema.getSubSchema( p, true );
-        }
-        final boolean existed;
-        switch ( getKind() ) {
-            case DROP_TABLE:
-            case DROP_MATERIALIZED_VIEW:
-                existed = schema.removeTable( name.getSimple() );
-                if ( !existed && !ifExists ) {
-                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableNotFound( name.getSimple() ) );
-                }
-                break;
-            case DROP_VIEW:
-                // Not quite right: removes any other functions with the same name
-                existed = schema.removeFunction( name.getSimple() );
-                if ( !existed && !ifExists ) {
-                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.viewNotFound( name.getSimple() ) );
-                }
-                break;
-            case DROP_TYPE:
-                existed = schema.removeType( name.getSimple() );
-                if ( !existed && !ifExists ) {
-                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.typeNotFound( name.getSimple() ) );
-                }
-                break;
-            case OTHER_DDL:
-            default:
-                throw new AssertionError( getKind() );
-        }
-    }*/
 }

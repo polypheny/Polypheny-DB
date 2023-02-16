@@ -4,7 +4,8 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
 
-    api group: 'io.activej', name: 'activej-serializer', version: '5.5-rc3'
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.4' // Apache 2.0
+    api group: 'io.activej', name: 'activej-serializer', version: '5.5-rc3' // Apache 2.0
     api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
 
     ////// SLF4J

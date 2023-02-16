@@ -16,8 +16,9 @@
 
 package org.polypheny.db.catalog.mappings;
 
-public abstract class CatalogModelMapping {
+public interface CatalogModelMapping {
 
-    public abstract String getGraphLabel();
+    String getGraphLabel();
+
 
 }

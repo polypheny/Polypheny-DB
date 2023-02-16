@@ -231,7 +231,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
 
         final SqlIdentifier previous = identifier;
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
         String columnName;
         final String tableName;
         final SqlValidatorNamespace namespace;

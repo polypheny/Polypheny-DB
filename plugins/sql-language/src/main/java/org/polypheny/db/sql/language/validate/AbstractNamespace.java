@@ -161,7 +161,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     @Override
     public boolean fieldExists( String name ) {
         final AlgDataType rowType = getRowType();
-        return validator.catalogReader.nameMatcher().field( rowType, name ) != null;
+        return validator.catalogReader.nameMatcher.field( rowType, name ) != null;
     }
 
 

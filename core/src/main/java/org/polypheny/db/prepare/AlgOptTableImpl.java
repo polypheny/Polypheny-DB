@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
@@ -225,7 +226,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
     @Override
     protected AlgOptTable extend( Table extendedTable ) {
-        final AlgDataType extendedRowType = extendedTable.getRowType( getRelOptSchema().getTypeFactory() );
+        final AlgDataType extendedRowType = extendedTable.getRowType( AlgDataTypeFactory.DEFAULT );
         return new AlgOptTableImpl(
                 getRelOptSchema(),
                 extendedRowType,
@@ -453,7 +454,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         if ( !strategies.contains( ColumnStrategy.VIRTUAL ) ) {
             return rowType;
         }
-        final AlgDataTypeFactory.Builder builder = table.getRelOptSchema().getTypeFactory().builder();
+        final AlgDataTypeFactory.Builder builder = AlgDataTypeFactoryImpl.DEFAULT.builder();
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
             if ( strategies.get( field.getIndex() ) != ColumnStrategy.VIRTUAL ) {
                 builder.add( field );

@@ -34,10 +34,7 @@
 package org.polypheny.db.prepare;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -48,26 +45,20 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
- * Implementation of {@link org.polypheny.db.prepare.Prepare.CatalogReader} and also {@link OperatorTable} based on
+ * Implementation of {@link Prepare.CatalogReader} and also {@link OperatorTable} based on
  * tables and functions defined schemas.
  */
 public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
@@ -75,33 +66,14 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     protected final PolyphenyDbSchema rootSchema;
     protected final AlgDataTypeFactory typeFactory;
     private final List<List<String>> schemaPaths;
-    protected final NameMatcher nameMatcher;
 
 
     public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, AlgDataTypeFactory typeFactory ) {
-        this(
-                rootSchema,
-                NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() ),
-                ImmutableList.of( Objects.requireNonNull( defaultSchema ), ImmutableList.of() ),
-                typeFactory );
-    }
-
-
-    protected PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, NameMatcher nameMatcher, List<List<String>> schemaPaths, AlgDataTypeFactory typeFactory ) {
         this.rootSchema = Objects.requireNonNull( rootSchema );
-        this.nameMatcher = nameMatcher;
-        this.schemaPaths =
-                Util.immutableCopy( Util.isDistinct( schemaPaths )
-                        ? schemaPaths
-                        : new LinkedHashSet<>( schemaPaths ) );
+        this.schemaPaths = ImmutableList.of( Objects.requireNonNull( defaultSchema ), ImmutableList.of() );
         this.typeFactory = typeFactory;
     }
 
-
-    @Override
-    public PolyphenyDbCatalogReader withSchemaPath( List<String> schemaPath ) {
-        return new PolyphenyDbCatalogReader( rootSchema, nameMatcher, ImmutableList.of( schemaPath, ImmutableList.of() ), typeFactory );
-    }
 
 
     @Override
@@ -141,35 +113,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    public Collection<Function> getFunctionsFrom( List<String> names ) {
-        final List<Function> functions2 = new ArrayList<>();
-        final List<List<String>> schemaNameList = new ArrayList<>();
-        if ( names.size() > 1 ) {
-            // Name qualified: ignore path. But we do look in "/catalog" and "/", the last 2 items in the path.
-            if ( schemaPaths.size() > 1 ) {
-                schemaNameList.addAll( Util.skip( schemaPaths ) );
-            } else {
-                schemaNameList.addAll( schemaPaths );
-            }
-        } else {
-            for ( List<String> schemaPath : schemaPaths ) {
-                PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, nameMatcher );
-                if ( schema != null ) {
-                    schemaNameList.addAll( schema.getPath() );
-                }
-            }
-        }
-        for ( List<String> schemaNames : schemaNameList ) {
-            PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, Iterables.concat( schemaNames, Util.skipLast( names ) ), nameMatcher );
-            if ( schema != null ) {
-                final String name = Util.last( names );
-                functions2.addAll( schema.getFunctions( name, true ) );
-            }
-        }
-        return functions2;
-    }
-
-
     @Override
     public AlgDataType getNamedType( Identifier typeName ) {
         PolyphenyDbSchema.TypeEntry typeEntry = ValidatorUtil.getTypeEntry( getRootSchema(), typeName );
@@ -183,7 +126,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
-        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, names, nameMatcher );
+        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, names, Wrapper.nameMatcher );
         if ( schema == null ) {
             return ImmutableList.of();
         }
@@ -235,7 +178,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public AlgDataType createTypeFromProjection( final AlgDataType type, final List<String> columnNameList ) {
-        return ValidatorUtil.createTypeFromProjection( type, columnNameList, typeFactory, nameMatcher.isCaseSensitive() );
+        return ValidatorUtil.createTypeFromProjection( type, columnNameList, typeFactory, Wrapper.nameMatcher.isCaseSensitive() );
     }
 
 
@@ -256,31 +199,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         return rootSchema;
     }
 
-
-    @Override
-    public AlgDataTypeFactory getTypeFactory() {
-        return typeFactory;
-    }
-
-
-    @Override
-    public void registerRules( AlgOptPlanner planner ) {
-    }
-
-
-    @Override
-    public NameMatcher nameMatcher() {
-        return nameMatcher;
-    }
-
-
-    @Override
-    public <C> C unwrap( Class<C> aClass ) {
-        if ( aClass.isInstance( this ) ) {
-            return aClass.cast( this );
-        }
-        return null;
-    }
 
 }
 

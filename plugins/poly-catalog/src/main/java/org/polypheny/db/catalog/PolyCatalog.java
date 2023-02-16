@@ -20,15 +20,18 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.document.DocumentCatalog;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entities.CatalogUser;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.graph.GraphCatalog;
 import org.polypheny.db.catalog.mappings.CatalogDocumentMapping;
@@ -36,6 +39,14 @@ import org.polypheny.db.catalog.mappings.CatalogGraphMapping;
 import org.polypheny.db.catalog.mappings.CatalogModelMapping;
 import org.polypheny.db.catalog.mappings.CatalogRelationalMapping;
 import org.polypheny.db.catalog.relational.RelationalCatalog;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.util.Moniker;
 
 
 /**
@@ -46,10 +57,10 @@ import org.polypheny.db.catalog.relational.RelationalCatalog;
  * Field -> Column (Relational), does not exist (Graph), Field (Document)
  */
 @Slf4j
-public class PolyCatalog implements SerializableCatalog {
+public class PolyCatalog implements SerializableCatalog, CatalogReader {
 
     @Getter
-    BinarySerializer<PolyCatalog> serializer = SerializableCatalog.builder.get().build( PolyCatalog.class );
+    public final BinarySerializer<PolyCatalog> serializer = SerializableCatalog.builder.get().build( PolyCatalog.class );
 
     @Serialize
     public final RelationalCatalog relational;
@@ -59,29 +70,37 @@ public class PolyCatalog implements SerializableCatalog {
     public final DocumentCatalog document;
 
     private final ImmutableList<ModelCatalog> catalogs;
+    @Serialize
+    public final Map<Long, CatalogUser> users;
 
-    private final Map<Long, CatalogUser> users = new HashMap<>();
+    @Serialize
+    public final Map<Long, CatalogDatabase> databases;
 
-    private final Map<Long, CatalogModelMapping> mappings = new HashMap<>();
+    @Serialize
+    public final Map<Long, CatalogModelMapping> mappings;
 
-    private final AtomicLong namespaceIdBuilder = new AtomicLong( 0 );
-    private final AtomicLong entityIdBuilder = new AtomicLong( 0 );
-
-    private final AtomicLong fieldIdBuilder = new AtomicLong( 0 );
+    private final IdBuilder idBuilder = new IdBuilder();
 
 
     public PolyCatalog() {
-        this( new DocumentCatalog(), new GraphCatalog(), new RelationalCatalog() );
+        this( new DocumentCatalog(), new GraphCatalog(), new RelationalCatalog(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
     }
 
 
-    private PolyCatalog(
+    public PolyCatalog(
             @Deserialize("document") DocumentCatalog document,
             @Deserialize("graph") GraphCatalog graph,
-            @Deserialize("relational") RelationalCatalog relational ) {
+            @Deserialize("relational") RelationalCatalog relational,
+            @Deserialize("users") Map<Long, CatalogUser> users,
+            @Deserialize("databases") Map<Long, CatalogDatabase> databases,
+            @Deserialize("mappings") Map<Long, CatalogModelMapping> mappings ) {
         this.document = document;
         this.graph = graph;
         this.relational = relational;
+
+        this.users = users;
+        this.databases = databases;
+        this.mappings = mappings;
 
         catalogs = ImmutableList.of( this.relational, this.graph, this.document );
     }
@@ -99,19 +118,36 @@ public class PolyCatalog implements SerializableCatalog {
     }
 
 
-    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
-        long id = namespaceIdBuilder.getAndIncrement();
+    public long addUser( @NonNull String name ) {
+        long id = idBuilder.getNewUserId();
+
+        users.put( id, new CatalogUser( id, name ) );
+
+        return id;
+    }
+
+
+    public long addDatabase( String name, long ownerId ) {
+        long id = idBuilder.getNewDatabaseId();
+
+        databases.put( id, new CatalogDatabase( id, name, ownerId ) );
+        return id;
+    }
+
+
+    public long addNamespace( String name, long databaseId, long ownerId, NamespaceType namespaceType ) {
+        long id = idBuilder.getNewNamespaceId();
 
         CatalogModelMapping mapping = null;
         switch ( namespaceType ) {
             case RELATIONAL:
-                mapping = addRelationalNamespace( id, name, databaseId, namespaceType );
+                mapping = addRelationalNamespace( id, name, databaseId, namespaceType, ownerId );
                 break;
             case DOCUMENT:
-                mapping = addDocumentNamespace( id, name, databaseId, namespaceType );
+                mapping = addDocumentNamespace( id, name, databaseId, namespaceType, ownerId );
                 break;
             case GRAPH:
-                mapping = addGraphNamespace( id, name, databaseId, namespaceType );
+                mapping = addGraphNamespace( id, name, databaseId, namespaceType, ownerId );
                 break;
         }
 
@@ -121,15 +157,15 @@ public class PolyCatalog implements SerializableCatalog {
     }
 
 
-    private CatalogModelMapping addGraphNamespace( long id, String name, long databaseId, NamespaceType namespaceType ) {
+    private CatalogModelMapping addGraphNamespace( long id, String name, long databaseId, NamespaceType namespaceType, long ownerId ) {
         // add to model catalog
         graph.addGraph( id, name, databaseId, namespaceType );
 
         // add substitutions for other models
-        long nodeId = entityIdBuilder.getAndIncrement();
-        long nPropertiesId = entityIdBuilder.getAndIncrement();
-        long edgeId = entityIdBuilder.getAndIncrement();
-        long ePropertiesId = entityIdBuilder.getAndIncrement();
+        long nodeId = idBuilder.getNewEntityId();
+        long nPropertiesId = idBuilder.getNewEntityId();
+        long edgeId = idBuilder.getNewEntityId();
+        long ePropertiesId = idBuilder.getNewEntityId();
 
         // add relational
         relational.addSchema( id, name, databaseId, namespaceType );
@@ -149,7 +185,7 @@ public class PolyCatalog implements SerializableCatalog {
     }
 
 
-    private CatalogModelMapping addDocumentNamespace( long id, String name, long databaseId, NamespaceType namespaceType ) {
+    private CatalogModelMapping addDocumentNamespace( long id, String name, long databaseId, NamespaceType namespaceType, long ownerId ) {
         // add to model catalog
         document.addDatabase( id, name, databaseId, namespaceType );
 
@@ -161,7 +197,7 @@ public class PolyCatalog implements SerializableCatalog {
     }
 
 
-    private CatalogModelMapping addRelationalNamespace( long id, String name, long databaseId, NamespaceType namespaceType ) {
+    private CatalogModelMapping addRelationalNamespace( long id, String name, long databaseId, NamespaceType namespaceType, long ownerId ) {
         // add to model catalog
         relational.addSchema( id, name, databaseId, namespaceType );
 
@@ -174,7 +210,7 @@ public class PolyCatalog implements SerializableCatalog {
 
 
     public long addEntity( String name, long namespaceId, NamespaceType type, int ownerId ) {
-        long id = entityIdBuilder.getAndIncrement();
+        long id = idBuilder.getNewEntityId();
 
         switch ( type ) {
             case RELATIONAL:
@@ -214,7 +250,7 @@ public class PolyCatalog implements SerializableCatalog {
 
 
     public long addField( String name, long entityId, AlgDataType type, NamespaceType namespaceType ) {
-        long id = fieldIdBuilder.getAndIncrement();
+        long id = idBuilder.getNewFieldId();
 
         switch ( namespaceType ) {
             case RELATIONAL:
@@ -234,5 +270,70 @@ public class PolyCatalog implements SerializableCatalog {
         relational.addColumn( id, name, entityId, type );
     }
 
+
+    @Override
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+
+    }
+
+
+    @Override
+    public List<Operator> getOperatorList() {
+        return null;
+    }
+
+
+    @Override
+    public AlgDataType getNamedType( Identifier typeName ) {
+        return null;
+    }
+
+
+    @Override
+    public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public List<List<String>> getSchemaPaths() {
+        return null;
+    }
+
+
+    @Override
+    public AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList ) {
+        return null;
+    }
+
+
+    @Override
+    public PolyphenyDbSchema getRootSchema() {
+        return null;
+    }
+
+
+    @Override
+    public PreparingTable getTableForMember( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public PreparingTable getTable( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public AlgOptTable getCollection( List<String> names ) {
+        return null;
+    }
+
+
+    @Override
+    public Graph getGraph( String name ) {
+        return null;
+    }
 
 }

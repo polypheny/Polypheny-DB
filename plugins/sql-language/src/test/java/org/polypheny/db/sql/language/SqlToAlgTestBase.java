@@ -346,17 +346,6 @@ public abstract class SqlToAlgTestBase {
         }
 
 
-        @Override
-        public AlgDataTypeFactory getTypeFactory() {
-            return typeFactory;
-        }
-
-
-        @Override
-        public void registerRules( AlgOptPlanner planner ) throws Exception {
-        }
-
-
         /**
          * Mock column set.
          */
@@ -456,7 +445,7 @@ public abstract class SqlToAlgTestBase {
 
             @Override
             public AlgOptTable extend( List<AlgDataTypeField> extendedFields ) {
-                final AlgDataType extendedRowType = getRelOptSchema().getTypeFactory().builder()
+                final AlgDataType extendedRowType = AlgDataTypeFactory.DEFAULT.builder()
                         .addAll( rowType.getFieldList() )
                         .addAll( extendedFields )
                         .build();

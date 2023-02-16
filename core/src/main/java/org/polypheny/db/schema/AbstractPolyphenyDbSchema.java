@@ -38,12 +38,24 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.algebra.type.*;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -51,9 +63,6 @@ import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
 import org.polypheny.db.util.Pair;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 
 /**
@@ -450,26 +459,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns tables derived from explicit and implicit functions that take zero parameters.
-     */
-    @Override
-    public final NavigableMap<String, Table> getTablesBasedOnNullaryFunctions() {
-        ImmutableSortedMap.Builder<String, Table> builder = new ImmutableSortedMap.Builder<>( NameSet.COMPARATOR );
-        for ( Map.Entry<String, FunctionEntry> entry : nullaryFunctionMap.map().entrySet() ) {
-            final Function function = entry.getValue().getFunction();
-            if ( function instanceof TableMacro ) {
-                assert function.getParameters().isEmpty();
-                final Table table = ((TableMacro) function).apply( ImmutableList.of() );
-                builder.put( entry.getKey(), table );
-            }
-        }
-        // add tables derived from implicit functions
-        addImplicitTablesBasedOnNullaryFunctionsToBuilder( builder );
-        return builder.build();
-    }
-
-
-    /**
      * Returns a tables derived from explicit and implicit functions that take zero parameters.
      */
     @Override
@@ -483,39 +472,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             }
         }
         return getImplicitTableBasedOnNullaryFunction( tableName, caseSensitive );
-    }
-
-
-    @Override
-    @Experimental
-    public boolean removeSubSchema( String name ) {
-        return subSchemaMap.remove( name ) != null;
-    }
-
-
-    @Override
-    @Experimental
-    public boolean removeTable( String name ) {
-        return tableMap.remove( name ) != null;
-    }
-
-
-    @Override
-    @Experimental
-    public boolean removeFunction( String name ) {
-        final FunctionEntry remove = nullaryFunctionMap.remove( name );
-        if ( remove == null ) {
-            return false;
-        }
-        functionMap.remove( name, remove );
-        return true;
-    }
-
-
-    @Override
-    @Experimental
-    public boolean removeType( String name ) {
-        return typeMap.remove( name ) != null;
     }
 
 

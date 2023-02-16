@@ -35,7 +35,6 @@ package org.polypheny.db.plan;
 
 
 import java.util.List;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -53,15 +52,5 @@ public interface AlgOptSchema {
      * @param names Qualified name
      */
     AlgOptTable getTableForMember( List<String> names );
-
-    /**
-     * Returns the {@link AlgDataTypeFactory type factory} used to generate types for this schema.
-     */
-    AlgDataTypeFactory getTypeFactory();
-
-    /**
-     * Registers all of the rules supported by this schema. Only called by {@link AlgOptPlanner#registerSchema}.
-     */
-    void registerRules( AlgOptPlanner planner ) throws Exception;
 
 }
