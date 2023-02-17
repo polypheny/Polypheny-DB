@@ -16,6 +16,9 @@
 
 package org.polypheny.db.adapter.excel;
 
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -33,22 +36,18 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.util.Source;
 
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public class ExcelTranslatableTable extends ExcelTable implements QueryableTable, TranslatableTable {
 
     /**
      * Creates a ExcelTable.
      */
-    ExcelTranslatableTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId) {
-        super(source, protoRowType, fieldTypes, fields, excelSource, tableId);
+    ExcelTranslatableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
+        super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
     }
 
 
-    ExcelTranslatableTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet) {
-        super(source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet);
+    ExcelTranslatableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
+        super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
     }
 
 
@@ -62,21 +61,21 @@ public class ExcelTranslatableTable extends ExcelTable implements QueryableTable
      * <p>
      * Called from generated code.
      */
-    public Enumerable<Object> project(final DataContext dataContext, final int[] fields) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter(excelSource);
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
+    public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( excelSource );
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
-                return new ExcelEnumerator<>(source, cancelFlag, fieldTypes, fields, sheet);
+                return new ExcelEnumerator<>( source, cancelFlag, fieldTypes, fields, sheet );
             }
         };
     }
 
 
     @Override
-    public Expression getExpression(SchemaPlus schema, String tableName, Class clazz) {
-        return Schemas.tableExpression(schema, getElementType(), tableName, clazz);
+    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+        return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
     }
 
 
@@ -87,15 +86,15 @@ public class ExcelTranslatableTable extends ExcelTable implements QueryableTable
 
 
     @Override
-    public <T> Queryable<T> asQueryable(DataContext dataContext, SchemaPlus schema, String tableName) {
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public AlgNode toAlg(ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         // Request all fields.
-        return new ExcelTableScan(context.getCluster(), algOptTable, this, fields);
+        return new ExcelTableScan( context.getCluster(), algOptTable, this, fields );
     }
 
 }

@@ -17,11 +17,10 @@
 package org.polypheny.db.adapter.excel;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Adapter;
-
-import java.util.Map;
 
 public class ExcelPlugin extends Plugin {
 
@@ -30,8 +29,8 @@ public class ExcelPlugin extends Plugin {
      * Your plugins have to provide constructor with this exact signature to
      * be successfully loaded by manager.
      */
-    public ExcelPlugin(PluginWrapper wrapper) {
-        super(wrapper);
+    public ExcelPlugin( PluginWrapper wrapper ) {
+        super( wrapper );
     }
 
 
@@ -43,7 +42,7 @@ public class ExcelPlugin extends Plugin {
                 "maxStringLength", "255"
         );
 
-        Adapter.addAdapter(ExcelSource.class, "EXCEL", settings);
+        Adapter.addAdapter( ExcelSource.class, "EXCEL", settings );
     }
 
 }

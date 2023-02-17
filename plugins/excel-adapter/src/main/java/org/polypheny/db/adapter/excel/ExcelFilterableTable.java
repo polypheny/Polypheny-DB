@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adapter.excel;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -29,9 +31,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.util.Source;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public class ExcelFilterableTable extends ExcelTable implements FilterableTable {
 
     /**
@@ -40,14 +39,14 @@ public class ExcelFilterableTable extends ExcelTable implements FilterableTable 
     private final String sheet;
 
 
-    public ExcelFilterableTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId) {
-        super(source, protoRowType, fieldTypes, fields, excelSource, tableId);
+    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
+        super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
         this.sheet = "";
     }
 
 
-    public ExcelFilterableTable(Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet) {
-        super(source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet);
+    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
+        super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
         this.sheet = sheet;
     }
 
@@ -58,31 +57,31 @@ public class ExcelFilterableTable extends ExcelTable implements FilterableTable 
 
 
     @Override
-    public Enumerable<Object[]> scan(DataContext dataContext, List<RexNode> filters) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter(excelSource);
+    public Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( excelSource );
         final String[] filterValues = new String[fieldTypes.size()];
-        filters.removeIf(filter -> addFilter(filter, filterValues));
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
+        filters.removeIf( filter -> addFilter( filter, filterValues ) );
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new ExcelEnumerator<>(source, cancelFlag, false, filterValues, new ExcelEnumerator.ArrayRowConverter(fieldTypes, fields), sheet);
+                return new ExcelEnumerator<>( source, cancelFlag, false, filterValues, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
             }
         };
     }
 
 
-    private boolean addFilter(RexNode filter, Object[] filterValues) {
-        if (filter.isA(Kind.EQUALS)) {
+    private boolean addFilter( RexNode filter, Object[] filterValues ) {
+        if ( filter.isA( Kind.EQUALS ) ) {
             final RexCall call = (RexCall) filter;
-            RexNode left = call.getOperands().get(0);
-            if (left.isA(Kind.CAST)) {
-                left = ((RexCall) left).operands.get(0);
+            RexNode left = call.getOperands().get( 0 );
+            if ( left.isA( Kind.CAST ) ) {
+                left = ((RexCall) left).operands.get( 0 );
             }
-            final RexNode right = call.getOperands().get(1);
-            if (left instanceof RexInputRef && right instanceof RexLiteral) {
+            final RexNode right = call.getOperands().get( 1 );
+            if ( left instanceof RexInputRef && right instanceof RexLiteral ) {
                 final int index = ((RexInputRef) left).getIndex();
-                if (filterValues[index] == null) {
+                if ( filterValues[index] == null ) {
                     filterValues[index] = ((RexLiteral) right).getValue2().toString();
                     return true;
                 }
