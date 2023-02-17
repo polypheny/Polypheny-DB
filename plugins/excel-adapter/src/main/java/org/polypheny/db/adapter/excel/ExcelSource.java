@@ -77,7 +77,6 @@ public class ExcelSource extends DataSource {
 
 
     public ExcelSource( int storeId, String uniqueName, Map<String, String> settings ) {
-
         super( storeId, uniqueName, settings, true );
 
         // Validate maxStringLength setting
@@ -95,7 +94,6 @@ public class ExcelSource extends DataSource {
 
 
     private void setExcelDir( Map<String, String> settings ) {
-
         String dir = settings.get( "directory" );
         if ( dir.startsWith( "classpath://" ) ) {
             excelDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
@@ -230,15 +228,13 @@ public class ExcelSource extends DataSource {
                 }
                 Iterator<Row> rowIterator = sheet.iterator();
 
-                // read first row to extract column attribute name and datatype
+                // Read first row to extract column attribute name and datatype
                 while ( rowIterator.hasNext() ) {
-
                     Row row = rowIterator.next();
-                    //For each row, iterate through all the columns
+                    // For each row, iterate through all the columns
                     Iterator<Cell> cellIterator = row.cellIterator();
 
                     while ( cellIterator.hasNext() ) {
-
                         Cell cell = cellIterator.next();
                         try {
                             String[] colSplit = cell.getStringCellValue().split( ":" );
@@ -307,20 +303,15 @@ public class ExcelSource extends DataSource {
                                     position == 1 ) ); // TODO
 
                             position++;
-
-
                         } catch ( Exception e ) {
 
                         }
-
                     }
                     break;
                 }
-
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }
-
             exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
         }
         return exportedColumnCache;

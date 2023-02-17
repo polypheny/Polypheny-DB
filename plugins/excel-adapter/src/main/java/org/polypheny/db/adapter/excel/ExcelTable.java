@@ -81,7 +81,6 @@ public class ExcelTable extends AbstractTable {
                 return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, sheet, null );
             }
         }
-
     }
 
 
