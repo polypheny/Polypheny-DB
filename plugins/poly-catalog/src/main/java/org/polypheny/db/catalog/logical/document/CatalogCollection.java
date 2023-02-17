@@ -14,30 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog;
+package org.polypheny.db.catalog.logical.document;
 
-import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
-
-public class CatalogDatabase {
-
-    @Serialize
-    public final long id;
-
-    @Serialize
-    public final String name;
-
-    @Serialize
-    public final long ownerId;
-
-
-    public CatalogDatabase(
-            @Deserialize("id") long id,
-            @Deserialize("name") String name,
-            @Deserialize("ownerId") long ownerId ) {
-        this.id = id;
-        this.name = name;
-        this.ownerId = ownerId;
-    }
+public class CatalogCollection {
 
 }

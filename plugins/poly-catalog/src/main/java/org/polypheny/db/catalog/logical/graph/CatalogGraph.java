@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.graph;
+package org.polypheny.db.catalog.logical.graph;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;

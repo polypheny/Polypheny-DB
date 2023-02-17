@@ -14,32 +14,32 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.relational;
+package org.polypheny.db.catalog.logical.relational;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import lombok.Value;
 
 @Value
-public class CatalogTable {
+public class CatalogColumn {
 
     @Serialize
     public long id;
 
     @Serialize
     public String name;
-
     @Serialize
-    public long namespaceId;
+    public long tableId;
 
 
-    public CatalogTable(
+    public CatalogColumn(
             @Deserialize("id") long id,
             @Deserialize("name") String name,
-            @Deserialize("namespaceId") long namespaceId ) {
+            @Deserialize("tableId") long tableId ) {
         this.id = id;
         this.name = name;
-        this.namespaceId = namespaceId;
+        this.tableId = tableId;
+
     }
 
 }

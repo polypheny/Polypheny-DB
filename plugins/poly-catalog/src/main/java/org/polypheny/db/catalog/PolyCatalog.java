@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog;
 
-import com.google.common.collect.ImmutableList;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -30,15 +29,11 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.document.DocumentCatalog;
 import org.polypheny.db.catalog.entities.CatalogUser;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.graph.GraphCatalog;
-import org.polypheny.db.catalog.mappings.CatalogDocumentMapping;
-import org.polypheny.db.catalog.mappings.CatalogGraphMapping;
-import org.polypheny.db.catalog.mappings.CatalogModelMapping;
-import org.polypheny.db.catalog.mappings.CatalogRelationalMapping;
-import org.polypheny.db.catalog.relational.RelationalCatalog;
+import org.polypheny.db.catalog.logical.document.DocumentCatalog;
+import org.polypheny.db.catalog.logical.graph.GraphCatalog;
+import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptTable;
@@ -63,58 +58,45 @@ public class PolyCatalog implements SerializableCatalog, CatalogReader {
     public final BinarySerializer<PolyCatalog> serializer = SerializableCatalog.builder.get().build( PolyCatalog.class );
 
     @Serialize
-    public final RelationalCatalog relational;
-    @Serialize
-    public final GraphCatalog graph;
-    @Serialize
-    public final DocumentCatalog document;
+    public final Map<Long, RelationalCatalog> relationals;
 
-    private final ImmutableList<ModelCatalog> catalogs;
+    @Serialize
+    public final Map<Long, DocumentCatalog> documents;
+
+    @Serialize
+    public final Map<Long, GraphCatalog> graphs;
+
     @Serialize
     public final Map<Long, CatalogUser> users;
-
-    @Serialize
-    public final Map<Long, CatalogDatabase> databases;
-
-    @Serialize
-    public final Map<Long, CatalogModelMapping> mappings;
 
     private final IdBuilder idBuilder = new IdBuilder();
 
 
     public PolyCatalog() {
-        this( new DocumentCatalog(), new GraphCatalog(), new RelationalCatalog(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
+        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
     }
 
 
     public PolyCatalog(
-            @Deserialize("document") DocumentCatalog document,
-            @Deserialize("graph") GraphCatalog graph,
-            @Deserialize("relational") RelationalCatalog relational,
             @Deserialize("users") Map<Long, CatalogUser> users,
-            @Deserialize("databases") Map<Long, CatalogDatabase> databases,
-            @Deserialize("mappings") Map<Long, CatalogModelMapping> mappings ) {
-        this.document = document;
-        this.graph = graph;
-        this.relational = relational;
+            @Deserialize("relationals") Map<Long, RelationalCatalog> relationals,
+            @Deserialize("documents") Map<Long, DocumentCatalog> documents,
+            @Deserialize("graphs") Map<Long, GraphCatalog> graphs ) {
 
         this.users = users;
-        this.databases = databases;
-        this.mappings = mappings;
-
-        catalogs = ImmutableList.of( this.relational, this.graph, this.document );
+        this.relationals = relationals;
+        this.documents = documents;
+        this.graphs = graphs;
     }
 
 
     public void commit() throws NoTablePrimaryKeyException {
         log.debug( "commit" );
-        catalogs.stream().filter( ModelCatalog::hasUncommittedChanges ).forEach( ModelCatalog::commit );
     }
 
 
     public void rollback() {
         log.debug( "rollback" );
-        catalogs.stream().filter( ModelCatalog::hasUncommittedChanges ).forEach( ModelCatalog::rollback );
     }
 
 
@@ -127,147 +109,40 @@ public class PolyCatalog implements SerializableCatalog, CatalogReader {
     }
 
 
-    public long addDatabase( String name, long ownerId ) {
-        long id = idBuilder.getNewDatabaseId();
-
-        databases.put( id, new CatalogDatabase( id, name, ownerId ) );
-        return id;
-    }
-
-
-    public long addNamespace( String name, long databaseId, long ownerId, NamespaceType namespaceType ) {
+    public long addNamespace( String name, NamespaceType namespaceType ) {
         long id = idBuilder.getNewNamespaceId();
 
-        CatalogModelMapping mapping = null;
         switch ( namespaceType ) {
             case RELATIONAL:
-                mapping = addRelationalNamespace( id, name, databaseId, namespaceType, ownerId );
+                relationals.put( id, new RelationalCatalog( id, name ) );
                 break;
             case DOCUMENT:
-                mapping = addDocumentNamespace( id, name, databaseId, namespaceType, ownerId );
+                documents.put( id, new DocumentCatalog( id, name ) );
                 break;
             case GRAPH:
-                mapping = addGraphNamespace( id, name, databaseId, namespaceType, ownerId );
+                graphs.put( id, new GraphCatalog( id, name ) );
                 break;
         }
-
-        mappings.put( id, mapping );
 
         return id;
     }
 
 
-    private CatalogModelMapping addGraphNamespace( long id, String name, long databaseId, NamespaceType namespaceType, long ownerId ) {
-        // add to model catalog
-        graph.addGraph( id, name, databaseId, namespaceType );
-
-        // add substitutions for other models
-        long nodeId = idBuilder.getNewEntityId();
-        long nPropertiesId = idBuilder.getNewEntityId();
-        long edgeId = idBuilder.getNewEntityId();
-        long ePropertiesId = idBuilder.getNewEntityId();
-
-        // add relational
-        relational.addSchema( id, name, databaseId, namespaceType );
-        relational.addTable( nodeId, "_nodes_", id );
-        relational.addTable( nPropertiesId, "_nProperties_", id );
-        relational.addTable( edgeId, "_edges_", id );
-        relational.addTable( ePropertiesId, "_eProperties_", id );
-
-        // add document
-        document.addDatabase( id, name, databaseId, namespaceType );
-        document.addCollection( nodeId, "_nodes_", id );
-        document.addCollection( nPropertiesId, "_nProperties_", id );
-        document.addCollection( edgeId, "_edges_", id );
-        document.addCollection( ePropertiesId, "_eProperties_", id );
-
-        return new CatalogGraphMapping( id, nodeId, nPropertiesId, edgeId, ePropertiesId );
-    }
-
-
-    private CatalogModelMapping addDocumentNamespace( long id, String name, long databaseId, NamespaceType namespaceType, long ownerId ) {
-        // add to model catalog
-        document.addDatabase( id, name, databaseId, namespaceType );
-
-        // add substitutions to other models
-        relational.addSchema( id, name, databaseId, namespaceType );
-        graph.addGraph( id, name, databaseId, namespaceType );
-
-        return new CatalogDocumentMapping( id );
-    }
-
-
-    private CatalogModelMapping addRelationalNamespace( long id, String name, long databaseId, NamespaceType namespaceType, long ownerId ) {
-        // add to model catalog
-        relational.addSchema( id, name, databaseId, namespaceType );
-
-        // add substitutions to other models
-        document.addDatabase( id, name, databaseId, namespaceType );
-        graph.addGraph( id, name, databaseId, namespaceType );
-
-        return new CatalogRelationalMapping( id );
-    }
-
-
-    public long addEntity( String name, long namespaceId, NamespaceType type, long ownerId ) {
+    public long addTable( String name, long namespaceId ) {
         long id = idBuilder.getNewEntityId();
 
-        switch ( type ) {
-            case RELATIONAL:
-                addRelationalEntity( id, name, namespaceId );
-                break;
-            case DOCUMENT:
-                addDocumentEntity( id, name, namespaceId );
-                break;
-            case GRAPH:
-                // do nothing
-                break;
-        }
+        relationals.get( namespaceId ).asRelational().addTable( id, name );
 
         return id;
     }
 
 
-    private void addDocumentEntity( long id, String name, long namespaceId ) {
-        // add target data model entity
-        document.addCollection( id, name, namespaceId );
-
-        // add substitution entity
-        relational.addSubstitutionTable( id, name, namespaceId, NamespaceType.DOCUMENT );
-        graph.addSubstitutionGraph( id, name, namespaceId, NamespaceType.DOCUMENT );
-    }
-
-
-    private void addRelationalEntity( long id, String name, long namespaceId ) {
-        // add target data model entity
-        relational.addTable( id, name, namespaceId );
-
-        // add substitution entity
-        graph.addSubstitutionGraph( id, name, namespaceId, NamespaceType.RELATIONAL );
-        document.addSubstitutionCollection( id, name, namespaceId, NamespaceType.RELATIONAL );
-
-    }
-
-
-    public long addField( String name, long entityId, AlgDataType type, NamespaceType namespaceType ) {
+    public long addColumn( String name, long namespaceId, long entityId, AlgDataType type ) {
         long id = idBuilder.getNewFieldId();
 
-        switch ( namespaceType ) {
-            case RELATIONAL:
-                addColumn( id, name, entityId, type );
-                break;
-            case DOCUMENT:
-            case GRAPH:
-                // not available for models
-                break;
-        }
+        relationals.get( namespaceId ).asRelational().addColumn( id, name, entityId );
 
         return id;
-    }
-
-
-    private void addColumn( long id, String name, long entityId, AlgDataType type ) {
-        relational.addColumn( id, name, entityId, type );
     }
 
 

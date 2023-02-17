@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.graph;
+package org.polypheny.db.catalog.logical.document;
 
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -22,34 +22,48 @@ import io.activej.serializer.annotations.Serialize;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.ModelCatalog;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.SerializableCatalog;
 
-public class GraphCatalog implements ModelCatalog, SerializableCatalog {
+@Value
+public class DocumentCatalog implements NCatalog, SerializableCatalog {
 
     @Getter
-    public final BinarySerializer<GraphCatalog> serializer = SerializableCatalog.builder.get().build( GraphCatalog.class );
+    public BinarySerializer<DocumentCatalog> serializer = SerializableCatalog.builder.get().build( DocumentCatalog.class );
 
     @Serialize
-    public Map<Long, CatalogGraph> graphs;
+    public Map<Long, CatalogCollection> collections;
 
-    private boolean openChanges = false;
+    @Serialize
+    public String name;
+
+    @Serialize
+    public long id;
 
 
-    public GraphCatalog() {
-        this( new ConcurrentHashMap<>() );
+    public DocumentCatalog( long id, String name ) {
+        this( id, name, new ConcurrentHashMap<>() );
     }
 
 
-    public GraphCatalog( @Deserialize("graphs") Map<Long, CatalogGraph> graphs ) {
-        this.graphs = graphs;
+    public DocumentCatalog(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("collections") Map<Long, CatalogCollection> collections ) {
+        this.collections = collections;
+        this.id = id;
+        this.name = name;
     }
+
+
+    @NonFinal
+    boolean openChanges = false;
 
 
     @Override
     public void commit() {
-
         openChanges = false;
     }
 
@@ -63,16 +77,13 @@ public class GraphCatalog implements ModelCatalog, SerializableCatalog {
 
     @Override
     public boolean hasUncommittedChanges() {
-        return openChanges;
+        return false;
     }
 
 
-    public void addGraph( long id, String name, long databaseId, NamespaceType namespaceType ) {
-        graphs.put( id, new CatalogGraph( id, name, databaseId, namespaceType ) );
+    public void addCollection( long id, String name, long namespaceId ) {
+
     }
 
-
-    public void addSubstitutionGraph( long id, String name, long namespaceId, NamespaceType document ) {
-    }
 
 }

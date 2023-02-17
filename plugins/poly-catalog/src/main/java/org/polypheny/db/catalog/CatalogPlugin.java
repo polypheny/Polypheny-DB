@@ -38,16 +38,18 @@ public class CatalogPlugin extends Plugin {
     public void start() {
         PolyCatalog catalog = new PolyCatalog();
         long user = catalog.addUser( "admin" );
-        long database = catalog.addDatabase( "APP", user );
 
-        catalog.addNamespace( "test", database, user, NamespaceType.RELATIONAL );
-        long namespaceId = catalog.addNamespace( "test2", database, user, NamespaceType.RELATIONAL );
+        catalog.addNamespace( "test", NamespaceType.RELATIONAL );
+        long namespaceId = catalog.addNamespace( "test2", NamespaceType.RELATIONAL );
 
-        catalog.addEntity( "testTable", namespaceId, NamespaceType.RELATIONAL, user );
+        long tableId = catalog.addTable( "testTable", namespaceId );
+        catalog.addColumn( "testColumn", namespaceId, tableId, null );
 
         byte[] buffer = catalog.serialize( PolyCatalog.class );
 
         PolyCatalog catalog1 = catalog.deserialize( buffer, PolyCatalog.class );
+
+        catalog1.addColumn( "testColumn2", namespaceId, tableId, null );
 
     }
 

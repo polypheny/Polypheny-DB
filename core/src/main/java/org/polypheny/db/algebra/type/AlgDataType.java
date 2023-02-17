@@ -74,10 +74,6 @@ public interface AlgDataType {
     List<String> getFieldNames();
 
 
-    List<Long> getIds();
-
-    Long getId();
-
     /**
      * Returns the number of fields in a struct type.
      *

@@ -14,8 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.document;
+package org.polypheny.db.catalog.entities;
 
-public class CatalogCollection {
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+
+public class CatalogDatabase {
+
+    @Serialize
+    public final long id;
+
+    @Serialize
+    public final String name;
+
+
+    public CatalogDatabase(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name ) {
+        this.id = id;
+        this.name = name;
+    }
 
 }

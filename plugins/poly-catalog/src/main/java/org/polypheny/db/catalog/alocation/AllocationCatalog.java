@@ -14,25 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.mappings;
+package org.polypheny.db.catalog.alocation;
 
-import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
+import org.polypheny.db.catalog.NCatalog;
 
-public class CatalogDocumentMapping implements CatalogModelMapping {
+public class AllocationCatalog implements NCatalog {
 
-    @Serialize
-    public final long id;
+    @Override
+    public void commit() {
 
-
-    public CatalogDocumentMapping( @Deserialize("id") long id ) {
-        this.id = id;
     }
 
 
     @Override
-    public String getGraphLabel() {
-        return "_collection_" + id;
+    public void rollback() {
+
+    }
+
+
+    @Override
+    public boolean hasUncommittedChanges() {
+        return false;
     }
 
 }

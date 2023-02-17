@@ -1870,7 +1870,7 @@ public class AlgBuilder {
             final Kind kind = node.getKind();
             switch ( kind ) {
                 case INPUT_REF:
-                    fields.add( frame.unstructured.get( ((RexInputRef) node).getIndex() ) );
+                    fields.add( frame.structured.get( ((RexInputRef) node).getIndex() ) );
                     break;
                 default:
                     String name = aggregateFields.get( i ).getName();
