@@ -9,8 +9,6 @@ dependencies {
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
     implementation group: "org.apache.poi", name: "poi", version: poi_version
     implementation group: "org.apache.poi", name: "poi-ooxml", version: poi_ooxml_version
-    implementation group: "org.apache.poi", name: "poi-scratchpad", version: poi_scratchpad_version
-    implementation group: 'com.monitorjbl', name: 'xlsx-streamer', version: xlsx_streamer_version
 
 
     // --- Test Compile ---
@@ -43,10 +41,5 @@ java {
 
 licensee {
     allow('Apache-2.0')
-    allow('MIT')
-
     allowUrl('http://opensource.org/licenses/BSD-3-Clause') // BSD-3
-    allowUrl('https://raw.githubusercontent.com/monitorjbl/excel-streaming-reader/master/LICENSE') // Apache 2.0
-
-    allowDependency('xml-apis', 'xml-apis', '1.4.01') { because 'Apache 2.0 according to Maven' }
 }
