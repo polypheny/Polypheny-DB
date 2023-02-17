@@ -234,11 +234,11 @@ application {
 }
 
 tasks.register('runReset', JavaExec) {
-    group = "Execution"
-    description = "Run the main class with JavaExecTask"
+    group = 'Execution'
+    description = 'Run the main class with JavaExecTask'
     classpath sourceSets.main.runtimeClasspath
     mainClass = 'org.polypheny.db.PolyphenyDb'
-    args "-resetCatalog"
+    args = ['-resetCatalog', '-resetPlugins']
 }
 
 startScripts {

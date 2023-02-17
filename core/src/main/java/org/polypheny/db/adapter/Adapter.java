@@ -263,7 +263,7 @@ public abstract class Adapter {
 
         DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
 
-        String subOf();
+        String subOf() default "";
 
 
         @Inherited
