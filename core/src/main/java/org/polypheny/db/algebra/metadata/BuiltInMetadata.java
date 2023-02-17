@@ -755,12 +755,5 @@ public abstract class BuiltInMetadata {
     }
 
 
-    /**
-     * The built-in forms of metadata.
-     */
-    interface All extends Selectivity, UniqueKeys, RowCount, DistinctRowCount, PercentageOriginalRows, ColumnUniqueness, ColumnOrigin, Predicates, Collation, Distribution, Size, Parallelism, Memory, AllPredicates, ExpressionLineage, TableReferences, NodeTypes {
-
-    }
-
 }
 

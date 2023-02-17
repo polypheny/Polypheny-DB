@@ -151,8 +151,8 @@ public class Uncollect extends SingleAlg {
 
         for ( AlgDataTypeField field : fields ) {
             if ( field.getType() instanceof MapPolyType ) {
-                builder.add( UnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().getKeyType() );
-                builder.add( UnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().getValueType() );
+                builder.add( UnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().unwrap( MapPolyType.class ).getKeyType() );
+                builder.add( UnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().unwrap( MapPolyType.class ).getValueType() );
             } else {
                 AlgDataType ret = field.getType().getComponentType();
                 assert null != ret;

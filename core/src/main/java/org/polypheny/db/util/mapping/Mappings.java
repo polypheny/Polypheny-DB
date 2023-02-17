@@ -1051,14 +1051,6 @@ public abstract class Mappings {
 
 
     /**
-     * Thrown when a mapping is expected to return one element but returns several.
-     */
-    public static class TooManyElementsException extends RuntimeException {
-
-    }
-
-
-    /**
      * Thrown when a mapping is expected to return one element but returns none.
      */
     public static class NoElementException extends RuntimeException {

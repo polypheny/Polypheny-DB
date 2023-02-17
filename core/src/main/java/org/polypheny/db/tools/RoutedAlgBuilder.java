@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgNode;
@@ -110,14 +109,4 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-    @AllArgsConstructor
-    @Getter
-    public static class SelectedAdapterInfo {
-
-        public final String uniqueName;
-        public final String physicalSchemaName;
-        public final String physicalTableName;
-
-    }
-
-}
+   }

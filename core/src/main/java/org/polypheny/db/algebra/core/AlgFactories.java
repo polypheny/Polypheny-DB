@@ -79,7 +79,6 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -318,17 +317,6 @@ public class AlgFactories {
                 List<AggregateCall> aggCalls ) {
             return LogicalAggregate.create( input, indicator, groupSet, groupSets, aggCalls );
         }
-
-    }
-
-
-    public interface TransformerFactory {
-
-        AlgNode createTransformer(
-                AlgNode input,
-                AlgDataType rowType,
-                List<PolyType> unsupportedTypes,
-                PolyType substituteType );
 
     }
 

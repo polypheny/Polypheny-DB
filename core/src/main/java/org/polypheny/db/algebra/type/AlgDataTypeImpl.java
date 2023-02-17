@@ -60,7 +60,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
 
     /**
-     * Creates a RelDataTypeImpl.
+     * Creates a AlgDataTypeImpl.
      *
      * @param fieldList List of fields
      */
@@ -186,20 +186,6 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
     @Override
     public AlgDataType getComponentType() {
         // this is not a collection type
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType getKeyType() {
-        // this is not a map type
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType getValueType() {
-        // this is not a map type
         return null;
     }
 

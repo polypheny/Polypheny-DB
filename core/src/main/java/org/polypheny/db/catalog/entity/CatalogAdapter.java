@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
@@ -86,14 +85,6 @@ public class CatalogAdapter implements CatalogObject {
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{ uniqueName };
-    }
-
-
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogAdapter {
-
-        public final String name;
-
     }
 
 }

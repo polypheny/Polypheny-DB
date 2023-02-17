@@ -56,5 +56,6 @@ public abstract class DynamicRecordType extends AlgDataTypeImpl {
         return name.startsWith( DYNAMIC_STAR_PREFIX );
     }
 
+
 }
 

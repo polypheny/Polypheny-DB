@@ -44,7 +44,6 @@ import java.util.Iterator;
  * For instance:
  *
  * <ul>
- * <li>If a target has more than one source, then the method {@link #getSource(int)} will throw {@link Mappings.TooManyElementsException}.</li>
  * <li>If a source has no targets, then the method {@link #getTarget} will throw {@link Mappings.NoElementException}.</li>
  * </ul>
  */

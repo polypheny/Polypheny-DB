@@ -40,7 +40,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,7 +47,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -62,7 +60,6 @@ import org.apache.calcite.linq4j.TransformedEnumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.CalcSplitRule;
 import org.polypheny.db.algebra.rules.FilterScanRule;
 import org.polypheny.db.algebra.rules.ProjectScanRule;
@@ -73,9 +70,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
@@ -163,127 +157,6 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
     @Override
     public void close() {
     }
-
-
-    /**
-     * Not used.
-     */
-    private class FooCompiler implements ScalarCompiler {
-
-        @Override
-        public Scalar compile( List<RexNode> nodes, AlgDataType inputRowType, DataContext dataContext ) {
-            final RexNode node = nodes.get( 0 );
-            if ( node instanceof RexCall ) {
-                final RexCall call = (RexCall) node;
-                final Scalar argScalar = compile( call.getOperands(), inputRowType, dataContext );
-                return new Scalar() {
-                    final Object[] args = new Object[call.getOperands().size()];
-
-
-                    @Override
-                    public void execute( final Context context, Object[] results ) {
-                        results[0] = execute( context );
-                    }
-
-
-                    @Override
-                    public Object execute( Context context ) {
-                        Comparable o0;
-                        Comparable o1;
-                        switch ( call.getKind() ) {
-                            case LESS_THAN:
-                            case LESS_THAN_OR_EQUAL:
-                            case GREATER_THAN:
-                            case GREATER_THAN_OR_EQUAL:
-                            case EQUALS:
-                            case NOT_EQUALS:
-                                argScalar.execute( context, args );
-                                o0 = (Comparable) args[0];
-                                if ( o0 == null ) {
-                                    return null;
-                                }
-                                o1 = (Comparable) args[1];
-                                if ( o1 == null ) {
-                                    return null;
-                                }
-                                if ( o0 instanceof BigDecimal ) {
-                                    if ( o1 instanceof Double || o1 instanceof Float ) {
-                                        o1 = new BigDecimal( ((Number) o1).doubleValue() );
-                                    } else {
-                                        o1 = new BigDecimal( ((Number) o1).longValue() );
-                                    }
-                                }
-                                if ( o1 instanceof BigDecimal ) {
-                                    if ( o0 instanceof Double || o0 instanceof Float ) {
-                                        o0 = new BigDecimal( ((Number) o0).doubleValue() );
-                                    } else {
-                                        o0 = new BigDecimal( ((Number) o0).longValue() );
-                                    }
-                                }
-                                final int c = o0.compareTo( o1 );
-                                switch ( call.getKind() ) {
-                                    case LESS_THAN:
-                                        return c < 0;
-                                    case LESS_THAN_OR_EQUAL:
-                                        return c <= 0;
-                                    case GREATER_THAN:
-                                        return c > 0;
-                                    case GREATER_THAN_OR_EQUAL:
-                                        return c >= 0;
-                                    case EQUALS:
-                                        return c == 0;
-                                    case NOT_EQUALS:
-                                        return c != 0;
-                                    default:
-                                        throw new AssertionError( "unknown expression " + call );
-                                }
-                            default:
-                                if ( call.getOperator().getOperatorName() == OperatorName.UPPER ) {
-                                    argScalar.execute( context, args );
-                                    String s0 = (String) args[0];
-                                    if ( s0 == null ) {
-                                        return null;
-                                    }
-                                    return s0.toUpperCase( Locale.ROOT );
-                                }
-                                if ( call.getOperator().getOperatorName() == OperatorName.SUBSTRING ) {
-                                    argScalar.execute( context, args );
-                                    String s0 = (String) args[0];
-                                    Number i1 = (Number) args[1];
-                                    Number i2 = (Number) args[2];
-                                    if ( s0 == null || i1 == null || i2 == null ) {
-                                        return null;
-                                    }
-                                    return s0.substring( i1.intValue() - 1, i1.intValue() - 1 + i2.intValue() );
-                                }
-                                throw new AssertionError( "unknown expression " + call );
-                        }
-                    }
-                };
-            }
-            return new Scalar() {
-                @Override
-                public void execute( Context context, Object[] results ) {
-                    results[0] = execute( context );
-                }
-
-
-                @Override
-                public Object execute( Context context ) {
-                    switch ( node.getKind() ) {
-                        case LITERAL:
-                            return ((RexLiteral) node).getValueAs( Comparable.class );
-                        case INPUT_REF:
-                            return context.values[((RexInputRef) node).getIndex()];
-                        default:
-                            throw new RuntimeException( "unknown expression type " + node );
-                    }
-                }
-            };
-        }
-
-    }
-
 
     /**
      * Information about a node registered in the data flow graph.

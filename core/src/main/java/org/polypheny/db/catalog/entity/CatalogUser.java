@@ -19,7 +19,6 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 
 
 @EqualsAndHashCode
@@ -52,14 +51,6 @@ public final class CatalogUser implements CatalogObject, Comparable<CatalogUser>
             return this.id - o.id;
         }
         return -1;
-    }
-
-
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogUser {
-
-        public final String name;
-
     }
 
 }

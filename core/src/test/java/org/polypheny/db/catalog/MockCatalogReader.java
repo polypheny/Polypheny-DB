@@ -37,7 +37,6 @@ package org.polypheny.db.catalog;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Type;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -59,18 +58,14 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
-import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
@@ -89,9 +84,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.test.JdbcTest;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.AccessType;
-import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.NameMatchers;
@@ -624,156 +617,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                 rowType = new AlgRecordType( rowType.getFieldList() );
             }
             return super.toAlg( context, traitSet );
-        }
-
-    }
-
-
-    /**
-     * Struct type based on another struct type.
-     */
-    private static class DelegateStructType implements AlgDataType {
-
-        private AlgDataType delegate;
-        private StructKind structKind;
-
-
-        DelegateStructType( AlgDataType delegate, StructKind structKind ) {
-            assert delegate.isStruct();
-            this.delegate = delegate;
-            this.structKind = structKind;
-        }
-
-
-        @Override
-        public boolean isStruct() {
-            return delegate.isStruct();
-        }
-
-
-        @Override
-        public boolean isDynamicStruct() {
-            return delegate.isDynamicStruct();
-        }
-
-
-        @Override
-        public List<AlgDataTypeField> getFieldList() {
-            return delegate.getFieldList();
-        }
-
-
-        @Override
-        public List<String> getFieldNames() {
-            return delegate.getFieldNames();
-        }
-
-
-        @Override
-        public int getFieldCount() {
-            return delegate.getFieldCount();
-        }
-
-
-        @Override
-        public StructKind getStructKind() {
-            return structKind;
-        }
-
-
-        @Override
-        public AlgDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
-            return delegate.getField( fieldName, caseSensitive, elideRecord );
-        }
-
-
-        @Override
-        public boolean isNullable() {
-            return delegate.isNullable();
-        }
-
-
-        @Override
-        public AlgDataType getComponentType() {
-            return delegate.getComponentType();
-        }
-
-
-        @Override
-        public AlgDataType getKeyType() {
-            return delegate.getKeyType();
-        }
-
-
-        @Override
-        public AlgDataType getValueType() {
-            return delegate.getValueType();
-        }
-
-
-        @Override
-        public Charset getCharset() {
-            return delegate.getCharset();
-        }
-
-
-        @Override
-        public Collation getCollation() {
-            return delegate.getCollation();
-        }
-
-
-        @Override
-        public IntervalQualifier getIntervalQualifier() {
-            return delegate.getIntervalQualifier();
-        }
-
-
-        @Override
-        public int getPrecision() {
-            return delegate.getPrecision();
-        }
-
-
-        @Override
-        public int getRawPrecision() {
-            return delegate.getRawPrecision();
-        }
-
-
-        @Override
-        public int getScale() {
-            return delegate.getScale();
-        }
-
-
-        @Override
-        public PolyType getPolyType() {
-            return delegate.getPolyType();
-        }
-
-
-        @Override
-        public String getFullTypeString() {
-            return delegate.getFullTypeString();
-        }
-
-
-        @Override
-        public AlgDataTypeFamily getFamily() {
-            return delegate.getFamily();
-        }
-
-
-        @Override
-        public AlgDataTypePrecedenceList getPrecedenceList() {
-            return delegate.getPrecedenceList();
-        }
-
-
-        @Override
-        public AlgDataTypeComparability getComparability() {
-            return delegate.getComparability();
         }
 
     }

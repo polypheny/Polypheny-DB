@@ -31,8 +31,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.routing.Router;
-import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -133,14 +131,5 @@ public class IcarusRouter extends FullPlacementQueryRouter {
         return builders;
     }
 
-
-    public static class IcarusRouterFactory extends RouterFactory {
-
-        @Override
-        public Router createInstance() {
-            return new IcarusRouter();
-        }
-
-    }
 
 }

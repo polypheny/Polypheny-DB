@@ -16,10 +16,7 @@
 
 package org.polypheny.db.cypher;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
@@ -28,13 +25,9 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.cypher.CypherNode.CypherKind;
-import org.polypheny.db.cypher.CypherNode.CypherVisitor;
-import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
-import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryParameters;
@@ -179,41 +172,6 @@ public class CypherProcessorImpl extends AutomaticDdlProcessor {
     @Override
     public boolean needsDdlGeneration( Node query, QueryParameters parameters ) {
         return false;
-    }
-
-
-    @Getter
-    public static class LabelExtractor extends CypherVisitor {
-
-        final List<String> nodeLabels = new ArrayList<>();
-        final List<String> relationshipLabels = new ArrayList<>();
-
-
-        @Override
-        public void visit( CypherCreate create ) {
-
-            List<CypherEveryPathPattern> paths = create
-                    .getPatterns()
-                    .stream()
-                    .filter( p -> p.getCypherKind() == CypherKind.PATH )
-                    .map( p -> (CypherEveryPathPattern) p )
-                    .collect( Collectors.toList() );
-
-            relationshipLabels.addAll( paths
-                    .stream()
-                    .map( CypherEveryPathPattern::getEdges )
-                    .flatMap( rs -> rs.stream().flatMap( r -> r.getLabels().stream() ) )
-                    .collect( Collectors.toSet() ) );
-
-            nodeLabels.addAll( paths
-                    .stream()
-                    .map( CypherEveryPathPattern::getNodes )
-                    .flatMap( rs -> rs.stream().flatMap( n -> n.getLabels().stream() ) )
-                    .collect( Collectors.toSet() ) );
-
-            super.visit( create );
-        }
-
     }
 
 }

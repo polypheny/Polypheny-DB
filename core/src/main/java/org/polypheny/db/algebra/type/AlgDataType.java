@@ -42,7 +42,7 @@ import org.polypheny.db.util.Collation;
 
 
 /**
- * RelDataType represents the type of a scalar expression or entire row returned from a relational expression.
+ * RelDataType represents the type of scalar expression or entire row returned from a relational expression.
  * <p>
  * This is a somewhat "fat" interface which unions the attributes of many different type classes into one. Inelegant,
  * but since our type system was defined before the advent of Java generics, it avoids a lot of typecasting.
@@ -72,6 +72,11 @@ public interface AlgDataType {
      * @return read-only list of field names
      */
     List<String> getFieldNames();
+
+
+    List<Long> getIds();
+
+    Long getId();
 
     /**
      * Returns the number of fields in a struct type.
@@ -117,20 +122,6 @@ public interface AlgDataType {
      * @return canonical type descriptor for components
      */
     AlgDataType getComponentType();
-
-    /**
-     * Gets the key type if this type is a map, otherwise null.
-     *
-     * @return canonical type descriptor for key
-     */
-    AlgDataType getKeyType();
-
-    /**
-     * Gets the value type if this type is a map, otherwise null.
-     *
-     * @return canonical type descriptor for value
-     */
-    AlgDataType getValueType();
 
     /**
      * Gets this type's character set, or null if this type cannot carry a character set or has no character set defined.
@@ -226,6 +217,14 @@ public interface AlgDataType {
      * @return whether it has dynamic structure (for "schema-on-read" table)
      */
     boolean isDynamicStruct();
+
+
+    default <T extends AlgDataType> T unwrap( Class<T> clazz ) {
+        if ( this.getClass().isInstance( clazz ) ) {
+            return clazz.cast( this );
+        }
+        return null;
+    }
 
 }
 

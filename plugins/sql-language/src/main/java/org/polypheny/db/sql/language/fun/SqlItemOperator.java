@@ -31,6 +31,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -126,7 +127,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
             case ARRAY:
                 return OperandTypes.family( PolyTypeFamily.INTEGER );
             case MAP:
-                return OperandTypes.family( operandType.getKeyType().getPolyType().getFamily() );
+                return OperandTypes.family( operandType.unwrap( MapPolyType.class ).getKeyType().getPolyType().getFamily() );
             case ANY:
             case DYNAMIC_STAR:
                 return OperandTypes.or(
@@ -169,7 +170,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
                     return typeFactory.createTypeWithNullability( operandType.getComponentType(), true );
                 }
             case MAP:
-                return typeFactory.createTypeWithNullability( operandType.getValueType(), true );
+                return typeFactory.createTypeWithNullability( operandType.unwrap( MapPolyType.class ).getValueType(), true );
             case ANY:
             case DYNAMIC_STAR:
                 return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );

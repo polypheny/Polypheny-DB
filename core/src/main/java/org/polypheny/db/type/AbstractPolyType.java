@@ -97,5 +97,17 @@ public abstract class AbstractPolyType extends AlgDataTypeImpl implements Clonea
         return super.getPrecedenceList();
     }
 
+
+    public AlgDataType getKeyType() {
+        // this is not a map type
+        return null;
+    }
+
+
+    public AlgDataType getValueType() {
+        // this is not a map type
+        return null;
+    }
+
 }
 

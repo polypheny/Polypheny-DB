@@ -92,5 +92,17 @@ public class AlgCrossType extends AlgDataTypeImpl {
         sb.append( ")" );
     }
 
+
+    public AlgDataType getKeyType() {
+        // this is not a map type
+        return null;
+    }
+
+
+    public AlgDataType getValueType() {
+        // this is not a map type
+        return null;
+    }
+
 }
 

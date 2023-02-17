@@ -50,7 +50,6 @@ import org.apache.http.entity.StringEntity;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.junit.rules.ExternalResource;
-import org.polypheny.db.util.Closer;
 
 
 /**

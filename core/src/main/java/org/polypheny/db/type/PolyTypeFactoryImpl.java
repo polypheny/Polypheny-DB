@@ -34,13 +34,17 @@
 package org.polypheny.db.type;
 
 
-import org.polypheny.db.algebra.type.*;
+import java.nio.charset.Charset;
+import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Util;
-
-import java.nio.charset.Charset;
-import java.util.List;
 
 
 /**
@@ -503,7 +507,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
 
 
     private AlgDataType copyMapType( AlgDataType type, boolean nullable ) {
-        MapPolyType mt = (MapPolyType) type;
+        MapPolyType mt = type.unwrap( MapPolyType.class );
         AlgDataType keyType = copyType( mt.getKeyType() );
         AlgDataType valueType = copyType( mt.getValueType() );
         return new MapPolyType( keyType, valueType, nullable );

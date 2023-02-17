@@ -33,30 +33,38 @@
 
 package org.polypheny.db.adapter.jdbc;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import javax.sql.DataSource;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
-import org.polypheny.db.information.*;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
-import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
-
-import javax.annotation.Nonnull;
-import javax.sql.DataSource;
-import java.sql.Date;
-import java.sql.*;
-import java.util.*;
 
 
 /**
@@ -220,40 +228,6 @@ public final class JdbcUtils {
             long time = v.getTime();
             int offset = TimeZone.getDefault().getOffset( time );
             return new Date( time + offset );
-        }
-
-    }
-
-
-    /**
-     * Ensures that if two data sources have the same definition, they will use the same object.
-     *
-     * This in turn makes it easier to cache {@link SqlDialect} objects. Otherwise, each time we see a new data source,
-     * we have to open a connection to find out what database product and version it is.
-     */
-    public static class DataSourcePool {
-
-        public static final DataSourcePool INSTANCE = new DataSourcePool();
-
-        private final LoadingCache<List<String>, BasicDataSource> cache = CacheBuilder.newBuilder().softValues().build( CacheLoader.from( DataSourcePool::dataSource ) );
-
-
-        private static @Nonnull
-        BasicDataSource dataSource( @Nonnull List<String> key ) {
-            BasicDataSource dataSource = new BasicDataSource();
-            dataSource.setUrl( key.get( 0 ) );
-            dataSource.setUsername( key.get( 1 ) );
-            dataSource.setPassword( key.get( 2 ) );
-            dataSource.setDriverClassName( key.get( 3 ) );
-            return dataSource;
-        }
-
-
-        public DataSource get( String url, String driverClassName, String username, String password ) {
-            // Get data source objects from a cache, so that we don't have to sniff out what kind of
-            // database they are quite as often.
-            final List<String> key = ImmutableNullableList.of( url, username, password, driverClassName );
-            return cache.getUnchecked( key );
         }
 
     }

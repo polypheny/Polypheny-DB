@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 
 @EqualsAndHashCode
@@ -50,12 +49,5 @@ public class CatalogQueryInterface implements CatalogObject {
         return new Serializable[]{ name };
     }
 
-
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogQueryInterface {
-
-        public final String name;
-
-    }
 
 }

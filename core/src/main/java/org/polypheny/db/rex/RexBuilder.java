@@ -1332,7 +1332,7 @@ public class RexBuilder {
         final Map<RexNode, RexNode> map = value
                 .entrySet()
                 .stream()
-                .collect( Collectors.toMap( e -> makeLiteral( e.getKey(), mapType.getKeyType(), allowCast ), e -> makeLiteral( e.getValue(), mapType.getValueType(), allowCast ) ) );
+                .collect( Collectors.toMap( e -> makeLiteral( e.getKey(), mapType.unwrap( MapPolyType.class ).getKeyType(), allowCast ), e -> makeLiteral( e.getValue(), mapType.unwrap( MapPolyType.class ).getValueType(), allowCast ) ) );
 
         return makeMap( type, map );
     }

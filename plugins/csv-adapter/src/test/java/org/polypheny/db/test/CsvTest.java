@@ -65,6 +65,29 @@ import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.Util;
+
 
 /**
  * Unit test of the Polypheny-DB CSV adapter.
@@ -881,59 +904,6 @@ public class CsvTest {
             throw new RuntimeException( e );
         }
         return null;
-    }
-
-
-    /**
-     * Receives commands on a queue and executes them on its own thread. Call {@link #close} to terminate.
-     *
-     * @param <E> Result value of commands
-     */
-    private static class Worker<E> implements Runnable, AutoCloseable {
-
-        /**
-         * Queue of commands.
-         */
-        final BlockingQueue<Callable<E>> queue = new ArrayBlockingQueue<>( 5 );
-        /**
-         * The poison pill command.
-         */
-        final Callable<E> end = () -> null;
-        /**
-         * Value returned by the most recent command.
-         */
-        private E v;
-        /**
-         * Exception thrown by a command or queue wait.
-         */
-        private Exception e;
-
-
-        @Override
-        public void run() {
-            try {
-                for ( ; ; ) {
-                    final Callable<E> c = queue.take();
-                    if ( c == end ) {
-                        return;
-                    }
-                    this.v = c.call();
-                }
-            } catch ( Exception e ) {
-                this.e = e;
-            }
-        }
-
-
-        @Override
-        public void close() {
-            try {
-                queue.put( end );
-            } catch ( InterruptedException e ) {
-                // ignore
-            }
-        }
-
     }
 
 

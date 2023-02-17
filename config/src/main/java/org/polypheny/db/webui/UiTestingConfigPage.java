@@ -62,13 +62,6 @@ public class UiTestingConfigPage {
     }
 
 
-    private static class FooBarImplementation extends TestClass {
-
-        int d;
-
-    }
-
-
     static {
         ConfigManager cm = ConfigManager.getInstance();
 

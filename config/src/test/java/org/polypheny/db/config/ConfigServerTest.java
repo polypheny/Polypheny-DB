@@ -152,10 +152,9 @@ public class ConfigServerTest {
         int b;
     }
     private static class BarImplementation extends TestClass {
+
         int c;
-    }
-    private static class FooBarImplementation extends TestClass {
-        int d;
+
     }
 
     private enum TestEnum {

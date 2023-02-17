@@ -44,7 +44,6 @@ import java.lang.reflect.UndeclaredThrowableException;
  *
  * It is useful when you are prototyping code. You can rapidly create a prototype class which implements the important methods in an interface, then implement other methods as they are called.
  *
- * @see DelegatingInvocationHandler
  */
 public class BarfingInvocationHandler implements InvocationHandler {
 

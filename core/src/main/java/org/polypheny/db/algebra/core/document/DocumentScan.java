@@ -23,8 +23,8 @@ import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDocumentType;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
@@ -49,7 +49,7 @@ public abstract class DocumentScan extends AbstractAlgNode implements DocumentAl
         AlgDataType docType = cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT );
         // todo dl: change after RowType refactor
         if ( this.collection.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
-            this.rowType = new AlgDocumentType();
+            this.rowType = new DocumentType();
         } else {
             List<AlgDataTypeField> list = collection.getRowType().getFieldList().stream()
                     .map( f -> new AlgDataTypeFieldImpl( f.getName(), f.getIndex(), cluster.getTypeFactory().createPolyType( PolyType.ANY ) ) )

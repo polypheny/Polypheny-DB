@@ -28,7 +28,7 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 
-public class AlgDocumentType implements Serializable, AlgDataType, AlgDataTypeFamily, AlgDataTypeField {
+public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamily, AlgDataTypeField {
 
     @Getter
     private final StructKind structKind;
@@ -42,16 +42,15 @@ public class AlgDocumentType implements Serializable, AlgDataType, AlgDataTypeFa
     private String physicalName = null;
 
 
-    public AlgDocumentType( @Nullable String name, @Nonnull List<AlgDataType> fixedFields ) {
+    public DocumentType( @Nullable String name, @Nonnull List<AlgDataType> fixedFields ) {
         this.name = name;
         this.structKind = fixedFields.isEmpty() ? StructKind.NONE : StructKind.SEMI;
-        assert fixedFields != null;
         this.fixedFields = ImmutableList.copyOf( fixedFields );
     }
 
 
-    public AlgDocumentType() {
-        this( null, List.of( new AlgDocumentType( "_id_", List.of() ) ) );
+    public DocumentType() {
+        this( null, List.of( new DocumentType( "_id_", List.of() ) ) );
     }
 
 
@@ -102,18 +101,6 @@ public class AlgDocumentType implements Serializable, AlgDataType, AlgDataTypeFa
 
     @Override
     public AlgDataType getComponentType() {
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType getKeyType() {
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType getValueType() {
         return null;
     }
 

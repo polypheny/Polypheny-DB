@@ -29,7 +29,7 @@ import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.type.AlgDocumentType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -51,7 +51,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
      */
     public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
         super( cluster, traitSet );
-        this.rowType = new AlgDocumentType();
+        this.rowType = new DocumentType();
         this.documentTuples = validate( documentTuples );
     }
 
@@ -126,7 +126,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );
 
-        return new LogicalValues( cluster, out, ((AlgDocumentType) rowType).asRelational(), relationalize( documentTuples, cluster.getRexBuilder() ) );
+        return new LogicalValues( cluster, out, ((DocumentType) rowType).asRelational(), relationalize( documentTuples, cluster.getRexBuilder() ) );
     }
 
 
