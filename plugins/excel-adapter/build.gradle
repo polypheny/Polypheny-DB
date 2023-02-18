@@ -1,0 +1,45 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
+
+    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
+    implementation group: "org.apache.poi", name: "poi", version: poi_version
+    implementation group: "org.apache.poi", name: "poi-ooxml", version: poi_ooxml_version
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+}
+
+compileJava {
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+    allowUrl('http://opensource.org/licenses/BSD-3-Clause') // BSD-3
+}
