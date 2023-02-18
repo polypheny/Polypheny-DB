@@ -25,13 +25,13 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.NCatalog;
-import org.polypheny.db.catalog.SerializableCatalog;
+import org.polypheny.db.catalog.Serializable;
 
 @Value
-public class RelationalCatalog implements NCatalog, SerializableCatalog {
+public class RelationalCatalog implements NCatalog, Serializable {
 
     @Getter
-    public BinarySerializer<RelationalCatalog> serializer = SerializableCatalog.builder.get().build( RelationalCatalog.class );
+    public BinarySerializer<RelationalCatalog> serializer = Serializable.builder.get().build( RelationalCatalog.class );
 
     @Serialize
     public Map<Long, CatalogTable> tables;
@@ -102,6 +102,12 @@ public class RelationalCatalog implements NCatalog, SerializableCatalog {
     public void deleteColumn( long id, long entityId ) {
         tables.put( entityId, tables.get( id ).withDeletedColumn( id ) );
         change();
+    }
+
+
+    @Override
+    public RelationalCatalog copy() {
+        return deserialize( serialize(), RelationalCatalog.class );
     }
 
 }

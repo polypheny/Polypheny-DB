@@ -16,6 +16,14 @@
 
 package org.polypheny.db.catalog.logical.document;
 
+import lombok.AllArgsConstructor;
+import lombok.Value;
+
+@Value
+@AllArgsConstructor
 public class CatalogCollection {
+
+    public long id;
+    public String name;
 
 }

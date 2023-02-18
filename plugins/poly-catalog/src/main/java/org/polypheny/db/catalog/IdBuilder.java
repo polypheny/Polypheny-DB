@@ -27,19 +27,25 @@ public class IdBuilder {
 
     public final AtomicLong userId;
 
+    public final AtomicLong verticalId;
+
+    public final AtomicLong horizontalId;
+
 
     public IdBuilder() {
-        this( new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ) );
+        this( new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ) );
     }
 
 
-    public IdBuilder( AtomicLong databaseId, AtomicLong namespaceId, AtomicLong entityId, AtomicLong fieldId, AtomicLong userId ) {
+    public IdBuilder( AtomicLong databaseId, AtomicLong namespaceId, AtomicLong entityId, AtomicLong fieldId, AtomicLong userId, AtomicLong verticalId, AtomicLong horizontalId ) {
         this.databaseId = databaseId;
         this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.fieldId = fieldId;
 
         this.userId = userId;
+        this.verticalId = verticalId;
+        this.horizontalId = horizontalId;
     }
 
 
@@ -65,6 +71,16 @@ public class IdBuilder {
 
     public long getNewUserId() {
         return userId.getAndIncrement();
+    }
+
+
+    public long getNewVerticalId() {
+        return verticalId.getAndIncrement();
+    }
+
+
+    public long getNewHorizontalId() {
+        return horizontalId.getAndIncrement();
     }
 
 }

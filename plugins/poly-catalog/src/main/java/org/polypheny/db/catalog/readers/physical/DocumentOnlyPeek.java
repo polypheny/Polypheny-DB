@@ -14,27 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.alocation;
+package org.polypheny.db.catalog.readers.physical;
 
-import org.polypheny.db.catalog.NCatalog;
-
-public class AllocationCatalog implements NCatalog {
-
-    @Override
-    public void commit() {
-
-    }
-
-
-    @Override
-    public void rollback() {
-
-    }
-
-
-    @Override
-    public boolean hasUncommittedChanges() {
-        return false;
-    }
+public class DocumentOnlyPeek implements PhysicalPeek {
 
 }

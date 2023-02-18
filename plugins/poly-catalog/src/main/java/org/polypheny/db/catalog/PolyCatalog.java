@@ -52,10 +52,10 @@ import org.polypheny.db.util.Moniker;
  * Field -> Column (Relational), does not exist (Graph), Field (Document)
  */
 @Slf4j
-public class PolyCatalog implements SerializableCatalog, CatalogReader {
+public class PolyCatalog implements Serializable, CatalogReader {
 
     @Getter
-    public final BinarySerializer<PolyCatalog> serializer = SerializableCatalog.builder.get().build( PolyCatalog.class );
+    public final BinarySerializer<PolyCatalog> serializer = Serializable.builder.get().build( PolyCatalog.class );
 
     @Serialize
     public final Map<Long, RelationalCatalog> relationals;
@@ -209,6 +209,12 @@ public class PolyCatalog implements SerializableCatalog, CatalogReader {
     @Override
     public Graph getGraph( String name ) {
         return null;
+    }
+
+
+    @Override
+    public PolyCatalog copy() {
+        return deserialize( serialize(), PolyCatalog.class );
     }
 
 }

@@ -22,20 +22,23 @@ import io.activej.serializer.SerializerBuilder;
 import java.util.function.Supplier;
 import org.polypheny.db.plugins.PolyPluginManager;
 
-public interface SerializableCatalog {
+public interface Serializable {
 
     Supplier<SerializerBuilder> builder = () -> SerializerBuilder.create( DefiningClassLoader.create( PolyPluginManager.getMainClassLoader() ) );
 
-    <T extends SerializableCatalog> BinarySerializer<T> getSerializer();
+    <T extends Serializable> BinarySerializer<T> getSerializer();
 
-    default <T extends SerializableCatalog> byte[] serialize( Class<T> clazz ) {
+    default <T extends Serializable> byte[] serialize() {
         byte[] buffer = new byte[1000];
         getSerializer().encode( buffer, 0, this );
         return buffer;
     }
 
-    default <T extends SerializableCatalog> T deserialize( byte[] serialized, Class<T> clazz ) {
+    default <T extends Serializable> T deserialize( byte[] serialized, Class<T> clazz ) {
         return clazz.cast( getSerializer().decode( serialized, 0 ) );
     }
+
+
+    Serializable copy();
 
 }

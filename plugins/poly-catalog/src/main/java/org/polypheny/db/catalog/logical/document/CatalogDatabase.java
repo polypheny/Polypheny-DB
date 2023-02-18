@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical.graph;
+package org.polypheny.db.catalog.logical.document;
 
-import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import lombok.Value;
 
-public class CatalogGraph {
+@Value
+public class CatalogDatabase {
 
-    @Serialize
-    public final long id;
+    public String name;
+    public long id;
+    public ImmutableMap<Long, CatalogCollection> collections;
 
-    @Serialize
-    public final String name;
 
-    public CatalogGraph(
-            @Deserialize("id") long id,
-            @Deserialize("name") String name ) {
+    public CatalogDatabase( long id, String name, Map<Long, CatalogCollection> collections ) {
         this.id = id;
         this.name = name;
+        this.collections = ImmutableMap.copyOf( collections );
     }
 
 }

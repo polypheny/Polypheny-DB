@@ -25,13 +25,13 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.NCatalog;
-import org.polypheny.db.catalog.SerializableCatalog;
+import org.polypheny.db.catalog.Serializable;
 
 @Value
-public class DocumentCatalog implements NCatalog, SerializableCatalog {
+public class DocumentCatalog implements NCatalog, Serializable {
 
     @Getter
-    public BinarySerializer<DocumentCatalog> serializer = SerializableCatalog.builder.get().build( DocumentCatalog.class );
+    public BinarySerializer<DocumentCatalog> serializer = Serializable.builder.get().build( DocumentCatalog.class );
 
     @Serialize
     public Map<Long, CatalogCollection> collections;
@@ -85,5 +85,10 @@ public class DocumentCatalog implements NCatalog, SerializableCatalog {
 
     }
 
+
+    @Override
+    public DocumentCatalog copy() {
+        return deserialize( serialize(), DocumentCatalog.class );
+    }
 
 }

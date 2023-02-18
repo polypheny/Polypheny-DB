@@ -14,24 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical.graph;
+package org.polypheny.db.catalog.readers;
 
-import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
-
-public class CatalogGraph {
-
-    @Serialize
-    public final long id;
-
-    @Serialize
-    public final String name;
-
-    public CatalogGraph(
-            @Deserialize("id") long id,
-            @Deserialize("name") String name ) {
-        this.id = id;
-        this.name = name;
-    }
+public interface Peek {
 
 }

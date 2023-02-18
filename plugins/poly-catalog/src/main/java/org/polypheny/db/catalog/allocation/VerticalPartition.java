@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical.graph;
+package org.polypheny.db.catalog.allocation;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import lombok.Value;
 
-public class CatalogGraph {
+@Value
+public class VerticalPartition {
 
     @Serialize
-    public final long id;
+    public long id;
 
     @Serialize
-    public final String name;
+    public long logicalId;
 
-    public CatalogGraph(
+
+    public VerticalPartition(
             @Deserialize("id") long id,
-            @Deserialize("name") String name ) {
+            @Deserialize("logicalId") long logicalId ) {
         this.id = id;
-        this.name = name;
+        this.logicalId = logicalId;
     }
 
 }

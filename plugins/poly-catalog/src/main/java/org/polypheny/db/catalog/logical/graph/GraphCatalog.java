@@ -19,19 +19,17 @@ package org.polypheny.db.catalog.logical.graph;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.NCatalog;
-import org.polypheny.db.catalog.SerializableCatalog;
+import org.polypheny.db.catalog.Serializable;
 
 @Value
-public class GraphCatalog implements NCatalog, SerializableCatalog {
+public class GraphCatalog implements NCatalog, Serializable {
 
     @Getter
-    public BinarySerializer<GraphCatalog> serializer = SerializableCatalog.builder.get().build( GraphCatalog.class );
+    public BinarySerializer<GraphCatalog> serializer = Serializable.builder.get().build( GraphCatalog.class );
 
     @Serialize
     public long id;
@@ -39,23 +37,13 @@ public class GraphCatalog implements NCatalog, SerializableCatalog {
     @Serialize
     public String name;
 
-    @Serialize
-    public Map<Long, CatalogGraph> graphs;
-
     @NonFinal
     boolean openChanges = false;
 
 
-    public GraphCatalog( long id, String name ) {
-        this( id, name, new ConcurrentHashMap<>() );
-    }
-
-
     public GraphCatalog(
             @Deserialize("id") long id,
-            @Deserialize("name") String name,
-            @Deserialize("graphs") Map<Long, CatalogGraph> graphs ) {
-        this.graphs = graphs;
+            @Deserialize("name") String name ) {
 
         this.id = id;
         this.name = name;
@@ -64,7 +52,6 @@ public class GraphCatalog implements NCatalog, SerializableCatalog {
 
     @Override
     public void commit() {
-
         openChanges = false;
     }
 
@@ -81,5 +68,10 @@ public class GraphCatalog implements NCatalog, SerializableCatalog {
         return openChanges;
     }
 
+
+    @Override
+    public GraphCatalog copy() {
+        return deserialize( serialize(), GraphCatalog.class );
+    }
 
 }
