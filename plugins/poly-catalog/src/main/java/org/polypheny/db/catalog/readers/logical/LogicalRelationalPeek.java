@@ -22,14 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Value;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.logical.relational.CatalogColumn;
 import org.polypheny.db.catalog.logical.relational.CatalogSchema;
 import org.polypheny.db.catalog.logical.relational.CatalogTable;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
-import org.polypheny.db.catalog.readers.physical.PhysicalPeek;
 
 @Value
-public class LogicalRelationalPeek implements PhysicalPeek {
+public class LogicalRelationalPeek implements LogicalPeek {
 
     ImmutableList<RelationalCatalog> catalogs;
 
@@ -115,6 +115,12 @@ public class LogicalRelationalPeek implements PhysicalPeek {
 
     private Map<String, CatalogSchema> buildSchemaNames() {
         return schemas.stream().collect( Collectors.toMap( c -> c.name, c -> c ) );
+    }
+
+
+    @Override
+    public NamespaceType getType() {
+        return NamespaceType.RELATIONAL;
     }
 
 }

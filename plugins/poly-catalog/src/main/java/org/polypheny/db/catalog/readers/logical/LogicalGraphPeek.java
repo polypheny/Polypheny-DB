@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Value;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.logical.graph.CatalogGraph;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 
@@ -59,5 +60,10 @@ public class LogicalGraphPeek implements LogicalPeek {
         return graphs.stream().collect( Collectors.toMap( g -> g.name, g -> g ) );
     }
 
+
+    @Override
+    public NamespaceType getType() {
+        return NamespaceType.GRAPH;
+    }
 
 }

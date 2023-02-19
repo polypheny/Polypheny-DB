@@ -37,19 +37,20 @@ public class CatalogPlugin extends Plugin {
     @Override
     public void start() {
         PolyCatalog catalog = new PolyCatalog();
-        long user = catalog.addUser( "admin" );
 
         catalog.addNamespace( "test", NamespaceType.RELATIONAL );
         long namespaceId = catalog.addNamespace( "test2", NamespaceType.RELATIONAL );
 
         long tableId = catalog.addTable( "testTable", namespaceId );
         catalog.addColumn( "testColumn", namespaceId, tableId, null );
+        catalog.commit();
 
-        byte[] buffer = catalog.serialize( PolyCatalog.class );
+        byte[] buffer = catalog.serialize();
 
         PolyCatalog catalog1 = catalog.deserialize( buffer, PolyCatalog.class );
 
         catalog1.addColumn( "testColumn2", namespaceId, tableId, null );
+        catalog1.rollback();
 
     }
 

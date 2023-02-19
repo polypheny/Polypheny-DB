@@ -16,14 +16,25 @@
 
 package org.polypheny.db.catalog.logical.document;
 
-import lombok.AllArgsConstructor;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import lombok.Value;
 
 @Value
-@AllArgsConstructor
 public class CatalogCollection {
 
+    @Serialize
     public long id;
+
+    @Serialize
     public String name;
+
+
+    public CatalogCollection(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name ) {
+        this.id = id;
+        this.name = name;
+    }
 
 }

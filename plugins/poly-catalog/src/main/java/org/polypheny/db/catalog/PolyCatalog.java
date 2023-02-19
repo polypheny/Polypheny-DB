@@ -30,10 +30,10 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entities.CatalogUser;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
+import org.polypheny.db.catalog.readers.logical.LogicalFullPeek;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptTable;
@@ -58,40 +58,38 @@ public class PolyCatalog implements Serializable, CatalogReader {
     public final BinarySerializer<PolyCatalog> serializer = Serializable.builder.get().build( PolyCatalog.class );
 
     @Serialize
-    public final Map<Long, RelationalCatalog> relationals;
-
-    @Serialize
-    public final Map<Long, DocumentCatalog> documents;
-
-    @Serialize
-    public final Map<Long, GraphCatalog> graphs;
+    public final Map<Long, NCatalog> catalogs;
 
     @Serialize
     public final Map<Long, CatalogUser> users;
 
     private final IdBuilder idBuilder = new IdBuilder();
+    private LogicalFullPeek logicalPeek;
 
 
     public PolyCatalog() {
-        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
+        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
     }
 
 
     public PolyCatalog(
             @Deserialize("users") Map<Long, CatalogUser> users,
-            @Deserialize("relationals") Map<Long, RelationalCatalog> relationals,
-            @Deserialize("documents") Map<Long, DocumentCatalog> documents,
-            @Deserialize("graphs") Map<Long, GraphCatalog> graphs ) {
+            @Deserialize("catalogs") Map<Long, NCatalog> catalogs ) {
 
         this.users = users;
-        this.relationals = relationals;
-        this.documents = documents;
-        this.graphs = graphs;
+        this.catalogs = catalogs;
+        updatePeeks();
     }
 
 
-    public void commit() throws NoTablePrimaryKeyException {
+    private void updatePeeks() {
+        this.logicalPeek = new LogicalFullPeek( catalogs );
+    }
+
+
+    public void commit() {
         log.debug( "commit" );
+        updatePeeks();
     }
 
 
@@ -114,13 +112,13 @@ public class PolyCatalog implements Serializable, CatalogReader {
 
         switch ( namespaceType ) {
             case RELATIONAL:
-                relationals.put( id, new RelationalCatalog( id, name ) );
+                catalogs.put( id, new RelationalCatalog( id, name ) );
                 break;
             case DOCUMENT:
-                documents.put( id, new DocumentCatalog( id, name ) );
+                catalogs.put( id, new DocumentCatalog( id, name ) );
                 break;
             case GRAPH:
-                graphs.put( id, new GraphCatalog( id, name ) );
+                catalogs.put( id, new GraphCatalog( id, name ) );
                 break;
         }
 
@@ -131,7 +129,7 @@ public class PolyCatalog implements Serializable, CatalogReader {
     public long addTable( String name, long namespaceId ) {
         long id = idBuilder.getNewEntityId();
 
-        relationals.get( namespaceId ).asRelational().addTable( id, name );
+        catalogs.get( namespaceId ).asRelational().addTable( id, name );
 
         return id;
     }
@@ -140,7 +138,7 @@ public class PolyCatalog implements Serializable, CatalogReader {
     public long addColumn( String name, long namespaceId, long entityId, AlgDataType type ) {
         long id = idBuilder.getNewFieldId();
 
-        relationals.get( namespaceId ).asRelational().addColumn( id, name, entityId );
+        catalogs.get( namespaceId ).asRelational().addColumn( id, name, entityId );
 
         return id;
     }

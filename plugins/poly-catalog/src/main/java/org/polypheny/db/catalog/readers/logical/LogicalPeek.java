@@ -16,9 +16,12 @@
 
 package org.polypheny.db.catalog.readers.logical;
 
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.readers.Peek;
 
 public interface LogicalPeek extends Peek {
+
+    NamespaceType getType();
 
 
 }

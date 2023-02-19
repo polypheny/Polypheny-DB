@@ -16,10 +16,12 @@
 
 package org.polypheny.db.catalog;
 
+import io.activej.serializer.annotations.SerializeClass;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
 
+@SerializeClass(subclasses = { GraphCatalog.class, RelationalCatalog.class, DocumentCatalog.class }) // required for deserialization
 public interface NCatalog {
 
     void commit();
@@ -27,6 +29,8 @@ public interface NCatalog {
     void rollback();
 
     boolean hasUncommittedChanges();
+
+    Catalog.NamespaceType getType();
 
     default RelationalCatalog asRelational() {
         return unwrap( RelationalCatalog.class );

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Value;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.logical.document.CatalogCollection;
 import org.polypheny.db.catalog.logical.document.CatalogDatabase;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;
@@ -82,6 +83,12 @@ public class LogicalDocumentPeek implements LogicalPeek {
 
     private List<CatalogDatabase> buildDatabases() {
         return catalogs.stream().map( c -> new CatalogDatabase( c.id, c.name, c.collections ) ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public NamespaceType getType() {
+        return NamespaceType.DOCUMENT;
     }
 
 }

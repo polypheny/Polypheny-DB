@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
@@ -72,6 +73,12 @@ public class AllocationCatalog implements NCatalog, Serializable {
     @Override
     public boolean hasUncommittedChanges() {
         return false;
+    }
+
+
+    @Override
+    public NamespaceType getType() {
+        return null;
     }
 
 
