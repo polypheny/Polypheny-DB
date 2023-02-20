@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.physical;
+package org.polypheny.db.catalog.snapshot.physical;
 
-public class RelationalOnlyPeek implements PhysicalPeek {
+public class GraphOnlySnapshot implements PhysicalSnapshot {
 
 }

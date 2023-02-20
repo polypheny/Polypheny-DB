@@ -438,7 +438,7 @@ public abstract class SqlToAlgTestBase {
 
 
             @Override
-            public Expression getExpression( Class clazz ) {
+            public Expression getExpression( Class<?> clazz ) {
                 return null;
             }
 
@@ -480,7 +480,7 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public Expression getExpression( Class clazz ) {
+        public Expression getExpression( Class<?> clazz ) {
             return parent.getExpression( clazz );
         }
 

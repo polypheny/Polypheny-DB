@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.allocation;
+package org.polypheny.db.catalog.snapshot;
 
-import org.polypheny.db.catalog.readers.Peek;
-
-public class AllocationPeek implements Peek {
+public interface Snapshot {
 
 }

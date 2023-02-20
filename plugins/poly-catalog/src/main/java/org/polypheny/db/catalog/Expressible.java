@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.physical;
+package org.polypheny.db.catalog;
 
-public class DocumentOnlyPeek implements PhysicalPeek {
+import org.apache.calcite.linq4j.tree.Expression;
+
+public interface Expressible {
+
+    Expression asExpression();
 
 }

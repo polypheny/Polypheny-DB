@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.logical;
+package org.polypheny.db.catalog.snapshot.logical;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.logical.graph.CatalogGraph;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 
 @Value
-public class LogicalGraphPeek implements LogicalPeek {
+public class LogicalGraphSnapshot implements LogicalSnapshot {
 
     ImmutableList<GraphCatalog> catalogs;
     public ImmutableList<CatalogGraph> graphs;
@@ -36,7 +36,7 @@ public class LogicalGraphPeek implements LogicalPeek {
     public ImmutableMap<String, CatalogGraph> graphNames;
 
 
-    public LogicalGraphPeek( final List<GraphCatalog> catalogs ) {
+    public LogicalGraphSnapshot( final List<GraphCatalog> catalogs ) {
         this.catalogs = ImmutableList.copyOf( catalogs.stream().map( GraphCatalog::copy ).collect( Collectors.toList() ) );
 
         this.graphs = ImmutableList.copyOf( buildGraphs() );

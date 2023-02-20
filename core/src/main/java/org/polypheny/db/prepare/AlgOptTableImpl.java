@@ -36,11 +36,10 @@ package org.polypheny.db.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.enumerable.EnumerableScan;
@@ -57,9 +56,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
@@ -68,14 +66,11 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.Path;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.StreamableTable;
 import org.polypheny.db.schema.Table;
@@ -85,7 +80,6 @@ import org.polypheny.db.util.AccessType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.NullInitializerExpressionFactory;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -97,8 +91,14 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     private final transient AlgOptSchema schema;
     private final AlgDataType rowType;
     @Getter
+    @Nullable
     private final Table table;
-    private final transient Function<Class, Expression> expressionFunction;
+
+    @Getter
+    @Nullable
+    private final CatalogTable catalogTable;
+    @Nullable
+    private final transient Function<Class<?>, Expression> expressionFunction;
     private final ImmutableList<String> names;
 
     /**
@@ -114,35 +114,25 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
             AlgDataType rowType,
             List<String> names,
             Table table,
-            Function<Class, Expression> expressionFunction,
+            CatalogTable catalogTable,
+            Function<Class<?>, Expression> expressionFunction,
             Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
         this.names = ImmutableList.copyOf( names );
         this.table = table; // may be null
+        this.catalogTable = catalogTable;
         this.expressionFunction = expressionFunction; // may be null
         this.rowCount = rowCount; // may be null
     }
 
 
     public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, List<String> names, Expression expression ) {
-        return new AlgOptTableImpl( schema, rowType, names, null, c -> expression, null );
+        return new AlgOptTableImpl( schema, rowType, names, null, null, c -> expression, null );
     }
 
 
-    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, Table table, Path path ) {
-        final SchemaPlus schemaPlus = MySchemaPlus.create( path );
-        return new AlgOptTableImpl(
-                schema,
-                rowType,
-                Pair.left( path ),
-                table,
-                getClassExpressionFunction( schemaPlus, Util.last( path ).left, table ),
-                table.getStatistic().getRowCount() );
-    }
-
-
-    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, Double count ) {
+    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, CatalogTable catalogTable, Double count ) {
         final Table table = tableEntry.getTable();
         Double rowCount;
         if ( count == null ) {
@@ -151,7 +141,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
             rowCount = count;
         }
 
-        return new AlgOptTableImpl( schema, rowType, tableEntry.path(), table, getClassExpressionFunction( tableEntry, table ), rowCount );
+        return new AlgOptTableImpl( schema, rowType, tableEntry.path(), table, catalogTable, getClassExpressionFunction( tableEntry, table ), rowCount );
     }
 
 
@@ -159,16 +149,16 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
      * Creates a copy of this RelOptTable. The new RelOptTable will have newRowType.
      */
     public AlgOptTableImpl copy( AlgDataType newRowType ) {
-        return new AlgOptTableImpl( this.schema, newRowType, this.names, this.table, this.expressionFunction, this.rowCount );
+        return new AlgOptTableImpl( this.schema, newRowType, this.names, this.table, this.catalogTable, this.expressionFunction, this.rowCount );
     }
 
 
-    private static Function<Class, Expression> getClassExpressionFunction( PolyphenyDbSchema.TableEntry tableEntry, Table table ) {
+    private static Function<Class<?>, Expression> getClassExpressionFunction( PolyphenyDbSchema.TableEntry tableEntry, Table table ) {
         return getClassExpressionFunction( tableEntry.schema.plus(), tableEntry.name, table );
     }
 
 
-    private static Function<Class, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Table table ) {
+    private static Function<Class<?>, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Table table ) {
         if ( table instanceof QueryableTable ) {
             final QueryableTable queryableTable = (QueryableTable) table;
             return clazz -> queryableTable.getExpression( schema, tableName, clazz );
@@ -186,11 +176,11 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
-    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, Table table, ImmutableList<String> names ) {
+    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, Table table, CatalogTable catalogTable, ImmutableList<String> names ) {
         assert table instanceof TranslatableTable
                 || table instanceof ScannableTable
                 || table instanceof ModifiableTable;
-        return new AlgOptTableImpl( schema, rowType, names, table, null, null );
+        return new AlgOptTableImpl( schema, rowType, names, table, catalogTable, null, null );
     }
 
 
@@ -216,7 +206,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
     @Override
-    public Expression getExpression( Class clazz ) {
+    public Expression getExpression( Class<?> clazz ) {
         if ( expressionFunction == null ) {
             return null;
         }
@@ -232,6 +222,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
                 extendedRowType,
                 getQualifiedName(),
                 extendedTable,
+                null,
                 expressionFunction,
                 getRowCount() );
     }
@@ -292,7 +283,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
                 }
             }
             final AlgOptTable algOptTable =
-                    new AlgOptTableImpl( this.schema, b.build(), this.names, this.table, this.expressionFunction, this.rowCount ) {
+                    new AlgOptTableImpl( this.schema, b.build(), this.names, this.table, this.catalogTable, this.expressionFunction, this.rowCount ) {
                         @Override
                         public <T> T unwrap( Class<T> clazz ) {
                             if ( clazz.isAssignableFrom( InitializerExpressionFactory.class ) ) {
@@ -412,7 +403,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         final InitializerExpressionFactory ief = Util.first(
                 table.unwrap( InitializerExpressionFactory.class ),
                 NullInitializerExpressionFactory.INSTANCE );
-        return new AbstractList<ColumnStrategy>() {
+        return new AbstractList<>() {
             @Override
             public int size() {
                 return fieldCount;
@@ -461,173 +452,6 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
             }
         }
         return builder.build();
-    }
-
-
-    /**
-     * Implementation of {@link SchemaPlus} that wraps a regular schema and knows its name and parent.
-     *
-     * It is read-only, and functionality is limited in other ways, it but allows table expressions to be generated.
-     */
-    private static class MySchemaPlus implements SchemaPlus {
-
-        private final SchemaPlus parent;
-        private final String name;
-        private final Schema schema;
-
-
-        MySchemaPlus( SchemaPlus parent, String name, Schema schema ) {
-            this.parent = parent;
-            this.name = name;
-            this.schema = schema;
-        }
-
-
-        public static MySchemaPlus create( Path path ) {
-            final Pair<String, Schema> pair = Util.last( path );
-            final SchemaPlus parent;
-            if ( path.size() == 1 ) {
-                parent = null;
-            } else {
-                parent = create( path.parent() );
-            }
-            return new MySchemaPlus( parent, pair.left, pair.right );
-        }
-
-
-        @Override
-        public PolyphenyDbSchema polyphenyDbSchema() {
-            return null;
-        }
-
-
-        @Override
-        public SchemaPlus getParentSchema() {
-            return parent;
-        }
-
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-
-        @Override
-        public SchemaPlus getSubSchema( String name ) {
-            final Schema subSchema = schema.getSubSchema( name );
-            return subSchema == null ? null : new MySchemaPlus( this, name, subSchema );
-        }
-
-
-        @Override
-        public SchemaPlus add( String name, Schema schema, NamespaceType namespaceType ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public void add( String name, Table table ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public void add( String name, org.polypheny.db.schema.Function function ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public void add( String name, AlgProtoDataType type ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public boolean isMutable() {
-            return schema.isMutable();
-        }
-
-
-        @Override
-        public <T> T unwrap( Class<T> clazz ) {
-            return null;
-        }
-
-
-        @Override
-        public void setPath( ImmutableList<ImmutableList<String>> path ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public void setCacheEnabled( boolean cache ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public boolean isCacheEnabled() {
-            return false;
-        }
-
-
-        @Override
-        public Table getTable( String name ) {
-            return schema.getTable( name );
-        }
-
-
-        @Override
-        public Set<String> getTableNames() {
-            return schema.getTableNames();
-        }
-
-
-        @Override
-        public AlgProtoDataType getType( String name ) {
-            return schema.getType( name );
-        }
-
-
-        @Override
-        public Set<String> getTypeNames() {
-            return schema.getTypeNames();
-        }
-
-
-        @Override
-        public Collection<org.polypheny.db.schema.Function>
-        getFunctions( String name ) {
-            return schema.getFunctions( name );
-        }
-
-
-        @Override
-        public Set<String> getFunctionNames() {
-            return schema.getFunctionNames();
-        }
-
-
-        @Override
-        public Set<String> getSubSchemaNames() {
-            return schema.getSubSchemaNames();
-        }
-
-
-        @Override
-        public Expression getExpression( SchemaPlus parentSchema, String name ) {
-            return schema.getExpression( parentSchema, name );
-        }
-
-
-        @Override
-        public Schema snapshot( SchemaVersion version ) {
-            throw new UnsupportedOperationException();
-        }
-
     }
 
 }

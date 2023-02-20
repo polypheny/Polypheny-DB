@@ -64,6 +64,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.QueryableTable;
@@ -106,6 +108,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
         if ( queryable instanceof AbstractTableQueryable ) {
             final AbstractTableQueryable tableQueryable = (AbstractTableQueryable) queryable;
             final QueryableTable table = tableQueryable.table;
+            final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
             final PolyphenyDbSchema.TableEntry tableEntry =
                     PolyphenyDbSchema
                             .from( tableQueryable.schema )
@@ -114,6 +117,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
                     null,
                     table.getRowType( translator.typeFactory ),
                     tableEntry,
+                    catalogTable,
                     null );
             if ( table instanceof TranslatableTable ) {
                 return ((TranslatableTable) table).toAlg( translator.toAlgContext(), algOptTable, translator.cluster.traitSet() );

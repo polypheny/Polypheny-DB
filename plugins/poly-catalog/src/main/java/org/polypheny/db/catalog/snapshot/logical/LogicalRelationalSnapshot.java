@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.logical;
+package org.polypheny.db.catalog.snapshot.logical;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.logical.relational.CatalogTable;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
 
 @Value
-public class LogicalRelationalPeek implements LogicalPeek {
+public class LogicalRelationalSnapshot implements LogicalSnapshot {
 
     ImmutableList<RelationalCatalog> catalogs;
 
@@ -44,7 +44,7 @@ public class LogicalRelationalPeek implements LogicalPeek {
     public ImmutableMap<String, CatalogColumn> columnNames;
 
 
-    public LogicalRelationalPeek( List<RelationalCatalog> catalogs ) {
+    public LogicalRelationalSnapshot( List<RelationalCatalog> catalogs ) {
         this.catalogs = ImmutableList.copyOf( catalogs.stream().map( RelationalCatalog::copy ).collect( Collectors.toList() ) );
 
         this.schemas = ImmutableList.copyOf( buildSchemas() );

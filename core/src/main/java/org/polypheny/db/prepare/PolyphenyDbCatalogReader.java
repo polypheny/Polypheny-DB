@@ -45,6 +45,8 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptTable;
@@ -75,20 +77,20 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-
     @Override
     public Prepare.PreparingTable getTable( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
         PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {
             final Table table = entry.getTable();
+            CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
             if ( table instanceof Wrapper ) {
                 final Prepare.PreparingTable algOptTable = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
                 if ( algOptTable != null ) {
                     return algOptTable;
                 }
             }
-            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );
+            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, catalogTable, null );
         }
         return null;
     }
@@ -100,7 +102,8 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {
             final Table table = entry.getTable();
-            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );
+            CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
+            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, catalogTable, null );
         }
         return null;
     }

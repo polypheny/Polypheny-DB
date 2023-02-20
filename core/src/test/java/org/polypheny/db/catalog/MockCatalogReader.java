@@ -65,6 +65,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -524,6 +525,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
+        public CatalogTable getCatalogTable() {
+            return null;
+        }
+
+
+        @Override
         public Monotonicity getMonotonicity( String columnName ) {
             return monotonicColumnSet.contains( columnName )
                     ? Monotonicity.INCREASING
@@ -538,7 +545,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public Expression getExpression( Class clazz ) {
+        public Expression getExpression( Class<?> clazz ) {
             throw new UnsupportedOperationException();
         }
 

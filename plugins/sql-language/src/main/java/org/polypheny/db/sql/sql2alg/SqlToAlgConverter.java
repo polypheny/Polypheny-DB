@@ -120,7 +120,9 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -2159,8 +2161,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         if ( operator instanceof SqlUserDefinedTableMacro ) {
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
             final TranslatableTable table = udf.getTable( typeFactory, callBinding.sqlOperands() );
+            final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
             final AlgDataType rowType = table.getRowType( typeFactory );
-            AlgOptTable algOptTable = AlgOptTableImpl.create( null, rowType, table, udf.getNameAsId().names );
+            AlgOptTable algOptTable = AlgOptTableImpl.create( null, rowType, table, catalogTable, udf.getNameAsId().names );
             AlgNode converted = toAlg( algOptTable );
             bb.setRoot( converted, true );
             return;

@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers;
+package org.polypheny.db.catalog.snapshot.logical;
 
-public interface Peek {
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+
+public interface LogicalSnapshot extends Snapshot {
+
+    NamespaceType getType();
+
 
 }

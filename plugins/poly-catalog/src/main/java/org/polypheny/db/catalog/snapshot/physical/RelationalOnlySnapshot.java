@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.logical;
+package org.polypheny.db.catalog.snapshot.physical;
 
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.readers.Peek;
-
-public interface LogicalPeek extends Peek {
-
-    NamespaceType getType();
-
+public class RelationalOnlySnapshot implements PhysicalSnapshot {
 
 }

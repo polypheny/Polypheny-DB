@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.logical;
+package org.polypheny.db.catalog.snapshot.logical;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.logical.document.CatalogDatabase;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 
 @Value
-public class LogicalDocumentPeek implements LogicalPeek {
+public class LogicalDocumentSnapshot implements LogicalSnapshot {
 
     ImmutableList<DocumentCatalog> catalogs;
     public ImmutableList<CatalogDatabase> databases;
@@ -39,7 +39,7 @@ public class LogicalDocumentPeek implements LogicalPeek {
     public ImmutableMap<String, CatalogCollection> collectionNames;
 
 
-    public LogicalDocumentPeek( final List<DocumentCatalog> catalogs ) {
+    public LogicalDocumentSnapshot( final List<DocumentCatalog> catalogs ) {
         this.catalogs = ImmutableList.copyOf( catalogs.stream().map( DocumentCatalog::copy ).collect( Collectors.toList() ) );
 
         this.databases = ImmutableList.copyOf( buildDatabases() );

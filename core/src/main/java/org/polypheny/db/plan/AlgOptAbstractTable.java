@@ -139,7 +139,7 @@ public abstract class AlgOptAbstractTable implements AlgOptTable {
 
 
     @Override
-    public Expression getExpression( Class clazz ) {
+    public Expression getExpression( Class<?> clazz ) {
         throw new UnsupportedOperationException();
     }
 

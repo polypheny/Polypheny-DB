@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.physical;
+package org.polypheny.db.catalog.snapshot.physical;
 
-import org.polypheny.db.catalog.readers.Peek;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
-public interface PhysicalPeek extends Peek {
+public interface PhysicalSnapshot extends Snapshot {
 
 }

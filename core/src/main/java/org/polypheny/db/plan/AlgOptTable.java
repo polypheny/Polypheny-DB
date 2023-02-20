@@ -44,6 +44,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
@@ -61,6 +62,8 @@ public interface AlgOptTable extends Wrapper {
      * @return qualified name
      */
     List<String> getQualifiedName();
+
+    CatalogTable getCatalogTable();
 
     /**
      * Returns an estimate of the number of rows in the table.
@@ -119,7 +122,7 @@ public interface AlgOptTable extends Wrapper {
      *
      * @param clazz The desired collection class; for example {@code Queryable}.
      */
-    Expression getExpression( Class clazz );
+    Expression getExpression( Class<?> clazz );
 
     /**
      * Returns a table with the given extra fields.

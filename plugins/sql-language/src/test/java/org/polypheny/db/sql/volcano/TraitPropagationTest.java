@@ -67,6 +67,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.PolyphenyDbServerStatement;
@@ -157,6 +158,12 @@ public class TraitPropagationTest {
             };
 
             final AlgOptAbstractTable t1 = new AlgOptAbstractTable( algOptSchema, "t1", table.getRowType( typeFactory ) ) {
+                @Override
+                public CatalogTable getCatalogTable() {
+                    return null;
+                }
+
+
                 @Override
                 public <T> T unwrap( Class<T> clazz ) {
                     return clazz.isInstance( table )

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.readers.logical;
+package org.polypheny.db.catalog.snapshot.logical;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
@@ -27,34 +27,34 @@ import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
 
-public class LogicalFullPeek implements LogicalPeek {
+public class LogicalFullSnapshot implements LogicalSnapshot {
 
     private final ImmutableMap<Long, NCatalog> catalogs;
-    private final LogicalRelationalPeek relationalPeek;
-    private final LogicalGraphPeek graphPeek;
-    private final LogicalDocumentPeek documentPeek;
-    private final ImmutableMap<Long, LogicalPeek> ids;
-    private final ImmutableMap<String, LogicalPeek> names;
+    private final LogicalRelationalSnapshot relationalPeek;
+    private final LogicalGraphSnapshot graphPeek;
+    private final LogicalDocumentSnapshot documentPeek;
+    private final ImmutableMap<Long, LogicalSnapshot> ids;
+    private final ImmutableMap<String, LogicalSnapshot> names;
 
 
-    public LogicalFullPeek( Map<Long, NCatalog> catalogs ) {
+    public LogicalFullSnapshot( Map<Long, NCatalog> catalogs ) {
         this.catalogs = ImmutableMap.copyOf( catalogs );
 
         List<RelationalCatalog> relational = catalogs.values().stream().filter( c -> c.getType() == NamespaceType.RELATIONAL ).map( NCatalog::asRelational ).collect( Collectors.toList() );
         List<GraphCatalog> graph = catalogs.values().stream().filter( c -> c.getType() == NamespaceType.GRAPH ).map( NCatalog::asGraph ).collect( Collectors.toList() );
         List<DocumentCatalog> document = catalogs.values().stream().filter( c -> c.getType() == NamespaceType.DOCUMENT ).map( NCatalog::asDocument ).collect( Collectors.toList() );
 
-        this.relationalPeek = new LogicalRelationalPeek( relational );
-        this.graphPeek = new LogicalGraphPeek( graph );
-        this.documentPeek = new LogicalDocumentPeek( document );
+        this.relationalPeek = new LogicalRelationalSnapshot( relational );
+        this.graphPeek = new LogicalGraphSnapshot( graph );
+        this.documentPeek = new LogicalDocumentSnapshot( document );
 
         this.ids = buildIds();
         this.names = buildNames();
     }
 
 
-    private ImmutableMap<Long, LogicalPeek> buildIds() {
-        Map<Long, LogicalPeek> ids = new HashMap<>();
+    private ImmutableMap<Long, LogicalSnapshot> buildIds() {
+        Map<Long, LogicalSnapshot> ids = new HashMap<>();
         this.relationalPeek.schemaIds.keySet().forEach( id -> ids.put( id, relationalPeek ) );
         this.graphPeek.graphIds.keySet().forEach( id -> ids.put( id, graphPeek ) );
         this.documentPeek.databaseIds.keySet().forEach( id -> ids.put( id, documentPeek ) );
@@ -63,8 +63,8 @@ public class LogicalFullPeek implements LogicalPeek {
     }
 
 
-    private ImmutableMap<String, LogicalPeek> buildNames() {
-        Map<String, LogicalPeek> names = new HashMap<>();
+    private ImmutableMap<String, LogicalSnapshot> buildNames() {
+        Map<String, LogicalSnapshot> names = new HashMap<>();
         this.relationalPeek.schemaNames.keySet().forEach( name -> names.put( name, relationalPeek ) );
         this.graphPeek.graphNames.keySet().forEach( name -> names.put( name, graphPeek ) );
         this.documentPeek.databaseNames.keySet().forEach( name -> names.put( name, documentPeek ) );
