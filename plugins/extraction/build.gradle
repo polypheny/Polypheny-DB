@@ -2,12 +2,14 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":plugins:sql-language")
-    implementation project(":plugins:cypher-language")
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":plugins:cypher-language")
 
-    implementation group: 'org.glassfish', name: 'jakarta.json', version: jakarta_json_version
-    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation group: "org.glassfish", name: "jakarta.json", version: jakarta_json_version
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude group: 'org.slf4j'
+    } // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -67,5 +69,12 @@ java {
     withSourcesJar()
 }
 
-
+licensee {
+    allow('Apache-2.0')
+    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
+    allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
+        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
+    }
+    allowDependency('org.glassfish', 'jakarta.json', '2.0.1') { because 'Eclipse Public License v. 2.0' }
+}
 
