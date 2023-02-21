@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 
 
 /**
@@ -129,12 +129,12 @@ public class RexTableInputRef extends RexInputRef {
      */
     public static class AlgTableRef implements Comparable<AlgTableRef> {
 
-        private final AlgOptTable table;
+        private final AlgOptEntity table;
         private final int entityNumber;
         private final String digest;
 
 
-        private AlgTableRef( AlgOptTable table, int entityNumber ) {
+        private AlgTableRef( AlgOptEntity table, int entityNumber ) {
             this.table = table;
             this.entityNumber = entityNumber;
             this.digest = table.getQualifiedName() + ".#" + entityNumber;
@@ -156,7 +156,7 @@ public class RexTableInputRef extends RexInputRef {
         }
 
 
-        public AlgOptTable getTable() {
+        public AlgOptEntity getTable() {
             return table;
         }
 
@@ -177,7 +177,7 @@ public class RexTableInputRef extends RexInputRef {
         }
 
 
-        public static AlgTableRef of( AlgOptTable table, int entityNumber ) {
+        public static AlgTableRef of( AlgOptEntity table, int entityNumber ) {
             return new AlgTableRef( table, entityNumber );
         }
 

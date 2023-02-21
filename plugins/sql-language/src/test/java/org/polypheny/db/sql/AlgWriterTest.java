@@ -37,7 +37,7 @@ import org.polypheny.db.algebra.externalize.AlgJsonReader;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
@@ -104,8 +104,8 @@ public class AlgWriterTest extends SqlLanguageDependent {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
                     rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
-                    LogicalScan scan =
-                            LogicalScan.create(
+                    LogicalRelScan scan =
+                            LogicalRelScan.create(
                                     cluster,
                                     algOptSchema.getTableForMember( Arrays.asList( "hr", "emps" ) ) );
                     final RexBuilder rexBuilder = cluster.getRexBuilder();

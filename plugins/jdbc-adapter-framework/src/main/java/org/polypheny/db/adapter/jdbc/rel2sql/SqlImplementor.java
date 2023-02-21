@@ -58,7 +58,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.*;
 import org.polypheny.db.sql.language.*;
 import org.polypheny.db.sql.language.SqlDialect.IntervalParameterStrategy;
@@ -146,13 +146,13 @@ public abstract class SqlImplementor {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = result.asSelect( ((JdbcTable) ((AlgOptTableImpl) input.getValue().getTable()).getTable()).getNodeList() );
+                    node = result.asSelect( ((JdbcTable) ((AlgOptEntityImpl) input.getValue().getTable()).getTable()).getNodeList() );
                 } else {
                     node = result.asSelect();
                 }
             } else {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( ((JdbcTable) ((AlgOptTableImpl) input.getValue().getTable()).getTable()).getNodeList() ) );
+                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( ((JdbcTable) ((AlgOptEntityImpl) input.getValue().getTable()).getTable()).getNodeList() ) );
                 } else {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
                 }
@@ -1128,7 +1128,7 @@ public abstract class SqlImplementor {
                 select = subSelect();
             } else {
                 if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ) instanceof JdbcScan ) {
-                    select = asSelect( ((JdbcTable) ((AlgOptTableImpl) alg.getInput( 0 ).getTable()).getTable()).getNodeList() );
+                    select = asSelect( ((JdbcTable) ((AlgOptEntityImpl) alg.getInput( 0 ).getTable()).getTable()).getNodeList() );
                 } else {
                     select = asSelect();
                 }

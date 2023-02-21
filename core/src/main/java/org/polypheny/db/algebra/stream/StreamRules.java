@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
@@ -59,8 +59,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.schema.StreamableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
@@ -269,20 +269,20 @@ public class StreamRules {
             final Delta delta = call.alg( 0 );
             final Scan scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
-            final AlgOptTable algOptTable = scan.getTable();
-            final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
+            final AlgOptEntity algOptEntity = scan.getTable();
+            final StreamableTable streamableTable = algOptEntity.unwrap( StreamableTable.class );
             if ( streamableTable != null ) {
                 final Table table1 = streamableTable.stream();
                 final CatalogTable catalogTable = Catalog.getInstance().getTable( table1.getTableId() );
-                final AlgOptTable algOptTable2 =
-                        AlgOptTableImpl.create( algOptTable.getRelOptSchema(),
-                                algOptTable.getRowType(),
+                final AlgOptEntity algOptEntity2 =
+                        AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
+                                algOptEntity.getRowType(),
                                 table1,
                                 catalogTable,
                                 ImmutableList.<String>builder()
-                                        .addAll( algOptTable.getQualifiedName() )
+                                        .addAll( algOptEntity.getQualifiedName() )
                                         .add( "(STREAM)" ).build() );
-                final LogicalScan newScan = LogicalScan.create( cluster, algOptTable2 );
+                final LogicalRelScan newScan = LogicalRelScan.create( cluster, algOptEntity2 );
                 call.transformTo( newScan );
             }
         }
@@ -311,8 +311,8 @@ public class StreamRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
             final Scan scan = call.alg( 1 );
-            final AlgOptTable algOptTable = scan.getTable();
-            final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
+            final AlgOptEntity algOptEntity = scan.getTable();
+            final StreamableTable streamableTable = algOptEntity.unwrap( StreamableTable.class );
             final AlgBuilder builder = call.builder();
             if ( streamableTable == null ) {
                 call.transformTo( builder.values( delta.getRowType() ).build() );

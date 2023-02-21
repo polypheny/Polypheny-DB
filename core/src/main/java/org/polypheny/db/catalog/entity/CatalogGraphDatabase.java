@@ -25,10 +25,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
 @EqualsAndHashCode
-public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGraphDatabase> {
+public class CatalogGraphDatabase extends CatalogEntity implements CatalogObject, Comparable<CatalogGraphDatabase> {
 
     private static final long serialVersionUID = 7343856827901459672L;
 
@@ -43,6 +45,7 @@ public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGr
 
 
     public CatalogGraphDatabase( long databaseId, long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements, boolean caseSensitive ) {
+        super( id, EntityType.ENTITY, NamespaceType.GRAPH );
         this.id = id;
         this.name = name;
         this.ownerId = ownerId;

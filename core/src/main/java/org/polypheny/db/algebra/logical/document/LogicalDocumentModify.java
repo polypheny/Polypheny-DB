@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
@@ -33,12 +33,12 @@ public class LogicalDocumentModify extends DocumentModify implements RelationalT
     /**
      * Subclass of {@link DocumentModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentModify( AlgTraitSet traits, AlgOptTable table, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+    public LogicalDocumentModify( AlgTraitSet traits, AlgOptEntity table, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
         super( traits, table, catalogReader, input, operation, keys, updates );
     }
 
 
-    public static LogicalDocumentModify create( AlgOptTable table, AlgNode input, CatalogReader catalogReader, Operation operation, List<String> keys, List<RexNode> updates ) {
+    public static LogicalDocumentModify create( AlgOptEntity table, AlgNode input, CatalogReader catalogReader, Operation operation, List<String> keys, List<RexNode> updates ) {
         return new LogicalDocumentModify( input.getTraitSet(), table, catalogReader, input, operation, keys, updates );
     }
 
@@ -50,7 +50,7 @@ public class LogicalDocumentModify extends DocumentModify implements RelationalT
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptEntity> entities, CatalogReader catalogReader ) {
         return List.of( RelationalTransformable.getModify( entities.get( 0 ), catalogReader, values.get( 0 ), operation ) );
     }
 

@@ -73,7 +73,7 @@ import org.polypheny.db.algebra.core.SortExchange;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
@@ -204,7 +204,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     /**
      * Helper method to determine a {@link Scan}'s collation.
      */
-    public static List<AlgCollation> table( AlgOptTable table ) {
+    public static List<AlgCollation> table( AlgOptEntity table ) {
         return table.getCollationList();
     }
 

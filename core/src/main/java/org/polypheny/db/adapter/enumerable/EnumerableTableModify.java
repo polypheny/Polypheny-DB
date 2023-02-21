@@ -50,8 +50,8 @@ import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
@@ -74,7 +74,7 @@ public class EnumerableTableModify extends Modify implements EnumerableAlg {
     }
 
 
-    public EnumerableTableModify( AlgOptCluster cluster, AlgTraitSet traits, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public EnumerableTableModify( AlgOptCluster cluster, AlgTraitSet traits, AlgOptEntity table, Prepare.CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         assert child.getConvention() instanceof EnumerableConvention;
         assert getConvention() instanceof EnumerableConvention;

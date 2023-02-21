@@ -57,7 +57,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -83,7 +83,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     private boolean isDml;
 
     @Getter
-    private AlgOptTable table;
+    private AlgOptEntity table;
 
     @Getter
     private NeoEntity entity;
@@ -109,7 +109,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    public void setTable( AlgOptTable table ) {
+    public void setTable( AlgOptEntity table ) {
         this.table = table;
         this.entity = (NeoEntity) table.getTable();
     }

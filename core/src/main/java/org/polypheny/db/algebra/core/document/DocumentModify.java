@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -34,7 +34,7 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
     public final Operation operation;
     @Getter
-    private final AlgOptTable collection;
+    private final AlgOptEntity collection;
     @Getter
     private final List<String> keys;
     @Getter
@@ -47,7 +47,7 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
      * Creates a {@link DocumentModify}.
      * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which modifies a collection.
      */
-    protected DocumentModify( AlgTraitSet traits, AlgOptTable collection, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+    protected DocumentModify( AlgTraitSet traits, AlgOptEntity collection, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
         super( input.getCluster(), input.getTraitSet(), input );
         this.operation = operation;
         this.collection = collection;

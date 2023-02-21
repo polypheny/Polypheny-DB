@@ -51,17 +51,18 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.Prepare.AbstractPreparingEntity;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.FilterableTable;
@@ -84,9 +85,9 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link AlgOptTable}.
+ * Implementation of {@link AlgOptEntity}.
  */
-public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
+public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     private final transient AlgOptSchema schema;
     private final AlgDataType rowType;
@@ -96,7 +97,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
     @Getter
     @Nullable
-    private final CatalogTable catalogTable;
+    private final CatalogEntity catalogEntity;
     @Nullable
     private final transient Function<Class<?>, Expression> expressionFunction;
     private final ImmutableList<String> names;
@@ -109,30 +110,30 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     private final Double rowCount;
 
 
-    private AlgOptTableImpl(
+    private AlgOptEntityImpl(
             AlgOptSchema schema,
             AlgDataType rowType,
             List<String> names,
             Table table,
-            CatalogTable catalogTable,
+            CatalogEntity catalogEntity,
             Function<Class<?>, Expression> expressionFunction,
             Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
         this.names = ImmutableList.copyOf( names );
         this.table = table; // may be null
-        this.catalogTable = catalogTable;
+        this.catalogEntity = catalogEntity;
         this.expressionFunction = expressionFunction; // may be null
         this.rowCount = rowCount; // may be null
     }
 
 
-    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, List<String> names, Expression expression ) {
-        return new AlgOptTableImpl( schema, rowType, names, null, null, c -> expression, null );
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, List<String> names, Expression expression ) {
+        return new AlgOptEntityImpl( schema, rowType, names, null, null, c -> expression, null );
     }
 
 
-    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, CatalogTable catalogTable, Double count ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, CatalogEntity catalogEntity, Double count ) {
         final Table table = tableEntry.getTable();
         Double rowCount;
         if ( count == null ) {
@@ -141,15 +142,15 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
             rowCount = count;
         }
 
-        return new AlgOptTableImpl( schema, rowType, tableEntry.path(), table, catalogTable, getClassExpressionFunction( tableEntry, table ), rowCount );
+        return new AlgOptEntityImpl( schema, rowType, tableEntry.path(), table, catalogEntity, getClassExpressionFunction( tableEntry, table ), rowCount );
     }
 
 
     /**
      * Creates a copy of this RelOptTable. The new RelOptTable will have newRowType.
      */
-    public AlgOptTableImpl copy( AlgDataType newRowType ) {
-        return new AlgOptTableImpl( this.schema, newRowType, this.names, this.table, this.catalogTable, this.expressionFunction, this.rowCount );
+    public AlgOptEntityImpl copy( AlgDataType newRowType ) {
+        return new AlgOptEntityImpl( this.schema, newRowType, this.names, this.table, this.catalogEntity, this.expressionFunction, this.rowCount );
     }
 
 
@@ -176,11 +177,11 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
-    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, Table table, CatalogTable catalogTable, ImmutableList<String> names ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Table table, CatalogEntity catalogEntity, ImmutableList<String> names ) {
         assert table instanceof TranslatableTable
                 || table instanceof ScannableTable
                 || table instanceof ModifiableTable;
-        return new AlgOptTableImpl( schema, rowType, names, table, catalogTable, null, null );
+        return new AlgOptEntityImpl( schema, rowType, names, table, catalogEntity, null, null );
     }
 
 
@@ -215,9 +216,9 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
     @Override
-    protected AlgOptTable extend( Table extendedTable ) {
+    protected AlgOptEntity extend( Table extendedTable ) {
         final AlgDataType extendedRowType = extendedTable.getRowType( AlgDataTypeFactory.DEFAULT );
-        return new AlgOptTableImpl(
+        return new AlgOptEntityImpl(
                 getRelOptSchema(),
                 extendedRowType,
                 getQualifiedName(),
@@ -230,9 +231,9 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
     @Override
     public boolean equals( Object obj ) {
-        return obj instanceof AlgOptTableImpl
-                && this.rowType.equals( ((AlgOptTableImpl) obj).getRowType() )
-                && this.table == ((AlgOptTableImpl) obj).table;
+        return obj instanceof AlgOptEntityImpl
+                && this.rowType.equals( ((AlgOptEntityImpl) obj).getRowType() )
+                && this.table == ((AlgOptEntityImpl) obj).table;
     }
 
 
@@ -269,8 +270,8 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         // immutable RelRecordType using the same field list.
         if ( this.getRowType().isDynamicStruct() ) {
             final AlgDataType staticRowType = new AlgRecordType( getRowType().getFieldList() );
-            final AlgOptTable algOptTable = this.copy( staticRowType );
-            return algOptTable.toAlg( context, traitSet );
+            final AlgOptEntity algOptEntity = this.copy( staticRowType );
+            return algOptEntity.toAlg( context, traitSet );
         }
 
         // If there are any virtual columns, create a copy of this table without those virtual columns.
@@ -282,8 +283,8 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
                     b.add( field.getName(), null, field.getType() );
                 }
             }
-            final AlgOptTable algOptTable =
-                    new AlgOptTableImpl( this.schema, b.build(), this.names, this.table, this.catalogTable, this.expressionFunction, this.rowCount ) {
+            final AlgOptEntity algOptEntity =
+                    new AlgOptEntityImpl( this.schema, b.build(), this.names, this.table, this.catalogEntity, this.expressionFunction, this.rowCount ) {
                         @Override
                         public <T> T unwrap( Class<T> clazz ) {
                             if ( clazz.isAssignableFrom( InitializerExpressionFactory.class ) ) {
@@ -292,7 +293,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
                             return super.unwrap( clazz );
                         }
                     };
-            return algOptTable.toAlg( context, traitSet );
+            return algOptEntity.toAlg( context, traitSet );
         }
 
         if ( table instanceof TranslatableTable ) {
@@ -300,7 +301,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {
-            return LogicalScan.create( cluster, this );
+            return LogicalRelScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE && table instanceof QueryableTable ) {
             return EnumerableScan.create( cluster, this );
@@ -308,7 +309,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         if ( table instanceof ScannableTable
                 || table instanceof FilterableTable
                 || table instanceof ProjectableFilterableTable ) {
-            return LogicalScan.create( cluster, this );
+            return LogicalRelScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE ) {
             return EnumerableScan.create( cluster, this );
@@ -398,7 +399,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     /**
      * Helper for {@link #getColumnStrategies()}.
      */
-    public static List<ColumnStrategy> columnStrategies( final AlgOptTable table ) {
+    public static List<ColumnStrategy> columnStrategies( final AlgOptEntity table ) {
         final int fieldCount = table.getRowType().getFieldCount();
         final InitializerExpressionFactory ief = Util.first(
                 table.unwrap( InitializerExpressionFactory.class ),
@@ -422,7 +423,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
      * Converts the ordinal of a field into the ordinal of a stored field.
      * That is, it subtracts the number of virtual fields that come before it.
      */
-    public static int realOrdinal( final AlgOptTable table, int i ) {
+    public static int realOrdinal( final AlgOptEntity table, int i ) {
         List<ColumnStrategy> strategies = table.getColumnStrategies();
         int n = 0;
         for ( int j = 0; j < i; j++ ) {
@@ -439,7 +440,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
      * Returns the row type of a table after any {@link ColumnStrategy#VIRTUAL} columns have been removed. This is the type
      * of the records that are actually stored.
      */
-    public static AlgDataType realRowType( AlgOptTable table ) {
+    public static AlgDataType realRowType( AlgOptEntity table ) {
         final AlgDataType rowType = table.getRowType();
         final List<ColumnStrategy> strategies = columnStrategies( table );
         if ( !strategies.contains( ColumnStrategy.VIRTUAL ) ) {

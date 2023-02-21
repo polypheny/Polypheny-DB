@@ -19,6 +19,7 @@ package org.polypheny.db.algebra;
 import java.util.Objects;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.plan.volcano.AlgSubset;
 
 public class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
@@ -33,7 +34,7 @@ public class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
 
 
     public static boolean contains( Modify modify ) {
-        Long id = modify.getTable().getTable().getTableId();
+        long id = modify.getTable().getCatalogEntity().id;
         UnsupportedFromInsertShuttle shuttle = new UnsupportedFromInsertShuttle( id );
         modify.accept( shuttle );
         return shuttle.containsOtherTableId;
@@ -42,7 +43,7 @@ public class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( Scan scan ) {
-        if ( !Objects.equals( scan.getTable().getTable().getTableId(), tableId ) ) {
+        if ( !Objects.equals( scan.getTable().getCatalogEntity().id, tableId ) ) {
             containsOtherTableId = true;
         }
         return super.visit( scan );

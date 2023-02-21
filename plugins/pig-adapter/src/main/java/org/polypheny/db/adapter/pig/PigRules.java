@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -90,7 +90,7 @@ public class PigRules {
 
 
     /**
-     * Rule to convert a {@link LogicalScan} to a {@link PigScan}.
+     * Rule to convert a {@link LogicalRelScan} to a {@link PigScan}.
      */
     private static class PigScanRule extends ConverterRule {
 
@@ -98,13 +98,13 @@ public class PigRules {
 
 
         private PigScanRule() {
-            super( LogicalScan.class, Convention.NONE, PigAlg.CONVENTION, "PigScanRule" );
+            super( LogicalRelScan.class, Convention.NONE, PigAlg.CONVENTION, "PigScanRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalScan scan = (LogicalScan) alg;
+            final LogicalRelScan scan = (LogicalRelScan) alg;
             final AlgTraitSet traitSet = scan.getTraitSet().replace( PigAlg.CONVENTION );
             return new PigScan( alg.getCluster(), traitSet, scan.getTable() );
         }

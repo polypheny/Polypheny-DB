@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -236,7 +236,7 @@ public class LoptSemiJoinOptimizer {
 
         // Make sure all the fact table keys originate from the same table and are simple column references
         final List<Integer> actualLeftKeys = new ArrayList<>();
-        LcsTable factTable = validateKeys( factRel, leftKeys, rightKeys, actualLeftKeys );
+        LcsEntity factTable = validateKeys( factRel, leftKeys, rightKeys, actualLeftKeys );
         if ( factTable == null ) {
             return null;
         }
@@ -337,9 +337,9 @@ public class LoptSemiJoinOptimizer {
      * @param actualLeftKeys the remaining valid fact table semijoin keys
      * @return the underlying fact table if the semijoin keys are valid; otherwise null
      */
-    private LcsTable validateKeys( AlgNode factRel, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> actualLeftKeys ) {
+    private LcsEntity validateKeys( AlgNode factRel, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> actualLeftKeys ) {
         int keyIdx = 0;
-        AlgOptTable theTable = null;
+        AlgOptEntity theTable = null;
         ListIterator<Integer> keyIter = leftKeys.listIterator();
         while ( keyIter.hasNext() ) {
             boolean removeKey = false;
@@ -349,9 +349,9 @@ public class LoptSemiJoinOptimizer {
             if ( (colOrigin == null) || LucidDbSpecialOperators.isLcsRidColumnId( colOrigin.getOriginColumnOrdinal() ) ) {
                 removeKey = true;
             } else {
-                AlgOptTable table = colOrigin.getOriginTable();
+                AlgOptEntity table = colOrigin.getOriginTable();
                 if ( theTable == null ) {
-                    if ( !(table instanceof LcsTable) ) {
+                    if ( !(table instanceof LcsEntity) ) {
                         // not a column store table
                         removeKey = true;
                     } else {
@@ -375,7 +375,7 @@ public class LoptSemiJoinOptimizer {
         if ( actualLeftKeys.isEmpty() ) {
             return null;
         } else {
-            return (LcsTable) theTable;
+            return (LcsEntity) theTable;
         }
     }
 
@@ -663,7 +663,7 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private abstract static class LcsTable implements AlgOptTable {
+    private abstract static class LcsEntity implements AlgOptEntity {
 
     }
 

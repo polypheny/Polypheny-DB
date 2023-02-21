@@ -32,7 +32,7 @@ import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.language.SqlCall;
@@ -101,8 +101,8 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         final AlgDataType rowType = ns.getRowType();
         if ( rowType.isStruct() ) {
             ValidatorTable validatorTable = ns.getTable();
-            if ( validatorTable instanceof Prepare.PreparingTable ) {
-                Table t = ((Prepare.PreparingTable) validatorTable).unwrap( Table.class );
+            if ( validatorTable instanceof PreparingEntity ) {
+                Table t = ((PreparingEntity) validatorTable).unwrap( Table.class );
                 if ( t instanceof CustomColumnResolvingTable ) {
                     final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, validator.getTypeFactory(), names );
                     for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {

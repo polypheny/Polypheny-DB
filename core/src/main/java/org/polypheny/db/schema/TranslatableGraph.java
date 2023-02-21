@@ -17,7 +17,7 @@
 package org.polypheny.db.schema;
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.schema.graph.Graph;
 
 public interface TranslatableGraph extends Graph {

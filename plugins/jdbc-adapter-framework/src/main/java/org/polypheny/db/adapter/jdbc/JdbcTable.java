@@ -35,6 +35,10 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -54,8 +58,8 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -66,16 +70,16 @@ import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.language.*;
+import org.polypheny.db.sql.language.SqlBasicCall;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
 
 
 /**
@@ -211,8 +215,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
-        return new JdbcScan( context.getCluster(), algOptTable, this, jdbcSchema.getConvention() );
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+        return new JdbcScan( context.getCluster(), algOptEntity, this, jdbcSchema.getConvention() );
     }
 
 
@@ -242,7 +246,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     @Override
     public Modify toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptTable table,
+            AlgOptEntity table,
             CatalogReader catalogReader,
             AlgNode input,
             Operation operation,

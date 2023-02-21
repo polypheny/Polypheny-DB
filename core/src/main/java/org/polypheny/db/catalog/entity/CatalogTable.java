@@ -32,11 +32,12 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 
-@EqualsAndHashCode
-public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
+@EqualsAndHashCode(callSuper = false)
+public class CatalogTable extends CatalogEntity implements CatalogObject, Comparable<CatalogTable> {
 
     private static final long serialVersionUID = 4653390333258552102L;
 
+    @Getter
     public final long id;
     public final String name;
     public final ImmutableList<Long> fieldIds;
@@ -67,6 +68,7 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
+        super( id, type, NamespaceType.RELATIONAL );
         this.id = id;
         this.name = name;
         this.fieldIds = fieldIds;
@@ -101,6 +103,7 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
             boolean modifiable,
             PartitionProperty partitionProperty,
             ImmutableList<Long> connectedViews ) {
+        super( id, type, NamespaceType.RELATIONAL );
         this.id = id;
         this.name = name;
         this.fieldIds = fieldIds;

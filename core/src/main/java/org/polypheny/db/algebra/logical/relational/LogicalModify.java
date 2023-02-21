@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -48,7 +48,7 @@ public final class LogicalModify extends Modify {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalModify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public LogicalModify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, schema, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
@@ -56,7 +56,7 @@ public final class LogicalModify extends Modify {
     /**
      * Creates a LogicalModify.
      */
-    public static LogicalModify create( AlgOptTable table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public static LogicalModify create( AlgOptEntity table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalModify( cluster, traitSet, table, schema, input, operation, updateColumnList, sourceExpressionList, flattened );

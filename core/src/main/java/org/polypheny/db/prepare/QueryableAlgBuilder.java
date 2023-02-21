@@ -63,7 +63,7 @@ import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rex.RexNode;
@@ -113,7 +113,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
                     PolyphenyDbSchema
                             .from( tableQueryable.schema )
                             .add( tableQueryable.tableName, tableQueryable.table );
-            final AlgOptTableImpl algOptTable = AlgOptTableImpl.create(
+            final AlgOptEntityImpl algOptTable = AlgOptEntityImpl.create(
                     null,
                     table.getRowType( translator.typeFactory ),
                     tableEntry,
@@ -122,7 +122,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
             if ( table instanceof TranslatableTable ) {
                 return ((TranslatableTable) table).toAlg( translator.toAlgContext(), algOptTable, translator.cluster.traitSet() );
             } else {
-                return LogicalScan.create( translator.cluster, algOptTable );
+                return LogicalRelScan.create( translator.cluster, algOptTable );
             }
         }
         return translator.translate( queryable.getExpression() );

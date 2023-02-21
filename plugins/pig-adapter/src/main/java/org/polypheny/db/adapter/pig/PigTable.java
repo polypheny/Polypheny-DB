@@ -39,8 +39,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
@@ -89,9 +89,9 @@ public class PigTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new PigScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), algOptTable );
+        return new PigScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), algOptEntity );
     }
 
 }

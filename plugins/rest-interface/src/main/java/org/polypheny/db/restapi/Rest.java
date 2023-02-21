@@ -55,7 +55,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
@@ -156,7 +156,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getNamespaceName(), resourcePatchRequest.tables.get( 0 ).name ) );
+        PreparingEntity table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getNamespaceName(), resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -215,7 +215,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).name ) );
+        PreparingEntity table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourceDeleteRequest.tables );
@@ -268,7 +268,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).name ) );
+        PreparingEntity table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).name ) );
 
         // Values
         AlgDataType tableRowType = table.getRowType();

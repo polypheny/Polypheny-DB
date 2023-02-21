@@ -24,16 +24,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.document.DocumentScan;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -62,13 +61,9 @@ public class CachedPlanRouter extends BaseRouter {
             return super.handleDocumentScan( (DocumentScan) node, statement, builder, null );
         }
 
-        if ( node instanceof LogicalScan && node.getTable() != null ) {
-            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
-            if ( !(table.getTable() instanceof LogicalTable) ) {
-                throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
-            }
-            LogicalTable logicalTable = ((LogicalTable) table.getTable());
-            CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
+        if ( node instanceof LogicalRelScan && node.getTable() != null ) {
+            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getTable();
+            CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
 
             List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;
             Map<Long, List<CatalogColumnPlacement>> placement = new HashMap<>();

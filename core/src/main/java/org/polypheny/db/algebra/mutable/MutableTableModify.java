@@ -39,7 +39,7 @@ import java.util.Objects;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
 
@@ -50,14 +50,14 @@ import org.polypheny.db.rex.RexNode;
 public class MutableTableModify extends MutableSingleAlg {
 
     public final Prepare.CatalogReader catalogReader;
-    public final AlgOptTable table;
+    public final AlgOptEntity table;
     public final Operation operation;
     public final List<String> updateColumnList;
     public final List<RexNode> sourceExpressionList;
     public final boolean flattened;
 
 
-    private MutableTableModify( AlgDataType rowType, MutableAlg input, AlgOptTable table, Prepare.CatalogReader catalogReader, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    private MutableTableModify( AlgDataType rowType, MutableAlg input, AlgOptEntity table, Prepare.CatalogReader catalogReader, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( MutableAlgType.TABLE_MODIFY, rowType, input );
         this.table = table;
         this.catalogReader = catalogReader;
@@ -80,7 +80,7 @@ public class MutableTableModify extends MutableSingleAlg {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    public static MutableTableModify of( AlgDataType rowType, MutableAlg input, AlgOptTable table, Prepare.CatalogReader catalogReader, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public static MutableTableModify of( AlgDataType rowType, MutableAlg input, AlgOptEntity table, Prepare.CatalogReader catalogReader, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         return new MutableTableModify( rowType, input, table, catalogReader, operation, updateColumnList, sourceExpressionList, flattened );
     }
 

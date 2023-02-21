@@ -187,7 +187,7 @@ public abstract class AlgOptUtil {
     /**
      * Returns a set of tables used by this expression or its children
      */
-    public static Set<AlgOptTable> findTables( AlgNode alg ) {
+    public static Set<AlgOptEntity> findTables( AlgNode alg ) {
         return new LinkedHashSet<>( findAllTables( alg ) );
     }
 
@@ -195,9 +195,9 @@ public abstract class AlgOptUtil {
     /**
      * Returns a list of all tables used by this expression or its children
      */
-    public static List<AlgOptTable> findAllTables( AlgNode alg ) {
+    public static List<AlgOptEntity> findAllTables( AlgNode alg ) {
         final Multimap<Class<? extends AlgNode>, AlgNode> nodes = AlgMetadataQuery.instance().getNodeTypes( alg );
-        final List<AlgOptTable> usedTables = new ArrayList<>();
+        final List<AlgOptEntity> usedTables = new ArrayList<>();
         for ( Entry<Class<? extends AlgNode>, Collection<AlgNode>> e : nodes.asMap().entrySet() ) {
             if ( Scan.class.isAssignableFrom( e.getKey() ) ) {
                 for ( AlgNode node : e.getValue() ) {

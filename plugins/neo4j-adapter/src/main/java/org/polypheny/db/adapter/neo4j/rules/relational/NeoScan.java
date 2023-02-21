@@ -34,7 +34,7 @@ import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class NeoScan extends Scan implements NeoRelAlg {
@@ -43,7 +43,7 @@ public class NeoScan extends Scan implements NeoRelAlg {
     private final NeoEntity neoEntity;
 
 
-    public NeoScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, NeoEntity neoEntity ) {
+    public NeoScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, NeoEntity neoEntity ) {
         super( cluster, traitSet, table );
         this.neoEntity = neoEntity;
     }

@@ -90,9 +90,9 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
@@ -166,7 +166,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
                     .build();
     protected QuerySpec querySpec;
 
-    final AlgOptTable table;
+    final AlgOptEntity table;
     final DruidTable druidTable;
     final ImmutableList<Interval> intervals;
     final ImmutableList<AlgNode> algs;
@@ -193,7 +193,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      * @param algs Internal relational expressions
      * @param converterOperatorMap mapping of Polypheny-DB Sql Operator to Druid Expression API.
      */
-    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         super( cluster, traitSet );
         this.table = table;
         this.druidTable = druidTable;
@@ -215,7 +215,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> algs ) {
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<AlgNode> algs ) {
         final ImmutableMap.Builder<Operator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
         for ( DruidSqlOperatorConverter converter : DEFAULT_OPERATORS_LIST ) {
             mapBuilder.put( converter.polyphenyDbOperator(), converter );
@@ -227,7 +227,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return create( cluster, traitSet, table, druidTable, druidTable.intervals, algs, converterOperatorMap );
     }
 
@@ -235,7 +235,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return new DruidQuery( cluster, traitSet, table, druidTable, intervals, algs, converterOperatorMap );
     }
 
@@ -525,7 +525,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
 
 
     @Override
-    public AlgOptTable getTable() {
+    public AlgOptEntity getTable() {
         return table;
     }
 

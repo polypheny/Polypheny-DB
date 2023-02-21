@@ -49,7 +49,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
@@ -78,32 +79,32 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public Prepare.PreparingTable getTable( final List<String> names ) {
+    public PreparingEntity getTable( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
         PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {
             final Table table = entry.getTable();
             CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
             if ( table instanceof Wrapper ) {
-                final Prepare.PreparingTable algOptTable = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
+                final PreparingEntity algOptTable = ((Wrapper) table).unwrap( PreparingEntity.class );
                 if ( algOptTable != null ) {
                     return algOptTable;
                 }
             }
-            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, catalogTable, null );
+            return AlgOptEntityImpl.create( this, table.getRowType( typeFactory ), entry, catalogTable, null );
         }
         return null;
     }
 
 
     @Override
-    public AlgOptTable getCollection( final List<String> names ) {
+    public AlgOptEntity getCollection( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
         PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {
             final Table table = entry.getTable();
             CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
-            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, catalogTable, null );
+            return AlgOptEntityImpl.create( this, table.getRowType( typeFactory ), entry, catalogTable, null );
         }
         return null;
     }
@@ -174,7 +175,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public Prepare.PreparingTable getTableForMember( List<String> names ) {
+    public PreparingEntity getTableForMember( List<String> names ) {
         return getTable( names );
     }
 

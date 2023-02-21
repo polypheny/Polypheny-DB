@@ -39,7 +39,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
@@ -60,7 +60,7 @@ public interface ModifiableTable extends QueryableTable {
      */
     Modify toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptTable table,
+            AlgOptEntity table,
             CatalogReader catalogReader,
             AlgNode child,
             Modify.Operation operation,

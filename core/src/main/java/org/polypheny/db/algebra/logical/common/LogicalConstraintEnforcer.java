@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -45,18 +45,15 @@ import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -135,7 +132,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.scan( table.getSchemaName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
-                final AlgNode scan = LogicalScan.create( modify.getCluster(), modify.getTable() );
+                final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getTable() );
                 builder.push( scan );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexInputRef> keys = constraint.key
@@ -167,10 +164,10 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             for ( final CatalogForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
                 final AlgOptSchema algOptSchema = modify.getCatalogReader();
-                final AlgOptTable scanOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getTableName() ) );
-                final AlgOptTable refOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                final AlgNode scan = LogicalScan.create( modify.getCluster(), scanOptTable );
-                final LogicalScan ref = LogicalScan.create( modify.getCluster(), refOptTable );
+                final AlgOptEntity scanOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getTableName() ) );
+                final AlgOptEntity refOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
+                final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
+                final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 
                 builder.push( scan );
                 builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
@@ -418,32 +415,11 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
 
     public static CatalogTable getCatalogTable( Modify modify ) {
-        Catalog catalog = Catalog.getInstance();
-        String schemaName;
-        if ( modify.getTable().getTable() instanceof LogicalTable ) {
-            schemaName = ((LogicalTable) modify.getTable().getTable()).getLogicalSchemaName();
-        } else if ( modify.getTable().getQualifiedName().size() == 2 ) {
-            schemaName = modify.getTable().getQualifiedName().get( 0 );
-        } else if ( modify.getTable().getQualifiedName().size() == 3 ) {
-            schemaName = modify.getTable().getQualifiedName().get( 1 );
-        } else {
-            throw new RuntimeException( "The schema was not provided correctly!" );
-        }
-        final CatalogSchema schema;
-        try {
-            schema = catalog.getSchema( Catalog.defaultDatabaseId, schemaName );
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "The schema was not provided correctly!" );
-        }
-
-        try {
-            String tableName = getEntityName( modify, schema );
-            return catalog.getTable( schema.id, tableName );
-
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception", e );
+        if ( modify.getTable() == null ) {
             throw new RuntimeException( "The table was not found in the catalog!" );
         }
+
+        return (CatalogTable) modify.getTable().getCatalogEntity();
     }
 
 

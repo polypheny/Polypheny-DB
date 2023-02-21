@@ -34,6 +34,8 @@
 package org.polypheny.db.adapter.html;
 
 
+import java.util.List;
+import java.util.Map;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -47,8 +49,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
@@ -56,9 +58,6 @@ import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.util.Source;
-
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -149,8 +148,8 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
-        return new EnumerableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), algOptTable, (Class) getElementType() );
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+        return new EnumerableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), algOptEntity, (Class) getElementType() );
     }
 
 }

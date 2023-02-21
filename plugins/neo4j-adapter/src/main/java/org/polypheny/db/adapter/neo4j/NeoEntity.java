@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -95,9 +95,9 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), algOptTable, this );
+        return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), algOptEntity, this );
     }
 
 
@@ -119,7 +119,7 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
     @Override
     public Modify toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptTable table,
+            AlgOptEntity table,
             CatalogReader catalogReader,
             AlgNode child,
             Operation operation,

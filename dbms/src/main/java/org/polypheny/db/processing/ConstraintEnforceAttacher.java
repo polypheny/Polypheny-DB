@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.Enforce
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.ModifyExtractor;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
@@ -76,8 +76,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -239,7 +239,7 @@ public class ConstraintEnforceAttacher {
                     continue;
                 }
                 // Enforce uniqueness between the already existing values and the new values
-                final AlgNode scan = LogicalScan.create( root.getCluster(), root.getTable() );
+                final AlgNode scan = LogicalRelScan.create( root.getCluster(), root.getTable() );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 //
                 // TODO: Here we get issues with batch queries
@@ -342,8 +342,8 @@ public class ConstraintEnforceAttacher {
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final AlgOptSchema algOptSchema = root.getCatalogReader();
-                final AlgOptTable algOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                final LogicalScan scan = LogicalScan.create( root.getCluster(), algOptTable );
+                final AlgOptEntity algOptEntity = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
+                final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), algOptEntity );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
                 builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );

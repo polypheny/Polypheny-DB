@@ -50,9 +50,9 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -109,18 +109,18 @@ class LixToAlgTranslator {
                             toRex( (FunctionExpression) call.expressions.get( 0 ), input ) );
 
                 case AS_QUERYABLE:
-                    return LogicalScan.create(
+                    return LogicalRelScan.create(
                             cluster,
-                            AlgOptTableImpl.create(
+                            AlgOptEntityImpl.create(
                                     null,
                                     typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) ),
                                     ImmutableList.of(),
                                     call.targetExpression ) );
 
                 case SCHEMA_GET_TABLE:
-                    return LogicalScan.create(
+                    return LogicalRelScan.create(
                             cluster,
-                            AlgOptTableImpl.create(
+                            AlgOptEntityImpl.create(
                                     null,
                                     typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value ),
                                     ImmutableList.of(),

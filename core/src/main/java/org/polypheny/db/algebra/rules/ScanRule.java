@@ -19,15 +19,15 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalScan} to the result of calling {@link AlgOptTable#toAlg}.
+ * Planner rule that converts a {@link LogicalRelScan} to the result of calling {@link AlgOptEntity#toAlg}.
  */
 public class ScanRule extends AlgOptRule {
 
@@ -40,13 +40,13 @@ public class ScanRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public ScanRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalScan.class, any() ), algBuilderFactory, null );
+        super( operand( LogicalRelScan.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalScan oldAlg = call.alg( 0 );
+        final LogicalRelScan oldAlg = call.alg( 0 );
         AlgNode newAlg = oldAlg.getTable().toAlg( oldAlg::getCluster, oldAlg.getTraitSet() );
         call.transformTo( newAlg );
     }

@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -52,7 +52,7 @@ public class LogicalLpgModify extends LpgModify implements RelationalTransformab
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptEntity> entities, CatalogReader catalogReader ) {
         List<AlgNode> modifies = new ArrayList<>();
 
         // modify of nodes

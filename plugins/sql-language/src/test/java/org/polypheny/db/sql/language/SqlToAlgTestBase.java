@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -59,7 +59,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
@@ -278,7 +278,7 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public AlgOptTable getTableForMember( List<String> names ) {
+        public AlgOptEntity getTableForMember( List<String> names ) {
             final ValidatorTable table = catalogReader.getTable( names );
             final AlgDataType rowType = table.getRowType();
             final List<AlgCollation> collationList = deduceMonotonicity( table );
@@ -318,12 +318,12 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public AlgOptTable getTableForMember( List<String> names, final String datasetName, boolean[] usedDataset ) {
-            final AlgOptTable table = getTableForMember( names );
+        public AlgOptEntity getTableForMember( List<String> names, final String datasetName, boolean[] usedDataset ) {
+            final AlgOptEntity table = getTableForMember( names );
 
             // If they're asking for a sample, just for test purposes, assume there's a table called "<table>:<sample>".
-            AlgOptTable datasetTable =
-                    new DelegatingRelOptTable( table ) {
+            AlgOptEntity datasetTable =
+                    new DelegatingRelOptEntity( table ) {
                         @Override
                         public List<String> getQualifiedName() {
                             final List<String> list = new ArrayList<>( super.getQualifiedName() );
@@ -349,7 +349,7 @@ public abstract class SqlToAlgTestBase {
         /**
          * Mock column set.
          */
-        protected class MockColumnSet implements AlgOptTable {
+        protected class MockColumnSet implements AlgOptEntity {
 
             private final List<String> names;
             private final AlgDataType rowType;
@@ -403,7 +403,7 @@ public abstract class SqlToAlgTestBase {
 
             @Override
             public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-                return LogicalScan.create( context.getCluster(), this );
+                return LogicalRelScan.create( context.getCluster(), this );
             }
 
 
@@ -444,7 +444,7 @@ public abstract class SqlToAlgTestBase {
 
 
             @Override
-            public AlgOptTable extend( List<AlgDataTypeField> extendedFields ) {
+            public AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
                 final AlgDataType extendedRowType = AlgDataTypeFactory.DEFAULT.builder()
                         .addAll( rowType.getFieldList() )
                         .addAll( extendedFields )
@@ -460,12 +460,12 @@ public abstract class SqlToAlgTestBase {
     /**
      * Table that delegates to a given table.
      */
-    private static class DelegatingRelOptTable implements AlgOptTable {
+    private static class DelegatingRelOptEntity implements AlgOptEntity {
 
-        private final AlgOptTable parent;
+        private final AlgOptEntity parent;
 
 
-        DelegatingRelOptTable( AlgOptTable parent ) {
+        DelegatingRelOptEntity( AlgOptEntity parent ) {
             this.parent = parent;
         }
 
@@ -486,7 +486,7 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public AlgOptTable extend( List<AlgDataTypeField> extendedFields ) {
+        public AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
             return parent.extend( extendedFields );
         }
 
@@ -517,7 +517,7 @@ public abstract class SqlToAlgTestBase {
 
         @Override
         public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-            return LogicalScan.create( context.getCluster(), this );
+            return LogicalRelScan.create( context.getCluster(), this );
         }
 
 

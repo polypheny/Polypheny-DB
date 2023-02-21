@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -96,7 +96,7 @@ public class PigAggregate extends Aggregate implements PigAlg {
      * Override this method so it looks down the tree to find the table this node is acting on.
      */
     @Override
-    public AlgOptTable getTable() {
+    public AlgOptEntity getTable() {
         return getInput().getTable();
     }
 

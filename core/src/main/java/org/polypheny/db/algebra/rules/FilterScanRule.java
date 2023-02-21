@@ -40,10 +40,10 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.FilterableTable;
@@ -117,7 +117,7 @@ public abstract class FilterScanRule extends AlgOptRule {
 
     public static boolean test( Scan scan ) {
         // We can only push filters into a FilterableTable or ProjectableFilterableTable.
-        final AlgOptTable table = scan.getTable();
+        final AlgOptEntity table = scan.getTable();
         return table.unwrap( FilterableTable.class ) != null || table.unwrap( ProjectableFilterableTable.class ) != null;
     }
 

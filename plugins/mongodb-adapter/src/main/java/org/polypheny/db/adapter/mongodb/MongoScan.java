@@ -34,14 +34,18 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.plan.*;
-
-import java.util.List;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
@@ -64,7 +68,7 @@ public class MongoScan extends Scan implements MongoAlg {
      * @param mongoEntity MongoDB table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    protected MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, MongoEntity mongoEntity, AlgDataType projectRowType ) {
+    protected MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, MongoEntity mongoEntity, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.mongoEntity = mongoEntity;
         this.projectRowType = projectRowType;

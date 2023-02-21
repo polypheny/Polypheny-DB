@@ -52,7 +52,7 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -92,29 +92,29 @@ public class ScanNode implements Node {
      * Tries various table SPIs, and negotiates with the table which filters and projects it can implement. Adds to the Enumerable implementations of any filters and projects that cannot be implemented by the table.
      */
     static ScanNode create( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
-        final AlgOptTable algOptTable = alg.getTable();
-        final ProjectableFilterableTable pfTable = algOptTable.unwrap( ProjectableFilterableTable.class );
+        final AlgOptEntity algOptEntity = alg.getTable();
+        final ProjectableFilterableTable pfTable = algOptEntity.unwrap( ProjectableFilterableTable.class );
         if ( pfTable != null ) {
             return createProjectableFilterable( compiler, alg, filters, projects, pfTable );
         }
-        final FilterableTable filterableTable = algOptTable.unwrap( FilterableTable.class );
+        final FilterableTable filterableTable = algOptEntity.unwrap( FilterableTable.class );
         if ( filterableTable != null ) {
             return createFilterable( compiler, alg, filters, projects, filterableTable );
         }
-        final ScannableTable scannableTable = algOptTable.unwrap( ScannableTable.class );
+        final ScannableTable scannableTable = algOptEntity.unwrap( ScannableTable.class );
         if ( scannableTable != null ) {
             return createScannable( compiler, alg, filters, projects, scannableTable );
         }
         //noinspection unchecked
-        final Enumerable<Row> enumerable = algOptTable.unwrap( Enumerable.class );
+        final Enumerable<Row> enumerable = algOptEntity.unwrap( Enumerable.class );
         if ( enumerable != null ) {
             return createEnumerable( compiler, alg, enumerable, null, filters, projects );
         }
-        final QueryableTable queryableTable = algOptTable.unwrap( QueryableTable.class );
+        final QueryableTable queryableTable = algOptEntity.unwrap( QueryableTable.class );
         if ( queryableTable != null ) {
             return createQueryable( compiler, alg, filters, projects, queryableTable );
         }
-        throw new AssertionError( "cannot convert table " + algOptTable + " to enumerable" );
+        throw new AssertionError( "cannot convert table " + algOptEntity + " to enumerable" );
     }
 
 
@@ -126,16 +126,16 @@ public class ScanNode implements Node {
 
     private static ScanNode createQueryable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableTable queryableTable ) {
         final DataContext root = compiler.getDataContext();
-        final AlgOptTable algOptTable = alg.getTable();
+        final AlgOptEntity algOptEntity = alg.getTable();
         final Type elementType = queryableTable.getElementType();
         SchemaPlus schema = root.getRootSchema();
-        for ( String name : Util.skipLast( algOptTable.getQualifiedName() ) ) {
+        for ( String name : Util.skipLast( algOptEntity.getQualifiedName() ) ) {
             schema = schema.getSubSchema( name );
         }
         final Enumerable<Row> rowEnumerable;
         if ( elementType instanceof Class ) {
             //noinspection unchecked
-            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, algOptTable.getQualifiedName() );
+            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, algOptEntity.getQualifiedName() );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             Class type = (Class) elementType;
             for ( Field field : type.getFields() ) {
@@ -157,7 +157,7 @@ public class ScanNode implements Node {
                 return new Row( values );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, algOptTable.getQualifiedName() );
+            rowEnumerable = Schemas.queryable( root, Row.class, algOptEntity.getQualifiedName() );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }

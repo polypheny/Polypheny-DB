@@ -73,7 +73,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -100,7 +100,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
@@ -129,7 +129,6 @@ import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.tools.AlgBuilder;
@@ -915,9 +914,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             @Override
             public AlgNode visit( LogicalProject project ) {
-                if ( project.getInput() instanceof LogicalScan ) {
+                if ( project.getInput() instanceof LogicalRelScan ) {
                     // Figure out the original column names required for index lookup
-                    final LogicalScan scan = (LogicalScan) project.getInput();
+                    final LogicalRelScan scan = (LogicalRelScan) project.getInput();
                     final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
                     final List<AlgDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
@@ -1324,7 +1323,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      */
     private Map<Integer, List<Long>> getAccessedPartitionsPerScan( AlgNode alg, Map<Integer, Set<String>> aggregatedPartitionValues ) {
         Map<Integer, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
-        if ( !(alg instanceof LogicalScan) ) {
+        if ( !(alg instanceof LogicalRelScan) ) {
             for ( int i = 0; i < alg.getInputs().size(); i++ ) {
                 Map<Integer, List<Long>> result = getAccessedPartitionsPerScan( alg.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
@@ -1336,70 +1335,69 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             boolean fallback = false;
             if ( alg.getTable() != null ) {
-                AlgOptTableImpl table = (AlgOptTableImpl) alg.getTable();
-                if ( table.getTable() instanceof LogicalTable ) {
-                    LogicalTable logicalTable = ((LogicalTable) table.getTable());
-                    int scanId = alg.getId();
+                AlgOptEntityImpl table = (AlgOptEntityImpl) alg.getTable();
 
-                    if ( logicalTable.getTableId() == -1 ) {
-                        // todo dl: remove after RowType refactor
-                        return accessedPartitionList;
-                    }
+                int scanId = alg.getId();
 
-                    // Get placements of this table
-                    CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
+                if ( table.getCatalogEntity() == null ) {
+                    // todo dl: remove after RowType refactor
+                    return accessedPartitionList;
+                }
 
-                    if ( aggregatedPartitionValues.containsKey( scanId ) ) {
-                        if ( aggregatedPartitionValues.get( scanId ) != null ) {
-                            if ( !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
-                                List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
+                // Get placements of this table
+                CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
 
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug(
-                                            "TableID: {} is partitioned on column: {} - {}",
-                                            logicalTable.getTableId(),
-                                            catalogTable.partitionProperty.partitionColumnId,
-                                            Catalog.getInstance().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
-                                }
-                                List<Long> identifiedPartitions = new ArrayList<>();
-                                for ( String partitionValue : partitionValues ) {
-                                    if ( log.isDebugEnabled() ) {
-                                        log.debug( "Extracted PartitionValue: {}", partitionValue );
-                                    }
-                                    long identifiedPartition = PartitionManagerFactory.getInstance()
-                                            .getPartitionManager( catalogTable.partitionProperty.partitionType )
-                                            .getTargetPartitionId( catalogTable, partitionValue );
+                if ( aggregatedPartitionValues.containsKey( scanId ) ) {
+                    if ( aggregatedPartitionValues.get( scanId ) != null ) {
+                        if ( !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
+                            List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
 
-                                    identifiedPartitions.add( identifiedPartition );
-                                    if ( log.isDebugEnabled() ) {
-                                        log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
-                                    }
-                                }
-
-                                accessedPartitionList.merge(
-                                        scanId,
-                                        identifiedPartitions,
-                                        ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                                scanPerTable.putIfAbsent( scanId, catalogTable.id );
-                                // Fallback all partitionIds are needed
-                            } else {
-                                fallback = true;
+                            if ( log.isDebugEnabled() ) {
+                                log.debug(
+                                        "TableID: {} is partitioned on column: {} - {}",
+                                        catalogTable.id,
+                                        catalogTable.partitionProperty.partitionColumnId,
+                                        Catalog.getInstance().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
                             }
+                            List<Long> identifiedPartitions = new ArrayList<>();
+                            for ( String partitionValue : partitionValues ) {
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( "Extracted PartitionValue: {}", partitionValue );
+                                }
+                                long identifiedPartition = PartitionManagerFactory.getInstance()
+                                        .getPartitionManager( catalogTable.partitionProperty.partitionType )
+                                        .getTargetPartitionId( catalogTable, partitionValue );
+
+                                identifiedPartitions.add( identifiedPartition );
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
+                                }
+                            }
+
+                            accessedPartitionList.merge(
+                                    scanId,
+                                    identifiedPartitions,
+                                    ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                            scanPerTable.putIfAbsent( scanId, catalogTable.id );
+                            // Fallback all partitionIds are needed
                         } else {
                             fallback = true;
                         }
                     } else {
                         fallback = true;
                     }
-
-                    if ( fallback ) {
-                        accessedPartitionList.merge(
-                                scanId,
-                                catalogTable.partitionProperty.partitionIds,
-                                ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                        scanPerTable.putIfAbsent( scanId, catalogTable.id );
-                    }
+                } else {
+                    fallback = true;
                 }
+
+                if ( fallback ) {
+                    accessedPartitionList.merge(
+                            scanId,
+                            catalogTable.partitionProperty.partitionIds,
+                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                    scanPerTable.putIfAbsent( scanId, catalogTable.id );
+                }
+
             }
         }
         return accessedPartitionList;

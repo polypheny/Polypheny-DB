@@ -34,8 +34,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -90,7 +90,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     @Override
     public Modify toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptTable table,
+            AlgOptEntity table,
             CatalogReader catalogReader,
             AlgNode input,
             Operation operation,
@@ -135,7 +135,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
         throw new RuntimeException( "toAlg() is not implemented for Logical Tables!" );
     }
 

@@ -71,7 +71,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.PolyphenyDbServerStatement;
-import org.polypheny.db.plan.AlgOptAbstractTable;
+import org.polypheny.db.plan.AlgOptAbstractEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -157,7 +157,7 @@ public class TraitPropagationTest {
                 }
             };
 
-            final AlgOptAbstractTable t1 = new AlgOptAbstractTable( algOptSchema, "t1", table.getRowType( typeFactory ) ) {
+            final AlgOptAbstractEntity t1 = new AlgOptAbstractEntity( algOptSchema, "t1", table.getRowType( typeFactory ) ) {
                 @Override
                 public CatalogTable getCatalogTable() {
                     return null;

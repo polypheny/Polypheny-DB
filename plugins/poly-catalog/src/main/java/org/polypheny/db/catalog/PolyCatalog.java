@@ -36,9 +36,9 @@ import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
 import org.polypheny.db.catalog.snapshot.logical.LogicalFullSnapshot;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.util.Moniker;
@@ -187,19 +187,19 @@ public class PolyCatalog implements Serializable, CatalogReader {
 
 
     @Override
-    public PreparingTable getTableForMember( List<String> names ) {
+    public PreparingEntity getTableForMember( List<String> names ) {
         return null;
     }
 
 
     @Override
-    public PreparingTable getTable( List<String> names ) {
+    public PreparingEntity getTable( List<String> names ) {
         return null;
     }
 
 
     @Override
-    public AlgOptTable getCollection( List<String> names ) {
+    public AlgOptEntity getCollection( List<String> names ) {
         return null;
     }
 

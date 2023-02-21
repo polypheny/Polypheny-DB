@@ -30,8 +30,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
+import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
@@ -152,12 +152,12 @@ class EmptyScope implements SqlValidatorScope {
                 final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
                 ValidatorTable table2 = null;
                 if ( table instanceof Wrapper ) {
-                    table2 = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
+                    table2 = ((Wrapper) table).unwrap( PreparingEntity.class );
                 }
                 if ( table2 == null ) {
                     final AlgOptSchema algOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
                     final AlgDataType rowType = table.getRowType( validator.typeFactory );
-                    table2 = AlgOptTableImpl.create( algOptSchema, rowType, entry, catalogTable, null );
+                    table2 = AlgOptEntityImpl.create( algOptSchema, rowType, entry, catalogTable, null );
                 }
                 namespace = new TableNamespace( validator, table2 );
                 resolved.found( namespace, false, null, path, remainingNames );

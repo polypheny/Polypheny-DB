@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -67,7 +67,7 @@ class HtmlScan extends Scan implements EnumerableAlg {
     private final int[] fields;
 
 
-    protected HtmlScan( AlgOptCluster cluster, AlgOptTable table, HtmlTable webTable, int[] fields ) {
+    protected HtmlScan( AlgOptCluster cluster, AlgOptEntity table, HtmlTable webTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.webTable = webTable;
         this.fields = fields;

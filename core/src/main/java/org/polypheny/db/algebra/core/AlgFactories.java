@@ -59,23 +59,20 @@ import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -540,31 +537,24 @@ public class AlgFactories {
         /**
          * Creates a {@link Scan}.
          */
-        AlgNode createScan( AlgOptCluster cluster, AlgOptTable table );
+        AlgNode createScan( AlgOptCluster cluster, AlgOptEntity table );
 
     }
 
 
     /**
-     * Implementation of {@link ScanFactory} that returns a {@link LogicalScan}.
+     * Implementation of {@link ScanFactory} that returns a {@link LogicalRelScan}.
      */
     private static class ScanFactoryImpl implements ScanFactory {
 
         @Override
-        public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
+        public AlgNode createScan( AlgOptCluster cluster, AlgOptEntity table ) {
 
             // Check if RelOptTable contains a View, in this case a LogicalViewScan needs to be created
-            if ( (table.getTable()) instanceof LogicalTable ) {
-                Catalog catalog = Catalog.getInstance();
-                long idLogical = table.getTable().getTableId();
-                CatalogTable catalogTable = catalog.getTable( idLogical );
-                if ( catalogTable.entityType == EntityType.VIEW ) {
-                    return LogicalRelViewScan.create( cluster, table );
-                } else {
-                    return LogicalScan.create( cluster, table );
-                }
+            if ( table.getCatalogEntity().entityType == EntityType.VIEW ) {
+                return LogicalRelViewScan.create( cluster, table );
             } else {
-                return LogicalScan.create( cluster, table );
+                return LogicalRelScan.create( cluster, table );
             }
         }
 

@@ -40,20 +40,18 @@ import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalTable;
 
 
 public class ViewManager {
@@ -253,14 +251,11 @@ public class ViewManager {
         public AlgNode checkNode( AlgNode other ) {
             if ( other instanceof LogicalRelViewScan ) {
                 return expandViewNode( other );
-            } else if ( doesSubstituteOrderBy && other instanceof LogicalScan ) {
-                if ( other.getTable() instanceof AlgOptTableImpl ) {
-                    if ( other.getTable().getTable() instanceof LogicalTable ) {
-                        long tableId = ((LogicalTable) ((AlgOptTableImpl) other.getTable()).getTable()).getTableId();
-                        CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-                        if ( catalogtable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
-                            return orderMaterialized( other );
-                        }
+            } else if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
+                if ( other.getTable() instanceof AlgOptEntityImpl ) {
+                    CatalogTable catalogTable = other.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+                    if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogTable).isOrdered() ) {
+                        return orderMaterialized( other );
                     }
                 }
             }

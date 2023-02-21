@@ -87,10 +87,10 @@ import org.polypheny.db.languages.mql.MqlUpdate;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -227,7 +227,7 @@ public class MqlToAlgConverter {
     private String defaultDatabase;
     private boolean notActive = false;
     private boolean usesDocumentModel;
-    private AlgOptTable entity;
+    private AlgOptEntity entity;
     private MqlQueryParameters parameters;
 
 
@@ -329,10 +329,10 @@ public class MqlToAlgConverter {
     }
 
 
-    private AlgOptTable getEntity( MqlCollectionStatement query, String dbSchemaName ) {
+    private AlgOptEntity getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         List<String> names = ImmutableList.of( dbSchemaName, query.getCollection() );
 
-        PreparingTable table = catalogReader.getTable( names );
+        PreparingEntity table = catalogReader.getTable( names );
 
         if ( table == null ) {
             return catalogReader.getCollection( names );
@@ -341,12 +341,11 @@ public class MqlToAlgConverter {
             final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
             final Builder fieldInfo = typeFactory.builder();
-            //fieldInfo.add( new AlgDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
             fieldInfo.add( new AlgDataTypeFieldImpl( "d", 0, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );
             AlgDataType rowType = fieldInfo.build();
             CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTable().getTableId() );
 
-            return AlgOptTableImpl.create(
+            return AlgOptEntityImpl.create(
                     table.getRelOptSchema(),
                     rowType,
                     new TableEntryImpl(
@@ -363,7 +362,7 @@ public class MqlToAlgConverter {
     /**
      * Starts converting a db.collection.update();
      */
-    private AlgNode convertUpdate( MqlUpdate query, AlgOptTable table, AlgNode node ) {
+    private AlgNode convertUpdate( MqlUpdate query, AlgOptEntity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
             if ( query.isOnlyOne() ) {
@@ -386,7 +385,7 @@ public class MqlToAlgConverter {
      * this method is implemented like the reduced update pipeline,
      * but in fact could be combined and therefore optimized a lot more
      */
-    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, AlgOptTable table ) {
+    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, AlgOptEntity table ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
         mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
@@ -540,7 +539,7 @@ public class MqlToAlgConverter {
      * @param table the active table
      * @return the unified UPDATE AlgNode
      */
-    private AlgNode finalizeUpdates( String key, Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, AlgDataType rowType, AlgNode node, AlgOptTable table ) {
+    private AlgNode finalizeUpdates( String key, Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, AlgDataType rowType, AlgNode node, AlgOptEntity table ) {
         RexNode updateChain = getIdentifier( key, rowType );
         // replace
         List<Pair<String, RexNode>> replaceNodes = mergedUpdates.get( UpdateOperation.REPLACE );
@@ -721,7 +720,7 @@ public class MqlToAlgConverter {
     /**
      * Starts translating an update pipeline
      */
-    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, AlgOptTable table ) {
+    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, AlgOptEntity table ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
         mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
@@ -765,7 +764,7 @@ public class MqlToAlgConverter {
     /**
      * Translates a delete operation from its MqlNode format to the {@link AlgNode} form
      */
-    private AlgNode convertDelete( MqlDelete query, AlgOptTable table, AlgNode node ) {
+    private AlgNode convertDelete( MqlDelete query, AlgOptEntity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
         }
@@ -789,7 +788,7 @@ public class MqlToAlgConverter {
      * @param table the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private AlgNode convertInsert( MqlInsert query, AlgOptTable table ) {
+    private AlgNode convertInsert( MqlInsert query, AlgOptEntity table ) {
         return LogicalDocumentModify.create(
                 table,
                 convertMultipleValues( query.getValues(), table.getRowType() ),

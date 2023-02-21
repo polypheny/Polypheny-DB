@@ -59,10 +59,10 @@ import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -240,12 +240,12 @@ public abstract class Prepare {
     public interface CatalogReader extends AlgOptSchema, ValidatorCatalogReader, OperatorTable {
 
         @Override
-        PreparingTable getTableForMember( List<String> names );
+        PreparingEntity getTableForMember( List<String> names );
 
         @Override
-        PreparingTable getTable( List<String> names );
+        PreparingEntity getTable( List<String> names );
 
-        AlgOptTable getCollection( List<String> names );
+        AlgOptEntity getCollection( List<String> names );
 
         Graph getGraph( String name );
 
@@ -257,18 +257,18 @@ public abstract class Prepare {
     /**
      * Definition of a table, for the purposes of the validator and planner.
      */
-    public interface PreparingTable extends AlgOptTable, ValidatorTable {
+    public interface PreparingEntity extends AlgOptEntity, ValidatorTable {
 
     }
 
 
     /**
-     * Abstract implementation of {@link PreparingTable}.
+     * Abstract implementation of {@link PreparingEntity}.
      */
-    public abstract static class AbstractPreparingTable implements PreparingTable {
+    public abstract static class AbstractPreparingEntity implements PreparingEntity {
 
         @Override
-        public final AlgOptTable extend( List<AlgDataTypeField> extendedFields ) {
+        public final AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
             final Table table = unwrap( Table.class );
 
             // Get the set of extended columns that do not have the same name as a column in the base table.
@@ -285,14 +285,14 @@ public abstract class Prepare {
 
 
         /**
-         * Implementation-specific code to instantiate a new {@link AlgOptTable} based on a {@link Table} that has been extended.
+         * Implementation-specific code to instantiate a new {@link AlgOptEntity} based on a {@link Table} that has been extended.
          */
-        protected abstract AlgOptTable extend( Table extendedTable );
+        protected abstract AlgOptEntity extend( Table extendedTable );
 
 
         @Override
         public List<ColumnStrategy> getColumnStrategies() {
-            return AlgOptTableImpl.columnStrategies( AbstractPreparingTable.this );
+            return AlgOptEntityImpl.columnStrategies( AbstractPreparingEntity.this );
         }
 
     }

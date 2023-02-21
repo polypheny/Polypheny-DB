@@ -39,9 +39,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -63,7 +63,7 @@ public class GeodeScan extends Scan implements GeodeAlg {
      * @param geodeTable Geode table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    GeodeScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, GeodeTable geodeTable, AlgDataType projectRowType ) {
+    GeodeScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, GeodeTable geodeTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.geodeTable = geodeTable;
         this.projectRowType = projectRowType;

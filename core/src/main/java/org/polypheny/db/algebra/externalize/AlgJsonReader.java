@@ -54,8 +54,8 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Schema;
@@ -125,7 +125,7 @@ public class AlgJsonReader {
 
 
             @Override
-            public AlgOptTable getTable( String table ) {
+            public AlgOptEntity getTable( String table ) {
                 final List<String> list;
                 if ( jsonAlg.get( table ) instanceof String ) {
                     String str = (String) jsonAlg.get( table );

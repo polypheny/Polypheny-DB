@@ -48,8 +48,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare;
@@ -88,7 +88,7 @@ public abstract class Modify extends SingleAlg {
      * The table definition.
      */
     @Getter
-    protected final AlgOptTable table;
+    protected final AlgOptEntity table;
     @Getter
     private final Operation operation;
     @Getter
@@ -118,7 +118,7 @@ public abstract class Modify extends SingleAlg {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    protected Modify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    protected Modify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, Prepare.CatalogReader catalogReader, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, input );
         this.table = table;
         this.catalogReader = catalogReader;

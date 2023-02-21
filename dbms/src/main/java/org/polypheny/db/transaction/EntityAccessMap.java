@@ -39,10 +39,11 @@ import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -221,14 +222,11 @@ public class EntityAccessMap {
      * @param table table of interest
      * @return qualified name
      */
-    public EntityIdentifier getQualifiedName( AlgOptTable table, long partitionId ) {
-        if ( !(table instanceof AlgOptTableImpl) ) {
+    public EntityIdentifier getQualifiedName( AlgOptEntity table, long partitionId ) {
+        if ( !(table instanceof AlgOptEntityImpl) ) {
             throw new RuntimeException( "Unexpected table type: " + table.getClass() );
         }
-        if ( !(table.getTable() instanceof LogicalTable) ) {
-            throw new RuntimeException( "Unexpected table type: " + table.getTable().getClass() );
-        }
-        return new EntityIdentifier( table.getTable().getTableId(), partitionId, NamespaceLevel.ENTITY_LEVEL );
+        return new EntityIdentifier( table.getCatalogEntity().id, partitionId, NamespaceLevel.ENTITY_LEVEL );
     }
 
 
@@ -240,7 +238,7 @@ public class EntityAccessMap {
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             super.visit( p, ordinal, parent );
-            AlgOptTable table = p.getTable();
+            AlgOptEntity table = p.getTable();
             if ( table == null ) {
                 if ( p instanceof LpgAlg ) {
                     attachGraph( (AlgNode & LpgAlg) p );
@@ -271,8 +269,8 @@ public class EntityAccessMap {
             List<Long> relevantPartitions;
             if ( accessedPartitions.containsKey( p.getId() ) ) {
                 relevantPartitions = accessedPartitions.get( p.getId() );
-            } else if ( table.getTable().getTableId() != -1 ) {
-                relevantPartitions = Catalog.getInstance().getTable( table.getTable().getTableId() ).partitionProperty.partitionIds;
+            } else if ( table.getCatalogEntity() != null ) {
+                relevantPartitions = table.getCatalogEntity().unwrap( CatalogTable.class ).partitionProperty.partitionIds;
             } else {
                 relevantPartitions = List.of();
             }
@@ -301,7 +299,7 @@ public class EntityAccessMap {
                 newAccess = Mode.READ_ACCESS;
             }
             // as documents are using the same id space as tables this will work
-            EntityIdentifier key = new EntityIdentifier( p.getCollection().getTable().getTableId(), 0, NamespaceLevel.ENTITY_LEVEL );
+            EntityIdentifier key = new EntityIdentifier( p.getCollection().getCatalogEntity().id, 0, NamespaceLevel.ENTITY_LEVEL );
             accessMap.put( key, newAccess );
         }
 

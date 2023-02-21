@@ -59,8 +59,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.schema.FilterableTable;
@@ -85,7 +85,7 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you are doing.
      */
-    public EnumerableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, Class elementType ) {
+    public EnumerableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, Class elementType ) {
         super( cluster, traitSet, table );
         assert getConvention() instanceof EnumerableConvention;
         this.elementType = elementType;
@@ -95,8 +95,8 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
     /**
      * Creates an EnumerableScan.
      */
-    public static EnumerableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
-        final Table table = algOptTable.unwrap( Table.class );
+    public static EnumerableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity ) {
+        final Table table = algOptEntity.unwrap( Table.class );
         Class elementType = EnumerableScan.deduceElementType( table );
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
@@ -106,7 +106,7 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
                             }
                             return ImmutableList.of();
                         } );
-        return new EnumerableScan( cluster, traitSet, algOptTable, elementType );
+        return new EnumerableScan( cluster, traitSet, algOptEntity, elementType );
     }
 
 
@@ -153,7 +153,7 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
     }
 
 
-    public static JavaRowFormat deduceFormat( AlgOptTable table ) {
+    public static JavaRowFormat deduceFormat( AlgOptEntity table ) {
         final Class elementType = deduceElementType( table.unwrap( Table.class ) );
         return elementType == Object[].class
                 ? JavaRowFormat.ARRAY

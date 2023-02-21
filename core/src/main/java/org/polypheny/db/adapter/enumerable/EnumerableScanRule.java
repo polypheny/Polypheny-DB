@@ -38,9 +38,9 @@ import java.util.function.Predicate;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -57,23 +57,23 @@ public class EnumerableScanRule extends ConverterRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public EnumerableScanRule( AlgBuilderFactory algBuilderFactory ) {
-        super( LogicalScan.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableScanRule" );
+        super( LogicalRelScan.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableScanRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalScan scan = (LogicalScan) alg;
-        final AlgOptTable algOptTable = scan.getTable();
-        final Table table = algOptTable.unwrap( Table.class );
+        LogicalRelScan scan = (LogicalRelScan) alg;
+        final AlgOptEntity algOptEntity = scan.getTable();
+        final Table table = algOptEntity.unwrap( Table.class );
         if ( !EnumerableScan.canHandle( table ) ) {
             return null;
         }
-        final Expression expression = algOptTable.getExpression( Object.class );
+        final Expression expression = algOptEntity.getExpression( Object.class );
         if ( expression == null ) {
             return null;
         }
-        return EnumerableScan.create( scan.getCluster(), algOptTable );
+        return EnumerableScan.create( scan.getCluster(), algOptEntity );
     }
 
 }

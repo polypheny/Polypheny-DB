@@ -40,11 +40,11 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
@@ -54,7 +54,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Represents a relational dataset in a {@link AlgOptSchema}. It has methods to describe and implement itself.
  */
-public interface AlgOptTable extends Wrapper {
+public interface AlgOptEntity extends Wrapper {
 
     /**
      * Obtains an identifier for this table. The identifier must be unique with respect to the Connection producing this table.
@@ -62,8 +62,6 @@ public interface AlgOptTable extends Wrapper {
      * @return qualified name
      */
     List<String> getQualifiedName();
-
-    CatalogTable getCatalogTable();
 
     /**
      * Returns an estimate of the number of rows in the table.
@@ -84,7 +82,7 @@ public interface AlgOptTable extends Wrapper {
      * Converts this table into a {@link AlgNode relational expression}.
      *
      * The {@link AlgOptPlanner planner} calls this method to convert a table into an initial
-     * relational expression, generally something abstract, such as a {@link LogicalScan}, then optimizes this
+     * relational expression, generally something abstract, such as a {@link LogicalRelScan}, then optimizes this
      * expression by applying {@link AlgOptRule rules} to transform it into more efficient access methods for this table.
      */
     AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet );
@@ -130,7 +128,7 @@ public interface AlgOptTable extends Wrapper {
      * The extended table includes the fields of this base table plus the extended fields that do not have the same name as
      * a field in the base table.
      */
-    AlgOptTable extend( List<AlgDataTypeField> extendedFields );
+    AlgOptEntity extend( List<AlgDataTypeField> extendedFields );
 
     /**
      * Returns a list describing how each column is populated. The list has the same number of entries as there are fields,
@@ -138,10 +136,12 @@ public interface AlgOptTable extends Wrapper {
      */
     List<ColumnStrategy> getColumnStrategies();
 
-
+    @Deprecated
     default Table getTable() {
         return null;
     }
+
+    CatalogEntity getCatalogEntity();
 
 
     /**

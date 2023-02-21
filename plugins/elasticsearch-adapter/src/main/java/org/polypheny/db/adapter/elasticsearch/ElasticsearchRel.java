@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
 
@@ -107,7 +107,7 @@ public interface ElasticsearchRel extends AlgNode {
          */
         Long fetch;
 
-        AlgOptTable table;
+        AlgOptEntity table;
         ElasticsearchTable elasticsearchTable;
 
 

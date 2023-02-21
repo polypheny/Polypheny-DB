@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -106,10 +106,10 @@ class TableNamespace extends AbstractNamespace {
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
         final List<AlgDataTypeField> extendedFields = builder.build();
         final Table schemaTable = table.unwrap( Table.class );
-        if ( schemaTable != null && table instanceof AlgOptTable && schemaTable instanceof ExtensibleTable ) {
+        if ( schemaTable != null && table instanceof AlgOptEntity && schemaTable instanceof ExtensibleTable ) {
             checkExtendedColumnTypes( extendList );
-            final AlgOptTable algOptTable = ((AlgOptTable) table).extend( extendedFields );
-            final ValidatorTable validatorTable = algOptTable.unwrap( ValidatorTable.class );
+            final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
+            final ValidatorTable validatorTable = algOptEntity.unwrap( ValidatorTable.class );
             return new TableNamespace( validator, validatorTable, ImmutableList.of() );
         }
         return new TableNamespace( validator, table, extendedFields );

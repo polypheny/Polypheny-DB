@@ -59,9 +59,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -252,10 +252,10 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      */
     private void findRemovableSelfJoins( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
         // Candidates for self-joins must be simple factors
-        Map<Integer, AlgOptTable> simpleFactors = getSimpleFactors( mq, multiJoin );
+        Map<Integer, AlgOptEntity> simpleFactors = getSimpleFactors( mq, multiJoin );
 
         // See if a simple factor is repeated and therefore potentially is part of a self-join.  Restrict each factor to at most one self-join.
-        final List<AlgOptTable> repeatedTables = new ArrayList<>();
+        final List<AlgOptEntity> repeatedTables = new ArrayList<>();
         final TreeSet<Integer> sortedFactors = new TreeSet<>();
         sortedFactors.addAll( simpleFactors.keySet() );
         final Map<Integer, Integer> selfJoinPairs = new HashMap<>();
@@ -298,8 +298,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * @param multiJoin join factors being optimized
      * @return map consisting of the simple factors and the tables they correspond
      */
-    private Map<Integer, AlgOptTable> getSimpleFactors( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
-        final Map<Integer, AlgOptTable> returnList = new HashMap<>();
+    private Map<Integer, AlgOptEntity> getSimpleFactors( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
+        final Map<Integer, AlgOptEntity> returnList = new HashMap<>();
 
         // Loop through all join factors and locate the ones where each column referenced from the factor is not derived and originates from the same underlying table.  Also, discard factors that
         // are null-generating or will be removed because of semijoins.
@@ -311,7 +311,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                 continue;
             }
             final AlgNode alg = multiJoin.getJoinFactor( factIdx );
-            final AlgOptTable table = mq.getTableOrigin( alg );
+            final AlgOptEntity table = mq.getTableOrigin( alg );
             if ( table != null ) {
                 returnList.put( factIdx, table );
             }
@@ -1509,11 +1509,11 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
         // Make sure the join is between the same simple factor
         final AlgMetadataQuery mq = joinRel.getCluster().getMetadataQuery();
-        final AlgOptTable leftTable = mq.getTableOrigin( left );
+        final AlgOptEntity leftTable = mq.getTableOrigin( left );
         if ( leftTable == null ) {
             return false;
         }
-        final AlgOptTable rightTable = mq.getTableOrigin( right );
+        final AlgOptEntity rightTable = mq.getTableOrigin( right );
         if ( rightTable == null ) {
             return false;
         }

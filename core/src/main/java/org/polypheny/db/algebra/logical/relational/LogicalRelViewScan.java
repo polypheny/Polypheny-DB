@@ -25,16 +25,13 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
 
@@ -46,15 +43,15 @@ public class LogicalRelViewScan extends Scan {
     private final AlgCollation algCollation;
 
 
-    public LogicalRelViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, AlgNode algNode, AlgCollation algCollation ) {
+    public LogicalRelViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, AlgNode algNode, AlgCollation algCollation ) {
         super( cluster, traitSet, table );
         this.algNode = algNode;
         this.algCollation = algCollation;
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, final AlgOptTable algOptTable ) {
-        final Table table = algOptTable.unwrap( Table.class );
+    public static AlgNode create( AlgOptCluster cluster, final AlgOptEntity algOptEntity ) {
+        final Table table = algOptEntity.unwrap( Table.class );
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
@@ -67,13 +64,10 @@ public class LogicalRelViewScan extends Scan {
                                     return ImmutableList.of();
                                 } );
 
-        Catalog catalog = Catalog.getInstance();
+        CatalogView catalogView = (CatalogView) algOptEntity.getCatalogEntity();
+        AlgCollation algCollation = catalogView.getAlgCollation();
 
-        long idLogical = ((LogicalTable) algOptTable.getTable()).getTableId();
-        CatalogTable catalogTable = catalog.getTable( idLogical );
-        AlgCollation algCollation = ((CatalogView) catalogTable).getAlgCollation();
-
-        return new LogicalRelViewScan( cluster, traitSet, algOptTable, ((CatalogView) catalogTable).prepareView( cluster ), algCollation );
+        return new LogicalRelViewScan( cluster, traitSet, algOptEntity, catalogView.prepareView( cluster ), algCollation );
     }
 
 

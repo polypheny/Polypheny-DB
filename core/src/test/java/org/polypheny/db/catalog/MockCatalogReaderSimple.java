@@ -35,6 +35,8 @@ package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
@@ -45,9 +47,6 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.InitializerExpressionFactory;
-
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -93,7 +92,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerType( ImmutableList.of( salesSchema.getCatalogName(), salesSchema.getName(), "customBigInt" ), typeFactory -> typeFactory.createPolyType( PolyType.BIGINT ) );
 
         // Register "EMP" table.
-        final MockTable empTable = MockTable.create( this, salesSchema, "EMP", false, 14, null, countingInitializerExpressionFactory );
+        final MockEntity empTable = MockEntity.create( this, salesSchema, "EMP", false, 14, null, countingInitializerExpressionFactory );
         empTable.addColumn( "EMPNO", fixture.intType, true );
         empTable.addColumn( "ENAME", fixture.varchar20Type );
         empTable.addColumn( "JOB", fixture.varchar10Type );
@@ -106,7 +105,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( empTable );
 
         // Register "EMPNULLABLES" table with nullable columns.
-        final MockTable empNullablesTable = MockTable.create( this, salesSchema, "EMPNULLABLES", false, 14 );
+        final MockEntity empNullablesTable = MockEntity.create( this, salesSchema, "EMPNULLABLES", false, 14 );
         empNullablesTable.addColumn( "EMPNO", fixture.intType, true );
         empNullablesTable.addColumn( "ENAME", fixture.varchar20Type );
         empNullablesTable.addColumn( "JOB", fixture.varchar10TypeNull );
@@ -119,7 +118,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( empNullablesTable );
 
         // Register "EMPDEFAULTS" table with default values for some columns.
-        final MockTable empDefaultsTable = MockTable.create( this, salesSchema, "EMPDEFAULTS", false, 14, null, new EmpInitializerExpressionFactory() );
+        final MockEntity empDefaultsTable = MockEntity.create( this, salesSchema, "EMPDEFAULTS", false, 14, null, new EmpInitializerExpressionFactory() );
         empDefaultsTable.addColumn( "EMPNO", fixture.intType, true );
         empDefaultsTable.addColumn( "ENAME", fixture.varchar20Type );
         empDefaultsTable.addColumn( "JOB", fixture.varchar10TypeNull );
@@ -132,7 +131,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( empDefaultsTable );
 
         // Register "EMP_B" table. As "EMP", birth with a "BIRTHDATE" column.
-        final MockTable empBTable = MockTable.create( this, salesSchema, "EMP_B", false, 14 );
+        final MockEntity empBTable = MockEntity.create( this, salesSchema, "EMP_B", false, 14 );
         empBTable.addColumn( "EMPNO", fixture.intType, true );
         empBTable.addColumn( "ENAME", fixture.varchar20Type );
         empBTable.addColumn( "JOB", fixture.varchar10Type );
@@ -146,13 +145,13 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( empBTable );
 
         // Register "DEPT" table.
-        MockTable deptTable = MockTable.create( this, salesSchema, "DEPT", false, 4 );
+        MockEntity deptTable = MockEntity.create( this, salesSchema, "DEPT", false, 4 );
         deptTable.addColumn( "DEPTNO", fixture.intType, true );
         deptTable.addColumn( "NAME", fixture.varchar10Type );
         registerTable( deptTable );
 
         // Register "DEPT_NESTED" table.
-        MockTable deptNestedTable = MockTable.create( this, salesSchema, "DEPT_NESTED", false, 4 );
+        MockEntity deptNestedTable = MockEntity.create( this, salesSchema, "DEPT_NESTED", false, 4 );
         deptNestedTable.addColumn( "DEPTNO", fixture.intType, true );
         deptNestedTable.addColumn( "NAME", fixture.varchar10Type );
         deptNestedTable.addColumn( "SKILL", fixture.skillRecordType );
@@ -160,7 +159,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( deptNestedTable );
 
         // Register "BONUS" table.
-        MockTable bonusTable = MockTable.create( this, salesSchema, "BONUS", false, 0 );
+        MockEntity bonusTable = MockEntity.create( this, salesSchema, "BONUS", false, 0 );
         bonusTable.addColumn( "ENAME", fixture.varchar20Type );
         bonusTable.addColumn( "JOB", fixture.varchar10Type );
         bonusTable.addColumn( "SAL", fixture.intType );
@@ -168,14 +167,14 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( bonusTable );
 
         // Register "SALGRADE" table.
-        MockTable salgradeTable = MockTable.create( this, salesSchema, "SALGRADE", false, 5 );
+        MockEntity salgradeTable = MockEntity.create( this, salesSchema, "SALGRADE", false, 5 );
         salgradeTable.addColumn( "GRADE", fixture.intType, true );
         salgradeTable.addColumn( "LOSAL", fixture.intType );
         salgradeTable.addColumn( "HISAL", fixture.intType );
         registerTable( salgradeTable );
 
         // Register "EMP_ADDRESS" table
-        MockTable contactAddressTable = MockTable.create( this, salesSchema, "EMP_ADDRESS", false, 26 );
+        MockEntity contactAddressTable = MockEntity.create( this, salesSchema, "EMP_ADDRESS", false, 26 );
         contactAddressTable.addColumn( "EMPNO", fixture.intType, true );
         contactAddressTable.addColumn( "HOME_ADDRESS", addressType );
         contactAddressTable.addColumn( "MAILING_ADDRESS", addressType );
@@ -186,7 +185,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerSchema( customerSchema );
 
         // Register "CONTACT" table.
-        MockTable contactTable = MockTable.create( this, customerSchema, "CONTACT", false, 1000 );
+        MockEntity contactTable = MockEntity.create( this, customerSchema, "CONTACT", false, 1000 );
         contactTable.addColumn( "CONTACTNO", fixture.intType );
         contactTable.addColumn( "FNAME", fixture.varchar10Type );
         contactTable.addColumn( "LNAME", fixture.varchar10Type );
@@ -195,7 +194,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( contactTable );
 
         // Register "CONTACT_PEEK" table. The
-        MockTable contactPeekTable = MockTable.create( this, customerSchema, "CONTACT_PEEK", false, 1000 );
+        MockEntity contactPeekTable = MockEntity.create( this, customerSchema, "CONTACT_PEEK", false, 1000 );
         contactPeekTable.addColumn( "CONTACTNO", fixture.intType );
         contactPeekTable.addColumn( "FNAME", fixture.varchar10Type );
         contactPeekTable.addColumn( "LNAME", fixture.varchar10Type );
@@ -205,14 +204,14 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( contactPeekTable );
 
         // Register "ACCOUNT" table.
-        MockTable accountTable = MockTable.create( this, customerSchema, "ACCOUNT", false, 457 );
+        MockEntity accountTable = MockEntity.create( this, customerSchema, "ACCOUNT", false, 457 );
         accountTable.addColumn( "ACCTNO", fixture.intType );
         accountTable.addColumn( "TYPE", fixture.varchar20Type );
         accountTable.addColumn( "BALANCE", fixture.intType );
         registerTable( accountTable );
 
         // Register "ORDERS" stream.
-        MockTable ordersStream = MockTable.create( this, salesSchema, "ORDERS", true, Double.POSITIVE_INFINITY );
+        MockEntity ordersStream = MockEntity.create( this, salesSchema, "ORDERS", true, Double.POSITIVE_INFINITY );
         ordersStream.addColumn( "ROWTIME", fixture.timestampType );
         ordersStream.addMonotonic( "ROWTIME" );
         ordersStream.addColumn( "PRODUCTID", fixture.intType );
@@ -220,21 +219,21 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( ordersStream );
 
         // Register "SHIPMENTS" stream. "ROWTIME" is not column 0, just to mix things up.
-        MockTable shipmentsStream = MockTable.create( this, salesSchema, "SHIPMENTS", true, Double.POSITIVE_INFINITY );
+        MockEntity shipmentsStream = MockEntity.create( this, salesSchema, "SHIPMENTS", true, Double.POSITIVE_INFINITY );
         shipmentsStream.addColumn( "ORDERID", fixture.intType );
         shipmentsStream.addColumn( "ROWTIME", fixture.timestampType );
         shipmentsStream.addMonotonic( "ROWTIME" );
         registerTable( shipmentsStream );
 
         // Register "PRODUCTS" table.
-        MockTable productsTable = MockTable.create( this, salesSchema, "PRODUCTS", false, 200D );
+        MockEntity productsTable = MockEntity.create( this, salesSchema, "PRODUCTS", false, 200D );
         productsTable.addColumn( "PRODUCTID", fixture.intType );
         productsTable.addColumn( "NAME", fixture.varchar20Type );
         productsTable.addColumn( "SUPPLIERID", fixture.intType );
         registerTable( productsTable );
 
         // Register "SUPPLIERS" table.
-        MockTable suppliersTable = MockTable.create( this, salesSchema, "SUPPLIERS", false, 10D );
+        MockEntity suppliersTable = MockEntity.create( this, salesSchema, "SUPPLIERS", false, 10D );
         suppliersTable.addColumn( "SUPPLIERID", fixture.intType );
         suppliersTable.addColumn( "NAME", fixture.varchar20Type );
         suppliersTable.addColumn( "CITY", fixture.intType );
@@ -253,7 +252,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 new CompoundNameColumn( "F1", "C2", fixture.intType ),
                 new CompoundNameColumn( "F2", "C3", fixture.intType ) );
         final CompoundNameColumnResolver structTypeTableResolver = new CompoundNameColumnResolver( columns, "F0" );
-        final MockTable structTypeTable = MockTable.create( this, structTypeSchema, "T", false, 100, structTypeTableResolver );
+        final MockEntity structTypeTable = MockEntity.create( this, structTypeSchema, "T", false, 100, structTypeTableResolver );
         for ( CompoundNameColumn column : columns ) {
             structTypeTable.addColumn( column.getName(), column.type );
         }
@@ -269,7 +268,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 new CompoundNameColumn( "F0", "C1", fixture.intTypeNull ),
                 new CompoundNameColumn( "F1", "C2", fixture.intType ),
                 new CompoundNameColumn( "F2", "C3", fixture.intTypeNull ) );
-        final MockTable structNullableTypeTable = MockTable.create( this, structTypeSchema, "T_NULLABLES", false, 100, structTypeTableResolver );
+        final MockEntity structNullableTypeTable = MockEntity.create( this, structTypeSchema, "T_NULLABLES", false, 100, structTypeTableResolver );
         for ( CompoundNameColumn column : columnsNullable ) {
             structNullableTypeTable.addColumn( column.getName(), column.type );
         }

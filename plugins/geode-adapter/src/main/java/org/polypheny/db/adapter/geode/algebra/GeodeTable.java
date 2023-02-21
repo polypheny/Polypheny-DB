@@ -37,6 +37,9 @@ package org.polypheny.db.adapter.geode.algebra;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -56,8 +59,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.SchemaPlus;
@@ -65,10 +68,6 @@ import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
-
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 
 /**
@@ -222,9 +221,9 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new GeodeScan( cluster, cluster.traitSetOf( GeodeAlg.CONVENTION ), algOptTable, this, null );
+        return new GeodeScan( cluster, cluster.traitSetOf( GeodeAlg.CONVENTION ), algOptEntity, this, null );
     }
 
 

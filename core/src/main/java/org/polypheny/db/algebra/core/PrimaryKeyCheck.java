@@ -19,20 +19,20 @@ package org.polypheny.db.algebra.core;
 
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 
 
 public abstract class PrimaryKeyCheck extends AbstractAlgNode {
 
     protected AlgNode dbSource;
     protected AlgNode values;
-    protected AlgOptTable table;
+    protected AlgOptEntity table;
 
 
     /**
      * Creates an <code>AbstractRelNode</code>.
      */
-    public PrimaryKeyCheck( AlgNode dbSource, AlgNode values, AlgOptTable table ) {
+    public PrimaryKeyCheck( AlgNode dbSource, AlgNode values, AlgOptEntity table ) {
         super( dbSource.getCluster(), dbSource.getTraitSet() );
         this.dbSource = dbSource;
         this.values = values;

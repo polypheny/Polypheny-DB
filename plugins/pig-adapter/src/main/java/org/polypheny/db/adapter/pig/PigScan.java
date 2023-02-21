@@ -42,9 +42,9 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 
@@ -57,7 +57,7 @@ public class PigScan extends Scan implements PigAlg {
     /**
      * Creates a PigScan.
      */
-    public PigScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
+    public PigScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table ) {
         super( cluster, traitSet, table );
         assert getConvention() == CONVENTION;
     }

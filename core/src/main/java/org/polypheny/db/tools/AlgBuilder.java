@@ -107,9 +107,9 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
@@ -1326,21 +1326,21 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( Iterable<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final AlgOptTable algOptTable = algOptSchema.getTableForMember( names );
-        if ( algOptTable == null ) {
+        final AlgOptEntity algOptEntity = algOptSchema.getTableForMember( names );
+        if ( algOptEntity == null ) {
             throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
         }
-        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
+        final AlgNode scan = scanFactory.createScan( cluster, algOptEntity );
         push( scan );
-        rename( algOptTable.getRowType().getFieldNames() );
+        rename( algOptEntity.getRowType().getFieldNames() );
         return this;
     }
 
 
-    public AlgBuilder scan( @Nonnull AlgOptTable algOptTable ) {
-        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
+    public AlgBuilder scan( @Nonnull AlgOptEntity algOptEntity ) {
+        final AlgNode scan = scanFactory.createScan( cluster, algOptEntity );
         push( scan );
-        rename( algOptTable.getRowType().getFieldNames() );
+        rename( algOptEntity.getRowType().getFieldNames() );
         return this;
     }
 
@@ -1359,7 +1359,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documentScan( AlgOptTable collection ) {
+    public AlgBuilder documentScan( AlgOptEntity collection ) {
         stack.add( new Frame( new LogicalDocumentScan( cluster, cluster.traitSet().replace( ModelTrait.DOCUMENT ), collection ) ) );
         return this;
     }

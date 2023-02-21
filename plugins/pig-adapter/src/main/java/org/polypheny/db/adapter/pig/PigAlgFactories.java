@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexNode;
@@ -73,7 +73,7 @@ public class PigAlgFactories {
 
 
         @Override
-        public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
+        public AlgNode createScan( AlgOptCluster cluster, AlgOptEntity table ) {
             return new PigScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), table );
         }
 

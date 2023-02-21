@@ -45,8 +45,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -131,7 +131,6 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
@@ -2133,12 +2132,12 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
-        if ( algNode instanceof LogicalScan ) {
+        if ( algNode instanceof LogicalRelScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( algNode.getTable().getTable().getTableId(), underlyingColumns );
+            underlyingTables.put( algNode.getTable().getCatalogEntity().id, underlyingColumns );
         } else if ( algNode instanceof LogicalRelViewScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( algNode.getTable().getTable().getTableId(), underlyingColumns );
+            underlyingTables.put( algNode.getTable().getCatalogEntity().id, underlyingColumns );
         }
         if ( algNode instanceof BiAlg ) {
             findUnderlyingTablesOfView( ((BiAlg) algNode).getLeft(), underlyingTables, fieldList );
@@ -2151,8 +2150,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
-        List<Long> columnIds = ((LogicalTable) algNode.getTable().getTable()).getColumnIds();
-        List<String> logicalColumnNames = ((LogicalTable) algNode.getTable().getTable()).getLogicalColumnNames();
+        CatalogTable table = algNode.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+        List<Long> columnIds = table.fieldIds;
+        List<String> logicalColumnNames = table.getColumnNames();
         List<Long> underlyingColumns = new ArrayList<>();
         for ( int i = 0; i < columnIds.size(); i++ ) {
             for ( AlgDataTypeField algDataTypeField : fieldList.getFieldList() ) {

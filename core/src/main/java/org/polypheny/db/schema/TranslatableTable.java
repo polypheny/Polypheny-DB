@@ -36,8 +36,8 @@ package org.polypheny.db.schema;
 
 import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -53,6 +53,6 @@ public interface TranslatableTable extends Table {
     /**
      * Converts this table into a {@link AlgNode relational expression}.
      */
-    AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet );
+    AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet );
 
 }

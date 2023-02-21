@@ -38,12 +38,12 @@ import java.util.List;
 
 
 /**
- * A <code>RelOptSchema</code> is a set of {@link AlgOptTable} objects.
+ * A <code>RelOptSchema</code> is a set of {@link AlgOptEntity} objects.
  */
 public interface AlgOptSchema {
 
     /**
-     * Retrieves a {@link AlgOptTable} based upon a member access.
+     * Retrieves a {@link AlgOptEntity} based upon a member access.
      *
      * For example, the Saffron expression <code>salesSchema.emps</code> would be resolved using a call to <code>salesSchema.getTableForMember(new String[]{"emps" })</code>.
      *
@@ -51,6 +51,6 @@ public interface AlgOptSchema {
      *
      * @param names Qualified name
      */
-    AlgOptTable getTableForMember( List<String> names );
+    AlgOptEntity getTableForMember( List<String> names );
 
 }

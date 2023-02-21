@@ -34,14 +34,17 @@
 package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.*;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTrait;
-
-import java.util.List;
 
 
 /**
@@ -58,7 +61,7 @@ public class JdbcScan extends Scan implements JdbcAlg {
     }
 
 
-    public JdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
+    public JdbcScan( AlgOptCluster cluster, AlgOptEntity table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
         super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), table );
         this.jdbcTable = jdbcTable;
         assert jdbcTable != null;

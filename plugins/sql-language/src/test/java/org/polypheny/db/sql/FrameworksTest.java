@@ -59,11 +59,11 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptAbstractTable;
+import org.polypheny.db.plan.AlgOptAbstractEntity;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -125,7 +125,7 @@ public class FrameworksTest extends SqlLanguageDependent {
                     };
 
                     // "SELECT * FROM myTable"
-                    final AlgOptAbstractTable algOptTable = new AlgOptAbstractTable( algOptSchema, "myTable", table.getRowType( typeFactory ) ) {
+                    final AlgOptAbstractEntity algOptTable = new AlgOptAbstractEntity( algOptSchema, "myTable", table.getRowType( typeFactory ) ) {
                     };
                     final EnumerableScan tableRel = EnumerableScan.create( cluster, algOptTable );
 
@@ -413,7 +413,7 @@ public class FrameworksTest extends SqlLanguageDependent {
 
 
         @Override
-        public Modify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, Modify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+        public Modify toModificationAlg( AlgOptCluster cluster, AlgOptEntity table, Prepare.CatalogReader catalogReader, AlgNode child, Modify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
             return LogicalModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 

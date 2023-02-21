@@ -20,7 +20,7 @@ package org.polypheny.db.util;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 
@@ -36,9 +36,9 @@ public interface InitializerExpressionFactory {
      * @param table the table containing the column
      * @param iColumn the 0-based offset of the column in the table
      * @return generation strategy, never null
-     * @see AlgOptTable#getColumnStrategies()
+     * @see AlgOptEntity#getColumnStrategies()
      */
-    ColumnStrategy generationStrategy( AlgOptTable table, int iColumn );
+    ColumnStrategy generationStrategy( AlgOptEntity table, int iColumn );
 
     /**
      * Creates an expression which evaluates to the default value for a particular column.
@@ -48,7 +48,7 @@ public interface InitializerExpressionFactory {
      * @param context Context for creating the expression
      * @return default value expression
      */
-    RexNode newColumnDefaultValue( AlgOptTable table, int iColumn, InitializerContext context );
+    RexNode newColumnDefaultValue( AlgOptEntity table, int iColumn, InitializerContext context );
 
     /**
      * Creates an expression which evaluates to the initializer expression for a particular attribute of a structured type.

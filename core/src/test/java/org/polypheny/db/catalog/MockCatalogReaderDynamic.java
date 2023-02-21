@@ -48,17 +48,17 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
         MockSchema schema = new MockSchema( "SALES" );
         registerSchema( schema );
 
-        MockTable nationTable = new MockDynamicTable( this, schema.getCatalogName(), schema.getName(), "NATION", false, 100 );
+        MockEntity nationTable = new MockDynamicEntity( this, schema.getCatalogName(), schema.getName(), "NATION", false, 100 );
         registerTable( nationTable );
 
-        MockTable customerTable = new MockDynamicTable( this, schema.getCatalogName(), schema.getName(), "CUSTOMER", false, 100 );
+        MockEntity customerTable = new MockDynamicEntity( this, schema.getCatalogName(), schema.getName(), "CUSTOMER", false, 100 );
         registerTable( customerTable );
 
         // CREATE TABLE "REGION" - static table with known schema.
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
 
-        MockTable regionTable = MockTable.create( this, schema, "REGION", false, 100 );
+        MockEntity regionTable = MockEntity.create( this, schema, "REGION", false, 100 );
         regionTable.addColumn( "R_REGIONKEY", intType );
         regionTable.addColumn( "R_NAME", varcharType );
         regionTable.addColumn( "R_COMMENT", varcharType );

@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -65,14 +65,15 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.prepare.Prepare.AbstractPreparingEntity;
+import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
@@ -130,7 +131,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
     protected void registerTablesWithRollUp( MockSchema schema, Fixture f ) {
         // Register "EMP_R" table. Contains a rolled up column.
-        final MockTable empRolledTable = MockTable.create( this, schema, "EMP_R", false, 14 );
+        final MockEntity empRolledTable = MockEntity.create( this, schema, "EMP_R", false, 14 );
         empRolledTable.addColumn( "EMPNO", f.intType, true );
         empRolledTable.addColumn( "DEPTNO", f.intType );
         empRolledTable.addColumn( "SLACKER", f.booleanType );
@@ -140,7 +141,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         // Register the "DEPT_R" table. Doesn't contain a rolled up column,
         // but is useful for testing join
-        MockTable deptSlackingTable = MockTable.create( this, schema, "DEPT_R", false, 4 );
+        MockEntity deptSlackingTable = MockEntity.create( this, schema, "DEPT_R", false, 4 );
         deptSlackingTable.addColumn( "DEPTNO", f.intType, true );
         deptSlackingTable.addColumn( "SLACKINGMIN", f.intType );
         registerTable( deptSlackingTable );
@@ -151,7 +152,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         // Register "EMP_R" table which contains a rolled up column in NEST schema.
         ImmutableList<String> tablePath = ImmutableList.of( schema.getCatalogName(), schema.name, nestedSchema.name, "EMP_R" );
-        final MockTable nestedEmpRolledTable = MockTable.create( this, tablePath, false, 14 );
+        final MockEntity nestedEmpRolledTable = MockEntity.create( this, tablePath, false, 14 );
         nestedEmpRolledTable.addColumn( "EMPNO", f.intType, true );
         nestedEmpRolledTable.addColumn( "DEPTNO", f.intType );
         nestedEmpRolledTable.addColumn( "SLACKER", f.booleanType );
@@ -169,7 +170,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-    protected void registerTable( final MockTable table ) {
+    protected void registerTable( final MockEntity table ) {
         table.onRegister( typeFactory );
         final WrapperTable wrapperTable = new WrapperTable( table );
         if ( table.stream ) {
@@ -206,7 +207,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-    private static List<AlgCollation> deduceMonotonicity( Prepare.PreparingTable table ) {
+    private static List<AlgCollation> deduceMonotonicity( PreparingEntity table ) {
         final List<AlgCollation> collationList = new ArrayList<>();
 
         // Deduce which fields the table is sorted on.
@@ -269,9 +270,9 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
     /**
      * Mock implementation of
-     * {@link Prepare.PreparingTable}.
+     * {@link PreparingEntity}.
      */
-    public static class MockTable extends Prepare.AbstractPreparingTable {
+    public static class MockEntity extends AbstractPreparingEntity {
 
         protected final MockCatalogReader catalogReader;
         protected final boolean stream;
@@ -289,7 +290,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         protected final Set<String> rolledUpColumns = new HashSet<>();
 
 
-        public MockTable(
+        public MockEntity(
                 MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount,
                 ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
             this( catalogReader, ImmutableList.of( catalogName, schemaName, name ), stream, rowCount, resolver, initializerFactory );
@@ -301,7 +302,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-        private MockTable( MockCatalogReader catalogReader, List<String> names, boolean stream, double rowCount, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
+        private MockEntity( MockCatalogReader catalogReader, List<String> names, boolean stream, double rowCount, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
             this.catalogReader = catalogReader;
             this.stream = stream;
             this.rowCount = rowCount;
@@ -314,7 +315,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         /**
          * Copy constructor.
          */
-        protected MockTable(
+        protected MockEntity(
                 MockCatalogReader catalogReader, boolean stream, double rowCount, List<Map.Entry<String, AlgDataType>> columnList, List<Integer> keyList, AlgDataType rowType, List<AlgCollation> collationList,
                 List<String> names, Set<String> monotonicColumnSet, StructKind kind, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
             this.catalogReader = catalogReader;
@@ -344,7 +345,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
             @Override
             public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-                return typeFactory.createStructType( MockTable.this.getRowType().getFieldList() );
+                return typeFactory.createStructType( MockEntity.this.getRowType().getFieldList() );
             }
 
 
@@ -376,8 +377,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             public <C> C unwrap( Class<C> aClass ) {
                 if ( aClass.isInstance( initializerFactory ) ) {
                     return aClass.cast( initializerFactory );
-                } else if ( aClass.isInstance( MockTable.this ) ) {
-                    return aClass.cast( MockTable.this );
+                } else if ( aClass.isInstance( MockEntity.this ) ) {
+                    return aClass.cast( MockEntity.this );
                 }
                 return super.unwrap( aClass );
             }
@@ -404,8 +405,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        protected AlgOptTable extend( final Table extendedTable ) {
-            return new MockTable( catalogReader, names, stream, rowCount, resolver, initializerFactory ) {
+        protected AlgOptEntity extend( final Table extendedTable ) {
+            return new MockEntity( catalogReader, names, stream, rowCount, resolver, initializerFactory ) {
                 @Override
                 public AlgDataType getRowType() {
                     return extendedTable.getRowType( catalogReader.typeFactory );
@@ -414,17 +415,17 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-        public static MockTable create( MockCatalogReader catalogReader, MockSchema schema, String name, boolean stream, double rowCount ) {
+        public static MockEntity create( MockCatalogReader catalogReader, MockSchema schema, String name, boolean stream, double rowCount ) {
             return create( catalogReader, schema, name, stream, rowCount, null );
         }
 
 
-        public static MockTable create( MockCatalogReader catalogReader, List<String> names, boolean stream, double rowCount ) {
-            return new MockTable( catalogReader, names, stream, rowCount, null, NullInitializerExpressionFactory.INSTANCE );
+        public static MockEntity create( MockCatalogReader catalogReader, List<String> names, boolean stream, double rowCount ) {
+            return new MockEntity( catalogReader, names, stream, rowCount, null, NullInitializerExpressionFactory.INSTANCE );
         }
 
 
-        public static MockTable create(
+        public static MockEntity create(
                 MockCatalogReader catalogReader,
                 MockSchema schema, String name, boolean stream, double rowCount,
                 ColumnResolver resolver ) {
@@ -433,8 +434,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-        public static MockTable create( MockCatalogReader catalogReader, MockSchema schema, String name, boolean stream, double rowCount, ColumnResolver resolver, InitializerExpressionFactory initializerExpressionFactory ) {
-            MockTable table = new MockTable( catalogReader, schema.getCatalogName(), schema.name, name, stream, rowCount, resolver, initializerExpressionFactory );
+        public static MockEntity create( MockCatalogReader catalogReader, MockSchema schema, String name, boolean stream, double rowCount, ColumnResolver resolver, InitializerExpressionFactory initializerExpressionFactory ) {
+            MockEntity table = new MockEntity( catalogReader, schema.getCatalogName(), schema.name, name, stream, rowCount, resolver, initializerExpressionFactory );
             schema.addTable( name );
             return table;
         }
@@ -472,7 +473,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         @Override
         public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-            return LogicalScan.create( context.getCluster(), this );
+            return LogicalRelScan.create( context.getCluster(), this );
         }
 
 
@@ -524,11 +525,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-        @Override
-        public CatalogTable getCatalogTable() {
-            return null;
-        }
-
 
         @Override
         public Monotonicity getMonotonicity( String columnName ) {
@@ -547,6 +543,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         @Override
         public Expression getExpression( Class<?> clazz ) {
             throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public CatalogEntity getCatalogEntity() {
+            return null;
         }
 
 
@@ -600,11 +602,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     /**
-     * Mock implementation of {@link Prepare.PreparingTable} with dynamic record type.
+     * Mock implementation of {@link PreparingEntity} with dynamic record type.
      */
-    public static class MockDynamicTable extends MockTable {
+    public static class MockDynamicEntity extends MockEntity {
 
-        public MockDynamicTable( MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount ) {
+        public MockDynamicEntity( MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount ) {
             super( catalogReader, catalogName, schemaName, name, stream, rowCount, null, NullInitializerExpressionFactory.INSTANCE );
         }
 
@@ -630,14 +632,14 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     /**
-     * Wrapper around a {@link MockTable}, giving it a {@link Table} interface. You can get the {@code MockTable} by calling {@link #unwrap(Class)}.
+     * Wrapper around a {@link MockEntity}, giving it a {@link Table} interface. You can get the {@code MockTable} by calling {@link #unwrap(Class)}.
      */
     private static class WrapperTable implements Table, Wrapper {
 
-        private final MockTable table;
+        private final MockEntity table;
 
 
-        WrapperTable( MockTable table ) {
+        WrapperTable( MockEntity table ) {
             this.table = table;
         }
 
@@ -721,11 +723,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     /**
-     * Wrapper around a {@link MockTable}, giving it a {@link StreamableTable} interface.
+     * Wrapper around a {@link MockEntity}, giving it a {@link StreamableTable} interface.
      */
     private static class StreamableWrapperTable extends WrapperTable implements StreamableTable {
 
-        StreamableWrapperTable( MockTable table ) {
+        StreamableWrapperTable( MockEntity table ) {
             super( table );
         }
 

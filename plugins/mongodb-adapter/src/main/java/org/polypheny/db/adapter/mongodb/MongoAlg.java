@@ -35,6 +35,12 @@ package org.polypheny.db.adapter.mongodb;
 
 
 import com.mongodb.client.gridfs.GridFSBucket;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.bson.BsonArray;
@@ -48,16 +54,9 @@ import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 
 /**
@@ -92,7 +91,7 @@ public interface MongoAlg extends AlgNode {
         public boolean onlyOne = false;
         public boolean isDocumentUpdate = false;
 
-        AlgOptTable table;
+        AlgOptEntity table;
         @Setter
         @Getter
         public boolean hasProject = false;

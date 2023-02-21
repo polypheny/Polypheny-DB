@@ -22,16 +22,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
-public class CatalogCollection implements CatalogObject {
+public class CatalogCollection extends CatalogEntity implements CatalogObject {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
+    @Getter
     public final long id;
     public final ImmutableList<Integer> placements;
     public final String name;
@@ -42,6 +45,7 @@ public class CatalogCollection implements CatalogObject {
 
 
     public CatalogCollection( long databaseId, long namespaceId, long id, String name, @NonNull Collection<Integer> placements, EntityType type, String physicalName ) {
+        super( id, EntityType.ENTITY, NamespaceType.DOCUMENT );
         this.id = id;
         this.databaseId = databaseId;
         this.namespaceId = namespaceId;

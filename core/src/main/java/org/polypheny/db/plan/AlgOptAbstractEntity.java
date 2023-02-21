@@ -43,25 +43,25 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Partial implementation of {@link AlgOptTable}.
+ * Partial implementation of {@link AlgOptEntity}.
  */
-public abstract class AlgOptAbstractTable implements AlgOptTable {
+public abstract class AlgOptAbstractEntity implements AlgOptEntity {
 
     protected final AlgOptSchema schema;
     protected final AlgDataType rowType;
     protected final String name;
 
 
-    protected AlgOptAbstractTable( AlgOptSchema schema, String name, AlgDataType rowType ) {
+    protected AlgOptAbstractEntity( AlgOptSchema schema, String name, AlgDataType rowType ) {
         this.schema = schema;
         this.name = name;
         this.rowType = rowType;
@@ -134,7 +134,7 @@ public abstract class AlgOptAbstractTable implements AlgOptTable {
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        return LogicalScan.create( context.getCluster(), this );
+        return LogicalRelScan.create( context.getCluster(), this );
     }
 
 
@@ -145,14 +145,14 @@ public abstract class AlgOptAbstractTable implements AlgOptTable {
 
 
     @Override
-    public AlgOptTable extend( List<AlgDataTypeField> extendedFields ) {
+    public AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
     public List<ColumnStrategy> getColumnStrategies() {
-        return AlgOptTableImpl.columnStrategies( this );
+        return AlgOptEntityImpl.columnStrategies( this );
     }
 
 }

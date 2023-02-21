@@ -25,12 +25,12 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
@@ -51,11 +51,11 @@ public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptEntity> entities, CatalogReader catalogReader ) {
         assert !entities.isEmpty();
         AlgTraitSet out = getTraitSet().replace( ModelTrait.RELATIONAL );
-        LogicalScan nodes = new LogicalScan( getCluster(), out, entities.get( 0 ) );
-        LogicalScan nodesProperty = new LogicalScan( getCluster(), out, entities.get( 1 ) );
+        LogicalRelScan nodes = new LogicalRelScan( getCluster(), out, entities.get( 0 ) );
+        LogicalRelScan nodesProperty = new LogicalRelScan( getCluster(), out, entities.get( 1 ) );
 
         RexBuilder builder = getCluster().getRexBuilder();
 
@@ -70,8 +70,8 @@ public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
             return List.of( nodeJoin );
         }
 
-        LogicalScan edges = new LogicalScan( getCluster(), out, entities.get( 2 ) );
-        LogicalScan edgesProperty = new LogicalScan( getCluster(), out, entities.get( 3 ) );
+        LogicalRelScan edges = new LogicalRelScan( getCluster(), out, entities.get( 2 ) );
+        LogicalRelScan edgesProperty = new LogicalRelScan( getCluster(), out, entities.get( 3 ) );
 
         RexNode edgeCondition = builder.makeCall(
                 OperatorRegistry.get( OperatorName.EQUALS ),

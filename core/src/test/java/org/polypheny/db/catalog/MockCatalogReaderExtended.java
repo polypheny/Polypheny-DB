@@ -57,7 +57,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
         final List<CompoundNameColumn> extendedColumns = new ArrayList<>( columnsExtended );
         extendedColumns.add( new CompoundNameColumn( "F2", "C2", f.varchar20Type ) );
         final CompoundNameColumnResolver structExtendedTableResolver = new CompoundNameColumnResolver( extendedColumns, "F0" );
-        final MockTable structExtendedTypeTable = MockTable.create(
+        final MockEntity structExtendedTypeTable = MockEntity.create(
                 this,
                 structTypeSchema,
                 "T_EXTEND",

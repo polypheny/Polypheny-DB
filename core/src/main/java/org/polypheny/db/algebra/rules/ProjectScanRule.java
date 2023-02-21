@@ -41,10 +41,10 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -110,13 +110,13 @@ public abstract class ProjectScanRule extends AlgOptRule {
 
     protected static boolean test( Scan scan ) {
         // We can only push projects into a ProjectableFilterableTable.
-        final AlgOptTable table = scan.getTable();
+        final AlgOptEntity table = scan.getTable();
         return table.unwrap( ProjectableFilterableTable.class ) != null;
     }
 
 
     protected void apply( AlgOptRuleCall call, Project project, Scan scan ) {
-        final AlgOptTable table = scan.getTable();
+        final AlgOptEntity table = scan.getTable();
         assert table.unwrap( ProjectableFilterableTable.class ) != null;
 
         final TargetMapping mapping = project.getMapping();

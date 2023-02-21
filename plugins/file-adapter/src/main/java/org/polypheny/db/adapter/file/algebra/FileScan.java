@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTrait;
 
@@ -38,7 +38,7 @@ public class FileScan extends Scan implements FileAlg {
     private final FileTranslatableTable fileTable;
 
 
-    public FileScan( AlgOptCluster cluster, AlgOptTable table, FileTranslatableTable fileTable ) {
+    public FileScan( AlgOptCluster cluster, AlgOptEntity table, FileTranslatableTable fileTable ) {
         //convention was: EnumerableConvention.INSTANCE
         super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ).replace( ModelTrait.RELATIONAL ), table );
         this.fileTable = fileTable;

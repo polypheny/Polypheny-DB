@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.PolyType;
 
@@ -35,20 +35,20 @@ import org.polypheny.db.type.PolyType;
 public abstract class DocumentScan extends AbstractAlgNode implements DocumentAlg {
 
     @Getter
-    private final AlgOptTable collection;
+    private final AlgOptEntity collection;
 
 
     /**
      * Creates a {@link DocumentScan}.
      * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which scans the content of a collection.
      */
-    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable collection ) {
+    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity collection ) {
         super( cluster, traitSet );
         this.collection = collection;
 
         AlgDataType docType = cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT );
         // todo dl: change after RowType refactor
-        if ( this.collection.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
+        if ( this.collection.getCatalogEntity().namespaceType == NamespaceType.DOCUMENT ) {
             this.rowType = new DocumentType();
         } else {
             List<AlgDataTypeField> list = collection.getRowType().getFieldList().stream()
@@ -61,7 +61,7 @@ public abstract class DocumentScan extends AbstractAlgNode implements DocumentAl
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + collection.getTable().getTableId() + "$";
+        return "$" + getClass().getSimpleName() + "$" + collection.getCatalogEntity().id + "$";
     }
 
 

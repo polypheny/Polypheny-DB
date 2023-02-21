@@ -28,8 +28,8 @@ import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 
@@ -91,14 +91,10 @@ public abstract class MaterializedViewManager {
         @Override
         public AlgNode visit( LogicalModify modify ) {
             if ( modify.getOperation() != Operation.MERGE ) {
-                if ( (modify.getTable().getTable() instanceof LogicalTable) ) {
-                    List<String> qualifiedName = modify.getTable().getQualifiedName();
-                    if ( qualifiedName.size() < 2 ) {
-                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalSchemaName() );
-                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalTableName() );
-                    } else {
-                        names.addAll( qualifiedName );
-                    }
+                if ( (modify.getTable().getCatalogEntity() != null) ) {
+                    CatalogTable table = modify.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+                    names.add( table.getNamespaceName() );
+                    names.add( table.name );
                 }
             }
             return super.visit( modify );

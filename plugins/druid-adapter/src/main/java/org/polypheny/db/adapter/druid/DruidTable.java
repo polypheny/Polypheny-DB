@@ -38,13 +38,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -55,8 +60,8 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.schema.Table;
@@ -66,8 +71,6 @@ import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSelectKeyword;
 import org.polypheny.db.type.PolyType;
-
-import java.util.*;
 
 
 /**
@@ -238,11 +241,11 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
         // ViewScan needed for Views
-        final LogicalScan scan = LogicalScan.create( cluster, algOptTable );
-        return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ).replace( traitSet.getTrait( ModelTraitDef.INSTANCE ) ), algOptTable, this, ImmutableList.of( scan ) );
+        final LogicalRelScan scan = LogicalRelScan.create( cluster, algOptEntity );
+        return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ).replace( traitSet.getTrait( ModelTraitDef.INSTANCE ) ), algOptEntity, this, ImmutableList.of( scan ) );
     }
 
 

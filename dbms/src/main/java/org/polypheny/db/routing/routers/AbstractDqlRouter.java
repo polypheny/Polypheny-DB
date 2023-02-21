@@ -39,13 +39,14 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
@@ -211,20 +212,20 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), null ) );
         }
 
-        if ( node instanceof LogicalScan && node.getTable() != null ) {
-            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
+        if ( node instanceof LogicalRelScan && node.getTable() != null ) {
+            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getTable();
 
-            if ( !(table.getTable() instanceof LogicalTable) ) {
+            if ( table == null ) {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
 
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
 
-            if ( logicalTable.getTableId() == -1 ) {
+            if ( table.getCatalogEntity() == null || table.getCatalogEntity().namespaceType == NamespaceType.GRAPH ) {
                 return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
             }
 
-            CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
+            CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
 
             // Check if table is even horizontal partitioned
             if ( catalogTable.partitionProperty.isPartitioned ) {

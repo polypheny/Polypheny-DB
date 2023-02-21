@@ -89,9 +89,9 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -985,7 +985,7 @@ public class MongoRules {
         protected MongoEntityModify(
                 AlgOptCluster cluster,
                 AlgTraitSet traitSet,
-                AlgOptTable table,
+                AlgOptEntity table,
                 CatalogReader catalogReader,
                 AlgNode input,
                 Operation operation,

@@ -46,9 +46,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptNode;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -259,7 +259,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      *
      * @return If this relational expression represents an access to a table, returns that table, otherwise returns null
      */
-    AlgOptTable getTable();
+    AlgOptEntity getTable();
 
     /**
      * Returns the name of this relational expression's class, sans package name, for use in explain. For example, for a

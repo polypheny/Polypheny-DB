@@ -43,9 +43,9 @@ import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -181,7 +181,7 @@ public class PlannerTest extends SqlLanguageDependent {
      */
     private static class MockJdbcScan extends Scan implements JdbcAlg {
 
-        MockJdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcConvention jdbcConvention ) {
+        MockJdbcScan( AlgOptCluster cluster, AlgOptEntity table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         }
 

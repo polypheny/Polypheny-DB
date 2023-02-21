@@ -68,7 +68,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
@@ -79,10 +79,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -162,14 +162,14 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableScanRule( AlgBuilderFactory algBuilderFactory ) {
-            super( operand( LogicalScan.class, none() ), algBuilderFactory, null );
+            super( operand( LogicalRelScan.class, none() ), algBuilderFactory, null );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalScan scan = call.alg( 0 );
-            final AlgOptTable table = scan.getTable();
+            final LogicalRelScan scan = call.alg( 0 );
+            final AlgOptEntity table = scan.getTable();
             if ( BindableScan.canHandle( table ) ) {
                 call.transformTo( BindableScan.create( scan.getCluster(), table ) );
             }
@@ -192,7 +192,7 @@ public class Bindables {
          *
          * Use {@link #create} unless you know what you are doing.
          */
-        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
+        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
             super( cluster, traitSet, table );
             this.filters = Objects.requireNonNull( filters );
             this.projects = Objects.requireNonNull( projects );
@@ -203,16 +203,16 @@ public class Bindables {
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
-            return create( cluster, algOptTable, ImmutableList.of(), identity( algOptTable ) );
+        public static BindableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity ) {
+            return create( cluster, algOptEntity, ImmutableList.of(), identity( algOptEntity ) );
         }
 
 
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, AlgOptTable algOptTable, List<RexNode> filters, List<Integer> projects ) {
-            final Table table = algOptTable.unwrap( Table.class );
+        public static BindableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity, List<RexNode> filters, List<Integer> projects ) {
+            final Table table = algOptEntity.unwrap( Table.class );
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
                             .replace( table.getSchemaType().getModelTrait() )
@@ -222,7 +222,7 @@ public class Bindables {
                                 }
                                 return ImmutableList.of();
                             } );
-            return new BindableScan( cluster, traitSet, algOptTable, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
+            return new BindableScan( cluster, traitSet, algOptEntity, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
         }
 
 
@@ -274,7 +274,7 @@ public class Bindables {
         }
 
 
-        public static boolean canHandle( AlgOptTable table ) {
+        public static boolean canHandle( AlgOptEntity table ) {
             return table.unwrap( ScannableTable.class ) != null
                     || table.unwrap( FilterableTable.class ) != null
                     || table.unwrap( ProjectableFilterableTable.class ) != null;

@@ -49,7 +49,7 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -130,7 +130,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
     /**
      * Helper method to determine a {@link Scan}'s distribution.
      */
-    public static AlgDistribution table( AlgOptTable table ) {
+    public static AlgDistribution table( AlgOptEntity table ) {
         return table.getDistribution();
     }
 

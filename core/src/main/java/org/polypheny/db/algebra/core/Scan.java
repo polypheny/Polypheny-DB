@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -65,10 +65,10 @@ public abstract class Scan extends AbstractAlgNode {
     /**
      * The table definition.
      */
-    protected final AlgOptTable table;
+    protected final AlgOptEntity table;
 
 
-    protected Scan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
+    protected Scan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table ) {
         super( cluster, traitSet );
         this.table = table;
         if ( table.getRelOptSchema() != null ) {
@@ -92,7 +92,7 @@ public abstract class Scan extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptTable getTable() {
+    public AlgOptEntity getTable() {
         return table;
     }
 
@@ -115,7 +115,7 @@ public abstract class Scan extends AbstractAlgNode {
     /**
      * Returns an identity projection for the given table.
      */
-    public static ImmutableIntList identity( AlgOptTable table ) {
+    public static ImmutableIntList identity( AlgOptEntity table ) {
         return ImmutableIntList.identity( table.getRowType().getFieldCount() );
     }
 

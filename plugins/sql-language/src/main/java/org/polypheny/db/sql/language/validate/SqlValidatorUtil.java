@@ -45,7 +45,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
@@ -81,7 +81,7 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Converts a {@link SqlValidatorScope} into a {@link AlgOptTable}. This is only possible if the scope represents an identifier, such as "sales.emp".
+     * Converts a {@link SqlValidatorScope} into a {@link AlgOptEntity}. This is only possible if the scope represents an identifier, such as "sales.emp".
      * Otherwise, returns null.
      *
      * @param namespace Namespace
@@ -89,7 +89,7 @@ public class SqlValidatorUtil {
      * @param datasetName Name of sample dataset to substitute, or null to use the regular table
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      */
-    public static AlgOptTable getAlgOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
+    public static AlgOptEntity getAlgOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
         if ( namespace.isWrapperFor( TableNamespace.class ) ) {
             final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
             return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
@@ -111,9 +111,9 @@ public class SqlValidatorUtil {
     }
 
 
-    private static AlgOptTable getAlgOptTable( TableNamespace tableNamespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset, List<AlgDataTypeField> extendedFields ) {
+    private static AlgOptEntity getAlgOptTable( TableNamespace tableNamespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset, List<AlgDataTypeField> extendedFields ) {
         final List<String> names = tableNamespace.getTable().getQualifiedName();
-        AlgOptTable table;
+        AlgOptEntity table;
         if ( datasetName != null && catalogReader instanceof AlgOptSchemaWithSampling ) {
             final AlgOptSchemaWithSampling reader = (AlgOptSchemaWithSampling) catalogReader;
             table = reader.getTableForMember( names, datasetName, usedDataset );
@@ -267,7 +267,7 @@ public class SqlValidatorUtil {
     }
 
 
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptTable table ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptEntity table ) {
         return getTargetField( rowType, typeFactory, id, catalogReader, table, false );
     }
 
@@ -280,7 +280,7 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptTable table, boolean isDocument ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptEntity table, boolean isDocument ) {
         final Table t = table == null ? null : table.unwrap( Table.class );
 
         if ( !(t instanceof CustomColumnResolvingTable) ) {

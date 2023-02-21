@@ -45,14 +45,14 @@ import java.util.List;
 public interface AlgOptSchemaWithSampling extends AlgOptSchema {
 
     /**
-     * Retrieves a {@link AlgOptTable} based upon a member access, using a sample dataset if it exists.
+     * Retrieves a {@link AlgOptEntity} based upon a member access, using a sample dataset if it exists.
      *
      * @param names Compound name of table
      * @param datasetName Name of sample dataset to substitute, if it exists; null to not look for a sample
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      * @return Table, or null if not found
      */
-    AlgOptTable getTableForMember( List<String> names, String datasetName, boolean[] usedDataset );
+    AlgOptEntity getTableForMember( List<String> names, String datasetName, boolean[] usedDataset );
 
 }
 

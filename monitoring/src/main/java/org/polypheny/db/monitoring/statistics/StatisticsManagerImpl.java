@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -72,7 +72,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
@@ -538,7 +538,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
         AlgNode queryNode;
-        LogicalScan tableScan = getLogicalScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
+        LogicalRelScan tableScan = getLogicalScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
         switch ( nodeType ) {
             case MIN:
             case MAX:
@@ -563,9 +563,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Gets a tableScan for a given table.
      */
-    private LogicalScan getLogicalScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
-        AlgOptTable relOptTable = reader.getTable( Arrays.asList( schema, table ) );
-        return LogicalScan.create( cluster, relOptTable );
+    private LogicalRelScan getLogicalScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
+        AlgOptEntity relOptTable = reader.getTable( Arrays.asList( schema, table ) );
+        return LogicalRelScan.create( cluster, relOptTable );
     }
 
 

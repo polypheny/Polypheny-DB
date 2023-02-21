@@ -88,7 +88,7 @@ import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
@@ -4059,7 +4059,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
         }
         final Set<Integer> assignedFields = new HashSet<>();
-        final AlgOptTable algOptTable = table instanceof AlgOptTable ? ((AlgOptTable) table) : null;
+        final AlgOptEntity algOptEntity = table instanceof AlgOptEntity ? ((AlgOptEntity) table) : null;
         for ( Node node : targetColumnList ) {
             SqlIdentifier id = (SqlIdentifier) node;
             AlgDataTypeField targetField =
@@ -4068,7 +4068,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             typeFactory,
                             id,
                             catalogReader,
-                            algOptTable,
+                            algOptEntity,
                             allowDynamic );
 
             if ( targetField == null ) {
@@ -4090,16 +4090,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
         validateNamespace( targetNamespace, unknownType );
-        final AlgOptTable algOptTable =
+        final AlgOptEntity algOptEntity =
                 SqlValidatorUtil.getAlgOptTable(
                         targetNamespace,
                         catalogReader.unwrap( Prepare.CatalogReader.class ),
                         null,
                         null );
         final ValidatorTable table =
-                algOptTable == null
+                algOptEntity == null
                         ? targetNamespace.getTable()
-                        : algOptTable.unwrap( ValidatorTable.class );
+                        : algOptEntity.unwrap( ValidatorTable.class );
 
         boolean allowDynamic = false;
         if ( insert.getSchemaType() == NamespaceType.DOCUMENT ) {
@@ -4164,7 +4164,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         throw new UnsupportedOperationException();
                     }
                 };
-        final List<ColumnStrategy> strategies = table.unwrap( AlgOptTable.class ).getColumnStrategies();
+        final List<ColumnStrategy> strategies = table.unwrap( AlgOptEntity.class ).getColumnStrategies();
         for ( final AlgDataTypeField field : table.getRowType().getFieldList() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {
@@ -4374,16 +4374,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final AlgOptTable algOptTable =
+        final AlgOptEntity algOptEntity =
                 SqlValidatorUtil.getAlgOptTable(
                         targetNamespace,
                         catalogReader.unwrap( Prepare.CatalogReader.class ),
                         null,
                         null );
         final ValidatorTable table =
-                algOptTable == null
+                algOptEntity == null
                         ? targetNamespace.getTable()
-                        : algOptTable.unwrap( ValidatorTable.class );
+                        : algOptEntity.unwrap( ValidatorTable.class );
 
         final AlgDataType targetRowType =
                 createTargetRowType(

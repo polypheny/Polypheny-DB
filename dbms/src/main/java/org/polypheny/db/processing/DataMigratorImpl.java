@@ -59,7 +59,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
@@ -322,7 +322,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
@@ -364,7 +364,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
@@ -408,7 +408,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(

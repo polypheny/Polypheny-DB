@@ -44,7 +44,7 @@ public class MockCatalogReaderDocument extends MockCatalogReaderSimple {
         registerSchema( salesSchema );
 
         // Register "EMP" table.
-        final MockTable empTable = MockTable.create( this, salesSchema, "secrets", false, 14, null );
+        final MockEntity empTable = MockEntity.create( this, salesSchema, "secrets", false, 14, null );
 
         empTable.addColumn( "d", typeFactory.createPolyType( PolyType.DOCUMENT ) );
         registerTable( empTable );

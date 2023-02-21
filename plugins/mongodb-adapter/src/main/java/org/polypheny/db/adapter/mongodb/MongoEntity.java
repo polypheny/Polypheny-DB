@@ -86,8 +86,8 @@ import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -176,9 +176,9 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), algOptTable, this, null );
+        return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), algOptEntity, this, null );
     }
 
 
@@ -327,7 +327,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
     @Override
     public Modify toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptTable table,
+            AlgOptEntity table,
             CatalogReader catalogReader,
             AlgNode child,
             Operation operation,
@@ -351,7 +351,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
     @Override
     public DocumentModify toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptTable table,
+            AlgOptEntity table,
             CatalogReader catalogReader,
             AlgNode child,
             Operation operation,
