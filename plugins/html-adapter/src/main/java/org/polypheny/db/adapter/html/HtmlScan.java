@@ -63,11 +63,11 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 class HtmlScan extends Scan implements EnumerableAlg {
 
-    private final HtmlTable webTable;
+    private final HtmlEntity webTable;
     private final int[] fields;
 
 
-    protected HtmlScan( AlgOptCluster cluster, AlgOptEntity table, HtmlTable webTable, int[] fields ) {
+    protected HtmlScan( AlgOptCluster cluster, AlgOptEntity table, HtmlEntity webTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.webTable = webTable;
         this.fields = fields;
@@ -104,7 +104,7 @@ class HtmlScan extends Scan implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
 
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( HtmlTable.class ), "project", Expressions.constant( fields ) ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( HtmlEntity.class ), "project", Expressions.constant( fields ) ) ) );
     }
 
 }

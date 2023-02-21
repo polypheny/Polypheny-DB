@@ -63,12 +63,12 @@ import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoCost;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.StreamableTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.ScannableEntity;
+import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -96,13 +96,13 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
      * Creates an EnumerableScan.
      */
     public static EnumerableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity ) {
-        final Table table = algOptEntity.unwrap( Table.class );
-        Class elementType = EnumerableScan.deduceElementType( table );
+        final Entity entity = algOptEntity.unwrap( Entity.class );
+        Class elementType = EnumerableScan.deduceElementType( entity );
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
                         .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
-                            if ( table != null ) {
-                                return table.getStatistic().getCollations();
+                            if ( entity != null ) {
+                                return entity.getStatistic().getCollations();
                             }
                             return ImmutableList.of();
                         } );
@@ -127,25 +127,25 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
     /**
      * Returns whether EnumerableScan can generate code to handle a particular variant of the Table SPI.
      */
-    public static boolean canHandle( Table table ) {
+    public static boolean canHandle( Entity entity ) {
         // FilterableTable and ProjectableFilterableTable cannot be handled in/ enumerable convention because they might reject filters and those filters would need to be handled dynamically.
-        return table instanceof QueryableTable || table instanceof ScannableTable;
+        return entity instanceof QueryableEntity || entity instanceof ScannableEntity;
     }
 
 
-    public static Class deduceElementType( Table table ) {
-        if ( table instanceof QueryableTable ) {
-            final QueryableTable queryableTable = (QueryableTable) table;
+    public static Class deduceElementType( Entity entity ) {
+        if ( entity instanceof QueryableEntity ) {
+            final QueryableEntity queryableTable = (QueryableEntity) entity;
             final Type type = queryableTable.getElementType();
             if ( type instanceof Class ) {
                 return (Class) type;
             } else {
                 return Object[].class;
             }
-        } else if ( table instanceof ScannableTable
-                || table instanceof FilterableTable
-                || table instanceof ProjectableFilterableTable
-                || table instanceof StreamableTable ) {
+        } else if ( entity instanceof ScannableEntity
+                || entity instanceof FilterableEntity
+                || entity instanceof ProjectableFilterableEntity
+                || entity instanceof StreamableEntity ) {
             return Object[].class;
         } else {
             return Object.class;
@@ -154,7 +154,7 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
 
 
     public static JavaRowFormat deduceFormat( AlgOptEntity table ) {
-        final Class elementType = deduceElementType( table.unwrap( Table.class ) );
+        final Class elementType = deduceElementType( table.unwrap( Entity.class ) );
         return elementType == Object[].class
                 ? JavaRowFormat.ARRAY
                 : JavaRowFormat.CUSTOM;
@@ -190,9 +190,9 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
         if ( physType.getFormat() == JavaRowFormat.SCALAR
                 && Object[].class.isAssignableFrom( elementType )
                 && getRowType().getFieldCount() == 1
-                && (table.unwrap( ScannableTable.class ) != null
-                || table.unwrap( FilterableTable.class ) != null
-                || table.unwrap( ProjectableFilterableTable.class ) != null) ) {
+                && (table.unwrap( ScannableEntity.class ) != null
+                || table.unwrap( FilterableEntity.class ) != null
+                || table.unwrap( ProjectableFilterableEntity.class ) != null) ) {
             return Expressions.call( BuiltInMethod.SLICE0.method, expression );
         }
         JavaRowFormat oldFormat = format();

@@ -35,7 +35,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
-import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -48,7 +48,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             AlgNode node,
             CatalogTable catalogTable,
             Statement statement,
-            LogicalTable logicalTable,
+            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
@@ -81,7 +81,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             AlgNode node,
             CatalogTable catalogTable,
             Statement statement,
-            LogicalTable logicalTable,
+            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {

@@ -103,7 +103,7 @@ public class AlgWriterTest extends SqlLanguageDependent {
     public void testWriter() {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
                     LogicalRelScan scan =
                             LogicalRelScan.create(
                                     cluster,
@@ -138,7 +138,7 @@ public class AlgWriterTest extends SqlLanguageDependent {
     public void testReader() {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
                     final AlgJsonReader reader = new AlgJsonReader( cluster, algOptSchema, rootSchema );
                     AlgNode node;
                     try {

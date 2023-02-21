@@ -125,9 +125,9 @@ from "scott".emp join "scott".dept using (deptno);
 EnumerableAggregate(group=[{0, 2}])
   EnumerableJoin(condition=[=($0, $2)], joinType=[inner])
     EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-      EnumerableScan(table=[[scott, DEPT]])
+      EnumerableScan(entity=[[scott, DEPT]])
     EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], DEPTNO=[$t7])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 select distinct dept.deptno
@@ -145,9 +145,9 @@ from "scott".emp join "scott".dept using (deptno);
 EnumerableAggregate(group=[{0}])
   EnumerableJoin(condition=[=($0, $2)], joinType=[inner])
     EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-      EnumerableScan(table=[[scott, DEPT]])
+      EnumerableScan(entity=[[scott, DEPT]])
     EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], DEPTNO=[$t7])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-676] AssertionError in GROUPING SETS query
@@ -199,13 +199,13 @@ EnumerableCalc(expr#0..1=[{inputs}], DEPTNO=[$t1], ENAME=[$t0])
   EnumerableAggregate(group=[{1, 3}])
     EnumerableJoin(condition=[=($2, $4)], joinType=[inner])
       EnumerableCalc(expr#0..7=[{inputs}], expr#8=[10], expr#9=[+($t7, $t8)], proj#0..1=[{exprs}], $f8=[$t9])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
       EnumerableCalc(expr#0..3=[{inputs}], expr#4=[+($t1, $t3)], expr#5=[CAST($t4):INTEGER], DEPTNO=[$t1], $f16=[$t5])
         EnumerableJoin(condition=[=($1, $3)], joinType=[inner])
           EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], DEPTNO=[$t7])
-            EnumerableScan(table=[[scott, EMP]])
+            EnumerableScan(entity=[[scott, EMP]])
           EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], DEPTNO=[$t7])
-            EnumerableScan(table=[[scott, EMP]])
+            EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 
@@ -233,12 +233,12 @@ where e.deptno + 10 = d.deptno * 2;
 EnumerableCalc(expr#0..4=[{inputs}], DEPTNO=[$t3], DEPTNO0=[$t0])
   EnumerableJoin(condition=[=($1, $4)], joinType=[inner])
     EnumerableCalc(expr#0..2=[{inputs}], expr#3=[2], expr#4=[*($t0, $t3)], DEPTNO=[$t0], $f1=[$t4])
-      EnumerableScan(table=[[scott, DEPT]])
+      EnumerableScan(entity=[[scott, DEPT]])
     EnumerableCalc(expr#0..7=[{inputs}], expr#8=[10], expr#9=[+($t7, $t8)], EMPNO=[$t0], DEPTNO=[$t7], $f2=[$t9])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
-### [CALCITE-801] NullPointerException using USING on table alias with column aliases
+### [CALCITE-801] NullPointerException using USING on entity alias with column aliases
 select *
 from (values (100, 'Bill', 1),
              (200, 'Eric', 1),
@@ -283,8 +283,8 @@ EnumerableCalc(expr#0..10=[{inputs}], expr#11=[COALESCE($t7, $t8)], DEPTNO=[$t11
   EnumerableLimit(fetch=[10])
     EnumerableJoin(condition=[=($7, $8)], joinType=[left])
       EnumerableLimit(fetch=[10])
-        EnumerableScan(table=[[scott, EMP]])
-      EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, DEPT]])
 !plan
 
 # End join.iq

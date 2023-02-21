@@ -57,12 +57,12 @@ import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
-import org.polypheny.db.schema.StreamableTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.Util;
@@ -246,7 +246,7 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that pushes a {@link Delta} into a {@link Scan} of a {@link StreamableTable}.
+     * Planner rule that pushes a {@link Delta} into a {@link Scan} of a {@link StreamableEntity}.
      *
      * Very likely, the stream was only represented as a table for uniformity with the other relations in the system. The Delta disappears and the stream can be implemented directly.
      */
@@ -270,14 +270,14 @@ public class StreamRules {
             final Scan scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
             final AlgOptEntity algOptEntity = scan.getTable();
-            final StreamableTable streamableTable = algOptEntity.unwrap( StreamableTable.class );
+            final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
             if ( streamableTable != null ) {
-                final Table table1 = streamableTable.stream();
-                final CatalogTable catalogTable = Catalog.getInstance().getTable( table1.getTableId() );
+                final Entity entity1 = streamableTable.stream();
+                final CatalogTable catalogTable = Catalog.getInstance().getTable( entity1.getId() );
                 final AlgOptEntity algOptEntity2 =
                         AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
                                 algOptEntity.getRowType(),
-                                table1,
+                                entity1,
                                 catalogTable,
                                 ImmutableList.<String>builder()
                                         .addAll( algOptEntity.getQualifiedName() )
@@ -291,7 +291,7 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that converts {@link Delta} over a {@link Scan} of a table other than {@link StreamableTable} to an empty {@link Values}.
+     * Planner rule that converts {@link Delta} over a {@link Scan} of a table other than {@link StreamableEntity} to an empty {@link Values}.
      */
     public static class DeltaScanToEmptyRule extends AlgOptRule {
 
@@ -312,7 +312,7 @@ public class StreamRules {
             final Delta delta = call.alg( 0 );
             final Scan scan = call.alg( 1 );
             final AlgOptEntity algOptEntity = scan.getTable();
-            final StreamableTable streamableTable = algOptEntity.unwrap( StreamableTable.class );
+            final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
             final AlgBuilder builder = call.builder();
             if ( streamableTable == null ) {
                 call.transformTo( builder.values( delta.getRowType() ).build() );

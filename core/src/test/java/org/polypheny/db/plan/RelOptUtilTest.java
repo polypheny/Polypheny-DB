@@ -66,7 +66,7 @@ public class RelOptUtilTest {
     private static Frameworks.ConfigBuilder config() {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( false )
-                .add( "scott", new ReflectiveSchema( new ScottSchema() ), NamespaceType.RELATIONAL );
+                .add( "scott", new ReflectiveSchema( new ScottSchema(), -1 ), NamespaceType.RELATIONAL );
 
         return Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )

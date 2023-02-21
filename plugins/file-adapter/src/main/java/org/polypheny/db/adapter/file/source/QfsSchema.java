@@ -34,7 +34,7 @@ import org.polypheny.db.adapter.file.Condition;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
-import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -46,27 +46,28 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
-public class QfsSchema extends AbstractSchema implements FileSchema {
+public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
 
     @Getter
     private final String schemaName;
-    private final Map<String, FileTranslatableTable> tableMap = new HashMap<>();
+    private final Map<String, FileTranslatableEntity> tableMap = new HashMap<>();
     @Getter
     private final Qfs source;
     @Getter
     private final FileConvention convention;
 
 
-    public QfsSchema( SchemaPlus parentSchema, String schemaName, Qfs source ) {
-        super();
+    public QfsSchema( long id, SchemaPlus parentSchema, String schemaName, Qfs source ) {
+        super( id );
         this.schemaName = schemaName;
         this.source = source;
         final Expression expression = Schemas.subSchemaExpression( parentSchema, schemaName, QfsSchema.class );
@@ -87,12 +88,12 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         return new HashMap<>( tableMap );
     }
 
 
-    public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Entity createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         ArrayList<Long> columnIds = new ArrayList<>();
@@ -131,7 +132,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         } else {
             pkIds = new ArrayList<>();
         }
-        FileTranslatableTable table = new FileTranslatableTable(
+        FileTranslatableEntity table = new FileTranslatableEntity(
                 this,
                 catalogTable.name + "_" + partitionPlacement.partitionId,
                 catalogTable.id,

@@ -33,25 +33,24 @@
 
 package org.polypheny.db.adapter.csv;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.util.Source;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
  * Table based on a CSV file.
  * <p>
- * It implements the {@link ScannableTable} interface, so Polypheny-DB gets data by calling
+ * It implements the {@link ScannableEntity} interface, so Polypheny-DB gets data by calling
  * the {@link #scan(DataContext)} method.
  */
-public class CsvScannableTable extends CsvTable implements ScannableTable {
+public class CsvScannableTable extends CsvTable implements ScannableEntity {
 
     /**
      * Creates a CsvScannableTable.

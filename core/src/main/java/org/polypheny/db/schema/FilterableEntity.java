@@ -35,37 +35,27 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.util.Pair;
+import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Extension to {@link Table} that specifies a custom way to resolve column names.
+ * Table that can be scanned, optionally applying supplied filter expressions, without creating an intermediate expression.
  *
- * It is optional for a Table to implement this interface. If Table does not implement this interface, column resolving will
- * be performed in the default way.
- *
- * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.
+ * @see ScannableEntity
  */
-public interface CustomColumnResolvingTable extends Table {
+public interface FilterableEntity extends Entity {
 
     /**
-     * Resolve a column based on the name components. One or more the input name components can be resolved to one field in
-     * the table row type, along with a remainder list of name components which have not been resolved within this call, and
-     * which in turn can be potentially resolved as sub-field names. In the meantime, this method can return multiple matches,
-     * which is a list of pairs containing the resolved field and the remaining name components.
+     * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
      *
-     * @param rowType the table row type
-     * @param typeFactory the type factory
-     * @param names the name components to be resolved
-     * @return a list of pairs containing the resolved field and the remaining name components.
+     * The list of filters is mutable.
+     * If the table can implement a particular filter, it should remove that filter from the list.
+     * If it cannot implement a filter, it should leave it in the list.
+     * Any filters remaining will be implemented by the consuming Polypheny-DB operator.
      */
-    List<Pair<AlgDataTypeField, List<String>>> resolveColumn(
-            AlgDataType rowType,
-            AlgDataTypeFactory typeFactory,
-            List<String> names );
+    Enumerable<Object[]> scan( DataContext root, List<RexNode> filters );
 
 }
 

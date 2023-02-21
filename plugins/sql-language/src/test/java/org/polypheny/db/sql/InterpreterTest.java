@@ -43,11 +43,11 @@ import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.util.PlannerImplMock;
-import org.polypheny.db.test.ScannableTableTest.BeatlesTable;
-import org.polypheny.db.test.ScannableTableTest.SimpleTable;
+import org.polypheny.db.test.ScannableEntityTest.BeatlesEntity;
+import org.polypheny.db.test.ScannableEntityTest.SimpleEntity;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -153,7 +153,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
     @Before
     public void setUp() {
-        rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+        rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
@@ -254,11 +254,11 @@ public class InterpreterTest extends SqlLanguageDependent {
 
 
     /**
-     * Tests executing a plan on a {@link ScannableTable} using an interpreter.
+     * Tests executing a plan on a {@link ScannableEntity} using an interpreter.
      */
     @Test
     public void testInterpretScannableTable() throws Exception {
-        rootSchema.add( "beatles", new BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesEntity() );
         Node parse = planner.parse( "select * from \"beatles\" order by \"i\"" );
 
         Node validate = planner.validate( parse );
@@ -271,7 +271,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
     @Test
     public void testAggregateCount() throws Exception {
-        rootSchema.add( "beatles", new BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesEntity() );
         Node parse = planner.parse( "select  count(*) from \"beatles\"" );
 
         Node validate = planner.validate( parse );
@@ -284,7 +284,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
     @Test
     public void testAggregateMax() throws Exception {
-        rootSchema.add( "beatles", new BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesEntity() );
         Node parse = planner.parse( "select  max(\"i\") from \"beatles\"" );
 
         Node validate = planner.validate( parse );
@@ -297,7 +297,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
     @Test
     public void testAggregateMin() throws Exception {
-        rootSchema.add( "beatles", new BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesEntity() );
         Node parse = planner.parse( "select  min(\"i\") from \"beatles\"" );
 
         Node validate = planner.validate( parse );
@@ -310,7 +310,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
     @Test
     public void testAggregateGroup() throws Exception {
-        rootSchema.add( "beatles", new BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesEntity() );
         Node parse = planner.parse( "select \"j\", count(*) from \"beatles\" group by \"j\"" );
 
         Node validate = planner.validate( parse );
@@ -323,7 +323,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
     @Test
     public void testAggregateGroupFilter() throws Exception {
-        rootSchema.add( "beatles", new BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesEntity() );
         final String sql = "select \"j\",\n" + "  count(*) filter (where char_length(\"j\") > 4)\n" + "from \"beatles\" group by \"j\"";
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
@@ -335,11 +335,11 @@ public class InterpreterTest extends SqlLanguageDependent {
 
 
     /**
-     * Tests executing a plan on a single-column {@link ScannableTable} using an interpreter.
+     * Tests executing a plan on a single-column {@link ScannableEntity} using an interpreter.
      */
     @Test
     public void testInterpretSimpleScannableTable() throws Exception {
-        rootSchema.add( "simple", new SimpleTable() );
+        rootSchema.add( "simple", new SimpleEntity() );
         Node parse = planner.parse( "select * from \"simple\" limit 2" );
 
         Node validate = planner.validate( parse );
@@ -355,7 +355,7 @@ public class InterpreterTest extends SqlLanguageDependent {
      */
     @Test
     public void testInterpretUnionAll() throws Exception {
-        rootSchema.add( "simple", new SimpleTable() );
+        rootSchema.add( "simple", new SimpleEntity() );
         Node parse = planner.parse( "select * from \"simple\"\n" + "union all\n" + "select * from \"simple\"\n" );
 
         Node validate = planner.validate( parse );
@@ -371,7 +371,7 @@ public class InterpreterTest extends SqlLanguageDependent {
      */
     @Test
     public void testInterpretUnion() throws Exception {
-        rootSchema.add( "simple", new SimpleTable() );
+        rootSchema.add( "simple", new SimpleEntity() );
         Node parse = planner.parse( "select * from \"simple\"\n" + "union\n" + "select * from \"simple\"\n" );
 
         Node validate = planner.validate( parse );

@@ -59,7 +59,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -70,7 +70,7 @@ import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 
@@ -78,7 +78,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Table based on an Elasticsearch type.
  */
-public class ElasticsearchTable extends AbstractQueryableTable implements TranslatableTable {
+public class ElasticsearchEntity extends AbstractQueryableEntity implements TranslatableEntity {
 
     /**
      * Used for constructing (possibly nested) Elastic aggregation nodes.
@@ -95,7 +95,7 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
     /**
      * Creates an ElasticsearchTable.
      */
-    ElasticsearchTable( ElasticsearchTransport transport ) {
+    ElasticsearchEntity( ElasticsearchTransport transport ) {
         super( Object[].class );
         this.transport = Objects.requireNonNull( transport, "transport" );
         this.version = transport.version;
@@ -342,13 +342,13 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
 
     /**
-     * Implementation of {@link Queryable} based on a {@link ElasticsearchTable}.
+     * Implementation of {@link Queryable} based on a {@link ElasticsearchEntity}.
      *
      * @param <T> element type
      */
     public static class ElasticsearchQueryable<T> extends AbstractTableQueryable<T> {
 
-        ElasticsearchQueryable( DataContext dataContext, SchemaPlus schema, ElasticsearchTable table, String tableName ) {
+        ElasticsearchQueryable( DataContext dataContext, SchemaPlus schema, ElasticsearchEntity table, String tableName ) {
             super( dataContext, schema, table, tableName );
         }
 
@@ -359,8 +359,8 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
         }
 
 
-        private ElasticsearchTable getTable() {
-            return (ElasticsearchTable) table;
+        private ElasticsearchEntity getTable() {
+            return (ElasticsearchEntity) table;
         }
 
 

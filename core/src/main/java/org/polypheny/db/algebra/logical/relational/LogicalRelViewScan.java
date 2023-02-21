@@ -32,7 +32,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
 
 
 public class LogicalRelViewScan extends Scan {
@@ -51,15 +51,15 @@ public class LogicalRelViewScan extends Scan {
 
 
     public static AlgNode create( AlgOptCluster cluster, final AlgOptEntity algOptEntity ) {
-        final Table table = algOptEntity.unwrap( Table.class );
+        final Entity entity = algOptEntity.unwrap( Entity.class );
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
                         .replaceIfs(
                                 AlgCollationTraitDef.INSTANCE,
                                 () -> {
-                                    if ( table != null ) {
-                                        return table.getStatistic().getCollations();
+                                    if ( entity != null ) {
+                                        return entity.getStatistic().getCollations();
                                     }
                                     return ImmutableList.of();
                                 } );

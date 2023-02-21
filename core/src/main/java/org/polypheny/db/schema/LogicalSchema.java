@@ -23,33 +23,37 @@ import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.schema.Namespace.Schema;
 
 
-public class LogicalSchema implements Schema {
+public class LogicalSchema implements Namespace, Schema {
 
     private final String schemaName;
 
     @Getter
-    private final Map<String, LogicalTable> tableMap;
+    private final Map<String, LogicalEntity> tableMap;
 
-    private final Map<String, LogicalTable> collectionMap;
+    private final Map<String, LogicalEntity> collectionMap;
+    @Getter
+    private final long id;
 
 
-    public LogicalSchema( String schemaName, Map<String, LogicalTable> tableMap, Map<String, LogicalTable> collectionMap ) {
+    public LogicalSchema( long id, String schemaName, Map<String, LogicalEntity> tableMap, Map<String, LogicalEntity> collectionMap ) {
         this.schemaName = schemaName;
         this.tableMap = tableMap;
         this.collectionMap = collectionMap;
+        this.id = id;
     }
 
 
     @Override
-    public Table getTable( String name ) {
+    public Entity getEntity( String name ) {
         return tableMap.get( name );
     }
 
 
     @Override
-    public Set<String> getTableNames() {
+    public Set<String> getEntityNames() {
         return tableMap.keySet();
     }
 
@@ -79,13 +83,13 @@ public class LogicalSchema implements Schema {
 
 
     @Override
-    public Schema getSubSchema( String name ) {
+    public Namespace getSubNamespace( String name ) {
         return null;
     }
 
 
     @Override
-    public Set<String> getSubSchemaNames() {
+    public Set<String> getSubNamespaceNames() {
         return ImmutableSet.of();
     }
 
@@ -103,8 +107,8 @@ public class LogicalSchema implements Schema {
 
 
     @Override
-    public Schema snapshot( SchemaVersion version ) {
-        return new LogicalSchema( schemaName, tableMap, collectionMap );
+    public Namespace snapshot( SchemaVersion version ) {
+        return new LogicalSchema( id, schemaName, tableMap, collectionMap );
     }
 
 }

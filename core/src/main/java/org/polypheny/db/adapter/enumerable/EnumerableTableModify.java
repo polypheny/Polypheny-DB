@@ -55,7 +55,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -78,7 +78,7 @@ public class EnumerableTableModify extends Modify implements EnumerableAlg {
         super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         assert child.getConvention() instanceof EnumerableConvention;
         assert getConvention() instanceof EnumerableConvention;
-        final ModifiableTable modifiableTable = table.unwrap( ModifiableTable.class );
+        final ModifiableEntity modifiableTable = table.unwrap( ModifiableEntity.class );
         if ( modifiableTable == null ) {
             throw new AssertionError(); // TODO: user error in validator
         }
@@ -97,9 +97,9 @@ public class EnumerableTableModify extends Modify implements EnumerableAlg {
         final Result result = implementor.visitChild( this, 0, (EnumerableAlg) getInput(), pref );
         Expression childExp = builder.append( "child", result.block );
         final ParameterExpression collectionParameter = Expressions.parameter( Collection.class, builder.newName( "collection" ) );
-        final Expression expression = table.getExpression( ModifiableTable.class );
+        final Expression expression = table.getExpression( ModifiableEntity.class );
         assert expression != null; // TODO: user error in validator
-        assert ModifiableTable.class.isAssignableFrom( Types.toClass( expression.getType() ) ) : expression.getType();
+        assert ModifiableEntity.class.isAssignableFrom( Types.toClass( expression.getType() ) ) : expression.getType();
         builder.add(
                 Expressions.declare(
                         Modifier.FINAL,

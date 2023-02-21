@@ -57,7 +57,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public class ElasticsearchScan extends Scan implements ElasticsearchRel {
 
-    private final ElasticsearchTable elasticsearchTable;
+    private final ElasticsearchEntity elasticsearchTable;
     private final AlgDataType projectRowType;
 
 
@@ -70,7 +70,7 @@ public class ElasticsearchScan extends Scan implements ElasticsearchRel {
      * @param elasticsearchTable Elasticsearch table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    ElasticsearchScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, ElasticsearchTable elasticsearchTable, AlgDataType projectRowType ) {
+    ElasticsearchScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, ElasticsearchEntity elasticsearchTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.elasticsearchTable = Objects.requireNonNull( elasticsearchTable, "elasticsearchTable" );
         this.projectRowType = projectRowType;

@@ -44,14 +44,14 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
-import org.polypheny.db.schema.CustomColumnResolvingTable;
-import org.polypheny.db.schema.ExtensibleTable;
+import org.polypheny.db.schema.CustomColumnResolvingEntity;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.ExtensibleEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -133,7 +133,7 @@ public class SqlValidatorUtil {
      */
     public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, ValidatorTable table, SqlNodeList extendedColumns ) {
         final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
-        final ExtensibleTable extTable = table.unwrap( ExtensibleTable.class );
+        final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class );
         int extendedFieldOffset =
                 extTable == null
                         ? table.getRowType().getFieldCount()
@@ -281,9 +281,9 @@ public class SqlValidatorUtil {
      * @return the target field or null if the name cannot be resolved
      */
     public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptEntity table, boolean isDocument ) {
-        final Table t = table == null ? null : table.unwrap( Table.class );
+        final Entity t = table == null ? null : table.unwrap( Entity.class );
 
-        if ( !(t instanceof CustomColumnResolvingTable) ) {
+        if ( !(t instanceof CustomColumnResolvingEntity) ) {
             final NameMatcher nameMatcher = catalogReader.nameMatcher;
             AlgDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
 
@@ -294,7 +294,7 @@ public class SqlValidatorUtil {
             return typeField;
         }
 
-        final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, typeFactory, id.names );
+        final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingEntity) t).resolveColumn( rowType, typeFactory, id.names );
         switch ( entries.size() ) {
             case 1:
                 if ( !entries.get( 0 ).getValue().isEmpty() ) {
@@ -649,7 +649,7 @@ public class SqlValidatorUtil {
             return false;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
-        PolyphenyDbSchema schema = validator.getCatalogReader().getRootSchema().getSubSchema( id.names.get( 0 ), false );
+        PolyphenyDbSchema schema = validator.getCatalogReader().getRootSchema().getSubNamespace( id.names.get( 0 ), false );
         if ( schema == null ) {
             return false;
         }

@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -137,7 +137,7 @@ public interface AlgOptEntity extends Wrapper {
     List<ColumnStrategy> getColumnStrategies();
 
     @Deprecated
-    default Table getTable() {
+    default Entity getTable() {
         return null;
     }
 

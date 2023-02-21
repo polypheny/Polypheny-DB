@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.file;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.algebra.FileScan;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
@@ -43,14 +42,14 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 
 
-public class FileTranslatableTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
+public class FileTranslatableEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity {
 
     private final File rootDir;
     @Getter
@@ -72,7 +71,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     private final AlgProtoDataType protoRowType;
 
 
-    public FileTranslatableTable(
+    public FileTranslatableEntity(
             final FileSchema fileSchema,
             final String tableName,
             final Long tableId,
@@ -86,7 +85,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         this.fileSchema = fileSchema;
         this.rootDir = fileSchema.getRootDir();
         this.tableName = tableName;
-        this.tableId = tableId;
+        this.id = tableId;
         this.partitionId = partitionId;
         this.adapterId = fileSchema.getAdapterId();
         this.pkIds = pkIds;
@@ -159,8 +158,8 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
     public class FileQueryable<T> extends AbstractTableQueryable<T> {
 
-        public FileQueryable( DataContext dataContext, SchemaPlus schema, FileTranslatableTable table, String tableName ) {
-            super( dataContext, schema, FileTranslatableTable.this, tableName );
+        public FileQueryable( DataContext dataContext, SchemaPlus schema, FileTranslatableEntity table, String tableName ) {
+            super( dataContext, schema, FileTranslatableEntity.this, tableName );
         }
 
 

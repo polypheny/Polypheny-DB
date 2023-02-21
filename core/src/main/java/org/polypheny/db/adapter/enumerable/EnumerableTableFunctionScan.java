@@ -51,7 +51,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.impl.TableFunctionImpl;
 
 
@@ -107,7 +107,7 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
         }
         final TableFunctionImpl tableFunction = (TableFunctionImpl) udtf.getFunction();
         final Method method = tableFunction.method;
-        return QueryableTable.class.isAssignableFrom( method.getReturnType() );
+        return QueryableEntity.class.isAssignableFrom( method.getReturnType() );
     }
 
 }

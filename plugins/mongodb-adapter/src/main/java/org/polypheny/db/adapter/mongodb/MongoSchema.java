@@ -38,6 +38,9 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -45,22 +48,24 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.*;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**
  * Schema mapped onto a directory of MONGO files. Each table in the schema is a MONGO file in that directory.
  */
-public class MongoSchema extends AbstractSchema {
+public class MongoSchema extends AbstractNamespace implements Schema {
 
     @Getter
     final MongoDatabase database;
@@ -69,10 +74,10 @@ public class MongoSchema extends AbstractSchema {
     private final Convention convention = MongoAlg.CONVENTION;
 
     @Getter
-    private final Map<String, Table> tableMap = new HashMap<>();
+    private final Map<String, Entity> tableMap = new HashMap<>();
 
     @Getter
-    private final Map<String, Table> collectionMap = new HashMap<>();
+    private final Map<String, Entity> collectionMap = new HashMap<>();
     private final MongoClient connection;
     private final TransactionProvider transactionProvider;
     @Getter
@@ -88,8 +93,8 @@ public class MongoSchema extends AbstractSchema {
      * @param transactionProvider
      * @param mongoStore
      */
-    public MongoSchema( String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
-        super();
+    public MongoSchema( long id, String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
+        super( id );
         this.transactionProvider = transactionProvider;
         this.connection = connection;
         this.database = this.connection.getDatabase( database );
@@ -119,7 +124,7 @@ public class MongoSchema extends AbstractSchema {
     }
 
 
-    public Table createCollection( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+    public Entity createCollection( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 

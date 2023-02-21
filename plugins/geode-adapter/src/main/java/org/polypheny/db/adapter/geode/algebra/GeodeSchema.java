@@ -42,40 +42,41 @@ import java.util.Objects;
 import org.apache.geode.cache.GemFireCache;
 import org.apache.geode.cache.Region;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 
 
 /**
  * Schema mapped onto a Geode Region.
  */
-public class GeodeSchema extends AbstractSchema {
+public class GeodeSchema extends AbstractNamespace implements Schema {
 
     final GemFireCache cache;
     private final List<String> regionNames;
-    private ImmutableMap<String, Table> tableMap;
+    private ImmutableMap<String, Entity> tableMap;
 
 
-    GeodeSchema( String locatorHost, int locatorPort, Iterable<String> regionNames, String pdxAutoSerializerPackageExp ) {
-        this( GeodeUtils.createClientCache( locatorHost, locatorPort, pdxAutoSerializerPackageExp, true ), regionNames );
+    GeodeSchema( long id, String locatorHost, int locatorPort, Iterable<String> regionNames, String pdxAutoSerializerPackageExp ) {
+        this( id, GeodeUtils.createClientCache( locatorHost, locatorPort, pdxAutoSerializerPackageExp, true ), regionNames );
     }
 
 
-    GeodeSchema( final GemFireCache cache, final Iterable<String> regionNames ) {
-        super();
+    GeodeSchema( long id, final GemFireCache cache, final Iterable<String> regionNames ) {
+        super( id );
         this.cache = Objects.requireNonNull( cache, "clientCache" );
         this.regionNames = ImmutableList.copyOf( Objects.requireNonNull( regionNames, "regionNames" ) );
     }
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         if ( tableMap == null ) {
-            final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+            final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
             for ( String regionName : regionNames ) {
                 Region region = GeodeUtils.createRegion( cache, regionName );
-                Table table = new GeodeTable( region );
-                builder.put( regionName, table );
+                Entity entity = new GeodeEntity( region );
+                builder.put( regionName, entity );
             }
             tableMap = builder.build();
         }

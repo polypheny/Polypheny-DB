@@ -43,7 +43,7 @@ import java.util.List;
  * The application may occur at compile time (for a macro) or at run time (for a regular function). The result may be a
  * relation, and so might any of the parameters.
  *
- * Functions are registered in a {@link Schema}, and may be queried by name ({@link Schema#getFunctions(String)}) then
+ * Functions are registered in a {@link Namespace}, and may be queried by name ({@link Namespace#getFunctions(String)}) then
  * overloads resolved based on parameter types.
  *
  * @see TableMacro

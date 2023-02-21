@@ -65,7 +65,7 @@ public class PigScan extends Scan implements PigAlg {
 
     @Override
     public void implement( Implementor implementor ) {
-        final PigTable pigTable = getPigTable( implementor.getTableName( this ) );
+        final PigEntity pigTable = getPigTable( implementor.getTableName( this ) );
         final String alias = implementor.getPigRelationAlias( this );
         final String schema = '(' + getSchemaForPigStatement( implementor ) + ')';
         final String statement = alias + " = LOAD '" + pigTable.getFilePath() + "' USING PigStorage() AS " + schema + ';';
@@ -73,9 +73,9 @@ public class PigScan extends Scan implements PigAlg {
     }
 
 
-    private PigTable getPigTable( String name ) {
+    private PigEntity getPigTable( String name ) {
         final PolyphenyDbSchema schema = getTable().unwrap( PolyphenyDbSchema.class );
-        return (PigTable) schema.getTable( name ).getTable();
+        return (PigEntity) schema.getTable( name ).getTable();
     }
 
 

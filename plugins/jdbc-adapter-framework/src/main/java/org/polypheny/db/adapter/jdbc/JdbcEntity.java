@@ -36,7 +36,6 @@ package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.Lists;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -45,7 +44,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
@@ -64,11 +63,11 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Schema.TableType;
+import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TableType;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -89,7 +88,7 @@ import org.polypheny.db.util.Util;
  * applying Queryable operators such as {@link org.apache.calcite.linq4j.Queryable#where(org.apache.calcite.linq4j.function.Predicate2)}.
  * The resulting queryable can then be converted to a SQL query, which can be executed efficiently on the JDBC server.
  */
-public class JdbcTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
+public class JdbcEntity extends AbstractQueryableEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity {
 
     private AlgProtoDataType protoRowType;
     private JdbcSchema jdbcSchema;
@@ -105,7 +104,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     private final TableType jdbcTableType;
 
 
-    public JdbcTable(
+    public JdbcEntity(
             JdbcSchema jdbcSchema,
             String logicalSchemaName,
             String logicalTableName,
@@ -126,7 +125,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         this.physicalColumnNames = physicalColumnNames;
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
         this.protoRowType = protoRowType;
-        this.tableId = tableId;
+        this.id = tableId;
     }
 
 
@@ -279,14 +278,14 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     /**
-     * Enumerable that returns the contents of a {@link JdbcTable} by connecting to the JDBC data source.
+     * Enumerable that returns the contents of a {@link JdbcEntity} by connecting to the JDBC data source.
      *
      * @param <T> element type
      */
     private class JdbcTableQueryable<T> extends AbstractTableQueryable<T> {
 
         JdbcTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-            super( dataContext, schema, JdbcTable.this, tableName );
+            super( dataContext, schema, JdbcEntity.this, tableName );
         }
 
 

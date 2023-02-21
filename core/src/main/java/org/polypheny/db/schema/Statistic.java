@@ -42,7 +42,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Statistics about a {@link Table}.
+ * Statistics about a {@link Entity}.
  *
  * Each of the methods may return {@code null} meaning "not known".
  *

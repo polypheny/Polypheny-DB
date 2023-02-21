@@ -101,8 +101,8 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.ExInst;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -3001,13 +3001,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // if it's not a SqlIdentifier then that's fine, it'll be validated somewhere else.
         if ( leftOrRight instanceof SqlIdentifier ) {
             SqlIdentifier from = (SqlIdentifier) leftOrRight;
-            Table table = findTable(
+            Entity entity = findTable(
                     catalogReader.getRootSchema(),
                     Util.last( from.names ),
                     catalogReader.nameMatcher.isCaseSensitive() );
             String name = Util.last( identifier.names );
 
-            if ( table != null && table.isRolledUp( name ) ) {
+            if ( entity != null && entity.isRolledUp( name ) ) {
                 throw newValidationError( identifier, RESOURCE.rolledUpNotAllowed( name, "USING" ) );
             }
         }
@@ -3368,9 +3368,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         String tableAlias = pair.left;
         String columnName = pair.right;
 
-        Table table = findTable( tableAlias );
-        if ( table != null ) {
-            return table.rolledUpColumnValidInsideAgg( columnName, aggCall, parent );
+        Entity entity = findTable( tableAlias );
+        if ( entity != null ) {
+            return entity.rolledUpColumnValidInsideAgg( columnName, aggCall, parent );
         }
         return true;
     }
@@ -3387,15 +3387,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         String tableAlias = pair.left;
         String columnName = pair.right;
 
-        Table table = findTable( tableAlias );
-        if ( table != null ) {
-            return table.isRolledUp( columnName );
+        Entity entity = findTable( tableAlias );
+        if ( entity != null ) {
+            return entity.isRolledUp( columnName );
         }
         return false;
     }
 
 
-    private Table findTable( PolyphenyDbSchema schema, String tableName, boolean caseSensitive ) {
+    private Entity findTable( PolyphenyDbSchema schema, String tableName, boolean caseSensitive ) {
         PolyphenyDbSchema.TableEntry entry = schema.getTable( tableName );
         if ( entry != null ) {
             return entry.getTable();
@@ -3403,9 +3403,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         // Check sub schemas
         for ( PolyphenyDbSchema subSchema : schema.getSubSchemaMap().values() ) {
-            Table table = findTable( subSchema, tableName, caseSensitive );
-            if ( table != null ) {
-                return table;
+            Entity entity = findTable( subSchema, tableName, caseSensitive );
+            if ( entity != null ) {
+                return entity;
             }
         }
 
@@ -3414,9 +3414,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     /**
-     * Given a table alias, find the corresponding {@link Table} associated with it
+     * Given a table alias, find the corresponding {@link Entity} associated with it
      */
-    private Table findTable( String alias ) {
+    private Entity findTable( String alias ) {
         List<String> names = null;
         if ( tableScope == null ) {
             // no tables to find
@@ -3694,8 +3694,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // We've found a table. But is it a sequence?
         final SqlValidatorNamespace ns = resolved.only().namespace;
         if ( ns instanceof TableNamespace ) {
-            final Table table = ns.getTable().unwrap( Table.class );
-            switch ( table.getJdbcTableType() ) {
+            final Entity entity = ns.getTable().unwrap( Entity.class );
+            switch ( entity.getJdbcTableType() ) {
                 case SEQUENCE:
                 case TEMPORARY_SEQUENCE:
                     return;

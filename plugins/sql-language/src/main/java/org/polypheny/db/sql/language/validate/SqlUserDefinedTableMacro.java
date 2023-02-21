@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -86,7 +86,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
     /**
      * Returns the table in this UDF, or null if there is no table.
      */
-    public TranslatableTable getTable( AlgDataTypeFactory typeFactory, List<SqlNode> operandList ) {
+    public TranslatableEntity getTable( AlgDataTypeFactory typeFactory, List<SqlNode> operandList ) {
         List<Object> arguments = convertArguments( typeFactory, operandList, tableMacro, getNameAsId(), true );
         return tableMacro.apply( arguments );
     }

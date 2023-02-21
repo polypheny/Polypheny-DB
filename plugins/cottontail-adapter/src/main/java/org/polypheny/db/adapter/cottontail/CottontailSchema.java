@@ -25,21 +25,22 @@ import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
 
-public class CottontailSchema extends AbstractSchema {
+public class CottontailSchema extends AbstractNamespace implements Schema {
 
     @Getter
     private final CottontailConvention convention;
 
-    private final Map<String, CottontailTable> tableMap;
+    private final Map<String, CottontailEntity> tableMap;
     private final Map<String, String> physicalToLogicalTableNameMap;
 
     private final CottontailStore cottontailStore;
@@ -54,12 +55,14 @@ public class CottontailSchema extends AbstractSchema {
 
 
     private CottontailSchema(
+            long id,
             @NonNull CottontailWrapper wrapper,
             CottontailConvention convention,
-            Map<String, CottontailTable> tableMap,
+            Map<String, CottontailEntity> tableMap,
             Map<String, String> physicalToLogicalTableNameMap,
             CottontailStore cottontailStore,
             String name ) {
+        super( id );
         this.wrapper = wrapper;
         this.convention = convention;
         this.tableMap = tableMap;
@@ -71,10 +74,12 @@ public class CottontailSchema extends AbstractSchema {
 
 
     public CottontailSchema(
+            long id,
             CottontailWrapper wrapper,
             CottontailConvention convention,
             CottontailStore cottontailStore,
             String name ) {
+        super( id );
         this.wrapper = wrapper;
         this.convention = convention;
         this.cottontailStore = cottontailStore;
@@ -86,6 +91,7 @@ public class CottontailSchema extends AbstractSchema {
 
 
     public static CottontailSchema create(
+            Long id,
             SchemaPlus parentSchema,
             String name,
             CottontailWrapper wrapper,
@@ -93,7 +99,7 @@ public class CottontailSchema extends AbstractSchema {
     ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CottontailSchema.class );
         final CottontailConvention convention = CottontailConvention.of( name, expression );
-        return new CottontailSchema( wrapper, convention, cottontailStore, name );
+        return new CottontailSchema( id, wrapper, convention, cottontailStore, name );
     }
 
 
@@ -109,8 +115,9 @@ public class CottontailSchema extends AbstractSchema {
 
 
     @Override
-    public Schema snapshot( SchemaVersion version ) {
+    public Namespace snapshot( SchemaVersion version ) {
         return new CottontailSchema(
+                this.id,
                 this.wrapper,
                 this.convention,
                 this.tableMap,
@@ -127,7 +134,7 @@ public class CottontailSchema extends AbstractSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         return ImmutableMap.copyOf( this.tableMap );
     }
 

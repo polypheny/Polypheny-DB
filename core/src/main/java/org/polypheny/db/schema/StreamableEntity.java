@@ -34,19 +34,20 @@
 package org.polypheny.db.schema;
 
 
-import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.stream.Delta;
 
 
 /**
- * Table that can be scanned without creating an intermediate relational expression.
+ * Table that can be converted to a stream.
+ *
+ * @see Delta
  */
-public interface ScannableTable extends Table {
+public interface StreamableEntity extends Entity {
 
     /**
      * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
      */
-    Enumerable<Object[]> scan( DataContext root );
+    Entity stream();
 
 }
 

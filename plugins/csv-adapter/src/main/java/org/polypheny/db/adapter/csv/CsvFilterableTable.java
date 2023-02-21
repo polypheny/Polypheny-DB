@@ -33,6 +33,8 @@
 
 package org.polypheny.db.adapter.csv;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -43,19 +45,16 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
+import org.polypheny.db.schema.FilterableEntity;
 import org.polypheny.db.util.Source;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
  * Table based on a CSV file that can implement simple filtering.
  *
- * It implements the {@link FilterableTable} interface, so Polypheny-DB gets data by calling the {@link #scan(DataContext, List)} method.
+ * It implements the {@link FilterableEntity} interface, so Polypheny-DB gets data by calling the {@link #scan(DataContext, List)} method.
  */
-public class CsvFilterableTable extends CsvTable implements FilterableTable {
+public class CsvFilterableTable extends CsvTable implements FilterableEntity {
 
     /**
      * Creates a CsvFilterableTable.

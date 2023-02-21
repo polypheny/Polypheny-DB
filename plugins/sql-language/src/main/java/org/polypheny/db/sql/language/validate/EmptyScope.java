@@ -32,8 +32,8 @@ import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -133,7 +133,7 @@ class EmptyScope implements SqlValidatorScope {
                 remainingNames = Util.skip( remainingNames );
                 continue;
             }
-            final PolyphenyDbSchema subSchema = schema.getSubSchema( schemaName, nameMatcher.isCaseSensitive() );
+            final PolyphenyDbSchema subSchema = schema.getSubNamespace( schemaName, nameMatcher.isCaseSensitive() );
             if ( subSchema != null ) {
                 path = path.plus( null, -1, subSchema.getName(), StructKind.NONE );
                 remainingNames = Util.skip( remainingNames );
@@ -148,15 +148,15 @@ class EmptyScope implements SqlValidatorScope {
             if ( entry != null ) {
                 path = path.plus( null, -1, entry.name, StructKind.NONE );
                 remainingNames = Util.skip( remainingNames );
-                final Table table = entry.getTable();
-                final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
+                final Entity entity = entry.getTable();
+                final CatalogTable catalogTable = Catalog.getInstance().getTable( entity.getId() );
                 ValidatorTable table2 = null;
-                if ( table instanceof Wrapper ) {
-                    table2 = ((Wrapper) table).unwrap( PreparingEntity.class );
+                if ( entity instanceof Wrapper ) {
+                    table2 = ((Wrapper) entity).unwrap( PreparingEntity.class );
                 }
                 if ( table2 == null ) {
                     final AlgOptSchema algOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
-                    final AlgDataType rowType = table.getRowType( validator.typeFactory );
+                    final AlgDataType rowType = entity.getRowType( validator.typeFactory );
                     table2 = AlgOptEntityImpl.create( algOptSchema, rowType, entry, catalogTable, null );
                 }
                 namespace = new TableNamespace( validator, table2 );

@@ -43,7 +43,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableScan;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -55,7 +55,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.util.Source;
 
@@ -63,7 +63,7 @@ import org.polypheny.db.util.Source;
 /**
  * Table implementation wrapping a URL / HTML table.
  */
-class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
+class HtmlEntity extends AbstractQueryableEntity implements TranslatableEntity {
 
     private final AlgProtoDataType protoRowType;
     private HtmlReader reader;
@@ -73,7 +73,7 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
     /**
      * Creates a HtmlTable.
      */
-    private HtmlTable( Source source, String selector, Integer index, AlgProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs ) throws Exception {
+    private HtmlEntity( Source source, String selector, Integer index, AlgProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs ) throws Exception {
         super( Object[].class );
 
         this.protoRowType = protoRowType;
@@ -85,11 +85,11 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
     /**
      * Creates a HtmlTable.
      */
-    static HtmlTable create( Source source, Map<String, Object> tableDef ) throws Exception {
+    static HtmlEntity create( Source source, Map<String, Object> tableDef ) throws Exception {
         @SuppressWarnings("unchecked") List<Map<String, Object>> fieldConfigs = (List<Map<String, Object>>) tableDef.get( "fields" );
         String selector = (String) tableDef.get( "selector" );
         Integer index = (Integer) tableDef.get( "index" );
-        return new HtmlTable( source, selector, index, null, fieldConfigs );
+        return new HtmlEntity( source, selector, index, null, fieldConfigs );
     }
 
 

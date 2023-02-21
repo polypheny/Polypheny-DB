@@ -37,6 +37,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import java.lang.reflect.Type;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
@@ -61,9 +70,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-
-import java.lang.reflect.Type;
-import java.util.*;
 
 
 /**
@@ -136,7 +142,7 @@ public final class Schemas {
                         Expressions.constant( name ) );
         //CHECKSTYLE: IGNORE 2
         //noinspection unchecked
-        if ( false && type != null && !type.isAssignableFrom( Schema.class ) ) {
+        if ( false && type != null && !type.isAssignableFrom( Namespace.class ) ) {
             return unwrap( call, type );
         }
         return call;
@@ -156,27 +162,27 @@ public final class Schemas {
      */
     public static Expression tableExpression( SchemaPlus schema, Type elementType, String tableName, Class clazz ) {
         final MethodCallExpression expression;
-        if ( Table.class.isAssignableFrom( clazz ) ) {
+        if ( Entity.class.isAssignableFrom( clazz ) ) {
             expression = Expressions.call(
                     expression( schema ),
                     BuiltInMethod.SCHEMA_GET_TABLE.method,
                     Expressions.constant( tableName ) );
-            if ( ScannableTable.class.isAssignableFrom( clazz ) ) {
+            if ( ScannableEntity.class.isAssignableFrom( clazz ) ) {
                 return Expressions.call(
                         BuiltInMethod.SCHEMAS_ENUMERABLE_SCANNABLE.method,
-                        Expressions.convert_( expression, ScannableTable.class ),
+                        Expressions.convert_( expression, ScannableEntity.class ),
                         DataContext.ROOT );
             }
-            if ( FilterableTable.class.isAssignableFrom( clazz ) ) {
+            if ( FilterableEntity.class.isAssignableFrom( clazz ) ) {
                 return Expressions.call(
                         BuiltInMethod.SCHEMAS_ENUMERABLE_FILTERABLE.method,
-                        Expressions.convert_( expression, FilterableTable.class ),
+                        Expressions.convert_( expression, FilterableEntity.class ),
                         DataContext.ROOT );
             }
-            if ( ProjectableFilterableTable.class.isAssignableFrom( clazz ) ) {
+            if ( ProjectableFilterableEntity.class.isAssignableFrom( clazz ) ) {
                 return Expressions.call(
                         BuiltInMethod.SCHEMAS_ENUMERABLE_PROJECTABLE_FILTERABLE.method,
-                        Expressions.convert_( expression, ProjectableFilterableTable.class ),
+                        Expressions.convert_( expression, ProjectableFilterableEntity.class ),
                         DataContext.ROOT );
             }
         } else {
@@ -212,7 +218,7 @@ public final class Schemas {
         for ( Iterator<? extends String> iterator = names.iterator(); ; ) {
             String name = iterator.next();
             if ( iterator.hasNext() ) {
-                schema = schema.getSubSchema( name );
+                schema = schema.getSubNamespace( name );
             } else {
                 return queryable( root, schema, clazz, name );
             }
@@ -224,13 +230,13 @@ public final class Schemas {
      * Returns a {@link Queryable}, given a schema and table name.
      */
     public static <E> Queryable<E> queryable( DataContext root, SchemaPlus schema, Class<E> clazz, String tableName ) {
-        QueryableTable table = (QueryableTable) schema.getTable( tableName );
+        QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
         return table.asQueryable( root, schema, tableName );
     }
 
 
     public static <E> Queryable<E> graph( DataContext root, SchemaPlus schema ) {
-        QueryableGraph graph = (QueryableGraph) schema.polyphenyDbSchema().getSchema();
+        QueryableGraph graph = (QueryableGraph) schema.polyphenyDbSchema().getNamespace();
         return graph.asQueryable( root, graph );
     }
 
@@ -238,7 +244,7 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, representing each row as an object array.
      */
-    public static Enumerable<Object[]> enumerable( final ScannableTable table, final DataContext root ) {
+    public static Enumerable<Object[]> enumerable( final ScannableEntity table, final DataContext root ) {
         return table.scan( root );
     }
 
@@ -246,7 +252,7 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, not applying any filters, representing each row as an object array.
      */
-    public static Enumerable<Object[]> enumerable( final FilterableTable table, final DataContext root ) {
+    public static Enumerable<Object[]> enumerable( final FilterableEntity table, final DataContext root ) {
         return table.scan( root, ImmutableList.of() );
     }
 
@@ -254,7 +260,7 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, not applying any filters and projecting all columns, representing each row as an object array.
      */
-    public static Enumerable<Object[]> enumerable( final ProjectableFilterableTable table, final DataContext root ) {
+    public static Enumerable<Object[]> enumerable( final ProjectableFilterableEntity table, final DataContext root ) {
         return table.scan( root, ImmutableList.of(), identity( table.getRowType( root.getTypeFactory() ).getFieldCount() ) );
     }
 
@@ -269,17 +275,17 @@ public final class Schemas {
 
 
     /**
-     * Returns an {@link org.apache.calcite.linq4j.Enumerable} over object arrays, given a fully-qualified table name which leads to a {@link ScannableTable}.
+     * Returns an {@link org.apache.calcite.linq4j.Enumerable} over object arrays, given a fully-qualified table name which leads to a {@link ScannableEntity}.
      */
-    public static Table table( DataContext root, String... names ) {
+    public static Entity table( DataContext root, String... names ) {
         SchemaPlus schema = root.getRootSchema();
         final List<String> nameList = Arrays.asList( names );
         for ( Iterator<? extends String> iterator = nameList.iterator(); ; ) {
             String name = iterator.next();
             if ( iterator.hasNext() ) {
-                schema = schema.getSubSchema( name );
+                schema = schema.getSubNamespace( name );
             } else {
-                return schema.getTable( name );
+                return schema.getEntity( name );
             }
         }
     }
@@ -418,8 +424,8 @@ public final class Schemas {
     /**
      * Returns an implementation of {@link AlgProtoDataType} that asks a given table for its row type with a given type factory.
      */
-    public static AlgProtoDataType proto( final Table table ) {
-        return table::getRowType;
+    public static AlgProtoDataType proto( final Entity entity ) {
+        return entity::getRowType;
     }
 
 
@@ -441,7 +447,7 @@ public final class Schemas {
             if ( schema == null ) {
                 return null;
             }
-            schema = schema.getSubSchema( string, false );
+            schema = schema.getSubNamespace( string, false );
         }
         return schema;
     }
@@ -463,8 +469,8 @@ public final class Schemas {
      * Creates a path with a given list of names starting from a given root schema.
      */
     public static Path path( PolyphenyDbSchema rootSchema, Iterable<String> names ) {
-        final ImmutableList.Builder<Pair<String, Schema>> builder = ImmutableList.builder();
-        Schema schema = rootSchema.plus();
+        final ImmutableList.Builder<Pair<String, Namespace>> builder = ImmutableList.builder();
+        Namespace namespace = rootSchema.plus();
         final Iterator<String> iterator = names.iterator();
         if ( !iterator.hasNext() ) {
             return PathImpl.EMPTY;
@@ -474,16 +480,16 @@ public final class Schemas {
         }
         for ( ; ; ) {
             final String name = iterator.next();
-            builder.add( Pair.of( name, schema ) );
+            builder.add( Pair.of( name, namespace ) );
             if ( !iterator.hasNext() ) {
                 return path( builder.build() );
             }
-            schema = schema.getSubSchema( name );
+            namespace = namespace.getSubNamespace( name );
         }
     }
 
 
-    public static PathImpl path( ImmutableList<Pair<String, Schema>> build ) {
+    public static PathImpl path( ImmutableList<Pair<String, Namespace>> build ) {
         return new PathImpl( build );
     }
 
@@ -492,7 +498,7 @@ public final class Schemas {
      * Returns the path to get to a schema from its root.
      */
     public static Path path( SchemaPlus schema ) {
-        List<Pair<String, Schema>> list = new ArrayList<>();
+        List<Pair<String, Namespace>> list = new ArrayList<>();
         for ( SchemaPlus s = schema; s != null; s = s.getParentSchema() ) {
             list.add( Pair.of( s.getName(), s ) );
         }
@@ -593,14 +599,14 @@ public final class Schemas {
     /**
      * Implementation of {@link Path}.
      */
-    private static class PathImpl extends AbstractList<Pair<String, Schema>> implements Path {
+    private static class PathImpl extends AbstractList<Pair<String, Namespace>> implements Path {
 
-        private final ImmutableList<Pair<String, Schema>> pairs;
+        private final ImmutableList<Pair<String, Namespace>> pairs;
 
         private static final PathImpl EMPTY = new PathImpl( ImmutableList.of() );
 
 
-        PathImpl( ImmutableList<Pair<String, Schema>> pairs ) {
+        PathImpl( ImmutableList<Pair<String, Namespace>> pairs ) {
             this.pairs = pairs;
         }
 
@@ -620,7 +626,7 @@ public final class Schemas {
 
 
         @Override
-        public Pair<String, Schema> get( int index ) {
+        public Pair<String, Namespace> get( int index ) {
             return pairs.get( index );
         }
 
@@ -658,7 +664,7 @@ public final class Schemas {
 
 
         @Override
-        public List<Schema> schemas() {
+        public List<Namespace> schemas() {
             return Pair.right( pairs );
         }
 

@@ -90,7 +90,7 @@ import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -1007,8 +1007,8 @@ public class JdbcRules {
         @Override
         public boolean matches( AlgOptRuleCall call ) {
             final Modify modify = call.alg( 0 );
-            if ( modify.getTable().unwrap( JdbcTable.class ) != null ) {
-                JdbcTable table = modify.getTable().unwrap( JdbcTable.class );
+            if ( modify.getTable().unwrap( JdbcEntity.class ) != null ) {
+                JdbcEntity table = modify.getTable().unwrap( JdbcEntity.class );
                 if ( out.getJdbcSchema() == table.getSchema() ) {
                     return true;
                 }
@@ -1020,7 +1020,7 @@ public class JdbcRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Modify modify = (Modify) alg;
-            final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
+            final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
             }
@@ -1061,7 +1061,7 @@ public class JdbcRules {
             super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
             assert input.getConvention() instanceof JdbcConvention;
             assert getConvention() instanceof JdbcConvention;
-            final ModifiableTable modifiableTable = table.unwrap( ModifiableTable.class );
+            final ModifiableEntity modifiableTable = table.unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 throw new AssertionError(); // TODO: user error in validator
             }

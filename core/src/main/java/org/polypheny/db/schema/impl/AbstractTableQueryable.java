@@ -42,15 +42,15 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
+import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 
 
 /**
- * Abstract implementation of {@link org.apache.calcite.linq4j.Queryable} for {@link QueryableTable}.
+ * Abstract implementation of {@link org.apache.calcite.linq4j.Queryable} for {@link QueryableEntity}.
  *
- * Not to be confused with {@link AbstractQueryableTable}.
+ * Not to be confused with {@link AbstractQueryableEntity}.
  *
  * @param <T> element type
  */
@@ -58,11 +58,11 @@ public abstract class AbstractTableQueryable<T> extends AbstractQueryable<T> {
 
     public final DataContext dataContext;
     public final SchemaPlus schema;
-    public final QueryableTable table;
+    public final QueryableEntity table;
     public final String tableName;
 
 
-    public AbstractTableQueryable( DataContext dataContext, SchemaPlus schema, QueryableTable table, String tableName ) {
+    public AbstractTableQueryable( DataContext dataContext, SchemaPlus schema, QueryableEntity table, String tableName ) {
         this.dataContext = dataContext;
         this.schema = schema;
         this.table = table;

@@ -41,7 +41,7 @@ import org.polypheny.db.sql.web.SchemaToJsonMapper;
 import org.polypheny.db.type.PolyType;
 
 
-public class SchemaToJsonMapperTest extends SqlLanguageDependent {
+public class NamespaceToJsonMapperTest extends SqlLanguageDependent {
 
 
     private static final String mockJson = "{\"tableName\":\"stores\",\"columns\":[{\"columnName\":\"sid\",\"type\":\"INTEGER\",\"nullable\":false},{\"columnName\":\"name\",\"type\":\"VARCHAR\",\"length\":50,\"nullable\":false},{\"columnName\":\"location\",\"type\":\"VARCHAR\",\"length\":30,\"nullable\":true,\"defaultValue\":\"Basel\"}],\"primaryKeyColumnNames\":[\"sid\",\"name\"]}";

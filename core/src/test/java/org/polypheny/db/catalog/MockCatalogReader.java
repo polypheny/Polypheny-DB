@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,17 +74,17 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.AbstractPreparingEntity;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
-import org.polypheny.db.schema.CustomColumnResolvingTable;
-import org.polypheny.db.schema.ExtensibleTable;
+import org.polypheny.db.schema.CustomColumnResolvingEntity;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.ExtensibleEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.StreamableTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.StreamableEntity;
+import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.test.JdbcTest;
+import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.test.JdbcTest.AbstractModifiableEntity;
 import org.polypheny.db.util.AccessType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerExpressionFactory;
@@ -122,7 +121,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-
     /**
      * Initializes this catalog reader.
      */
@@ -148,7 +146,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         // Register nested schema NEST that contains table with a rolled up column.
         MockSchema nestedSchema = new MockSchema( "NEST" );
-        registerNestedSchema( schema, nestedSchema );
+        registerNestedSchema( schema, nestedSchema, -1 );
 
         // Register "EMP_R" table which contains a rolled up column in NEST schema.
         ImmutableList<String> tablePath = ImmutableList.of( schema.getCatalogName(), schema.name, nestedSchema.name, "EMP_R" );
@@ -172,13 +170,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
     protected void registerTable( final MockEntity table ) {
         table.onRegister( typeFactory );
-        final WrapperTable wrapperTable = new WrapperTable( table );
+        final WrapperEntity wrapperTable = new WrapperEntity( table );
         if ( table.stream ) {
             registerTable(
                     table.names,
-                    new StreamableWrapperTable( table ) {
+                    new StreamableWrapperEntity( table ) {
                         @Override
-                        public Table stream() {
+                        public Entity stream() {
                             return wrapperTable;
                         }
                     } );
@@ -188,22 +186,22 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-    private void registerTable( final List<String> names, final Table table ) {
+    private void registerTable( final List<String> names, final Entity entity ) {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
         final String tableName = Util.last( names );
         final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, NameMatchers.withCaseSensitive( true ) );
-        schema.add( tableName, table );
+        schema.add( tableName, entity );
     }
 
 
-    protected void registerSchema( MockSchema schema ) {
-        rootSchema.add( schema.name, new AbstractSchema(), NamespaceType.RELATIONAL );
+    protected void registerSchema( MockSchema schema, long id ) {
+        rootSchema.add( schema.name, new AbstractNamespace( id ), NamespaceType.RELATIONAL );
     }
 
 
-    private void registerNestedSchema( MockSchema parentSchema, MockSchema schema ) {
-        rootSchema.getSubSchema( parentSchema.getName(), true ).add( schema.name, new AbstractSchema(), NamespaceType.RELATIONAL );
+    private void registerNestedSchema( MockSchema parentSchema, MockSchema schema, long id ) {
+        rootSchema.getSubNamespace( parentSchema.getName(), true ).add( schema.name, new AbstractNamespace( id ), NamespaceType.RELATIONAL );
     }
 
 
@@ -336,9 +334,9 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         /**
          * Implementation of AbstractModifiableTable.
          */
-        private class ModifiableTable extends JdbcTest.AbstractModifiableTable implements ExtensibleTable, Wrapper {
+        private class ModifiableEntity extends AbstractModifiableEntity implements ExtensibleEntity, Wrapper {
 
-            protected ModifiableTable( String tableName ) {
+            protected ModifiableEntity( String tableName ) {
                 super( tableName );
             }
 
@@ -385,11 +383,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public Table extend( final List<AlgDataTypeField> fields ) {
-                return new ModifiableTable( Util.last( names ) ) {
+            public Entity extend( final List<AlgDataTypeField> fields ) {
+                return new ModifiableEntity( Util.last( names ) ) {
                     @Override
                     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-                        ImmutableList<AlgDataTypeField> allFields = ImmutableList.copyOf( Iterables.concat( ModifiableTable.this.getRowType( typeFactory ).getFieldList(), fields ) );
+                        ImmutableList<AlgDataTypeField> allFields = ImmutableList.copyOf( Iterables.concat( ModifiableEntity.this.getRowType( typeFactory ).getFieldList(), fields ) );
                         return typeFactory.createStructType( allFields );
                     }
                 };
@@ -405,11 +403,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        protected AlgOptEntity extend( final Table extendedTable ) {
+        protected AlgOptEntity extend( final Entity extendedEntity ) {
             return new MockEntity( catalogReader, names, stream, rowCount, resolver, initializerFactory ) {
                 @Override
                 public AlgDataType getRowType() {
-                    return extendedTable.getRowType( catalogReader.typeFactory );
+                    return extendedEntity.getRowType( catalogReader.typeFactory );
                 }
             };
         }
@@ -449,11 +447,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             if ( clazz.isInstance( initializerFactory ) ) {
                 return clazz.cast( initializerFactory );
             }
-            if ( clazz.isAssignableFrom( Table.class ) ) {
-                final Table table = resolver == null
-                        ? new ModifiableTable( Util.last( names ) )
-                        : new ModifiableTableWithCustomColumnResolving( Util.last( names ) );
-                return clazz.cast( table );
+            if ( clazz.isAssignableFrom( Entity.class ) ) {
+                final Entity entity = resolver == null
+                        ? new ModifiableEntity( Util.last( names ) )
+                        : new ModifiableEntityWithCustomColumnResolving( Util.last( names ) );
+                return clazz.cast( entity );
             }
             return null;
         }
@@ -525,7 +523,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-
         @Override
         public Monotonicity getMonotonicity( String columnName ) {
             return monotonicColumnSet.contains( columnName )
@@ -582,11 +579,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         /**
-         * Subclass of {@link ModifiableTable} that also implements {@link CustomColumnResolvingTable}.
+         * Subclass of {@link ModifiableEntity} that also implements {@link CustomColumnResolvingEntity}.
          */
-        private class ModifiableTableWithCustomColumnResolving extends ModifiableTable implements CustomColumnResolvingTable, Wrapper {
+        private class ModifiableEntityWithCustomColumnResolving extends ModifiableEntity implements CustomColumnResolvingEntity, Wrapper {
 
-            ModifiableTableWithCustomColumnResolving( String tableName ) {
+            ModifiableEntityWithCustomColumnResolving( String tableName ) {
                 super( tableName );
             }
 
@@ -632,14 +629,14 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     /**
-     * Wrapper around a {@link MockEntity}, giving it a {@link Table} interface. You can get the {@code MockTable} by calling {@link #unwrap(Class)}.
+     * Wrapper around a {@link MockEntity}, giving it a {@link Entity} interface. You can get the {@code MockTable} by calling {@link #unwrap(Class)}.
      */
-    private static class WrapperTable implements Table, Wrapper {
+    private static class WrapperEntity implements Entity, Wrapper {
 
         private final MockEntity table;
 
 
-        WrapperTable( MockEntity table ) {
+        WrapperEntity( MockEntity table ) {
             this.table = table;
         }
 
@@ -696,7 +693,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public Long getTableId() {
+        public Long getId() {
             throw new RuntimeException( "Method getTableId is not implemented." );
         }
 
@@ -715,25 +712,25 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public Schema.TableType getJdbcTableType() {
-            return table.stream ? Schema.TableType.STREAM : Schema.TableType.TABLE;
+        public TableType getJdbcTableType() {
+            return table.stream ? TableType.STREAM : TableType.TABLE;
         }
 
     }
 
 
     /**
-     * Wrapper around a {@link MockEntity}, giving it a {@link StreamableTable} interface.
+     * Wrapper around a {@link MockEntity}, giving it a {@link StreamableEntity} interface.
      */
-    private static class StreamableWrapperTable extends WrapperTable implements StreamableTable {
+    private static class StreamableWrapperEntity extends WrapperEntity implements StreamableEntity {
 
-        StreamableWrapperTable( MockEntity table ) {
+        StreamableWrapperEntity( MockEntity table ) {
             super( table );
         }
 
 
         @Override
-        public Table stream() {
+        public Entity stream() {
             return this;
         }
 

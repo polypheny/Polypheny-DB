@@ -99,7 +99,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -167,7 +167,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     protected QuerySpec querySpec;
 
     final AlgOptEntity table;
-    final DruidTable druidTable;
+    final DruidEntity druidTable;
     final ImmutableList<Interval> intervals;
     final ImmutableList<AlgNode> algs;
     /**
@@ -193,7 +193,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      * @param algs Internal relational expressions
      * @param converterOperatorMap mapping of Polypheny-DB Sql Operator to Druid Expression API.
      */
-    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         super( cluster, traitSet );
         this.table = table;
         this.druidTable = druidTable;
@@ -215,7 +215,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<AlgNode> algs ) {
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<AlgNode> algs ) {
         final ImmutableMap.Builder<Operator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
         for ( DruidSqlOperatorConverter converter : DEFAULT_OPERATORS_LIST ) {
             mapBuilder.put( converter.polyphenyDbOperator(), converter );
@@ -227,7 +227,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return create( cluster, traitSet, table, druidTable, druidTable.intervals, algs, converterOperatorMap );
     }
 
@@ -235,7 +235,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return new DruidQuery( cluster, traitSet, table, druidTable, intervals, algs, converterOperatorMap );
     }
 
@@ -396,7 +396,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
             }
             // Polypheny-DB has this un-direct renaming of timestampFieldName to native druid `__time`
             if ( query.getDruidTable().timestampFieldName.equals( columnName ) ) {
-                return DruidTable.DEFAULT_TIMESTAMP_COLUMN;
+                return DruidEntity.DEFAULT_TIMESTAMP_COLUMN;
             }
             return columnName;
         }
@@ -530,7 +530,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     }
 
 
-    public DruidTable getDruidTable() {
+    public DruidEntity getDruidTable() {
         return druidTable;
     }
 
@@ -638,7 +638,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
 
     @Override
     public Enumerable<Object[]> bind( DataContext dataContext ) {
-        return table.unwrap( ScannableTable.class ).scan( dataContext );
+        return table.unwrap( ScannableEntity.class ).scan( dataContext );
     }
 
 

@@ -39,37 +39,36 @@ import lombok.Getter;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.Schema.TableType;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.Wrapper;
 
 
 /**
- * Abstract base class for implementing {@link Table}.
+ * Abstract base class for implementing {@link Entity}.
  *
- * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, Call, Node)} if
+ * Sub-classes should override {@link #isRolledUp} and {@link Entity#rolledUpColumnValidInsideAgg(String, Call, Node)} if
  * their table can potentially contain rolled up values. This information is used by the validator to check for illegal uses
  * of these columns.
  */
 @Getter
-public abstract class AbstractTable implements Table, Wrapper {
+public abstract class AbstractEntity implements Entity, Wrapper {
 
 
     @Getter
-    protected Long tableId;
+    protected Long id;
     protected Statistic statistic = Statistics.UNKNOWN;
 
 
-    protected AbstractTable() {
+    protected AbstractEntity() {
     }
 
 
     @Override
     public TableType getJdbcTableType() {
-        return Schema.TableType.TABLE;
+        return TableType.TABLE;
     }
 
 
@@ -96,10 +95,10 @@ public abstract class AbstractTable implements Table, Wrapper {
 
     @Override
     public Statistic getStatistic() {
-        if ( tableId == null ) {
+        if ( id == null ) {
             return Statistics.UNKNOWN;
         }
-        Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( tableId );
+        Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( id );
 
         if ( rowCount == null ) {
             return Statistics.UNKNOWN;

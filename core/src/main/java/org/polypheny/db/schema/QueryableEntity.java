@@ -41,9 +41,9 @@ import org.polypheny.db.adapter.DataContext;
 
 
 /**
- * Extension to {@link Table} that can translate itself to a {@link Queryable}.
+ * Extension to {@link Entity} that can translate itself to a {@link Queryable}.
  */
-public interface QueryableTable extends Table {
+public interface QueryableEntity extends Entity {
 
     /**
      * Converts this table into a {@link Queryable}.

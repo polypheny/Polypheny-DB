@@ -47,17 +47,17 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.util.Source;
 
 
 /**
  * Table based on a CSV file.
  */
-public class CsvTranslatableTable extends CsvTable implements QueryableTable, TranslatableTable {
+public class CsvTranslatableTable extends CsvTable implements QueryableEntity, TranslatableEntity {
 
     /**
      * Creates a CsvTable.

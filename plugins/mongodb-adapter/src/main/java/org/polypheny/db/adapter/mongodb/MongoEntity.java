@@ -44,7 +44,6 @@ import com.mongodb.client.model.DeleteManyModel;
 import com.mongodb.client.model.DeleteOneModel;
 import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -69,7 +68,7 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.algebra.AlgNode;
@@ -93,9 +92,9 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableCollection;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.util.BsonUtil;
@@ -106,7 +105,7 @@ import org.polypheny.db.util.Util;
  * Table based on a MongoDB collection.
  */
 @Slf4j
-public class MongoEntity extends AbstractQueryableTable implements TranslatableTable, ModifiableTable, ModifiableCollection {
+public class MongoEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity, ModifiableCollection {
 
     @Getter
     private final String collectionName;
@@ -140,7 +139,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = storeId;
-        this.tableId = catalogTable.id;
+        this.id = catalogTable.id;
     }
 
 
@@ -154,7 +153,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = adapter;
-        this.tableId = catalogEntity.id;
+        this.id = catalogEntity.id;
     }
 
 

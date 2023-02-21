@@ -63,10 +63,10 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ModelTraitDef;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.TranslatableEntity;
+import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSelectKeyword;
@@ -76,7 +76,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Table mapped onto a Druid table.
  */
-public class DruidTable extends AbstractTable implements TranslatableTable {
+public class DruidEntity extends AbstractEntity implements TranslatableEntity {
 
     public static final String DEFAULT_TIMESTAMP_COLUMN = "__time";
     public static final Interval DEFAULT_INTERVAL = new Interval( new DateTime( "1900-01-01", ISOChronology.getInstanceUTC() ), new DateTime( "3000-01-01", ISOChronology.getInstanceUTC() ) );
@@ -101,7 +101,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      * @param intervals Default interval if query does not constrain the time, or null
      * @param timestampFieldName Name of the column that contains the time
      */
-    public DruidTable( DruidSchema schema, String dataSource, AlgProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
+    public DruidEntity( DruidSchema schema, String dataSource, AlgProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
         this.timestampFieldName = Objects.requireNonNull( timestampFieldName );
         this.schema = Objects.requireNonNull( schema );
         this.dataSource = Objects.requireNonNull( dataSource );
@@ -114,7 +114,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     /**
-     * Creates a {@link DruidTable} by using the given {@link DruidConnectionImpl} to populate the other parameters. The parameters may be partially populated.
+     * Creates a {@link DruidEntity} by using the given {@link DruidConnectionImpl} to populate the other parameters. The parameters may be partially populated.
      *
      * @param druidSchema Druid schema
      * @param dataSourceName Data source name in Druid, also table name
@@ -126,17 +126,17 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      * @param complexMetrics List of complex metrics in Druid (thetaSketch, hyperUnique)
      * @return A table
      */
-    static Table create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, PolyType> fieldMap, Set<String> metricNameSet, String timestampColumnName, DruidConnectionImpl connection, Map<String, List<ComplexMetric>> complexMetrics ) {
+    static Entity create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, PolyType> fieldMap, Set<String> metricNameSet, String timestampColumnName, DruidConnectionImpl connection, Map<String, List<ComplexMetric>> complexMetrics ) {
         assert connection != null;
 
         connection.metadata( dataSourceName, timestampColumnName, intervals, fieldMap, metricNameSet, complexMetrics );
 
-        return DruidTable.create( druidSchema, dataSourceName, intervals, fieldMap, metricNameSet, timestampColumnName, complexMetrics );
+        return DruidEntity.create( druidSchema, dataSourceName, intervals, fieldMap, metricNameSet, timestampColumnName, complexMetrics );
     }
 
 
     /**
-     * Creates a {@link DruidTable} by copying the given parameters.
+     * Creates a {@link DruidEntity} by copying the given parameters.
      *
      * @param druidSchema Druid schema
      * @param dataSourceName Data source name in Druid, also table name
@@ -147,9 +147,9 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      * @param complexMetrics List of complex metrics in Druid (thetaSketch, hyperUnique)
      * @return A table
      */
-    static Table create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, PolyType> fieldMap, Set<String> metricNameSet, String timestampColumnName, Map<String, List<ComplexMetric>> complexMetrics ) {
+    static Entity create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, PolyType> fieldMap, Set<String> metricNameSet, String timestampColumnName, Map<String, List<ComplexMetric>> complexMetrics ) {
         final ImmutableMap<String, PolyType> fields = ImmutableMap.copyOf( fieldMap );
-        return new DruidTable( druidSchema, dataSourceName, new MapRelProtoDataType( fields, timestampColumnName ), ImmutableSet.copyOf( metricNameSet ), timestampColumnName, intervals, complexMetrics, fieldMap );
+        return new DruidEntity( druidSchema, dataSourceName, new MapRelProtoDataType( fields, timestampColumnName ), ImmutableSet.copyOf( metricNameSet ), timestampColumnName, intervals, complexMetrics, fieldMap );
     }
 
 
@@ -265,7 +265,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
         MapRelProtoDataType( ImmutableMap<String, PolyType> fields ) {
             this.fields = fields;
-            this.timestampColumn = DruidTable.DEFAULT_TIMESTAMP_COLUMN;
+            this.timestampColumn = DruidEntity.DEFAULT_TIMESTAMP_COLUMN;
         }
 
 

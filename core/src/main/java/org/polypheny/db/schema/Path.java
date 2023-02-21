@@ -48,7 +48,7 @@ import org.polypheny.db.util.Pair;
  * <li>A direct child "foo" of the root schema has a two elements [(root, ""), (child, "foo")].</li>
  * </ul>
  */
-public interface Path extends List<Pair<String, Schema>>, RandomAccess {
+public interface Path extends List<Pair<String, Namespace>>, RandomAccess {
 
     /**
      * Returns the parent path, or null if the path is empty.
@@ -63,6 +63,6 @@ public interface Path extends List<Pair<String, Schema>>, RandomAccess {
     /**
      * Returns the schemas of this path.
      */
-    List<Schema> schemas();
+    List<Namespace> schemas();
 }
 

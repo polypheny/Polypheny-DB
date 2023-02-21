@@ -56,17 +56,17 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
+import org.polypheny.db.schema.ScannableEntity;
+import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.type.PolyType;
 
 
 /**
- * Unit test for {@link ScannableTable}.
+ * Unit test for {@link ScannableEntity}.
  */
-public class ScannableTableTest {
+public class ScannableEntityTest {
 
     @Test
     public void testTens() throws SQLException {
@@ -432,9 +432,9 @@ public class ScannableTableTest {
 
 
     /**
-     * Table that returns one column via the {@link ScannableTable} interface.
+     * Table that returns one column via the {@link ScannableEntity} interface.
      */
-    public static class SimpleTable extends AbstractTable implements ScannableTable {
+    public static class SimpleEntity extends AbstractEntity implements ScannableEntity {
 
         @Override
         public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
@@ -458,7 +458,7 @@ public class ScannableTableTest {
     /**
      * Table that returns two columns via the ScannableTable interface.
      */
-    public static class BeatlesTable extends AbstractTable implements ScannableTable {
+    public static class BeatlesEntity extends AbstractEntity implements ScannableEntity {
 
         @Override
         public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
@@ -483,15 +483,15 @@ public class ScannableTableTest {
 
 
     /**
-     * Table that returns two columns via the {@link FilterableTable} interface.
+     * Table that returns two columns via the {@link FilterableEntity} interface.
      */
-    public static class BeatlesFilterableTable extends AbstractTable implements FilterableTable {
+    public static class BeatlesFilterableEntity extends AbstractEntity implements FilterableEntity {
 
         private final StringBuilder buf;
         private final boolean cooperative;
 
 
-        public BeatlesFilterableTable( StringBuilder buf, boolean cooperative ) {
+        public BeatlesFilterableEntity( StringBuilder buf, boolean cooperative ) {
             this.buf = buf;
             this.cooperative = cooperative;
         }
@@ -522,15 +522,15 @@ public class ScannableTableTest {
 
 
     /**
-     * Table that returns two columns via the {@link FilterableTable} interface.
+     * Table that returns two columns via the {@link FilterableEntity} interface.
      */
-    public static class BeatlesProjectableFilterableTable extends AbstractTable implements ProjectableFilterableTable {
+    public static class BeatlesProjectableFilterableEntity extends AbstractEntity implements ProjectableFilterableEntity {
 
         private final StringBuilder buf;
         private final boolean cooperative;
 
 
-        public BeatlesProjectableFilterableTable( StringBuilder buf, boolean cooperative ) {
+        public BeatlesProjectableFilterableEntity( StringBuilder buf, boolean cooperative ) {
             this.buf = buf;
             this.cooperative = cooperative;
         }

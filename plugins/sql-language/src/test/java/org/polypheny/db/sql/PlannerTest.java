@@ -34,8 +34,19 @@
 package org.polypheny.db.sql;
 
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.polypheny.db.plan.AlgOptRule.operand;
+
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,14 +58,24 @@ import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.*;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.algebra.rules.*;
+import org.polypheny.db.algebra.rules.FilterMergeRule;
+import org.polypheny.db.algebra.rules.LoptOptimizeJoinRule;
+import org.polypheny.db.algebra.rules.ProjectMergeRule;
+import org.polypheny.db.algebra.rules.ProjectToWindowRules;
+import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
+import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
+import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
@@ -65,10 +86,20 @@ import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.plan.*;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.schema.*;
+import org.polypheny.db.schema.FoodmartSchema;
+import org.polypheny.db.schema.HrSchema;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.TpchSchema;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
@@ -76,20 +107,21 @@ import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.util.ListSqlOperatorTable;
 import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.PolyphenyDbAssert;
-import org.polypheny.db.tools.*;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.AlgConversionException;
+import org.polypheny.db.tools.FrameworkConfig;
+import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.tools.Planner;
+import org.polypheny.db.tools.Program;
+import org.polypheny.db.tools.Programs;
+import org.polypheny.db.tools.RuleSet;
+import org.polypheny.db.tools.RuleSets;
+import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
-import static org.polypheny.db.plan.AlgOptRule.operand;
 
 
 /**
@@ -202,7 +234,7 @@ public class PlannerTest extends SqlLanguageDependent {
     public void testValidateUserDefinedAggregate() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
         OperatorTable opTab = ChainedOperatorTable.of( stdOpTab, new ListSqlOperatorTable( ImmutableList.of( new MyCountAggFunction() ) ) );
@@ -257,7 +289,7 @@ public class PlannerTest extends SqlLanguageDependent {
     private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -970,7 +1002,7 @@ public class PlannerTest extends SqlLanguageDependent {
      * Checks that a query returns a particular plan, using a planner with MultiJoinOptimizeBushyRule enabled.
      */
     private void checkBushy( String sql, String expected ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), NamespaceType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
@@ -1026,7 +1058,7 @@ public class PlannerTest extends SqlLanguageDependent {
 
 
     public String checkTpchQuery( String tpchTestQuery ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ), NamespaceType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.configBuilder().setLex( Lex.MYSQL ).build() )
@@ -1086,7 +1118,7 @@ public class PlannerTest extends SqlLanguageDependent {
     public void testOrderByNonSelectColumn() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "tpch", new ReflectiveSchema( new TpchSchema() ), NamespaceType.RELATIONAL );
+                .add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
 
         String query = "select t.psPartkey from \n"
                 + "(select ps.psPartkey from `tpch`.`partsupp` ps \n"
@@ -1169,7 +1201,7 @@ public class PlannerTest extends SqlLanguageDependent {
     private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, AlgConversionException {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( -1L, new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )

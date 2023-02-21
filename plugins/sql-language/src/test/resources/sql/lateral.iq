@@ -33,7 +33,7 @@ Was expecting one of:
 !error
 
 # Bad: LATERAL TABLE
-select * from "scott".emp join lateral table "scott".dept using (deptno);
+select * from "scott".emp join lateral entity "scott".dept using (deptno);
 parse failed: Encountered "\"scott\"" at line 1, column 46.
 Was expecting:
     "(" ...
@@ -66,7 +66,7 @@ select * from lateral (select * from "scott".emp) as e where deptno = 10;
 !ok
 
 # Good: Explicit TABLE in parentheses
-select * from (table "scott".emp) where deptno = 10;
+select * from (entity "scott".emp) where deptno = 10;
 +-------+--------+-----------+------+------------+---------+------+--------+
 | EMPNO | ENAME  | JOB       | MGR  | HIREDATE   | SAL     | COMM | DEPTNO |
 +-------+--------+-----------+------+------------+---------+------+--------+
@@ -79,8 +79,8 @@ select * from (table "scott".emp) where deptno = 10;
 !ok
 
 # Bad: Explicit TABLE
-select * from table "scott".emp;
-parse failed: Encountered "table \"scott\"" at line 1, column 15.
+select * from entity "scott".emp;
+parse failed: Encountered "entity \"scott\"" at line 1, column 15.
 Was expecting one of:
     <IDENTIFIER> ...
     <QUOTED_IDENTIFIER> ...
@@ -95,7 +95,7 @@ Was expecting one of:
 !error
 
 select * from lateral (select * from "scott".emp) as e
-join (table "scott".dept) using (deptno)
+join (entity "scott".dept) using (deptno)
 where e.deptno = 10;
 +--------+-------+--------+-----------+------+------------+---------+------+------------+----------+
 | DEPTNO | EMPNO | ENAME  | JOB       | MGR  | HIREDATE   | SAL     | COMM | DNAME      | LOC      |

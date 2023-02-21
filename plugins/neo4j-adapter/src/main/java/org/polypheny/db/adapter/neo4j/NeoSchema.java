@@ -30,17 +30,17 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
-public class NeoNamespace extends AbstractSchema {
+public class NeoSchema extends AbstractNamespace implements Schema {
 
     public final Driver graph;
     public final Neo4jStore store;
     public final String physicalName;
-    public final long id;
     public final Expression rootSchemaRetrieval;
     public final Session session;
     public final TransactionProvider transactionProvider;
@@ -50,14 +50,14 @@ public class NeoNamespace extends AbstractSchema {
      * Namespace object for the Neo4j database.
      *
      * @param db driver reference for the Neo4j database
-     * @param namespaceId id of the namespace
+     * @param id id of the namespace
      */
-    public NeoNamespace( Driver db, Expression expression, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long namespaceId ) {
+    public NeoSchema( Driver db, Expression expression, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long id ) {
+        super( id );
         this.graph = db;
         this.store = neo4jStore;
-        this.id = namespaceId;
         this.rootSchemaRetrieval = expression;
-        this.physicalName = Neo4jPlugin.getPhysicalNamespaceName( id );
+        this.physicalName = Neo4jPlugin.getPhysicalNamespaceName( getId() );
         this.session = graph.session();
         this.transactionProvider = transactionProvider;
     }
@@ -71,7 +71,7 @@ public class NeoNamespace extends AbstractSchema {
      * @param partitionPlacement reference to the partition
      * @return the created table
      */
-    public Table createTable( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Entity createTable( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 

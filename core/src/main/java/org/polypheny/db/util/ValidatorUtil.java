@@ -278,7 +278,7 @@ public class ValidatorUtil {
             if ( schema == rootSchema && NameMatchers.withCaseSensitive( true ).matches( p, schema.getName() ) ) {
                 continue;
             }
-            schema = schema.getSubSchema( p, true );
+            schema = schema.getSubNamespace( p, true );
         }
         return schema == null ? null : schema.getType( name, false );
     }
@@ -334,7 +334,7 @@ public class ValidatorUtil {
             if ( schema == rootSchema && nameMatcher.matches( schemaName, schema.getName() ) ) {
                 continue;
             }
-            schema = schema.getSubSchema( schemaName, nameMatcher.isCaseSensitive() );
+            schema = schema.getSubNamespace( schemaName, nameMatcher.isCaseSensitive() );
             if ( schema == null ) {
                 return null;
             }

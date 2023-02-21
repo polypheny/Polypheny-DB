@@ -36,6 +36,9 @@ package org.polypheny.db.adapter.jdbc.rel2sql;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.junit.Test;
 import org.polypheny.db.algebra.AlgCollation;
@@ -47,14 +50,17 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.schema.*;
+import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.SchemaVersion;
+import org.polypheny.db.schema.Statistic;
+import org.polypheny.db.schema.TableType;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 
 /**
@@ -62,15 +68,15 @@ import java.util.Set;
  */
 public class RelToSqlConverterStructsTest {
 
-    private static final Schema SCHEMA = new Schema() {
+    private static final Namespace NAMESPACE = new Namespace() {
         @Override
-        public Table getTable( String name ) {
-            return TABLE;
+        public Entity getEntity( String name ) {
+            return ENTITY;
         }
 
 
         @Override
-        public Set<String> getTableNames() {
+        public Set<String> getEntityNames() {
             return ImmutableSet.of( "myTable" );
         }
 
@@ -100,13 +106,13 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public Schema getSubSchema( String name ) {
+        public Namespace getSubNamespace( String name ) {
             return null;
         }
 
 
         @Override
-        public Set<String> getSubSchemaNames() {
+        public Set<String> getSubNamespaceNames() {
             return ImmutableSet.of();
         }
 
@@ -124,14 +130,14 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public Schema snapshot( SchemaVersion version ) {
+        public Namespace snapshot( SchemaVersion version ) {
             return null;
         }
     };
 
     // Table schema is as following:
     // { a: INT, n1: { n11: { b INT }, n12: {c: Int } }, n2: { d: Int }, e: Int }
-    private static final Table TABLE = new Table() {
+    private static final Entity ENTITY = new Entity() {
         @Override
         public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             final AlgDataType aType = typeFactory.createPolyType( PolyType.BIGINT );
@@ -156,13 +162,13 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public Long getTableId() {
+        public Long getId() {
             return null;
         }
 
 
         @Override
-        public Schema.TableType getJdbcTableType() {
+        public TableType getJdbcTableType() {
             return null;
         }
 
@@ -210,7 +216,7 @@ public class RelToSqlConverterStructsTest {
         }
     };
 
-    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( "" ).add( "myDb", SCHEMA, NamespaceType.RELATIONAL ).plus();
+    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( "" ).add( "myDb", NAMESPACE, NamespaceType.RELATIONAL ).plus();
 
 
     private AlgToSqlConverterTest.Sql sql( String sql ) {

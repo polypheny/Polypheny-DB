@@ -46,7 +46,7 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
     public MockCatalogReader init() {
         // Register "DYNAMIC" schema.
         MockSchema schema = new MockSchema( "SALES" );
-        registerSchema( schema );
+        registerSchema( schema, -1 );
 
         MockEntity nationTable = new MockDynamicEntity( this, schema.getCatalogName(), schema.getName(), "NATION", false, 100 );
         registerTable( nationTable );

@@ -104,8 +104,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
@@ -140,9 +140,9 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSamplingParameters;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.AlgOptSamplingParameters;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -165,10 +165,9 @@ import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.LogicalRelView;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -2161,8 +2160,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final SqlCallBinding callBinding = new SqlCallBinding( bb.scope.getValidator(), bb.scope, call );
         if ( operator instanceof SqlUserDefinedTableMacro ) {
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
-            final TranslatableTable table = udf.getTable( typeFactory, callBinding.sqlOperands() );
-            final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
+            final TranslatableEntity table = udf.getTable( typeFactory, callBinding.sqlOperands() );
+            final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getId() );
             final AlgDataType rowType = table.getRowType( typeFactory );
             AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable, udf.getNameAsId().names );
             AlgNode converted = toAlg( algOptEntity );
@@ -2879,8 +2878,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * Creates a relational expression to modify a table or modifiable view.
      */
     private AlgNode createModify( AlgOptEntity targetTable, AlgNode source ) {
-        final ModifiableTable modifiableTable = targetTable.unwrap( ModifiableTable.class );
-        if ( modifiableTable != null && modifiableTable == targetTable.unwrap( Table.class ) ) {
+        final ModifiableEntity modifiableTable = targetTable.unwrap( ModifiableEntity.class );
+        if ( modifiableTable != null && modifiableTable == targetTable.unwrap( Entity.class ) ) {
             return modifiableTable.toModificationAlg(
                     cluster,
                     targetTable,
@@ -3048,9 +3047,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
     private InitializerExpressionFactory getInitializerFactory( ValidatorTable validatorTable ) {
         // We might unwrap a null instead of a InitializerExpressionFactory.
-        final Table table = unwrap( validatorTable, Table.class );
-        if ( table != null ) {
-            InitializerExpressionFactory f = unwrap( table, InitializerExpressionFactory.class );
+        final Entity entity = unwrap( validatorTable, Entity.class );
+        if ( entity != null ) {
+            InitializerExpressionFactory f = unwrap( entity, InitializerExpressionFactory.class );
             if ( f != null ) {
                 return f;
             }

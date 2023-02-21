@@ -88,10 +88,10 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
@@ -179,7 +179,7 @@ public class Bindables {
 
 
     /**
-     * Scan of a table that implements {@link ScannableTable} and therefore can be converted into an {@link Enumerable}.
+     * Scan of a table that implements {@link ScannableEntity} and therefore can be converted into an {@link Enumerable}.
      */
     public static class BindableScan extends Scan implements BindableAlg {
 
@@ -212,13 +212,13 @@ public class Bindables {
          * Creates a BindableScan.
          */
         public static BindableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity, List<RexNode> filters, List<Integer> projects ) {
-            final Table table = algOptEntity.unwrap( Table.class );
+            final Entity entity = algOptEntity.unwrap( Entity.class );
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
-                            .replace( table.getSchemaType().getModelTrait() )
+                            .replace( entity.getSchemaType().getModelTrait() )
                             .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
-                                if ( table != null ) {
-                                    return table.getStatistic().getCollations();
+                                if ( entity != null ) {
+                                    return entity.getStatistic().getCollations();
                                 }
                                 return ImmutableList.of();
                             } );
@@ -275,16 +275,16 @@ public class Bindables {
 
 
         public static boolean canHandle( AlgOptEntity table ) {
-            return table.unwrap( ScannableTable.class ) != null
-                    || table.unwrap( FilterableTable.class ) != null
-                    || table.unwrap( ProjectableFilterableTable.class ) != null;
+            return table.unwrap( ScannableEntity.class ) != null
+                    || table.unwrap( FilterableEntity.class ) != null
+                    || table.unwrap( ProjectableFilterableEntity.class ) != null;
         }
 
 
         @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
-            return table.unwrap( ScannableTable.class ).scan( dataContext );
+            return table.unwrap( ScannableEntity.class ).scan( dataContext );
         }
 
 

@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
@@ -41,8 +42,6 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.util.Util;
-
-import java.util.List;
 
 
 /**
@@ -75,7 +74,7 @@ public class JdbcImplementor extends AlgToSqlConverter {
 
     @Override
     public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
-        JdbcTable table;
+        JdbcEntity table;
         if ( tableNames.size() == 1 ) {
             // only table name
             // NOTICE MV: I think, this case should no longer happen because there should always be a schema in the form
@@ -102,7 +101,7 @@ public class JdbcImplementor extends AlgToSqlConverter {
             return schema.getTableMap().get( tableNames.get( 0 ) ).physicalColumnName( columnName );
         } else if ( tableNames.size() == 2 ) {
             // table name and column name
-            JdbcTable table = schema.getTableMap().get( tableNames.get( 1 ) );
+            JdbcEntity table = schema.getTableMap().get( tableNames.get( 1 ) );
             if ( table.hasPhysicalColumnName( columnName ) ) {
                 return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
             } else {

@@ -33,33 +33,41 @@
 
 package org.polypheny.db.adapter.csv;
 
-import org.polypheny.db.algebra.type.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.*;
-
 
 /**
  * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
  */
-public class CsvSchema extends AbstractSchema {
+public class CsvSchema extends AbstractNamespace implements Schema {
 
     private final URL directoryUrl;
     private final CsvTable.Flavor flavor;
-    private Map<String, CsvTable> tableMap = new HashMap<>();
+    private final Map<String, CsvTable> tableMap = new HashMap<>();
 
 
     /**
@@ -68,14 +76,14 @@ public class CsvSchema extends AbstractSchema {
      * @param directoryUrl Directory that holds {@code .csv} files
      * @param flavor Whether to instantiate flavor tables that undergo query optimization
      */
-    public CsvSchema( URL directoryUrl, CsvTable.Flavor flavor ) {
-        super();
+    public CsvSchema( long id, URL directoryUrl, CsvTable.Flavor flavor ) {
+        super( id );
         this.directoryUrl = directoryUrl;
         this.flavor = flavor;
     }
 
 
-    public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
+    public Entity createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
@@ -106,7 +114,7 @@ public class CsvSchema extends AbstractSchema {
 
 
     @Override
-    public Map<String, Table> getTableMap() {
+    public Map<String, Entity> getTableMap() {
         return new HashMap<>( tableMap );
     }
 

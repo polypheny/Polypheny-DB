@@ -50,8 +50,9 @@ import java.util.Objects;
 import java.util.Set;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 
 
 /**
@@ -59,7 +60,7 @@ import org.polypheny.db.schema.impl.AbstractSchema;
  *
  * Each table in the schema is an ELASTICSEARCH type in that index.
  */
-public class ElasticsearchSchema extends AbstractSchema {
+public class ElasticsearchSchema extends AbstractNamespace implements Schema {
 
     private final String index;
 
@@ -67,7 +68,7 @@ public class ElasticsearchSchema extends AbstractSchema {
 
     private final ObjectMapper mapper;
 
-    private final Map<String, Table> tableMap;
+    private final Map<String, Entity> tableMap;
 
     /**
      * Default batch size to be used during scrolling.
@@ -82,19 +83,19 @@ public class ElasticsearchSchema extends AbstractSchema {
      * @param mapper mapper for JSON (de)serialization
      * @param index name of ES index
      */
-    public ElasticsearchSchema( RestClient client, ObjectMapper mapper, String index ) {
-        this( client, mapper, index, null );
+    public ElasticsearchSchema( long id, RestClient client, ObjectMapper mapper, String index ) {
+        this( id, client, mapper, index, null );
     }
 
 
-    public ElasticsearchSchema( RestClient client, ObjectMapper mapper, String index, String type ) {
-        this( client, mapper, index, type, ElasticsearchTransport.DEFAULT_FETCH_SIZE );
+    public ElasticsearchSchema( long id, RestClient client, ObjectMapper mapper, String index, String type ) {
+        this( id, client, mapper, index, type, ElasticsearchTransport.DEFAULT_FETCH_SIZE );
     }
 
 
     @VisibleForTesting
-    ElasticsearchSchema( RestClient client, ObjectMapper mapper, String index, String type, int fetchSize ) {
-        super();
+    ElasticsearchSchema( long id, RestClient client, ObjectMapper mapper, String index, String type, int fetchSize ) {
+        super( id );
         this.client = Objects.requireNonNull( client, "client" );
         this.mapper = Objects.requireNonNull( mapper, "mapper" );
         this.index = Objects.requireNonNull( index, "index" );
@@ -114,16 +115,16 @@ public class ElasticsearchSchema extends AbstractSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         return tableMap;
     }
 
 
-    private Map<String, Table> createTables( Iterable<String> types ) {
-        final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+    private Map<String, Entity> createTables( Iterable<String> types ) {
+        final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
         for ( String type : types ) {
             final ElasticsearchTransport transport = new ElasticsearchTransport( client, mapper, index, type, fetchSize );
-            builder.put( type, new ElasticsearchTable( transport ) );
+            builder.put( type, new ElasticsearchEntity( transport ) );
         }
         return builder.build();
     }

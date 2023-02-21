@@ -46,20 +46,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 
 
 /**
  * Schema mapped onto a Druid instance.
  */
-public class DruidSchema extends AbstractSchema {
+public class DruidSchema extends AbstractNamespace implements Schema {
 
     final String url;
     final String coordinatorUrl;
     private final boolean discoverTables;
-    private Map<String, Table> tableMap = null;
+    private Map<String, Entity> tableMap = null;
 
 
     /**
@@ -69,7 +70,8 @@ public class DruidSchema extends AbstractSchema {
      * @param coordinatorUrl URL of coordinator REST service, e.g. "http://localhost:8081"
      * @param discoverTables If true, ask Druid what tables exist; if false, only create tables explicitly in the model
      */
-    public DruidSchema( String url, String coordinatorUrl, boolean discoverTables ) {
+    public DruidSchema( long id, String url, String coordinatorUrl, boolean discoverTables ) {
+        super( id );
         this.url = Objects.requireNonNull( url );
         this.coordinatorUrl = Objects.requireNonNull( coordinatorUrl );
         this.discoverTables = discoverTables;
@@ -77,7 +79,7 @@ public class DruidSchema extends AbstractSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         if ( !discoverTables ) {
             return ImmutableMap.of();
         }
@@ -93,14 +95,14 @@ public class DruidSchema extends AbstractSchema {
     }
 
 
-    private Table table( String tableName, DruidConnectionImpl connection ) {
+    private Entity table( String tableName, DruidConnectionImpl connection ) {
         final Map<String, PolyType> fieldMap = new LinkedHashMap<>();
         final Set<String> metricNameSet = new LinkedHashSet<>();
         final Map<String, List<ComplexMetric>> complexMetrics = new HashMap<>();
 
-        connection.metadata( tableName, DruidTable.DEFAULT_TIMESTAMP_COLUMN, null, fieldMap, metricNameSet, complexMetrics );
+        connection.metadata( tableName, DruidEntity.DEFAULT_TIMESTAMP_COLUMN, null, fieldMap, metricNameSet, complexMetrics );
 
-        return DruidTable.create( DruidSchema.this, tableName, null, fieldMap, metricNameSet, DruidTable.DEFAULT_TIMESTAMP_COLUMN, complexMetrics );
+        return DruidEntity.create( DruidSchema.this, tableName, null, fieldMap, metricNameSet, DruidEntity.DEFAULT_TIMESTAMP_COLUMN, complexMetrics );
     }
 
 }

@@ -50,7 +50,7 @@ import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -92,7 +92,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             AlgNode node,
             CatalogTable catalogTable,
             Statement statement,
-            LogicalTable logicalTable,
+            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation );
@@ -101,7 +101,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             AlgNode node,
             CatalogTable catalogTable,
             Statement statement,
-            LogicalTable logicalTable,
+            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation );
@@ -219,7 +219,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
 
-            LogicalTable logicalTable = ((LogicalTable) table.getTable());
+            LogicalEntity logicalTable = ((LogicalEntity) table.getEntity());
 
             if ( table.getCatalogEntity() == null || table.getCatalogEntity().namespaceType == NamespaceType.GRAPH ) {
                 return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
@@ -247,7 +247,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     }
 
 
-    private List<RoutedAlgBuilder> handleRelationalOnGraphScan( AlgNode node, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    private List<RoutedAlgBuilder> handleRelationalOnGraphScan( AlgNode node, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // todo dl: remove after RowType refactor
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         RexBuilder rexBuilder = algBuilder.getRexBuilder();

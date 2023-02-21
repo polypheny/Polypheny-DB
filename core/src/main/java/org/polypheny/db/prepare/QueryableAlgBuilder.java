@@ -68,8 +68,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 
 
@@ -107,8 +107,8 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
         }
         if ( queryable instanceof AbstractTableQueryable ) {
             final AbstractTableQueryable tableQueryable = (AbstractTableQueryable) queryable;
-            final QueryableTable table = tableQueryable.table;
-            final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTableId() );
+            final QueryableEntity table = tableQueryable.table;
+            final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getId() );
             final PolyphenyDbSchema.TableEntry tableEntry =
                     PolyphenyDbSchema
                             .from( tableQueryable.schema )
@@ -119,8 +119,8 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
                     tableEntry,
                     catalogTable,
                     null );
-            if ( table instanceof TranslatableTable ) {
-                return ((TranslatableTable) table).toAlg( translator.toAlgContext(), algOptTable, translator.cluster.traitSet() );
+            if ( table instanceof TranslatableEntity ) {
+                return ((TranslatableEntity) table).toAlg( translator.toAlgContext(), algOptTable, translator.cluster.traitSet() );
             } else {
                 return LogicalRelScan.create( translator.cluster, algOptTable );
             }

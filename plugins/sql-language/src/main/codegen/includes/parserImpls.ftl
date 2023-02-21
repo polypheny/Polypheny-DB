@@ -24,13 +24,13 @@ return SqlShowTables(...)
 SqlTruncate SqlTruncateTable() :
 {
     final Span s;
-    final SqlIdentifier table;
+    final SqlIdentifier entity;
 }
 {
     <TRUNCATE> { s = span(); }
-    <TABLE> table = CompoundIdentifier()
+    <TABLE> entity = CompoundIdentifier()
     {
-        return new SqlTruncate(s.end(this), table);
+        return new SqlTruncate(s.end(this), entity);
     }
 }
 
@@ -40,24 +40,24 @@ SqlTruncate SqlTruncateTable() :
 */
 SqlAlterSchema SqlAlterSchema(Span s) :
 {
-    final SqlIdentifier schema;
+    final SqlIdentifier namespace;
     final SqlIdentifier name;
     final SqlIdentifier owner;
 }
 {
     <SCHEMA>
-    schema = CompoundIdentifier()
+    namespace = CompoundIdentifier()
     (
         <RENAME> <TO>
         name = CompoundIdentifier()
         {
-            return new SqlAlterSchemaRename(s.end(this), schema, name);
+            return new SqlAlterSchemaRename(s.end(this), namespace, name);
         }
     |
         <OWNER> <TO>
         owner = SimpleIdentifier()
         {
-            return new SqlAlterSchemaOwner(s.end(this), schema, owner);
+            return new SqlAlterSchemaOwner(s.end(this), namespace, owner);
         }
     )
 }
@@ -175,7 +175,7 @@ SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
 */
 SqlAlterTable SqlAlterTable(Span s) :
 {
-    final SqlIdentifier table;
+    final SqlIdentifier entity;
     final SqlIdentifier column;
     final SqlIdentifier name;
     final SqlIdentifier owner;
@@ -215,18 +215,18 @@ SqlAlterTable SqlAlterTable(Span s) :
 }
 {
     <TABLE>
-    table = CompoundIdentifier()
+    entity = CompoundIdentifier()
     (
         <RENAME> <TO>
         name = SimpleIdentifier()
         {
-            return new SqlAlterTableRename(s.end(this), table, name);
+            return new SqlAlterTableRename(s.end(this), entity, name);
         }
     |
         <OWNER> <TO>
         owner = SimpleIdentifier()
         {
-            return new SqlAlterTableOwner(s.end(this), table, owner);
+            return new SqlAlterTableOwner(s.end(this), entity, owner);
         }
     |
         <RENAME> <COLUMN>
@@ -234,7 +234,7 @@ SqlAlterTable SqlAlterTable(Span s) :
         <TO>
         name = SimpleIdentifier()
         {
-            return new SqlAlterTableRenameColumn(s.end(this), table, column, name);
+            return new SqlAlterTableRenameColumn(s.end(this), entity, column, name);
         }
     |
         <ADD> <COLUMN>
@@ -264,7 +264,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 { afterColumn = null; beforeColumn = null; }
             )
             {
-                return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
+                return new SqlAlterTableAddColumn(s.end(this), entity, name, type, nullable, defaultValue, beforeColumn, afterColumn);
             }
         |
             <AS>
@@ -285,14 +285,14 @@ SqlAlterTable SqlAlterTable(Span s) :
                 { afterColumn = null; beforeColumn = null; }
             )
             {
-                return new SqlAlterSourceTableAddColumn(s.end(this), table, name, physicalName, defaultValue, beforeColumn, afterColumn);
+                return new SqlAlterSourceTableAddColumn(s.end(this), entity, name, physicalName, defaultValue, beforeColumn, afterColumn);
             }
         )
     |
         <DROP> <COLUMN>
         column = SimpleIdentifier()
         {
-            return new SqlAlterTableDropColumn(s.end(this), table, column);
+            return new SqlAlterTableDropColumn(s.end(this), entity, column);
         }
     |
         <ADD> <PRIMARY> <KEY>
@@ -305,12 +305,12 @@ SqlAlterTable SqlAlterTable(Span s) :
             }
         )
         {
-            return new SqlAlterTableAddPrimaryKey(s.end(this), table, columnList);
+            return new SqlAlterTableAddPrimaryKey(s.end(this), entity, columnList);
         }
     |
         <DROP> <PRIMARY> <KEY>
         {
-            return new SqlAlterTableDropPrimaryKey(s.end(this), table);
+            return new SqlAlterTableDropPrimaryKey(s.end(this), entity);
         }
     |
         <ADD> <CONSTRAINT>
@@ -326,7 +326,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 }
             )
             {
-                return new SqlAlterTableAddUniqueConstraint(s.end(this), table, constraintName, columnList);
+                return new SqlAlterTableAddUniqueConstraint(s.end(this), entity, constraintName, columnList);
             }
         |
             <FOREIGN> <KEY>
@@ -374,14 +374,14 @@ SqlAlterTable SqlAlterTable(Span s) :
                 { onDelete = null; }
             )
             {
-                return new SqlAlterTableAddForeignKey(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
+                return new SqlAlterTableAddForeignKey(s.end(this), entity, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
             }
         )
     |
         <DROP> <CONSTRAINT>
         constraintName = SimpleIdentifier()
         {
-            return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
+            return new SqlAlterTableDropConstraint(s.end(this), entity, constraintName);
         }
     |
         <DROP>
@@ -389,7 +389,7 @@ SqlAlterTable SqlAlterTable(Span s) :
         <KEY>
         constraintName = SimpleIdentifier()
         {
-            return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
+            return new SqlAlterTableDropForeignKey(s.end(this), entity, constraintName);
         }
     |
         <ADD>
@@ -428,7 +428,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 <RPAREN>
             ]
         {
-            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList);
+            return new SqlAlterTableAddPlacement(s.end(this), entity, columnList, store, partitionList, partitionNamesList);
         }
     |
         <DROP>
@@ -437,7 +437,7 @@ SqlAlterTable SqlAlterTable(Span s) :
         <STORE>
         store = SimpleIdentifier()
         {
-            return new SqlAlterTableDropPlacement(s.end(this), table, store);
+            return new SqlAlterTableDropPlacement(s.end(this), entity, store);
         }
     |
         <MODIFY>
@@ -450,7 +450,7 @@ SqlAlterTable SqlAlterTable(Span s) :
             <STORE>
             store = SimpleIdentifier()
             {
-                return new SqlAlterTableModifyPlacementAddColumn(s.end(this), table, column, store);
+                return new SqlAlterTableModifyPlacementAddColumn(s.end(this), entity, column, store);
             }
         |
             <DROP>
@@ -460,7 +460,7 @@ SqlAlterTable SqlAlterTable(Span s) :
             <STORE>
             store = SimpleIdentifier()
             {
-                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
+                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), entity, column, store);
             }
         |
             columnList = ParenthesizedSimpleIdentifierList()
@@ -485,7 +485,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                <RPAREN>
             ]
             {
-                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList);
+                return new SqlAlterTableModifyPlacement(s.end(this), entity, columnList, store, partitionList, partitionNamesList);
             }
         )
 
@@ -509,7 +509,7 @@ SqlAlterTable SqlAlterTable(Span s) :
         <ON>
         <STORE> store = SimpleIdentifier()
         {
-            return new SqlAlterTableModifyPartitions(s.end(this), table, store, partitionList, partitionNamesList);
+            return new SqlAlterTableModifyPartitions(s.end(this), entity, store, partitionList, partitionNamesList);
         }
 
     |
@@ -541,18 +541,18 @@ SqlAlterTable SqlAlterTable(Span s) :
             { storeName = null; }
         )
         {
-            return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexMethod, indexName, storeName);
+            return new SqlAlterTableAddIndex(s.end(this), entity, columnList, unique, indexMethod, indexName, storeName);
         }
     |
         <DROP> <INDEX>
         indexName = SimpleIdentifier()
         {
-            return new SqlAlterTableDropIndex(s.end(this), table, indexName);
+            return new SqlAlterTableDropIndex(s.end(this), entity, indexName);
         }
     |
         <MODIFY> <COLUMN>
         column = SimpleIdentifier()
-        statement = AlterTableModifyColumn(s, table, column)
+        statement = AlterTableModifyColumn(s, entity, column)
         {
             return statement;
         }
@@ -608,7 +608,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                                                                     rawPartitionInfo.setPartitionNamesList( CoreUtil.toNodeList( partitionNamesList, Identifier.class ) );
                                                                     rawPartitionInfo.setPartitionQualifierList( SqlUtil.toNodeListList( partitionQualifierList ) );
 
-                                                                return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                                                return new SqlAlterTableAddPartitions(s.end(this), entity, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
                                                                             }
                     )
 
@@ -647,13 +647,13 @@ SqlAlterTable SqlAlterTable(Span s) :
         ]
         {
             rawPartitionInfo = new RawPartitionInformation();
-            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+            return new SqlAlterTableAddPartitions(s.end(this), entity, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
         }
 
     |
         <MERGE> <PARTITIONS>
         {
-            return new SqlAlterTableMergePartitions(s.end(this), table);
+            return new SqlAlterTableMergePartitions(s.end(this), entity);
         }
     )
 }
@@ -661,7 +661,7 @@ SqlAlterTable SqlAlterTable(Span s) :
 /**
 * Parses the MODIFY COLUMN part of an ALTER TABLE statement.
 */
-SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, SqlIdentifier column) :
+SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier entity, SqlIdentifier column) :
 {
     SqlDataTypeSpec type = null;
     Boolean nullable = null;
@@ -703,7 +703,7 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
         <DROP> <DEFAULT_> { dropDefault = true; }
     )
     {
-        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
+        return new SqlAlterTableModifyColumn(s.end(this), entity, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
     }
 }
 

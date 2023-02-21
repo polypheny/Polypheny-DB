@@ -46,8 +46,8 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mapping;
@@ -58,8 +58,8 @@ import org.polypheny.db.util.mapping.Mappings;
  * Planner rule that converts
  * a {@link Filter}
  * on a {@link Scan}
- * of a {@link FilterableTable}
- * or a {@link ProjectableFilterableTable}
+ * of a {@link FilterableEntity}
+ * or a {@link ProjectableFilterableEntity}
  * to a {@link BindableScan}.
  *
  * The {@link #INTERPRETER} variant allows an intervening {@link org.polypheny.db.adapter.enumerable.EnumerableInterpreter}.
@@ -118,7 +118,7 @@ public abstract class FilterScanRule extends AlgOptRule {
     public static boolean test( Scan scan ) {
         // We can only push filters into a FilterableTable or ProjectableFilterableTable.
         final AlgOptEntity table = scan.getTable();
-        return table.unwrap( FilterableTable.class ) != null || table.unwrap( ProjectableFilterableTable.class ) != null;
+        return table.unwrap( FilterableEntity.class ) != null || table.unwrap( ProjectableFilterableEntity.class ) != null;
     }
 
 

@@ -44,7 +44,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
-import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 
@@ -257,7 +257,7 @@ public class EntityAccessMap {
             if ( p instanceof Modify ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                    extractWriteConstraints( (LogicalTable) table.getTable() );
+                    extractWriteConstraints( (LogicalEntity) table.getTable() );
                 }
             } else {
                 newAccess = Mode.READ_ACCESS;
@@ -324,7 +324,7 @@ public class EntityAccessMap {
         /**
          * Retrieves an access map for linked tables based on foreign key constraints
          */
-        private void extractWriteConstraints( LogicalTable logicalTable ) {
+        private void extractWriteConstraints( LogicalEntity logicalTable ) {
 
             for ( long constraintTable : logicalTable.getConstraintIds() ) {
                 for ( long constraintPartitionIds

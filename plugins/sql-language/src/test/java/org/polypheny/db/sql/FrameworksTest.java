@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
@@ -53,6 +52,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -75,18 +75,18 @@ import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.HrSchema;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.Path;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.impl.AbstractEntity;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.util.PlannerImplMock;
@@ -112,7 +112,7 @@ public class FrameworksTest extends SqlLanguageDependent {
         AlgNode x =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
                     final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
-                    final Table table = new AbstractTable() {
+                    final Entity entity = new AbstractEntity() {
                         @Override
                         public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                             final AlgDataType stringType = typeFactory.createJavaType( String.class );
@@ -125,7 +125,11 @@ public class FrameworksTest extends SqlLanguageDependent {
                     };
 
                     // "SELECT * FROM myTable"
-                    final AlgOptAbstractEntity algOptTable = new AlgOptAbstractEntity( algOptSchema, "myTable", table.getRowType( typeFactory ) ) {
+                    final AlgOptAbstractEntity algOptTable = new AlgOptAbstractEntity( algOptSchema, "myTable", entity.getRowType( typeFactory ) ) {
+                        @Override
+                        public CatalogEntity getCatalogEntity() {
+                            return null;
+                        }
                     };
                     final EnumerableScan tableRel = EnumerableScan.create( cluster, algOptTable );
 
@@ -161,7 +165,7 @@ public class FrameworksTest extends SqlLanguageDependent {
     @Test
     public void testCreateRootSchemaWithNoMetadataSchema() {
         SchemaPlus rootSchema = Frameworks.createRootSchema( false );
-        assertThat( rootSchema.getSubSchemaNames().size(), equalTo( 0 ) );
+        assertThat( rootSchema.getSubNamespaceNames().size(), equalTo( 0 ) );
     }
 
 
@@ -243,7 +247,7 @@ public class FrameworksTest extends SqlLanguageDependent {
     public void testFrameworksValidatorWithIdentifierExpansion() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -278,7 +282,7 @@ public class FrameworksTest extends SqlLanguageDependent {
     public void testSchemaPath() {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -313,10 +317,10 @@ public class FrameworksTest extends SqlLanguageDependent {
     @Test
     @Ignore // test is no longer needed? as the streamer prevents this error and uses different end implementation
     public void testUpdate() throws Exception {
-        Table table = new TableImpl();
+        Entity entity = new EntityImpl();
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
-        SchemaPlus schema = rootSchema.add( "x", new AbstractSchema(), NamespaceType.RELATIONAL );
-        schema.add( "MYTABLE", table );
+        SchemaPlus schema = rootSchema.add( "x", new AbstractNamespace( -1 ), NamespaceType.RELATIONAL );
+        schema.add( "MYTABLE", entity );
         List<AlgTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( AlgDistributionTraitDef.INSTANCE );
@@ -379,9 +383,9 @@ public class FrameworksTest extends SqlLanguageDependent {
     /**
      * Modifiable, filterable table.
      */
-    private static class TableImpl extends AbstractTable implements ModifiableTable, ProjectableFilterableTable {
+    private static class EntityImpl extends AbstractEntity implements ModifiableEntity, ProjectableFilterableEntity {
 
-        TableImpl() {
+        EntityImpl() {
         }
 
 

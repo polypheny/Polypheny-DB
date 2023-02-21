@@ -84,7 +84,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
         // Register "SALES" schema.
         MockSchema salesSchema = new MockSchema( "SALES" );
-        registerSchema( salesSchema );
+        registerSchema( salesSchema, -1 );
 
         // Register "EMP" table with customer InitializerExpressionFactory to check whether newDefaultValue method called or not.
         final InitializerExpressionFactory countingInitializerExpressionFactory = new CountingFactory( ImmutableList.of( "DEPTNO" ) );
@@ -182,7 +182,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
         // Register "CUSTOMER" schema.
         MockSchema customerSchema = new MockSchema( "CUSTOMER" );
-        registerSchema( customerSchema );
+        registerSchema( customerSchema, -1 );
 
         // Register "CONTACT" table.
         MockEntity contactTable = MockEntity.create( this, customerSchema, "CONTACT", false, 1000 );
@@ -240,7 +240,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( suppliersTable );
 
         MockSchema structTypeSchema = new MockSchema( "STRUCT" );
-        registerSchema( structTypeSchema );
+        registerSchema( structTypeSchema, -1 );
         final List<CompoundNameColumn> columns = Arrays.asList(
                 new CompoundNameColumn( "", "K0", fixture.varchar20Type ),
                 new CompoundNameColumn( "", "C1", fixture.varchar20Type ),

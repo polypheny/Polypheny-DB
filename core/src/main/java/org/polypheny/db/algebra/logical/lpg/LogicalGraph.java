@@ -29,19 +29,19 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.type.PolyType;
 
 
 @Getter
-public class LogicalGraph implements RelationalTransformable, Schema, Graph, TranslatableGraph {
+public class LogicalGraph implements RelationalTransformable, Namespace, Graph, TranslatableGraph {
 
     private final long id;
 
@@ -61,13 +61,13 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
 
 
     @Override
-    public Table getTable( String name ) {
+    public Entity getEntity( String name ) {
         return null;
     }
 
 
     @Override
-    public Set<String> getTableNames() {
+    public Set<String> getEntityNames() {
         return Set.of();
     }
 
@@ -97,13 +97,13 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
 
 
     @Override
-    public Schema getSubSchema( String name ) {
+    public Namespace getSubNamespace( String name ) {
         return null;
     }
 
 
     @Override
-    public Set<String> getSubSchemaNames() {
+    public Set<String> getSubNamespaceNames() {
         return Set.of();
     }
 
@@ -121,7 +121,7 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
 
 
     @Override
-    public Schema snapshot( SchemaVersion version ) {
+    public Namespace snapshot( SchemaVersion version ) {
         return new LogicalGraph( id );
     }
 
@@ -133,7 +133,7 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, Graph graph ) {
+    public AlgNode toAlg( ToAlgContext context, org.polypheny.db.schema.graph.Graph graph ) {
         throw new RuntimeException( "toAlg() is not implemented for Logical Graphs!" );
     }
 

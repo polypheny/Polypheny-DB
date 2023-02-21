@@ -41,26 +41,6 @@ public class QueryPlanBuilder {
 
 
     private static AlgBuilder createRelBuilder( final Statement statement ) {
-        /*final SchemaPlus rootSchema = transaction.getSchema().plus();
-        FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
-                .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
-                .traitDefs( (List<RelTraitDef>) null )
-                .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
-                .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        0,
-                        transaction ) ).build();
-        return AlgBuilder.create( config );
-                         */
         return AlgBuilder.create( statement );
     }
 

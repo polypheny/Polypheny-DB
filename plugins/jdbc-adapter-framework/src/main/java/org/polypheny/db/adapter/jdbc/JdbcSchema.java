@@ -37,6 +37,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -46,30 +53,38 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
-import org.polypheny.db.algebra.type.*;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.*;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.SchemaVersion;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.TableType;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
-import javax.sql.DataSource;
-import java.util.*;
-
 
 /**
- * Implementation of {@link Schema} that is backed by a JDBC data source.
+ * Implementation of {@link Namespace} that is backed by a JDBC data source.
  *
  * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed
  * against those tables, pushing down as much as possible of the query logic to SQL.
  */
 @Slf4j
-public class JdbcSchema implements Schema {
+public class JdbcSchema implements Namespace, Schema {
 
     final ConnectionFactory connectionFactory;
     public final SqlDialect dialect;
@@ -77,20 +92,23 @@ public class JdbcSchema implements Schema {
     @Getter
     private final JdbcConvention convention;
 
-    private final Map<String, JdbcTable> tableMap;
+    private final Map<String, JdbcEntity> tableMap;
     private final Map<String, String> physicalToLogicalTableNameMap;
 
     private final Adapter adapter;
+    @Getter
+    private final long id;
 
 
     private JdbcSchema(
+            long id,
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            Map<String, JdbcTable> tableMap,
+            Map<String, JdbcEntity> tableMap,
             Map<String, String> physicalToLogicalTableNameMap,
             Adapter adapter ) {
-        super();
+        this.id = id;
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         this.convention = convention;
@@ -108,11 +126,12 @@ public class JdbcSchema implements Schema {
      * @param convention Calling convention
      */
     public JdbcSchema(
+            long id,
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
             Adapter adapter ) {
-        super();
+        this.id = id;
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         convention.setJdbcSchema( this );
@@ -123,7 +142,7 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public JdbcTable createJdbcTable(
+    public JdbcEntity createJdbcTable(
             CatalogTable catalogTable,
             List<CatalogColumnPlacement> columnPlacementsOnStore,
             CatalogPartitionPlacement partitionPlacement ) {
@@ -147,7 +166,7 @@ public class JdbcSchema implements Schema {
             physicalColumnNames.add( placement.physicalColumnName );
         }
 
-        JdbcTable table = new JdbcTable(
+        JdbcEntity table = new JdbcEntity(
                 this,
                 catalogTable.getNamespaceName(),
                 catalogTable.name,
@@ -166,6 +185,7 @@ public class JdbcSchema implements Schema {
 
 
     public static JdbcSchema create(
+            Long id,
             SchemaPlus parentSchema,
             String name,
             ConnectionFactory connectionFactory,
@@ -173,7 +193,7 @@ public class JdbcSchema implements Schema {
             Adapter adapter ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
-        return new JdbcSchema( connectionFactory, dialect, convention, adapter );
+        return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
     }
 
 
@@ -192,8 +212,9 @@ public class JdbcSchema implements Schema {
 
 
     @Override
-    public Schema snapshot( SchemaVersion version ) {
+    public Namespace snapshot( SchemaVersion version ) {
         return new JdbcSchema(
+                id,
                 connectionFactory,
                 dialect,
                 convention,
@@ -239,12 +260,12 @@ public class JdbcSchema implements Schema {
 
 
     @Override
-    public Table getTable( String name ) {
+    public Entity getEntity( String name ) {
         return getTableMap().get( name );
     }
 
 
-    public synchronized ImmutableMap<String, JdbcTable> getTableMap() {
+    public synchronized ImmutableMap<String, JdbcEntity> getTableMap() {
         return ImmutableMap.copyOf( tableMap );
     }
 
@@ -286,7 +307,7 @@ public class JdbcSchema implements Schema {
 
 
     @Override
-    public Set<String> getTableNames() {
+    public Set<String> getEntityNames() {
         // This method is called during a cache refresh. We can take it as a signal that we need to re-build our own cache.
         return getTableMap().keySet();
     }
@@ -311,14 +332,14 @@ public class JdbcSchema implements Schema {
 
 
     @Override
-    public Schema getSubSchema( String name ) {
+    public Namespace getSubNamespace( String name ) {
         // JDBC does not support sub-schemas.
         return null;
     }
 
 
     @Override
-    public Set<String> getSubSchemaNames() {
+    public Set<String> getSubNamespaceNames() {
         return ImmutableSet.of();
     }
 

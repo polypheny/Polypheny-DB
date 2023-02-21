@@ -26,7 +26,7 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
-public interface ModifiableCollection extends QueryableTable {
+public interface ModifiableCollection extends QueryableEntity {
 
     DocumentModify toModificationAlg(
             AlgOptCluster cluster,

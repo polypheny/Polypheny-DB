@@ -75,7 +75,7 @@ public class DruidQueryFilterTest {
         final PolyphenyDbConnectionConfig connectionConfigMock = Mockito.mock( PolyphenyDbConnectionConfig.class );
         Mockito.when( connectionConfigMock.timeZone() ).thenReturn( "UTC" );
         Mockito.when( druidQuery.getConnectionConfig() ).thenReturn( connectionConfigMock );
-        Mockito.when( druidQuery.getDruidTable() ).thenReturn( new DruidTable( Mockito.mock( DruidSchema.class ), "dataSource", null, ImmutableSet.of(), "timestamp", null, null, null ) );
+        Mockito.when( druidQuery.getDruidTable() ).thenReturn( new DruidEntity( Mockito.mock( DruidSchema.class ), "dataSource", null, ImmutableSet.of(), "timestamp", null, null, null ) );
     }
 
 
@@ -122,7 +122,7 @@ public class DruidQueryFilterTest {
 
         final JavaTypeFactoryImpl typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-        final DruidTable druidTable = new DruidTable( Mockito.mock( DruidSchema.class ), "dataSource", null, ImmutableSet.of(), "timestamp", null, null, null );
+        final DruidEntity druidTable = new DruidEntity( Mockito.mock( DruidSchema.class ), "dataSource", null, ImmutableSet.of(), "timestamp", null, null, null );
         final AlgDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
         final AlgDataType varcharRowType = typeFactory.builder().add( "dimensionName", null, varcharType ).build();
 

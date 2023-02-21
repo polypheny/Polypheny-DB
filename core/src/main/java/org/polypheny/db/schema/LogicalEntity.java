@@ -16,7 +16,6 @@
 
 package org.polypheny.db.schema;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -24,7 +23,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
@@ -42,7 +41,7 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
-public class LogicalTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
+public class LogicalEntity extends AbstractQueryableEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity {
 
     private AlgProtoDataType protoRowType;
 
@@ -63,7 +62,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private final List<String> logicalColumnNames;
 
 
-    public LogicalTable(
+    public LogicalEntity(
             long tableId,
             String logicalSchemaName,
             String logicalTableName,
@@ -72,7 +71,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
             AlgProtoDataType protoRowType,
             NamespaceType schemaType ) {
         super( Object[].class );
-        this.tableId = tableId;
+        this.id = tableId;
         this.logicalSchemaName = logicalSchemaName;
         this.logicalTableName = logicalTableName;
         this.columnIds = columnIds;

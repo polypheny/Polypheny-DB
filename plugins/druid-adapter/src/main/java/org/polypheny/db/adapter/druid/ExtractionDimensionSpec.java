@@ -110,7 +110,7 @@ public class ExtractionDimensionSpec implements DimensionSpec {
      */
     @Nullable
     public static Granularity toQueryGranularity( DimensionSpec dimensionSpec ) {
-        if ( !DruidTable.DEFAULT_TIMESTAMP_COLUMN.equals( dimensionSpec.getDimension() ) ) {
+        if ( !DruidEntity.DEFAULT_TIMESTAMP_COLUMN.equals( dimensionSpec.getDimension() ) ) {
             // Only __time column can be substituted by granularity
             return null;
         }

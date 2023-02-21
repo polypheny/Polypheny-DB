@@ -46,7 +46,7 @@ import org.apache.calcite.linq4j.tree.Types;
  */
 enum ElasticsearchMethod {
 
-    ELASTICSEARCH_QUERYABLE_FIND( ElasticsearchTable.ElasticsearchQueryable.class,
+    ELASTICSEARCH_QUERYABLE_FIND( ElasticsearchEntity.ElasticsearchQueryable.class,
             "find",
             List.class, // ops  - projections and other stuff
             List.class, // fields

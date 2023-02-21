@@ -97,7 +97,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema.TableEntryImpl;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
@@ -343,14 +343,14 @@ public class MqlToAlgConverter {
             final Builder fieldInfo = typeFactory.builder();
             fieldInfo.add( new AlgDataTypeFieldImpl( "d", 0, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );
             AlgDataType rowType = fieldInfo.build();
-            CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTable().getTableId() );
+            CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTable().getId() );
 
             return AlgOptEntityImpl.create(
                     table.getRelOptSchema(),
                     rowType,
                     new TableEntryImpl(
                             catalogReader.getRootSchema(), names.get( names.size() - 1 ),
-                            new LogicalTable( Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( dbSchemaName ) ).get( 0 ).id, names.get( 0 ), names.get( names.size() - 1 ), List.of(), List.of(), AlgDataTypeImpl.proto( rowType ), NamespaceType.GRAPH ) ),
+                            new LogicalEntity( Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( dbSchemaName ) ).get( 0 ).id, names.get( 0 ), names.get( names.size() - 1 ), List.of(), List.of(), AlgDataTypeImpl.proto( rowType ), NamespaceType.GRAPH ) ),
                     catalogTable,
                     1.0 );
         }

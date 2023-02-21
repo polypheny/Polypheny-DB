@@ -38,100 +38,106 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
-import org.polypheny.db.schema.Table;
 
 
 /**
- * Implementation of {@link Schema} that delegates to an underlying schema.
+ * Implementation of {@link Namespace} that delegates to an underlying schema.
  */
-public class DelegatingSchema implements Schema {
+public class DelegatingNamespace implements Namespace {
 
-    protected final Schema schema;
+    protected final Namespace namespace;
 
 
     /**
      * Creates a DelegatingSchema.
      *
-     * @param schema Underlying schema
+     * @param namespace Underlying schema
      */
-    public DelegatingSchema( Schema schema ) {
-        this.schema = schema;
+    public DelegatingNamespace( Namespace namespace ) {
+        this.namespace = namespace;
     }
 
 
     @Override
     public String toString() {
-        return "DelegatingSchema(delegate=" + schema + ")";
+        return "DelegatingSchema(delegate=" + namespace + ")";
     }
 
 
     @Override
     public boolean isMutable() {
-        return schema.isMutable();
+        return namespace.isMutable();
     }
 
 
     @Override
-    public Schema snapshot( SchemaVersion version ) {
-        return schema.snapshot( version );
+    public Namespace snapshot( SchemaVersion version ) {
+        return namespace.snapshot( version );
     }
 
 
     @Override
     public Expression getExpression( SchemaPlus parentSchema, String name ) {
-        return schema.getExpression( parentSchema, name );
+        return namespace.getExpression( parentSchema, name );
     }
 
 
     @Override
-    public Table getTable( String name ) {
-        return schema.getTable( name );
+    public Entity getEntity( String name ) {
+        return namespace.getEntity( name );
     }
 
 
     @Override
-    public Set<String> getTableNames() {
-        return schema.getTableNames();
+    public Set<String> getEntityNames() {
+        return namespace.getEntityNames();
     }
 
 
     @Override
     public AlgProtoDataType getType( String name ) {
-        return schema.getType( name );
+        return namespace.getType( name );
     }
 
 
     @Override
     public Set<String> getTypeNames() {
-        return schema.getTypeNames();
+        return namespace.getTypeNames();
     }
 
 
     @Override
     public Collection<Function> getFunctions( String name ) {
-        return schema.getFunctions( name );
+        return namespace.getFunctions( name );
     }
 
 
     @Override
     public Set<String> getFunctionNames() {
-        return schema.getFunctionNames();
+        return namespace.getFunctionNames();
     }
 
 
     @Override
-    public Schema getSubSchema( String name ) {
-        return schema.getSubSchema( name );
+    public long getId() {
+        return namespace.getId();
     }
 
 
     @Override
-    public Set<String> getSubSchemaNames() {
-        return schema.getSubSchemaNames();
+    public Namespace getSubNamespace( String name ) {
+        return namespace.getSubNamespace( name );
+    }
+
+
+    @Override
+    public Set<String> getSubNamespaceNames() {
+        return namespace.getSubNamespaceNames();
     }
 
 }

@@ -55,7 +55,7 @@ public class PigRelBuilderTest {
         final SchemaPlus rootSchema = transaction.getSchema().plus();
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
-                .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
+                .defaultSchema( rootSchema.getSubNamespace( transaction.getDefaultSchema().name ) )
                 .traitDefs( (List<AlgTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(

@@ -109,11 +109,11 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableCollection;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.tools.AlgBuilder;
@@ -413,7 +413,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         ),
                                         catalogTable.name + "_" + currentPartitionId );
                                 AlgOptEntity physical = catalogReader.getTableForMember( qualifiedTableName );
-                                ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+                                ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
                                 // Build DML
                                 Modify adjustedModify = modifiableTable.toModificationAlg(
@@ -504,7 +504,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 ),
                                                 catalogTable.name + "_" + entry.getKey() );
                                         AlgOptEntity physical = catalogReader.getTableForMember( qualifiedTableName );
-                                        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+                                        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
                                         // Build DML
                                         Modify adjustedModify = modifiableTable.toModificationAlg(
@@ -607,9 +607,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             false,
                             statement.getDataContext().getParameterValues() ).build();
 
-                    ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+                    ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
-                    if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
+                    if ( modifiableTable != null && modifiableTable == physical.unwrap( Entity.class ) ) {
                         adjustedModify = modifiableTable.toModificationAlg(
                                 cluster,
                                 physical,
@@ -1212,7 +1212,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private Modify getModify( AlgOptEntity table, AlgNode input, Statement statement, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
-        return table.unwrap( ModifiableTable.class ).toModificationAlg( input.getCluster(), table, statement.getTransaction().getCatalogReader(), input, operation, updateList, sourceList, true );
+        return table.unwrap( ModifiableEntity.class ).toModificationAlg( input.getCluster(), table, statement.getTransaction().getCatalogReader(), input, operation, updateList, sourceList, true );
     }
 
 

@@ -71,8 +71,8 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.ExtensibleTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.ExtensibleEntity;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
@@ -269,25 +269,25 @@ public abstract class Prepare {
 
         @Override
         public final AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
-            final Table table = unwrap( Table.class );
+            final Entity entity = unwrap( Entity.class );
 
             // Get the set of extended columns that do not have the same name as a column in the base table.
             final List<AlgDataTypeField> baseColumns = getRowType().getFieldList();
             final List<AlgDataTypeField> dedupedFields = AlgOptUtil.deduplicateColumns( baseColumns, extendedFields );
             final List<AlgDataTypeField> dedupedExtendedFields = dedupedFields.subList( baseColumns.size(), dedupedFields.size() );
 
-            if ( table instanceof ExtensibleTable ) {
-                final Table extendedTable = ((ExtensibleTable) table).extend( dedupedExtendedFields );
-                return extend( extendedTable );
+            if ( entity instanceof ExtensibleEntity ) {
+                final Entity extendedEntity = ((ExtensibleEntity) entity).extend( dedupedExtendedFields );
+                return extend( extendedEntity );
             }
-            throw new RuntimeException( "Cannot extend " + table );
+            throw new RuntimeException( "Cannot extend " + entity );
         }
 
 
         /**
-         * Implementation-specific code to instantiate a new {@link AlgOptEntity} based on a {@link Table} that has been extended.
+         * Implementation-specific code to instantiate a new {@link AlgOptEntity} based on a {@link Entity} that has been extended.
          */
-        protected abstract AlgOptEntity extend( Table extendedTable );
+        protected abstract AlgOptEntity extend( Entity extendedEntity );
 
 
         @Override

@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -69,7 +69,7 @@ public class EnumerableTableModifyRule extends ConverterRule {
             // return EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE.convert( alg );
             return null;
         }
-        final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
+        final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
         if ( modifiableTable == null ) {
             return null;
         }

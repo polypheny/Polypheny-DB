@@ -26,7 +26,8 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.NameMap;
 
@@ -39,7 +40,7 @@ public interface PolyphenyDbSchema {
 
     void setCache( boolean cache );
 
-    TableEntry add( String tableName, Table table );
+    TableEntry add( String tableName, Entity entity );
 
     TypeEntry add( String name, AlgProtoDataType type );
 
@@ -49,12 +50,12 @@ public interface PolyphenyDbSchema {
 
     List<String> path( String name );
 
-    PolyphenyDbSchema getSubSchema( String schemaName, boolean caseSensitive );
+    PolyphenyDbSchema getSubNamespace( String namespaceName, boolean caseSensitive );
 
     /**
      * Adds a child schema of this schema.
      */
-    PolyphenyDbSchema add( String name, Schema schema, NamespaceType type );
+    PolyphenyDbSchema add( String name, Namespace namespace, NamespaceType type );
 
     TableEntry getTable( String tableName );
 
@@ -62,9 +63,9 @@ public interface PolyphenyDbSchema {
 
     PolyphenyDbSchema getParent();
 
-    Schema getSchema();
+    Namespace getNamespace();
 
-    void setSchema( Schema schema );
+    void setNamespace( Namespace namespace );
 
     SchemaPlus plus();
 
@@ -129,7 +130,7 @@ public interface PolyphenyDbSchema {
         }
 
 
-        public abstract Table getTable();
+        public abstract Entity getTable();
 
     }
 
@@ -169,21 +170,21 @@ public interface PolyphenyDbSchema {
      */
     class TableEntryImpl extends TableEntry {
 
-        private final Table table;
+        private final Entity entity;
 
 
         /**
          * Creates a TableEntryImpl.
          */
-        public TableEntryImpl( PolyphenyDbSchema schema, String name, Table table ) {
+        public TableEntryImpl( PolyphenyDbSchema schema, String name, Entity entity ) {
             super( schema, name );
-            this.table = Objects.requireNonNull( table );
+            this.entity = Objects.requireNonNull( entity );
         }
 
 
         @Override
-        public Table getTable() {
-            return table;
+        public Entity getTable() {
+            return entity;
         }
 
     }
@@ -242,10 +243,10 @@ public interface PolyphenyDbSchema {
     /**
      * Schema that has no parents.
      */
-    class RootSchema extends AbstractSchema {
+    class RootSchema extends AbstractNamespace implements Schema {
 
         RootSchema() {
-            super();
+            super( -1L );
         }
 
 

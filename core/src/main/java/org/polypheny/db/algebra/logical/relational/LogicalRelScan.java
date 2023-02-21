@@ -44,8 +44,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.Table;
 
 
 /**
@@ -105,7 +105,7 @@ public final class LogicalRelScan extends Scan {
      * @param algOptEntity Table
      */
     public static LogicalRelScan create( AlgOptCluster cluster, final AlgOptEntity algOptEntity ) {
-        final Table table = algOptEntity.unwrap( Table.class );
+        final Entity entity = algOptEntity.unwrap( Entity.class );
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
@@ -113,8 +113,8 @@ public final class LogicalRelScan extends Scan {
                         .replaceIfs(
                                 AlgCollationTraitDef.INSTANCE,
                                 () -> {
-                                    if ( table != null ) {
-                                        return table.getStatistic().getCollations();
+                                    if ( entity != null ) {
+                                        return entity.getStatistic().getCollations();
                                     }
                                     return ImmutableList.of();
                                 } );

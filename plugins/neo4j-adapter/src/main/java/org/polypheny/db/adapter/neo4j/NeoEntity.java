@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
@@ -50,10 +49,10 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -61,7 +60,7 @@ import org.polypheny.db.util.Pair;
 /**
  * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
  */
-public class NeoEntity extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
+public class NeoEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity {
 
     public final String physicalEntityName;
     public final long id;
@@ -77,7 +76,7 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public Long getTableId() {
+    public Long getId() {
         return id;
     }
 
@@ -102,7 +101,7 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public Collection<?> getModifiableCollection() {
+    public Collection getModifiableCollection() {
         throw new UnsupportedOperationException( "getModifiableCollection is not supported by the NEO4j adapter." );
     }
 
@@ -144,14 +143,14 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
         @Getter
         private final NeoEntity entity;
-        private final NeoNamespace namespace;
+        private final NeoSchema namespace;
         private final AlgDataType rowType;
 
 
-        public NeoQueryable( DataContext dataContext, SchemaPlus schema, QueryableTable table, String tableName ) {
+        public NeoQueryable( DataContext dataContext, SchemaPlus schema, QueryableEntity table, String tableName ) {
             super( dataContext, schema, table, tableName );
             this.entity = (NeoEntity) table;
-            this.namespace = schema.unwrap( NeoNamespace.class );
+            this.namespace = schema.unwrap( NeoSchema.class );
             this.rowType = entity.rowType.apply( entity.getTypeFactory() );
         }
 

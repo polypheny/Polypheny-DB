@@ -19,7 +19,7 @@ package org.polypheny.db.adapter.cottontail.algebra;
 
 import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.CottontailTable;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext.QueryType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
@@ -33,10 +33,10 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 public class CottontailScan extends Scan implements CottontailAlg {
 
-    protected final CottontailTable cottontailTable;
+    protected final CottontailEntity cottontailTable;
 
 
-    public CottontailScan( AlgOptCluster cluster, AlgOptEntity table, CottontailTable cottontailTable, AlgTraitSet traitSet, CottontailConvention cottontailConvention ) {
+    public CottontailScan( AlgOptCluster cluster, AlgOptEntity table, CottontailEntity cottontailTable, AlgTraitSet traitSet, CottontailConvention cottontailConvention ) {
         super( cluster, traitSet.replace( cottontailConvention ), table );
         this.cottontailTable = cottontailTable;
     }

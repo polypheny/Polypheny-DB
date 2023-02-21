@@ -107,7 +107,7 @@ public class ElasticsearchToEnumerableConverter extends ConverterImpl implements
                                     }
                                 } ),
                         Pair.class ) );
-        final Expression table = block.append( "table", implementor.table.getExpression( ElasticsearchTable.ElasticsearchQueryable.class ) );
+        final Expression table = block.append( "table", implementor.table.getExpression( ElasticsearchEntity.ElasticsearchQueryable.class ) );
         final Expression ops = block.append( "ops", Expressions.constant( implementor.list ) );
         final Expression sort = block.append( "sort", constantArrayList( implementor.sort, Pair.class ) );
         final Expression groupBy = block.append( "groupBy", Expressions.constant( implementor.groupBy ) );

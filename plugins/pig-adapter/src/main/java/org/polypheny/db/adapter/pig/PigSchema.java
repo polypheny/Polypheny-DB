@@ -36,25 +36,31 @@ package org.polypheny.db.adapter.pig;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 
 
 /**
  * Schema that contains one more or more Pig tables.
  */
-public class PigSchema extends AbstractSchema {
+public class PigSchema extends AbstractNamespace implements Schema {
 
-    protected final Map<String, Table> tableMap = new HashMap<>();
+    protected final Map<String, Entity> tableMap = new HashMap<>();
+
+
+    public PigSchema( long id ) {
+        super( id );
+    }
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         return tableMap;
     }
 
 
-    void registerTable( String name, PigTable table ) {
+    void registerTable( String name, PigEntity table ) {
         tableMap.put( name, table );
     }
 

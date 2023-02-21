@@ -75,7 +75,7 @@ public interface GeodeAlg extends AlgNode {
 
         Long limitValue;
         AlgOptEntity table;
-        GeodeTable geodeTable;
+        GeodeEntity geodeTable;
 
 
         /**

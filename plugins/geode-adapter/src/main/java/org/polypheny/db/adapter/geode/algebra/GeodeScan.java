@@ -50,7 +50,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public class GeodeScan extends Scan implements GeodeAlg {
 
-    final GeodeTable geodeTable;
+    final GeodeEntity geodeTable;
     final AlgDataType projectRowType;
 
 
@@ -63,7 +63,7 @@ public class GeodeScan extends Scan implements GeodeAlg {
      * @param geodeTable Geode table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    GeodeScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, GeodeTable geodeTable, AlgDataType projectRowType ) {
+    GeodeScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, GeodeEntity geodeTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.geodeTable = geodeTable;
         this.projectRowType = projectRowType;

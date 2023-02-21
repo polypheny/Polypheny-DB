@@ -57,10 +57,10 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Enumerables;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -93,15 +93,15 @@ public class ScanNode implements Node {
      */
     static ScanNode create( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
         final AlgOptEntity algOptEntity = alg.getTable();
-        final ProjectableFilterableTable pfTable = algOptEntity.unwrap( ProjectableFilterableTable.class );
+        final ProjectableFilterableEntity pfTable = algOptEntity.unwrap( ProjectableFilterableEntity.class );
         if ( pfTable != null ) {
             return createProjectableFilterable( compiler, alg, filters, projects, pfTable );
         }
-        final FilterableTable filterableTable = algOptEntity.unwrap( FilterableTable.class );
+        final FilterableEntity filterableTable = algOptEntity.unwrap( FilterableEntity.class );
         if ( filterableTable != null ) {
             return createFilterable( compiler, alg, filters, projects, filterableTable );
         }
-        final ScannableTable scannableTable = algOptEntity.unwrap( ScannableTable.class );
+        final ScannableEntity scannableTable = algOptEntity.unwrap( ScannableEntity.class );
         if ( scannableTable != null ) {
             return createScannable( compiler, alg, filters, projects, scannableTable );
         }
@@ -110,7 +110,7 @@ public class ScanNode implements Node {
         if ( enumerable != null ) {
             return createEnumerable( compiler, alg, enumerable, null, filters, projects );
         }
-        final QueryableTable queryableTable = algOptEntity.unwrap( QueryableTable.class );
+        final QueryableEntity queryableTable = algOptEntity.unwrap( QueryableEntity.class );
         if ( queryableTable != null ) {
             return createQueryable( compiler, alg, filters, projects, queryableTable );
         }
@@ -118,19 +118,19 @@ public class ScanNode implements Node {
     }
 
 
-    private static ScanNode createScannable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ScannableTable scannableTable ) {
+    private static ScanNode createScannable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ScannableEntity scannableTable ) {
         final Enumerable<Row> rowEnumerable = Enumerables.toRow( scannableTable.scan( compiler.getDataContext() ) );
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
 
 
-    private static ScanNode createQueryable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableTable queryableTable ) {
+    private static ScanNode createQueryable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableEntity queryableTable ) {
         final DataContext root = compiler.getDataContext();
         final AlgOptEntity algOptEntity = alg.getTable();
         final Type elementType = queryableTable.getElementType();
         SchemaPlus schema = root.getRootSchema();
         for ( String name : Util.skipLast( algOptEntity.getQualifiedName() ) ) {
-            schema = schema.getSubSchema( name );
+            schema = schema.getSubNamespace( name );
         }
         final Enumerable<Row> rowEnumerable;
         if ( elementType instanceof Class ) {
@@ -163,7 +163,7 @@ public class ScanNode implements Node {
     }
 
 
-    private static ScanNode createFilterable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, FilterableTable filterableTable ) {
+    private static ScanNode createFilterable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, FilterableEntity filterableTable ) {
         final DataContext root = compiler.getDataContext();
         final List<RexNode> mutableFilters = Lists.newArrayList( filters );
         final Enumerable<Object[]> enumerable = filterableTable.scan( root, mutableFilters );
@@ -177,7 +177,7 @@ public class ScanNode implements Node {
     }
 
 
-    private static ScanNode createProjectableFilterable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ProjectableFilterableTable pfTable ) {
+    private static ScanNode createProjectableFilterable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ProjectableFilterableEntity pfTable ) {
         final DataContext root = compiler.getDataContext();
         final ImmutableIntList originalProjects = projects;
         for ( ; ; ) {

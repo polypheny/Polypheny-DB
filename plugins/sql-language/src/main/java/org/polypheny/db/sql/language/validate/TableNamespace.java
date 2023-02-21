@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.schema.ExtensibleTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
@@ -105,8 +105,8 @@ class TableNamespace extends AbstractNamespace {
         builder.addAll( this.extendedFields );
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
         final List<AlgDataTypeField> extendedFields = builder.build();
-        final Table schemaTable = table.unwrap( Table.class );
-        if ( schemaTable != null && table instanceof AlgOptEntity && schemaTable instanceof ExtensibleTable ) {
+        final Entity schemaEntity = table.unwrap( Entity.class );
+        if ( schemaEntity != null && table instanceof AlgOptEntity && schemaEntity instanceof ExtensibleEntity ) {
             checkExtendedColumnTypes( extendList );
             final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
             final ValidatorTable validatorTable = algOptEntity.unwrap( ValidatorTable.class );
@@ -120,8 +120,8 @@ class TableNamespace extends AbstractNamespace {
      * Gets the data-type of all columns in a table (for a view table: including columns of the underlying table)
      */
     private AlgDataType getBaseRowType() {
-        final Table schemaTable = table.unwrap( Table.class );
-        return schemaTable.getRowType( validator.typeFactory );
+        final Entity schemaEntity = table.unwrap( Entity.class );
+        return schemaEntity.getRowType( validator.typeFactory );
     }
 
 

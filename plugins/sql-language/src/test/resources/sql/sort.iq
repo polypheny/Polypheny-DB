@@ -21,7 +21,7 @@
 # The ArrayTable "days" is sorted by "day", so plan must not contain sort
 select * from "days" order by "day";
 !verify
-EnumerableScan(table=[[foodmart2, days]])
+EnumerableScan(entity=[[foodmart2, days]])
 !plan
 
 # The ArrayTable "days" is sorted by "day", so the plan does not sort, only applies limit
@@ -36,7 +36,7 @@ select * from "days" order by "day" limit 2;
 
 !ok
 EnumerableLimit(fetch=[2])
-  EnumerableScan(table=[[foodmart2, days]])
+  EnumerableScan(entity=[[foodmart2, days]])
 !plan
 
 # The ArrayTable "days" is sorted by "day", so the plan must not contain Sort
@@ -52,7 +52,7 @@ select * from "days" where "day" between 2 and 4 order by "day";
 
 !ok
 EnumerableCalc(expr#0..1=[{inputs}], expr#2=[2], expr#3=[>=($t0, $t2)], expr#4=[4], expr#5=[<=($t0, $t4)], expr#6=[AND($t3, $t5)], proj#0..1=[{exprs}], $condition=[$t6])
-  EnumerableScan(table=[[foodmart2, days]])
+  EnumerableScan(entity=[[foodmart2, days]])
 !plan
 
 # [CALCITE-970] Default collation of NULL values
@@ -135,12 +135,12 @@ order by deptno desc, dname, deptno;
 
 !ok
 EnumerableSort(sort0=[$0], sort1=[$1], dir0=[DESC], dir1=[ASC])
-  EnumerableScan(table=[[scott, DEPT]])
+  EnumerableScan(entity=[[scott, DEPT]])
 !plan
 
 !use post
 
-# [CALCITE-603] WITH ... ORDER BY cannot find table
+# [CALCITE-603] WITH ... ORDER BY cannot find entity
 with e as (select "empid" as empid from "hr"."emps" where "empid" < 120)
 select * from e as e1, e as e2 order by e1.empid + e2.empid, e1.empid;
 +-------+--------+
@@ -181,7 +181,7 @@ select * from "hr"."emps" offset 0;
 (4 rows)
 
 !ok
-EnumerableScan(table=[[hr, emps]])
+EnumerableScan(entity=[[hr, emps]])
 !plan
 
 # [CALCITE-634] Allow ORDER BY aggregate function in SELECT DISTINCT, provided

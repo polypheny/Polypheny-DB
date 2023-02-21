@@ -41,21 +41,33 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Table that can be scanned, optionally applying supplied filter expressions, without creating an intermediate expression.
+ * Table that can be scanned, optionally applying supplied filter expressions, and projecting a given list of columns,
+ * without creating an intermediate relational expression.
  *
- * @see ScannableTable
+ * If you wish to write a table that can apply projects but not filters, simply decline all filters.
+ *
+ * @see ScannableEntity
+ * @see FilterableEntity
  */
-public interface FilterableTable extends Table {
+public interface ProjectableFilterableEntity extends Entity {
 
     /**
-     * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
+     * Returns an enumerable over the rows in this Table.
+     *
+     * Each row is represented as an array of its column values.
      *
      * The list of filters is mutable.
      * If the table can implement a particular filter, it should remove that filter from the list.
      * If it cannot implement a filter, it should leave it in the list.
      * Any filters remaining will be implemented by the consuming Polypheny-DB operator.
+     *
+     * The projects are zero-based.
+     *
+     * @param root Execution context
+     * @param filters Mutable list of filters. The method should keep in the list any filters that it cannot apply.
+     * @param projects List of projects. Each is the 0-based ordinal of the column to project.
+     * @return Enumerable over all rows that match the accepted filters, returning for each row an array of column values, one value for each ordinal in {@code projects}.
      */
-    Enumerable<Object[]> scan( DataContext root, List<RexNode> filters );
+    Enumerable<Object[]> scan( DataContext root, List<RexNode> filters, int[] projects );
 
 }
-

@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
-public class LogicalRelView extends LogicalTable {
+public class LogicalRelView extends LogicalEntity {
 
     protected LogicalRelView(
             long tableId,

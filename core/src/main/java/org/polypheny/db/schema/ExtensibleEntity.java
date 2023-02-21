@@ -34,39 +34,35 @@
 package org.polypheny.db.schema;
 
 
-import java.util.Collection;
 import java.util.List;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
- * A table that can be modified.
+ * Table whose row type can be extended to include extra fields.
+ *
+ * In some storage systems, especially those with "late schema", there may exist columns that have values in the table but
+ * which are not declared in the table schema. However, a particular query may wish to reference these columns as if they were
+ * defined in the schema. Calling the {@link #extend} method creates a temporarily extended table schema.
+ *
+ * If the table implements extended interfaces such as
+ * {@link ScannableEntity},
+ * {@link FilterableEntity} or
+ * {@link ProjectableFilterableEntity}, you may wish
+ * to make the table returned from {@link #extend} implement these interfaces as well.
  */
-public interface ModifiableTable extends QueryableTable {
+public interface ExtensibleEntity extends Entity {
 
     /**
-     * Returns the modifiable collection.
-     * Modifying the collection will change the table's contents.
+     * Returns a table that has the row type of this table plus the given fields.
      */
-    Collection<?> getModifiableCollection();
+    Entity extend( List<AlgDataTypeField> fields );
 
     /**
-     * Creates a relational expression that modifies this table.
+     * Returns the starting offset of the first extended column, which may differ from the field count when the table stores
+     * metadata columns that are not counted in the row-type field count.
      */
-    Modify toModificationAlg(
-            AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
-            AlgNode child,
-            Modify.Operation operation,
-            List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened );
+    int getExtendedColumnOffset();
 
 }
 

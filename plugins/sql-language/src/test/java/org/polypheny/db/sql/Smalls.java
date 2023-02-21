@@ -34,18 +34,18 @@ import org.apache.calcite.linq4j.function.Parameter;
 import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.TableType;
+import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.type.PolyType;
 
 
@@ -55,9 +55,9 @@ import org.polypheny.db.type.PolyType;
 public class Smalls {
 
     public static final Method GENERATE_STRINGS_METHOD = Types.lookupMethod( Smalls.class, "generateStrings", Integer.class );
-    public static final Method MAZE_METHOD = Types.lookupMethod( MazeTable.class, "generate", int.class, int.class, int.class );
-    public static final Method MAZE2_METHOD = Types.lookupMethod( MazeTable.class, "generate2", int.class, int.class, Integer.class );
-    public static final Method MAZE3_METHOD = Types.lookupMethod( MazeTable.class, "generate3", String.class );
+    public static final Method MAZE_METHOD = Types.lookupMethod( MazeEntity.class, "generate", int.class, int.class, int.class );
+    public static final Method MAZE2_METHOD = Types.lookupMethod( MazeEntity.class, "generate2", int.class, int.class, Integer.class );
+    public static final Method MAZE3_METHOD = Types.lookupMethod( MazeEntity.class, "generate3", String.class );
     public static final Method MULTIPLICATION_TABLE_METHOD = Types.lookupMethod( Smalls.class, "multiplicationTable", int.class, int.class, Integer.class );
     public static final Method FIBONACCI_TABLE_METHOD = Types.lookupMethod( Smalls.class, "fibonacciTable" );
     public static final Method FIBONACCI2_TABLE_METHOD = Types.lookupMethod( Smalls.class, "fibonacciTableWithLimit", long.class );
@@ -72,7 +72,7 @@ public class Smalls {
     }
 
 
-    private static QueryableTable oneThreePlus( String s ) {
+    private static QueryableEntity oneThreePlus( String s ) {
         List<Integer> items;
         // Argument is null in case SQL contains function call with expression. Then the engine calls a function with null arguments to get getRowType.
         if ( s == null ) {
@@ -82,7 +82,7 @@ public class Smalls {
             items = ImmutableList.of( 1, 3, latest );
         }
         final Enumerable<Integer> enumerable = Linq4j.asEnumerable( items );
-        return new AbstractQueryableTable( Integer.class ) {
+        return new AbstractQueryableEntity( Integer.class ) {
             @Override
             public <E> Queryable<E> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 //noinspection unchecked
@@ -106,8 +106,8 @@ public class Smalls {
     /**
      * A function that generates a table that generates a sequence of {@link IntString} values.
      */
-    public static QueryableTable generateStrings( final Integer count ) {
-        return new AbstractQueryableTable( IntString.class ) {
+    public static QueryableEntity generateStrings( final Integer count ) {
+        return new AbstractQueryableEntity( IntString.class ) {
             @Override
             public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.createJavaType( IntString.class );
@@ -169,9 +169,9 @@ public class Smalls {
     /**
      * A function that generates multiplication table of {@code ncol} columns x {@code nrow} rows.
      */
-    public static QueryableTable multiplicationTable( final int ncol, final int nrow, Integer offset ) {
+    public static QueryableEntity multiplicationTable( final int ncol, final int nrow, Integer offset ) {
         final int offs = offset == null ? 0 : offset;
-        return new AbstractQueryableTable( Object[].class ) {
+        return new AbstractQueryableEntity( Object[].class ) {
             @Override
             public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 final AlgDataTypeFactory.Builder builder = typeFactory.builder();
@@ -212,7 +212,7 @@ public class Smalls {
     /**
      * A function that generates the Fibonacci sequence. Interesting because it has one column and no arguments.
      */
-    public static ScannableTable fibonacciTable() {
+    public static ScannableEntity fibonacciTable() {
         return fibonacciTableWithLimit( -1L );
     }
 
@@ -220,8 +220,8 @@ public class Smalls {
     /**
      * A function that generates the Fibonacci sequence. Interesting because it has one column and no arguments.
      */
-    public static ScannableTable fibonacciTableWithLimit( final long limit ) {
-        return new ScannableTable() {
+    public static ScannableEntity fibonacciTableWithLimit( final long limit ) {
+        return new ScannableEntity() {
             @Override
             public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.builder().add( "N", null, PolyType.BIGINT ).build();
@@ -279,14 +279,14 @@ public class Smalls {
 
 
             @Override
-            public Long getTableId() {
+            public Long getId() {
                 return null;
             }
 
 
             @Override
-            public Schema.TableType getJdbcTableType() {
-                return Schema.TableType.TABLE;
+            public TableType getJdbcTableType() {
+                return TableType.TABLE;
             }
 
 
@@ -308,8 +308,8 @@ public class Smalls {
     /**
      * A function that adds a number to the first column of input cursor
      */
-    public static QueryableTable processCursor( final int offset, final Enumerable<Object[]> a ) {
-        return new AbstractQueryableTable( Object[].class ) {
+    public static QueryableEntity processCursor( final int offset, final Enumerable<Object[]> a ) {
+        return new AbstractQueryableEntity( Object[].class ) {
             @Override
             public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
@@ -331,8 +331,8 @@ public class Smalls {
     /**
      * A function that sums the second column of first input cursor, second column of first input and the given int.
      */
-    public static QueryableTable processCursors( final int offset, final Enumerable<Object[]> a, final Enumerable<IntString> b ) {
-        return new AbstractQueryableTable( Object[].class ) {
+    public static QueryableEntity processCursors( final int offset, final Enumerable<Object[]> a, final Enumerable<IntString> b ) {
+        return new AbstractQueryableEntity( Object[].class ) {
             @Override
             public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
@@ -608,20 +608,19 @@ public class Smalls {
     /**
      * The real MazeTable may be found in example/function. This is a cut-down version to support a test.
      */
-    public static class MazeTable extends AbstractTable implements ScannableTable {
+    public static class MazeEntity extends AbstractEntity implements ScannableEntity {
 
         private final String content;
 
 
-        public MazeTable( String content ) {
+        public MazeEntity( String content ) {
             this.content = content;
         }
 
 
-        public static ScannableTable generate( int width, int height, int seed ) {
-            return new MazeTable( String.format( Locale.ROOT, "generate(w=%d, h=%d, s=%d)", width, height, seed ) );
+        public static ScannableEntity generate( int width, int height, int seed ) {
+            return new MazeEntity( String.format( Locale.ROOT, "generate(w=%d, h=%d, s=%d)", width, height, seed ) );
         }
-
 
 
         @Override

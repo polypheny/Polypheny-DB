@@ -46,7 +46,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mapping;
@@ -57,7 +57,7 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 /**
  * Planner rule that converts a {@link Project}
  * on a {@link Scan}
- * of a {@link ProjectableFilterableTable}
+ * of a {@link ProjectableFilterableEntity}
  * to a {@link BindableScan}.
  *
  * The {@link #INTERPRETER} variant allows an intervening {@link EnumerableInterpreter}.
@@ -111,13 +111,13 @@ public abstract class ProjectScanRule extends AlgOptRule {
     protected static boolean test( Scan scan ) {
         // We can only push projects into a ProjectableFilterableTable.
         final AlgOptEntity table = scan.getTable();
-        return table.unwrap( ProjectableFilterableTable.class ) != null;
+        return table.unwrap( ProjectableFilterableEntity.class ) != null;
     }
 
 
     protected void apply( AlgOptRuleCall call, Project project, Scan scan ) {
         final AlgOptEntity table = scan.getTable();
-        assert table.unwrap( ProjectableFilterableTable.class ) != null;
+        assert table.unwrap( ProjectableFilterableEntity.class ) != null;
 
         final TargetMapping mapping = project.getMapping();
         if ( mapping == null || Mappings.isIdentity( mapping ) ) {

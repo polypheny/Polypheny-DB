@@ -44,9 +44,9 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -84,19 +84,19 @@ public class Qfs extends DataSource {
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new QfsSchema( rootSchema, name, this );
+    public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
+        currentSchema = new QfsSchema( id, rootSchema, name, this );
     }
 
 
     @Override
-    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Entity createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         return currentSchema.createFileTable( combinedTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 
     @Override
-    public Schema getCurrentSchema() {
+    public Namespace getCurrentSchema() {
         return currentSchema;
     }
 

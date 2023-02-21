@@ -47,7 +47,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
         super.init();
 
         MockSchema structTypeSchema = new MockSchema( "STRUCT" );
-        registerSchema( structTypeSchema );
+        registerSchema( structTypeSchema, -1 );
         final Fixture f = new Fixture( typeFactory );
         final List<CompoundNameColumn> columnsExtended = Arrays.asList(
                 new CompoundNameColumn( "", "K0", f.varchar20TypeNull ),

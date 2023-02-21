@@ -126,7 +126,7 @@ public class DruidExpressions {
                 return null;
             }
             if ( druidRel.getDruidTable().timestampFieldName.equals( columnName ) ) {
-                return DruidExpressions.fromColumn( DruidTable.DEFAULT_TIMESTAMP_COLUMN );
+                return DruidExpressions.fromColumn( DruidEntity.DEFAULT_TIMESTAMP_COLUMN );
             }
             return DruidExpressions.fromColumn( columnName );
         }

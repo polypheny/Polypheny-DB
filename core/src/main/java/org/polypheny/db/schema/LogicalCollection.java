@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
-public class LogicalCollection extends LogicalTable {
+public class LogicalCollection extends LogicalEntity {
 
     protected LogicalCollection( long tableId, String logicalSchemaName, String logicalTableName, AlgProtoDataType protoRowType ) {
         super( tableId, logicalSchemaName, logicalTableName, List.of( 0L ), List.of( "d" ), protoRowType, NamespaceType.DOCUMENT );

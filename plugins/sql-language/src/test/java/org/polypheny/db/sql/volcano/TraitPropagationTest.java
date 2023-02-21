@@ -91,11 +91,11 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RuleSet;
@@ -142,7 +142,7 @@ public class TraitPropagationTest {
             final AlgDataType sqlBigInt = typeFactory.createPolyType( PolyType.BIGINT );
 
             // SELECT * from T;
-            final Table table = new AbstractTable() {
+            final Entity entity = new AbstractEntity() {
                 @Override
                 public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                     return typeFactory.builder()
@@ -157,7 +157,7 @@ public class TraitPropagationTest {
                 }
             };
 
-            final AlgOptAbstractEntity t1 = new AlgOptAbstractEntity( algOptSchema, "t1", table.getRowType( typeFactory ) ) {
+            final AlgOptAbstractEntity t1 = new AlgOptAbstractEntity( algOptSchema, "t1", entity.getRowType( typeFactory ) ) {
                 @Override
                 public CatalogTable getCatalogTable() {
                     return null;
@@ -166,8 +166,8 @@ public class TraitPropagationTest {
 
                 @Override
                 public <T> T unwrap( Class<T> clazz ) {
-                    return clazz.isInstance( table )
-                            ? clazz.cast( table )
+                    return clazz.isInstance( entity )
+                            ? clazz.cast( entity )
                             : super.unwrap( clazz );
                 }
             };

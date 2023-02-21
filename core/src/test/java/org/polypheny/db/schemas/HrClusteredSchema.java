@@ -48,29 +48,30 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.impl.AbstractEntity;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
  * A typical HR schema with employees (emps) and departments (depts) tables that are naturally ordered based on their primary keys representing clustered tables.
  */
-public final class HrClusteredSchema extends AbstractSchema {
+public final class HrClusteredSchema extends AbstractNamespace implements Schema {
 
-    private final ImmutableMap<String, Table> tables;
+    private final ImmutableMap<String, Entity> tables;
 
 
-    public HrClusteredSchema() {
-        super();
-        tables = ImmutableMap.<String, Table>builder()
+    public HrClusteredSchema( long id ) {
+        super( id );
+        tables = ImmutableMap.<String, Entity>builder()
                 .put(
                         "emps",
-                        new PkClusteredTable(
+                        new PkClusteredEntity(
                                 factory ->
                                         new AlgDataTypeFactory.Builder( factory )
                                                 .add( "empid", null, factory.createJavaType( int.class ) )
@@ -88,7 +89,7 @@ public final class HrClusteredSchema extends AbstractSchema {
                         ) )
                 .put(
                         "depts",
-                        new PkClusteredTable(
+                        new PkClusteredEntity(
                                 factory ->
                                         new AlgDataTypeFactory.Builder( factory )
                                                 .add( "deptno", null, factory.createJavaType( int.class ) )
@@ -104,7 +105,7 @@ public final class HrClusteredSchema extends AbstractSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         return tables;
     }
 
@@ -112,14 +113,14 @@ public final class HrClusteredSchema extends AbstractSchema {
     /**
      * A table sorted (ascending direction and nulls last) on the primary key.
      */
-    private static class PkClusteredTable extends AbstractTable implements ScannableTable {
+    private static class PkClusteredEntity extends AbstractEntity implements ScannableEntity {
 
         private final ImmutableBitSet pkColumns;
         private final List<Object[]> data;
         private final Function<AlgDataTypeFactory, AlgDataType> typeBuilder;
 
 
-        PkClusteredTable( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
+        PkClusteredEntity( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
             this.data = data;
             this.typeBuilder = dataTypeBuilder;
             this.pkColumns = pkColumns;

@@ -77,6 +77,7 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -1213,7 +1214,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     /**
      * This method returns the number of rows for a given table, which is used in
-     * {@link org.polypheny.db.schema.impl.AbstractTable#getStatistic()} to update the statistics.
+     * {@link AbstractEntity#getStatistic()} to update the statistics.
      *
      * @param tableId of the table
      * @return the number of rows of a given table

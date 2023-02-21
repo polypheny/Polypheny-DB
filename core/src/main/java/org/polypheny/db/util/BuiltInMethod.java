@@ -35,15 +35,47 @@ package org.polypheny.db.util;
 
 
 import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.sql.ResultSet;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TimeZone;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.apache.calcite.linq4j.*;
-import org.apache.calcite.linq4j.function.*;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.CorrelateJoinType;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.EnumerableDefaults;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.ExtendedEnumerable;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.function.EqualityComparer;
+import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Function2;
+import org.apache.calcite.linq4j.function.Predicate1;
+import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.*;
+import org.polypheny.db.adapter.enumerable.AggregateLambdaFactory;
+import org.polypheny.db.adapter.enumerable.BatchIteratorEnumerable;
+import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
+import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
+import org.polypheny.db.adapter.enumerable.SourceSorter;
 import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgMatch.MatchEnumerable;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
@@ -52,30 +84,61 @@ import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.*;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ColumnOrigin;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ColumnUniqueness;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.CumulativeCost;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.DistinctRowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Distribution;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExplainVisibility;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.MaxRowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Memory;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.MinRowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.NodeTypes;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.NonCumulativeCost;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.PercentageOriginalRows;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.PopulationSize;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Predicates;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.RowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Selectivity;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.*;
+import org.polypheny.db.runtime.ArrayBindable;
+import org.polypheny.db.runtime.BinarySearch;
+import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.runtime.Enumerables;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.RandomFunction;
+import org.polypheny.db.runtime.SortedMultiMap;
+import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.runtime.functions.CrossModelFunctions;
 import org.polypheny.db.runtime.functions.CypherFunctions;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.functions.MqlFunctions;
-import org.polypheny.db.schema.*;
-import org.polypheny.db.schema.graph.*;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.ScannableEntity;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.graph.GraphPropertyHolder;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.sql.ResultSet;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.*;
 
 
 /**
@@ -92,19 +155,19 @@ public enum BuiltInMethod {
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
-    QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),
+    QUERYABLE_TABLE_AS_QUERYABLE( QueryableEntity.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),
     AS_QUERYABLE( Enumerable.class, "asQueryable" ),
     ABSTRACT_ENUMERABLE_CTOR( AbstractEnumerable.class ),
     BATCH_ITERATOR_CTOR( BatchIteratorEnumerable.class ),
     BATCH_ITERATOR_GET_ENUM( BatchIteratorEnumerable.class, "getEnumerable" ),
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
-    SCHEMA_GET_SUB_SCHEMA( Schema.class, "getSubSchema", String.class ),
-    SCHEMA_GET_TABLE( Schema.class, "getTable", String.class ),
+    SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
+    SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrap", Class.class ),
-    SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableTable.class, DataContext.class ),
-    SCHEMAS_ENUMERABLE_FILTERABLE( Schemas.class, "enumerable", FilterableTable.class, DataContext.class ),
-    SCHEMAS_ENUMERABLE_PROJECTABLE_FILTERABLE( Schemas.class, "enumerable", ProjectableFilterableTable.class, DataContext.class ),
+    SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),
+    SCHEMAS_ENUMERABLE_FILTERABLE( Schemas.class, "enumerable", FilterableEntity.class, DataContext.class ),
+    SCHEMAS_ENUMERABLE_PROJECTABLE_FILTERABLE( Schemas.class, "enumerable", ProjectableFilterableEntity.class, DataContext.class ),
     SCHEMAS_QUERYABLE( Schemas.class, "queryable", DataContext.class, SchemaPlus.class, Class.class, String.class ),
     REFLECTIVE_SCHEMA_GET_TARGET( ReflectiveSchema.class, "getTarget" ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
@@ -252,8 +315,8 @@ public enum BuiltInMethod {
     GREATER( Functions.class, "greater", Comparable.class, Comparable.class ),
     BIT_AND( Functions.class, "bitAnd", long.class, long.class ),
     BIT_OR( Functions.class, "bitOr", long.class, long.class ),
-    MODIFIABLE_TABLE_GET_MODIFIABLE_COLLECTION( ModifiableTable.class, "getModifiableCollection" ),
-    SCANNABLE_TABLE_SCAN( ScannableTable.class, "scan", DataContext.class ),
+    MODIFIABLE_TABLE_GET_MODIFIABLE_COLLECTION( ModifiableEntity.class, "getModifiableCollection" ),
+    SCANNABLE_TABLE_SCAN( ScannableEntity.class, "scan", DataContext.class ),
     STRING_TO_BOOLEAN( Functions.class, "toBoolean", String.class ),
     INTERNAL_TO_DATE( Functions.class, "internalToDate", int.class ),
     INTERNAL_TO_TIME( Functions.class, "internalToTime", int.class ),

@@ -39,25 +39,26 @@ import java.util.Map;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.client.ClientCache;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 
 
 /**
  * Geode Simple Schema.
  */
-public class GeodeSimpleSchema extends AbstractSchema {
+public class GeodeSimpleSchema extends AbstractNamespace implements Schema {
 
     private String locatorHost;
     private int locatorPort;
     private String[] regionNames;
     private String pdxAutoSerializerPackageExp;
     private ClientCache clientCache;
-    private ImmutableMap<String, Table> tableMap;
+    private ImmutableMap<String, Entity> tableMap;
 
 
-    public GeodeSimpleSchema( String locatorHost, int locatorPort, String[] regionNames, String pdxAutoSerializerPackageExp ) {
-        super();
+    public GeodeSimpleSchema( long id, String locatorHost, int locatorPort, String[] regionNames, String pdxAutoSerializerPackageExp ) {
+        super( id );
         this.locatorHost = locatorHost;
         this.locatorPort = locatorPort;
         this.regionNames = regionNames;
@@ -68,13 +69,13 @@ public class GeodeSimpleSchema extends AbstractSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         if ( tableMap == null ) {
-            final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+            final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
             for ( String regionName : regionNames ) {
                 Region region = GeodeUtils.createRegion( clientCache, regionName );
-                Table table = new GeodeSimpleScannableTable( regionName, GeodeUtils.autodetectRelTypeFromRegion( region ), clientCache );
-                builder.put( regionName, table );
+                Entity entity = new GeodeSimpleScannableEntity( regionName, GeodeUtils.autodetectRelTypeFromRegion( region ), clientCache );
+                builder.put( regionName, entity );
             }
             tableMap = builder.build();
         }

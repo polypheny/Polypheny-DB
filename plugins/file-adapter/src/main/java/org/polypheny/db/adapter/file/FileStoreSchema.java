@@ -42,27 +42,28 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
-public class FileStoreSchema extends AbstractSchema implements FileSchema {
+public class FileStoreSchema extends AbstractNamespace implements FileSchema, Schema {
 
     @Getter
     private final String schemaName;
-    private final Map<String, FileTranslatableTable> tableMap = new HashMap<>();
+    private final Map<String, FileTranslatableEntity> tableMap = new HashMap<>();
     @Getter
     private final FileStore store;
     @Getter
     private final FileConvention convention;
 
 
-    public FileStoreSchema( SchemaPlus parentSchema, String schemaName, FileStore store ) {
-        super();
+    public FileStoreSchema( long id, SchemaPlus parentSchema, String schemaName, FileStore store ) {
+        super( id );
         this.schemaName = schemaName;
         this.store = store;
         final Expression expression = Schemas.subSchemaExpression( parentSchema, schemaName, FileStoreSchema.class );
@@ -83,12 +84,12 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         return new HashMap<>( tableMap );
     }
 
 
-    public Table createFileTable(
+    public Entity createFileTable(
             CatalogTable catalogTable,
             List<CatalogColumnPlacement> columnPlacementsOnStore,
             CatalogPartitionPlacement partitionPlacement ) {
@@ -128,7 +129,7 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
             pkIds = new ArrayList<>();
         }
         // FileTable table = new FileTable( store.getRootDir(), schemaName, catalogEntity.id, columnIds, columnTypes, columnNames, store, this );
-        FileTranslatableTable table = new FileTranslatableTable(
+        FileTranslatableEntity table = new FileTranslatableEntity(
                 this,
                 catalogTable.name + "_" + partitionPlacement.partitionId,
                 catalogTable.id,

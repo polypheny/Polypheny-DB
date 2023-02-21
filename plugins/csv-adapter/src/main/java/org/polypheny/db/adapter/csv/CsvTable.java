@@ -33,21 +33,21 @@
 
 package org.polypheny.db.adapter.csv;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.Entity.Table;
+import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.util.Source;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
  * Base class for table that reads CSV files.
  */
-public abstract class CsvTable extends AbstractTable {
+public abstract class CsvTable extends AbstractEntity implements Table {
 
     protected final Source source;
     protected final AlgProtoDataType protoRowType;
@@ -65,7 +65,7 @@ public abstract class CsvTable extends AbstractTable {
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.csvSource = csvSource;
-        this.tableId = tableId;
+        this.id = tableId;
     }
 
 

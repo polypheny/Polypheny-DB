@@ -43,7 +43,7 @@ public interface FileAlg extends AlgNode {
 
 
         @Getter
-        private transient FileTranslatableTable fileTable;
+        private transient FileTranslatableEntity fileTable;
         @Getter
         private final List<String> columnNames = new ArrayList<>();
         private final List<String> project = new ArrayList<>();
@@ -69,7 +69,7 @@ public interface FileAlg extends AlgNode {
         }
 
 
-        public void setFileTable( final FileTranslatableTable fileTable ) {
+        public void setFileTable( final FileTranslatableEntity fileTable ) {
             this.fileTable = fileTable;
             this.columnNames.clear();
             this.columnNames.addAll( fileTable.getColumnNames() );

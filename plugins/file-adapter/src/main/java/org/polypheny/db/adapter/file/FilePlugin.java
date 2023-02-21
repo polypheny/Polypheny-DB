@@ -60,9 +60,9 @@ import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -174,22 +174,22 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name ) {
+        public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
             // it might be worth it to check why createNewSchema is called multiple times with different names
             if ( currentSchema == null ) {
-                currentSchema = new FileStoreSchema( rootSchema, name, this );
+                currentSchema = new FileStoreSchema( id, rootSchema, name, this );
             }
         }
 
 
         @Override
-        public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        public Entity createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
             return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
         }
 
 
         @Override
-        public Schema getCurrentSchema() {
+        public Namespace getCurrentSchema() {
             return currentSchema;
         }
 
@@ -454,7 +454,7 @@ public class FilePlugin extends Plugin {
         public void truncate( Context context, CatalogTable table ) {
             //context.getStatement().getTransaction().registerInvolvedStore( this );
             for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
-                FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name + "_" + partitionPlacement.partitionId );
+                FileTranslatableEntity fileTable = (FileTranslatableEntity) currentSchema.getEntity( table.name + "_" + partitionPlacement.partitionId );
                 try {
                     for ( String colName : fileTable.getColumnNames() ) {
                         File columnFolder = getColumnFolder( fileTable.getColumnIdMap().get( colName ), fileTable.getPartitionId() );

@@ -47,9 +47,9 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -127,19 +127,19 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new CsvSchema( csvDir, Flavor.SCANNABLE );
+    public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
+        currentSchema = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
     }
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Entity createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
     }
 
 
     @Override
-    public Schema getCurrentSchema() {
+    public Namespace getCurrentSchema() {
         return currentSchema;
     }
 

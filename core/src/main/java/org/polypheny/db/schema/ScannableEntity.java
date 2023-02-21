@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,40 +31,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.java;
+package org.polypheny.db.schema;
 
 
-import java.lang.reflect.Type;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.adapter.DataContext;
 
 
 /**
- * Abstract base class for implementing {@link org.polypheny.db.schema.Table}.
+ * Table that can be scanned without creating an intermediate relational expression.
  */
-public abstract class AbstractQueryableTable extends AbstractTable implements QueryableTable {
+public interface ScannableEntity extends Entity {
 
-    protected final Type elementType;
+    /**
+     * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
+     */
+    Enumerable<Object[]> scan( DataContext root );
 
-
-    protected AbstractQueryableTable( Type elementType ) {
-        super();
-        this.elementType = elementType;
-    }
-
-
-    @Override
-    public Type getElementType() {
-        return elementType;
-    }
-
-
-    @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
-        return Schemas.tableExpression( schema, elementType, tableName, clazz );
-    }
 }
 

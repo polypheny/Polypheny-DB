@@ -45,8 +45,8 @@ import java.util.Set;
 import org.joda.time.Interval;
 import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
@@ -69,7 +69,7 @@ public class DruidTableFactory implements TableFactory {
 
     // name that is also the same name as a complex metric
     @Override
-    public Table create( SchemaPlus schema, String name, Map operand, AlgDataType rowType ) {
+    public Entity create( SchemaPlus schema, String name, Map operand, AlgDataType rowType ) {
         final DruidSchema druidSchema = schema.unwrap( DruidSchema.class );
         // If "dataSource" operand is present it overrides the table name.
         final String dataSource = (String) operand.get( "dataSource" );
@@ -99,7 +99,7 @@ public class DruidTableFactory implements TableFactory {
                 timestampColumnType = PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
             }
         } else {
-            timestampColumnName = DruidTable.DEFAULT_TIMESTAMP_COLUMN;
+            timestampColumnName = DruidEntity.DEFAULT_TIMESTAMP_COLUMN;
             timestampColumnType = PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
         }
         fieldBuilder.put( timestampColumnName, timestampColumnType );
@@ -174,9 +174,9 @@ public class DruidTableFactory implements TableFactory {
 
         if ( dimensionsRaw == null || metricsRaw == null ) {
             DruidConnectionImpl connection = new DruidConnectionImpl( druidSchema.url, druidSchema.url.replace( ":8082", ":8081" ) );
-            return DruidTable.create( druidSchema, dataSourceName, intervals, fieldBuilder, metricNameBuilder, timestampColumnName, connection, complexMetrics );
+            return DruidEntity.create( druidSchema, dataSourceName, intervals, fieldBuilder, metricNameBuilder, timestampColumnName, connection, complexMetrics );
         } else {
-            return DruidTable.create( druidSchema, dataSourceName, intervals, fieldBuilder, metricNameBuilder, timestampColumnName, complexMetrics );
+            return DruidEntity.create( druidSchema, dataSourceName, intervals, fieldBuilder, metricNameBuilder, timestampColumnName, complexMetrics );
         }
     }
 

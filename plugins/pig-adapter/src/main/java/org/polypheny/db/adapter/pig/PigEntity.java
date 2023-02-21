@@ -42,8 +42,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.TranslatableEntity;
+import org.polypheny.db.schema.impl.AbstractEntity;
 
 
 /**
@@ -53,7 +53,7 @@ import org.polypheny.db.schema.impl.AbstractTable;
  *
  * Only VARCHAR (CHARARRAY in Pig) type supported at this point.
  */
-public class PigTable extends AbstractTable implements TranslatableTable {
+public class PigEntity extends AbstractEntity implements TranslatableEntity {
 
     private final String filePath;
     private final String[] fieldNames;
@@ -62,7 +62,7 @@ public class PigTable extends AbstractTable implements TranslatableTable {
     /**
      * Creates a PigTable.
      */
-    public PigTable( String filePath, String[] fieldNames ) {
+    public PigEntity( String filePath, String[] fieldNames ) {
         this.filePath = filePath;
         this.fieldNames = fieldNames;
     }

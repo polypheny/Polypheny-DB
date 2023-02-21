@@ -52,7 +52,7 @@ import org.apache.geode.cache.query.SelectResults;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
 import org.polypheny.db.adapter.geode.util.JavaTypeFactoryExtImpl;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -64,7 +64,7 @@ import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
@@ -74,13 +74,13 @@ import org.polypheny.db.util.Util;
  * Table based on a Geode Region
  */
 @Slf4j
-public class GeodeTable extends AbstractQueryableTable implements TranslatableTable {
+public class GeodeEntity extends AbstractQueryableEntity implements TranslatableEntity {
 
     private final String regionName;
     private final AlgDataType rowType;
 
 
-    GeodeTable( Region<?, ?> region ) {
+    GeodeEntity( Region<?, ?> region ) {
         super( Object[].class );
         this.regionName = region.getName();
         this.rowType = GeodeUtils.autodetectRelTypeFromRegion( region );
@@ -234,13 +234,13 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
 
 
     /**
-     * Implementation of {@link Queryable} based on a {@link GeodeTable}.
+     * Implementation of {@link Queryable} based on a {@link GeodeEntity}.
      *
      * @param <T> type
      */
     public static class GeodeQueryable<T> extends AbstractTableQueryable<T> {
 
-        public GeodeQueryable( DataContext dataContext, SchemaPlus schema, GeodeTable table, String tableName ) {
+        public GeodeQueryable( DataContext dataContext, SchemaPlus schema, GeodeEntity table, String tableName ) {
             super( dataContext, schema, table, tableName );
         }
 
@@ -252,8 +252,8 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
         }
 
 
-        private GeodeTable getTable() {
-            return (GeodeTable) table;
+        private GeodeEntity getTable() {
+            return (GeodeEntity) table;
         }
 
 

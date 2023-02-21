@@ -23,8 +23,8 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.ScannableEntity;
+import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
 
@@ -32,7 +32,7 @@ import org.polypheny.db.util.Source;
 /**
  * Table based on a JSON file.
  */
-public class JsonTable extends AbstractTable implements ScannableTable {
+public class JsonEntity extends AbstractEntity implements ScannableEntity {
 
     private final Source source;
 
@@ -40,7 +40,7 @@ public class JsonTable extends AbstractTable implements ScannableTable {
     /**
      * Creates a JsonTable.
      */
-    public JsonTable( Source source ) {
+    public JsonEntity( Source source ) {
         this.source = source;
     }
 

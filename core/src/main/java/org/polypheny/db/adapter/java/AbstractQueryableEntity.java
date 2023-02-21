@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2020 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,28 +31,41 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.schema;
+package org.polypheny.db.adapter.java;
 
 
-import org.polypheny.db.adapter.enumerable.EnumerableScan;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
-import org.polypheny.db.plan.AlgTraitSet;
+import java.lang.reflect.Type;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.impl.AbstractEntity;
 
 
 /**
- * Extension to {@link Table} that specifies how it is to be translated to a {@link AlgNode relational expression}.
- *
- * It is optional for a Table to implement this interface. If Table does not implement this interface, it will be converted
- * to a  {@link EnumerableScan}. Generally a Table will implement this interface to create a particular subclass of AlgNode,
- * and also register rules that act on that particular subclass of AlgNode.
+ * Abstract base class for implementing {@link Entity}.
  */
-public interface TranslatableTable extends Table {
+public abstract class AbstractQueryableEntity extends AbstractEntity implements QueryableEntity {
 
-    /**
-     * Converts this table into a {@link AlgNode relational expression}.
-     */
-    AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet );
+    protected final Type elementType;
 
+
+    protected AbstractQueryableEntity( Type elementType ) {
+        super();
+        this.elementType = elementType;
+    }
+
+
+    @Override
+    public Type getElementType() {
+        return elementType;
+    }
+
+
+    @Override
+    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+        return Schemas.tableExpression( schema, elementType, tableName, clazz );
+    }
 }
+

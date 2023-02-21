@@ -41,7 +41,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.util.Static;
 
 
@@ -81,7 +81,7 @@ public class TableMacroImpl extends ReflectiveFunctionBase implements TableMacro
             }
         }
         final Class<?> returnType = method.getReturnType();
-        if ( !TranslatableTable.class.isAssignableFrom( returnType ) ) {
+        if ( !TranslatableEntity.class.isAssignableFrom( returnType ) ) {
             return null;
         }
         return new TableMacroImpl( method );
@@ -95,14 +95,14 @@ public class TableMacroImpl extends ReflectiveFunctionBase implements TableMacro
      * @return Table
      */
     @Override
-    public TranslatableTable apply( List<Object> arguments ) {
+    public TranslatableEntity apply( List<Object> arguments ) {
         try {
             Object o = null;
             if ( !Modifier.isStatic( method.getModifiers() ) ) {
                 final Constructor<?> constructor = method.getDeclaringClass().getConstructor();
                 o = constructor.newInstance();
             }
-            return (TranslatableTable) method.invoke( o, arguments.toArray() );
+            return (TranslatableEntity) method.invoke( o, arguments.toArray() );
         } catch ( IllegalArgumentException e ) {
             throw new RuntimeException( "Expected " + Arrays.toString( method.getParameterTypes() ) + " actual " + arguments, e );
         } catch ( IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException e ) {

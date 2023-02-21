@@ -51,9 +51,9 @@ import org.junit.Test;
 import org.polypheny.db.adapter.pig.PigAggregate;
 import org.polypheny.db.adapter.pig.PigAlg;
 import org.polypheny.db.adapter.pig.PigAlgFactories;
+import org.polypheny.db.adapter.pig.PigEntity;
 import org.polypheny.db.adapter.pig.PigFilter;
 import org.polypheny.db.adapter.pig.PigRules;
-import org.polypheny.db.adapter.pig.PigTable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.rules.FilterJoinRule.FilterIntoJoinRule;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -231,8 +231,8 @@ public class PigAlgBuilderStyleTest extends AbstractPigTest {
 
     private SchemaPlus createTestSchema() {
         SchemaPlus result = Frameworks.createRootSchema( false );
-        result.add( "t", new PigTable( "build/test-classes/data.txt", new String[]{ "tc0", "tc1" } ) );
-        result.add( "s", new PigTable( "build/test-classes/data2.txt", new String[]{ "sc0", "sc1" } ) );
+        result.add( "t", new PigEntity( "build/test-classes/data.txt", new String[]{ "tc0", "tc1" } ) );
+        result.add( "s", new PigEntity( "build/test-classes/data2.txt", new String[]{ "sc0", "sc1" } ) );
         return result;
     }
 
@@ -278,7 +278,7 @@ public class PigAlgBuilderStyleTest extends AbstractPigTest {
     }
 
 
-    private String getPigScript( AlgNode root, Schema schema ) {
+    private String getPigScript( AlgNode root, Namespace namespace ) {
         PigAlg.Implementor impl = new PigAlg.Implementor();
         impl.visitChild( 0, root );
         return impl.getScript();

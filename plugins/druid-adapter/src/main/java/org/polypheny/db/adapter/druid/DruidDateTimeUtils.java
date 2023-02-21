@@ -95,14 +95,14 @@ public class DruidDateTimeUtils {
     protected static List<Interval> toInterval( List<Range<Long>> ranges ) {
         List<Interval> intervals = Lists.transform( ranges, range -> {
             if ( !range.hasLowerBound() && !range.hasUpperBound() ) {
-                return DruidTable.DEFAULT_INTERVAL;
+                return DruidEntity.DEFAULT_INTERVAL;
             }
             long start = range.hasLowerBound()
                     ? range.lowerEndpoint().longValue()
-                    : DruidTable.DEFAULT_INTERVAL.getStartMillis();
+                    : DruidEntity.DEFAULT_INTERVAL.getStartMillis();
             long end = range.hasUpperBound()
                     ? range.upperEndpoint().longValue()
-                    : DruidTable.DEFAULT_INTERVAL.getEndMillis();
+                    : DruidEntity.DEFAULT_INTERVAL.getEndMillis();
             if ( range.hasLowerBound() && range.lowerBoundType() == BoundType.OPEN ) {
                 start++;
             }

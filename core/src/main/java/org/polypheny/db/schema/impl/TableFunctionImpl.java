@@ -52,11 +52,11 @@ import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ImplementableFunction;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Static;
@@ -110,7 +110,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
             }
         }
         final Class<?> returnType = method.getReturnType();
-        if ( !QueryableTable.class.isAssignableFrom( returnType ) && !ScannableTable.class.isAssignableFrom( returnType ) ) {
+        if ( !QueryableEntity.class.isAssignableFrom( returnType ) && !ScannableEntity.class.isAssignableFrom( returnType ) ) {
             return null;
         }
         CallImplementor implementor = createImplementor( method );
@@ -126,14 +126,14 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
 
     @Override
     public Type getElementType( List<Object> arguments ) {
-        final Table table = apply( arguments );
-        if ( table instanceof QueryableTable ) {
-            QueryableTable queryableTable = (QueryableTable) table;
+        final Entity entity = apply( arguments );
+        if ( entity instanceof QueryableEntity ) {
+            QueryableEntity queryableTable = (QueryableEntity) entity;
             return queryableTable.getElementType();
-        } else if ( table instanceof ScannableTable ) {
+        } else if ( entity instanceof ScannableEntity ) {
             return Object[].class;
         }
-        throw new AssertionError( "Invalid table class: " + table + " " + table.getClass() );
+        throw new AssertionError( "Invalid table class: " + entity + " " + entity.getClass() );
     }
 
 
@@ -150,9 +150,9 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
                     public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
                         Expression expr = super.implement( translator, call, translatedOperands );
                         final Class<?> returnType = method.getReturnType();
-                        if ( QueryableTable.class.isAssignableFrom( returnType ) ) {
+                        if ( QueryableEntity.class.isAssignableFrom( returnType ) ) {
                             Expression queryable = Expressions.call(
-                                    Expressions.convert_( expr, QueryableTable.class ),
+                                    Expressions.convert_( expr, QueryableEntity.class ),
                                     BuiltInMethod.QUERYABLE_TABLE_AS_QUERYABLE.method,
                                     Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method ),
                                     Expressions.constant( null, SchemaPlus.class ),
@@ -167,7 +167,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
     }
 
 
-    private Table apply( List<Object> arguments ) {
+    private Entity apply( List<Object> arguments ) {
         try {
             Object o = null;
             if ( !Modifier.isStatic( method.getModifiers() ) ) {
@@ -175,7 +175,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
                 o = constructor.newInstance();
             }
             final Object table = method.invoke( o, arguments.toArray() );
-            return (Table) table;
+            return (Entity) table;
         } catch ( IllegalArgumentException e ) {
             throw Static.RESOURCE.illegalArgumentForTableFunctionCall(
                     method.toString(),

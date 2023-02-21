@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,20 +34,25 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.algebra.stream.Delta;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Table that can be converted to a stream.
+ * Extension to {@link Entity} that specifies how it is to be translated to a {@link AlgNode relational expression}.
  *
- * @see Delta
+ * It is optional for a Table to implement this interface. If Table does not implement this interface, it will be converted
+ * to a  {@link EnumerableScan}. Generally a Table will implement this interface to create a particular subclass of AlgNode,
+ * and also register rules that act on that particular subclass of AlgNode.
  */
-public interface StreamableTable extends Table {
+public interface TranslatableEntity extends Entity {
 
     /**
-     * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
+     * Converts this table into a {@link AlgNode relational expression}.
      */
-    Table stream();
+    AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet );
 
 }
-

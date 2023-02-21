@@ -41,7 +41,7 @@ public class MockCatalogReaderDocument extends MockCatalogReaderSimple {
 
         // Register "SALES" schema.
         MockSchema salesSchema = new MockSchema( "private" );
-        registerSchema( salesSchema );
+        registerSchema( salesSchema, -1 );
 
         // Register "EMP" table.
         final MockEntity empTable = MockEntity.create( this, salesSchema, "secrets", false, 14, null );

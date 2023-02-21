@@ -52,9 +52,9 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -207,13 +207,13 @@ public class CottontailPlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name ) {
-            this.currentSchema = CottontailSchema.create( rootSchema, name, this.wrapper, this );
+        public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
+            this.currentSchema = CottontailSchema.create( id, rootSchema, name, this.wrapper, this );
         }
 
 
         @Override
-        public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        public Entity createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
             final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
             final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
             List<String> logicalColumnNames = new LinkedList<>();
@@ -244,7 +244,7 @@ public class CottontailPlugin extends Plugin {
                         : CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
             }
 
-            CottontailTable table = new CottontailTable(
+            CottontailEntity table = new CottontailEntity(
                     this.currentSchema,
                     combinedTable.getNamespaceName(),
                     combinedTable.name,
@@ -261,7 +261,7 @@ public class CottontailPlugin extends Plugin {
 
 
         @Override
-        public Schema getCurrentSchema() {
+        public Namespace getCurrentSchema() {
             return this.currentSchema;
         }
 

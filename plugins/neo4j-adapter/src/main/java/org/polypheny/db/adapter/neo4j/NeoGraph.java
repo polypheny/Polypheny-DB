@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.AbstractQueryable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -57,13 +56,12 @@ import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.TranslatableGraph;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.QueryableGraph;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
@@ -71,20 +69,18 @@ import org.polypheny.db.util.Pair;
 /**
  * Graph entity in the Neo4j representation.
  */
-public class NeoGraph extends AbstractSchema implements ModifiableGraph, TranslatableGraph, QueryableGraph {
+public class NeoGraph extends AbstractNamespace implements ModifiableGraph, TranslatableGraph, QueryableGraph {
 
     public final String name;
     public final TransactionProvider transactionProvider;
     public final Driver db;
-    @Getter
-    private final long id;
     public final String mappingLabel;
     public final Neo4jStore store;
 
 
     public NeoGraph( String name, TransactionProvider transactionProvider, Driver db, long id, String mappingLabel, Neo4jStore store ) {
+        super( id );
         this.name = name;
-        this.id = id;
         this.transactionProvider = transactionProvider;
         this.db = db;
         this.mappingLabel = mappingLabel;
@@ -105,7 +101,7 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
     public LpgModify toModificationAlg(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            Graph graph,
+            org.polypheny.db.schema.graph.Graph graph,
             PolyphenyDbCatalogReader catalogReader,
             AlgNode input,
             Operation operation,
@@ -147,7 +143,7 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, Graph graph ) {
+    public AlgNode toAlg( ToAlgContext context, org.polypheny.db.schema.graph.Graph graph ) {
         final AlgOptCluster cluster = context.getCluster();
         return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
     }
@@ -166,7 +162,7 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
         private final DataContext dataContext;
 
 
-        public NeoQueryable( DataContext dataContext, Graph graph ) {
+        public NeoQueryable( DataContext dataContext, org.polypheny.db.schema.graph.Graph graph ) {
             this.dataContext = dataContext;
             this.graph = (NeoGraph) graph;
         }

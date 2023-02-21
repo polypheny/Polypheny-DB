@@ -65,17 +65,17 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.AbstractPreparingEntity;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ProjectableFilterableTable;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
+import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.StreamableTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.StreamableEntity;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.AccessType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -93,7 +93,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     private final AlgDataType rowType;
     @Getter
     @Nullable
-    private final Table table;
+    private final Entity entity;
 
     @Getter
     @Nullable
@@ -114,14 +114,14 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             AlgOptSchema schema,
             AlgDataType rowType,
             List<String> names,
-            Table table,
+            Entity entity,
             CatalogEntity catalogEntity,
             Function<Class<?>, Expression> expressionFunction,
             Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
         this.names = ImmutableList.copyOf( names );
-        this.table = table; // may be null
+        this.entity = entity; // may be null
         this.catalogEntity = catalogEntity;
         this.expressionFunction = expressionFunction; // may be null
         this.rowCount = rowCount; // may be null
@@ -134,15 +134,15 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
 
     public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, CatalogEntity catalogEntity, Double count ) {
-        final Table table = tableEntry.getTable();
+        final Entity entity = tableEntry.getTable();
         Double rowCount;
         if ( count == null ) {
-            rowCount = table.getStatistic().getRowCount();
+            rowCount = entity.getStatistic().getRowCount();
         } else {
             rowCount = count;
         }
 
-        return new AlgOptEntityImpl( schema, rowType, tableEntry.path(), table, catalogEntity, getClassExpressionFunction( tableEntry, table ), rowCount );
+        return new AlgOptEntityImpl( schema, rowType, tableEntry.path(), entity, catalogEntity, getClassExpressionFunction( tableEntry, entity ), rowCount );
     }
 
 
@@ -150,25 +150,25 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Creates a copy of this RelOptTable. The new RelOptTable will have newRowType.
      */
     public AlgOptEntityImpl copy( AlgDataType newRowType ) {
-        return new AlgOptEntityImpl( this.schema, newRowType, this.names, this.table, this.catalogEntity, this.expressionFunction, this.rowCount );
+        return new AlgOptEntityImpl( this.schema, newRowType, this.names, this.entity, this.catalogEntity, this.expressionFunction, this.rowCount );
     }
 
 
-    private static Function<Class<?>, Expression> getClassExpressionFunction( PolyphenyDbSchema.TableEntry tableEntry, Table table ) {
-        return getClassExpressionFunction( tableEntry.schema.plus(), tableEntry.name, table );
+    private static Function<Class<?>, Expression> getClassExpressionFunction( PolyphenyDbSchema.TableEntry tableEntry, Entity entity ) {
+        return getClassExpressionFunction( tableEntry.schema.plus(), tableEntry.name, entity );
     }
 
 
-    private static Function<Class<?>, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Table table ) {
-        if ( table instanceof QueryableTable ) {
-            final QueryableTable queryableTable = (QueryableTable) table;
+    private static Function<Class<?>, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Entity entity ) {
+        if ( entity instanceof QueryableEntity ) {
+            final QueryableEntity queryableTable = (QueryableEntity) entity;
             return clazz -> queryableTable.getExpression( schema, tableName, clazz );
-        } else if ( table instanceof ScannableTable
-                || table instanceof FilterableTable
-                || table instanceof ProjectableFilterableTable ) {
-            return clazz -> Schemas.tableExpression( schema, Object[].class, tableName, table.getClass() );
-        } else if ( table instanceof StreamableTable ) {
-            return getClassExpressionFunction( schema, tableName, ((StreamableTable) table).stream() );
+        } else if ( entity instanceof ScannableEntity
+                || entity instanceof FilterableEntity
+                || entity instanceof ProjectableFilterableEntity ) {
+            return clazz -> Schemas.tableExpression( schema, Object[].class, tableName, entity.getClass() );
+        } else if ( entity instanceof StreamableEntity ) {
+            return getClassExpressionFunction( schema, tableName, ((StreamableEntity) entity).stream() );
         } else {
             return input -> {
                 throw new UnsupportedOperationException();
@@ -177,11 +177,11 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Table table, CatalogEntity catalogEntity, ImmutableList<String> names ) {
-        assert table instanceof TranslatableTable
-                || table instanceof ScannableTable
-                || table instanceof ModifiableTable;
-        return new AlgOptEntityImpl( schema, rowType, names, table, catalogEntity, null, null );
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity, ImmutableList<String> names ) {
+        assert entity instanceof TranslatableEntity
+                || entity instanceof ScannableEntity
+                || entity instanceof ModifiableEntity;
+        return new AlgOptEntityImpl( schema, rowType, names, entity, catalogEntity, null, null );
     }
 
 
@@ -190,11 +190,11 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         if ( clazz.isInstance( this ) ) {
             return clazz.cast( this );
         }
-        if ( clazz.isInstance( table ) ) {
-            return clazz.cast( table );
+        if ( clazz.isInstance( entity ) ) {
+            return clazz.cast( entity );
         }
-        if ( table instanceof Wrapper ) {
-            final T t = ((Wrapper) table).unwrap( clazz );
+        if ( entity instanceof Wrapper ) {
+            final T t = ((Wrapper) entity).unwrap( clazz );
             if ( t != null ) {
                 return t;
             }
@@ -216,13 +216,13 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
 
     @Override
-    protected AlgOptEntity extend( Table extendedTable ) {
-        final AlgDataType extendedRowType = extendedTable.getRowType( AlgDataTypeFactory.DEFAULT );
+    protected AlgOptEntity extend( Entity extendedEntity ) {
+        final AlgDataType extendedRowType = extendedEntity.getRowType( AlgDataTypeFactory.DEFAULT );
         return new AlgOptEntityImpl(
                 getRelOptSchema(),
                 extendedRowType,
                 getQualifiedName(),
-                extendedTable,
+                extendedEntity,
                 null,
                 expressionFunction,
                 getRowCount() );
@@ -233,13 +233,13 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     public boolean equals( Object obj ) {
         return obj instanceof AlgOptEntityImpl
                 && this.rowType.equals( ((AlgOptEntityImpl) obj).getRowType() )
-                && this.table == ((AlgOptEntityImpl) obj).table;
+                && this.entity == ((AlgOptEntityImpl) obj).entity;
     }
 
 
     @Override
     public int hashCode() {
-        return (this.table == null) ? super.hashCode() : this.table.hashCode();
+        return (this.entity == null) ? super.hashCode() : this.entity.hashCode();
     }
 
 
@@ -248,8 +248,8 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         if ( rowCount != null ) {
             return rowCount;
         }
-        if ( table != null ) {
-            final Double rowCount = table.getStatistic().getRowCount();
+        if ( entity != null ) {
+            final Double rowCount = entity.getStatistic().getRowCount();
             if ( rowCount != null ) {
                 return rowCount;
             }
@@ -284,7 +284,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
                 }
             }
             final AlgOptEntity algOptEntity =
-                    new AlgOptEntityImpl( this.schema, b.build(), this.names, this.table, this.catalogEntity, this.expressionFunction, this.rowCount ) {
+                    new AlgOptEntityImpl( this.schema, b.build(), this.names, this.entity, this.catalogEntity, this.expressionFunction, this.rowCount ) {
                         @Override
                         public <T> T unwrap( Class<T> clazz ) {
                             if ( clazz.isAssignableFrom( InitializerExpressionFactory.class ) ) {
@@ -296,19 +296,19 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             return algOptEntity.toAlg( context, traitSet );
         }
 
-        if ( table instanceof TranslatableTable ) {
-            return ((TranslatableTable) table).toAlg( context, this, traitSet );
+        if ( entity instanceof TranslatableEntity ) {
+            return ((TranslatableEntity) entity).toAlg( context, this, traitSet );
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {
             return LogicalRelScan.create( cluster, this );
         }
-        if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE && table instanceof QueryableTable ) {
+        if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE && entity instanceof QueryableEntity ) {
             return EnumerableScan.create( cluster, this );
         }
-        if ( table instanceof ScannableTable
-                || table instanceof FilterableTable
-                || table instanceof ProjectableFilterableTable ) {
+        if ( entity instanceof ScannableEntity
+                || entity instanceof FilterableEntity
+                || entity instanceof ProjectableFilterableEntity ) {
             return LogicalRelScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE ) {
@@ -320,8 +320,8 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public List<AlgCollation> getCollationList() {
-        if ( table != null ) {
-            return table.getStatistic().getCollations();
+        if ( entity != null ) {
+            return entity.getStatistic().getCollations();
         }
         return ImmutableList.of();
     }
@@ -329,8 +329,8 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public AlgDistribution getDistribution() {
-        if ( table != null ) {
-            return table.getStatistic().getDistribution();
+        if ( entity != null ) {
+            return entity.getStatistic().getDistribution();
         }
         return AlgDistributionTraitDef.INSTANCE.getDefault();
     }
@@ -338,8 +338,8 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public boolean isKey( ImmutableBitSet columns ) {
-        if ( table != null ) {
-            return table.getStatistic().isKey( columns );
+        if ( entity != null ) {
+            return entity.getStatistic().isKey( columns );
         }
         return false;
     }
@@ -347,8 +347,8 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public List<AlgReferentialConstraint> getReferentialConstraints() {
-        if ( table != null ) {
-            return table.getStatistic().getReferentialConstraints();
+        if ( entity != null ) {
+            return entity.getStatistic().getReferentialConstraints();
         }
         return ImmutableList.of();
     }
@@ -364,9 +364,9 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     public boolean supportsModality( Modality modality ) {
         switch ( modality ) {
             case STREAM:
-                return table instanceof StreamableTable;
+                return entity instanceof StreamableEntity;
             default:
-                return !(table instanceof StreamableTable);
+                return !(entity instanceof StreamableEntity);
         }
     }
 
@@ -379,7 +379,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        for ( AlgCollation collation : table.getStatistic().getCollations() ) {
+        for ( AlgCollation collation : entity.getStatistic().getCollations() ) {
             final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();
             if ( fieldIndex < rowType.getFieldCount() && rowType.getFieldNames().get( fieldIndex ).equals( columnName ) ) {

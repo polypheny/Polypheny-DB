@@ -89,9 +89,9 @@ public class GeodeToEnumerableConverter extends ConverterImpl implements Enumera
 
 
     /**
-     * Reference to the method {@link GeodeTable.GeodeQueryable#query}, used in the {@link Expression}.
+     * Reference to the method {@link GeodeEntity.GeodeQueryable#query}, used in the {@link Expression}.
      */
-    private static final Method GEODE_QUERY_METHOD = Types.lookupMethod( GeodeTable.GeodeQueryable.class, "query", List.class, List.class, List.class, List.class, List.class, List.class, Long.class );
+    private static final Method GEODE_QUERY_METHOD = Types.lookupMethod( GeodeEntity.GeodeQueryable.class, "query", List.class, List.class, List.class, List.class, List.class, List.class, Long.class );
 
 
     /**
@@ -126,7 +126,7 @@ public class GeodeToEnumerableConverter extends ConverterImpl implements Enumera
         // Expression meta-program for calling the GeodeTable.GeodeQueryable#query method form the generated code
         final BlockBuilder blockBuilder = new BlockBuilder().append(
                 Expressions.call(
-                        geodeImplementContext.table.getExpression( GeodeTable.GeodeQueryable.class ),
+                        geodeImplementContext.table.getExpression( GeodeEntity.GeodeQueryable.class ),
                         GEODE_QUERY_METHOD,
                         // fields
                         constantArrayList( Pair.zip( geodeFieldNames( rowType ), physFieldClasses ), Pair.class ),

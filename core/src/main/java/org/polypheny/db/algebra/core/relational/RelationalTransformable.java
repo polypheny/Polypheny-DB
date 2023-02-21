@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 
 
 /**
@@ -39,7 +39,7 @@ public interface RelationalTransformable {
 
 
     static Modify getModify( AlgOptEntity table, CatalogReader catalogReader, AlgNode alg, Operation operation ) {
-        return table.unwrap( ModifiableTable.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
+        return table.unwrap( ModifiableEntity.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
     }
 
 }

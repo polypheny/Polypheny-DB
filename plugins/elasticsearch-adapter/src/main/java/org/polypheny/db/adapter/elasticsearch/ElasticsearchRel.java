@@ -108,7 +108,7 @@ public interface ElasticsearchRel extends AlgNode {
         Long fetch;
 
         AlgOptEntity table;
-        ElasticsearchTable elasticsearchTable;
+        ElasticsearchEntity elasticsearchTable;
 
 
         void add( String findOp ) {

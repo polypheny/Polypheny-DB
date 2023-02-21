@@ -73,7 +73,7 @@ import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -562,7 +562,7 @@ public class AlgFactories {
 
 
     /**
-     * Creates a {@link ScanFactory} that can expand {@link TranslatableTable} instances.
+     * Creates a {@link ScanFactory} that can expand {@link TranslatableEntity} instances.
      *
      * @param scanFactory Factory for non-translatable tables
      * @return Table scan factory
@@ -570,7 +570,7 @@ public class AlgFactories {
     @Nonnull
     public static ScanFactory expandingScanFactory( @Nonnull ScanFactory scanFactory ) {
         return ( cluster, table ) -> {
-            final TranslatableTable translatableTable = table.unwrap( TranslatableTable.class );
+            final TranslatableEntity translatableTable = table.unwrap( TranslatableEntity.class );
             if ( translatableTable != null ) {
                 final ToAlgContext toAlgContext = () -> cluster;
                 return translatableTable.toAlg( toAlgContext, table, cluster.traitSet() );

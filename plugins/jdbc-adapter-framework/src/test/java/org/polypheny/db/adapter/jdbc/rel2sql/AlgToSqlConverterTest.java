@@ -34,7 +34,12 @@
 package org.polypheny.db.adapter.jdbc.rel2sql;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.function.Function;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
@@ -67,20 +72,29 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
 import org.polypheny.db.sql.SqlLanguageDependent;
-import org.polypheny.db.sql.language.*;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.Context;
 import org.polypheny.db.sql.language.SqlDialect.DatabaseProduct;
-import org.polypheny.db.sql.language.dialect.*;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.SqlWriter;
+import org.polypheny.db.sql.language.dialect.HiveSqlDialect;
+import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
+import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
+import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.Matchers;
-import org.polypheny.db.tools.*;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.FrameworkConfig;
+import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.tools.Planner;
+import org.polypheny.db.tools.Program;
+import org.polypheny.db.tools.Programs;
+import org.polypheny.db.tools.RuleSet;
+import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.type.PolyType;
-
-import java.util.List;
-import java.util.function.Function;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 
 /**
@@ -108,7 +122,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
     private Sql sql( String sql ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), NamespaceType.RELATIONAL );
+                .add( "foodmart", new ReflectiveSchema( new FoodmartSchema(), -1 ), NamespaceType.RELATIONAL );
         return new Sql( schema, sql, PolyphenyDbSqlDialect.DEFAULT, DEFAULT_REL_CONFIG, ImmutableList.of() );
     }
 
@@ -164,7 +178,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
      */
     private static AlgBuilder algBuilder() {
         // Creates a config based on the "scott" schema.
-        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema() ), NamespaceType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema(), -1 ), NamespaceType.RELATIONAL );
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( schema )

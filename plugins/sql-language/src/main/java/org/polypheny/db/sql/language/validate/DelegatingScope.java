@@ -33,8 +33,8 @@ import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
-import org.polypheny.db.schema.CustomColumnResolvingTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.CustomColumnResolvingEntity;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -102,9 +102,9 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         if ( rowType.isStruct() ) {
             ValidatorTable validatorTable = ns.getTable();
             if ( validatorTable instanceof PreparingEntity ) {
-                Table t = ((PreparingEntity) validatorTable).unwrap( Table.class );
-                if ( t instanceof CustomColumnResolvingTable ) {
-                    final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, validator.getTypeFactory(), names );
+                Entity t = ((PreparingEntity) validatorTable).unwrap( Entity.class );
+                if ( t instanceof CustomColumnResolvingEntity ) {
+                    final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingEntity) t).resolveColumn( rowType, validator.getTypeFactory(), names );
                     for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {
                         final AlgDataTypeField field = entry.getKey();
                         final List<String> remainder = entry.getValue();

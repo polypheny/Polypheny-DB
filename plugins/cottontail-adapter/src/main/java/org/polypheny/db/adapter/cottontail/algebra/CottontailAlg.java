@@ -19,7 +19,7 @@ package org.polypheny.db.adapter.cottontail.algebra;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.adapter.cottontail.CottontailTable;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptEntity;
 
@@ -50,7 +50,7 @@ public interface CottontailAlg extends AlgNode {
         public String tableName;
 
         public AlgOptEntity table;
-        public CottontailTable cottontailTable;
+        public CottontailEntity cottontailTable;
 
         public Expression filterBuilder;
 

@@ -52,7 +52,7 @@ import org.polypheny.db.schema.ModelTrait;
  */
 public class JdbcScan extends Scan implements JdbcAlg {
 
-    protected final JdbcTable jdbcTable;
+    protected final JdbcEntity jdbcTable;
 
 
     @Override
@@ -61,7 +61,7 @@ public class JdbcScan extends Scan implements JdbcAlg {
     }
 
 
-    public JdbcScan( AlgOptCluster cluster, AlgOptEntity table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
+    public JdbcScan( AlgOptCluster cluster, AlgOptEntity table, JdbcEntity jdbcTable, JdbcConvention jdbcConvention ) {
         super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), table );
         this.jdbcTable = jdbcTable;
         assert jdbcTable != null;

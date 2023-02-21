@@ -65,7 +65,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.tools.AlgBuilder;
@@ -323,7 +323,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
-        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -365,7 +365,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
-        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -409,7 +409,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
-        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),

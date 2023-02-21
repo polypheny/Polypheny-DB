@@ -58,7 +58,7 @@ import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 
@@ -80,10 +80,10 @@ public class AlgJsonReader {
     private AlgNode lastAlg;
 
 
-    public AlgJsonReader( AlgOptCluster cluster, AlgOptSchema algOptSchema, Schema schema ) {
+    public AlgJsonReader( AlgOptCluster cluster, AlgOptSchema algOptSchema, Namespace namespace ) {
         this.cluster = cluster;
         this.algOptSchema = algOptSchema;
-        Util.discard( schema );
+        Util.discard( namespace );
     }
 
 

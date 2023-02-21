@@ -78,14 +78,14 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     private final boolean caseSensitive;
     @Getter
     @Setter
-    public Schema schema;
+    public Namespace namespace;
     @Getter
     public final String name;
     @Getter
     public final NamespaceType namespaceType;
 
     /**
-     * Tables explicitly defined in this schema. Does not include tables in {@link #schema}.
+     * Tables explicitly defined in this schema. Does not include tables in {@link #namespace}.
      */
     @Getter
     protected final NameMap<TableEntry> tableMap;
@@ -99,7 +99,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
     protected AbstractPolyphenyDbSchema(
             AbstractPolyphenyDbSchema parent,
-            Schema schema,
+            Namespace namespace,
             String name,
             NamespaceType type,
             boolean caseSensitive,
@@ -111,7 +111,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             NameMap<FunctionEntry> nullaryFunctionMap,
             List<? extends List<String>> path ) {
         this.parent = parent;
-        this.schema = schema;
+        this.namespace = namespace;
         this.name = name;
         this.namespaceType = type;
         if ( tableMap == null ) {
@@ -150,32 +150,32 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * @param name Schema name
      */
     public static PolyphenyDbSchema createRootSchema( String name ) {
-        final Schema schema = new RootSchema();
-        return new SimplePolyphenyDbSchema( null, schema, name, NamespaceType.getDefault(), false );
+        final Namespace namespace = new RootSchema();
+        return new SimplePolyphenyDbSchema( null, namespace, name, NamespaceType.getDefault(), false );
     }
 
 
     /**
-     * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
-     * not explicitly by a call to {@link #add(String, Schema, NamespaceType)}), or null.
+     * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Namespace} object,
+     * not explicitly by a call to {@link #add(String, Namespace, NamespaceType)}), or null.
      */
     protected abstract PolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive );
 
     /**
-     * Returns a table with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
-     * not explicitly by a call to {@link #add(String, Table)}), or null.
+     * Returns a table with a given name that is defined implicitly (that is, by the underlying {@link Namespace} object,
+     * not explicitly by a call to {@link #add(String, Entity)}), or null.
      */
     protected abstract TableEntry getImplicitTable( String tableName );
 
     /**
-     * Returns a type with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
+     * Returns a type with a given name that is defined implicitly (that is, by the underlying {@link Namespace} object,
      * not explicitly by a call to {@link #add(String, AlgProtoDataType)}), or null.
      */
     protected abstract TypeEntry getImplicitType( String name, boolean caseSensitive );
 
     /**
      * Returns table function with a given name and zero arguments that is defined implicitly (that is, by the underlying
-     * {@link Schema} object, not explicitly by a call to {@link #add(String, Function)}), or null.
+     * {@link Namespace} object, not explicitly by a call to {@link #add(String, Function)}), or null.
      */
     protected abstract TableEntry getImplicitTableBasedOnNullaryFunction( String tableName, boolean caseSensitive );
 
@@ -207,7 +207,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     /**
      * Adds implicit table functions to a builder.
      */
-    protected abstract void addImplicitTablesBasedOnNullaryFunctionsToBuilder( ImmutableSortedMap.Builder<String, Table> builder );
+    protected abstract void addImplicitTablesBasedOnNullaryFunctionsToBuilder( ImmutableSortedMap.Builder<String, Entity> builder );
 
     /**
      * Returns a snapshot representation of this PolyphenyDbSchema.
@@ -220,8 +220,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     /**
      * Creates a TableEntryImpl with no SQLs.
      */
-    protected TableEntryImpl tableEntry( String name, Table table ) {
-        return new TableEntryImpl( this, name, table );
+    protected TableEntryImpl tableEntry( String name, Entity entity ) {
+        return new TableEntryImpl( this, name, entity );
     }
 
 
@@ -237,8 +237,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Defines a table within this schema.
      */
     @Override
-    public TableEntry add( String tableName, Table table ) {
-        final TableEntryImpl entry = new TableEntryImpl( this, tableName, table );
+    public TableEntry add( String tableName, Entity entity ) {
+        final TableEntryImpl entry = new TableEntryImpl( this, tableName, entity );
         tableMap.put( tableName, entry );
         return entry;
     }
@@ -306,12 +306,12 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     @Override
-    public final PolyphenyDbSchema getSubSchema( String schemaName, boolean caseSensitive ) {
+    public final PolyphenyDbSchema getSubNamespace( String namespaceName, boolean caseSensitive ) {
         // Check explicit schemas.
-        for ( Map.Entry<String, PolyphenyDbSchema> entry : subSchemaMap.range( schemaName, caseSensitive ).entrySet() ) {
+        for ( Map.Entry<String, PolyphenyDbSchema> entry : subSchemaMap.range( namespaceName, caseSensitive ).entrySet() ) {
             return entry.getValue();
         }
-        return getImplicitSubSchema( schemaName, caseSensitive );
+        return getImplicitSubSchema( namespaceName, caseSensitive );
     }
 
 
@@ -338,7 +338,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             fieldInfo.add( new AlgDataTypeFieldImpl( "properties", 1, typeFactory.createPolyType( PolyType.VARCHAR, 2064 ) ) );
             fieldInfo.add( new AlgDataTypeFieldImpl( "labels", 2, typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ) ) );
 
-            return new TableEntryImpl( this, tableName, new LogicalTable( -1, name, tableName, List.of(), List.of(), AlgDataTypeImpl.proto( fieldInfo.build() ), NamespaceType.GRAPH ) );
+            return new TableEntryImpl( this, tableName, new LogicalEntity( -1, name, tableName, List.of(), List.of(), AlgDataTypeImpl.proto( fieldInfo.build() ), NamespaceType.GRAPH ) );
         } else if ( namespaceType == NamespaceType.DOCUMENT ) {
             for ( Map.Entry<String, TableEntry> entry : tableMap.map().entrySet().stream().filter( t -> t.getKey().split( "_" )[0].equalsIgnoreCase( tableName.split( "_" )[0] ) ).collect( Collectors.toList() ) ) {
                 return entry.getValue();
@@ -350,7 +350,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
     @Override
     public SchemaPlus plus() {
-        return new SchemaPlusImpl();
+        return new SchemaPlusImpl( getNamespace().getId() );
     }
 
 
@@ -374,8 +374,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema, NamespaceType)})
-     * and implicit (defined using {@link Schema#getSubSchemaNames()} and {@link Schema#getSubSchema(String)}).
+     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Namespace, NamespaceType)})
+     * and implicit (defined using {@link Namespace#getSubNamespaceNames()} and {@link Namespace#getSubNamespace(String)}).
      */
     @Override
     public final NavigableMap<String, PolyphenyDbSchema> getSubSchemaMap() {
@@ -467,8 +467,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             final Function function = entry.getValue().getFunction();
             if ( function instanceof TableMacro ) {
                 assert function.getParameters().isEmpty();
-                final Table table = ((TableMacro) function).apply( ImmutableList.of() );
-                return tableEntry( tableName, table );
+                final Entity entity = ((TableMacro) function).apply( ImmutableList.of() );
+                return tableEntry( tableName, entity );
             }
         }
         return getImplicitTableBasedOnNullaryFunction( tableName, caseSensitive );
@@ -479,6 +479,15 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Implementation of {@link SchemaPlus} based on a {@link AbstractPolyphenyDbSchema}.
      */
     private class SchemaPlusImpl implements SchemaPlus {
+
+        @Getter
+        private final long id;
+
+
+        public SchemaPlusImpl( long id ) {
+            this.id = id;
+        }
+
 
         @Override
         public AbstractPolyphenyDbSchema polyphenyDbSchema() {
@@ -500,7 +509,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
         @Override
         public boolean isMutable() {
-            return schema.isMutable();
+            return namespace.isMutable();
         }
 
 
@@ -517,26 +526,26 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
         @Override
-        public Schema snapshot( SchemaVersion version ) {
+        public Namespace snapshot( SchemaVersion version ) {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
         public Expression getExpression( SchemaPlus parentSchema, String name ) {
-            return schema.getExpression( parentSchema, name );
+            return namespace.getExpression( parentSchema, name );
         }
 
 
         @Override
-        public Table getTable( String name ) {
+        public Entity getEntity( String name ) {
             final TableEntry entry = AbstractPolyphenyDbSchema.this.getTable( name );
             return entry == null ? null : entry.getTable();
         }
 
 
         @Override
-        public NavigableSet<String> getTableNames() {
+        public NavigableSet<String> getEntityNames() {
             return AbstractPolyphenyDbSchema.this.getTableNames();
         }
 
@@ -567,21 +576,21 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
         @Override
-        public SchemaPlus getSubSchema( String name ) {
-            final PolyphenyDbSchema subSchema = AbstractPolyphenyDbSchema.this.getSubSchema( name, true );
+        public SchemaPlus getSubNamespace( String name ) {
+            final PolyphenyDbSchema subSchema = AbstractPolyphenyDbSchema.this.getSubNamespace( name, true );
             return subSchema == null ? null : subSchema.plus();
         }
 
 
         @Override
-        public Set<String> getSubSchemaNames() {
+        public Set<String> getSubNamespaceNames() {
             return AbstractPolyphenyDbSchema.this.getSubSchemaMap().keySet();
         }
 
 
         @Override
-        public SchemaPlus add( String name, Schema schema, NamespaceType namespaceType ) {
-            final PolyphenyDbSchema polyphenyDbSchema = AbstractPolyphenyDbSchema.this.add( name, schema, namespaceType );
+        public SchemaPlus add( String name, Namespace namespace, NamespaceType namespaceType ) {
+            final PolyphenyDbSchema polyphenyDbSchema = AbstractPolyphenyDbSchema.this.add( name, namespace, namespaceType );
             return polyphenyDbSchema.plus();
         }
 
@@ -594,8 +603,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             if ( clazz.isInstance( AbstractPolyphenyDbSchema.this ) ) {
                 return clazz.cast( AbstractPolyphenyDbSchema.this );
             }
-            if ( clazz.isInstance( AbstractPolyphenyDbSchema.this.schema ) ) {
-                return clazz.cast( AbstractPolyphenyDbSchema.this.schema );
+            if ( clazz.isInstance( AbstractPolyphenyDbSchema.this.namespace ) ) {
+                return clazz.cast( AbstractPolyphenyDbSchema.this.namespace );
             }
             throw new ClassCastException( "not a " + clazz );
         }
@@ -608,8 +617,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
         @Override
-        public void add( String name, Table table ) {
-            AbstractPolyphenyDbSchema.this.add( name, table );
+        public void add( String name, Entity entity ) {
+            AbstractPolyphenyDbSchema.this.add( name, entity );
         }
 
 

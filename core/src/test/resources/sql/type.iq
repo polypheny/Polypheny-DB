@@ -23,8 +23,8 @@ create type myint1 as int;
 
 !update
 
-# Create a basic table
-create table t (i myint1 not null, j int not null);
+# Create a basic entity
+create entity t (i myint1 not null, j int not null);
 (0 rows modified)
 
 !update
@@ -50,7 +50,7 @@ select * from t;
 !ok
 
 
-# Create a table with complex structure type
+# Create a entity with complex structure type
 # This is to test struct type inference
 
 create type mytype1 as (ii int not null);
@@ -58,8 +58,8 @@ create type mytype1 as (ii int not null);
 
 !update
 
-# Create a complex table
-create table v (i int not null, j mytype1 not null);
+# Create a complex entity
+create entity v (i int not null, j mytype1 not null);
 (0 rows modified)
 
 !update
@@ -69,8 +69,8 @@ MYINT INTEGER(10) NOT NULL
 MYSTRUCT STRUCT NOT NULL
 !type
 
-drop table t;
-drop table v;
+drop entity t;
+drop entity v;
 (0 rows modified)
 
 !update

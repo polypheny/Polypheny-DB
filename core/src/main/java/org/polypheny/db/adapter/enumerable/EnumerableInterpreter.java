@@ -47,16 +47,16 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.FilterableEntity;
+import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
  * Relational expression that executes its children using an interpreter.
  *
- * Although quite a few kinds of {@link AlgNode} can be interpreted, this is only created by default for {@link FilterableTable} and
- * {@link ProjectableFilterableTable}.
+ * Although quite a few kinds of {@link AlgNode} can be interpreted, this is only created by default for {@link FilterableEntity} and
+ * {@link ProjectableFilterableEntity}.
  */
 public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 

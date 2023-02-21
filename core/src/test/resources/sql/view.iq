@@ -91,7 +91,7 @@ select * from v;
 create or replace view v (x, y, z) as
 select a, a + 5 as b
 from (values 1, 2) as t(a);
-List of column aliases must have same degree as table; table has 2 columns ('A', 'B'), whereas alias list has 3 columns
+List of column aliases must have same degree as entity; entity has 2 columns ('A', 'B'), whereas alias list has 3 columns
 !error
 
 # Column names not unique
@@ -119,8 +119,8 @@ select * from v;
 
 !ok
 
-# View based on table
-create table t (i int);
+# View based on entity
+create entity t (i int);
 (0 rows modified)
 
 !update

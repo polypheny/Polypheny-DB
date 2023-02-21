@@ -44,7 +44,7 @@ package org.polypheny.db.schema;
  * </ol>
  * Implementation classes of this interface must also override equals(Object), hashCode() and toString().
  *
- * @see Schema#snapshot(SchemaVersion)
+ * @see Namespace#snapshot(SchemaVersion)
  */
 public interface SchemaVersion {
 

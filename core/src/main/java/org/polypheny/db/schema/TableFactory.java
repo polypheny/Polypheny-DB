@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
- * Factory for {@link Table} objects.
+ * Factory for {@link Entity} objects.
  *
  * A table factory allows you to include custom tables in a model file.
  * For example, here is a model that contains a custom table that generates a range of integers.
@@ -87,7 +87,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
  *
  * @param <T> Sub-type of table created by this factory
  */
-public interface TableFactory<T extends Table> {
+public interface TableFactory<T extends Entity> {
 
     /**
      * Creates a Table.

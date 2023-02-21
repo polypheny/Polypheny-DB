@@ -20,7 +20,7 @@ package org.polypheny.db.adapter.file.algebra;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileAlg;
-import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -77,7 +77,7 @@ public class FileTableModify extends Modify implements FileAlg {
     public void implement( final FileImplementor implementor ) {
         setOperation( implementor );//do it first, so children know that we have an insert/update/delete
         implementor.visitChild( 0, getInput() );
-        FileTranslatableTable fileTable = (FileTranslatableTable) getTable().getTable();
+        FileTranslatableEntity fileTable = (FileTranslatableEntity) getTable().getTable();
         implementor.setFileTable( fileTable );
         if ( getOperation() == Operation.UPDATE ) {
             if ( getSourceExpressionList() != null ) {

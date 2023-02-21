@@ -59,17 +59,18 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.TranslatableEntity;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
 import org.polypheny.db.util.BuiltInMethod;
@@ -77,13 +78,13 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link Schema} that exposes the public fields and methods in a Java object.
+ * Implementation of {@link Namespace} that exposes the public fields and methods in a Java object.
  */
-public class ReflectiveSchema extends AbstractSchema {
+public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
     private final Class clazz;
     private Object target;
-    private Map<String, Table> tableMap;
+    private Map<String, Entity> tableMap;
     private Multimap<String, Function> functionMap;
 
 
@@ -91,9 +92,10 @@ public class ReflectiveSchema extends AbstractSchema {
      * Creates a ReflectiveSchema.
      *
      * @param target Object whose fields will be sub-objects of the schema
+     * @param id
      */
-    public ReflectiveSchema( Object target ) {
-        super();
+    public ReflectiveSchema( Object target, long id ) {
+        super( id );
         this.clazz = target.getClass();
         this.target = target;
     }
@@ -116,7 +118,7 @@ public class ReflectiveSchema extends AbstractSchema {
 
 
     @Override
-    public Map<String, Table> getTableMap() {
+    public Map<String, Entity> getTableMap() {
         if ( tableMap == null ) {
             tableMap = createTableMap();
         }
@@ -124,17 +126,17 @@ public class ReflectiveSchema extends AbstractSchema {
     }
 
 
-    private Map<String, Table> createTableMap() {
-        final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+    private Map<String, Entity> createTableMap() {
+        final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
         for ( Field field : clazz.getFields() ) {
             final String fieldName = field.getName();
-            final Table table = fieldRelation( field );
-            if ( table == null ) {
+            final Entity entity = fieldRelation( field );
+            if ( entity == null ) {
                 continue;
             }
-            builder.put( fieldName, table );
+            builder.put( fieldName, entity );
         }
-        Map<String, Table> tableMap = builder.build();
+        Map<String, Entity> tableMap = builder.build();
         // Unique-Key - Foreign-Key
         for ( Field field : clazz.getFields() ) {
             if ( AlgReferentialConstraint.class.isAssignableFrom( field.getType() ) ) {
@@ -144,7 +146,7 @@ public class ReflectiveSchema extends AbstractSchema {
                 } catch ( IllegalAccessException e ) {
                     throw new RuntimeException( "Error while accessing field " + field, e );
                 }
-                FieldTable table = (FieldTable) tableMap.get( Util.last( rc.getSourceQualifiedName() ) );
+                FieldEntity table = (FieldEntity) tableMap.get( Util.last( rc.getSourceQualifiedName() ) );
                 assert table != null;
                 table.statistic = Statistics.of( ImmutableList.copyOf( Iterables.concat( table.getStatistic().getReferentialConstraints(), Collections.singleton( rc ) ) ) );
             }
@@ -169,7 +171,7 @@ public class ReflectiveSchema extends AbstractSchema {
             if ( method.getDeclaringClass() == Object.class || methodName.equals( "toString" ) ) {
                 continue;
             }
-            if ( TranslatableTable.class.isAssignableFrom( method.getReturnType() ) ) {
+            if ( TranslatableEntity.class.isAssignableFrom( method.getReturnType() ) ) {
                 final TableMacro tableMacro = new MethodTableMacro( this, method );
                 builder.put( methodName, tableMacro );
             }
@@ -193,7 +195,7 @@ public class ReflectiveSchema extends AbstractSchema {
     /**
      * Returns a table based on a particular field of this schema. If the field is not of the right type to be a relation, returns null.
      */
-    private <T> Table fieldRelation( final Field field ) {
+    private <T> Entity fieldRelation( final Field field ) {
         final Type elementType = getElementType( field.getType() );
         if ( elementType == null ) {
             return null;
@@ -205,7 +207,7 @@ public class ReflectiveSchema extends AbstractSchema {
             throw new RuntimeException( "Error while accessing field " + field, e );
         }
         @SuppressWarnings("unchecked") final Enumerable<T> enumerable = toEnumerable( o );
-        return new FieldTable<>( field, elementType, enumerable );
+        return new FieldEntity<>( field, elementType, enumerable );
     }
 
 
@@ -241,13 +243,13 @@ public class ReflectiveSchema extends AbstractSchema {
     /**
      * Table that is implemented by reading from a Java object.
      */
-    private static class ReflectiveTable extends AbstractQueryableTable implements Table, ScannableTable {
+    private static class ReflectiveEntity extends AbstractQueryableEntity implements Entity, ScannableEntity {
 
         private final Type elementType;
         private final Enumerable enumerable;
 
 
-        ReflectiveTable( Type elementType, Enumerable enumerable ) {
+        ReflectiveEntity( Type elementType, Enumerable enumerable ) {
             super( elementType );
             this.elementType = elementType;
             this.enumerable = enumerable;
@@ -303,7 +305,7 @@ public class ReflectiveSchema extends AbstractSchema {
         MethodTableMacro( ReflectiveSchema schema, Method method ) {
             super( method );
             this.schema = schema;
-            assert TranslatableTable.class.isAssignableFrom( method.getReturnType() ) : "Method should return TranslatableTable so the macro can be expanded";
+            assert TranslatableEntity.class.isAssignableFrom( method.getReturnType() ) : "Method should return TranslatableTable so the macro can be expanded";
         }
 
 
@@ -313,10 +315,10 @@ public class ReflectiveSchema extends AbstractSchema {
 
 
         @Override
-        public TranslatableTable apply( final List<Object> arguments ) {
+        public TranslatableEntity apply( final List<Object> arguments ) {
             try {
                 final Object o = method.invoke( schema.getTarget(), arguments.toArray() );
-                return (TranslatableTable) o;
+                return (TranslatableEntity) o;
             } catch ( IllegalAccessException | InvocationTargetException e ) {
                 throw new RuntimeException( e );
             }
@@ -330,18 +332,18 @@ public class ReflectiveSchema extends AbstractSchema {
      *
      * @param <T> element type
      */
-    private static class FieldTable<T> extends ReflectiveTable {
+    private static class FieldEntity<T> extends ReflectiveEntity {
 
         private final Field field;
         private Statistic statistic;
 
 
-        FieldTable( Field field, Type elementType, Enumerable<T> enumerable ) {
+        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable ) {
             this( field, elementType, enumerable, Statistics.UNKNOWN );
         }
 
 
-        FieldTable( Field field, Type elementType, Enumerable<T> enumerable, Statistic statistic ) {
+        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable, Statistic statistic ) {
             super( elementType, enumerable );
             this.field = field;
             this.statistic = statistic;

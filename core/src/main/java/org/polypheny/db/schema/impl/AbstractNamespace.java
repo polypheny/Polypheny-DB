@@ -40,18 +40,19 @@ import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
 
 
 /**
- * Abstract implementation of {@link Schema}.
+ * Abstract implementation of {@link Namespace}.
  *
  * <p>Behavior is as follows:</p>
  * <ul>
@@ -62,9 +63,14 @@ import org.polypheny.db.schema.Table;
  * <li>The name and parent schema are as specified in the constructor arguments.</li>
  * </ul>
  */
-public class AbstractSchema implements Schema {
+public class AbstractNamespace implements Namespace {
 
-    public AbstractSchema() {
+    @Getter
+    public final long id;
+
+
+    public AbstractNamespace( long id ) {
+        this.id = id;
     }
 
 
@@ -75,7 +81,7 @@ public class AbstractSchema implements Schema {
 
 
     @Override
-    public Schema snapshot( SchemaVersion version ) {
+    public Namespace snapshot( SchemaVersion version ) {
         return this;
     }
 
@@ -89,25 +95,25 @@ public class AbstractSchema implements Schema {
     /**
      * Returns a map of tables in this schema by name.
      *
-     * The implementations of {@link #getTableNames()} and {@link #getTable(String)} depend on this map.
+     * The implementations of {@link #getEntityNames()} and {@link #getEntity(String)} depend on this map.
      * The default implementation of this method returns the empty map.
      * Override this method to change their behavior.
      *
      * @return Map of tables in this schema by name
      */
-    protected Map<String, Table> getTableMap() {
+    protected Map<String, Entity> getTableMap() {
         return ImmutableMap.of();
     }
 
 
     @Override
-    public final Set<String> getTableNames() {
+    public final Set<String> getEntityNames() {
         return getTableMap().keySet();
     }
 
 
     @Override
-    public final Table getTable( String name ) {
+    public final Entity getEntity( String name ) {
         return getTableMap().get( name );
     }
 
@@ -143,7 +149,7 @@ public class AbstractSchema implements Schema {
      * It is a multi-map because functions are overloaded; there may be more than one function in a schema with a given
      * name (as long as they have different parameter lists).
      *
-     * The implementations of {@link #getFunctionNames()} and {@link Schema#getFunctions(String)} depend on this map.
+     * The implementations of {@link #getFunctionNames()} and {@link Namespace#getFunctions(String)} depend on this map.
      * The default implementation of this method returns the empty multi-map.
      * Override this method to change their behavior.
      *
@@ -169,25 +175,25 @@ public class AbstractSchema implements Schema {
     /**
      * Returns a map of sub-schemas in this schema by name.
      *
-     * The implementations of {@link #getSubSchemaNames()} and {@link #getSubSchema(String)} depend on this map.
+     * The implementations of {@link #getSubNamespaceNames()} and {@link #getSubNamespace(String)} depend on this map.
      * The default implementation of this method returns the empty map.
      * Override this method to change their behavior.
      *
      * @return Map of sub-schemas in this schema by name
      */
-    protected Map<String, Schema> getSubSchemaMap() {
+    protected Map<String, Namespace> getSubSchemaMap() {
         return ImmutableMap.of();
     }
 
 
     @Override
-    public final Set<String> getSubSchemaNames() {
+    public final Set<String> getSubNamespaceNames() {
         return getSubSchemaMap().keySet();
     }
 
 
     @Override
-    public final Schema getSubSchema( String name ) {
+    public final Namespace getSubNamespace( String name ) {
         return getSubSchemaMap().get( name );
     }
 

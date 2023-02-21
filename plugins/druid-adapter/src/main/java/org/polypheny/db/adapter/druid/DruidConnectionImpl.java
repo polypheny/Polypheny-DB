@@ -556,7 +556,7 @@ class DruidConnectionImpl implements DruidConnection {
             fieldBuilder.put( timestampColumnName, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
             for ( JsonSegmentMetadata o : list ) {
                 for ( Map.Entry<String, JsonColumn> entry : o.columns.entrySet() ) {
-                    if ( entry.getKey().equals( DruidTable.DEFAULT_TIMESTAMP_COLUMN ) ) {
+                    if ( entry.getKey().equals( DruidEntity.DEFAULT_TIMESTAMP_COLUMN ) ) {
                         // timestamp column
                         continue;
                     }

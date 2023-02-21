@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
-import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
@@ -47,7 +47,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
@@ -90,7 +90,7 @@ public class FileRules {
         @Override
         public boolean matches( AlgOptRuleCall call ) {
             final Modify modify = call.alg( 0 );
-            if ( modify.getTable().unwrap( FileTranslatableTable.class ) == null ) {
+            if ( modify.getTable().unwrap( FileTranslatableEntity.class ) == null ) {
                 // todo insert from select is not correctly implemented
                 return false;
             }
@@ -99,7 +99,7 @@ public class FileRules {
                 return false;
             }
 
-            FileTranslatableTable table = modify.getTable().unwrap( FileTranslatableTable.class );
+            FileTranslatableEntity table = modify.getTable().unwrap( FileTranslatableEntity.class );
             convention.setModification( true );
             return true;
         }
@@ -108,7 +108,7 @@ public class FileRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Modify modify = (Modify) alg;
-            final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
+            final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
 
             if ( modifiableTable == null ) {
                 log.warn( "Returning null during conversion" );

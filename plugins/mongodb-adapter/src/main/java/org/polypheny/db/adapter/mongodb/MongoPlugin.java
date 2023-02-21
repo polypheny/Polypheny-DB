@@ -77,9 +77,9 @@ import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -227,24 +227,24 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name ) {
+        public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
             String[] splits = name.split( "_" );
             String database = name;
             if ( splits.length >= 2 ) {
                 database = splits[0] + "_" + splits[1];
             }
-            currentSchema = new MongoSchema( database, this.client, transactionProvider, this );
+            currentSchema = new MongoSchema( id, database, this.client, transactionProvider, this );
         }
 
 
         @Override
-        public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        public Entity createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
             return currentSchema.createTable( combinedTable, columnPlacementsOnStore, getAdapterId(), partitionPlacement );
         }
 
 
         @Override
-        public Schema getCurrentSchema() {
+        public Namespace getCurrentSchema() {
             return this.currentSchema;
         }
 
@@ -261,7 +261,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public Table createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+        public Entity createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
             return this.currentSchema.createCollection( catalogEntity, partitionPlacement );
         }
 
@@ -309,7 +309,7 @@ public class MongoPlugin extends Plugin {
             commitAll();
 
             if ( this.currentSchema == null ) {
-                createNewSchema( null, Catalog.getInstance().getSchema( catalogTable.namespaceId ).getName() );
+                createNewSchema( null, catalogTable.getNamespaceName(), catalogTable.namespaceId );
             }
 
             for ( long partitionId : partitionIds ) {
@@ -340,7 +340,7 @@ public class MongoPlugin extends Plugin {
             commitAll();
 
             if ( this.currentSchema == null ) {
-                createNewSchema( null, Catalog.getInstance().getSchema( catalogCollection.namespaceId ).getName() );
+                createNewSchema( null, catalogCollection.getNamespaceName(), catalogCollection.namespaceId );
             }
 
             String physicalCollectionName = getPhysicalTableName( catalogCollection.id, adapterId );

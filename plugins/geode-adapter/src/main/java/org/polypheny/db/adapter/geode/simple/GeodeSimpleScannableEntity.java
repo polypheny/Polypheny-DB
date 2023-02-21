@@ -43,21 +43,21 @@ import org.apache.geode.cache.client.ClientCache;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.ScannableEntity;
+import org.polypheny.db.schema.impl.AbstractEntity;
 
 
 /**
  * Geode Simple Scannable Table Abstraction
  */
-public class GeodeSimpleScannableTable extends AbstractTable implements ScannableTable {
+public class GeodeSimpleScannableEntity extends AbstractEntity implements ScannableEntity {
 
     private final AlgDataType algDataType;
     private String regionName;
     private ClientCache clientCache;
 
 
-    public GeodeSimpleScannableTable( String regionName, AlgDataType algDataType, ClientCache clientCache ) {
+    public GeodeSimpleScannableEntity( String regionName, AlgDataType algDataType, ClientCache clientCache ) {
         super();
         this.regionName = regionName;
         this.clientCache = clientCache;

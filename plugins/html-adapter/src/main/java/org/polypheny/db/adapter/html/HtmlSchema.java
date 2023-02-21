@@ -40,9 +40,10 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
@@ -51,7 +52,7 @@ import org.polypheny.db.util.Util;
 /**
  * Schema mapped onto a set of URLs / HTML tables. Each table in the schema is an HTML table on a URL.
  */
-class HtmlSchema extends AbstractSchema {
+class HtmlSchema extends AbstractNamespace implements Schema {
 
     private final ImmutableList<Map<String, Object>> tables;
     private final File baseDirectory;
@@ -65,7 +66,8 @@ class HtmlSchema extends AbstractSchema {
      * @param baseDirectory Base directory to look for relative files, or null
      * @param tables List containing HTML table identifiers
      */
-    HtmlSchema( SchemaPlus parentSchema, String name, File baseDirectory, List<Map<String, Object>> tables ) {
+    HtmlSchema( long id, SchemaPlus parentSchema, String name, File baseDirectory, List<Map<String, Object>> tables ) {
+        super( id );
         this.tables = ImmutableList.copyOf( tables );
         this.baseDirectory = baseDirectory;
     }
@@ -91,8 +93,8 @@ class HtmlSchema extends AbstractSchema {
 
 
     @Override
-    protected Map<String, Table> getTableMap() {
-        final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+    protected Map<String, Entity> getTableMap() {
+        final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
 
         for ( Map<String, Object> tableDef : this.tables ) {
             String tableName = (String) tableDef.get( "name" );
@@ -119,7 +121,7 @@ class HtmlSchema extends AbstractSchema {
             Source sourceSansGz = source.trim( ".gz" );
             final Source sourceSansJson = sourceSansGz.trimOrNull( ".json" );
             if ( sourceSansJson != null ) {
-                JsonTable table = new JsonTable( source );
+                JsonEntity table = new JsonEntity( source );
                 builder.put( sourceSansJson.relative( baseSource ).path(), table );
                 continue;
             }
@@ -133,7 +135,7 @@ class HtmlSchema extends AbstractSchema {
     }
 
 
-    private boolean addTable( ImmutableMap.Builder<String, Table> builder, Map<String, Object> tableDef ) throws MalformedURLException {
+    private boolean addTable( ImmutableMap.Builder<String, Entity> builder, Map<String, Object> tableDef ) throws MalformedURLException {
         final String tableName = (String) tableDef.get( "name" );
         final String url = (String) tableDef.get( "url" );
         final Source source0 = Sources.url( url );
@@ -147,11 +149,11 @@ class HtmlSchema extends AbstractSchema {
     }
 
 
-    private boolean addTable( ImmutableMap.Builder<String, Table> builder, Source source, String tableName, Map<String, Object> tableDef ) {
+    private boolean addTable( ImmutableMap.Builder<String, Entity> builder, Source source, String tableName, Map<String, Object> tableDef ) {
         final Source sourceSansGz = source.trim( ".gz" );
         final Source sourceSansJson = sourceSansGz.trimOrNull( ".json" );
         if ( sourceSansJson != null ) {
-            JsonTable table = new JsonTable( source );
+            JsonEntity table = new JsonEntity( source );
             builder.put( Util.first( tableName, sourceSansJson.path() ), table );
             return true;
         }
@@ -160,14 +162,14 @@ class HtmlSchema extends AbstractSchema {
             //
             // TODO: MV: This three nulls most properly introduce trouble. Fix to have the correct row details at this point.
             //
-            final Table table = null; //new CsvFilterableTable( source, null, null, null, null, null ); TODO: if this is actually used, introduce dependency on plugin
-            builder.put( Util.first( tableName, sourceSansCsv.path() ), table );
+            final Entity entity = null; //new CsvFilterableTable( source, null, null, null, null, null ); TODO: if this is actually used, introduce dependency on plugin
+            builder.put( Util.first( tableName, sourceSansCsv.path() ), entity );
             return true;
         }
 
         if ( tableDef != null ) {
             try {
-                HtmlTable table = HtmlTable.create( source, tableDef );
+                HtmlEntity table = HtmlEntity.create( source, tableDef );
                 builder.put( Util.first( tableName, source.path() ), table );
                 return true;
             } catch ( Exception e ) {

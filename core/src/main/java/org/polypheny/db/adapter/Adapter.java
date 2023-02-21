@@ -65,9 +65,9 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 
 @Getter
@@ -320,11 +320,11 @@ public abstract class Adapter {
     }
 
 
-    public abstract void createNewSchema( SchemaPlus rootSchema, String name );
+    public abstract void createNewSchema( SchemaPlus rootSchema, String name, Long id );
 
-    public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
+    public abstract Entity createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
 
-    public abstract Schema getCurrentSchema();
+    public abstract Namespace getCurrentSchema();
 
 
     public void createGraphNamespace( SchemaPlus rootSchema, String name, long id ) {
@@ -332,12 +332,12 @@ public abstract class Adapter {
     }
 
 
-    public Table createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+    public Entity createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
         throw new UnsupportedOperationException( "It is not supported to create a document with this adapter." );
     }
 
 
-    public Schema getCurrentGraphNamespace() {
+    public Namespace getCurrentGraphNamespace() {
         throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
     }
 

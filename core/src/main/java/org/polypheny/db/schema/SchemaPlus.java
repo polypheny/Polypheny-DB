@@ -36,12 +36,13 @@ package org.polypheny.db.schema;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.schema.Namespace.Schema;
 
 
 /**
- * Extension to the {@link Schema} interface.
+ * Extension to the {@link Namespace} interface.
  *
- * Given a user-defined schema that implements the {@link Schema} interface, Polypheny-DB creates a wrapper that implements
+ * Given a user-defined schema that implements the {@link Namespace} interface, Polypheny-DB creates a wrapper that implements
  * the {@code SchemaPlus} interface. This provides extra functionality, such as access to tables that have been added explicitly.
  *
  * A user-defined schema does not need to implement this interface, but by the time a schema is passed to a method in a
@@ -51,7 +52,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
  * given by the system. The purpose of SchemaPlus is to expose to user code, in a read only manner, some of the extra
  * information about schemas that Polypheny-DB builds up when a schema is registered.
  */
-public interface SchemaPlus extends Schema {
+public interface SchemaPlus extends Namespace, Schema {
 
 
     PolyphenyDbSchema polyphenyDbSchema();
@@ -71,17 +72,17 @@ public interface SchemaPlus extends Schema {
 
     // override with stricter return
     @Override
-    SchemaPlus getSubSchema( String name );
+    SchemaPlus getSubNamespace( String name );
 
     /**
      * Adds a schema as a sub-schema of this schema, and returns the wrapped object.
      */
-    SchemaPlus add( String name, Schema schema, NamespaceType namespaceType );
+    SchemaPlus add( String name, Namespace namespace, NamespaceType namespaceType );
 
     /**
      * Adds a table to this schema.
      */
-    void add( String name, Table table );
+    void add( String name, Entity entity );
 
     /**
      * Adds a function to this schema.

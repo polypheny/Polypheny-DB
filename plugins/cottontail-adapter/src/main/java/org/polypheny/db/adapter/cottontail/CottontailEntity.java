@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail;
 
-import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
@@ -24,7 +23,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
@@ -40,9 +39,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
@@ -53,7 +52,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 
 
-public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
+public class CottontailEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity {
 
     private AlgProtoDataType protoRowType;
     private CottontailSchema cottontailSchema;
@@ -67,12 +66,10 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     private final String physicalTableName;
     private final List<String> physicalColumnNames;
 
-    private final String logicalSchemaName;
-    private final String logicalTableName;
     private final List<String> logicalColumnNames;
 
 
-    protected CottontailTable(
+    protected CottontailEntity(
             CottontailSchema cottontailSchema,
             String logicalSchemaName,
             String logicalTableName,
@@ -87,13 +84,11 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
         this.cottontailSchema = cottontailSchema;
         this.protoRowType = protoRowType;
 
-        this.logicalSchemaName = logicalSchemaName;
-        this.logicalTableName = logicalTableName;
         this.logicalColumnNames = logicalColumnNames;
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.physicalColumnNames = physicalColumnNames;
-        this.tableId = tableId;
+        this.id = tableId;
 
         this.entity = EntityName.newBuilder()
                 .setName( this.physicalTableName )
@@ -185,14 +180,14 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     private class CottontailTableQueryable extends AbstractTableQueryable<Object[]> {
 
         public CottontailTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-            super( dataContext, schema, CottontailTable.this, tableName );
+            super( dataContext, schema, CottontailEntity.this, tableName );
         }
 
 
         @Override
         public Enumerator enumerator() {
             final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
-            final CottontailTable cottontailTable = (CottontailTable) this.table;
+            final CottontailEntity cottontailTable = (CottontailEntity) this.table;
             final long txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
             final Query query = Query.newBuilder()
                     .setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() )

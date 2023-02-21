@@ -104,8 +104,8 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.sql.language.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
@@ -914,7 +914,7 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Modify modify = (Modify) alg;
-            final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
+            final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
             }
@@ -951,7 +951,7 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final DocumentModify modify = (DocumentModify) alg;
-            final ModifiableTable modifiableCollection = modify.getCollection().unwrap( ModifiableTable.class );
+            final ModifiableEntity modifiableCollection = modify.getCollection().unwrap( ModifiableEntity.class );
             if ( modifiableCollection == null ) {
                 return null;
             }
@@ -1021,13 +1021,13 @@ public class MongoRules {
         @Override
         public void implement( Implementor implementor ) {
             implementor.setDML( true );
-            Table preTable = table.getTable();
+            Entity preEntity = table.getTable();
             this.implementor = implementor;
 
-            if ( !(preTable instanceof MongoEntity) ) {
+            if ( !(preEntity instanceof MongoEntity) ) {
                 throw new RuntimeException( "There seems to be a problem with the correct costs for one of stores." );
             }
-            implementor.mongoEntity = (MongoEntity) preTable;
+            implementor.mongoEntity = (MongoEntity) preEntity;
             implementor.table = table;
             implementor.setOperation( this.getOperation() );
 

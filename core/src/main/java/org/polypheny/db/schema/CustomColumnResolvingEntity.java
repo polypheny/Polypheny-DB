@@ -35,39 +35,37 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
-import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.util.Pair;
 
 
 /**
- * Table that can be scanned, optionally applying supplied filter expressions, and projecting a given list of columns,
- * without creating an intermediate relational expression.
+ * Extension to {@link Entity} that specifies a custom way to resolve column names.
  *
- * If you wish to write a table that can apply projects but not filters, simply decline all filters.
+ * It is optional for a Table to implement this interface. If Table does not implement this interface, column resolving will
+ * be performed in the default way.
  *
- * @see ScannableTable
- * @see FilterableTable
+ * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.
  */
-public interface ProjectableFilterableTable extends Table {
+public interface CustomColumnResolvingEntity extends Entity {
 
     /**
-     * Returns an enumerable over the rows in this Table.
+     * Resolve a column based on the name components. One or more the input name components can be resolved to one field in
+     * the table row type, along with a remainder list of name components which have not been resolved within this call, and
+     * which in turn can be potentially resolved as sub-field names. In the meantime, this method can return multiple matches,
+     * which is a list of pairs containing the resolved field and the remaining name components.
      *
-     * Each row is represented as an array of its column values.
-     *
-     * The list of filters is mutable.
-     * If the table can implement a particular filter, it should remove that filter from the list.
-     * If it cannot implement a filter, it should leave it in the list.
-     * Any filters remaining will be implemented by the consuming Polypheny-DB operator.
-     *
-     * The projects are zero-based.
-     *
-     * @param root Execution context
-     * @param filters Mutable list of filters. The method should keep in the list any filters that it cannot apply.
-     * @param projects List of projects. Each is the 0-based ordinal of the column to project.
-     * @return Enumerable over all rows that match the accepted filters, returning for each row an array of column values, one value for each ordinal in {@code projects}.
+     * @param rowType the table row type
+     * @param typeFactory the type factory
+     * @param names the name components to be resolved
+     * @return a list of pairs containing the resolved field and the remaining name components.
      */
-    Enumerable<Object[]> scan( DataContext root, List<RexNode> filters, int[] projects );
+    List<Pair<AlgDataTypeField, List<String>>> resolveColumn(
+            AlgDataType rowType,
+            AlgDataTypeFactory typeFactory,
+            List<String> names );
 
 }
+

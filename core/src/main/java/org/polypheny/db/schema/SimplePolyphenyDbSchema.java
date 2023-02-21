@@ -37,12 +37,12 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     /**
      * Creates a SimplePolyphenyDbSchema.
      *
-     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(String)} or {@link #add(String, Schema, NamespaceType)}.
+     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(String)} or {@link #add(String, Namespace, NamespaceType)}.
      */
-    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, NamespaceType namespaceType, boolean caseSensitive ) {
+    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Namespace namespace, String name, NamespaceType namespaceType, boolean caseSensitive ) {
         this(
                 parent,
-                schema,
+                namespace,
                 name,
                 namespaceType,
                 caseSensitive,
@@ -58,7 +58,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
     private SimplePolyphenyDbSchema(
             AbstractPolyphenyDbSchema parent,
-            Schema schema,
+            Namespace namespace,
             String name,
             NamespaceType namespaceType,
             boolean caseSensitive,
@@ -69,7 +69,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
             NameSet functionNames,
             NameMap<FunctionEntry> nullaryFunctionMap,
             List<? extends List<String>> path ) {
-        super( parent, schema, name, namespaceType, caseSensitive, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
+        super( parent, namespace, name, namespaceType, caseSensitive, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
     }
 
 
@@ -80,8 +80,8 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
 
     @Override
-    public PolyphenyDbSchema add( String name, Schema schema, NamespaceType namespaceType ) {
-        final PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, schema, name, namespaceType, false );
+    public PolyphenyDbSchema add( String name, Namespace namespace, NamespaceType namespaceType ) {
+        final PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, namespace, name, namespaceType, false );
         subSchemaMap.put( name, polyphenyDbSchema );
         return polyphenyDbSchema;
     }
@@ -90,7 +90,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     @Override
     protected AbstractPolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive ) {
         // Check implicit schemas.
-        Schema s = schema.getSubSchema( schemaName );
+        Namespace s = namespace.getSubNamespace( schemaName );
         if ( s != null ) {
             return new SimplePolyphenyDbSchema( this, s, schemaName, namespaceType, false );
         }
@@ -101,9 +101,9 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     @Override
     protected TableEntry getImplicitTable( String tableName ) {
         // Check implicit tables.
-        Table table = schema.getTable( tableName );
-        if ( table != null ) {
-            return tableEntry( tableName, table );
+        Entity entity = namespace.getEntity( tableName );
+        if ( entity != null ) {
+            return tableEntry( tableName, entity );
         }
         return null;
     }
@@ -112,7 +112,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     @Override
     protected TypeEntry getImplicitType( String name, boolean caseSensitive ) {
         // Check implicit types.
-        AlgProtoDataType type = schema.getType( name );
+        AlgProtoDataType type = namespace.getType( name );
         if ( type != null ) {
             return typeEntry( name, type );
         }
@@ -123,12 +123,12 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     @Override
     protected void addImplicitSubSchemaToBuilder( ImmutableSortedMap.Builder<String, PolyphenyDbSchema> builder ) {
         ImmutableSortedMap<String, PolyphenyDbSchema> explicitSubSchemas = builder.build();
-        for ( String schemaName : schema.getSubSchemaNames() ) {
+        for ( String schemaName : namespace.getSubNamespaceNames() ) {
             if ( explicitSubSchemas.containsKey( schemaName ) ) {
                 // explicit subschema wins.
                 continue;
             }
-            Schema s = schema.getSubSchema( schemaName );
+            Namespace s = namespace.getSubNamespace( schemaName );
             if ( s != null ) {
                 PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, s, schemaName, namespaceType, false );
                 builder.put( schemaName, polyphenyDbSchema );
@@ -139,13 +139,13 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
     @Override
     protected void addImplicitTableToBuilder( ImmutableSortedSet.Builder<String> builder ) {
-        builder.addAll( schema.getTableNames() );
+        builder.addAll( namespace.getEntityNames() );
     }
 
 
     @Override
     protected void addImplicitFunctionsToBuilder( ImmutableList.Builder<Function> builder, String name, boolean caseSensitive ) {
-        Collection<Function> functions = schema.getFunctions( name );
+        Collection<Function> functions = namespace.getFunctions( name );
         if ( functions != null ) {
             builder.addAll( functions );
         }
@@ -154,29 +154,29 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
     @Override
     protected void addImplicitFuncNamesToBuilder( ImmutableSortedSet.Builder<String> builder ) {
-        builder.addAll( schema.getFunctionNames() );
+        builder.addAll( namespace.getFunctionNames() );
     }
 
 
     @Override
     protected void addImplicitTypeNamesToBuilder( ImmutableSortedSet.Builder<String> builder ) {
-        builder.addAll( schema.getTypeNames() );
+        builder.addAll( namespace.getTypeNames() );
     }
 
 
     @Override
-    protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder( ImmutableSortedMap.Builder<String, Table> builder ) {
-        ImmutableSortedMap<String, Table> explicitTables = builder.build();
+    protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder( ImmutableSortedMap.Builder<String, Entity> builder ) {
+        ImmutableSortedMap<String, Entity> explicitTables = builder.build();
 
-        for ( String s : schema.getFunctionNames() ) {
+        for ( String s : namespace.getFunctionNames() ) {
             // explicit table wins.
             if ( explicitTables.containsKey( s ) ) {
                 continue;
             }
-            for ( Function function : schema.getFunctions( s ) ) {
+            for ( Function function : namespace.getFunctions( s ) ) {
                 if ( function instanceof TableMacro && function.getParameters().isEmpty() ) {
-                    final Table table = ((TableMacro) function).apply( ImmutableList.of() );
-                    builder.put( s, table );
+                    final Entity entity = ((TableMacro) function).apply( ImmutableList.of() );
+                    builder.put( s, entity );
                 }
             }
         }
@@ -185,12 +185,12 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
     @Override
     protected TableEntry getImplicitTableBasedOnNullaryFunction( String tableName, boolean caseSensitive ) {
-        Collection<Function> functions = schema.getFunctions( tableName );
+        Collection<Function> functions = namespace.getFunctions( tableName );
         if ( functions != null ) {
             for ( Function function : functions ) {
                 if ( function instanceof TableMacro && function.getParameters().isEmpty() ) {
-                    final Table table = ((TableMacro) function).apply( ImmutableList.of() );
-                    return tableEntry( tableName, table );
+                    final Entity entity = ((TableMacro) function).apply( ImmutableList.of() );
+                    return tableEntry( tableName, entity );
                 }
             }
         }
@@ -202,7 +202,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     protected PolyphenyDbSchema snapshot( AbstractPolyphenyDbSchema parent, SchemaVersion version ) {
         AbstractPolyphenyDbSchema snapshot = new SimplePolyphenyDbSchema(
                 parent,
-                schema.snapshot( version ),
+                namespace.snapshot( version ),
                 name,
                 namespaceType,
                 isCaseSensitive(),

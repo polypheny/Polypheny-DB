@@ -109,8 +109,8 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, this );
+    public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
+        currentJdbcSchema = JdbcSchema.create( id, rootSchema, name, connectionFactory, dialect, this );
     }
 
 

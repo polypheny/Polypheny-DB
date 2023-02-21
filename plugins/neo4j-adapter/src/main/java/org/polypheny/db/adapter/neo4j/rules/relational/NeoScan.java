@@ -51,7 +51,7 @@ public class NeoScan extends Scan implements NeoRelAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-        if ( implementor.getTable() != null && !Objects.equals( table.getTable().getTableId(), implementor.getTable().getTable().getTableId() ) ) {
+        if ( implementor.getTable() != null && !Objects.equals( table.getTable().getId(), implementor.getTable().getTable().getId() ) ) {
             handleInsertFromOther( implementor );
             return;
         }

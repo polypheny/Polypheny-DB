@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.CottontailTable;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
@@ -28,7 +28,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -47,11 +47,11 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         final Modify modify = call.alg( 0 );
-        if ( modify.getTable().unwrap( CottontailTable.class ) == null ) {
+        if ( modify.getTable().unwrap( CottontailEntity.class ) == null ) {
             return false;
         }
 
-        if ( !modify.getTable().unwrap( CottontailTable.class ).getUnderlyingConvention().equals( this.out ) ) {
+        if ( !modify.getTable().unwrap( CottontailEntity.class ).getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
         return modify.getOperation() != Operation.MERGE;
@@ -62,12 +62,12 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final Modify modify = (Modify) alg;
 
-        final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
+        final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
 
         if ( modifiableTable == null ) {
             return null;
         }
-        if ( modify.getTable().unwrap( CottontailTable.class ) == null ) {
+        if ( modify.getTable().unwrap( CottontailEntity.class ) == null ) {
             return null;
         }
 

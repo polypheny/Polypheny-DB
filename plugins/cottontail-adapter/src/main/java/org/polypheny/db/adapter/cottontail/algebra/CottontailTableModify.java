@@ -27,7 +27,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.adapter.cottontail.CottontailTable;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext.QueryType;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -52,7 +52,7 @@ import org.polypheny.db.util.BuiltInMethod;
 
 public class CottontailTableModify extends Modify implements CottontailAlg {
 
-    public final CottontailTable cottontailTable;
+    public final CottontailEntity cottontailTable;
 
 
     /**
@@ -84,7 +84,7 @@ public class CottontailTableModify extends Modify implements CottontailAlg {
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
-        this.cottontailTable = table.unwrap( CottontailTable.class );
+        this.cottontailTable = table.unwrap( CottontailEntity.class );
     }
 
 
