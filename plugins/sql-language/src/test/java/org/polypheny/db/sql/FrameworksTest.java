@@ -435,7 +435,7 @@ public class FrameworksTest extends SqlLanguageDependent {
 
 
         @Override
-        public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+        public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
             throw new UnsupportedOperationException();
         }
 

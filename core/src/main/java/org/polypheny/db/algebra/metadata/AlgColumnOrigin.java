@@ -88,7 +88,7 @@ public class AlgColumnOrigin {
             return false;
         }
         AlgColumnOrigin other = (AlgColumnOrigin) obj;
-        return originTable.getQualifiedName().equals( other.originTable.getQualifiedName() )
+        return originTable.getCatalogEntity().id == other.originTable.getCatalogEntity().id
                 && (iOriginColumn == other.iOriginColumn)
                 && (isDerived == other.isDerived);
     }
@@ -96,7 +96,7 @@ public class AlgColumnOrigin {
 
     // override Object
     public int hashCode() {
-        return originTable.getQualifiedName().hashCode() + iOriginColumn + (isDerived ? 313 : 0);
+        return originTable.getCatalogEntity().hashCode() + iOriginColumn + (isDerived ? 313 : 0);
     }
 
 }

@@ -90,15 +90,13 @@ import org.polypheny.db.util.Util;
  */
 public class JdbcEntity extends AbstractQueryableEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity {
 
-    private AlgProtoDataType protoRowType;
+    private final AlgProtoDataType protoRowType;
     private JdbcSchema jdbcSchema;
 
     private final String physicalSchemaName;
     private final String physicalTableName;
     private final List<String> physicalColumnNames;
 
-    private final String logicalSchemaName;
-    private final String logicalTableName;
     private final List<String> logicalColumnNames;
 
     private final TableType jdbcTableType;
@@ -117,8 +115,6 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
             Long tableId ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
-        this.logicalSchemaName = logicalSchemaName;
-        this.logicalTableName = logicalTableName;
         this.logicalColumnNames = logicalColumnNames;
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;

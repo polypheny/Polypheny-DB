@@ -32,7 +32,7 @@ public class DmlEventAnalyzer {
         DmlDataPoint metric = DmlDataPoint
                 .builder()
                 .Id( dmlEvent.getId() )
-                .tables( dmlEvent.getLogicalQueryInformation().getTables() )
+                .tables( dmlEvent.getLogicalQueryInformation().getTablesIds() )
                 .fieldNames( dmlEvent.getFieldNames() )
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )

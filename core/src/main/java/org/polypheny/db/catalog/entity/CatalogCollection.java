@@ -45,7 +45,7 @@ public class CatalogCollection extends CatalogEntity implements CatalogObject {
 
 
     public CatalogCollection( long databaseId, long namespaceId, long id, String name, @NonNull Collection<Integer> placements, EntityType type, String physicalName ) {
-        super( id, EntityType.ENTITY, NamespaceType.DOCUMENT );
+        super( id, name, EntityType.ENTITY, NamespaceType.DOCUMENT );
         this.id = id;
         this.databaseId = databaseId;
         this.namespaceId = namespaceId;

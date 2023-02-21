@@ -64,7 +64,7 @@ public abstract class AbstractQueryableEntity extends AbstractEntity implements 
 
 
     @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+    public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
         return Schemas.tableExpression( schema, elementType, tableName, clazz );
     }
 }

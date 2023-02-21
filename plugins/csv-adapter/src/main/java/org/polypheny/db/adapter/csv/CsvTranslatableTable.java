@@ -90,7 +90,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableEntity, T
 
 
     @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+    public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
         return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
     }
 

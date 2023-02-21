@@ -615,8 +615,7 @@ public abstract class BaseRouter implements Router {
     private RoutedAlgBuilder handleDocumentOnGraph( DocumentScan alg, Statement statement, RoutedAlgBuilder builder ) {
         AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.GRAPH );
         builder.lpgScan( alg.getCollection().getCatalogEntity().id );
-        List<String> names = alg.getCollection().getQualifiedName();
-        builder.lpgMatch( List.of( builder.lpgNodeMatch( List.of( names.get( names.size() - 1 ) ) ) ), List.of( "n" ) );
+        builder.lpgMatch( List.of( builder.lpgNodeMatch( List.of( alg.getCollection().getCatalogEntity().name ) ) ), List.of( "n" ) );
         AlgNode unrouted = builder.build();
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( routeGraph( builder, (AlgNode & LpgAlg) unrouted, statement ) ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.GRAPH, ModelTrait.DOCUMENT, alg.getRowType(), true ) );
         return builder;

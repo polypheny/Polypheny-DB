@@ -210,7 +210,7 @@ public abstract class Modify extends SingleAlg {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
-                .item( "table", table.getQualifiedName() )
+                .item( "table", table.getCatalogEntity().id )
                 .item( "operation", getOperation() )
                 .itemIf( "updateColumnList", updateColumnList, updateColumnList != null )
                 .itemIf( "sourceExpressionList", sourceExpressionList, sourceExpressionList != null )
@@ -229,7 +229,7 @@ public abstract class Modify extends SingleAlg {
     @Override
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
-                String.join( ".", table.getQualifiedName() ) + "$" +
+                "." + table.getCatalogEntity().id + "$" +
                 (getInputs() != null ? getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" : "") +
                 getOperation().name() + "$" +
                 (getUpdateColumnList() != null ? String.join( "$", getUpdateColumnList() ) + "$" : "") +

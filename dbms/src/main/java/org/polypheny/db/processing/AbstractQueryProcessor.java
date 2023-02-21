@@ -81,9 +81,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
@@ -619,26 +616,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalModify ) {
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalModify ltm = (LogicalModify) node;
-                        final CatalogTable table;
-                        final CatalogSchema schema;
-                        try {
-                            String tableName;
-                            if ( ltm.getTable().getQualifiedName().size() == 3 ) { // DatabaseName.SchemaName.TableName
-                                schema = catalog.getSchema( ltm.getTable().getQualifiedName().get( 0 ), ltm.getTable().getQualifiedName().get( 1 ) );
-                                tableName = ltm.getTable().getQualifiedName().get( 2 );
-                            } else if ( ltm.getTable().getQualifiedName().size() == 2 ) { // SchemaName.TableName
-                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), ltm.getTable().getQualifiedName().get( 0 ) );
-                                tableName = ltm.getTable().getQualifiedName().get( 1 );
-                            } else { // TableName
-                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), statement.getPrepareContext().getDefaultSchemaName() );
-                                tableName = ltm.getTable().getQualifiedName().get( 0 );
-                            }
-                            table = catalog.getTable( schema.id, tableName );
-                        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-                            // This really should not happen
-                            log.error( "Table not found: {}", ltm.getTable().getQualifiedName().get( 0 ), e );
-                            throw new RuntimeException( e );
-                        }
+                        final CatalogTable table = ltm.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+                        final CatalogSchema schema = catalog.getSchema( table.namespaceId );
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
                         // Check if there are any indexes effected by this table modify
@@ -917,7 +896,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 if ( project.getInput() instanceof LogicalRelScan ) {
                     // Figure out the original column names required for index lookup
                     final LogicalRelScan scan = (LogicalRelScan) project.getInput();
-                    final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
                     final List<AlgDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
                     for ( final RexNode expr : project.getChildExps() ) {
@@ -933,14 +911,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
-                    final CatalogTable ctable;
-                    try {
-                        ctable = Catalog.getInstance().getTable( schema.id, table );
-                    } catch ( UnknownTableException e ) {
-                        log.error( "Could not fetch table", e );
-                        IndexManager.getInstance().incrementNoIndex();
-                        return super.visit( project );
-                    }
+                    final CatalogTable ctable = scan.getTable().getCatalogEntity().unwrap( CatalogTable.class );
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
                     if ( idx == null ) {
@@ -1303,7 +1274,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 analyzeRelShuttle.availableColumns,
                 analyzeRelShuttle.availableColumnsWithTable,
                 analyzeRelShuttle.getUsedColumns(),
-                analyzeRelShuttle.getEntities() );
+                analyzeRelShuttle.getEntityId() );
         this.prepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery, queryInformation );
 
         return queryInformation;

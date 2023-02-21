@@ -215,7 +215,7 @@ public class Bindables {
             final Entity entity = algOptEntity.unwrap( Entity.class );
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
-                            .replace( entity.getSchemaType().getModelTrait() )
+                            .replace( entity.getNamespaceType().getModelTrait() )
                             .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
                                 if ( entity != null ) {
                                     return entity.getStatistic().getCollations();
@@ -268,7 +268,7 @@ public class Bindables {
         @Override
         public String algCompareString() {
             return "BindableScan$" +
-                    String.join( ".", table.getQualifiedName() ) +
+                    "." + table.getCatalogEntity().id +
                     (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                     (projects != null ? projects.toString() : "") + "&";
         }

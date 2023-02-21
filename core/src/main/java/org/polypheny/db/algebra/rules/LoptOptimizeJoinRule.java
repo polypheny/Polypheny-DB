@@ -267,7 +267,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             for ( int j = i + 1; j < factors.length; j++ ) {
                 int leftFactor = factors[i];
                 int rightFactor = factors[j];
-                if ( simpleFactors.get( leftFactor ).getQualifiedName().equals( simpleFactors.get( rightFactor ).getQualifiedName() ) ) {
+                if ( simpleFactors.get( leftFactor ).getCatalogEntity().id == simpleFactors.get( rightFactor ).getCatalogEntity().id ) {
                     selfJoinPairs.put( leftFactor, rightFactor );
                     repeatedTables.add( simpleFactors.get( leftFactor ) );
                     break;
@@ -1517,7 +1517,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         if ( rightTable == null ) {
             return false;
         }
-        if ( !leftTable.getQualifiedName().equals( rightTable.getQualifiedName() ) ) {
+        if ( leftTable.getCatalogEntity().id != rightTable.getCatalogEntity().id ) {
             return false;
         }
 

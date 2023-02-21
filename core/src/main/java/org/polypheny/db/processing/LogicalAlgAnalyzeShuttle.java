@@ -81,7 +81,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     protected final LinkedHashMap<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
     protected final HashMap<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
     @Getter
-    protected final List<String> entities = new ArrayList<>();
+    protected final List<Long> entityId = new ArrayList<>();
     private final Statement statement;
 
     @Getter
@@ -280,14 +280,14 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalMatch match ) {
-        hashBasis.add( "LogicalMatch#" + match.getTable().getQualifiedName() );
+        hashBasis.add( "LogicalMatch#" + match.getTable().getCatalogEntity().id );
         return visitChild( match, 0, match.getInput() );
     }
 
 
     @Override
     public AlgNode visit( Scan scan ) {
-        hashBasis.add( "Scan#" + scan.getTable().getQualifiedName() );
+        hashBasis.add( "Scan#" + scan.getTable().getCatalogEntity().id );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
 
@@ -326,7 +326,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalJoin join ) {
         if ( join.getLeft() instanceof LogicalRelScan && join.getRight() instanceof LogicalRelScan ) {
-            hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
+            hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getCatalogEntity().id + "#" + join.getRight().getTable().getCatalogEntity().id );
         }
 
         super.visit( join );
@@ -391,7 +391,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getAvailableColumns( AlgNode scan ) {
-        this.entities.addAll( scan.getTable().getQualifiedName() );
+        this.entityId.add( scan.getTable().getCatalogEntity().id );
         final CatalogTable table = (CatalogTable) scan.getTable().getCatalogEntity();
         if ( table != null ) {
             final List<Long> ids = table.fieldIds;

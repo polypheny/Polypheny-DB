@@ -89,7 +89,7 @@ public class MutableTableModify extends MutableSingleAlg {
     public boolean equals( Object obj ) {
         return obj == this
                 || obj instanceof MutableTableModify
-                && table.getQualifiedName().equals( ((MutableTableModify) obj).table.getQualifiedName() )
+                && table.getCatalogEntity().id == ((MutableTableModify) obj).table.getCatalogEntity().id
                 && operation == ((MutableTableModify) obj).operation
                 && Objects.equals( updateColumnList, ((MutableTableModify) obj).updateColumnList )
                 && PAIRWISE_STRING_EQUIVALENCE.equivalent( sourceExpressionList, ((MutableTableModify) obj).sourceExpressionList )
@@ -102,7 +102,7 @@ public class MutableTableModify extends MutableSingleAlg {
     public int hashCode() {
         return Objects.hash(
                 input,
-                table.getQualifiedName(),
+                table.getCatalogEntity().id,
                 operation,
                 updateColumnList,
                 PAIRWISE_STRING_EQUIVALENCE.hash( sourceExpressionList ),
@@ -112,7 +112,7 @@ public class MutableTableModify extends MutableSingleAlg {
 
     @Override
     public StringBuilder digest( StringBuilder buf ) {
-        buf.append( "Modify(table: " ).append( table.getQualifiedName() ).append( ", operation: " ).append( operation );
+        buf.append( "Modify(table: " ).append( table.getCatalogEntity().name ).append( ", operation: " ).append( operation );
         if ( updateColumnList != null ) {
             buf.append( ", updateColumnList: " ).append( updateColumnList );
         }

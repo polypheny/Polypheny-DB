@@ -32,7 +32,7 @@ public class QueryEventAnalyzer {
         QueryDataPointImpl metric = QueryDataPointImpl
                 .builder()
                 .Id( queryEvent.getId() )
-                .tables( queryEvent.getLogicalQueryInformation().getTables() )
+                .tables( queryEvent.getLogicalQueryInformation().getTablesIds() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )

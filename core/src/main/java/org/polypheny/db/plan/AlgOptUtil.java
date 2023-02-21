@@ -209,13 +209,6 @@ public abstract class AlgOptUtil {
     }
 
 
-    /**
-     * Returns a list of all table qualified names used by this expression or its children.
-     */
-    public static List<String> findAllTableQualifiedNames( AlgNode alg ) {
-        return Lists.transform( findAllTables( alg ), table -> table.getQualifiedName().toString() );
-    }
-
 
     /**
      * Returns a list of variables set by a relational expression or its descendants.

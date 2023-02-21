@@ -366,7 +366,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+            public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
                 return null;
             }
 

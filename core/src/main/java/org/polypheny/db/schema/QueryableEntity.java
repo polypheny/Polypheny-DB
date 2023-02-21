@@ -62,6 +62,6 @@ public interface QueryableEntity extends Entity {
      * @param tableName Table name (unique within schema)
      * @param clazz The desired collection class; for example {@code Queryable}.
      */
-    Expression getExpression( SchemaPlus schema, String tableName, Class clazz );
+    Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz );
 }
 

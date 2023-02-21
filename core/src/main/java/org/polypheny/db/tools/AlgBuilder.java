@@ -2919,10 +2919,7 @@ public class AlgBuilder {
 
         private static String deriveAlias( AlgNode alg ) {
             if ( alg instanceof Scan ) {
-                final List<String> names = alg.getTable().getQualifiedName();
-                if ( !names.isEmpty() ) {
-                    return Util.last( names );
-                }
+                return alg.getTable().getCatalogEntity().name;
             }
             return null;
         }

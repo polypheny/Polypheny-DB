@@ -43,7 +43,6 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -379,21 +378,6 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         }
     }
 
-
-    public static String getEntityName( Modify root, CatalogSchema schema ) {
-        String tableName;
-        if ( root.getTable().getQualifiedName().size() == 1 ) { // tableName
-            tableName = root.getTable().getQualifiedName().get( 0 );
-        } else if ( root.getTable().getQualifiedName().size() == 2 ) { // schemaName.tableName
-            if ( !schema.name.equalsIgnoreCase( root.getTable().getQualifiedName().get( 0 ) ) ) {
-                throw new RuntimeException( "Schema name does not match expected schema name: " + root.getTable().getQualifiedName().get( 0 ) );
-            }
-            tableName = root.getTable().getQualifiedName().get( 1 );
-        } else {
-            throw new RuntimeException( "Invalid table name: " + root.getTable().getQualifiedName() );
-        }
-        return tableName;
-    }
 
 
     @Override

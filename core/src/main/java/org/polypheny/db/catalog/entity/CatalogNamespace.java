@@ -17,23 +17,17 @@
 package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
-import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.schema.Wrapper;
 
-public abstract class CatalogEntity implements Wrapper, Serializable {
+public abstract class CatalogNamespace implements CatalogObject, Serializable {
 
     public final long id;
-    public final EntityType entityType;
     public final NamespaceType namespaceType;
-    public final String name;
 
 
-    protected CatalogEntity( long id, String name, EntityType type, NamespaceType namespaceType ) {
+    public CatalogNamespace( long id, NamespaceType type ) {
         this.id = id;
-        this.name = name;
-        this.entityType = type;
-        this.namespaceType = namespaceType;
+        this.namespaceType = type;
     }
 
 }

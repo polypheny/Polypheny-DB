@@ -47,8 +47,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -130,7 +130,7 @@ public abstract class Scan extends AbstractAlgNode {
 
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
-        return super.explainTerms( pw ).item( "table", table.getQualifiedName() );
+        return super.explainTerms( pw ).item( "table", table.getCatalogEntity().id );
     }
 
 
@@ -183,7 +183,7 @@ public abstract class Scan extends AbstractAlgNode {
     @Override
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
-                String.join( ".", table.getQualifiedName() ) + "&";
+                table.getCatalogEntity().id + "&";
     }
 
 }

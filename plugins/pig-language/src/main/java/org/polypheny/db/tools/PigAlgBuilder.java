@@ -35,6 +35,8 @@ package org.polypheny.db.tools;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -50,9 +52,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -205,7 +204,7 @@ public class PigAlgBuilder extends AlgBuilder {
         } else {
             AlgNode top = peek();
             if ( top instanceof Scan ) {
-                return Util.last( top.getTable().getQualifiedName() );
+                return top.getTable().getCatalogEntity().name;
             } else {
                 return null;
             }

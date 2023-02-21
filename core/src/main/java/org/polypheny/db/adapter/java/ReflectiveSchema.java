@@ -362,7 +362,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
         @Override
-        public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+        public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
             return Expressions.field( schema.unwrap( ReflectiveSchema.class ).getTargetExpression( schema.getParentSchema(), schema.getName() ), field );
         }
 

@@ -68,7 +68,7 @@ public class CatalogTable extends CatalogEntity implements CatalogObject, Compar
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
-        super( id, type, NamespaceType.RELATIONAL );
+        super( id, name, type, NamespaceType.RELATIONAL );
         this.id = id;
         this.name = name;
         this.fieldIds = fieldIds;
@@ -103,7 +103,7 @@ public class CatalogTable extends CatalogEntity implements CatalogObject, Compar
             boolean modifiable,
             PartitionProperty partitionProperty,
             ImmutableList<Long> connectedViews ) {
-        super( id, type, NamespaceType.RELATIONAL );
+        super( id, name, type, NamespaceType.RELATIONAL );
         this.id = id;
         this.name = name;
         this.fieldIds = fieldIds;

@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptEntity;
 
 
@@ -137,7 +138,7 @@ public class RexTableInputRef extends RexInputRef {
         private AlgTableRef( AlgOptEntity table, int entityNumber ) {
             this.table = table;
             this.entityNumber = entityNumber;
-            this.digest = table.getQualifiedName() + ".#" + entityNumber;
+            this.digest = table.getCatalogEntity().id + ".#" + entityNumber;
         }
 
 
@@ -145,7 +146,7 @@ public class RexTableInputRef extends RexInputRef {
         public boolean equals( Object obj ) {
             return this == obj
                     || obj instanceof AlgTableRef
-                    && table.getQualifiedName().equals( ((AlgTableRef) obj).getQualifiedName() )
+                    && table.getCatalogEntity().id == ((AlgTableRef) obj).getTable().getCatalogEntity().id
                     && entityNumber == ((AlgTableRef) obj).entityNumber;
         }
 
@@ -162,7 +163,7 @@ public class RexTableInputRef extends RexInputRef {
 
 
         public List<String> getQualifiedName() {
-            return table.getQualifiedName();
+            return List.of( table.getCatalogEntity().unwrap( CatalogTable.class ).getNamespaceName(), table.getCatalogEntity().name );
         }
 
 

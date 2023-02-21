@@ -43,7 +43,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private static final long serialVersionUID = 8159995420459385039L;
 
     @Builder.Default
-    private final List<String> tables = new ArrayList<>();
+    private final List<Long> tables = new ArrayList<>();
     private final Map<String, Object> dataElements = new HashMap<>();
     private UUID Id;
     private Timestamp recordedTimestamp;

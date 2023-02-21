@@ -107,7 +107,7 @@ public interface Entity {
     boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent );
 
 
-    default NamespaceType getSchemaType() {
+    default NamespaceType getNamespaceType() {
         return NamespaceType.RELATIONAL;
     }
 

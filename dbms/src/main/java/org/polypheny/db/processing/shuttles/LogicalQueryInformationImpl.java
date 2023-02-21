@@ -36,7 +36,7 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
     protected final Map<Long, String> usedColumns;
 
     @Getter
-    protected final List<String> tables;
+    protected final List<Long> tablesIds;
 
 
     public LogicalQueryInformationImpl(
@@ -45,13 +45,13 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
             LinkedHashMap<Long, String> availableColumns,
             HashMap<Long, Long> availableColumnsWithTable,
             Map<Long, String> usedColumns,
-            List<String> tables ) {
+            List<Long> tablesIds ) {
         this.queryId = queryId;
         this.accessedPartitions = accessedPartitionMap;
         this.availableColumns = availableColumns;
         this.availableColumnsWithTable = availableColumnsWithTable;
         this.usedColumns = usedColumns;
-        this.tables = tables;
+        this.tablesIds = tablesIds;
     }
 
 

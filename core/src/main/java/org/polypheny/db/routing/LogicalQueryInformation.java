@@ -61,6 +61,6 @@ public interface LogicalQueryInformation {
     /**
      * @return Gets a list of all accessed tables.
      */
-    List<String> getTables();
+    List<Long> getTablesIds();
 
 }

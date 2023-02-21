@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDynamic;
 import org.polypheny.db.catalog.MockCatalogReaderSimple;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
@@ -56,10 +57,10 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
@@ -324,14 +325,6 @@ public abstract class SqlToAlgTestBase {
             // If they're asking for a sample, just for test purposes, assume there's a table called "<table>:<sample>".
             AlgOptEntity datasetTable =
                     new DelegatingRelOptEntity( table ) {
-                        @Override
-                        public List<String> getQualifiedName() {
-                            final List<String> list = new ArrayList<>( super.getQualifiedName() );
-                            list.set(
-                                    list.size() - 1,
-                                    list.get( list.size() - 1 ) + ":" + datasetName );
-                            return ImmutableList.copyOf( list );
-                        }
                     };
             if ( usedDataset != null ) {
                 assert usedDataset.length == 1;
@@ -369,12 +362,6 @@ public abstract class SqlToAlgTestBase {
                     return clazz.cast( this );
                 }
                 return null;
-            }
-
-
-            @Override
-            public List<String> getQualifiedName() {
-                return names;
             }
 
 
@@ -438,6 +425,12 @@ public abstract class SqlToAlgTestBase {
 
 
             @Override
+            public CatalogEntity getCatalogEntity() {
+                return null;
+            }
+
+
+            @Override
             public Expression getExpression( Class<?> clazz ) {
                 return null;
             }
@@ -492,12 +485,6 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public List<String> getQualifiedName() {
-            return parent.getQualifiedName();
-        }
-
-
-        @Override
         public double getRowCount() {
             return parent.getRowCount();
         }
@@ -548,6 +535,12 @@ public abstract class SqlToAlgTestBase {
         @Override
         public List<ColumnStrategy> getColumnStrategies() {
             return parent.getColumnStrategies();
+        }
+
+
+        @Override
+        public CatalogEntity getCatalogEntity() {
+            return null;
         }
 
     }

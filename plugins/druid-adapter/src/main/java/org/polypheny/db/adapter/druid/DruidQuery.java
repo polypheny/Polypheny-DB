@@ -540,7 +540,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         for ( AlgNode alg : algs ) {
             if ( alg instanceof Scan ) {
                 Scan scan = (Scan) alg;
-                pw.item( "table", scan.getTable().getQualifiedName() );
+                pw.item( "table", scan.getTable().getCatalogEntity().id );
                 pw.item( "intervals", intervals );
             } else if ( alg instanceof Filter ) {
                 pw.item( "filter", ((Filter) alg).getCondition() );
@@ -625,7 +625,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     @Override
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
-                String.join( ".", table.getQualifiedName() ) + "$" +
+                "." + table.getCatalogEntity().id + "$" +
                 (algs != null ? algs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 

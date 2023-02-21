@@ -43,7 +43,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private static final long serialVersionUID = 4389301720141941770L;
 
     @Builder.Default
-    private final List<String> tables = new ArrayList<>();
+    private final List<Long> tables = new ArrayList<>();
     private final HashMap<String, Object> dataElements = new HashMap<>();
     private UUID Id;
     private Timestamp recordedTimestamp;

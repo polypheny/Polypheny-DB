@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -100,7 +101,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     private final CatalogEntity catalogEntity;
     @Nullable
     private final transient Function<Class<?>, Expression> expressionFunction;
-    private final ImmutableList<String> names;
 
     /**
      * Estimate for the row count, or null.
@@ -113,14 +113,12 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     private AlgOptEntityImpl(
             AlgOptSchema schema,
             AlgDataType rowType,
-            List<String> names,
             Entity entity,
             CatalogEntity catalogEntity,
             Function<Class<?>, Expression> expressionFunction,
             Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
-        this.names = ImmutableList.copyOf( names );
         this.entity = entity; // may be null
         this.catalogEntity = catalogEntity;
         this.expressionFunction = expressionFunction; // may be null
@@ -129,7 +127,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
 
     public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, List<String> names, Expression expression ) {
-        return new AlgOptEntityImpl( schema, rowType, names, null, null, c -> expression, null );
+        return new AlgOptEntityImpl( schema, rowType, null, null, c -> expression, null );
     }
 
 
@@ -142,7 +140,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             rowCount = count;
         }
 
-        return new AlgOptEntityImpl( schema, rowType, tableEntry.path(), entity, catalogEntity, getClassExpressionFunction( tableEntry, entity ), rowCount );
+        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, getClassExpressionFunction( tableEntry, entity ), rowCount );
     }
 
 
@@ -150,7 +148,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Creates a copy of this RelOptTable. The new RelOptTable will have newRowType.
      */
     public AlgOptEntityImpl copy( AlgDataType newRowType ) {
-        return new AlgOptEntityImpl( this.schema, newRowType, this.names, this.entity, this.catalogEntity, this.expressionFunction, this.rowCount );
+        return new AlgOptEntityImpl( this.schema, newRowType, this.entity, this.catalogEntity, this.expressionFunction, this.rowCount );
     }
 
 
@@ -177,11 +175,11 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity, ImmutableList<String> names ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity ) {
         assert entity instanceof TranslatableEntity
                 || entity instanceof ScannableEntity
                 || entity instanceof ModifiableEntity;
-        return new AlgOptEntityImpl( schema, rowType, names, entity, catalogEntity, null, null );
+        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, null, null );
     }
 
 
@@ -200,7 +198,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             }
         }
         if ( clazz == PolyphenyDbSchema.class ) {
-            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).rootSchema, Util.skipLast( getQualifiedName() ) ) );
+            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).rootSchema, List.of( catalogEntity.unwrap( CatalogTable.class ).getNamespaceName(), catalogEntity.name ) ) );
         }
         return null;
     }
@@ -221,7 +219,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         return new AlgOptEntityImpl(
                 getRelOptSchema(),
                 extendedRowType,
-                getQualifiedName(),
                 extendedEntity,
                 null,
                 expressionFunction,
@@ -284,7 +281,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
                 }
             }
             final AlgOptEntity algOptEntity =
-                    new AlgOptEntityImpl( this.schema, b.build(), this.names, this.entity, this.catalogEntity, this.expressionFunction, this.rowCount ) {
+                    new AlgOptEntityImpl( this.schema, b.build(), this.entity, this.catalogEntity, this.expressionFunction, this.rowCount ) {
                         @Override
                         public <T> T unwrap( Class<T> clazz ) {
                             if ( clazz.isAssignableFrom( InitializerExpressionFactory.class ) ) {
@@ -373,7 +370,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public List<String> getQualifiedName() {
-        return names;
+        return List.of( catalogEntity.unwrap( CatalogTable.class ).getNamespaceName(), catalogEntity.name );
     }
 
 

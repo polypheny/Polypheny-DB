@@ -60,13 +60,11 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -202,27 +200,20 @@ public class ConstraintEnforceAttacher {
         final Modify root = (Modify) logicalRoot.alg;
 
         final Catalog catalog = Catalog.getInstance();
-        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
         final CatalogTable table;
         final CatalogPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
-        try {
-            String entityName = LogicalConstraintEnforcer.getEntityName( root, schema );
-            table = catalog.getTable( schema.id, entityName );
-            primaryKey = catalog.getPrimaryKey( table.primaryKey );
-            constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
-            foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
-            exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
-            // Turn primary key into an artificial unique constraint
-            CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
-            final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
-            constraints.add( pkc );
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception", e );
-            return logicalRoot;
-        }
+        table = root.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+        primaryKey = catalog.getPrimaryKey( table.primaryKey );
+        constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
+        foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
+        exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
+        // Turn primary key into an artificial unique constraint
+        CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+        constraints.add( pkc );
 
         AlgNode lceRoot = root;
 

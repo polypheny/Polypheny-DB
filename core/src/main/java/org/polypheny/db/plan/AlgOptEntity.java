@@ -57,13 +57,6 @@ import org.polypheny.db.util.ImmutableBitSet;
 public interface AlgOptEntity extends Wrapper {
 
     /**
-     * Obtains an identifier for this table. The identifier must be unique with respect to the Connection producing this table.
-     *
-     * @return qualified name
-     */
-    List<String> getQualifiedName();
-
-    /**
      * Returns an estimate of the number of rows in the table.
      */
     double getRowCount();

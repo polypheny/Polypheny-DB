@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -70,12 +69,6 @@ public abstract class AlgOptAbstractEntity implements AlgOptEntity {
 
     public String getName() {
         return name;
-    }
-
-
-    @Override
-    public List<String> getQualifiedName() {
-        return ImmutableList.of( name );
     }
 
 

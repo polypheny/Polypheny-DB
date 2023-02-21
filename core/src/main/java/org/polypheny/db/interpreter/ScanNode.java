@@ -52,6 +52,7 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
@@ -61,11 +62,9 @@ import org.polypheny.db.schema.FilterableEntity;
 import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.ScannableEntity;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -128,14 +127,11 @@ public class ScanNode implements Node {
         final DataContext root = compiler.getDataContext();
         final AlgOptEntity algOptEntity = alg.getTable();
         final Type elementType = queryableTable.getElementType();
-        SchemaPlus schema = root.getRootSchema();
-        for ( String name : Util.skipLast( algOptEntity.getQualifiedName() ) ) {
-            schema = schema.getSubNamespace( name );
-        }
+
         final Enumerable<Row> rowEnumerable;
         if ( elementType instanceof Class ) {
             //noinspection unchecked
-            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, algOptEntity.getQualifiedName() );
+            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, List.of( algOptEntity.getCatalogEntity().unwrap( CatalogTable.class ).getNamespaceName(), algOptEntity.getCatalogEntity().name ) );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             Class type = (Class) elementType;
             for ( Field field : type.getFields() ) {
@@ -157,7 +153,7 @@ public class ScanNode implements Node {
                 return new Row( values );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, algOptEntity.getQualifiedName() );
+            rowEnumerable = Schemas.queryable( root, Row.class, List.of( algOptEntity.getCatalogEntity().unwrap( CatalogTable.class ).getNamespaceName(), algOptEntity.getCatalogEntity().name ) );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
