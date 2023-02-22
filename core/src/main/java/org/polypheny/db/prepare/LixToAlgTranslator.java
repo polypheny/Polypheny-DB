@@ -34,7 +34,6 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -114,7 +113,6 @@ class LixToAlgTranslator {
                             AlgOptEntityImpl.create(
                                     null,
                                     typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) ),
-                                    ImmutableList.of(),
                                     call.targetExpression ) );
 
                 case SCHEMA_GET_TABLE:
@@ -123,7 +121,6 @@ class LixToAlgTranslator {
                             AlgOptEntityImpl.create(
                                     null,
                                     typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value ),
-                                    ImmutableList.of(),
                                     call.targetExpression ) );
 
                 default:

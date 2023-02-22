@@ -73,8 +73,8 @@ class HtmlEntity extends AbstractQueryableEntity implements TranslatableEntity {
     /**
      * Creates a HtmlTable.
      */
-    private HtmlEntity( Source source, String selector, Integer index, AlgProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs ) throws Exception {
-        super( Object[].class );
+    private HtmlEntity( Source source, String selector, Integer index, AlgProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs, Long id, Long partitionId, Long adapterId ) throws Exception {
+        super( Object[].class, id, partitionId, adapterId );
 
         this.protoRowType = protoRowType;
         this.reader = new HtmlReader( source, selector, index );
@@ -89,7 +89,7 @@ class HtmlEntity extends AbstractQueryableEntity implements TranslatableEntity {
         @SuppressWarnings("unchecked") List<Map<String, Object>> fieldConfigs = (List<Map<String, Object>>) tableDef.get( "fields" );
         String selector = (String) tableDef.get( "selector" );
         Integer index = (Integer) tableDef.get( "index" );
-        return new HtmlEntity( source, selector, index, null, fieldConfigs );
+        return new HtmlEntity( source, selector, index, null, fieldConfigs, null, null, null );
     }
 
 

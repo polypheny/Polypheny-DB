@@ -103,12 +103,12 @@ public class ElasticsearchSchema extends AbstractNamespace implements Schema {
         this.fetchSize = fetchSize;
         if ( type == null ) {
             try {
-                this.tableMap = createTables( listTypesFromElastic() );
+                this.tableMap = createTables( listTypesFromElastic(), null, null, null );
             } catch ( IOException e ) {
                 throw new UncheckedIOException( "Couldn't get types for " + index, e );
             }
         } else {
-            this.tableMap = createTables( Collections.singleton( type ) );
+            this.tableMap = createTables( Collections.singleton( type ), null, null, null );
         }
 
     }
@@ -120,11 +120,11 @@ public class ElasticsearchSchema extends AbstractNamespace implements Schema {
     }
 
 
-    private Map<String, Entity> createTables( Iterable<String> types ) {
+    private Map<String, Entity> createTables( Iterable<String> types, Long id, Long partitionId, Long adapterId ) {
         final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
         for ( String type : types ) {
             final ElasticsearchTransport transport = new ElasticsearchTransport( client, mapper, index, type, fetchSize );
-            builder.put( type, new ElasticsearchEntity( transport ) );
+            builder.put( type, new ElasticsearchEntity( transport, id, partitionId, adapterId ) );
         }
         return builder.build();
     }

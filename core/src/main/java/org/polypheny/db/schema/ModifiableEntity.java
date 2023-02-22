@@ -49,12 +49,6 @@ import org.polypheny.db.rex.RexNode;
 public interface ModifiableEntity extends QueryableEntity {
 
     /**
-     * Returns the modifiable collection.
-     * Modifying the collection will change the table's contents.
-     */
-    Collection getModifiableCollection();
-
-    /**
      * Creates a relational expression that modifies this table.
      */
     Modify toModificationAlg(

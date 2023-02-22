@@ -70,7 +70,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
@@ -343,7 +342,6 @@ public class MqlToAlgConverter {
             final Builder fieldInfo = typeFactory.builder();
             fieldInfo.add( new AlgDataTypeFieldImpl( "d", 0, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );
             AlgDataType rowType = fieldInfo.build();
-            CatalogTable catalogTable = Catalog.getInstance().getTable( table.getTable().getId() );
 
             return AlgOptEntityImpl.create(
                     table.getRelOptSchema(),
@@ -351,7 +349,8 @@ public class MqlToAlgConverter {
                     new TableEntryImpl(
                             catalogReader.getRootSchema(), names.get( names.size() - 1 ),
                             new LogicalEntity( Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( dbSchemaName ) ).get( 0 ).id, names.get( 0 ), names.get( names.size() - 1 ), List.of(), List.of(), AlgDataTypeImpl.proto( rowType ), NamespaceType.GRAPH ) ),
-                    catalogTable,
+                    table.getCatalogEntity(),
+                    table.getPartitionPlacement(),
                     1.0 );
         }
 

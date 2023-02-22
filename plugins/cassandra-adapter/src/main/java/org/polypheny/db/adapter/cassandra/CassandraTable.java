@@ -292,10 +292,6 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
-    @Override
-    public Collection getModifiableCollection() {
-        throw new RuntimeException( "getModifiableCollection() is not implemented for Cassandra Tables!" );
-    }
 
 
     @Override

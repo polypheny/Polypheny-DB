@@ -40,7 +40,7 @@ public class JdbcTest {
     public abstract static class AbstractModifiableEntity extends AbstractEntity implements ModifiableEntity {
 
         protected AbstractModifiableEntity( String tableName ) {
-            super();
+            super( null, null, null );
         }
 
 

@@ -45,8 +45,6 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -84,14 +82,14 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {
             final Entity entity = entry.getTable();
-            CatalogTable catalogTable = Catalog.getInstance().getTable( entity.getId() );
+
             if ( entity instanceof Wrapper ) {
                 final PreparingEntity algOptTable = ((Wrapper) entity).unwrap( PreparingEntity.class );
                 if ( algOptTable != null ) {
                     return algOptTable;
                 }
             }
-            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, catalogTable, null );
+            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogTable(), entity.getPartitionPlacement(), null );
         }
         return null;
     }
@@ -103,8 +101,8 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {
             final Entity entity = entry.getTable();
-            CatalogTable catalogTable = Catalog.getInstance().getTable( entity.getId() );
-            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, catalogTable, null );
+
+            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogTable(), entity.getPartitionPlacement(), null );
         }
         return null;
     }

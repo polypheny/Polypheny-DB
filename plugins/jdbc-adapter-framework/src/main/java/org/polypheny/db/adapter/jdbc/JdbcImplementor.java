@@ -34,10 +34,12 @@
 package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -73,24 +75,8 @@ public class JdbcImplementor extends AlgToSqlConverter {
 
 
     @Override
-    public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
-        JdbcEntity table;
-        if ( tableNames.size() == 1 ) {
-            // only table name
-            // NOTICE MV: I think, this case should no longer happen because there should always be a schema in the form
-            //  <adapterUniqueName>_<logicalSchema>_<physicalSchema> be set.
-            // TODO MV: Consider removing this case
-            table = schema.getTableMap().get( tableNames.get( 0 ) );
-        } else if ( tableNames.size() == 2 ) {
-            // schema name and table name
-            table = schema.getTableMap().get( tableNames.get( 1 ) );
-        } else {
-            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
-        }
-        if ( table == null ) {
-            throw new RuntimeException( "Unknown table: [ " + String.join( ", ", tableNames ) + " ] | Table Map : [ " + String.join( ", ", schema.getTableMap().keySet() ) );
-        }
-        return table.physicalTableName();
+    public SqlIdentifier getPhysicalTableName( CatalogPartitionPlacement placement ) {
+        return new SqlIdentifier( Arrays.asList( placement.physicalSchemaName, placement.physicalTableName ), ParserPos.ZERO );
     }
 
 

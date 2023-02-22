@@ -69,6 +69,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -452,8 +453,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        //final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName(), POS );
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( List.of( modify.getTable().getCatalogEntity().unwrap( CatalogTable.class ).getNamespaceName(), modify.getTable().getCatalogEntity().name ) );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getTable().getPartitionPlacement() );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -660,7 +660,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    public abstract SqlIdentifier getPhysicalTableName( List<String> tableName );
+    public abstract SqlIdentifier getPhysicalTableName( CatalogPartitionPlacement tableName );
 
 
     public abstract SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName );
@@ -694,8 +694,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
 
 
         @Override
-        public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
-            return new SqlIdentifier( tableNames, POS );
+        public SqlIdentifier getPhysicalTableName( CatalogPartitionPlacement placement ) {
+            return new SqlIdentifier( placement.physicalTableName, POS );
         }
 
 

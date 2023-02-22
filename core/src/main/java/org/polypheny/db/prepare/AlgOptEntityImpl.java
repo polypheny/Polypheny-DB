@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -108,30 +109,35 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * If not null, overrides the estimate from the actual table.
      */
     private final Double rowCount;
+    @Getter
+    @Nullable
+    private final CatalogPartitionPlacement partitionPlacement;
 
 
     private AlgOptEntityImpl(
             AlgOptSchema schema,
             AlgDataType rowType,
-            Entity entity,
-            CatalogEntity catalogEntity,
-            Function<Class<?>, Expression> expressionFunction,
-            Double rowCount ) {
+            @Nullable Entity entity,
+            @Nullable CatalogEntity catalogEntity,
+            @Nullable CatalogPartitionPlacement placement,
+            @Nullable Function<Class<?>, Expression> expressionFunction,
+            @Nullable Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
-        this.entity = entity; // may be null
+        this.entity = entity;
+        this.partitionPlacement = placement;
         this.catalogEntity = catalogEntity;
-        this.expressionFunction = expressionFunction; // may be null
-        this.rowCount = rowCount; // may be null
+        this.expressionFunction = expressionFunction;
+        this.rowCount = rowCount;
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, List<String> names, Expression expression ) {
-        return new AlgOptEntityImpl( schema, rowType, null, null, c -> expression, null );
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Expression expression ) {
+        return new AlgOptEntityImpl( schema, rowType, null, null, null, c -> expression, null );
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, CatalogEntity catalogEntity, Double count ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, CatalogEntity catalogEntity, CatalogPartitionPlacement placement, Double count ) {
         final Entity entity = tableEntry.getTable();
         Double rowCount;
         if ( count == null ) {
@@ -140,7 +146,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             rowCount = count;
         }
 
-        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, getClassExpressionFunction( tableEntry, entity ), rowCount );
+        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, placement, getClassExpressionFunction( tableEntry, entity ), rowCount );
     }
 
 
@@ -148,7 +154,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Creates a copy of this RelOptTable. The new RelOptTable will have newRowType.
      */
     public AlgOptEntityImpl copy( AlgDataType newRowType ) {
-        return new AlgOptEntityImpl( this.schema, newRowType, this.entity, this.catalogEntity, this.expressionFunction, this.rowCount );
+        return new AlgOptEntityImpl( this.schema, newRowType, this.entity, this.catalogEntity, this.partitionPlacement, this.expressionFunction, this.rowCount );
     }
 
 
@@ -175,11 +181,11 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity, CatalogPartitionPlacement placement ) {
         assert entity instanceof TranslatableEntity
                 || entity instanceof ScannableEntity
                 || entity instanceof ModifiableEntity;
-        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, null, null );
+        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, placement, null, null );
     }
 
 
@@ -220,6 +226,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
                 getRelOptSchema(),
                 extendedRowType,
                 extendedEntity,
+                null,
                 null,
                 expressionFunction,
                 getRowCount() );
@@ -281,7 +288,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
                 }
             }
             final AlgOptEntity algOptEntity =
-                    new AlgOptEntityImpl( this.schema, b.build(), this.entity, this.catalogEntity, this.expressionFunction, this.rowCount ) {
+                    new AlgOptEntityImpl( this.schema, b.build(), this.entity, this.catalogEntity, this.partitionPlacement, this.expressionFunction, this.rowCount ) {
                         @Override
                         public <T> T unwrap( Class<T> clazz ) {
                             if ( clazz.isAssignableFrom( InitializerExpressionFactory.class ) ) {

@@ -436,6 +436,11 @@ public class ScannableEntityTest {
      */
     public static class SimpleEntity extends AbstractEntity implements ScannableEntity {
 
+        protected SimpleEntity() {
+            super( null, null, null );
+        }
+
+
         @Override
         public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder().add( "i", null, PolyType.INTEGER ).build();
@@ -444,7 +449,7 @@ public class ScannableEntityTest {
 
         @Override
         public Enumerable<Object[]> scan( DataContext root ) {
-            return new AbstractEnumerable<Object[]>() {
+            return new AbstractEnumerable<>() {
                 @Override
                 public Enumerator<Object[]> enumerator() {
                     return tens();
@@ -459,6 +464,11 @@ public class ScannableEntityTest {
      * Table that returns two columns via the ScannableTable interface.
      */
     public static class BeatlesEntity extends AbstractEntity implements ScannableEntity {
+
+        protected BeatlesEntity() {
+            super( null, null, null );
+        }
+
 
         @Override
         public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
@@ -492,6 +502,7 @@ public class ScannableEntityTest {
 
 
         public BeatlesFilterableEntity( StringBuilder buf, boolean cooperative ) {
+            super( null, null, null );
             this.buf = buf;
             this.cooperative = cooperative;
         }
@@ -531,6 +542,7 @@ public class ScannableEntityTest {
 
 
         public BeatlesProjectableFilterableEntity( StringBuilder buf, boolean cooperative ) {
+            super( null, null, null );
             this.buf = buf;
             this.cooperative = cooperative;
         }

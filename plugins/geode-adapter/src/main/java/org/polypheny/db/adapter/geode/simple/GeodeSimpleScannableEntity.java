@@ -58,7 +58,7 @@ public class GeodeSimpleScannableEntity extends AbstractEntity implements Scanna
 
 
     public GeodeSimpleScannableEntity( String regionName, AlgDataType algDataType, ClientCache clientCache ) {
-        super();
+        super( null, null, null );
         this.regionName = regionName;
         this.clientCache = clientCache;
         this.algDataType = algDataType;

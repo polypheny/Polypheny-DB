@@ -346,7 +346,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                                     Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ),
                                     partitionPlacement );
 
-                            physicalTables.put( catalog.getTable( tableId ).name + "_" + partitionPlacement.partitionId, entity );
+                            physicalTables.put( catalogTable.name + "_" + partitionPlacement.partitionId, entity );
 
                             rootSchema.add( schemaName, s, catalogSchema.namespaceType );
                             physicalTables.forEach( rootSchema.getSubNamespace( schemaName )::add );

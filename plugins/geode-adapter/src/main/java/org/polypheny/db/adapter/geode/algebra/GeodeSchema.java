@@ -75,7 +75,7 @@ public class GeodeSchema extends AbstractNamespace implements Schema {
             final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
             for ( String regionName : regionNames ) {
                 Region region = GeodeUtils.createRegion( cache, regionName );
-                Entity entity = new GeodeEntity( region );
+                Entity entity = new GeodeEntity( region, null, null, null );
                 builder.put( regionName, entity );
             }
             tableMap = builder.build();

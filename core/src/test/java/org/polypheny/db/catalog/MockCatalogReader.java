@@ -65,6 +65,7 @@ import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -348,12 +349,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public Collection getModifiableCollection() {
-                return null;
-            }
-
-
-            @Override
             public <E> Queryable<E> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 return null;
             }
@@ -549,6 +544,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
+        public CatalogPartitionPlacement getPartitionPlacement() {
+            return null;
+        }
+
+
         public void addColumn( String name, AlgDataType type ) {
             addColumn( name, type, false );
         }
@@ -695,6 +696,18 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         @Override
         public Long getId() {
             throw new RuntimeException( "Method getTableId is not implemented." );
+        }
+
+
+        @Override
+        public Long getPartitionId() {
+            throw new RuntimeException( "Method getTableId is not implemented." );
+        }
+
+
+        @Override
+        public Long getAdapterId() {
+            return null;
         }
 
 

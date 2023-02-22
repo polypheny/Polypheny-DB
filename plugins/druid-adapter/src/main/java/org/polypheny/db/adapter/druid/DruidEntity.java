@@ -102,6 +102,7 @@ public class DruidEntity extends AbstractEntity implements TranslatableEntity {
      * @param timestampFieldName Name of the column that contains the time
      */
     public DruidEntity( DruidSchema schema, String dataSource, AlgProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
+        super( null, null, null );
         this.timestampFieldName = Objects.requireNonNull( timestampFieldName );
         this.schema = Objects.requireNonNull( schema );
         this.dataSource = Objects.requireNonNull( dataSource );

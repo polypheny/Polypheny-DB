@@ -60,12 +60,12 @@ public abstract class CsvTable extends AbstractEntity implements Table {
      * Creates a CsvTable.
      */
     CsvTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
+        super( tableId, null, null );
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.csvSource = csvSource;
-        this.id = tableId;
     }
 
 

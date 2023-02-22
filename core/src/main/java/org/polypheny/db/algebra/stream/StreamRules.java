@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -273,11 +274,13 @@ public class StreamRules {
             if ( streamableTable != null ) {
                 final Entity entity1 = streamableTable.stream();
                 final CatalogTable catalogTable = algOptEntity.getCatalogEntity().unwrap( CatalogTable.class );
+                final CatalogPartitionPlacement placement = algOptEntity.getPartitionPlacement();
                 final AlgOptEntity algOptEntity2 =
                         AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
                                 algOptEntity.getRowType(),
                                 entity1,
-                                catalogTable );
+                                catalogTable,
+                                placement );
                 final LogicalRelScan newScan = LogicalRelScan.create( cluster, algOptEntity2 );
                 call.transformTo( newScan );
             }

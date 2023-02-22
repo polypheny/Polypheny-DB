@@ -207,7 +207,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
             throw new RuntimeException( "Error while accessing field " + field, e );
         }
         @SuppressWarnings("unchecked") final Enumerable<T> enumerable = toEnumerable( o );
-        return new FieldEntity<>( field, elementType, enumerable );
+        return new FieldEntity<>( field, elementType, enumerable, null, null, null );
     }
 
 
@@ -249,8 +249,8 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
         private final Enumerable enumerable;
 
 
-        ReflectiveEntity( Type elementType, Enumerable enumerable ) {
-            super( elementType );
+        ReflectiveEntity( Type elementType, Enumerable<?> enumerable, Long id, Long partitionId, Long adapterId ) {
+            super( elementType, id, partitionId, adapterId );
             this.elementType = elementType;
             this.enumerable = enumerable;
         }
@@ -338,13 +338,13 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
         private Statistic statistic;
 
 
-        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable ) {
-            this( field, elementType, enumerable, Statistics.UNKNOWN );
+        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable, Long id, Long partitionId, Long adapterId ) {
+            this( field, elementType, enumerable, Statistics.UNKNOWN, id, partitionId, adapterId );
         }
 
 
-        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable, Statistic statistic ) {
-            super( elementType, enumerable );
+        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable, Statistic statistic, Long id, Long partitionId, Long adapterId ) {
+            super( elementType, enumerable, id, partitionId, adapterId );
             this.field = field;
             this.statistic = statistic;
         }

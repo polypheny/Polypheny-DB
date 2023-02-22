@@ -36,6 +36,7 @@ package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.Lists;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -112,8 +113,10 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
             String physicalSchemaName,
             String physicalTableName,
             List<String> physicalColumnNames,
-            Long tableId ) {
-        super( Object[].class );
+            long tableId,
+            long partitionId,
+            long adapterId ) {
+        super( Object[].class, tableId, partitionId, adapterId );
         this.jdbcSchema = jdbcSchema;
         this.logicalColumnNames = logicalColumnNames;
         this.physicalSchemaName = physicalSchemaName;
@@ -121,7 +124,6 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
         this.physicalColumnNames = physicalColumnNames;
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
         this.protoRowType = protoRowType;
-        this.id = tableId;
     }
 
 
@@ -146,7 +148,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
         final AlgDataType rowType = protoRowType.apply( typeFactory );
         return Lists.transform( rowType.getFieldList(), f -> {
             final AlgDataType type = f.getType();
-            final Class clazz = (Class) typeFactory.getJavaClass( type );
+            final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );
             final ColumnMetaData.Rep rep = Util.first( ColumnMetaData.Rep.of( clazz ), ColumnMetaData.Rep.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
         } );
@@ -158,7 +160,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
         for ( String str : physicalColumnNames ) {
             pcnl.add( new SqlIdentifier( Arrays.asList( physicalTableName, str ), ParserPos.ZERO ) );
         }
-        //final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
+
         final SqlNodeList selectList = new SqlNodeList( pcnl, ParserPos.ZERO );
         SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), ParserPos.ZERO );
         SqlSelect node = new SqlSelect(
@@ -186,7 +188,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
 
     public SqlIdentifier physicalColumnName( String logicalColumnName ) {
         String physicalName = physicalColumnNames.get( logicalColumnNames.indexOf( logicalColumnName ) );
-        return new SqlIdentifier( Arrays.asList( physicalName ), ParserPos.ZERO );
+        return new SqlIdentifier( Collections.singletonList( physicalName ), ParserPos.ZERO );
     }
 
 
@@ -229,12 +231,6 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
                 jdbcSchema.getConnectionHandler( root ),
                 sql.getSql(),
                 JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
-    }
-
-
-    @Override
-    public Collection getModifiableCollection() {
-        throw new RuntimeException( "getModifiableCollection() is not implemented for JDBC adapter!" );
     }
 
 

@@ -123,14 +123,14 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
     @Getter
     private final TransactionProvider transactionProvider;
     @Getter
-    private final int storeId;
+    private final long storeId;
 
 
     /**
      * Creates a MongoTable.
      */
-    MongoEntity( CatalogTable catalogTable, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, int storeId, CatalogPartitionPlacement partitionPlacement ) {
-        super( Object[].class );
+    MongoEntity( CatalogTable catalogTable, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long storeId, CatalogPartitionPlacement partitionPlacement ) {
+        super( Object[].class, catalogTable.id, partitionPlacement.partitionId, storeId );
         this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
         this.transactionProvider = transactionProvider;
         this.catalogTable = catalogTable;
@@ -139,12 +139,11 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = storeId;
-        this.id = catalogTable.id;
     }
 
 
-    public MongoEntity( CatalogCollection catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, int adapter, CatalogCollectionPlacement partitionPlacement ) {
-        super( Object[].class );
+    public MongoEntity( CatalogCollection catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long adapter, CatalogCollectionPlacement partitionPlacement ) {
+        super( Object[].class, catalogEntity.id, partitionPlacement.id, adapter );
         this.collectionName = MongoStore.getPhysicalTableName( catalogEntity.id, partitionPlacement.id );
         this.transactionProvider = transactionProvider;
         this.catalogTable = null;
@@ -153,7 +152,6 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = adapter;
-        this.id = catalogEntity.id;
     }
 
 
@@ -234,7 +232,6 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
             List<Entry<String, Class>> arrayFields,
             final List<String> operations,
             Map<Long, Object> parameterValues,
-            //BsonDocument filter,
             List<BsonDocument> preOps,
             List<String> logicalCols ) {
         final List<BsonDocument> list = new ArrayList<>();
@@ -272,7 +269,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
         if ( list.isEmpty() ) {
             list.add( new BsonDocument( "$match", new BsonDocument() ) );
         }
-        //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
@@ -314,12 +311,6 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
      */
     private static Integer parseIntString( String valueString ) {
         return Integer.parseInt( valueString.replaceAll( "[^0-9]", "" ) );
-    }
-
-
-    @Override
-    public Collection getModifiableCollection() {
-        throw new RuntimeException( "getModifiableCollection() is not implemented for MongoDB adapter!" );
     }
 
 
@@ -399,7 +390,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getTable().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( this.getTable().getStoreId() ) );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getTable().getStoreId() ) );
 
             Map<Long, Object> values = new HashMap<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
@@ -447,7 +438,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
         public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
             MongoEntity mongoEntity = getTable();
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( mongoEntity.getStoreId() ) );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) mongoEntity.getStoreId() ) );
             GridFSBucket bucket = mongoEntity.getMongoSchema().getBucket();
 
             try {

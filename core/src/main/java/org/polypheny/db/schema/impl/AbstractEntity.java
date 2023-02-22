@@ -56,13 +56,21 @@ import org.polypheny.db.schema.Wrapper;
 @Getter
 public abstract class AbstractEntity implements Entity, Wrapper {
 
+    @Getter
+    protected final Long partitionId;
+    @Getter
+    private final Long id;
 
     @Getter
-    protected Long id;
+    private final Long adapterId;
+
     protected Statistic statistic = Statistics.UNKNOWN;
 
 
-    protected AbstractEntity() {
+    protected AbstractEntity( Long id, Long partitionId, Long adapterId ) {
+        this.id = id;
+        this.partitionId = partitionId;
+        this.adapterId = adapterId;
     }
 
 

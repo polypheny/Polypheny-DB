@@ -22,7 +22,7 @@ data: {
         # List of additional classes and packages to import.
         # Example. "org.polypheny.db.sql.*", "java.util.List".
         imports: [
-            "org.polypheny.db.namespace.ColumnStrategy"
+            "org.polypheny.db.schema.ColumnStrategy"
             "org.polypheny.db.sql.language.SqlAlter"
             "org.polypheny.db.sql.language.SqlBasicCall"
             "org.polypheny.db.sql.language.SqlBinaryOperator"

@@ -137,6 +137,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
                 catalogTable.name + "_" + partitionPlacement.partitionId,
                 catalogTable.id,
                 partitionPlacement.partitionId,
+                getAdapterId(),
                 columnIds,
                 columnTypes,
                 columnNames,

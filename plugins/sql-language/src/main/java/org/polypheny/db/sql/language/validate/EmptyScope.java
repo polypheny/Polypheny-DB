@@ -26,8 +26,6 @@ import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
@@ -149,7 +147,7 @@ class EmptyScope implements SqlValidatorScope {
                 path = path.plus( null, -1, entry.name, StructKind.NONE );
                 remainingNames = Util.skip( remainingNames );
                 final Entity entity = entry.getTable();
-                final CatalogTable catalogTable = Catalog.getInstance().getTable( entity.getId() );
+
                 ValidatorTable table2 = null;
                 if ( entity instanceof Wrapper ) {
                     table2 = ((Wrapper) entity).unwrap( PreparingEntity.class );
@@ -157,7 +155,7 @@ class EmptyScope implements SqlValidatorScope {
                 if ( table2 == null ) {
                     final AlgOptSchema algOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
                     final AlgDataType rowType = entity.getRowType( validator.typeFactory );
-                    table2 = AlgOptEntityImpl.create( algOptSchema, rowType, entry, catalogTable, null );
+                    table2 = AlgOptEntityImpl.create( algOptSchema, rowType, entry, entity.getCatalogTable(), entity.getPartitionPlacement(), null );
                 }
                 namespace = new TableNamespace( validator, table2 );
                 resolved.found( namespace, false, null, path, remainingNames );

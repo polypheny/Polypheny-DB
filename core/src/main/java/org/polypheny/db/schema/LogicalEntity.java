@@ -70,8 +70,7 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
             List<String> logicalColumnNames,
             AlgProtoDataType protoRowType,
             NamespaceType schemaType ) {
-        super( Object[].class );
-        this.id = tableId;
+        super( Object[].class, tableId, null, null );
         this.logicalSchemaName = logicalSchemaName;
         this.logicalTableName = logicalTableName;
         this.columnIds = columnIds;
@@ -112,12 +111,6 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
-    }
-
-
-    @Override
-    public Collection getModifiableCollection() {
-        throw new RuntimeException( "getModifiableCollection() is not implemented for Logical Tables!" );
     }
 
 

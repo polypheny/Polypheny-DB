@@ -78,8 +78,9 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
             String physicalSchemaName,
             String physicalTableName,
             List<String> physicalColumnNames,
-            Long tableId ) {
-        super( Object[].class );
+            Long tableId,
+            long partitionId, long adapterId ) {
+        super( Object[].class, tableId, partitionId, adapterId );
 
         this.cottontailSchema = cottontailSchema;
         this.protoRowType = protoRowType;
@@ -88,7 +89,6 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.physicalColumnNames = physicalColumnNames;
-        this.id = tableId;
 
         this.entity = EntityName.newBuilder()
                 .setName( this.physicalTableName )
@@ -105,12 +105,6 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
     @Override
     public String toString() {
         return "CottontailTable {" + physicalSchemaName + "." + physicalTableName + "}";
-    }
-
-
-    @Override
-    public Collection getModifiableCollection() {
-        throw new RuntimeException( "getModifiableCollection() is not implemented for Cottontail adapter!" );
     }
 
 
@@ -142,22 +136,6 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
     public Queryable<Object[]> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
         return new CottontailTableQueryable( dataContext, schema, tableName );
     }
-
-
-    /*@Override
-    public Enumerable<Object[]> scan( DataContext root ) {
-        Query query = Query.newBuilder()
-                .setFrom( From.newBuilder().setEntity( this.entity ).build() )
-                .build();
-        QueryMessage queryMessage = QueryMessage.newBuilder().setQuery( query ).build();
-
-
-        return new CottontailQueryEnumerable<>(
-                this.cottontailSchema.getWrapper().query( queryMessage ),
-                new CottontailQueryEnumerable.RowTypeParser(
-                        this.getRowType( root.getTypeFactory() ),
-                        this.physicalColumnNames ) );
-    }*/
 
 
     @Override

@@ -20,14 +20,12 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.adapter.enumerable.EnumerableTableModify;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Streamer;
-import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -151,18 +149,6 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static List<RexNode> createSourceList( DocumentModify modify, RexBuilder rexBuilder ) {
-        return modify.getUpdates()
-                .stream()
-                .map( name -> {
-                    int size = modify.getRowType().getFieldList().size();
-                    int index = modify.getTable().getRowType().getFieldNames().indexOf( name );
-                    return rexBuilder.makeDynamicParam(
-                            modify.getTable().getRowType().getFieldList().get( index ).getType(), size + index );
-                } ).collect( Collectors.toList() );
-    }
-
-
     private static void attachFilter( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
@@ -179,21 +165,6 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static void attachFilter( DocumentModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        List<RexNode> fields = new ArrayList<>();
-        int i = 0;
-        for ( AlgDataTypeField field : modify.getTable().getRowType().getFieldList() ) {
-            fields.add(
-                    algBuilder.equals(
-                            rexBuilder.makeInputRef( modify.getTable().getRowType(), i ),
-                            rexBuilder.makeDynamicParam( field.getType(), i ) ) );
-            i++;
-        }
-        algBuilder.filter( fields.size() == 1
-                ? fields.get( 0 )
-                : algBuilder.and( fields ) );
-    }
-
 
     private static AlgNode getChild( AlgNode child ) {
         if ( child instanceof AlgSubset ) {
@@ -205,54 +176,16 @@ public class LogicalStreamer extends Streamer {
 
     public static boolean isModifyApplicable( Modify modify ) {
 
+        // simple delete, which all store should be able to handle by themselves
         if ( modify.isInsert() && modify.getInput() instanceof Values ) {
             // simple insert, which all store should be able to handle by themselves
             return false;
-        } else if ( modify.isDelete() && modify.getInput() instanceof Scan ) {
-            // simple delete, which all store should be able to handle by themselves
-            return false;
+        } else {
+            return !modify.isDelete() || !(modify.getInput() instanceof Scan);
         }
-        return true;
     }
 
 
-    public static boolean isModifyApplicable( DocumentModify modify ) {
-
-        if ( modify.isInsert() && modify.getInput() instanceof Values ) {
-            // simple insert, which all store should be able to handle by themselves
-            return false;
-        } else if ( modify.isDelete() && modify.getInput() instanceof Scan ) {
-            // simple delete, which all store should be able to handle by themselves
-            return false;
-        }
-        return true;
-    }
-
-
-    public static boolean isEnumerableModifyApplicable( EnumerableTableModify modify ) {
-        if ( modify.getSourceExpressionList() == null || modify.getUpdateColumnList() == null ) {
-            return false;
-        }
-
-        if ( modify.isInsert() ) {
-            if ( modify.getInput() instanceof AlgSubset ) {
-                if ( ((AlgSubset) modify.getInput()).getOriginal() instanceof Values ) {
-                    // simple insert, which no store shouldn't be able to handle by themselves
-                    return false;
-                }
-            }
-        }
-
-        if ( modify.isDelete() ) {
-            if ( modify.getInput() instanceof AlgSubset ) {
-                if ( ((AlgSubset) modify.getInput()).getOriginal() instanceof Scan ) {
-                    // simple delete, which no store shouldn't be able to handle by themselves
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
 
     private static List<RexInputRef> getOldFieldRefs( AlgDataType rowType ) {

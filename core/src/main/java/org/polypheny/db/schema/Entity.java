@@ -35,7 +35,10 @@ package org.polypheny.db.schema;
 
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -84,6 +87,26 @@ public interface Entity {
      * Returns the tableId of this table.
      */
     Long getId();
+
+    @Deprecated // whole entity might get replaced
+    default CatalogTable getCatalogTable() {
+        if ( getId() == null ) {
+            return null;
+        }
+        return Catalog.getInstance().getTable( getId() );
+    }
+
+    Long getPartitionId();
+
+    Long getAdapterId();
+
+    @Deprecated // whole entity might get replaced
+    default CatalogPartitionPlacement getPartitionPlacement() {
+        if ( getAdapterId() == null || getPartitionId() == null ) {
+            return null;
+        }
+        return Catalog.getInstance().getPartitionPlacement( Math.toIntExact( getAdapterId() ), getPartitionId() );
+    }
 
     /**
      * Type of table.

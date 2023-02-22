@@ -2163,7 +2163,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             final TranslatableEntity table = udf.getTable( typeFactory, callBinding.sqlOperands() );
             final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getId() );
             final AlgDataType rowType = table.getRowType( typeFactory );
-            AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable );
+            AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable, null );
             AlgNode converted = toAlg( algOptEntity );
             bb.setRoot( converted, true );
             return;

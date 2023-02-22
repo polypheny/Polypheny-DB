@@ -411,12 +411,6 @@ public class FrameworksTest extends SqlLanguageDependent {
 
 
         @Override
-        public Collection getModifiableCollection() {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
         public Modify toModificationAlg( AlgOptCluster cluster, AlgOptEntity table, Prepare.CatalogReader catalogReader, AlgNode child, Modify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
             return LogicalModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }

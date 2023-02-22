@@ -167,7 +167,7 @@ public interface SqlValidatorScope extends ValidatorScope {
     /**
      * Looks up a table in this scope from its name. If found, calls {@link Resolved#resolve(List, NameMatcher, boolean, Resolved)}. {@link TableNamespace} that wraps it. If the "table" is defined in a {@code WITH} clause it may be a query, not a table after all.
      *
-     * The name matcher is not null, and one typically uses {@link ValidatorCatalogReader#nameMatcher()}.
+     * The name matcher is not null, and one typically uses {@link ValidatorCatalogReader#nameMatcher}.
      *
      * @param names Name of table, may be qualified or fully-qualified
      * @param nameMatcher Name matcher

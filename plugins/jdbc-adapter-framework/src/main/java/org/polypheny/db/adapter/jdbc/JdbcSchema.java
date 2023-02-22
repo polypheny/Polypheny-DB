@@ -176,7 +176,9 @@ public class JdbcSchema implements Namespace, Schema {
                 physicalSchemaName,
                 partitionPlacement.physicalTableName,
                 physicalColumnNames,
-                catalogTable.id
+                catalogTable.id,
+                partitionPlacement.partitionId,
+                adapter.getAdapterId()
         );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );

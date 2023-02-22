@@ -51,8 +51,8 @@ public abstract class AbstractQueryableEntity extends AbstractEntity implements 
     protected final Type elementType;
 
 
-    protected AbstractQueryableEntity( Type elementType ) {
-        super();
+    protected AbstractQueryableEntity( Type elementType, Long id, Long partitionId, Long adapterId ) {
+        super( id, partitionId, adapterId );
         this.elementType = elementType;
     }
 
@@ -67,5 +67,6 @@ public abstract class AbstractQueryableEntity extends AbstractEntity implements 
     public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
         return Schemas.tableExpression( schema, elementType, tableName, clazz );
     }
+
 }
 

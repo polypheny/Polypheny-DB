@@ -41,6 +41,7 @@ public class JsonEntity extends AbstractEntity implements ScannableEntity {
      * Creates a JsonTable.
      */
     public JsonEntity( Source source ) {
+        super( null, null, null );
         this.source = source;
     }
 

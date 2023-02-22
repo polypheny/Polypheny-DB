@@ -84,7 +84,9 @@ public class NeoSchema extends AbstractNamespace implements Schema {
         return new NeoEntity(
                 Neo4jPlugin.getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionPlacement.partitionId ),
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
-                combinedTable.id );
+                combinedTable.id,
+                partitionPlacement.partitionId,
+                store.getAdapterId() );
     }
 
 

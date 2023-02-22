@@ -121,6 +121,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
 
         PkClusteredEntity( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
+            super( null, null, null );
             this.data = data;
             this.typeBuilder = dataTypeBuilder;
             this.pkColumns = pkColumns;
@@ -133,7 +134,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
             for ( Integer key : pkColumns ) {
                 collationFields.add( new AlgFieldCollation( key, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.LAST ) );
             }
-            return Statistics.of( Double.valueOf( data.size() ), ImmutableList.of( pkColumns ), ImmutableList.of( AlgCollations.of( collationFields ) ) );
+            return Statistics.of( (double) data.size(), ImmutableList.of( pkColumns ), ImmutableList.of( AlgCollations.of( collationFields ) ) );
         }
 
 

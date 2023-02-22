@@ -95,8 +95,8 @@ public class ElasticsearchEntity extends AbstractQueryableEntity implements Tran
     /**
      * Creates an ElasticsearchTable.
      */
-    ElasticsearchEntity( ElasticsearchTransport transport ) {
-        super( Object[].class );
+    ElasticsearchEntity( ElasticsearchTransport transport, Long id, Long partitionId, Long adapterId ) {
+        super( Object[].class, id, partitionId, adapterId );
         this.transport = Objects.requireNonNull( transport, "transport" );
         this.version = transport.version;
         this.indexName = transport.indexName;

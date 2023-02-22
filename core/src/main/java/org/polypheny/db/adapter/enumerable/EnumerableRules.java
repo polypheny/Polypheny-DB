@@ -101,8 +101,6 @@ public class EnumerableRules {
 
     public static final EnumerableMinusRule ENUMERABLE_MINUS_RULE = new EnumerableMinusRule();
 
-    public static final EnumerableTableModifyRule ENUMERABLE_TABLE_MODIFICATION_RULE = new EnumerableTableModifyRule( AlgFactories.LOGICAL_BUILDER );
-
     public static final EnumerableValuesRule ENUMERABLE_VALUES_RULE = new EnumerableValuesRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final EnumerableWindowRule ENUMERABLE_WINDOW_RULE = new EnumerableWindowRule();

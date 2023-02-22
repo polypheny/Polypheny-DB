@@ -55,7 +55,7 @@ public class FileTranslatableEntity extends AbstractQueryableEntity implements T
     @Getter
     private final String tableName;
     @Getter
-    private final long partitionId;
+    private final Long partitionId;
     @Getter
     private final List<String> columnNames;
     @Getter
@@ -65,7 +65,7 @@ public class FileTranslatableEntity extends AbstractQueryableEntity implements T
     @Getter
     private final List<Long> pkIds; // Ids of the columns that are part of the primary key
     @Getter
-    private final int adapterId;
+    private final Long adapterId;
     @Getter
     private final FileSchema fileSchema;
     private final AlgProtoDataType protoRowType;
@@ -76,18 +76,17 @@ public class FileTranslatableEntity extends AbstractQueryableEntity implements T
             final String tableName,
             final Long tableId,
             final long partitionId,
-            final List<Long> columnIds,
+            long adapterId, final List<Long> columnIds,
             final ArrayList<PolyType> columnTypes,
             final List<String> columnNames,
             final List<Long> pkIds,
             final AlgProtoDataType protoRowType ) {
-        super( Object[].class );
+        super( Object[].class, tableId, partitionId, adapterId );
         this.fileSchema = fileSchema;
         this.rootDir = fileSchema.getRootDir();
         this.tableName = tableName;
-        this.id = tableId;
         this.partitionId = partitionId;
-        this.adapterId = fileSchema.getAdapterId();
+        this.adapterId = (long) fileSchema.getAdapterId();
         this.pkIds = pkIds;
         this.protoRowType = protoRowType;
 
@@ -113,13 +112,6 @@ public class FileTranslatableEntity extends AbstractQueryableEntity implements T
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
-    }
-
-
-    @Override
-    public Collection getModifiableCollection() {
-        throw new UnsupportedOperationException( "getModifiableCollection not implemented" );
-        //return new ArrayList<>();
     }
 
 

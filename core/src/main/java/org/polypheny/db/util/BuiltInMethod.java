@@ -126,7 +126,6 @@ import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.functions.MqlFunctions;
 import org.polypheny.db.schema.FilterableEntity;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.schema.QueryableEntity;
@@ -315,7 +314,6 @@ public enum BuiltInMethod {
     GREATER( Functions.class, "greater", Comparable.class, Comparable.class ),
     BIT_AND( Functions.class, "bitAnd", long.class, long.class ),
     BIT_OR( Functions.class, "bitOr", long.class, long.class ),
-    MODIFIABLE_TABLE_GET_MODIFIABLE_COLLECTION( ModifiableEntity.class, "getModifiableCollection" ),
     SCANNABLE_TABLE_SCAN( ScannableEntity.class, "scan", DataContext.class ),
     STRING_TO_BOOLEAN( Functions.class, "toBoolean", String.class ),
     INTERNAL_TO_DATE( Functions.class, "internalToDate", int.class ),

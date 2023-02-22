@@ -80,8 +80,8 @@ public class GeodeEntity extends AbstractQueryableEntity implements Translatable
     private final AlgDataType rowType;
 
 
-    GeodeEntity( Region<?, ?> region ) {
-        super( Object[].class );
+    GeodeEntity( Region<?, ?> region, Long id, Long partitionId, Long adapterId ) {
+        super( Object[].class, id, partitionId, adapterId );
         this.regionName = region.getName();
         this.rowType = GeodeUtils.autodetectRelTypeFromRegion( region );
     }

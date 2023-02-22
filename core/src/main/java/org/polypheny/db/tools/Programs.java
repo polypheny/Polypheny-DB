@@ -142,7 +142,6 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_MODIFY_COLLECT_RULE,
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_MODIFICATION_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_CALC_RULE,

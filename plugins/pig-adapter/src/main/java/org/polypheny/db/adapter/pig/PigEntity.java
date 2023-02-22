@@ -63,6 +63,7 @@ public class PigEntity extends AbstractEntity implements TranslatableEntity {
      * Creates a PigTable.
      */
     public PigEntity( String filePath, String[] fieldNames ) {
+        super( null, null, null );
         this.filePath = filePath;
         this.fieldNames = fieldNames;
     }
@@ -76,8 +77,7 @@ public class PigEntity extends AbstractEntity implements TranslatableEntity {
             final AlgDataType relDataType = typeFactory.createPolyType( PigDataType.valueOf( DataType.CHARARRAY ).getSqlType() );
             final AlgDataType nullableRelDataType = typeFactory.createTypeWithNullability( relDataType, true );
             // TODO (PCP)
-            String physicalColumnName = fieldName;
-            builder.add( fieldName, physicalColumnName, nullableRelDataType );
+            builder.add( fieldName, fieldName, nullableRelDataType );
         }
         return builder.build();
     }

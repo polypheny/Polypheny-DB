@@ -134,6 +134,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
                 catalogTable.name + "_" + partitionPlacement.partitionId,
                 catalogTable.id,
                 partitionPlacement.partitionId,
+                getAdapterId(),
                 columnIds,
                 columnTypes,
                 columnNames,

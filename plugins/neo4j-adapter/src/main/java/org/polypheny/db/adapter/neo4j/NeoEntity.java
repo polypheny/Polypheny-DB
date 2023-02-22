@@ -63,21 +63,13 @@ import org.polypheny.db.util.Pair;
 public class NeoEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity {
 
     public final String physicalEntityName;
-    public final long id;
     public final AlgProtoDataType rowType;
 
 
-    protected NeoEntity( String physicalEntityName, AlgProtoDataType proto, long id ) {
-        super( Object[].class );
+    protected NeoEntity( String physicalEntityName, AlgProtoDataType proto, long id, long partitionId, long adapterId ) {
+        super( Object[].class, id, partitionId, adapterId );
         this.physicalEntityName = physicalEntityName;
         this.rowType = proto;
-        this.id = id;
-    }
-
-
-    @Override
-    public Long getId() {
-        return id;
     }
 
 
@@ -97,12 +89,6 @@ public class NeoEntity extends AbstractQueryableEntity implements TranslatableEn
     public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
         return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), algOptEntity, this );
-    }
-
-
-    @Override
-    public Collection getModifiableCollection() {
-        throw new UnsupportedOperationException( "getModifiableCollection is not supported by the NEO4j adapter." );
     }
 
 

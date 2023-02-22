@@ -218,20 +218,14 @@ public class CottontailPlugin extends Plugin {
             final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
             List<String> logicalColumnNames = new LinkedList<>();
             List<String> physicalColumnNames = new LinkedList<>();
-            String physicalSchemaName = null;
-            String physicalTableName = null;
             Long tableId = combinedTable.id;
 
-            if ( physicalSchemaName == null ) {
-                physicalSchemaName = partitionPlacement.physicalTableName != null
-                        ? partitionPlacement.physicalSchemaName
-                        : this.dbName;
-            }
-            if ( physicalTableName == null ) {
-                physicalTableName = partitionPlacement.physicalTableName != null
-                        ? partitionPlacement.physicalTableName
-                        : CottontailNameUtil.createPhysicalTableName( combinedTable.id, partitionPlacement.partitionId );
-            }
+            String physicalSchemaName = partitionPlacement.physicalTableName != null
+                    ? partitionPlacement.physicalSchemaName
+                    : this.dbName;
+            String physicalTableName = partitionPlacement.physicalTableName != null
+                    ? partitionPlacement.physicalTableName
+                    : CottontailNameUtil.createPhysicalTableName( combinedTable.id, partitionPlacement.partitionId );
 
             for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
                 CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
@@ -244,7 +238,7 @@ public class CottontailPlugin extends Plugin {
                         : CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
             }
 
-            CottontailEntity table = new CottontailEntity(
+            return new CottontailEntity(
                     this.currentSchema,
                     combinedTable.getNamespaceName(),
                     combinedTable.name,
@@ -253,10 +247,10 @@ public class CottontailPlugin extends Plugin {
                     physicalSchemaName,
                     physicalTableName,
                     physicalColumnNames,
-                    tableId
+                    tableId,
+                    partitionPlacement.partitionId,
+                    getAdapterId()
             );
-
-            return table;
         }
 
 
