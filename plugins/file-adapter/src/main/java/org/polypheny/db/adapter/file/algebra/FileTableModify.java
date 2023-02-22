@@ -57,7 +57,7 @@ public class FileTableModify extends Modify implements FileAlg {
         return new FileTableModify(
                 getCluster(),
                 traitSet,
-                getTable(),
+                getEntity(),
                 getCatalogReader(),
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),
@@ -77,7 +77,7 @@ public class FileTableModify extends Modify implements FileAlg {
     public void implement( final FileImplementor implementor ) {
         setOperation( implementor );//do it first, so children know that we have an insert/update/delete
         implementor.visitChild( 0, getInput() );
-        FileTranslatableEntity fileTable = (FileTranslatableEntity) getTable().getTable();
+        FileTranslatableEntity fileTable = (FileTranslatableEntity) getEntity().getEntity();
         implementor.setFileTable( fileTable );
         if ( getOperation() == Operation.UPDATE ) {
             if ( getSourceExpressionList() != null ) {

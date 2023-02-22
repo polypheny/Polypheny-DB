@@ -281,7 +281,7 @@ public class MqlToAlgConverter {
 
         AlgNode node;
 
-        if ( entity.getTable().getNamespaceType() == NamespaceType.RELATIONAL ) {
+        if ( entity.getCatalogEntity().namespaceType == NamespaceType.RELATIONAL ) {
             _dataExists = false;
         }
 
@@ -333,9 +333,9 @@ public class MqlToAlgConverter {
 
         PreparingEntity table = catalogReader.getTable( names );
 
-        if ( table == null ) {
+        if ( table == null || table.getEntity() == null ) {
             return catalogReader.getCollection( names );
-        } else if ( table.getTable().getNamespaceType() == NamespaceType.GRAPH ) {
+        } else if ( table.getCatalogEntity().namespaceType == NamespaceType.GRAPH ) {
 
             final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 

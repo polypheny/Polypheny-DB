@@ -1007,8 +1007,8 @@ public class JdbcRules {
         @Override
         public boolean matches( AlgOptRuleCall call ) {
             final Modify modify = call.alg( 0 );
-            if ( modify.getTable().unwrap( JdbcEntity.class ) != null ) {
-                JdbcEntity table = modify.getTable().unwrap( JdbcEntity.class );
+            if ( modify.getEntity().unwrap( JdbcEntity.class ) != null ) {
+                JdbcEntity table = modify.getEntity().unwrap( JdbcEntity.class );
                 if ( out.getJdbcSchema() == table.getSchema() ) {
                     return true;
                 }
@@ -1020,7 +1020,7 @@ public class JdbcRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Modify modify = (Modify) alg;
-            final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
+            final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
             }
@@ -1028,7 +1028,7 @@ public class JdbcRules {
             return new JdbcTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getTable(),
+                    modify.getEntity(),
                     modify.getCatalogReader(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
@@ -1084,7 +1084,7 @@ public class JdbcRules {
             return new JdbcTableModify(
                     getCluster(),
                     traitSet,
-                    getTable(),
+                    getEntity(),
                     getCatalogReader(),
                     AbstractAlgNode.sole( inputs ),
                     getOperation(),

@@ -117,7 +117,7 @@ public abstract class FilterScanRule extends AlgOptRule {
 
     public static boolean test( Scan scan ) {
         // We can only push filters into a FilterableTable or ProjectableFilterableTable.
-        final AlgOptEntity table = scan.getTable();
+        final AlgOptEntity table = scan.getEntity();
         return table.unwrap( FilterableEntity.class ) != null || table.unwrap( ProjectableFilterableEntity.class ) != null;
     }
 
@@ -133,10 +133,10 @@ public abstract class FilterScanRule extends AlgOptRule {
             projects = scan.identity();
         }
 
-        final Mapping mapping = Mappings.target( projects, scan.getTable().getRowType().getFieldCount() );
+        final Mapping mapping = Mappings.target( projects, scan.getEntity().getRowType().getFieldCount() );
         filters.add( RexUtil.apply( mapping, filter.getCondition() ) );
 
-        call.transformTo( BindableScan.create( scan.getCluster(), scan.getTable(), filters.build(), projects ) );
+        call.transformTo( BindableScan.create( scan.getCluster(), scan.getEntity(), filters.build(), projects ) );
     }
 
 }

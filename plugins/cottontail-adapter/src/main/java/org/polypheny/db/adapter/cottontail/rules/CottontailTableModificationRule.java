@@ -47,11 +47,11 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         final Modify modify = call.alg( 0 );
-        if ( modify.getTable().unwrap( CottontailEntity.class ) == null ) {
+        if ( modify.getEntity().unwrap( CottontailEntity.class ) == null ) {
             return false;
         }
 
-        if ( !modify.getTable().unwrap( CottontailEntity.class ).getUnderlyingConvention().equals( this.out ) ) {
+        if ( !modify.getEntity().unwrap( CottontailEntity.class ).getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
         return modify.getOperation() != Operation.MERGE;
@@ -62,12 +62,12 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final Modify modify = (Modify) alg;
 
-        final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
+        final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
 
         if ( modifiableTable == null ) {
             return null;
         }
-        if ( modify.getTable().unwrap( CottontailEntity.class ) == null ) {
+        if ( modify.getEntity().unwrap( CottontailEntity.class ) == null ) {
             return null;
         }
 
@@ -76,7 +76,7 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
         return new CottontailTableModify(
                 modify.getCluster(),
                 traitSet,
-                modify.getTable(),
+                modify.getEntity(),
                 modify.getCatalogReader(),
                 AlgOptRule.convert( modify.getInput(), traitSet ),
                 modify.getOperation(),

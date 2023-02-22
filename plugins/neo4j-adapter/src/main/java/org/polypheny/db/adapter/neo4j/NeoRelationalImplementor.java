@@ -111,7 +111,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public void setTable( AlgOptEntity table ) {
         this.table = table;
-        this.entity = (NeoEntity) table.getTable();
+        this.entity = (NeoEntity) table.getEntity();
     }
 
 

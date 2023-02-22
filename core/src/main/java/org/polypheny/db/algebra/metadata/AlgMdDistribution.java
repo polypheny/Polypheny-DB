@@ -103,7 +103,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     public AlgDistribution distribution( Scan scan, AlgMetadataQuery mq ) {
-        return table( scan.getTable() );
+        return table( scan.getEntity() );
     }
 
 

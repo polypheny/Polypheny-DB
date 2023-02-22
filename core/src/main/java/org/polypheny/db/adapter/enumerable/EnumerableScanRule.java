@@ -64,7 +64,7 @@ public class EnumerableScanRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalRelScan scan = (LogicalRelScan) alg;
-        final AlgOptEntity algOptEntity = scan.getTable();
+        final AlgOptEntity algOptEntity = scan.getEntity();
         final Entity entity = algOptEntity.unwrap( Entity.class );
         if ( !EnumerableScan.canHandle( entity ) ) {
             return null;

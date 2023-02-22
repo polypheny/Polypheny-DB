@@ -252,8 +252,8 @@ public class ViewManager {
             if ( other instanceof LogicalRelViewScan ) {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
-                if ( other.getTable() instanceof AlgOptEntityImpl ) {
-                    CatalogTable catalogTable = other.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+                if ( other.getEntity() instanceof AlgOptEntityImpl ) {
+                    CatalogTable catalogTable = other.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
                     if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogTable).isOrdered() ) {
                         return orderMaterialized( other );
                     }

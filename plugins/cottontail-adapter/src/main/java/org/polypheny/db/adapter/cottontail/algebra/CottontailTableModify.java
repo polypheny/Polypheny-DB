@@ -93,7 +93,7 @@ public class CottontailTableModify extends Modify implements CottontailAlg {
         return new CottontailTableModify(
                 getCluster(),
                 traitSet,
-                getTable(),
+                getEntity(),
                 getCatalogReader(),
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),

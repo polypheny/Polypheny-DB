@@ -37,8 +37,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -89,11 +89,19 @@ public interface Entity {
     Long getId();
 
     @Deprecated // whole entity might get replaced
-    default CatalogTable getCatalogTable() {
+    default CatalogEntity getCatalogEntity() {
         if ( getId() == null ) {
             return null;
         }
-        return Catalog.getInstance().getTable( getId() );
+        switch ( getNamespaceType() ) {
+            case RELATIONAL:
+                return Catalog.getInstance().getTable( getId() );
+            case DOCUMENT:
+                return Catalog.getInstance().getCollection( getId() );
+            case GRAPH:
+                return Catalog.getInstance().getGraph( getId() );
+        }
+        return null;
     }
 
     Long getPartitionId();

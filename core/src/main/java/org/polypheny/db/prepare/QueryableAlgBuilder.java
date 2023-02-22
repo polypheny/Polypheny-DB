@@ -115,7 +115,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
                     null,
                     table.getRowType( translator.typeFactory ),
                     tableEntry,
-                    table.getCatalogTable(),
+                    table.getCatalogEntity(),
                     table.getPartitionPlacement(),
                     null );
             if ( table instanceof TranslatableEntity ) {

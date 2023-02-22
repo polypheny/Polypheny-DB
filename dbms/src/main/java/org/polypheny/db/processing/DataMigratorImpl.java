@@ -285,7 +285,7 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 List<AlgDataTypeField> fields;
                 if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getTable().getRowType().getFieldList();
+                    fields = targetAlg.alg.getEntity().getRowType().getFieldList();
                 } else {
                     fields = sourceAlg.validatedRowType.getFieldList();
                 }

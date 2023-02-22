@@ -96,8 +96,8 @@ public class PigAggregate extends Aggregate implements PigAlg {
      * Override this method so it looks down the tree to find the table this node is acting on.
      */
     @Override
-    public AlgOptEntity getTable() {
-        return getInput().getTable();
+    public AlgOptEntity getEntity() {
+        return getInput().getEntity();
     }
 
 

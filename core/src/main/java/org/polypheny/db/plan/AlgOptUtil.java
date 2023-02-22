@@ -201,7 +201,7 @@ public abstract class AlgOptUtil {
         for ( Entry<Class<? extends AlgNode>, Collection<AlgNode>> e : nodes.asMap().entrySet() ) {
             if ( Scan.class.isAssignableFrom( e.getKey() ) ) {
                 for ( AlgNode node : e.getValue() ) {
-                    usedTables.add( node.getTable() );
+                    usedTables.add( node.getEntity() );
                 }
             }
         }

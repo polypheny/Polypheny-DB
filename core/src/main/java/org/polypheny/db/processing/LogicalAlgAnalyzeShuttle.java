@@ -280,14 +280,14 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalMatch match ) {
-        hashBasis.add( "LogicalMatch#" + match.getTable().getCatalogEntity().id );
+        hashBasis.add( "LogicalMatch#" + match.getEntity().getCatalogEntity().id );
         return visitChild( match, 0, match.getInput() );
     }
 
 
     @Override
     public AlgNode visit( Scan scan ) {
-        hashBasis.add( "Scan#" + scan.getTable().getCatalogEntity().id );
+        hashBasis.add( "Scan#" + scan.getEntity().getCatalogEntity().id );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
 
@@ -326,7 +326,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalJoin join ) {
         if ( join.getLeft() instanceof LogicalRelScan && join.getRight() instanceof LogicalRelScan ) {
-            hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getCatalogEntity().id + "#" + join.getRight().getTable().getCatalogEntity().id );
+            hashBasis.add( "LogicalJoin#" + join.getLeft().getEntity().getCatalogEntity().id + "#" + join.getRight().getEntity().getCatalogEntity().id );
         }
 
         super.visit( join );
@@ -391,8 +391,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getAvailableColumns( AlgNode scan ) {
-        this.entityId.add( scan.getTable().getCatalogEntity().id );
-        final CatalogTable table = (CatalogTable) scan.getTable().getCatalogEntity();
+        this.entityId.add( scan.getEntity().getCatalogEntity().id );
+        final CatalogTable table = (CatalogTable) scan.getEntity().getCatalogEntity();
         if ( table != null ) {
             final List<Long> ids = table.fieldIds;
             final List<String> names = table.getColumnNames();
@@ -407,7 +407,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalFilter filter ) {
-        AlgOptEntityImpl table = (AlgOptEntityImpl) filter.getInput().getTable();
+        AlgOptEntityImpl table = (AlgOptEntityImpl) filter.getInput().getEntity();
         if ( table == null ) {
             return;
         }
@@ -442,7 +442,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalDocumentFilter filter ) {
-        AlgOptEntityImpl table = (AlgOptEntityImpl) filter.getInput().getTable();
+        AlgOptEntityImpl table = (AlgOptEntityImpl) filter.getInput().getEntity();
         if ( table == null ) {
             return;
         }

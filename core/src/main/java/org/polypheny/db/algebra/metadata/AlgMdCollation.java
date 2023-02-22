@@ -136,7 +136,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     public ImmutableList<AlgCollation> collations( Scan scan, AlgMetadataQuery mq ) {
-        return ImmutableList.copyOf( table( scan.getTable() ) );
+        return ImmutableList.copyOf( table( scan.getEntity() ) );
     }
 
 

@@ -237,5 +237,11 @@ public abstract class Modify extends SingleAlg {
                 isFlattened() + "&";
     }
 
+
+    @Override
+    public AlgOptEntity getEntity() {
+        return table;
+    }
+
 }
 

@@ -46,7 +46,7 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
     private AlgProtoDataType protoRowType;
 
     @Getter
-    private final NamespaceType schemaType;
+    private final NamespaceType namespaceType;
 
     @Getter
     private final String logicalSchemaName;
@@ -69,14 +69,14 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
             List<Long> columnIds,
             List<String> logicalColumnNames,
             AlgProtoDataType protoRowType,
-            NamespaceType schemaType ) {
+            NamespaceType namespaceType ) {
         super( Object[].class, tableId, null, null );
         this.logicalSchemaName = logicalSchemaName;
         this.logicalTableName = logicalTableName;
         this.columnIds = columnIds;
         this.logicalColumnNames = logicalColumnNames;
         this.protoRowType = protoRowType;
-        this.schemaType = schemaType;
+        this.namespaceType = namespaceType;
     }
 
 

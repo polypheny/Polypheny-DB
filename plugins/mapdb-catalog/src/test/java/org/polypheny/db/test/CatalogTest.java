@@ -359,7 +359,7 @@ public class CatalogTest {
         assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId1 ) );
 
         //catalog.deletePrimaryKey( tableId );
-        //assertNull( catalog.getTable( tableId ).primaryKey );
+        //assertNull( catalog.getEntity( tableId ).primaryKey );
 
         catalog.addPrimaryKey( tableId, Arrays.asList( columnId1, columnId2 ) );
 

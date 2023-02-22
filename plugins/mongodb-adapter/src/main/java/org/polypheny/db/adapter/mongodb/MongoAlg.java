@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
@@ -143,9 +144,9 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = mongoEntity.getCatalogTable().getColumnNames().indexOf( name );
+            int index = mongoEntity.getCatalogEntity().unwrap( CatalogTable.class ).getColumnNames().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogTable().fieldIds.get( index ) );
+                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogEntity().unwrap( CatalogTable.class ).fieldIds.get( index ) );
             }
             throw new RuntimeException( "This column is not part of the table." );
         }

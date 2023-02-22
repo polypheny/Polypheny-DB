@@ -387,7 +387,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public AlgOptEntity getTable() {
+    public AlgOptEntity getEntity() {
         return null;
     }
 

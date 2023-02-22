@@ -66,7 +66,7 @@ public class PigProject extends Project implements PigAlg {
 
     @Override
     public void implement( Implementor implementor ) {
-        System.out.println( getTable() );
+        System.out.println( getEntity() );
     }
 
 
@@ -74,8 +74,8 @@ public class PigProject extends Project implements PigAlg {
      * Override this method so it looks down the tree to find the table this node is acting on.
      */
     @Override
-    public AlgOptEntity getTable() {
-        return getInput().getTable();
+    public AlgOptEntity getEntity() {
+        return getInput().getEntity();
     }
 
 }

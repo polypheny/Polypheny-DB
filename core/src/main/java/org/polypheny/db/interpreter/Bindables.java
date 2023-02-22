@@ -169,7 +169,7 @@ public class Bindables {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final LogicalRelScan scan = call.alg( 0 );
-            final AlgOptEntity table = scan.getTable();
+            final AlgOptEntity table = scan.getEntity();
             if ( BindableScan.canHandle( table ) ) {
                 call.transformTo( BindableScan.create( scan.getCluster(), table ) );
             }

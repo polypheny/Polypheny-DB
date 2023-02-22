@@ -74,7 +74,7 @@ public interface PigAlg extends AlgNode {
 
 
         public String getTableName( AlgNode input ) {
-            return input.getTable().getCatalogEntity().name;
+            return input.getEntity().getCatalogEntity().name;
         }
 
 

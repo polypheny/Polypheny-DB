@@ -292,7 +292,7 @@ public class DruidRules {
                 return;
             }
 
-            if ( DruidQuery.computeProjectAsScan( project, query.getTable().getRowType(), query ) != null ) {
+            if ( DruidQuery.computeProjectAsScan( project, query.getEntity().getRowType(), query ) != null ) {
                 // All expressions can be pushed to Druid in their entirety.
                 final AlgNode newProject = project.copy( project.getTraitSet(), ImmutableList.of( Util.last( query.algs ) ) );
                 AlgNode newNode = DruidQuery.extendQuery( query, newProject );
@@ -603,7 +603,7 @@ public class DruidRules {
 
             List<AlgNode> newNodes = constructNewNodes( query.algs, addNewFilter, startIndex, filter, project, aggregate );
 
-            return DruidQuery.create( query.getCluster(), aggregate.getTraitSet().replace( query.getConvention() ), query.getTable(), query.druidTable, newNodes );
+            return DruidQuery.create( query.getCluster(), aggregate.getTraitSet().replace( query.getConvention() ), query.getEntity(), query.druidTable, newNodes );
         }
 
 

@@ -65,7 +65,7 @@ public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
         alg.accept( new AlgShuttleImpl() {
             @Override
             public AlgNode visit( Scan scan ) {
-                schemas[0] = scan.getTable().getRelOptSchema();
+                schemas[0] = scan.getEntity().getRelOptSchema();
                 return super.visit( scan );
             }
         } );

@@ -131,7 +131,7 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
         final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
             final RexNode inputRef = RexTableInputRef.of(
-                    AlgTableRef.of( alg.getTable(), 0 ),
+                    AlgTableRef.of( alg.getEntity(), 0 ),
                     RexInputRef.of( idx, alg.getRowType().getFieldList() ) );
             final RexInputRef ref = RexInputRef.of( idx, alg.getRowType().getFieldList() );
             mapping.put( ref, ImmutableSet.of( inputRef ) );

@@ -209,7 +209,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         long schemaId;
 
         try {
-            // Cannot use getTable() here since table does not yet exist
+            // Cannot use getEntity() here since table does not yet exist
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
                 schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );

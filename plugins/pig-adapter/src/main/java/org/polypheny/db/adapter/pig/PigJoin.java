@@ -82,8 +82,8 @@ public class PigJoin extends Join implements PigAlg {
      * The Pig alias of the joined relation will have the same name as one from the left side of the join.
      */
     @Override
-    public AlgOptEntity getTable() {
-        return getLeft().getTable();
+    public AlgOptEntity getEntity() {
+        return getLeft().getEntity();
     }
 
 

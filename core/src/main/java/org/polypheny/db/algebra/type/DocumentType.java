@@ -55,34 +55,34 @@ public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamil
 
 
     public AlgDataType asRelational() {
-        return new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "_data_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ) ) );
+        return new AlgRecordType( List.of(
+                new AlgDataTypeFieldImpl( "_id_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
+                new AlgDataTypeFieldImpl( "_data_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) )
+        ) );
     }
 
 
     @Override
     public boolean isStruct() {
-        return false;
+        return true;
     }
 
 
     @Override
     public List<AlgDataTypeField> getFieldList() {
-        return List.of( this );
+        throw new RuntimeException( "getFieldList" );
     }
 
 
     @Override
     public List<String> getFieldNames() {
-        if ( name == null ) {
-            return List.of( "$d" );
-        }
-        return List.of( name );
+        throw new RuntimeException( "getFieldList" );
     }
 
 
     @Override
     public int getFieldCount() {
-        return 1;
+        throw new RuntimeException( "getFieldList" );
     }
 
 
@@ -212,7 +212,7 @@ public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamil
 
     @Override
     public AlgDataType setValue( AlgDataType value ) {
-        throw new RuntimeException( "Error while setting field on AlgDocumentType" );
+        throw new RuntimeException( "Error while setting field on DocumentType" );
     }
 
 }

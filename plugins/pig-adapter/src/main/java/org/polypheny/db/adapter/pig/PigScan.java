@@ -74,14 +74,14 @@ public class PigScan extends Scan implements PigAlg {
 
 
     private PigEntity getPigTable( String name ) {
-        final PolyphenyDbSchema schema = getTable().unwrap( PolyphenyDbSchema.class );
+        final PolyphenyDbSchema schema = this.getEntity().unwrap( PolyphenyDbSchema.class );
         return (PigEntity) schema.getTable( name ).getTable();
     }
 
 
     private String getSchemaForPigStatement( Implementor implementor ) {
-        final List<String> fieldNamesAndTypes = new ArrayList<>( getTable().getRowType().getFieldList().size() );
-        for ( AlgDataTypeField f : getTable().getRowType().getFieldList() ) {
+        final List<String> fieldNamesAndTypes = new ArrayList<>( this.getEntity().getRowType().getFieldList().size() );
+        for ( AlgDataTypeField f : this.getEntity().getRowType().getFieldList() ) {
             fieldNamesAndTypes.add( getConcatenatedFieldNameAndTypeForPigSchema( implementor, f ) );
         }
         return String.join( ", ", fieldNamesAndTypes );

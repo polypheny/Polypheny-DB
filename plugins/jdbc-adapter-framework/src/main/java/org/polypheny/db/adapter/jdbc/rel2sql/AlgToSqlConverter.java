@@ -275,7 +275,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
      */
     public Result visit( Scan e ) {
         return result(
-                new SqlIdentifier( List.of( e.getTable().unwrap( CatalogTable.class ).getNamespaceName(), e.getTable().getCatalogEntity().name ), ParserPos.ZERO ),
+                new SqlIdentifier( List.of( e.getEntity().unwrap( CatalogTable.class ).getNamespaceName(), e.getEntity().getCatalogEntity().name ), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
@@ -453,7 +453,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getTable().getPartitionPlacement() );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().getPartitionPlacement() );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -466,7 +466,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                         sqlTargetTable,
                         sqlSource,
                         physicalIdentifierList(
-                                List.of( modify.getTable().getCatalogEntity().unwrap( CatalogTable.class ).getNamespaceName(), modify.getTable().getCatalogEntity().name ),
+                                modify.getEntity().getPartitionPlacement(),
                                 modify.getInput().getRowType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -475,7 +475,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( List.of( modify.getTable().getCatalogEntity().unwrap( CatalogTable.class ).getNamespaceName(), modify.getTable().getCatalogEntity().name ), modify.getUpdateColumnList() ),
+                        physicalIdentifierList( modify.getEntity().getPartitionPlacement(), modify.getUpdateColumnList() ),
                         exprList( context, modify.getSourceExpressionList() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),
@@ -518,8 +518,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
-    private SqlNodeList physicalIdentifierList( List<String> tableName, List<String> columnNames ) {
-        return new SqlNodeList( columnNames.stream().map( columnName -> getPhysicalColumnName( tableName, columnName ) ).collect( Collectors.toList() ), POS );
+    private SqlNodeList physicalIdentifierList( CatalogPartitionPlacement partitionPlacement, List<String> columnNames ) {
+        return new SqlNodeList( columnNames.stream().map( columnName -> getPhysicalColumnName( partitionPlacement, columnName ) ).collect( Collectors.toList() ), POS );
     }
 
 
@@ -663,7 +663,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     public abstract SqlIdentifier getPhysicalTableName( CatalogPartitionPlacement tableName );
 
 
-    public abstract SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName );
+    public abstract SqlIdentifier getPhysicalColumnName( CatalogPartitionPlacement tableName, String columnName );
 
 
     /**
@@ -700,7 +700,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
 
 
         @Override
-        public SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName ) {
+        public SqlIdentifier getPhysicalColumnName( CatalogPartitionPlacement placement, String columnName ) {
             return new SqlIdentifier( columnName, POS );
         }
 

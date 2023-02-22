@@ -89,7 +89,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
                     return algOptTable;
                 }
             }
-            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogTable(), entity.getPartitionPlacement(), null );
+            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogEntity(), entity.getPartitionPlacement(), null );
         }
         return null;
     }
@@ -102,7 +102,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         if ( entry != null ) {
             final Entity entity = entry.getTable();
 
-            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogTable(), entity.getPartitionPlacement(), null );
+            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogEntity(), entity.getPartitionPlacement(), null );
         }
         return null;
     }

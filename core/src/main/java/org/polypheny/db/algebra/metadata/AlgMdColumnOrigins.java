@@ -222,7 +222,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
         final Set<AlgColumnOrigin> set = new HashSet<>();
 
-        AlgOptEntity table = alg.getTable();
+        AlgOptEntity table = alg.getEntity();
         if ( table == null ) {
             // Somebody is making column values up out of thin air, like a VALUES clause, so we return an empty set.
             return set;

@@ -103,7 +103,7 @@ public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.Tab
      * Scan table reference.
      */
     public Set<AlgTableRef> getTableReferences( Scan alg, AlgMetadataQuery mq ) {
-        return ImmutableSet.of( AlgTableRef.of( alg.getTable(), 0 ) );
+        return ImmutableSet.of( AlgTableRef.of( alg.getEntity(), 0 ) );
     }
 
 

@@ -131,11 +131,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeDml( LogicalModify modify, Statement statement ) {
         AlgOptCluster cluster = modify.getCluster();
 
-        if ( modify.getTable() == null ) {
+        if ( modify.getEntity() == null ) {
             throw new RuntimeException( "Unexpected operator!" );
         }
 
-        AlgOptEntityImpl table = (AlgOptEntityImpl) modify.getTable();
+        AlgOptEntityImpl table = (AlgOptEntityImpl) modify.getEntity();
 
         // Get placements of this table
         CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
@@ -720,7 +720,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId ) {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
-        CatalogCollection collection = alg.getTable().getCatalogEntity().unwrap( CatalogCollection.class );
+        CatalogCollection collection = alg.getEntity().getCatalogEntity().unwrap( CatalogCollection.class );
 
         List<AlgNode> modifies = new ArrayList<>();
 
@@ -743,7 +743,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 continue;
             }
 
-            modifies.add( ((ModifiableCollection) document.getTable()).toModificationAlg(
+            modifies.add( ((ModifiableCollection) document.getEntity()).toModificationAlg(
                     alg.getCluster(),
                     document,
                     statement.getTransaction().getCatalogReader(),
@@ -1252,8 +1252,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             LogicalRelScan scan = (LogicalRelScan) builder.build();
             builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
             return builder;
-        } else if ( node instanceof LogicalRelScan && node.getTable() != null ) {
-            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getTable();
+        } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
+            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getEntity();
 
             // Special handling for INSERT INTO foo SELECT * FROM foo2
             if ( table.getCatalogEntity().id != catalogTable.id ) {

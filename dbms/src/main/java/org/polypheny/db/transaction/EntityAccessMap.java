@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -238,7 +239,7 @@ public class EntityAccessMap {
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             super.visit( p, ordinal, parent );
-            AlgOptEntity table = p.getTable();
+            AlgOptEntity table = p.getEntity();
             if ( table == null ) {
                 if ( p instanceof LpgAlg ) {
                     attachGraph( (AlgNode & LpgAlg) p );
@@ -257,7 +258,7 @@ public class EntityAccessMap {
             if ( p instanceof Modify ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                    extractWriteConstraints( (LogicalEntity) table.getTable() );
+                    extractWriteConstraints( (LogicalEntity) table.getEntity() );
                 }
             } else {
                 newAccess = Mode.READ_ACCESS;
@@ -270,7 +271,12 @@ public class EntityAccessMap {
             if ( accessedPartitions.containsKey( p.getId() ) ) {
                 relevantPartitions = accessedPartitions.get( p.getId() );
             } else if ( table.getCatalogEntity() != null ) {
-                relevantPartitions = table.getCatalogEntity().unwrap( CatalogTable.class ).partitionProperty.partitionIds;
+                if ( table.getCatalogEntity().namespaceType == NamespaceType.RELATIONAL ) {
+                    relevantPartitions = table.getCatalogEntity().unwrap( CatalogTable.class ).partitionProperty.partitionIds;
+                } else {
+                    relevantPartitions = List.of();
+                }
+
             } else {
                 relevantPartitions = List.of();
             }

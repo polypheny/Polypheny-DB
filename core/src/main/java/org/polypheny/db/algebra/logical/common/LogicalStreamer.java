@@ -104,13 +104,13 @@ public class LogicalStreamer extends Streamer {
 
         if ( !modify.isInsert() ) {
             // get collection, which is modified
-            algBuilder.scan( modify.getTable() );
+            algBuilder.scan( modify.getEntity() );
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
             //algBuilder.push( LogicalValues.createOneRow( input.getCluster() ) );
 
-            assert input.getRowType().getFieldCount() == modify.getTable().getRowType().getFieldCount();
+            assert input.getRowType().getFieldCount() == modify.getEntity().getRowType().getFieldCount();
             // attach a projection, so the values can be inserted on execution
             algBuilder.push(
                     LogicalProject.create(
@@ -125,7 +125,7 @@ public class LogicalStreamer extends Streamer {
         }
 
         LogicalModify prepared = LogicalModify.create(
-                        modify.getTable(),
+                        modify.getEntity(),
                         modify.getCatalogReader(),
                         algBuilder.build(),
                         modify.getOperation(),
@@ -142,9 +142,9 @@ public class LogicalStreamer extends Streamer {
                 .stream()
                 .map( name -> {
                     int size = modify.getRowType().getFieldList().size();
-                    int index = modify.getTable().getRowType().getFieldNames().indexOf( name );
+                    int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
                     return rexBuilder.makeDynamicParam(
-                            modify.getTable().getRowType().getFieldList().get( index ).getType(), size + index );
+                            modify.getEntity().getRowType().getFieldList().get( index ).getType(), size + index );
                 } ).collect( Collectors.toList() );
     }
 
@@ -152,10 +152,10 @@ public class LogicalStreamer extends Streamer {
     private static void attachFilter( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
-        for ( AlgDataTypeField field : modify.getTable().getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : modify.getEntity().getRowType().getFieldList() ) {
             fields.add(
                     algBuilder.equals(
-                            rexBuilder.makeInputRef( modify.getTable().getRowType(), i ),
+                            rexBuilder.makeInputRef( modify.getEntity().getRowType(), i ),
                             rexBuilder.makeDynamicParam( field.getType(), i ) ) );
             i++;
         }

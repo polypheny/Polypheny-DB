@@ -33,6 +33,7 @@
 
 package org.polypheny.db.adapter.csv;
 
+import java.util.List;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.plan.AlgOptRule;
@@ -40,8 +41,6 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
-
-import java.util.List;
 
 
 /**
@@ -77,7 +76,7 @@ public class CsvProjectScanRule extends AlgOptRule {
             return;
         }
         call.transformTo(
-                new CsvScan( scan.getCluster(), scan.getTable(), scan.csvTable, fields ) );
+                new CsvScan( scan.getCluster(), scan.getEntity(), scan.csvTable, fields ) );
     }
 
 

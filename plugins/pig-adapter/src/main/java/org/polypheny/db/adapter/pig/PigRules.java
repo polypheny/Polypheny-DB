@@ -106,7 +106,7 @@ public class PigRules {
         public AlgNode convert( AlgNode alg ) {
             final LogicalRelScan scan = (LogicalRelScan) alg;
             final AlgTraitSet traitSet = scan.getTraitSet().replace( PigAlg.CONVENTION );
-            return new PigScan( alg.getCluster(), traitSet, scan.getTable() );
+            return new PigScan( alg.getCluster(), traitSet, scan.getEntity() );
         }
 
     }

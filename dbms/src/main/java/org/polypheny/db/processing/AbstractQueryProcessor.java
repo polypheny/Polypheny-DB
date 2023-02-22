@@ -616,7 +616,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalModify ) {
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalModify ltm = (LogicalModify) node;
-                        final CatalogTable table = ltm.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+                        final CatalogTable table = ltm.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
                         final CatalogSchema schema = catalog.getSchema( table.namespaceId );
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
@@ -768,7 +768,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                                        .collect( Collectors.toList() );
 //                            }
 //                            final {@link AlgNode} replacement = LogicalModify.create(
-//                                    ltm.getTable(),
+//                                    ltm.getEntity(),
 //                                    transaction.getCatalogReader(),
 //                                    newProject,
 //                                    ltm.getOperation(),
@@ -911,7 +911,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
-                    final CatalogTable ctable = scan.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+                    final CatalogTable ctable = scan.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
                     if ( idx == null ) {
@@ -1305,8 +1305,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         } else {
             boolean fallback = false;
-            if ( alg.getTable() != null ) {
-                AlgOptEntityImpl table = (AlgOptEntityImpl) alg.getTable();
+            if ( alg.getEntity() != null ) {
+                AlgOptEntityImpl table = (AlgOptEntityImpl) alg.getEntity();
 
                 int scanId = alg.getId();
 

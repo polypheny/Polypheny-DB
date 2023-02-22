@@ -245,7 +245,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      */
     public static DruidQuery extendQuery( DruidQuery query, AlgNode r ) {
         final ImmutableList.Builder<AlgNode> builder = ImmutableList.builder();
-        return DruidQuery.create( query.getCluster(), r.getTraitSet().replace( query.getConvention() ), query.getTable(), query.druidTable, query.intervals, builder.addAll( query.algs ).add( r ).build(), query.getOperatorConversionMap() );
+        return DruidQuery.create( query.getCluster(), r.getTraitSet().replace( query.getConvention() ), query.getEntity(), query.druidTable, query.intervals, builder.addAll( query.algs ).add( r ).build(), query.getOperatorConversionMap() );
     }
 
 
@@ -253,7 +253,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      * Extends a DruidQuery.
      */
     public static DruidQuery extendQuery( DruidQuery query, List<Interval> intervals ) {
-        return DruidQuery.create( query.getCluster(), query.getTraitSet(), query.getTable(), query.druidTable, intervals, query.algs, query.getOperatorConversionMap() );
+        return DruidQuery.create( query.getCluster(), query.getTraitSet(), query.getEntity(), query.druidTable, intervals, query.algs, query.getOperatorConversionMap() );
     }
 
 
@@ -461,7 +461,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
                 if ( !(r instanceof Scan) ) {
                     return litmus.fail( "first alg must be Scan, was ", r );
                 }
-                if ( r.getTable() != table ) {
+                if ( r.getEntity() != table ) {
                     return litmus.fail( "first alg must be based on table table" );
                 }
             } else {
@@ -525,7 +525,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
 
 
     @Override
-    public AlgOptEntity getTable() {
+    public AlgOptEntity getEntity() {
         return table;
     }
 
@@ -540,7 +540,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         for ( AlgNode alg : algs ) {
             if ( alg instanceof Scan ) {
                 Scan scan = (Scan) alg;
-                pw.item( "table", scan.getTable().getCatalogEntity().id );
+                pw.item( "table", scan.getEntity().getCatalogEntity().id );
                 pw.item( "intervals", intervals );
             } else if ( alg instanceof Filter ) {
                 pw.item( "filter", ((Filter) alg).getCondition() );

@@ -205,7 +205,7 @@ public class ConstraintEnforceAttacher {
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
-        table = root.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+        table = root.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
         primaryKey = catalog.getPrimaryKey( table.primaryKey );
         constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
         foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
@@ -230,7 +230,7 @@ public class ConstraintEnforceAttacher {
                     continue;
                 }
                 // Enforce uniqueness between the already existing values and the new values
-                final AlgNode scan = LogicalRelScan.create( root.getCluster(), root.getTable() );
+                final AlgNode scan = LogicalRelScan.create( root.getCluster(), root.getEntity() );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 //
                 // TODO: Here we get issues with batch queries

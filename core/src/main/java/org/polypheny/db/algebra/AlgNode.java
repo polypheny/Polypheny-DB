@@ -259,7 +259,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      *
      * @return If this relational expression represents an access to a table, returns that table, otherwise returns null
      */
-    AlgOptEntity getTable();
+    AlgOptEntity getEntity();
 
     /**
      * Returns the name of this relational expression's class, sans package name, for use in explain. For example, for a

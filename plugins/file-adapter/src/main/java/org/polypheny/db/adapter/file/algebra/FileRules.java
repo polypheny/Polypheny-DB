@@ -90,7 +90,7 @@ public class FileRules {
         @Override
         public boolean matches( AlgOptRuleCall call ) {
             final Modify modify = call.alg( 0 );
-            if ( modify.getTable().unwrap( FileTranslatableEntity.class ) == null ) {
+            if ( modify.getEntity().unwrap( FileTranslatableEntity.class ) == null ) {
                 // todo insert from select is not correctly implemented
                 return false;
             }
@@ -99,7 +99,7 @@ public class FileRules {
                 return false;
             }
 
-            FileTranslatableEntity table = modify.getTable().unwrap( FileTranslatableEntity.class );
+            FileTranslatableEntity table = modify.getEntity().unwrap( FileTranslatableEntity.class );
             convention.setModification( true );
             return true;
         }
@@ -108,7 +108,7 @@ public class FileRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Modify modify = (Modify) alg;
-            final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
+            final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
 
             if ( modifiableTable == null ) {
                 log.warn( "Returning null during conversion" );
@@ -118,7 +118,7 @@ public class FileRules {
             return new FileTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getTable(),
+                    modify.getEntity(),
                     modify.getCatalogReader(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),

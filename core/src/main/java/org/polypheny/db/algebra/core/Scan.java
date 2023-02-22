@@ -92,7 +92,7 @@ public abstract class Scan extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptEntity getTable() {
+    public AlgOptEntity getEntity() {
         return table;
     }
 

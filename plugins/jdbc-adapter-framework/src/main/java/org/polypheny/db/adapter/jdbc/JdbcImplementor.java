@@ -35,11 +35,12 @@ package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
-import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -81,20 +82,13 @@ public class JdbcImplementor extends AlgToSqlConverter {
 
 
     @Override
-    public SqlIdentifier getPhysicalColumnName( List<String> tableNames, String columnName ) {
-        if ( tableNames.size() == 1 ) {
-            // only column name
-            return schema.getTableMap().get( tableNames.get( 0 ) ).physicalColumnName( columnName );
-        } else if ( tableNames.size() == 2 ) {
-            // table name and column name
-            JdbcEntity table = schema.getTableMap().get( tableNames.get( 1 ) );
-            if ( table.hasPhysicalColumnName( columnName ) ) {
-                return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
-            } else {
-                return new SqlIdentifier( "_" + columnName, ParserPos.ZERO );
-            }
+    public SqlIdentifier getPhysicalColumnName( CatalogPartitionPlacement placement, String columnName ) {
+        CatalogTable catalogTable = Catalog.getInstance().getTable( placement.tableId );
+        JdbcEntity table = schema.getTableMap().get( catalogTable.name + "_" + placement.partitionId );
+        if ( table.hasPhysicalColumnName( columnName ) ) {
+            return table.physicalColumnName( columnName );
         } else {
-            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
+            return new SqlIdentifier( "_" + columnName, ParserPos.ZERO );
         }
     }
 

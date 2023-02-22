@@ -380,7 +380,7 @@ public abstract class MutableAlgs {
             return MutableTableModify.of(
                     modify.getRowType(),
                     input,
-                    modify.getTable(),
+                    modify.getEntity(),
                     modify.getCatalogReader(),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),

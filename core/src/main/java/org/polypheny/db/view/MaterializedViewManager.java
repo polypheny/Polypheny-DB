@@ -91,8 +91,8 @@ public abstract class MaterializedViewManager {
         @Override
         public AlgNode visit( LogicalModify modify ) {
             if ( modify.getOperation() != Operation.MERGE ) {
-                if ( (modify.getTable().getCatalogEntity() != null) ) {
-                    CatalogTable table = modify.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+                if ( (modify.getEntity().getCatalogEntity() != null) ) {
+                    CatalogTable table = modify.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
                     names.add( table.getNamespaceName() );
                     names.add( table.name );
                 }

@@ -110,13 +110,13 @@ public abstract class ProjectScanRule extends AlgOptRule {
 
     protected static boolean test( Scan scan ) {
         // We can only push projects into a ProjectableFilterableTable.
-        final AlgOptEntity table = scan.getTable();
+        final AlgOptEntity table = scan.getEntity();
         return table.unwrap( ProjectableFilterableEntity.class ) != null;
     }
 
 
     protected void apply( AlgOptRuleCall call, Project project, Scan scan ) {
-        final AlgOptEntity table = scan.getTable();
+        final AlgOptEntity table = scan.getEntity();
         assert table.unwrap( ProjectableFilterableEntity.class ) != null;
 
         final TargetMapping mapping = project.getMapping();
@@ -136,7 +136,7 @@ public abstract class ProjectScanRule extends AlgOptRule {
         }
 
         final List<Integer> projects2 = Mappings.apply( (Mapping) mapping, projects );
-        call.transformTo( BindableScan.create( scan.getCluster(), scan.getTable(), filters, projects2 ) );
+        call.transformTo( BindableScan.create( scan.getCluster(), scan.getEntity(), filters, projects2 ) );
     }
 
 }

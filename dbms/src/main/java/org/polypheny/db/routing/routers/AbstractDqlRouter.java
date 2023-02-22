@@ -212,8 +212,8 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), null ) );
         }
 
-        if ( node instanceof LogicalRelScan && node.getTable() != null ) {
-            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getTable();
+        if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
+            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getEntity();
 
             if ( table == null ) {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );

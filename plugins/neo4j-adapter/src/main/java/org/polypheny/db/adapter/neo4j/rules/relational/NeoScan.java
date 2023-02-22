@@ -51,7 +51,7 @@ public class NeoScan extends Scan implements NeoRelAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-        if ( implementor.getTable() != null && !Objects.equals( table.getTable().getId(), implementor.getTable().getTable().getId() ) ) {
+        if ( implementor.getTable() != null && !Objects.equals( table.getEntity().getId(), implementor.getTable().getEntity().getId() ) ) {
             handleInsertFromOther( implementor );
             return;
         }
@@ -73,13 +73,13 @@ public class NeoScan extends Scan implements NeoRelAlg {
 
 
     private void handleInsertFromOther( NeoRelationalImplementor implementor ) {
-        implementor.selectFromTable = (NeoEntity) table.getTable();
+        implementor.selectFromTable = (NeoEntity) table.getEntity();
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new NeoScan( getCluster(), traitSet, getTable(), neoEntity );
+        return new NeoScan( getCluster(), traitSet, this.getEntity(), neoEntity );
     }
 
 }

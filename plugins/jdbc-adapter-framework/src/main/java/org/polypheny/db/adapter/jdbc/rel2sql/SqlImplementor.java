@@ -194,13 +194,13 @@ public abstract class SqlImplementor {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = result.asSelect( ((JdbcEntity) ((AlgOptEntityImpl) input.getValue().getTable()).getEntity()).getNodeList() );
+                    node = result.asSelect( ((JdbcEntity) ((AlgOptEntityImpl) input.getValue().getEntity()).getEntity()).getNodeList() );
                 } else {
                     node = result.asSelect();
                 }
             } else {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( ((JdbcEntity) ((AlgOptEntityImpl) input.getValue().getTable()).getEntity()).getNodeList() ) );
+                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( ((JdbcEntity) ((AlgOptEntityImpl) input.getValue().getEntity()).getEntity()).getNodeList() ) );
                 } else {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
                 }
@@ -1176,7 +1176,7 @@ public abstract class SqlImplementor {
                 select = subSelect();
             } else {
                 if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ) instanceof JdbcScan ) {
-                    select = asSelect( ((JdbcEntity) ((AlgOptEntityImpl) alg.getInput( 0 ).getTable()).getEntity()).getNodeList() );
+                    select = asSelect( ((JdbcEntity) ((AlgOptEntityImpl) alg.getInput( 0 ).getEntity()).getEntity()).getNodeList() );
                 } else {
                     select = asSelect();
                 }

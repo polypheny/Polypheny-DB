@@ -261,7 +261,7 @@ public class LanguageCrud {
 
         header.add( new FieldDef() );
 
-        return new Result( header.toArray( new FieldDef[0] ), data.toArray( new String[0][] ) )
+        return new Result( header.toArray( new FieldDef[0] ), data.stream().map( d -> d.stream().map( Object::toString ).toArray( String[]::new ) ).toArray( String[][]::new ) )
                 .setNamespaceType( implementation.getNamespaceType() )
                 .setNamespaceName( request.database )
                 .setLanguage( QueryLanguage.from( "mql" ) )

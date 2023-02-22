@@ -81,7 +81,7 @@ public interface NeoRules {
             return new NeoModify(
                     modify.getCluster(),
                     modify.getTraitSet().replace( NeoConvention.INSTANCE ),
-                    modify.getTable(),
+                    modify.getEntity(),
                     modify.getCatalogReader(),
                     convert( modify.getInput(), NeoConvention.INSTANCE ),
                     modify.getOperation(),

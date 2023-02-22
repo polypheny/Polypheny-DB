@@ -914,11 +914,11 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Modify modify = (Modify) alg;
-            final ModifiableEntity modifiableTable = modify.getTable().unwrap( ModifiableEntity.class );
+            final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
             }
-            if ( modify.getTable().unwrap( MongoEntity.class ) == null ) {
+            if ( modify.getEntity().unwrap( MongoEntity.class ) == null ) {
                 return null;
             }
 
@@ -926,7 +926,7 @@ public class MongoRules {
             return new MongoEntityModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getTable(),
+                    modify.getEntity(),
                     modify.getCatalogReader(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
@@ -1008,7 +1008,7 @@ public class MongoRules {
             return new MongoEntityModify(
                     getCluster(),
                     traitSet,
-                    getTable(),
+                    getEntity(),
                     getCatalogReader(),
                     AbstractAlgNode.sole( inputs ),
                     getOperation(),
@@ -1021,7 +1021,7 @@ public class MongoRules {
         @Override
         public void implement( Implementor implementor ) {
             implementor.setDML( true );
-            Entity preEntity = table.getTable();
+            Entity preEntity = table.getEntity();
             this.implementor = implementor;
 
             if ( !(preEntity instanceof MongoEntity) ) {
@@ -1302,10 +1302,10 @@ public class MongoRules {
             }
 
             BsonDocument doc = new BsonDocument();
-            CatalogTable catalogTable = implementor.mongoEntity.getCatalogTable();
+            CatalogTable catalogTable = implementor.mongoEntity.getCatalogEntity().unwrap( CatalogTable.class );
             GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
             //noinspection AssertWithSideEffects
-            assert input.getRowType().getFieldCount() == this.getTable().getRowType().getFieldCount();
+            assert input.getRowType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
             Map<Integer, String> physicalMapping;
             if ( input.getInput() instanceof MongoValues ) {
                 physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
@@ -1326,7 +1326,7 @@ public class MongoRules {
                     doc.append( getPhysicalName( input, catalogTable, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
                 } else if ( rexNode instanceof RexCall ) {
                     PolyType type = table
-                            .getTable()
+                            .getEntity()
                             .getRowType( getCluster().getTypeFactory() )
                             .getFieldList()
                             .get( pos )
@@ -1395,7 +1395,7 @@ public class MongoRules {
 
         private void handleDirectInsert( Implementor implementor, MongoValues values ) {
             List<BsonDocument> docs = new ArrayList<>();
-            CatalogTable catalogTable = implementor.mongoEntity.getCatalogTable();
+            CatalogTable catalogTable = implementor.mongoEntity.getCatalogEntity().unwrap( CatalogTable.class );
             GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
 
             AlgDataType valRowType = rowType;

@@ -20,9 +20,9 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -47,7 +47,7 @@ public class ScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalRelScan oldAlg = call.alg( 0 );
-        AlgNode newAlg = oldAlg.getTable().toAlg( oldAlg::getCluster, oldAlg.getTraitSet() );
+        AlgNode newAlg = oldAlg.getEntity().toAlg( oldAlg::getCluster, oldAlg.getTraitSet() );
         call.transformTo( newAlg );
     }
 

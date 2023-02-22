@@ -59,6 +59,12 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
 
     @Override
+    public AlgOptEntity getEntity() {
+        return collection;
+    }
+
+
+    @Override
     public AlgDataType deriveRowType() {
         return AlgOptUtil.createDmlRowType( Kind.INSERT, getCluster().getTypeFactory() );
     }

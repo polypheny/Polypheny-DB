@@ -2134,10 +2134,10 @@ public class DdlManagerImpl extends DdlManager {
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
         if ( algNode instanceof LogicalRelScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( algNode.getTable().getCatalogEntity().id, underlyingColumns );
+            underlyingTables.put( algNode.getEntity().getCatalogEntity().id, underlyingColumns );
         } else if ( algNode instanceof LogicalRelViewScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( algNode.getTable().getCatalogEntity().id, underlyingColumns );
+            underlyingTables.put( algNode.getEntity().getCatalogEntity().id, underlyingColumns );
         }
         if ( algNode instanceof BiAlg ) {
             findUnderlyingTablesOfView( ((BiAlg) algNode).getLeft(), underlyingTables, fieldList );
@@ -2150,7 +2150,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
-        CatalogTable table = algNode.getTable().getCatalogEntity().unwrap( CatalogTable.class );
+        CatalogTable table = algNode.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
         List<Long> columnIds = table.fieldIds;
         List<String> logicalColumnNames = table.getColumnNames();
         List<Long> underlyingColumns = new ArrayList<>();

@@ -269,7 +269,7 @@ public class StreamRules {
             final Delta delta = call.alg( 0 );
             final Scan scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
-            final AlgOptEntity algOptEntity = scan.getTable();
+            final AlgOptEntity algOptEntity = scan.getEntity();
             final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
             if ( streamableTable != null ) {
                 final Entity entity1 = streamableTable.stream();
@@ -310,7 +310,7 @@ public class StreamRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
             final Scan scan = call.alg( 1 );
-            final AlgOptEntity algOptEntity = scan.getTable();
+            final AlgOptEntity algOptEntity = scan.getEntity();
             final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
             final AlgBuilder builder = call.builder();
             if ( streamableTable == null ) {

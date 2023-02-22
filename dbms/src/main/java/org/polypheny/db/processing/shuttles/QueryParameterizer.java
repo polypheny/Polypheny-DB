@@ -291,7 +291,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         return new LogicalModify(
                 modify.getCluster(),
                 modify.getTraitSet(),
-                modify.getTable(),
+                modify.getEntity(),
                 modify.getCatalogReader(),
                 input,
                 modify.getOperation(),
@@ -360,7 +360,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         return new LogicalModify(
                 modify.getCluster(),
                 modify.getTraitSet(),
-                modify.getTable(),
+                modify.getEntity(),
                 modify.getCatalogReader(),
                 input,
                 modify.getOperation(),

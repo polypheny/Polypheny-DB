@@ -131,7 +131,7 @@ public interface AlgOptEntity extends Wrapper {
     List<ColumnStrategy> getColumnStrategies();
 
     @Deprecated
-    default Entity getTable() {
+    default Entity getEntity() {
         return null;
     }
 

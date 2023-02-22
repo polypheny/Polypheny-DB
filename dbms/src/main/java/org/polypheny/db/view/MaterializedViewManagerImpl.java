@@ -184,7 +184,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                     updateCandidates.put( transaction.getXid(), id );
                 }
             } catch ( UnknownTableException e ) {
-                throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
+                throw new RuntimeException( "Not possible to getEntity to update which Tables were changed.", e );
             }
         }
     }

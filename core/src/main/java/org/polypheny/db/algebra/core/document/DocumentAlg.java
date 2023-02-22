@@ -29,7 +29,7 @@ public interface DocumentAlg {
 
     default AlgOptEntity getCollection() {
         assert this instanceof AlgNode;
-        return ((AlgNode) this).getTable();
+        return ((AlgNode) this).getEntity();
     }
 
     enum DocType {

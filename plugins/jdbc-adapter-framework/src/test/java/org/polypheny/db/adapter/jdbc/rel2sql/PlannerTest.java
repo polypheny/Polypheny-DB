@@ -170,7 +170,7 @@ public class PlannerTest extends SqlLanguageDependent {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final EnumerableScan scan = (EnumerableScan) alg;
-            return new PlannerTest.MockJdbcScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
+            return new PlannerTest.MockJdbcScan( scan.getCluster(), scan.getEntity(), (JdbcConvention) getOutConvention() );
         }
 
     }

@@ -54,8 +54,8 @@ public class NeoModify extends Modify implements NeoRelAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-        assert getTable() != null;
-        implementor.setTable( getTable() );
+        assert getEntity() != null;
+        implementor.setTable( getEntity() );
         implementor.setDml( true );
 
         implementor.visitChild( 0, getInput() );

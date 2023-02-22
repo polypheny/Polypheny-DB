@@ -449,7 +449,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
-        if ( !(scan.getTable() instanceof LogicalCollection) ) {
+        if ( !(scan.getEntity() instanceof LogicalCollection) ) {
             alg = scan.getCollection().toAlg( toAlgContext, scan.traitSet );
         }
         setNewForOldRel( scan, alg );
@@ -529,7 +529,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void rewriteAlg( LogicalModify alg ) {
         LogicalModify newAlg =
                 LogicalModify.create(
-                        alg.getTable(),
+                        alg.getEntity(),
                         alg.getCatalogReader(),
                         getNewForOldRel( alg.getInput() ),
                         alg.getOperation(),
@@ -864,7 +864,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( Scan alg ) {
-        AlgNode newAlg = alg.getTable().toAlg( toAlgContext, alg.traitSet );
+        AlgNode newAlg = alg.getEntity().toAlg( toAlgContext, alg.traitSet );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(

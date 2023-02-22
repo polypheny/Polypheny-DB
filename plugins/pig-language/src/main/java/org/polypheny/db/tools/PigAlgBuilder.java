@@ -204,7 +204,7 @@ public class PigAlgBuilder extends AlgBuilder {
         } else {
             AlgNode top = peek();
             if ( top instanceof Scan ) {
-                return top.getTable().getCatalogEntity().name;
+                return top.getEntity().getCatalogEntity().name;
             } else {
                 return null;
             }

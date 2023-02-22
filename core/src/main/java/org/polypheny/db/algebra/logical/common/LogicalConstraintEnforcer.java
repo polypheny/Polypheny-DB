@@ -131,7 +131,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.scan( table.getSchemaName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
-                final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getTable() );
+                final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
                 builder.push( scan );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexInputRef> keys = constraint.key
@@ -258,7 +258,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.scan( table.getSchemaName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
-                builder.scan( table.getNamespaceName(), table.name );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
+                builder.scan( table.getNamespaceName(), table.name );//LogicalTableScan.create( modify.getCluster(), modify.getEntity() );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexInputRef> keys = constraint.key
                         .getColumnNames()
@@ -399,11 +399,11 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
 
     public static CatalogTable getCatalogTable( Modify modify ) {
-        if ( modify.getTable() == null ) {
+        if ( modify.getEntity() == null ) {
             throw new RuntimeException( "The table was not found in the catalog!" );
         }
 
-        return (CatalogTable) modify.getTable().getCatalogEntity();
+        return (CatalogTable) modify.getEntity().getCatalogEntity();
     }
 
 

@@ -91,7 +91,7 @@ public class ScanNode implements Node {
      * Tries various table SPIs, and negotiates with the table which filters and projects it can implement. Adds to the Enumerable implementations of any filters and projects that cannot be implemented by the table.
      */
     static ScanNode create( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
-        final AlgOptEntity algOptEntity = alg.getTable();
+        final AlgOptEntity algOptEntity = alg.getEntity();
         final ProjectableFilterableEntity pfTable = algOptEntity.unwrap( ProjectableFilterableEntity.class );
         if ( pfTable != null ) {
             return createProjectableFilterable( compiler, alg, filters, projects, pfTable );
@@ -125,7 +125,7 @@ public class ScanNode implements Node {
 
     private static ScanNode createQueryable( Compiler compiler, Scan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableEntity queryableTable ) {
         final DataContext root = compiler.getDataContext();
-        final AlgOptEntity algOptEntity = alg.getTable();
+        final AlgOptEntity algOptEntity = alg.getEntity();
         final Type elementType = queryableTable.getElementType();
 
         final Enumerable<Row> rowEnumerable;
@@ -179,7 +179,7 @@ public class ScanNode implements Node {
         for ( ; ; ) {
             final List<RexNode> mutableFilters = Lists.newArrayList( filters );
             final int[] projectInts;
-            if ( projects == null || projects.equals( Scan.identity( alg.getTable() ) ) ) {
+            if ( projects == null || projects.equals( Scan.identity( alg.getEntity() ) ) ) {
                 projectInts = null;
             } else {
                 projectInts = projects.toIntArray();
@@ -228,10 +228,10 @@ public class ScanNode implements Node {
                 filter2 = filter;
                 inputRowType = alg.getRowType();
             } else {
-                final Mapping mapping = Mappings.target( acceptedProjects, alg.getTable().getRowType().getFieldCount() );
+                final Mapping mapping = Mappings.target( acceptedProjects, alg.getEntity().getRowType().getFieldCount() );
                 filter2 = RexUtil.apply( mapping, filter );
                 final AlgDataTypeFactory.Builder builder = alg.getCluster().getTypeFactory().builder();
-                final List<AlgDataTypeField> fieldList = alg.getTable().getRowType().getFieldList();
+                final List<AlgDataTypeField> fieldList = alg.getEntity().getRowType().getFieldList();
                 for ( int acceptedProject : acceptedProjects ) {
                     builder.add( fieldList.get( acceptedProject ) );
                 }

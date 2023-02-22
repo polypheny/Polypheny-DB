@@ -61,8 +61,8 @@ public class CachedPlanRouter extends BaseRouter {
             return super.handleDocumentScan( (DocumentScan) node, statement, builder, null );
         }
 
-        if ( node instanceof LogicalRelScan && node.getTable() != null ) {
-            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getTable();
+        if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
+            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getEntity();
             CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
 
             List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;

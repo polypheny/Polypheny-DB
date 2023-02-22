@@ -21,10 +21,12 @@ import static org.reflections.Reflections.log;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
@@ -60,7 +62,7 @@ public class PolyImplementation {
     public final AlgDataType rowType;
     private final long maxRowCount = -1;
     private final Kind kind;
-    private Bindable<Object> bindable;
+    private Bindable bindable;
     private final NamespaceType namespaceType;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
@@ -367,18 +369,25 @@ public class PolyImplementation {
 
 
     public List<List<Object>> getDocRows( Statement statement, boolean noLimit ) {
-        bindable = null;
-        if ( !Kind.DDL.contains( kind ) ) {
+        cursorFactory = CursorFactory.OBJECT;
+        Function<Object, List<Object>> transformer;
+        if ( cursorFactory == CursorFactory.ARRAY ) {
             bindable = preparedResult.getBindable( CursorFactory.ARRAY );
+            transformer = o -> Arrays.asList( (Object[]) o );
+        } else if ( cursorFactory == CursorFactory.OBJECT || Kind.DML.contains( kind ) ) {
+            bindable = preparedResult.getBindable( CursorFactory.OBJECT );
+            transformer = Collections::singletonList;
+        } else {
+            throw new RuntimeException( "Error for result format" );
         }
 
-        Iterator iterator = createIterator( getBindable(), statement, true );
+        Iterator iterator = createIterator( bindable, statement, true );
 
         final Iterable<Object> iterable = () -> iterator;
 
         return StreamSupport
                 .stream( iterable.spliterator(), false )
-                .map( d -> Arrays.asList( (Object[]) d ) )
+                .map( transformer )
                 .collect( Collectors.toList() );
 
     }

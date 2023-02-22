@@ -73,7 +73,7 @@ public class MutableScan extends MutableLeafAlg {
 
     @Override
     public StringBuilder digest( StringBuilder buf ) {
-        return buf.append( "Scan(table: " ).append( alg.getTable().getCatalogEntity().name ).append( ")" );
+        return buf.append( "Scan(table: " ).append( alg.getEntity().getCatalogEntity().name ).append( ")" );
     }
 
 
