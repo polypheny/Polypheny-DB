@@ -201,7 +201,7 @@ public class DataContextImpl implements DataContext {
 
     @Override
     public SchemaPlus getRootSchema() {
-        return rootSchema == null ? null : rootSchema.plus();
+        return rootSchema == null ? null : rootSchema;
     }
 
 

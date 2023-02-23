@@ -46,7 +46,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -76,7 +76,7 @@ public class PlannerImpl implements Planner {
     private boolean open;
 
     // set in STATE_2_READY
-    private SchemaPlus defaultSchema;
+    private PolyphenyDbSchema defaultSchema;
     private JavaTypeFactory typeFactory;
     private AlgOptPlanner planner;
     private RexExecutor executor;

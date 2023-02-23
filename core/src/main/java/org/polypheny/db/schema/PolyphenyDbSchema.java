@@ -17,6 +17,7 @@
 package org.polypheny.db.schema;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
@@ -64,7 +65,17 @@ public interface PolyphenyDbSchema {
         }
     }
 
-    CatalogGraphDatabase getGraph( List<String> names );
+    default CatalogGraphDatabase getGraph( List<String> names ) {
+
+        if ( names.size() == 1 ) {// TODO add methods
+            return Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );
+        }
+        return null;
+    }
+
+    default List<String> getNamespaceNames() {
+        return Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, null ).stream().map( t -> t.name ).collect( Collectors.toList() );
+    }
 
     /**
      * Schema that has no parents.

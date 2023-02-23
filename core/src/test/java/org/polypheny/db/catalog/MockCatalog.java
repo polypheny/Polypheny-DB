@@ -1369,7 +1369,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
+    public void updateCollectionPartitionPhysicalNames( long namespaceId, long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
         throw new NotImplementedException();
     }
 

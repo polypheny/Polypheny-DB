@@ -19,9 +19,7 @@ package org.polypheny.db.util;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.base.Utf8;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -36,11 +34,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema.TableEntry;
-import org.polypheny.db.schema.PolyphenyDbSchema.TypeEntry;
 import org.polypheny.db.type.PolyTypeUtil;
 
 public class ValidatorUtil {
@@ -257,66 +251,6 @@ public class ValidatorUtil {
 
 
     /**
-     * Finds a {@link TypeEntry} in a given schema whose type has the given name, possibly qualified.
-     *
-     * @param rootSchema root schema
-     * @param typeName name of the type, may be qualified or fully-qualified
-     * @return TypeEntry with a table with the given name, or null
-     */
-    public static TypeEntry getTypeEntry( PolyphenyDbSchema rootSchema, Identifier typeName ) {
-        final String name;
-        final List<String> path;
-        if ( typeName.isSimple() ) {
-            path = ImmutableList.of();
-            name = typeName.getSimple();
-        } else {
-            path = Util.skipLast( typeName.getNames() );
-            name = Util.last( typeName.getNames() );
-        }
-        PolyphenyDbSchema schema = rootSchema;
-        for ( String p : path ) {
-            if ( schema == rootSchema && NameMatchers.withCaseSensitive( true ).matches( p, schema.getName() ) ) {
-                continue;
-            }
-            schema = schema.getSubNamespace( p, true );
-        }
-        return schema == null ? null : schema.getType( name, false );
-    }
-
-
-    /**
-     * Finds a {@link TableEntry} in a given catalog reader whose table has the given name, possibly qualified.
-     *
-     * Uses the case-sensitivity policy of the specified catalog reader.
-     *
-     * If not found, returns null.
-     *
-     * @param catalogReader accessor to the table metadata
-     * @param names Name of table, may be qualified or fully-qualified
-     * @return TableEntry with a table with the given name, or null
-     */
-    public static TableEntry getTableEntry( CatalogReader catalogReader, List<String> names ) {
-        // First look in the default schema, if any.
-        // If not found, look in the root schema.
-        for ( List<String> schemaPath : catalogReader.getSchemaPaths() ) {
-            PolyphenyDbSchema schema =
-                    getSchema(
-                            catalogReader.getRootSchema(),
-                            Iterables.concat( schemaPath, Util.skipLast( names ) ),
-                            catalogReader.nameMatcher );
-            if ( schema == null ) {
-                continue;
-            }
-            TableEntry entry = getTableEntryFrom( schema, Util.last( names ), catalogReader.nameMatcher.isCaseSensitive() );
-            if ( entry != null ) {
-                return entry;
-            }
-        }
-        return null;
-    }
-
-
-    /**
      * Finds and returns {@link PolyphenyDbSchema} nested to the given rootSchema with specified schemaPath.
      *
      * Uses the case-sensitivity policy of specified nameMatcher.
@@ -329,26 +263,8 @@ public class ValidatorUtil {
      * @return PolyphenyDbSchema that corresponds specified schemaPath
      */
     public static PolyphenyDbSchema getSchema( PolyphenyDbSchema rootSchema, Iterable<String> schemaPath, NameMatcher nameMatcher ) {
-        PolyphenyDbSchema schema = rootSchema;
-        for ( String schemaName : schemaPath ) {
-            if ( schema == rootSchema && nameMatcher.matches( schemaName, schema.getName() ) ) {
-                continue;
-            }
-            schema = schema.getSubNamespace( schemaName, nameMatcher.isCaseSensitive() );
-            if ( schema == null ) {
-                return null;
-            }
-        }
-        return schema;
-    }
 
-
-    private static TableEntry getTableEntryFrom( PolyphenyDbSchema schema, String name, boolean caseSensitive ) {
-        TableEntry entry = schema.getTable( name );
-        if ( entry == null ) {
-            entry = schema.getTableBasedOnNullaryFunction( name, caseSensitive );
-        }
-        return entry;
+        return rootSchema;
     }
 
 

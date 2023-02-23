@@ -44,7 +44,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**
@@ -68,7 +68,7 @@ public interface FrameworkConfig {
      * Returns the default schema that should be checked before looking at the root schema.
      * Returns null to only consult the root schema.
      */
-    SchemaPlus getDefaultSchema();
+    PolyphenyDbSchema getDefaultSchema();
 
     /**
      * Returns the executor used to evaluate constant expressions.

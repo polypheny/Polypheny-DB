@@ -455,13 +455,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
         final PolyphenyDbSchema schema =
                 action.getConfig().getDefaultSchema() != null
-                        ? PolyphenyDbSchema.from( action.getConfig().getDefaultSchema() )
+                        ? action.getConfig().getDefaultSchema()
                         : prepareContext.getRootSchema();
-        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema.root(), schema.path( null ), typeFactory );
+        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema, typeFactory );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final AlgOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
         final AlgOptCluster cluster = createCluster( planner, rexBuilder );
-        return action.apply( cluster, catalogReader, prepareContext.getRootSchema().plus() );
+        return action.apply( cluster, catalogReader, prepareContext.getRootSchema() );
     }
 
 

@@ -65,7 +65,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
@@ -107,14 +106,9 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
             final AbstractTableQueryable tableQueryable = (AbstractTableQueryable) queryable;
             final QueryableEntity table = tableQueryable.table;
 
-            final PolyphenyDbSchema.TableEntry tableEntry =
-                    PolyphenyDbSchema
-                            .from( tableQueryable.schema )
-                            .add( tableQueryable.tableName, tableQueryable.table );
             final AlgOptEntityImpl algOptTable = AlgOptEntityImpl.create(
                     null,
                     table.getRowType( translator.typeFactory ),
-                    tableEntry,
                     table.getCatalogEntity(),
                     table.getPartitionPlacement(),
                     null );

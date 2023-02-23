@@ -17,11 +17,7 @@
 package org.polypheny.db.sql.language.validate;
 
 
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.MonikerType;
@@ -30,7 +26,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
@@ -44,10 +39,7 @@ import org.polypheny.db.sql.language.SqlWindow;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Static;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -95,7 +87,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
      */
     void resolveInNamespace( SqlValidatorNamespace ns, boolean nullable, List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.isEmpty() ) {
-            resolved.found( ns, nullable, this, path, null );
+            resolved.found( null );
             return;
         }
         final AlgDataType rowType = ns.getRowType();
@@ -229,7 +221,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         if ( identifier.isStar() ) {
             return SqlQualified.create( this, 1, null, identifier );
         }
-
+        /*
         final SqlIdentifier previous = identifier;
         final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
         String columnName;
@@ -253,7 +245,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                                 Collections.sort( list );
                                 throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFoundDidYouMean( columnName, Util.sepList( list, "', '" ) ) );
                             }
-                        } else if ( SqlValidatorUtil.isTableNonRelational( validator ) ) {
+                        } else if ( !SqlValidatorUtil.isTableRelational( validator ) ) {
                             // todo dl, check if this does not lead to problems
                             return SqlQualified.create( this, 0, validator.getSqlNamespace( identifier ), identifier );
                         }
@@ -287,7 +279,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             }
             // fall through
             default: {
-                SqlValidatorNamespace fromNs = null;
+                CatalogEntity fromNs = null;
                 Path fromPath = null;
                 AlgDataType fromRowType = null;
                 final ResolvedImpl resolved = new ResolvedImpl();
@@ -299,8 +291,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     resolve( prefix.names, nameMatcher, false, resolved );
                     if ( resolved.count() == 1 ) {
                         final Resolve resolve = resolved.only();
-                        fromNs = resolve.namespace;
-                        fromPath = resolve.path;
+                        fromNs = resolve.getEntity().unwrap( CatalogTable.class );
                         fromRowType = resolve.rowType();
                         break;
                     }
@@ -317,7 +308,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         }
                     }
                 }
-                if ( fromNs == null || fromNs instanceof SchemaNamespace ) {
+                if ( fromNs == null ) {
                     // Look for a column not qualified by a table alias.
                     columnName = identifier.names.get( 0 );
                     final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
@@ -328,7 +319,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         case 1: {
                             final Map.Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
                             final String tableName2 = map.keySet().iterator().next();
-                            fromNs = entry.getValue().namespace;
+
                             fromPath = Path.EMPTY;
 
                             // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
@@ -343,8 +334,6 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                                         resolve( ImmutableList.of( tableName2 ), nameMatcher, false, resolved );
                                         if ( resolved.count() == 1 ) {
                                             final Resolve resolve = resolved.only();
-                                            fromNs = resolve.namespace;
-                                            fromPath = resolve.path;
                                             fromRowType = resolve.rowType();
                                             identifier = identifier
                                                     .setName( 0, columnName )
@@ -370,7 +359,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 //
                 // change "e.empno" to "E.empno".
                 if ( fromNs.getEnclosingNode() != null && !(this instanceof MatchRecognizeScope) ) {
-                    String alias = SqlValidatorUtil.getAlias( fromNs.getEnclosingNode(), -1 );
+
                     if ( alias != null && i > 0 && !alias.equals( identifier.names.get( i - 1 ) ) ) {
                         identifier = identifier.setName( i - 1, alias );
                     }
@@ -492,7 +481,8 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 }
                 return SqlQualified.create( this, i, fromNs, identifier );
             }
-        }
+        }*/
+        throw new RuntimeException();
     }
 
 

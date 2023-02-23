@@ -67,13 +67,6 @@ public interface ValidatorCatalogReader extends Wrapper {
      */
     List<Moniker> getAllSchemaObjectNames( List<String> names );
 
-    /**
-     * Returns the paths of all schemas to look in for tables.
-     *
-     * @return paths of current schema and root schema
-     */
-    List<List<String>> getSchemaPaths();
-
     AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList );
 
     /**

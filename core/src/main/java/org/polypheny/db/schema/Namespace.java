@@ -37,7 +37,6 @@ package org.polypheny.db.schema;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 
 
@@ -49,7 +48,6 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
  *
  * There may be multiple overloaded functions with the same name but different numbers or types of parameters. For this reason,
  * {@link #getFunctions} returns a list of all members with the same name. Polypheny-DB will call
- * {@link Schemas#resolve(AlgDataTypeFactory, String, java.util.Collection, java.util.List)}
  * to choose the appropriate one.
  *
  * The most common and important type of member is the one with no arguments and a result type that is a collection of records.

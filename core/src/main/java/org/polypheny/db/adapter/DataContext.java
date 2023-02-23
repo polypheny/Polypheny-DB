@@ -32,7 +32,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Advisor;
 
@@ -49,7 +49,7 @@ public interface DataContext {
     /**
      * Returns a sub-schema with a given name, or null.
      */
-    SchemaPlus getRootSchema();
+    PolyphenyDbSchema getRootSchema();
 
     /**
      * Returns the type factory.
@@ -209,7 +209,7 @@ public interface DataContext {
     class SlimDataContext implements DataContext, Serializable {
 
         @Override
-        public SchemaPlus getRootSchema() {
+        public PolyphenyDbSchema getRootSchema() {
             return null;
         }
 

@@ -36,8 +36,6 @@ package org.polypheny.db.prepare;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.MonikerType;
@@ -47,13 +45,14 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.ValidatorUtil;
@@ -67,12 +66,10 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     protected final PolyphenyDbSchema rootSchema;
     protected final AlgDataTypeFactory typeFactory;
-    private final List<List<String>> schemaPaths;
 
 
-    public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, AlgDataTypeFactory typeFactory ) {
+    public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, AlgDataTypeFactory typeFactory ) {
         this.rootSchema = Objects.requireNonNull( rootSchema );
-        this.schemaPaths = ImmutableList.of( Objects.requireNonNull( defaultSchema ), ImmutableList.of() );
         this.typeFactory = typeFactory;
     }
 
@@ -98,17 +95,16 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public Graph getGraph( final String name ) {
-        PolyphenyDbSchema schema = rootSchema.getSubNamespace( name, true );
-        return schema == null ? null : (Graph) schema.getNamespace();
+    public CatalogGraphDatabase getGraph( final String name ) {
+        return rootSchema.getGraph( List.of( name ) );
     }
 
 
     @Override
     public AlgDataType getNamedType( Identifier typeName ) {
-        PolyphenyDbSchema.TypeEntry typeEntry = ValidatorUtil.getTypeEntry( getRootSchema(), typeName );
-        if ( typeEntry != null ) {
-            return typeEntry.getType().apply( typeFactory );
+        CatalogTable table = rootSchema.getTable( typeName.getNames() );
+        if ( table != null ) {
+            return table.getRowType();
         } else {
             return null;
         }
@@ -123,41 +119,20 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         }
         final List<Moniker> result = new ArrayList<>();
 
-        // Add root schema if not anonymous
-        /*if ( !schema.getName().equals( "" ) ) {
-            result.add( moniker( schema, null, MonikerType.SCHEMA ) );
-        }*/
-
-        final Map<String, PolyphenyDbSchema> schemaMap = schema.getSubSchemaMap();
-
-        for ( String subSchema : schemaMap.keySet() ) {
+        for ( String subSchema : rootSchema.getNamespaceNames() ) {
             result.add( moniker( schema, subSchema, MonikerType.SCHEMA ) );
         }
 
-        for ( String table : schema.getTableNames() ) {
-            result.add( moniker( schema, table, MonikerType.TABLE ) );
-        }
-
-        final NavigableSet<String> functions = schema.getFunctionNames();
-        for ( String function : functions ) { // views are here as well
-            result.add( moniker( schema, function, MonikerType.FUNCTION ) );
-        }
         return result;
     }
 
 
     private Moniker moniker( PolyphenyDbSchema schema, String name, MonikerType type ) {
-        final List<String> path = schema.path( name );
+        /*final List<String> path = schema.path( name );
         if ( path.size() == 1 && !schema.root().getName().equals( "" ) && type == MonikerType.SCHEMA ) {
             type = MonikerType.CATALOG;
-        }
-        return new MonikerImpl( path, type );
-    }
-
-
-    @Override
-    public List<List<String>> getSchemaPaths() {
-        return schemaPaths;
+        }*/
+        return new MonikerImpl( name, type );
     }
 
 

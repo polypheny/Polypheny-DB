@@ -211,7 +211,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
                 extendedEntity,
                 null,
                 null,
-                expressionFunction,
                 getRowCount() );
     }
 
@@ -271,7 +270,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
                 }
             }
             final AlgOptEntity algOptEntity =
-                    new AlgOptEntityImpl( this.schema, b.build(), this.entity, this.catalogEntity, this.partitionPlacement, this.expressionFunction, this.rowCount ) {
+                    new AlgOptEntityImpl( this.schema, b.build(), this.entity, this.catalogEntity, this.partitionPlacement, this.rowCount ) {
                         @Override
                         public <T> T unwrap( Class<T> clazz ) {
                             if ( clazz.isAssignableFrom( InitializerExpressionFactory.class ) ) {

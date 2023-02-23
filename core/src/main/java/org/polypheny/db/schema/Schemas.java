@@ -33,7 +33,6 @@
 
 package org.polypheny.db.schema;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -41,11 +40,8 @@ import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
@@ -58,14 +54,13 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepare;
-import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
-import org.polypheny.db.schema.graph.QueryableGraph;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
@@ -79,24 +74,6 @@ public final class Schemas {
 
     private Schemas() {
         throw new AssertionError( "no instances!" );
-    }
-
-
-    public static FunctionEntry resolve( AlgDataTypeFactory typeFactory, String name, Collection<FunctionEntry> functionEntries, List<AlgDataType> argumentTypes ) {
-        final List<FunctionEntry> matches = new ArrayList<>();
-        for ( FunctionEntry entry : functionEntries ) {
-            if ( matches( typeFactory, entry.getFunction(), argumentTypes ) ) {
-                matches.add( entry );
-            }
-        }
-        switch ( matches.size() ) {
-            case 0:
-                return null;
-            case 1:
-                return matches.get( 0 );
-            default:
-                throw new RuntimeException( "More than one match for " + name + " with arguments " + argumentTypes );
-        }
     }
 
 
@@ -214,30 +191,19 @@ public final class Schemas {
      * Returns a {@link Queryable}, given a fully-qualified table name as an iterable.
      */
     public static <E> Queryable<E> queryable( DataContext root, Class<E> clazz, Iterable<? extends String> names ) {
-        SchemaPlus schema = root.getRootSchema();
-        for ( Iterator<? extends String> iterator = names.iterator(); ; ) {
-            String name = iterator.next();
-            if ( iterator.hasNext() ) {
-                schema = schema.getSubNamespace( name );
-            } else {
-                return queryable( root, schema, clazz, name );
-            }
-        }
+        PolyphenyDbSchema schema = root.getRootSchema();
+
+        return queryable( root, schema, clazz, names.iterator().next() );
+
     }
 
 
     /**
      * Returns a {@link Queryable}, given a schema and table name.
      */
-    public static <E> Queryable<E> queryable( DataContext root, SchemaPlus schema, Class<E> clazz, String tableName ) {
+    public static <E> Queryable<E> queryable( DataContext root, PolyphenyDbSchema schema, Class<E> clazz, String tableName ) {
         QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
         return table.asQueryable( root, schema, tableName );
-    }
-
-
-    public static <E> Queryable<E> graph( DataContext root, SchemaPlus schema ) {
-        QueryableGraph graph = (QueryableGraph) schema.polyphenyDbSchema().getNamespace();
-        return graph.asQueryable( root, graph );
     }
 
 
@@ -277,17 +243,9 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over object arrays, given a fully-qualified table name which leads to a {@link ScannableEntity}.
      */
-    public static Entity table( DataContext root, String... names ) {
-        SchemaPlus schema = root.getRootSchema();
-        final List<String> nameList = Arrays.asList( names );
-        for ( Iterator<? extends String> iterator = nameList.iterator(); ; ) {
-            String name = iterator.next();
-            if ( iterator.hasNext() ) {
-                schema = schema.getSubNamespace( name );
-            } else {
-                return schema.getEntity( name );
-            }
-        }
+    public static CatalogTable table( DataContext root, String... names ) {
+        PolyphenyDbSchema schema = root.getRootSchema();
+        return schema.getTable( List.of( names ) );
     }
 
     /**
@@ -362,7 +320,7 @@ public final class Schemas {
 
             @Override
             public PolyphenyDbSchema getRootSchema() {
-                return schema.root();
+                return schema;
             }
 
 
@@ -375,9 +333,6 @@ public final class Schemas {
             @Override
             public List<String> getDefaultSchemaPath() {
                 // schemaPath is usually null. If specified, it overrides schema as the context within which the SQL is validated.
-                if ( schemaPath == null ) {
-                    return schema.path( null );
-                }
                 return schemaPath;
             }
 
@@ -447,45 +402,8 @@ public final class Schemas {
             if ( schema == null ) {
                 return null;
             }
-            schema = schema.getSubNamespace( string, false );
         }
         return schema;
-    }
-
-
-    /**
-     * Generates a table name that is unique within the given schema.
-     */
-    public static String uniqueTableName( PolyphenyDbSchema schema, String base ) {
-        String t = Objects.requireNonNull( base );
-        for ( int x = 0; schema.getTable( t ) != null; x++ ) {
-            t = base + x;
-        }
-        return t;
-    }
-
-
-    /**
-     * Creates a path with a given list of names starting from a given root schema.
-     */
-    public static Path path( PolyphenyDbSchema rootSchema, Iterable<String> names ) {
-        final ImmutableList.Builder<Pair<String, Namespace>> builder = ImmutableList.builder();
-        Namespace namespace = rootSchema.plus();
-        final Iterator<String> iterator = names.iterator();
-        if ( !iterator.hasNext() ) {
-            return PathImpl.EMPTY;
-        }
-        if ( !rootSchema.getName().isEmpty() ) {
-            Preconditions.checkState( rootSchema.getName().equals( iterator.next() ) );
-        }
-        for ( ; ; ) {
-            final String name = iterator.next();
-            builder.add( Pair.of( name, namespace ) );
-            if ( !iterator.hasNext() ) {
-                return path( builder.build() );
-            }
-            namespace = namespace.getSubNamespace( name );
-        }
     }
 
 
@@ -511,18 +429,18 @@ public final class Schemas {
      */
     private static class DummyDataContext implements DataContext {
 
-        private final SchemaPlus rootSchema;
+        private final PolyphenyDbSchema rootSchema;
         private final ImmutableMap<String, Object> map;
 
 
-        DummyDataContext( SchemaPlus rootSchema ) {
+        DummyDataContext( PolyphenyDbSchema rootSchema ) {
             this.rootSchema = rootSchema;
             this.map = ImmutableMap.of();
         }
 
 
         @Override
-        public SchemaPlus getRootSchema() {
+        public PolyphenyDbSchema getRootSchema() {
             return rootSchema;
         }
 

@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
@@ -73,7 +74,6 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ExtensibleEntity;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Holder;
@@ -247,7 +247,7 @@ public abstract class Prepare {
 
         AlgOptEntity getCollection( List<String> names );
 
-        Graph getGraph( String name );
+        CatalogGraphDatabase getGraph( String name );
 
         ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
 

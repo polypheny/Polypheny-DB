@@ -31,8 +31,8 @@ public class CatalogCollectionPlacement extends CatalogEntityPlacement {
     public final String physicalNamespaceName;
 
 
-    public CatalogCollectionPlacement( int adapterId, long collectionId, @Nullable String physicalName, String physicalNamespaceName, long id ) {
-        super();
+    public CatalogCollectionPlacement( long namespaceId, int adapterId, long collectionId, @Nullable String physicalName, String physicalNamespaceName, long id ) {
+        super( namespaceId, (long) adapterId, collectionId );
         this.adapter = adapterId;
         this.collectionId = collectionId;
         this.physicalName = physicalName;

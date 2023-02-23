@@ -265,8 +265,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public PolyphenyDbCatalogReader getCatalogReader() {
         return new PolyphenyDbCatalogReader(
-                PolyphenyDbSchema.from( getSchema().plus() ),
-                PolyphenyDbSchema.from( getSchema().plus() ).path( null ),
+                getSchema(),
                 getTypeFactory() );
     }
 

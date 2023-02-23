@@ -59,8 +59,6 @@ import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -91,7 +89,7 @@ public class Frameworks {
      */
     public interface PlannerAction<R> {
 
-        R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema );
+        R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, PolyphenyDbSchema rootSchema );
 
     }
 
@@ -121,7 +119,7 @@ public class Frameworks {
         public abstract R apply(
                 AlgOptCluster cluster,
                 AlgOptSchema algOptSchema,
-                SchemaPlus rootSchema );
+                PolyphenyDbSchema rootSchema );
 
     }
 
@@ -135,11 +133,10 @@ public class Frameworks {
      */
     public static <R> R withPlanner( final PlannerAction<R> action, final FrameworkConfig config ) {
         return withPrepare(
-                new Frameworks.PrepareAction<R>( config ) {
+                new Frameworks.PrepareAction<>( config ) {
                     @Override
-                    public R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
-                        final PolyphenyDbSchema schema = PolyphenyDbSchema.from( Util.first( config.getDefaultSchema(), rootSchema ) );
-                        return action.apply( cluster, algOptSchema, schema.root().plus() );
+                    public R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, PolyphenyDbSchema rootSchema ) {
+                        return action.apply( cluster, algOptSchema, rootSchema );
                     }
                 } );
     }
@@ -152,11 +149,11 @@ public class Frameworks {
      * @return Return value from action
      */
     public static <R> R withPlanner( final PlannerAction<R> action ) {
-        SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        PolyphenyDbSchema rootSchema = Frameworks.createRootSchema( true );
         FrameworkConfig config = newConfigBuilder()
                 .defaultSchema( rootSchema )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
+                        rootSchema,
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -199,8 +196,8 @@ public class Frameworks {
      *
      * @param cache Whether to create a caching schema.
      */
-    public static SchemaPlus createRootSchema( boolean cache ) {
-        return AbstractPolyphenyDbSchema.createRootSchema( "" ).plus();
+    public static PolyphenyDbSchema createRootSchema( boolean cache ) {
+        return AbstractPolyphenyDbSchema.createRootSchema();
     }
 
 
@@ -234,7 +231,7 @@ public class Frameworks {
         private ImmutableList<AlgTraitDef> traitDefs;
         private ParserConfig parserConfig;
         private NodeToAlgConverter.Config sqlToRelConverterConfig;
-        private SchemaPlus defaultSchema;
+        private PolyphenyDbSchema defaultSchema;
         private RexExecutor executor;
         private AlgOptCostFactory costFactory;
         private AlgDataTypeSystem typeSystem;
@@ -256,8 +253,6 @@ public class Frameworks {
          * Creates a ConfigBuilder, initializing from an existing config.
          */
         public ConfigBuilder( FrameworkConfig config ) {
-            //convertletTable = config.getConvertletTable();
-            // operatorTable = config.getOperatorTable();
             programs = config.getPrograms();
             context = config.getContext();
             traitDefs = config.getTraitDefs();
@@ -334,7 +329,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder defaultSchema( SchemaPlus defaultSchema ) {
+        public ConfigBuilder defaultSchema( PolyphenyDbSchema defaultSchema ) {
             this.defaultSchema = defaultSchema;
             return this;
         }
@@ -398,7 +393,7 @@ public class Frameworks {
 
         private final NodeToAlgConverter.Config sqlToRelConverterConfig;
 
-        private final SchemaPlus defaultSchema;
+        private final PolyphenyDbSchema defaultSchema;
 
         private final AlgOptCostFactory costFactory;
 
@@ -416,7 +411,7 @@ public class Frameworks {
                 ImmutableList<AlgTraitDef> traitDefs,
                 ParserConfig parserConfig,
                 NodeToAlgConverter.Config nodeToRelConverterConfig,
-                SchemaPlus defaultSchema,
+                PolyphenyDbSchema defaultSchema,
                 AlgOptCostFactory costFactory,
                 AlgDataTypeSystem typeSystem,
                 RexExecutor executor,

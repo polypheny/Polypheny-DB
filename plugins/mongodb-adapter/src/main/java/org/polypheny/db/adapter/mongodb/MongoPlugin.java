@@ -347,6 +347,7 @@ public class MongoPlugin extends Plugin {
             this.currentSchema.database.createCollection( physicalCollectionName );
 
             catalog.updateCollectionPartitionPhysicalNames(
+                    catalogCollection.namespaceId,
                     catalogCollection.id,
                     getAdapterId(),
                     catalogCollection.getNamespaceName(),

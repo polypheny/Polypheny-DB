@@ -38,7 +38,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -47,11 +48,9 @@ import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ExtensibleEntity;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -307,33 +306,15 @@ public class SqlValidatorUtil {
     }
 
 
-    /**
-     * Resolves a multi-part identifier such as "SCHEMA.EMP.EMPNO" to a namespace. The returned namespace, never null, may represent a schema, table, column, etc.
-     */
-    public static SqlValidatorNamespace lookup( SqlValidatorScope scope, List<String> names ) {
-        assert names.size() > 0;
-        final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher;
-        final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-        scope.resolve( ImmutableList.of( names.get( 0 ) ), nameMatcher, false, resolved );
-        assert resolved.count() == 1;
-        SqlValidatorNamespace namespace = resolved.only().namespace;
-        for ( String name : Util.skip( names ) ) {
-            namespace = namespace.lookupChild( name );
-            assert namespace != null;
-        }
-        return namespace;
-    }
-
-
     public static void getSchemaObjectMonikers( ValidatorCatalogReader catalogReader, List<String> names, List<Moniker> hints ) {
         // Assume that the last name is 'dummy' or similar.
         List<String> subNames = Util.skipLast( names );
 
         // Try successively with catalog.schema, catalog and no prefix
-        for ( List<String> x : catalogReader.getSchemaPaths() ) {
+        /*for ( List<String> x : catalogReader.getSchemaPaths() ) {
             final List<String> names2 = ImmutableList.<String>builder().addAll( x ).addAll( subNames ).build();
             hints.addAll( catalogReader.getAllSchemaObjectNames( names2 ) );
-        }
+        }*/
     }
 
 
@@ -512,20 +493,9 @@ public class SqlValidatorUtil {
             assert resolved.count() == 1;
             final SqlValidatorScope.Resolve resolve = resolved.only();
             final AlgDataType rowType = resolve.rowType();
-            final int childNamespaceIndex = resolve.path.steps().get( 0 ).i;
+            final int childNamespaceIndex = 0;
 
             int namespaceOffset = 0;
-
-            if ( childNamespaceIndex > 0 ) {
-                // If not the first child, need to figure out the width of output types from all the preceding namespaces
-                final SqlValidatorScope ancestorScope = resolve.scope;
-                assert ancestorScope instanceof ListScope;
-                List<SqlValidatorNamespace> children = ((ListScope) ancestorScope).getChildren();
-
-                for ( int j = 0; j < childNamespaceIndex; j++ ) {
-                    namespaceOffset += children.get( j ).getRowType().getFieldCount();
-                }
-            }
 
             AlgDataTypeField field = nameMatcher.field( rowType, originalFieldName );
             int origPos = namespaceOffset + field.getIndex();
@@ -641,7 +611,7 @@ public class SqlValidatorUtil {
     }
 
 
-    public static boolean isTableNonRelational( SqlValidatorImpl validator ) {
+    public static boolean isTableRelational( SqlValidatorImpl validator ) {
         if ( validator.getTableScope() == null ) {
             return false;
         }
@@ -649,12 +619,15 @@ public class SqlValidatorUtil {
             return false;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
-        PolyphenyDbSchema schema = validator.getCatalogReader().getRootSchema().getSubNamespace( id.names.get( 0 ), false );
-        if ( schema == null ) {
+        CatalogGraphDatabase graph = validator.getCatalogReader().getRootSchema().getGraph( id.names );
+        if ( graph != null ) {
             return false;
         }
-
-        return ((AbstractPolyphenyDbSchema) schema).getNamespaceType() != NamespaceType.RELATIONAL;
+        CatalogCollection collection = validator.getCatalogReader().getRootSchema().getCollection( id.names );
+        if ( collection != null ) {
+            return false;
+        }
+        return true;
     }
 
 

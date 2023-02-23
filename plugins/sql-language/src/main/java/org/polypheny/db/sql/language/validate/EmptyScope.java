@@ -19,20 +19,14 @@ package org.polypheny.db.sql.language.validate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
-import org.polypheny.db.prepare.Prepare.PreparingEntity;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDynamicParam;
@@ -45,7 +39,6 @@ import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -97,25 +90,12 @@ class EmptyScope implements SqlValidatorScope {
 
     @Override
     public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
-        final List<Resolve> imperfectResolves = new ArrayList<>();
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
         // Look in the default schema, then default catalog, then root schema.
-        for ( List<String> schemaPath : validator.catalogReader.getSchemaPaths() ) {
-            resolve_( validator.catalogReader.getRootSchema(), names, schemaPath, nameMatcher, path, resolved );
-            for ( Resolve resolve : resolves ) {
-                if ( resolve.remainingNames.isEmpty() ) {
-                    // There is a full match. Return it as the only match.
-                    ((ResolvedImpl) resolved).clear();
-                    resolves.add( resolve );
-                    return;
-                }
-            }
-            imperfectResolves.addAll( resolves );
-        }
-        // If there were no matches in the last round, restore those found in previous rounds
-        if ( resolves.isEmpty() ) {
-            resolves.addAll( imperfectResolves );
+        CatalogTable table = validator.catalogReader.getRootSchema().getTable( names );
+        if ( table != null ) {
+            resolves.add( new Resolve( validator.catalogReader.getRootSchema().getTable( names ) ) );
         }
     }
 
@@ -123,48 +103,10 @@ class EmptyScope implements SqlValidatorScope {
     // todo dl: refactor for 0.10
     private void resolve_( final PolyphenyDbSchema rootSchema, List<String> names, List<String> schemaNames, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         final List<String> concat = ImmutableList.<String>builder().addAll( schemaNames ).addAll( names ).build();
-        PolyphenyDbSchema schema = rootSchema;
-        SqlValidatorNamespace namespace = null;
-        List<String> remainingNames = concat;
-        for ( String schemaName : concat ) {
-            if ( schema == rootSchema && nameMatcher.matches( schemaName, schema.getName() ) ) {
-                remainingNames = Util.skip( remainingNames );
-                continue;
-            }
-            final PolyphenyDbSchema subSchema = schema.getSubNamespace( schemaName, nameMatcher.isCaseSensitive() );
-            if ( subSchema != null ) {
-                path = path.plus( null, -1, subSchema.getName(), StructKind.NONE );
-                remainingNames = Util.skip( remainingNames );
-                schema = subSchema;
-                namespace = new SchemaNamespace( validator, ImmutableList.copyOf( path.stepNames() ) );
-                continue;
-            }
-            PolyphenyDbSchema.TableEntry entry = schema.getTable( schemaName );
-            if ( entry == null ) {
-                entry = schema.getTableBasedOnNullaryFunction( schemaName, nameMatcher.isCaseSensitive() );
-            }
-            if ( entry != null ) {
-                path = path.plus( null, -1, entry.name, StructKind.NONE );
-                remainingNames = Util.skip( remainingNames );
-                final Entity entity = entry.getTable();
 
-                ValidatorTable table2 = null;
-                if ( entity instanceof Wrapper ) {
-                    table2 = ((Wrapper) entity).unwrap( PreparingEntity.class );
-                }
-                if ( table2 == null ) {
-                    final AlgOptSchema algOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
-                    final AlgDataType rowType = entity.getRowType( validator.typeFactory );
-                    table2 = AlgOptEntityImpl.create( algOptSchema, rowType, entry, entity.getCatalogEntity(), entity.getPartitionPlacement(), null );
-                }
-                namespace = new TableNamespace( validator, table2 );
-                resolved.found( namespace, false, null, path, remainingNames );
-                return;
-            }
-            // neither sub-schema nor table
-            if ( namespace != null && !remainingNames.equals( names ) ) {
-                resolved.found( namespace, false, null, path, remainingNames );
-            }
+        CatalogTable table = rootSchema.getTable( concat );
+        if ( table != null ) {
+            resolved.found( table );
             return;
         }
     }

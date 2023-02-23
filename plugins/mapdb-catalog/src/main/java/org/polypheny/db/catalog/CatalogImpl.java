@@ -2441,7 +2441,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addCollectionPlacement( long namespaceId, int adapterId, long collectionId, PlacementType placementType ) {
         long id = partitionIdBuilder.getAndIncrement();
-        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, null, id );
+        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( namespaceId, adapterId, collectionId, null, null, id );
         CatalogCollection old = collections.get( collectionId );
         if ( old == null ) {
             throw new UnknownCollectionException( collectionId );
@@ -2463,13 +2463,13 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
+    public void updateCollectionPartitionPhysicalNames( long namespaceId, long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
         CatalogCollection old = getCollection( collectionId );
         if ( old == null ) {
             throw new UnknownCollectionException( collectionId );
         }
 
-        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, physicalCollectionName, physicalNamespaceName, old.id );
+        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( namespaceId, adapterId, collectionId, physicalCollectionName, physicalNamespaceName, old.id );
         CatalogCollection collection = old.setPhysicalName( physicalCollectionName );
         synchronized ( this ) {
             collections.replace( collectionId, collection );

@@ -1894,13 +1894,14 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Updates the physical name of the given collection.
      *
+     * @param namespaceId
      * @param collectionId The id of the collection to change
      * @param adapterId The id of the adapter on which the physical names of the collection are updated
      * @param physicalNamespaceName The new namespace name
      * @param namespaceName The namespace name
      * @param physicalCollectionName The new physical collection name
      */
-    public abstract void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName );
+    public abstract void updateCollectionPartitionPhysicalNames( long namespaceId, long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName );
 
     /**
      * Delete a specific collection.

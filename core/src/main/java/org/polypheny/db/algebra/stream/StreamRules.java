@@ -274,7 +274,7 @@ public class StreamRules {
             if ( streamableTable != null ) {
                 final Entity entity1 = streamableTable.stream();
                 final CatalogTable catalogTable = algOptEntity.getCatalogEntity().unwrap( CatalogTable.class );
-                final CatalogPartitionPlacement placement = algOptEntity.getPartitionPlacement();
+                final CatalogPartitionPlacement placement = algOptEntity.getPartitionPlacement().unwrap( CatalogPartitionPlacement.class );
                 final AlgOptEntity algOptEntity2 =
                         AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
                                 algOptEntity.getRowType(),

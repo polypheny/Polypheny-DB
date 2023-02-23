@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entities.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
@@ -40,7 +41,6 @@ import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.util.Moniker;
 
 
@@ -169,12 +169,6 @@ public class PolyCatalog implements Serializable, CatalogReader {
 
 
     @Override
-    public List<List<String>> getSchemaPaths() {
-        return null;
-    }
-
-
-    @Override
     public AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList ) {
         return null;
     }
@@ -205,7 +199,7 @@ public class PolyCatalog implements Serializable, CatalogReader {
 
 
     @Override
-    public Graph getGraph( String name ) {
+    public CatalogGraphDatabase getGraph( String name ) {
         return null;
     }
 

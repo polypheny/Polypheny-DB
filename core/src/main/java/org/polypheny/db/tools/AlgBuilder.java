@@ -126,7 +126,7 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -276,7 +276,7 @@ public class AlgBuilder {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, PolyphenyDbSchema rootSchema ) {
                         clusters[0] = cluster;
                         algOptSchemas[0] = algOptSchema;
                         return null;
