@@ -294,7 +294,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
                         for ( long partitionId : hotPartitionsToCreate ) {
                             catalog.addPartitionPlacement(
-                                    store.getAdapterId(),
+                                    catalogTable.namespaceId, store.getAdapterId(),
                                     table.id,
                                     partitionId,
                                     PlacementType.AUTOMATIC,
@@ -343,7 +343,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
                         for ( long partitionId : coldPartitionsToCreate ) {
                             catalog.addPartitionPlacement(
-                                    store.getAdapterId(),
+                                    catalogTable.namespaceId, store.getAdapterId(),
                                     table.id,
                                     partitionId,
                                     PlacementType.AUTOMATIC,

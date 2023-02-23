@@ -112,16 +112,16 @@ class LixToAlgTranslator {
                             cluster,
                             AlgOptEntityImpl.create(
                                     null,
-                                    typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) ),
-                                    call.targetExpression ) );
+                                    typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) )
+                            ) );
 
                 case SCHEMA_GET_TABLE:
                     return LogicalRelScan.create(
                             cluster,
                             AlgOptEntityImpl.create(
                                     null,
-                                    typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value ),
-                                    call.targetExpression ) );
+                                    typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value )
+                            ) );
 
                 default:
                     throw new UnsupportedOperationException( "unknown method " + call.method );

@@ -100,7 +100,7 @@ public class ScrollingTest {
 //        // get node stats
 //        final Response response = NODE.restClient().performRequest( "GET", "/_nodes/stats/indices/search" );
 //
-//        try ( InputStream is = response.getEntity().getContent() ) {
+//        try ( InputStream is = response.getTable().getContent() ) {
 //            final ObjectNode node = NODE.mapper().readValue( is, ObjectNode.class );
 //            final String path = "/indices/search/scroll_current";
 //            final JsonNode scrollCurrent = node.with( "nodes" ).elements().next().at( path );

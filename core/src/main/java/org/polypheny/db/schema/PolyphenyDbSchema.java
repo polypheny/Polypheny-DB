@@ -16,229 +16,55 @@
 
 package org.polypheny.db.schema;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
-import java.util.Objects;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.NameMap;
 
 
 public interface PolyphenyDbSchema {
 
-    static PolyphenyDbSchema from( SchemaPlus plus ) {
-        return plus.polyphenyDbSchema();
+    default CatalogTable getTable( List<String> names ) {
+        switch ( names.size() ) {
+            case 3:
+                return Catalog.getInstance().getTables( Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ), Pattern.of( names.get( 2 ) ) ).get( 0 );
+            case 2:
+                return Catalog.getInstance().getTables( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ) ).get( 0 );
+            case 1:
+                return Catalog.getInstance().getTables( Catalog.defaultDatabaseId, null, Pattern.of( names.get( 0 ) ) ).get( 0 );
+            default:
+                return null;
+        }
     }
 
-    void setCache( boolean cache );
-
-    TableEntry add( String tableName, Entity entity );
-
-    TypeEntry add( String name, AlgProtoDataType type );
-
-    PolyphenyDbSchema root();
-
-    boolean isRoot();
-
-    List<String> path( String name );
-
-    PolyphenyDbSchema getSubNamespace( String namespaceName, boolean caseSensitive );
-
-    /**
-     * Adds a child schema of this schema.
-     */
-    PolyphenyDbSchema add( String name, Namespace namespace, NamespaceType type );
-
-    TableEntry getTable( String tableName );
-
-    String getName();
-
-    PolyphenyDbSchema getParent();
-
-    Namespace getNamespace();
-
-    void setNamespace( Namespace namespace );
-
-    SchemaPlus plus();
-
-    List<? extends List<String>> getPath();
-
-    NavigableMap<String, PolyphenyDbSchema> getSubSchemaMap();
-
-    NavigableSet<String> getTableNames();
-
-    NavigableSet<String> getTypeNames();
-
-    TypeEntry getType( String name, boolean caseSensitive );
-
-    Collection<Function> getFunctions( String name, boolean caseSensitive );
-
-    NavigableSet<String> getFunctionNames();
-
-    TableEntry getTableBasedOnNullaryFunction( String tableName, boolean caseSensitive );
-
-    NameMap<TableEntry> getTableMap();
-
-
-    /**
-     * Entry in a schema, such as a table or sub-schema.
-     *
-     * Each object's name is a property of its membership in a schema; therefore in principle it could belong to several
-     * schemas, or even the same schema several times, with different names. In this respect, it is like an inode in a
-     * Unix file system.
-     *
-     * The members of a schema must have unique names.
-     */
-    abstract class Entry {
-
-        public final PolyphenyDbSchema schema;
-        public final String name;
-
-
-        public Entry( PolyphenyDbSchema schema, String name ) {
-            this.schema = Objects.requireNonNull( schema );
-            this.name = Objects.requireNonNull( name );
+    default CatalogCollection getCollection( List<String> names ) {
+        CatalogNamespace namespace;
+        switch ( names.size() ) {
+            case 3:
+                namespace = Catalog.getInstance().getSchemas( Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ) ).get( 0 );
+                return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 2 ) ) ).get( 0 );
+            case 2:
+                namespace = Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );
+                return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 1 ) ) ).get( 0 );
+            case 1:
+                // TODO add methods
+                namespace = Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, null ).get( 0 );
+                return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 0 ) ) ).get( 0 );
+            default:
+                return null;
         }
-
-
-        /**
-         * Returns this object's path. For example ["hr", "emps"].
-         */
-        public final List<String> path() {
-            return schema.path( name );
-        }
-
     }
 
-
-    /**
-     * Membership of a table in a schema.
-     */
-    abstract class TableEntry extends Entry {
-
-
-        public TableEntry( PolyphenyDbSchema schema, String name ) {
-            super( schema, name );
-        }
-
-
-        public abstract Entity getTable();
-
-    }
-
-
-    /**
-     * Membership of a type in a schema.
-     */
-    abstract class TypeEntry extends Entry {
-
-        public TypeEntry( PolyphenyDbSchema schema, String name ) {
-            super( schema, name );
-        }
-
-
-        public abstract AlgProtoDataType getType();
-
-    }
-
-
-    /**
-     * Membership of a function in a schema.
-     */
-    abstract class FunctionEntry extends Entry {
-
-        public FunctionEntry( PolyphenyDbSchema schema, String name ) {
-            super( schema, name );
-        }
-
-
-        public abstract Function getFunction();
-
-    }
-
-
-    /**
-     * Implementation of {@link PolyphenyDbSchema.TableEntry} where all properties are held in fields.
-     */
-    class TableEntryImpl extends TableEntry {
-
-        private final Entity entity;
-
-
-        /**
-         * Creates a TableEntryImpl.
-         */
-        public TableEntryImpl( PolyphenyDbSchema schema, String name, Entity entity ) {
-            super( schema, name );
-            this.entity = Objects.requireNonNull( entity );
-        }
-
-
-        @Override
-        public Entity getTable() {
-            return entity;
-        }
-
-    }
-
-
-    /**
-     * Implementation of {@link TypeEntry} where all properties are held in fields.
-     */
-    class TypeEntryImpl extends TypeEntry {
-
-        private final AlgProtoDataType protoDataType;
-
-
-        /**
-         * Creates a TypeEntryImpl.
-         */
-        public TypeEntryImpl( PolyphenyDbSchema schema, String name, AlgProtoDataType protoDataType ) {
-            super( schema, name );
-            this.protoDataType = protoDataType;
-        }
-
-
-        @Override
-        public AlgProtoDataType getType() {
-            return protoDataType;
-        }
-
-    }
-
-
-    /**
-     * Implementation of {@link FunctionEntry} where all properties are held in fields.
-     */
-    class FunctionEntryImpl extends FunctionEntry {
-
-        private final Function function;
-
-
-        /**
-         * Creates a FunctionEntryImpl.
-         */
-        public FunctionEntryImpl( PolyphenyDbSchema schema, String name, Function function ) {
-            super( schema, name );
-            this.function = function;
-        }
-
-
-        @Override
-        public Function getFunction() {
-            return function;
-        }
-
-    }
-
+    CatalogGraphDatabase getGraph( List<String> names );
 
     /**
      * Schema that has no parents.

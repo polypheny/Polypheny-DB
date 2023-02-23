@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
@@ -69,6 +70,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -90,7 +92,6 @@ import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
@@ -3001,7 +3002,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // if it's not a SqlIdentifier then that's fine, it'll be validated somewhere else.
         if ( leftOrRight instanceof SqlIdentifier ) {
             SqlIdentifier from = (SqlIdentifier) leftOrRight;
-            Entity entity = findTable(
+            CatalogEntity entity = findTable(
                     catalogReader.getRootSchema(),
                     Util.last( from.names ),
                     catalogReader.nameMatcher.isCaseSensitive() );
@@ -3366,11 +3367,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
         String tableAlias = pair.left;
-        String columnName = pair.right;
 
-        Entity entity = findTable( tableAlias );
+        CatalogEntity entity = findTable( tableAlias );
         if ( entity != null ) {
-            return entity.rolledUpColumnValidInsideAgg( columnName, aggCall, parent );
+            return entity.rolledUpColumnValidInsideAgg();
         }
         return true;
     }
@@ -3387,7 +3387,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         String tableAlias = pair.left;
         String columnName = pair.right;
 
-        Entity entity = findTable( tableAlias );
+        CatalogEntity entity = findTable( tableAlias );
         if ( entity != null ) {
             return entity.isRolledUp( columnName );
         }
@@ -3395,49 +3395,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private Entity findTable( PolyphenyDbSchema schema, String tableName, boolean caseSensitive ) {
-        PolyphenyDbSchema.TableEntry entry = schema.getTable( tableName );
-        if ( entry != null ) {
-            return entry.getTable();
-        }
-
-        // Check sub schemas
-        for ( PolyphenyDbSchema subSchema : schema.getSubSchemaMap().values() ) {
-            Entity entity = findTable( subSchema, tableName, caseSensitive );
-            if ( entity != null ) {
-                return entity;
-            }
-        }
-
-        return null;
+    private @Nullable CatalogEntity findTable( PolyphenyDbSchema schema, String tableName, boolean caseSensitive ) {
+        return schema.getTable( List.of( tableName ) );
     }
 
 
     /**
      * Given a table alias, find the corresponding {@link Entity} associated with it
      */
-    private Entity findTable( String alias ) {
-        List<String> names = null;
-        if ( tableScope == null ) {
-            // no tables to find
-            return null;
-        }
-
-        for ( ScopeChild child : tableScope.children ) {
-            if ( catalogReader.nameMatcher.matches( child.name, alias ) ) {
-                names = ((SqlIdentifier) child.namespace.getNode()).names;
-                break;
-            }
-        }
-        if ( names == null || names.size() == 0 ) {
-            return null;
-        } else if ( names.size() == 1 ) {
-            return findTable( catalogReader.getRootSchema(), names.get( 0 ), catalogReader.nameMatcher.isCaseSensitive() );
-        }
-
-        PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( (CatalogReader) catalogReader, names );
-
-        return entry == null ? null : entry.getTable();
+    private CatalogEntity findTable( String alias ) {
+        return findTable( catalogReader.getRootSchema(), alias, catalogReader.nameMatcher.isCaseSensitive() );
     }
 
 

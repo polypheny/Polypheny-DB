@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.schema.Wrapper;
@@ -34,6 +35,23 @@ public abstract class CatalogEntity implements Wrapper, Serializable {
         this.name = name;
         this.entityType = type;
         this.namespaceType = namespaceType;
+    }
+
+
+    public AlgDataType getRowType() {
+        return null;
+    }
+
+
+    @Deprecated
+    public boolean rolledUpColumnValidInsideAgg() {
+        return true;
+    }
+
+
+    @Deprecated
+    public boolean isRolledUp( String fieldName ) {
+        return false;
     }
 
 }

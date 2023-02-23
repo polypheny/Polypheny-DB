@@ -17,16 +17,11 @@
 package org.polypheny.db.schema;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.ImmutableSortedSet;
-import java.util.Collection;
-import java.util.List;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.util.NameMap;
-import org.polypheny.db.util.NameMultimap;
-import org.polypheny.db.util.NameSet;
+import java.util.Map;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -36,188 +31,23 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
     /**
      * Creates a SimplePolyphenyDbSchema.
-     *
-     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(String)} or {@link #add(String, Namespace, NamespaceType)}.
      */
-    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Namespace namespace, String name, NamespaceType namespaceType, boolean caseSensitive ) {
-        this(
-                parent,
-                namespace,
-                name,
-                namespaceType,
-                caseSensitive,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null );
-    }
+    public SimplePolyphenyDbSchema(
+            Map<Pair<Long, Long>, CatalogEntity> logicalRelational,
+            Map<Pair<Long, Long>, CatalogEntity> logicalDocument,
+            Map<Pair<Long, Long>, CatalogEntity> logicalGraph,
+            Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalRelational,
+            Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalDocument,
+            Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalGraph ) {
+        super( logicalRelational, logicalDocument, logicalGraph, physicalRelational, physicalDocument, physicalGraph );
 
-
-    private SimplePolyphenyDbSchema(
-            AbstractPolyphenyDbSchema parent,
-            Namespace namespace,
-            String name,
-            NamespaceType namespaceType,
-            boolean caseSensitive,
-            NameMap<PolyphenyDbSchema> subSchemaMap,
-            NameMap<TableEntry> tableMap,
-            NameMap<TypeEntry> typeMap,
-            NameMultimap<FunctionEntry> functionMap,
-            NameSet functionNames,
-            NameMap<FunctionEntry> nullaryFunctionMap,
-            List<? extends List<String>> path ) {
-        super( parent, namespace, name, namespaceType, caseSensitive, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
-    }
-
-
-    @Override
-    public void setCache( boolean cache ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public PolyphenyDbSchema add( String name, Namespace namespace, NamespaceType namespaceType ) {
-        final PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, namespace, name, namespaceType, false );
-        subSchemaMap.put( name, polyphenyDbSchema );
-        return polyphenyDbSchema;
-    }
-
-
-    @Override
-    protected AbstractPolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive ) {
-        // Check implicit schemas.
-        Namespace s = namespace.getSubNamespace( schemaName );
-        if ( s != null ) {
-            return new SimplePolyphenyDbSchema( this, s, schemaName, namespaceType, false );
-        }
-        return null;
-    }
-
-
-    @Override
-    protected TableEntry getImplicitTable( String tableName ) {
-        // Check implicit tables.
-        Entity entity = namespace.getEntity( tableName );
-        if ( entity != null ) {
-            return tableEntry( tableName, entity );
-        }
-        return null;
-    }
-
-
-    @Override
-    protected TypeEntry getImplicitType( String name, boolean caseSensitive ) {
-        // Check implicit types.
-        AlgProtoDataType type = namespace.getType( name );
-        if ( type != null ) {
-            return typeEntry( name, type );
-        }
-        return null;
-    }
-
-
-    @Override
-    protected void addImplicitSubSchemaToBuilder( ImmutableSortedMap.Builder<String, PolyphenyDbSchema> builder ) {
-        ImmutableSortedMap<String, PolyphenyDbSchema> explicitSubSchemas = builder.build();
-        for ( String schemaName : namespace.getSubNamespaceNames() ) {
-            if ( explicitSubSchemas.containsKey( schemaName ) ) {
-                // explicit subschema wins.
-                continue;
-            }
-            Namespace s = namespace.getSubNamespace( schemaName );
-            if ( s != null ) {
-                PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, s, schemaName, namespaceType, false );
-                builder.put( schemaName, polyphenyDbSchema );
-            }
-        }
-    }
-
-
-    @Override
-    protected void addImplicitTableToBuilder( ImmutableSortedSet.Builder<String> builder ) {
-        builder.addAll( namespace.getEntityNames() );
-    }
-
-
-    @Override
-    protected void addImplicitFunctionsToBuilder( ImmutableList.Builder<Function> builder, String name, boolean caseSensitive ) {
-        Collection<Function> functions = namespace.getFunctions( name );
-        if ( functions != null ) {
-            builder.addAll( functions );
-        }
-    }
-
-
-    @Override
-    protected void addImplicitFuncNamesToBuilder( ImmutableSortedSet.Builder<String> builder ) {
-        builder.addAll( namespace.getFunctionNames() );
-    }
-
-
-    @Override
-    protected void addImplicitTypeNamesToBuilder( ImmutableSortedSet.Builder<String> builder ) {
-        builder.addAll( namespace.getTypeNames() );
-    }
-
-
-    @Override
-    protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder( ImmutableSortedMap.Builder<String, Entity> builder ) {
-        ImmutableSortedMap<String, Entity> explicitTables = builder.build();
-
-        for ( String s : namespace.getFunctionNames() ) {
-            // explicit table wins.
-            if ( explicitTables.containsKey( s ) ) {
-                continue;
-            }
-            for ( Function function : namespace.getFunctions( s ) ) {
-                if ( function instanceof TableMacro && function.getParameters().isEmpty() ) {
-                    final Entity entity = ((TableMacro) function).apply( ImmutableList.of() );
-                    builder.put( s, entity );
-                }
-            }
-        }
-    }
-
-
-    @Override
-    protected TableEntry getImplicitTableBasedOnNullaryFunction( String tableName, boolean caseSensitive ) {
-        Collection<Function> functions = namespace.getFunctions( tableName );
-        if ( functions != null ) {
-            for ( Function function : functions ) {
-                if ( function instanceof TableMacro && function.getParameters().isEmpty() ) {
-                    final Entity entity = ((TableMacro) function).apply( ImmutableList.of() );
-                    return tableEntry( tableName, entity );
-                }
-            }
-        }
-        return null;
     }
 
 
     @Override
     protected PolyphenyDbSchema snapshot( AbstractPolyphenyDbSchema parent, SchemaVersion version ) {
-        AbstractPolyphenyDbSchema snapshot = new SimplePolyphenyDbSchema(
-                parent,
-                namespace.snapshot( version ),
-                name,
-                namespaceType,
-                isCaseSensitive(),
-                null,
-                tableMap,
-                typeMap,
-                functionMap,
-                functionNames,
-                nullaryFunctionMap,
-                getPath() );
-        for ( PolyphenyDbSchema subSchema : subSchemaMap.map().values() ) {
-            PolyphenyDbSchema subSchemaSnapshot = ((AbstractPolyphenyDbSchema) subSchema).snapshot( snapshot, version );
-            snapshot.subSchemaMap.put( subSchema.getName(), subSchemaSnapshot );
-        }
-        return snapshot;
+
+        return null;
     }
 
 

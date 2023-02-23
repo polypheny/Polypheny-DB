@@ -20,7 +20,7 @@ import java.io.Serializable;
 import javax.annotation.Nullable;
 
 
-public class CatalogGraphPlacement implements CatalogObject {
+public class CatalogGraphPlacement extends CatalogEntityPlacement {
 
     private static final long serialVersionUID = 5889825050034392549L;
 
@@ -31,6 +31,7 @@ public class CatalogGraphPlacement implements CatalogObject {
 
 
     public CatalogGraphPlacement( int adapterId, long graphId, @Nullable String physicalName, long partitionId ) {
+        super( graphId, (long) adapterId, graphId );
         this.adapterId = adapterId;
         this.graphId = graphId;
         this.physicalName = physicalName;

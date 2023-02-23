@@ -38,10 +38,11 @@ import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -57,6 +58,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -74,7 +76,6 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.ScannableEntity;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.schema.TranslatableEntity;
@@ -100,8 +101,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     @Getter
     @Nullable
     private final CatalogEntity catalogEntity;
-    @Nullable
-    private final transient Function<Class<?>, Expression> expressionFunction;
 
     /**
      * Estimate for the row count, or null.
@@ -120,33 +119,30 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             @Nullable Entity entity,
             @Nullable CatalogEntity catalogEntity,
             @Nullable CatalogPartitionPlacement placement,
-            @Nullable Function<Class<?>, Expression> expressionFunction,
             @Nullable Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
         this.entity = entity;
         this.partitionPlacement = placement;
         this.catalogEntity = catalogEntity;
-        this.expressionFunction = expressionFunction;
         this.rowCount = rowCount;
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Expression expression ) {
-        return new AlgOptEntityImpl( schema, rowType, null, null, null, c -> expression, null );
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType ) {
+        return new AlgOptEntityImpl( schema, rowType, null, null, null, null );
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, CatalogEntity catalogEntity, CatalogPartitionPlacement placement, Double count ) {
-        final Entity entity = tableEntry.getTable();
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, CatalogEntity catalogEntity, CatalogPartitionPlacement placement, Double count ) {
         Double rowCount;
         if ( count == null ) {
-            rowCount = entity.getStatistic().getRowCount();
+            rowCount = Double.valueOf( StatisticsManager.getInstance().rowCountPerTable( catalogEntity.id ) );
         } else {
             rowCount = count;
         }
 
-        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, placement, getClassExpressionFunction( tableEntry, entity ), rowCount );
+        return new AlgOptEntityImpl( schema, rowType, null, catalogEntity, placement, rowCount );
     }
 
 
@@ -154,30 +150,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Creates a copy of this RelOptTable. The new RelOptTable will have newRowType.
      */
     public AlgOptEntityImpl copy( AlgDataType newRowType ) {
-        return new AlgOptEntityImpl( this.schema, newRowType, this.entity, this.catalogEntity, this.partitionPlacement, this.expressionFunction, this.rowCount );
-    }
-
-
-    private static Function<Class<?>, Expression> getClassExpressionFunction( PolyphenyDbSchema.TableEntry tableEntry, Entity entity ) {
-        return getClassExpressionFunction( tableEntry.schema.plus(), tableEntry.name, entity );
-    }
-
-
-    private static Function<Class<?>, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Entity entity ) {
-        if ( entity instanceof QueryableEntity ) {
-            final QueryableEntity queryableTable = (QueryableEntity) entity;
-            return clazz -> queryableTable.getExpression( schema, tableName, clazz );
-        } else if ( entity instanceof ScannableEntity
-                || entity instanceof FilterableEntity
-                || entity instanceof ProjectableFilterableEntity ) {
-            return clazz -> Schemas.tableExpression( schema, Object[].class, tableName, entity.getClass() );
-        } else if ( entity instanceof StreamableEntity ) {
-            return getClassExpressionFunction( schema, tableName, ((StreamableEntity) entity).stream() );
-        } else {
-            return input -> {
-                throw new UnsupportedOperationException();
-            };
-        }
+        return new AlgOptEntityImpl( this.schema, newRowType, this.entity, this.catalogEntity, this.partitionPlacement, this.rowCount );
     }
 
 
@@ -185,7 +158,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         assert entity instanceof TranslatableEntity
                 || entity instanceof ScannableEntity
                 || entity instanceof ModifiableEntity;
-        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, placement, null, null );
+        return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, placement, null );
     }
 
 
@@ -212,10 +185,20 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public Expression getExpression( Class<?> clazz ) {
-        if ( expressionFunction == null ) {
-            return null;
+        if ( partitionPlacement != null ) {
+            return Expressions.call(
+                    Expressions.call( Catalog.class, "getInstance" ),
+                    "getPartitionPlacement",
+                    Expressions.constant( partitionPlacement.adapterId ),
+                    Expressions.constant( partitionPlacement.partitionId ) );
+        } else if ( catalogEntity != null ) {
+            return Expressions.call(
+                    Expressions.call( Catalog.class, "getInstance" ),
+                    "getTable",
+                    Expressions.constant( catalogEntity.id ) );
         }
-        return expressionFunction.apply( clazz );
+
+        return null;
     }
 
 

@@ -162,7 +162,7 @@ public enum BuiltInMethod {
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
     SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
-    SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
+    SCHEMA_GET_TABLE( Namespace.class, "getTable", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrap", Class.class ),
     SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),
     SCHEMAS_ENUMERABLE_FILTERABLE( Schemas.class, "enumerable", FilterableEntity.class, DataContext.class ),

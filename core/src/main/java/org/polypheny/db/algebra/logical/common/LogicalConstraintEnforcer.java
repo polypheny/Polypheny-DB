@@ -258,7 +258,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.scan( table.getSchemaName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
-                builder.scan( table.getNamespaceName(), table.name );//LogicalTableScan.create( modify.getCluster(), modify.getEntity() );
+                builder.scan( table.getNamespaceName(), table.name );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexInputRef> keys = constraint.key
                         .getColumnNames()

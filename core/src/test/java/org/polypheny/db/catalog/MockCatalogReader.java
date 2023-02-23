@@ -63,7 +63,6 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.nodes.Call;
@@ -84,7 +83,6 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.test.JdbcTest.AbstractModifiableEntity;
 import org.polypheny.db.util.AccessType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -116,7 +114,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
      */
     public MockCatalogReader( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super(
-                AbstractPolyphenyDbSchema.createRootSchema( DEFAULT_CATALOG ),
+                AbstractPolyphenyDbSchema.createRootSchema(),//DEFAULT_CATALOG ),
                 PREFIX,
                 typeFactory );
     }
@@ -165,7 +163,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
         final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, NameMatchers.withCaseSensitive( true ) );
-        schema.add( Util.last( names ), algProtoDataType );
+        //schema.add( Util.last( names ), algProtoDataType );
     }
 
 
@@ -192,17 +190,17 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         final List<String> schemaPath = Util.skipLast( names );
         final String tableName = Util.last( names );
         final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, NameMatchers.withCaseSensitive( true ) );
-        schema.add( tableName, entity );
+        //schema.add( tableName, entity );
     }
 
 
     protected void registerSchema( MockSchema schema, long id ) {
-        rootSchema.add( schema.name, new AbstractNamespace( id ), NamespaceType.RELATIONAL );
+        //rootSchema.add( schema.name, new AbstractNamespace( id ), NamespaceType.RELATIONAL );
     }
 
 
     private void registerNestedSchema( MockSchema parentSchema, MockSchema schema, long id ) {
-        rootSchema.getSubNamespace( parentSchema.getName(), true ).add( schema.name, new AbstractNamespace( id ), NamespaceType.RELATIONAL );
+        //rootSchema.getSubNamespace( parentSchema.getName(), true ).add( schema.name, new AbstractNamespace( id ), NamespaceType.RELATIONAL );
     }
 
 

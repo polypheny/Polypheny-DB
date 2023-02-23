@@ -908,7 +908,7 @@ public class CatalogImpl extends Catalog {
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
             long partitionId = table.partitionProperty.partitionIds.get( 0 );
-            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE );
+            addPartitionPlacement( table.namespaceId, csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE );
         }
     }
 
@@ -2282,6 +2282,7 @@ public class CatalogImpl extends Catalog {
         CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
 
         CatalogColumnPlacement columnPlacement = new CatalogColumnPlacement(
+                column.schemaId,
                 column.tableId,
                 columnId,
                 adapterId,
@@ -2309,6 +2310,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
             CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
+                    old.namespaceId,
                     old.tableId,
                     old.adapterId,
                     old.adapterUniqueName,
@@ -2437,7 +2439,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType placementType ) {
+    public long addCollectionPlacement( long namespaceId, int adapterId, long collectionId, PlacementType placementType ) {
         long id = partitionIdBuilder.getAndIncrement();
         CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, null, id );
         CatalogCollection old = collections.get( collectionId );
@@ -2810,6 +2812,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.namespaceId,
                     old.tableId,
                     old.columnId,
                     old.adapterId,
@@ -2838,6 +2841,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.namespaceId,
                     old.tableId,
                     old.columnId,
                     old.adapterId,
@@ -2866,6 +2870,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.namespaceId,
                     old.tableId,
                     old.columnId,
                     old.adapterId,
@@ -2894,6 +2899,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.namespaceId,
                     old.tableId,
                     old.columnId,
                     old.adapterId,
@@ -4751,10 +4757,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
+    public void addPartitionPlacement( long namespaceId, int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
         if ( !checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
             CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
             CatalogPartitionPlacement partitionPlacement = new CatalogPartitionPlacement(
+                    namespaceId,
                     tableId,
                     adapterId,
                     store.uniqueName,

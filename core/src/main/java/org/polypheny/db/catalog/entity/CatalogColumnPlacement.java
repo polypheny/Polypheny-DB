@@ -29,6 +29,7 @@ public class CatalogColumnPlacement implements CatalogObject {
 
     private static final long serialVersionUID = -1909757888176291095L;
 
+    public final long namespaceId;
     public final long tableId;
     public final long columnId;
     public final int adapterId;
@@ -42,6 +43,7 @@ public class CatalogColumnPlacement implements CatalogObject {
 
 
     public CatalogColumnPlacement(
+            final long namespaceId,
             final long tableId,
             final long columnId,
             final int adapterId,
@@ -50,6 +52,7 @@ public class CatalogColumnPlacement implements CatalogObject {
             final String physicalSchemaName,
             final String physicalColumnName,
             final long physicalPosition ) {
+        this.namespaceId = namespaceId;
         this.tableId = tableId;
         this.columnId = columnId;
         this.adapterId = adapterId;

@@ -45,11 +45,12 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.graph.Graph;
@@ -79,30 +80,18 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     @Override
     public PreparingEntity getTable( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
-        PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
-        if ( entry != null ) {
-            final Entity entity = entry.getTable();
+        CatalogEntity entity = rootSchema.getTable( names );
+        return AlgOptEntityImpl.create( this, entity.getRowType(), entity, null, null );
 
-            if ( entity instanceof Wrapper ) {
-                final PreparingEntity algOptTable = ((Wrapper) entity).unwrap( PreparingEntity.class );
-                if ( algOptTable != null ) {
-                    return algOptTable;
-                }
-            }
-            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogEntity(), entity.getPartitionPlacement(), null );
-        }
-        return null;
     }
 
 
     @Override
     public AlgOptEntity getCollection( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
-        PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
-        if ( entry != null ) {
-            final Entity entity = entry.getTable();
-
-            return AlgOptEntityImpl.create( this, entity.getRowType( typeFactory ), entry, entity.getCatalogEntity(), entity.getPartitionPlacement(), null );
+        CatalogCollection collection = rootSchema.getCollection( names );
+        if ( collection != null ) {
+            return AlgOptEntityImpl.create( this, collection.getRowType(), collection, null, null );
         }
         return null;
     }
@@ -135,9 +124,9 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         final List<Moniker> result = new ArrayList<>();
 
         // Add root schema if not anonymous
-        if ( !schema.getName().equals( "" ) ) {
+        /*if ( !schema.getName().equals( "" ) ) {
             result.add( moniker( schema, null, MonikerType.SCHEMA ) );
-        }
+        }*/
 
         final Map<String, PolyphenyDbSchema> schemaMap = schema.getSubSchemaMap();
 

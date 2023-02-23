@@ -293,6 +293,7 @@ public class DdlManagerImpl extends DdlManager {
                     catalog.addPrimaryKey( tableId, primaryKeyColIds );
                     CatalogTable catalogTable = catalog.getTable( tableId );
                     catalog.addPartitionPlacement(
+                            catalogTable.namespaceId,
                             adapter.getAdapterId(),
                             catalogTable.id,
                             catalogTable.partitionProperty.partitionIds.get( 0 ),
@@ -896,7 +897,7 @@ public class DdlManagerImpl extends DdlManager {
         // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
         for ( long partitionId : partitionIds ) {
             catalog.addPartitionPlacement(
-                    dataStore.getAdapterId(),
+                    catalogTable.namespaceId, dataStore.getAdapterId(),
                     catalogTable.id,
                     partitionId,
                     PlacementType.AUTOMATIC,
@@ -1459,7 +1460,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
             newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
-                    storeInstance.getAdapterId(),
+                    catalogTable.namespaceId, storeInstance.getAdapterId(),
                     catalogTable.id,
                     partitionId,
                     PlacementType.MANUAL,
@@ -1513,7 +1514,7 @@ public class DdlManagerImpl extends DdlManager {
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             for ( long partitionId : newPartitions ) {
                 catalog.addPartitionPlacement(
-                        storeInstance.getAdapterId(),
+                        catalogTable.namespaceId, storeInstance.getAdapterId(),
                         catalogTable.id,
                         partitionId,
                         PlacementType.AUTOMATIC,
@@ -1858,6 +1859,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( DataStore store : stores ) {
             catalog.addPartitionPlacement(
+                    catalogMaterializedView.namespaceId,
                     store.getAdapterId(),
                     tableId,
                     catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
@@ -1989,6 +1991,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addDataPlacement( store.getAdapterId(), mapping.edgesPropertyId );
 
         catalog.addPartitionPlacement(
+                nodes.namespaceId,
                 store.getAdapterId(),
                 nodes.id,
                 nodes.partitionProperty.partitionIds.get( 0 ),
@@ -1999,6 +2002,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         catalog.addPartitionPlacement(
+                nodeProperty.namespaceId,
                 store.getAdapterId(),
                 nodeProperty.id,
                 nodeProperty.partitionProperty.partitionIds.get( 0 ),
@@ -2009,6 +2013,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         catalog.addPartitionPlacement(
+                edges.namespaceId,
                 store.getAdapterId(),
                 edges.id,
                 edges.partitionProperty.partitionIds.get( 0 ),
@@ -2019,6 +2024,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         catalog.addPartitionPlacement(
+                edgeProperty.namespaceId,
                 store.getAdapterId(),
                 edgeProperty.id,
                 edgeProperty.partitionProperty.partitionIds.get( 0 ),
@@ -2226,7 +2232,7 @@ public class DdlManagerImpl extends DdlManager {
 
             for ( DataStore store : stores ) {
                 catalog.addPartitionPlacement(
-                        store.getAdapterId(),
+                        catalogTable.namespaceId, store.getAdapterId(),
                         catalogTable.id,
                         catalogTable.partitionProperty.partitionIds.get( 0 ),
                         PlacementType.AUTOMATIC,
@@ -2281,6 +2287,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( DataStore store : stores ) {
             catalog.addCollectionPlacement(
+                    catalogCollection.namespaceId,
                     store.getAdapterId(),
                     catalogCollection.id,
                     PlacementType.AUTOMATIC );
@@ -2345,7 +2352,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( DataStore store : stores ) {
             catalog.addCollectionPlacement(
-                    store.getAdapterId(),
+                    catalogCollection.namespaceId, store.getAdapterId(),
                     catalogCollection.id,
                     PlacementType.AUTOMATIC );
 
@@ -2390,6 +2397,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addDataPlacement( store.getAdapterId(), collectionId );
 
         catalog.addPartitionPlacement(
+                table.namespaceId,
                 store.getAdapterId(),
                 table.id,
                 table.partitionProperty.partitionIds.get( 0 ),
@@ -2663,6 +2671,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( DataStore store : stores ) {
             for ( long partitionId : partitionIds ) {
                 catalog.addPartitionPlacement(
+                        partitionedTable.namespaceId,
                         store.getAdapterId(),
                         partitionedTable.id,
                         partitionId,
@@ -2773,6 +2782,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( DataStore store : stores ) {
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             catalog.addPartitionPlacement(
+                    mergedTable.namespaceId,
                     store.getAdapterId(),
                     mergedTable.id,
                     mergedTable.partitionProperty.partitionIds.get( 0 ),

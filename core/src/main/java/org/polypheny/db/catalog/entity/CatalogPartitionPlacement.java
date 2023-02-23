@@ -26,7 +26,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 /**
  * This class is considered the logical representation of a physical table on a specific store.
  */
-public class CatalogPartitionPlacement implements CatalogObject {
+public class CatalogPartitionPlacement extends CatalogEntityPlacement {
 
     private static final long serialVersionUID = 8835793248417591036L;
 
@@ -52,9 +52,11 @@ public class CatalogPartitionPlacement implements CatalogObject {
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     public final DataPlacementRole role;
+    public final long namespaceId;
 
 
     public CatalogPartitionPlacement(
+            long namespaceId,
             final long tableId,
             final int adapterId,
             @NonNull final String adapterUniqueName,
@@ -63,6 +65,8 @@ public class CatalogPartitionPlacement implements CatalogObject {
             final String physicalTableName,
             final long partitionId,
             DataPlacementRole role ) {
+        super( namespaceId, (long) adapterId, tableId );
+        this.namespaceId = namespaceId;
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;

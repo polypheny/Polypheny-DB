@@ -57,7 +57,7 @@ public class CottontailScan extends Scan implements CottontailAlg {
 
     @Override
     public void implement( CottontailImplementContext context ) {
-//        context.from = From.newBuilder().setEntity( this.cottontailTable.getEntity() ).build();
+//        context.from = From.newBuilder().setEntity( this.cottontailTable.getTable() ).build();
         if ( context.queryType == null ) {
             context.cottontailTable = this.cottontailTable;
             context.schemaName = this.cottontailTable.getPhysicalSchemaName();

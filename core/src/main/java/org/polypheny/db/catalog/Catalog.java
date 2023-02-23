@@ -1551,6 +1551,7 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Adds a placement for a partition.
      *
+     * @param namespaceId
      * @param adapterId The adapter on which the table should be placed on
      * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
@@ -1558,7 +1559,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
+    public abstract void addPartitionPlacement( long namespaceId, int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store
@@ -1846,12 +1847,13 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Adds a new placement for a given collection.
      *
+     * @param namespaceId
      * @param adapterId The id of the adapter on which the placement is added
      * @param collectionId The id of the collection for which the placement is added
      * @param placementType The type of placement
      * @return The id of the newly added placement
      */
-    public abstract long addCollectionPlacement( int adapterId, long collectionId, PlacementType placementType );
+    public abstract long addCollectionPlacement( long namespaceId, int adapterId, long collectionId, PlacementType placementType );
 
     /**
      * Get the mapping for the collection, which points to the substitution entities in other data models.
@@ -2341,6 +2343,11 @@ public abstract class Catalog implements ExtensionPoint {
 
         public Pattern toLowerCase() {
             return new Pattern( pattern.toLowerCase() );
+        }
+
+
+        public static Pattern of( String pattern ) {
+            return new Pattern( pattern );
         }
 
 

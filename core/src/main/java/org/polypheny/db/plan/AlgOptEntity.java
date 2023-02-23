@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Wrapper;
@@ -137,7 +137,7 @@ public interface AlgOptEntity extends Wrapper {
 
     CatalogEntity getCatalogEntity();
 
-    CatalogPartitionPlacement getPartitionPlacement();
+    CatalogEntityPlacement getPartitionPlacement();
 
 
     /**

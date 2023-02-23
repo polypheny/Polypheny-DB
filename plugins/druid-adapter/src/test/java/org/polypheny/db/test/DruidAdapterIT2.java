@@ -2717,7 +2717,7 @@ public class DruidAdapterIT2 {
 //    @Test
 //    public void testTableMapReused() {
 //        AbstractSchema schema = new DruidSchema( "http://localhost:8082", "http://localhost:8081", true );
-//        assertSame( schema.getEntity( "wikiticker" ), schema.getEntity( "wikiticker" ) );
+//        assertSame( schema.getTable( "wikiticker" ), schema.getTable( "wikiticker" ) );
 //    }
 //
 //
