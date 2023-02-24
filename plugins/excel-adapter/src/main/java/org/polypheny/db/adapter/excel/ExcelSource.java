@@ -39,6 +39,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
@@ -63,7 +64,9 @@ import org.polypheny.db.util.Sources;
         name = "Excel",
         description = "An adapter for querying Excel files. The location of the directory containing the Excel files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
-@AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .xlsx.", position = 1)
+@AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", description = "You can upload one or multiple .xlsx.", position = 1)
+@AdapterSettingString(subOf = "method_link", defaultValue = ".", name = "directoryName", description = "You can select a path to a folder or specific .xls or .xlsx files.", position = 2)
 @AdapterSettingString(name = "sheetName", description = "default to read the first sheet", defaultValue = "", required = false)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
@@ -95,6 +98,10 @@ public class ExcelSource extends DataSource {
 
     private void setExcelDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
+        if ( settings.containsKey( "method" ) && settings.get( "method" ).equalsIgnoreCase( "link" ) ) {
+            dir = settings.get( "directoryName" );
+        }
+
         if ( dir.startsWith( "classpath://" ) ) {
             excelDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
         } else {
@@ -168,7 +175,8 @@ public class ExcelSource extends DataSource {
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         String currentSheetName;
 
-        if ( exportedColumnCache != null ) {
+        if ( settings.get( "method" ).equalsIgnoreCase( "upload" ) && exportedColumnCache != null ) {
+            // if we upload, file will not be changed and we can cache the columns information, if "link" is used this is not advised
             return exportedColumnCache;
         }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
@@ -181,6 +189,9 @@ public class ExcelSource extends DataSource {
             for ( CatalogColumnPlacement ccp : ccps ) {
                 fileNames.add( ccp.physicalSchemaName );
             }
+        } else if ( Sources.of( excelDir ).file().isFile() ) {
+            // single files
+            fileNames = Set.of( excelDir.getPath() );
         } else {
             File[] files = Sources.of( excelDir )
                     .file()
@@ -226,11 +237,9 @@ public class ExcelSource extends DataSource {
                     sheet = workbook.getSheet( this.sheetName );
                     currentSheetName = this.sheetName;
                 }
-                Iterator<Row> rowIterator = sheet.iterator();
 
                 // Read first row to extract column attribute name and datatype
-                while ( rowIterator.hasNext() ) {
-                    Row row = rowIterator.next();
+                for ( Row row : sheet ) {
                     // For each row, iterate through all the columns
                     Iterator<Cell> cellIterator = row.cellIterator();
 
@@ -304,7 +313,7 @@ public class ExcelSource extends DataSource {
 
                             position++;
                         } catch ( Exception e ) {
-
+                            throw new RuntimeException( e );
                         }
                     }
                     break;
