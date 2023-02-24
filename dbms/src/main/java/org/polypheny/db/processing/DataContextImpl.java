@@ -32,7 +32,6 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Holder;
 
@@ -200,8 +199,8 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public SchemaPlus getRootSchema() {
-        return rootSchema == null ? null : rootSchema;
+    public PolyphenyDbSchema getRootSchema() {
+        return rootSchema;
     }
 
 

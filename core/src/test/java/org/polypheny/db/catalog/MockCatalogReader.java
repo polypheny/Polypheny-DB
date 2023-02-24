@@ -115,7 +115,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     public MockCatalogReader( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super(
                 AbstractPolyphenyDbSchema.createRootSchema(),//DEFAULT_CATALOG ),
-                PREFIX,
                 typeFactory );
     }
 

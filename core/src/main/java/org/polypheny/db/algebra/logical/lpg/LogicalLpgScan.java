@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -36,7 +37,6 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.TranslatableGraph;
 
 
 public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
@@ -44,7 +44,7 @@ public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
     /**
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph, AlgDataType rowType ) {
+    public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogGraphDatabase graph, AlgDataType rowType ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
     }

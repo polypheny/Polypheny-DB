@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.validate;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWithItem;
 import org.polypheny.db.util.NameMatcher;
@@ -66,9 +67,10 @@ class WithScope extends ListScope {
     @Override
     public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
-            final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
-            final Step path2 = path.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
-            resolved.found( ns, false, null, path2, null );
+            //final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
+            //final Step path2 = path.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
+            CatalogEntity entity = validator.catalogReader.getRootSchema().getTable( names );
+            resolved.found( entity );
             return;
         }
         super.resolveTable( names, nameMatcher, path, resolved );
@@ -80,7 +82,8 @@ class WithScope extends ListScope {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
             final Step path = Path.EMPTY.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
-            resolved.found( ns, false, null, path, null );
+            CatalogEntity entity = validator.catalogReader.getRootSchema().getTable( names );
+            resolved.found( entity );
             return;
         }
         super.resolve( names, nameMatcher, deep, resolved );

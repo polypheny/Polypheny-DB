@@ -25,13 +25,13 @@ import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.graph.Graph;
 
 
 public class LogicalLpgModify extends LpgModify implements RelationalTransformable {
@@ -40,7 +40,7 @@ public class LogicalLpgModify extends LpgModify implements RelationalTransformab
     /**
      * Subclass of {@link LpgModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogGraphDatabase graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 

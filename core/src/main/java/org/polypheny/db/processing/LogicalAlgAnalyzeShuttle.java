@@ -29,7 +29,6 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -62,7 +61,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -151,7 +149,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
-        hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.getGraph().getId() );
+        hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.getGraph().id );
 
         return super.visit( scan );
     }
@@ -452,7 +450,6 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalLpgFilter filter ) {
-        Graph graph = ((LpgAlg) filter.getInput()).getGraph();
         // todo might add
     }
 

@@ -67,7 +67,6 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
-import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
@@ -98,6 +97,7 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.refactor.LogicalEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -482,7 +482,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
-        if ( !(scan.getGraph() instanceof LogicalGraph) ) {
+        if ( !(scan.getGraph() instanceof LogicalEntity) ) {
             alg = scan.getGraph().toAlg( toAlgContext, scan.getGraph() );
         }
         setNewForOldRel( scan, alg );

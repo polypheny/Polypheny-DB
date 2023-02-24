@@ -51,7 +51,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -72,7 +72,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public SchemaPlus getRootSchema() {
+    public PolyphenyDbSchema getRootSchema() {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 

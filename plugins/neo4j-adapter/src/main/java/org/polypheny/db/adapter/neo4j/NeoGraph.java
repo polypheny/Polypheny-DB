@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -101,7 +102,7 @@ public class NeoGraph extends AbstractNamespace implements ModifiableGraph, Tran
     public LpgModify toModificationAlg(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            org.polypheny.db.schema.graph.Graph graph,
+            CatalogGraphDatabase graph,
             PolyphenyDbCatalogReader catalogReader,
             AlgNode input,
             Operation operation,

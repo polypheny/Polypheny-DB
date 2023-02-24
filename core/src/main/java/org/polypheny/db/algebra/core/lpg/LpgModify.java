@@ -22,10 +22,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.graph.Graph;
 
 
 public abstract class LpgModify extends SingleAlg implements LpgAlg {
@@ -34,14 +34,14 @@ public abstract class LpgModify extends SingleAlg implements LpgAlg {
     public final List<String> ids;
     public final List<? extends RexNode> operations;
     @Getter
-    public final Graph graph;
+    public final CatalogGraphDatabase graph;
 
 
     /**
      * Creates a {@link LpgModify}.
      * {@link org.polypheny.db.schema.ModelTrait#GRAPH} node, which is able to modify an LPG graph.
      */
-    protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
+    protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogGraphDatabase graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
         super( cluster, traits, input );
         this.operation = operation;
         this.ids = ids;

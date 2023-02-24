@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
@@ -45,12 +44,12 @@ import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
 
@@ -64,7 +63,7 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
      * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    public NeoLpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogGraphDatabase graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 
@@ -77,7 +76,7 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
-        implementor.setGraph( (NeoGraph) getGraph() );
+        implementor.setGraph( graph );
         implementor.setDml( true );
         implementor.visitChild( 0, getInput() );
 

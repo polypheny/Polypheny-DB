@@ -778,7 +778,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     final NameMatcher nameMatcher = catalogReader.nameMatcher;
                     scope.resolve( ImmutableList.of( name ), nameMatcher, false, resolved );
                     if ( resolved.count() == 1 ) {
-                        ns = resolved.only().namespace;
+                        //ns = resolved.only().namespace;
                     }
                 } else {
                     ns = ns.lookupChild( name );
@@ -1027,7 +1027,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( id.names, nameMatcher, false, resolved );
             if ( resolved.count() == 1 ) {
-                return resolved.only().namespace;
+                //return resolved.only().namespace;
             }
         }
         return getSqlNamespace( id );
@@ -3659,15 +3659,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             throw newValidationError( id, RESOURCE.tableNameNotFound( id.toString() ) );
         }
         // We've found a table. But is it a sequence?
-        final SqlValidatorNamespace ns = resolved.only().namespace;
-        if ( ns instanceof TableNamespace ) {
+        //final SqlValidatorNamespace ns = resolved.only().namespace;
+        /*if ( ns instanceof TableNamespace ) {
             final Entity entity = ns.getTable().unwrap( Entity.class );
             switch ( entity.getJdbcTableType() ) {
                 case SEQUENCE:
                 case TEMPORARY_SEQUENCE:
                     return;
             }
-        }
+        }*/
         throw newValidationError( id, RESOURCE.notASequence( id.toString() ) );
     }
 
@@ -5403,9 +5403,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     // There's a namespace with the name we seek.
                     final SqlValidatorScope.Resolve resolve = resolved.only();
                     type = resolve.rowType();
-                    for ( SqlValidatorScope.Step p : Util.skip( resolve.path.steps() ) ) {
+                    /*for ( SqlValidatorScope.Step p : Util.skip( resolve.path.steps() ) ) {
                         type = type.getFieldList().get( p.i ).getType();
-                    }
+                    }*/
                     break;
                 }
             }

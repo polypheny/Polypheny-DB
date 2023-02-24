@@ -174,7 +174,7 @@ public final class Schemas {
     }
 
 
-    public static DataContext createDataContext( SchemaPlus rootSchema ) {
+    public static DataContext createDataContext( PolyphenyDbSchema rootSchema ) {
         return new DummyDataContext( rootSchema );
     }
 
@@ -202,7 +202,8 @@ public final class Schemas {
      * Returns a {@link Queryable}, given a schema and table name.
      */
     public static <E> Queryable<E> queryable( DataContext root, PolyphenyDbSchema schema, Class<E> clazz, String tableName ) {
-        QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
+        //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
+        CatalogTable table = schema.getTable( List.of( tableName ) );
         return table.asQueryable( root, schema, tableName );
     }
 

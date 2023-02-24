@@ -2236,7 +2236,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     private CorrelationUse getCorrelationUse( Blackboard bb, final AlgNode r0 ) {
-        final Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( r0 );
+        /*final Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( r0 );
         if ( correlatedVariables.isEmpty() ) {
             return null;
         }
@@ -2328,7 +2328,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             // Add new node to leaves.
             leaves.add( r );
         }
-        return new CorrelationUse( correlNames.get( 0 ), requiredColumns.build(), r );
+        return new CorrelationUse( correlNames.get( 0 ), requiredColumns.build(), r );*/
+        return null;
     }
 
 
@@ -2340,7 +2341,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * @return true if the sub-query is non-correlated
      */
     private boolean isSubQueryNonCorrelated( AlgNode subq, Blackboard bb ) {
-        Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( subq );
+        /*Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( subq );
         for ( CorrelationId correlName : correlatedVariables ) {
             DeferredLookup lookup = mapCorrelToDeferred.get( correlName );
             String originalRelName = lookup.getOriginalRelName();
@@ -2363,7 +2364,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     break;
                 }
             } while ( parentScope != null );
-        }
+        }*/
         return true;
     }
 
@@ -3869,7 +3870,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
             // Found in current query's from list.  Find which from item.
             // We assume that the order of the from clause items has been preserved.
-            final SqlValidatorScope ancestorScope = resolve.scope;
+            /*final SqlValidatorScope ancestorScope = resolve.scope;
             boolean isParent = ancestorScope != scope;
             if ( (inputs != null) && !isParent ) {
                 final LookupContext algs = new LookupContext( this, inputs, systemFieldList.size() );
@@ -3885,7 +3886,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     }
                     final Map<String, Integer> map = ImmutableMap.copyOf( fieldOffsets );
                     return Pair.of( node, map );
-                }
+
             } else {
                 // We're referencing a relational expression which has not been converted yet. This occurs when from items are correlated, e.g. "select from emp as emp join emp.getDepts() as dept".
                 // Create a temporary expression.
@@ -3914,7 +3915,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     final RexNode c = rexBuilder.makeCorrel( builder.uniquify().build(), correlId );
                     return Pair.of( c, fields.build() );
                 }
-            }
+            }}*/
+            return null;
         }
 
 

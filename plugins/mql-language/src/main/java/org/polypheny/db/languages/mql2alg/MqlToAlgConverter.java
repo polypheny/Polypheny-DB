@@ -65,11 +65,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
@@ -96,8 +94,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalEntity;
-import org.polypheny.db.schema.PolyphenyDbSchema.TableEntryImpl;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -346,11 +342,8 @@ public class MqlToAlgConverter {
             return AlgOptEntityImpl.create(
                     table.getRelOptSchema(),
                     rowType,
-                    new TableEntryImpl(
-                            catalogReader.getRootSchema(), names.get( names.size() - 1 ),
-                            new LogicalEntity( Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( dbSchemaName ) ).get( 0 ).id, names.get( 0 ), names.get( names.size() - 1 ), List.of(), List.of(), AlgDataTypeImpl.proto( rowType ), NamespaceType.GRAPH ) ),
                     table.getCatalogEntity(),
-                    table.getPartitionPlacement(),
+                    table.getPartitionPlacement().unwrap( CatalogPartitionPlacement.class ),
                     1.0 );
         }
 

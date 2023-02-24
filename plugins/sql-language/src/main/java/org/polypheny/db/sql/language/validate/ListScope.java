@@ -28,8 +28,6 @@ import java.util.Objects;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
@@ -97,7 +95,7 @@ public abstract class ListScope extends DelegatingScope {
             }
 
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
-            final ValidatorTable table = child.namespace.getTable();
+            /*final ValidatorTable table = child.namespace.getTable();
             if ( table != null ) {
                 final ResolvedImpl resolved = new ResolvedImpl();
                 resolveTable( names, nameMatcher, Path.EMPTY, resolved );
@@ -107,7 +105,7 @@ public abstract class ListScope extends DelegatingScope {
                         && resolved.only().namespace.getTable().getQualifiedName().equals( table.getQualifiedName() ) ) {
                     return child;
                 }
-            }
+            }*/
         }
         return null;
     }
@@ -172,8 +170,9 @@ public abstract class ListScope extends DelegatingScope {
     public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
         // First resolve by looking through the child namespaces.
         final ScopeChild child0 = findChild( names, nameMatcher );
+
         if ( child0 != null ) {
-            final Step path =
+            /*final Step path =
                     Path.EMPTY.plus(
                             child0.namespace.getRowType(),
                             child0.ordinal,
@@ -184,7 +183,7 @@ public abstract class ListScope extends DelegatingScope {
                     child0.nullable,
                     this,
                     path,
-                    null );
+                    null );*/
             return;
         }
 

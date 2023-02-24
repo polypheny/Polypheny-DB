@@ -36,7 +36,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
@@ -50,6 +49,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
@@ -109,7 +109,7 @@ public class CypherToAlgConverter {
             databaseId = parameters.getDatabaseId();
         }
 
-        LogicalGraph graph = new LogicalGraph( databaseId );
+        CatalogGraphDatabase graph = Catalog.getInstance().getGraph( databaseId );
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan
@@ -128,7 +128,7 @@ public class CypherToAlgConverter {
     }
 
 
-    private AlgNode buildFullScan( LogicalGraph graph ) {
+    private AlgNode buildFullScan( CatalogGraphDatabase graph ) {
         return new LogicalLpgScan(
                 cluster,
                 cluster.traitSet(),
@@ -405,7 +405,7 @@ public class CypherToAlgConverter {
         private final Queue<Pair<String, RexNode>> rexQueue = new LinkedList<>();
         private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
         public final CypherNode original;
-        public final LogicalGraph graph;
+        public final CatalogGraphDatabase graph;
 
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
@@ -423,7 +423,7 @@ public class CypherToAlgConverter {
 
         private CypherContext(
                 CypherNode original,
-                LogicalGraph graph,
+                CatalogGraphDatabase graph,
                 AlgOptCluster cluster,
                 AlgBuilder algBuilder,
                 RexBuilder rexBuilder,

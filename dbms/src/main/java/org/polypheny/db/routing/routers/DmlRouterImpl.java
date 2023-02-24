@@ -114,7 +114,6 @@ import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableCollection;
 import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -763,7 +762,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement ) {
-        CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
+        CatalogGraphDatabase catalogGraph = alg.getGraph();
         return routeGraphDml( alg, statement, catalogGraph, catalogGraph.placements );
     }
 
@@ -784,7 +783,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-            Graph graph = reader.getGraph( name );
+            CatalogGraphDatabase graph = reader.getGraph( name );
             if ( graph == null ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, adapterId, statement ) );
@@ -968,7 +967,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode attachRelationalModify( LogicalLpgModify alg, int adapterId, Statement statement ) {
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().id );
 
         PreparingEntity nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
         PreparingEntity nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId );

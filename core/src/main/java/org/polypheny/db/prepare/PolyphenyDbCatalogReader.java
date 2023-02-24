@@ -33,7 +33,6 @@
 
 package org.polypheny.db.prepare;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -114,9 +113,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     @Override
     public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
         final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, names, Wrapper.nameMatcher );
-        if ( schema == null ) {
-            return ImmutableList.of();
-        }
         final List<Moniker> result = new ArrayList<>();
 
         for ( String subSchema : rootSchema.getNamespaceNames() ) {

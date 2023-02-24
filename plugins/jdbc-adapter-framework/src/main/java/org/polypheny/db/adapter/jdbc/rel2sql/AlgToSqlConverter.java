@@ -453,7 +453,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().getPartitionPlacement() );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().getPartitionPlacement().unwrap( CatalogPartitionPlacement.class ) );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -466,7 +466,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                         sqlTargetTable,
                         sqlSource,
                         physicalIdentifierList(
-                                modify.getEntity().getPartitionPlacement(),
+                                modify.getEntity().getPartitionPlacement().unwrap( CatalogPartitionPlacement.class ),
                                 modify.getInput().getRowType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -475,7 +475,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( modify.getEntity().getPartitionPlacement(), modify.getUpdateColumnList() ),
+                        physicalIdentifierList( modify.getEntity().getPartitionPlacement().unwrap( CatalogPartitionPlacement.class ), modify.getUpdateColumnList() ),
                         exprList( context, modify.getSourceExpressionList() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),

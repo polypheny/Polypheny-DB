@@ -79,7 +79,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -150,14 +149,14 @@ public class AlgBuilderTest {
 
 
     private AlgBuilder createAlgBuilder() {
-        final SchemaPlus rootSchema = transaction.getSchema().plus();
+        final PolyphenyDbSchema rootSchema = transaction.getSchema();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
-                .defaultSchema( rootSchema.getSubNamespace( transaction.getDefaultSchema().name ) )
+                .defaultSchema( rootSchema )
                 .traitDefs( (List<AlgTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
+                        rootSchema,
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {

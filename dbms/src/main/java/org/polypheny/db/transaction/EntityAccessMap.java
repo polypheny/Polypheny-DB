@@ -322,7 +322,7 @@ public class EntityAccessMap {
                 newAccess = Mode.READ_ACCESS;
             }
             // as graph is on the namespace level in the full polyschema it is unique and can be used like this
-            EntityIdentifier key = new EntityIdentifier( p.getGraph().getId(), 0, NamespaceLevel.NAMESPACE_LEVEL );
+            EntityIdentifier key = new EntityIdentifier( p.getGraph().id, 0, NamespaceLevel.NAMESPACE_LEVEL );
             accessMap.put( key, newAccess );
         }
 

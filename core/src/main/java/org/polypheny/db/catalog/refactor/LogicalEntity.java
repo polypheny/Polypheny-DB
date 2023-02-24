@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.lpg;
+package org.polypheny.db.catalog.refactor;
 
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-
-
-/**
- * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node.
- */
-public interface LpgAlg {
-
-    NodeType getNodeType();
-
-    default CatalogGraphDatabase getGraph() {
-        return null;
-    }
-
-    enum NodeType {
-        MATCH,
-        FILTER,
-        SCAN,
-        UNWIND,
-        PROJECT,
-        MODIFY,
-        VALUES,
-        AGGREGATE,
-        MERGE,
-        SORT
-    }
+public interface LogicalEntity {
 
 }

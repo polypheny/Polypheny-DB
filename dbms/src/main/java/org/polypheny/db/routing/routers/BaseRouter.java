@@ -83,7 +83,6 @@ import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.TranslatableGraph;
-import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -416,7 +415,7 @@ public abstract class BaseRouter implements Router {
 
         Catalog catalog = Catalog.getInstance();
 
-        CatalogSchema namespace = catalog.getSchema( alg.getGraph().getId() );
+        CatalogSchema namespace = catalog.getSchema( alg.getGraph().id );
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
             return handleGraphOnRelational( alg, namespace, statement, placementId );
@@ -425,7 +424,7 @@ public abstract class BaseRouter implements Router {
             return handleGraphOnDocument( alg, namespace, statement, placementId );
         }
 
-        CatalogGraphDatabase catalogGraph = catalog.getGraph( alg.getGraph().getId() );
+        CatalogGraphDatabase catalogGraph = alg.getGraph();
 
         List<AlgNode> scans = new ArrayList<>();
 
@@ -439,7 +438,7 @@ public abstract class BaseRouter implements Router {
             CatalogGraphPlacement graphPlacement = catalog.getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-            Graph graph = reader.getGraph( name );
+            CatalogGraphDatabase graph = reader.getGraph( name );
 
             if ( !(graph instanceof TranslatableGraph) ) {
                 // needs substitution later on
@@ -448,7 +447,7 @@ public abstract class BaseRouter implements Router {
             }
 
             // a native placement was used, we go with that
-            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
+            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), graph, alg.getRowType() );
         }
         if ( scans.size() < 1 ) {
             throw new RuntimeException( "Error while routing graph query." );
@@ -494,7 +493,7 @@ public abstract class BaseRouter implements Router {
 
 
     public AlgNode getRelationalScan( LogicalLpgScan alg, int adapterId, Statement statement ) {
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().id );
 
         PreparingEntity nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
         PreparingEntity nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId );
