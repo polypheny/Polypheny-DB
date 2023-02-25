@@ -33,4 +33,6 @@ public interface QueryableEntity extends Typed {
         return PolyValue[].class;
     }
 
+    Type getElementType();
+
 }
