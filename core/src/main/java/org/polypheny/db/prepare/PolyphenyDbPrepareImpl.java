@@ -120,6 +120,7 @@ import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -262,8 +263,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for cluster.
      */
-    protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder ) {
-        return AlgOptCluster.create( planner, rexBuilder );
+    protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, PolyphenyDbSchema rootSchema ) {
+        return AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
     }
 
     /**
@@ -453,15 +454,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public <R> R perform( PrepareAction<R> action ) {
         final Context prepareContext = action.getConfig().getPrepareContext();
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-        final PolyphenyDbSchema schema =
-                action.getConfig().getDefaultSchema() != null
-                        ? action.getConfig().getDefaultSchema()
-                        : prepareContext.getRootSchema();
-        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema, typeFactory );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final AlgOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
-        final AlgOptCluster cluster = createCluster( planner, rexBuilder );
-        return action.apply( cluster, catalogReader, prepareContext.getRootSchema() );
+        final AlgOptCluster cluster = createCluster( planner, rexBuilder, null, prepareContext.getRootSchema() );
+        return action.apply( cluster, prepareContext.getRootSchema() );
     }
 
 

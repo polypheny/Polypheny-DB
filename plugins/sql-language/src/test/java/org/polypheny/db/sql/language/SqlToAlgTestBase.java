@@ -668,7 +668,7 @@ public abstract class SqlToAlgTestBase {
 
         protected SqlToAlgConverter createSqlToRelConverter( final SqlValidator validator, final Prepare.CatalogReader catalogReader, final AlgDataTypeFactory typeFactory, final Config config ) {
             final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-            AlgOptCluster cluster = AlgOptCluster.create( getPlanner(), rexBuilder );
+            AlgOptCluster cluster = AlgOptCluster.create( getPlanner(), rexBuilder, traitSet, rootSchema );
             if ( clusterFactory != null ) {
                 cluster = clusterFactory.apply( cluster );
             }

@@ -103,7 +103,6 @@ public final class LogicalRelScan extends RelScan<CatalogEntity> {
      * Creates a LogicalScan.
      *
      * @param cluster Cluster
-     * @param algOptEntity Table
      */
     public static LogicalRelScan create( AlgOptCluster cluster, final CatalogEntity entity ) {
 

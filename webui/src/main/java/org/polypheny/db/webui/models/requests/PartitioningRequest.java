@@ -17,7 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 
 public class PartitioningRequest {

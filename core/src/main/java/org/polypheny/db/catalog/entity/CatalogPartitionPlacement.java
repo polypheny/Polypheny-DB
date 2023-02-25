@@ -19,8 +19,8 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import lombok.NonNull;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
-import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.PlacementType;
 
 
 /**

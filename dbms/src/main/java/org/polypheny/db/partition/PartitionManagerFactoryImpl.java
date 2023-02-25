@@ -15,13 +15,13 @@
  */
 package org.polypheny.db.partition;
 
-import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 
 public class PartitionManagerFactoryImpl extends PartitionManagerFactory {
 
     @Override
-    public PartitionManager getPartitionManager( Catalog.PartitionType partitionType ) {
+    public PartitionManager getPartitionManager( PartitionType partitionType ) {
         switch ( partitionType ) {
             case HASH:
                 return new HashPartitionManager();

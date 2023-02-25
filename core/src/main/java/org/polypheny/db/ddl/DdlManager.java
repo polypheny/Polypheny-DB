@@ -25,13 +25,13 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -582,9 +582,9 @@ public abstract class DdlManager {
     public abstract void removeGraphDatabasePlacement( long graphId, DataStore dataStores, Statement statement );
 
 
-    public abstract void dropCollection( CatalogCollection catalogCollection, Statement statement );
+    public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
-    public abstract void dropCollectionPlacement( long namespaceId, CatalogCollection collection, List<DataStore> dataStores, Statement statement );
+    public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore> dataStores, Statement statement );
 
 
     /**

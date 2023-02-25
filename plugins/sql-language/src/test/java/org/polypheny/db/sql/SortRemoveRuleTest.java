@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.rules.JoinToCorrelateRule;
 import org.polypheny.db.algebra.rules.SemiJoinRules;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptUtil;

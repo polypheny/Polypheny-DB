@@ -28,9 +28,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -156,7 +156,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
-    public void createCollection( Context prepareContext, CatalogCollection catalogCollection, long adapterId ) {
+    public void createCollection( Context prepareContext, LogicalCollection catalogCollection, long adapterId ) {
         // overwrite this if the datastore supports document
         createCollectionSubstitution( prepareContext, catalogCollection );
     }
@@ -166,7 +166,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void createCollectionSubstitution( Context prepareContext, CatalogCollection catalogCollection ) {
+    private void createCollectionSubstitution( Context prepareContext, LogicalCollection catalogCollection ) {
         Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
@@ -180,7 +180,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
-    public void dropCollection( Context prepareContext, CatalogCollection catalogCollection ) {
+    public void dropCollection( Context prepareContext, LogicalCollection catalogCollection ) {
         // overwrite this if the datastore supports document
         dropCollectionSubstitution( prepareContext, catalogCollection );
     }
@@ -190,7 +190,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void dropCollectionSubstitution( Context prepareContext, CatalogCollection catalogCollection ) {
+    private void dropCollectionSubstitution( Context prepareContext, LogicalCollection catalogCollection ) {
         Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 

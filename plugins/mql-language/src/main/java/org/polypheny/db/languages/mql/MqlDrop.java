@@ -18,8 +18,8 @@ package org.polypheny.db.languages.mql;
 
 import java.util.List;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -55,7 +55,7 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
         }
 
         CatalogSchema namespace = catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).get( 0 );
-        List<CatalogCollection> collections = catalog.getCollections( namespace.id, new Pattern( getCollection() ) );
+        List<LogicalCollection> collections = catalog.getCollections( namespace.id, new Pattern( getCollection() ) );
         if ( collections.size() != 1 ) {
             // dropping a collection, which does not exist, which is a no-op
             return;

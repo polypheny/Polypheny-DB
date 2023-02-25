@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.language.ddl.altermaterializedview;
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;

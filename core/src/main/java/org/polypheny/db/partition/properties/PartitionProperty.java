@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 
 @SuperBuilder

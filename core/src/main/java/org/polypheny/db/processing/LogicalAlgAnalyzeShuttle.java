@@ -59,6 +59,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.transaction.Statement;
@@ -149,7 +150,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
-        hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.getGraph().id );
+        hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.entity.id );
 
         return super.visit( scan );
     }
@@ -250,7 +251,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
-        hashBasis.add( "LogicalDocumentScan#" + scan.getCollection().getCatalogEntity().id );
+        hashBasis.add( "LogicalDocumentScan#" + scan.entity.id );
         return super.visit( scan );
     }
 
@@ -278,14 +279,14 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalMatch match ) {
-        hashBasis.add( "LogicalMatch#" + match.getEntity().getCatalogEntity().id );
+        hashBasis.add( "LogicalMatch#" + match.getEntity().id );
         return visitChild( match, 0, match.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( RelScan scan ) {
-        hashBasis.add( "Scan#" + scan.getEntity().getCatalogEntity().id );
+    public AlgNode visit( RelScan<?> scan ) {
+        hashBasis.add( "Scan#" + scan.getEntity().id );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
 
@@ -324,7 +325,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalJoin join ) {
         if ( join.getLeft() instanceof LogicalRelScan && join.getRight() instanceof LogicalRelScan ) {
-            hashBasis.add( "LogicalJoin#" + join.getLeft().getEntity().getCatalogEntity().id + "#" + join.getRight().getEntity().getCatalogEntity().id );
+            hashBasis.add( "LogicalJoin#" + join.getLeft().getEntity().id + "#" + join.getRight().getEntity().id );
         }
 
         super.visit( join );
@@ -389,8 +390,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getAvailableColumns( AlgNode scan ) {
-        this.entityId.add( scan.getEntity().getCatalogEntity().id );
-        final LogicalTable table = (LogicalTable) scan.getEntity().getCatalogEntity();
+        this.entityId.add( scan.getEntity().id );
+        final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class );
         if ( table != null ) {
             final List<Long> ids = table.fieldIds;
             final List<String> names = table.getColumnNames();
@@ -405,12 +406,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalFilter filter ) {
-        AlgOptEntityImpl table = (AlgOptEntityImpl) filter.getInput().getEntity();
+        CatalogEntity table = filter.getInput().getEntity();
         if ( table == null ) {
             return;
         }
 
-        handleIfPartitioned( filter, (LogicalTable) table.getCatalogEntity() );
+        handleIfPartitioned( filter, table.unwrap( LogicalTable.class ) );
     }
 
 
@@ -440,12 +441,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalDocumentFilter filter ) {
-        AlgOptEntityImpl table = (AlgOptEntityImpl) filter.getInput().getEntity();
-        if ( table == null ) {
+        CatalogEntity entity = filter.getInput().getEntity();
+        if ( entity == null ) {
             return;
         }
 
-        handleIfPartitioned( filter, (LogicalTable) table.getCatalogEntity() );
+        handleIfPartitioned( filter, (LogicalTable) entity );
     }
 
 

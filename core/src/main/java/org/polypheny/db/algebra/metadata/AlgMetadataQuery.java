@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -392,7 +393,7 @@ public class AlgMetadataQuery {
      * @param alg the AlgNode
      * @return the table, if the {@link AlgNode} is a simple table; otherwise null
      */
-    public AlgOptEntity getTableOrigin( AlgNode alg ) {
+    public CatalogEntity getTableOrigin( AlgNode alg ) {
         // Determine the simple origin of the first column in the/ AlgNode. If it's simple, then that means that the underlying table is also simple, even if the column itself is derived.
         if ( alg.getRowType().getFieldCount() == 0 ) {
             return null;

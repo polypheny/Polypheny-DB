@@ -18,7 +18,7 @@ package org.polypheny.db.sql.language.ddl;
 
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.partition.raw.RawPartitionInformation;

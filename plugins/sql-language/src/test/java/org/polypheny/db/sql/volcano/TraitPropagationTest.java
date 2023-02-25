@@ -465,7 +465,7 @@ public class TraitPropagationTest {
             planner.addRule( r );
         }
 
-        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
         return action.apply( cluster, catalogReader, prepareContext.getRootSchema().plus() );
     }
 

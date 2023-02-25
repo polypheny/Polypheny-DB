@@ -24,7 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 @EqualsAndHashCode(callSuper = false)
@@ -51,7 +51,7 @@ public final class CatalogSchema extends CatalogNamespace implements CatalogObje
             final long databaseId,
             final int ownerId,
             @NonNull final String ownerName,
-            @NonNull final Catalog.NamespaceType namespaceType,
+            @NonNull final NamespaceType namespaceType,
             boolean caseSensitive ) {
         super( id, namespaceType );
         this.id = id;

@@ -33,6 +33,7 @@ import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
@@ -46,13 +47,13 @@ public class RoutedAlgBuilder extends AlgBuilder {
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
 
-    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
-        super( context, cluster, algOptSchema );
+    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, PolyphenyDbSchema rootSchema ) {
+        super( context, cluster, rootSchema );
     }
 
 
     public static RoutedAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
+        return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader().getRootSchema() );
     }
 
 

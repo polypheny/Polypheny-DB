@@ -76,7 +76,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
  */
 public interface AlgShuttle {
 
-    AlgNode visit( RelScan scan );
+    AlgNode visit( RelScan<?> scan );
 
     AlgNode visit( TableFunctionScan scan );
 

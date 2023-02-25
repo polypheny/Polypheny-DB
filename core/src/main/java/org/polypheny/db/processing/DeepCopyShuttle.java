@@ -50,7 +50,7 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( RelScan scan ) {
+    public AlgNode visit( RelScan<?> scan ) {
         final AlgNode node = super.visit( scan );
         return new LogicalRelScan( node.getCluster(), copy( node.getTraitSet() ), node.getEntity() );
     }

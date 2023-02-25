@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryParameters;
 
 public class MqlQueryParameters extends QueryParameters {

@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
@@ -31,17 +32,17 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.ModelTrait;
 
 
-public class LogicalDocumentScan extends DocumentScan implements RelationalTransformable {
+public class LogicalDocumentScan extends DocumentScan<LogicalCollection> implements RelationalTransformable {
 
     /**
      * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity document ) {
+    public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalCollection document ) {
         super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), document );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, AlgOptEntity collection ) {
+    public static AlgNode create( AlgOptCluster cluster, LogicalCollection collection ) {
         return new LogicalDocumentScan( cluster, cluster.traitSet(), collection );
     }
 

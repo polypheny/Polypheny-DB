@@ -40,6 +40,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
@@ -133,7 +134,7 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
 
 
     @Override
-    public Queryable<Object[]> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+    public Queryable<Object[]> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
         return new CottontailTableQueryable( dataContext, schema, tableName );
     }
 

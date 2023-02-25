@@ -141,8 +141,7 @@ public class PlannerImpl implements Planner {
         }
         ensure( State.STATE_1_RESET );
         Frameworks.withPlanner(
-                ( cluster, algOptSchema, rootSchema ) -> {
-                    Util.discard( rootSchema ); // use our own defaultSchema
+                ( cluster, rootSchema ) -> {
                     typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
                     planner = cluster.getPlanner();
                     planner.setExecutor( executor );

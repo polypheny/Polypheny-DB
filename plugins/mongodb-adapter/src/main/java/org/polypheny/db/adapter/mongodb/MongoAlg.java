@@ -195,7 +195,7 @@ public interface MongoAlg extends AlgNode {
 
 
         @Override
-        public AlgNode visit( RelScan scan ) {
+        public AlgNode visit( RelScan<?> scan ) {
             super.visit( scan );
 
             return scan;

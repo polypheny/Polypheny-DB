@@ -32,17 +32,16 @@ public class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
     }
 
 
-    public static boolean contains( RelModify modify ) {
-        long id = modify.getEntity().getCatalogEntity().id;
-        UnsupportedFromInsertShuttle shuttle = new UnsupportedFromInsertShuttle( id );
+    public static boolean contains( RelModify<?> modify ) {
+        UnsupportedFromInsertShuttle shuttle = new UnsupportedFromInsertShuttle( modify.entity.id );
         modify.accept( shuttle );
         return shuttle.containsOtherTableId;
     }
 
 
     @Override
-    public AlgNode visit( RelScan scan ) {
-        if ( !Objects.equals( scan.getEntity().getCatalogEntity().id, tableId ) ) {
+    public AlgNode visit( RelScan<?> scan ) {
+        if ( !Objects.equals( scan.getEntity().id, tableId ) ) {
             containsOtherTableId = true;
         }
         return super.visit( scan );

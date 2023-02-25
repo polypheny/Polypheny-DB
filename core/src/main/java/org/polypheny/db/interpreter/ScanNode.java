@@ -90,50 +90,48 @@ public class ScanNode implements Node {
      *
      * Tries various table SPIs, and negotiates with the table which filters and projects it can implement. Adds to the Enumerable implementations of any filters and projects that cannot be implemented by the table.
      */
-    static ScanNode create( Compiler compiler, RelScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
-        final AlgOptEntity algOptEntity = alg.getEntity();
-        final ProjectableFilterableEntity pfTable = algOptEntity.unwrap( ProjectableFilterableEntity.class );
+    static ScanNode create( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
+        final ProjectableFilterableEntity pfTable = alg.entity.unwrap( ProjectableFilterableEntity.class );
         if ( pfTable != null ) {
             return createProjectableFilterable( compiler, alg, filters, projects, pfTable );
         }
-        final FilterableEntity filterableTable = algOptEntity.unwrap( FilterableEntity.class );
+        final FilterableEntity filterableTable = alg.entity.unwrap( FilterableEntity.class );
         if ( filterableTable != null ) {
             return createFilterable( compiler, alg, filters, projects, filterableTable );
         }
-        final ScannableEntity scannableTable = algOptEntity.unwrap( ScannableEntity.class );
+        final ScannableEntity scannableTable = alg.entity.unwrap( ScannableEntity.class );
         if ( scannableTable != null ) {
             return createScannable( compiler, alg, filters, projects, scannableTable );
         }
         //noinspection unchecked
-        final Enumerable<Row> enumerable = algOptEntity.unwrap( Enumerable.class );
+        final Enumerable<Row> enumerable = alg.entity.unwrap( Enumerable.class );
         if ( enumerable != null ) {
             return createEnumerable( compiler, alg, enumerable, null, filters, projects );
         }
-        final QueryableEntity queryableTable = algOptEntity.unwrap( QueryableEntity.class );
+        final QueryableEntity queryableTable = alg.entity.unwrap( QueryableEntity.class );
         if ( queryableTable != null ) {
             return createQueryable( compiler, alg, filters, projects, queryableTable );
         }
-        throw new AssertionError( "cannot convert table " + algOptEntity + " to enumerable" );
+        throw new AssertionError( "cannot convert table " + alg.entity + " to enumerable" );
     }
 
 
-    private static ScanNode createScannable( Compiler compiler, RelScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ScannableEntity scannableTable ) {
+    private static ScanNode createScannable( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ScannableEntity scannableTable ) {
         final Enumerable<Row> rowEnumerable = Enumerables.toRow( scannableTable.scan( compiler.getDataContext() ) );
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
 
 
-    private static ScanNode createQueryable( Compiler compiler, RelScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableEntity queryableTable ) {
+    private static ScanNode createQueryable( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableEntity queryableTable ) {
         final DataContext root = compiler.getDataContext();
-        final AlgOptEntity algOptEntity = alg.getEntity();
         final Type elementType = queryableTable.getElementType();
 
         final Enumerable<Row> rowEnumerable;
         if ( elementType instanceof Class ) {
             //noinspection unchecked
-            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, List.of( algOptEntity.getCatalogEntity().unwrap( LogicalTable.class ).getNamespaceName(), algOptEntity.getCatalogEntity().name ) );
+            final Queryable<Object> queryable = (Queryable<Object>) Schemas.queryable( root, (Class<?>) elementType, List.of( alg.entity.unwrap( LogicalTable.class ).getNamespaceName(), alg.entity.name ) );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
-            Class type = (Class) elementType;
+            Class<?> type = (Class<?>) elementType;
             for ( Field field : type.getFields() ) {
                 if ( Modifier.isPublic( field.getModifiers() ) && !Modifier.isStatic( field.getModifiers() ) ) {
                     fieldBuilder.add( field );
@@ -153,13 +151,13 @@ public class ScanNode implements Node {
                 return new Row( values );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, List.of( algOptEntity.getCatalogEntity().unwrap( LogicalTable.class ).getNamespaceName(), algOptEntity.getCatalogEntity().name ) );
+            rowEnumerable = Schemas.queryable( root, Row.class, List.of( alg.entity.unwrap( LogicalTable.class ).getNamespaceName(), algOptEntity.getCatalogEntity().name ) );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
 
 
-    private static ScanNode createFilterable( Compiler compiler, RelScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, FilterableEntity filterableTable ) {
+    private static ScanNode createFilterable( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableIntList projects, FilterableEntity filterableTable ) {
         final DataContext root = compiler.getDataContext();
         final List<RexNode> mutableFilters = Lists.newArrayList( filters );
         final Enumerable<Object[]> enumerable = filterableTable.scan( root, mutableFilters );

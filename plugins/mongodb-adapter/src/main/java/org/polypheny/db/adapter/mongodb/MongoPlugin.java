@@ -59,9 +59,9 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -262,7 +262,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public Entity createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+        public Entity createDocumentSchema( LogicalCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
             return this.currentSchema.createCollection( catalogEntity, partitionPlacement );
         }
 
@@ -336,7 +336,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void createCollection( Context prepareContext, CatalogCollection catalogCollection, long adapterId ) {
+        public void createCollection( Context prepareContext, LogicalCollection catalogCollection, long adapterId ) {
             Catalog catalog = Catalog.getInstance();
             commitAll();
 
@@ -367,7 +367,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void dropCollection( Context context, CatalogCollection catalogCollection ) {
+        public void dropCollection( Context context, LogicalCollection catalogCollection ) {
             Catalog catalog = Catalog.getInstance();
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );

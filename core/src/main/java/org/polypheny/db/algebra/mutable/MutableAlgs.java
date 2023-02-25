@@ -380,7 +380,6 @@ public abstract class MutableAlgs {
                     modify.getRowType(),
                     input,
                     modify.getEntity(),
-                    modify.getCatalogReader(),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),
                     modify.getSourceExpressionList(),

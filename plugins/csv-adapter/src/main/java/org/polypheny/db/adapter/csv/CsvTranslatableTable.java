@@ -47,8 +47,8 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.util.Source;
@@ -90,7 +90,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableEntity, T
 
 
     @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
+    public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
         return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
     }
 
@@ -102,7 +102,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableEntity, T
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
         throw new UnsupportedOperationException();
     }
 

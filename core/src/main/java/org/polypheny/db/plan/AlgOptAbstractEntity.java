@@ -127,7 +127,7 @@ public abstract class AlgOptAbstractEntity implements AlgOptEntity {
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        return LogicalRelScan.create( context.getCluster(), this );
+        return null;//return LogicalRelScan.create( context.getCluster(), this );
     }
 
 

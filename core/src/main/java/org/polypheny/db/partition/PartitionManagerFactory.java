@@ -17,7 +17,7 @@
 package org.polypheny.db.partition;
 
 
-import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 
 public abstract class PartitionManagerFactory {
@@ -43,6 +43,6 @@ public abstract class PartitionManagerFactory {
     }
 
 
-    public abstract PartitionManager getPartitionManager( Catalog.PartitionType partitionType );
+    public abstract PartitionManager getPartitionManager( PartitionType partitionType );
 
 }

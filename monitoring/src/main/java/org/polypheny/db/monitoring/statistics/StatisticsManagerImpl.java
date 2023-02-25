@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -536,7 +536,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
         AlgBuilder relBuilder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = relBuilder.getRexBuilder();
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, traitSet, rootSchema );
 
         AlgNode queryNode;
         LogicalRelScan tableScan = getLogicalScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );

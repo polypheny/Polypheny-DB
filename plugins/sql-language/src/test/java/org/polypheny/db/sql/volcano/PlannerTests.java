@@ -66,7 +66,7 @@ class PlannerTests {
 
     static AlgOptCluster newCluster( VolcanoPlanner planner ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        return AlgOptCluster.create( planner, new RexBuilder( typeFactory ) );
+        return AlgOptCluster.create( planner, new RexBuilder( typeFactory ), traitSet, rootSchema );
     }
 
 

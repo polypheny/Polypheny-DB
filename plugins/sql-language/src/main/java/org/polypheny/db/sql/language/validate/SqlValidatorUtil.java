@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -623,7 +623,7 @@ public class SqlValidatorUtil {
         if ( graph != null ) {
             return false;
         }
-        CatalogCollection collection = validator.getCatalogReader().getRootSchema().getCollection( id.names );
+        LogicalCollection collection = validator.getCatalogReader().getRootSchema().getCollection( id.names );
         if ( collection != null ) {
             return false;
         }

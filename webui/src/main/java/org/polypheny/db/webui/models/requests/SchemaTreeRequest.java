@@ -18,7 +18,7 @@ package org.polypheny.db.webui.models.requests;
 
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 public class SchemaTreeRequest extends UIRequest {
 

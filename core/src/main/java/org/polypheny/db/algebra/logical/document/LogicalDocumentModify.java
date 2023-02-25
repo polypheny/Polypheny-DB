@@ -28,30 +28,30 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
-public class LogicalDocumentModify extends DocumentModify implements RelationalTransformable {
+public class LogicalDocumentModify extends DocumentModify<CatalogEntity> implements RelationalTransformable {
 
     /**
      * Subclass of {@link DocumentModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentModify( AlgTraitSet traits, AlgOptEntity table, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
-        super( traits, table, catalogReader, input, operation, keys, updates );
+    public LogicalDocumentModify( AlgTraitSet traits, CatalogEntity entity, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+        super( traits, entity, catalogReader, input, operation, keys, updates );
     }
 
 
-    public static LogicalDocumentModify create( AlgOptEntity table, AlgNode input, CatalogReader catalogReader, Operation operation, List<String> keys, List<RexNode> updates ) {
-        return new LogicalDocumentModify( input.getTraitSet(), table, catalogReader, input, operation, keys, updates );
+    public static LogicalDocumentModify create( CatalogEntity entity, AlgNode input, CatalogReader catalogReader, Operation operation, List<String> keys, List<RexNode> updates ) {
+        return new LogicalDocumentModify( input.getTraitSet(), entity, catalogReader, input, operation, keys, updates );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentModify( traitSet, getCollection(), getCatalogReader(), inputs.get( 0 ), operation, getKeys(), getUpdates() );
+        return new LogicalDocumentModify( traitSet, entity, getCatalogReader(), inputs.get( 0 ), operation, getKeys(), getUpdates() );
     }
 
 
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader ) {
-        return List.of( RelationalTransformable.getModify( entities.get( 0 ), catalogReader, values.get( 0 ), operation ) );
+        return List.of( RelationalTransformable.getModify( entities.get( 0 ), values.get( 0 ), operation ) );
     }
 
 

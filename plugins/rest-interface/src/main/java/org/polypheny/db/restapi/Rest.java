@@ -173,7 +173,7 @@ public class Rest {
         // Table Modify
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
 
         // Values
         AlgDataType tableRowType = table.getRowType();
@@ -232,7 +232,7 @@ public class Rest {
         // Table Modify
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
 
         AlgNode algNode = algBuilder.build();
         RelModify modify = new LogicalRelModify(
@@ -278,7 +278,7 @@ public class Rest {
 //        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
 
         List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );

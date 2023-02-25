@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.metadata;
 
 
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 
 
@@ -42,15 +43,15 @@ import org.polypheny.db.plan.AlgOptEntity;
  */
 public class AlgColumnOrigin {
 
-    private final AlgOptEntity originTable;
+    private final CatalogEntity originTable;
 
     private final int iOriginColumn;
 
     private final boolean isDerived;
 
 
-    public AlgColumnOrigin( AlgOptEntity originTable, int iOriginColumn, boolean isDerived ) {
-        this.originTable = originTable;
+    public AlgColumnOrigin( CatalogEntity origin, int iOriginColumn, boolean isDerived ) {
+        this.originTable = origin;
         this.iOriginColumn = iOriginColumn;
         this.isDerived = isDerived;
     }
@@ -59,7 +60,7 @@ public class AlgColumnOrigin {
     /**
      * @return table of origin
      */
-    public AlgOptEntity getOriginTable() {
+    public CatalogEntity getOriginTable() {
         return originTable;
     }
 
@@ -88,7 +89,7 @@ public class AlgColumnOrigin {
             return false;
         }
         AlgColumnOrigin other = (AlgColumnOrigin) obj;
-        return originTable.getCatalogEntity().id == other.originTable.getCatalogEntity().id
+        return originTable.id == other.originTable.id
                 && (iOriginColumn == other.iOriginColumn)
                 && (isDerived == other.isDerived);
     }
@@ -96,7 +97,7 @@ public class AlgColumnOrigin {
 
     // override Object
     public int hashCode() {
-        return originTable.getCatalogEntity().hashCode() + iOriginColumn + (isDerived ? 313 : 0);
+        return originTable.hashCode() + iOriginColumn + (isDerived ? 313 : 0);
     }
 
 }

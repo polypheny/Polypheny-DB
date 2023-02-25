@@ -103,15 +103,9 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
             return alg;
         }
         if ( queryable instanceof AbstractTableQueryable ) {
-            final AbstractTableQueryable tableQueryable = (AbstractTableQueryable) queryable;
+            final AbstractTableQueryable<?> tableQueryable = (AbstractTableQueryable<?>) queryable;
             final QueryableEntity table = tableQueryable.table;
 
-            final AlgOptEntityImpl algOptTable = AlgOptEntityImpl.create(
-                    null,
-                    table.getRowType( translator.typeFactory ),
-                    table.getCatalogEntity(),
-                    table.getPartitionPlacement(),
-                    null );
             if ( table instanceof TranslatableEntity ) {
                 return ((TranslatableEntity) table).toAlg( translator.toAlgContext(), algOptTable, translator.cluster.traitSet() );
             } else {

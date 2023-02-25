@@ -39,7 +39,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
 
 
-public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
+public class LogicalLpgScan extends LpgScan<LogicalGraph> implements RelationalTransformable {
 
     /**
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
@@ -86,7 +86,7 @@ public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalLpgScan( inputs.get( 0 ).getCluster(), traitSet, graph, rowType );
+        return new LogicalLpgScan( inputs.get( 0 ).getCluster(), traitSet, entity, rowType );
     }
 
 

@@ -62,7 +62,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -118,6 +118,16 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
+import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -158,8 +168,8 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], LogicalTable> tableNames;
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
 
-    private static BTreeMap<Long, CatalogCollection> collections;
-    private static BTreeMap<Object[], CatalogCollection> collectionNames;
+    private static BTreeMap<Long, LogicalCollection> collections;
+    private static BTreeMap<Object[], LogicalCollection> collectionNames;
 
     private static BTreeMap<Object[], CatalogCollectionPlacement> collectionPlacements;
 
@@ -2376,7 +2386,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public CatalogCollection getCollection( long id ) {
+    public LogicalCollection getCollection( long id ) {
         if ( !collections.containsKey( id ) ) {
             throw new UnknownTableIdRuntimeException( id );
         }
@@ -2388,11 +2398,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern ) {
+    public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
         if ( schemas.containsKey( namespaceId ) ) {
             CatalogSchema schema = Objects.requireNonNull( schemas.get( namespaceId ) );
             if ( namePattern != null ) {
-                CatalogCollection collection = collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } );
+                LogicalCollection collection = collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } );
                 if ( collection == null ) {
                     return new ArrayList<>();
                 }
@@ -2416,7 +2426,7 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogSchema namespace = getSchema( schemaId );
-        CatalogCollection collection = new CatalogCollection(
+        LogicalCollection collection = new LogicalCollection(
                 Catalog.defaultDatabaseId,
                 schemaId,
                 collectionId,
@@ -2442,12 +2452,12 @@ public class CatalogImpl extends Catalog {
     public long addCollectionPlacement( long namespaceId, int adapterId, long collectionId, PlacementType placementType ) {
         long id = partitionIdBuilder.getAndIncrement();
         CatalogCollectionPlacement placement = new CatalogCollectionPlacement( namespaceId, adapterId, collectionId, null, null, id );
-        CatalogCollection old = collections.get( collectionId );
+        LogicalCollection old = collections.get( collectionId );
         if ( old == null ) {
             throw new UnknownCollectionException( collectionId );
         }
 
-        CatalogCollection collection = old.addPlacement( adapterId );
+        LogicalCollection collection = old.addPlacement( adapterId );
 
         synchronized ( this ) {
             collectionPlacements.put( new Object[]{ collectionId, adapterId }, placement );
@@ -2464,13 +2474,13 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void updateCollectionPartitionPhysicalNames( long namespaceId, long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
-        CatalogCollection old = getCollection( collectionId );
+        LogicalCollection old = getCollection( collectionId );
         if ( old == null ) {
             throw new UnknownCollectionException( collectionId );
         }
 
         CatalogCollectionPlacement placement = new CatalogCollectionPlacement( namespaceId, adapterId, collectionId, physicalCollectionName, physicalNamespaceName, old.id );
-        CatalogCollection collection = old.setPhysicalName( physicalCollectionName );
+        LogicalCollection collection = old.setPhysicalName( physicalCollectionName );
         synchronized ( this ) {
             collections.replace( collectionId, collection );
             collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
@@ -2560,7 +2570,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteCollection( long id ) {
-        CatalogCollection collection = getCollection( id );
+        LogicalCollection collection = getCollection( id );
 
         synchronized ( this ) {
             collections.remove( collection.namespaceId );
@@ -2576,8 +2586,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void dropCollectionPlacement( long id, int adapterId ) {
-        CatalogCollection oldCollection = Objects.requireNonNull( collections.get( id ) );
-        CatalogCollection collection = oldCollection.removePlacement( adapterId );
+        LogicalCollection oldCollection = Objects.requireNonNull( collections.get( id ) );
+        LogicalCollection collection = oldCollection.removePlacement( adapterId );
 
         synchronized ( this ) {
             collectionPlacements.remove( new Object[]{ id, adapterId } );

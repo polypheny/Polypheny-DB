@@ -17,7 +17,7 @@
 package org.polypheny.db.languages;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.interpreter.Node;
 
 /**

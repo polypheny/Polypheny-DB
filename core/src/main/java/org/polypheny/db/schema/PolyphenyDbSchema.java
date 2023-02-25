@@ -18,21 +18,22 @@ package org.polypheny.db.schema;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
-import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.logistic.Pattern;
 
 
 public interface PolyphenyDbSchema {
+
 
     default LogicalTable getTable( List<String> names ) {
         switch ( names.size() ) {
@@ -47,7 +48,20 @@ public interface PolyphenyDbSchema {
         }
     }
 
-    default CatalogCollection getCollection( List<String> names ) {
+    default LogicalTable getTable( long id ) {
+        return Catalog.getInstance().getTable( id );
+    }
+
+    default AllocationTable getAllocTable( long id ){
+        return null;
+    }
+
+    default PhysicalTable getPhysicalTable( long id ){
+        return null;
+    }
+
+
+    default LogicalCollection getCollection( List<String> names ) {
         CatalogNamespace namespace;
         switch ( names.size() ) {
             case 3:
@@ -65,11 +79,34 @@ public interface PolyphenyDbSchema {
         }
     }
 
-    default LogicalGraph getGraph( List<String> names ) {
+    default LogicalCollection getCollection( long id ) {
+        return Catalog.getInstance().getCollection( id );
+    }
 
+    default AllocationCollection getAllocCollection( long id ){
+        return null;
+    }
+
+    default PhysicalCollection getPhysicalCollection( long id ){
+        return null;
+    }
+
+    default LogicalGraph getGraph( List<String> names ) {
         if ( names.size() == 1 ) {// TODO add methods
             return Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );
         }
+        return null;
+    }
+
+    default LogicalGraph getGraph( long id ) {
+        return Catalog.getInstance().getGraph( id );
+    }
+
+    default AllocationGraph getAllocGraph( long id ){
+        return null;
+    }
+
+    default PhysicalGraph getPhysicalGraph( long id ){
         return null;
     }
 
@@ -77,21 +114,8 @@ public interface PolyphenyDbSchema {
         return Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, null ).stream().map( t -> t.name ).collect( Collectors.toList() );
     }
 
-    /**
-     * Schema that has no parents.
-     */
-    class RootSchema extends AbstractNamespace implements Schema {
-
-        RootSchema() {
-            super( -1L );
-        }
-
-
-        @Override
-        public Expression getExpression( SchemaPlus parentSchema, String name ) {
-            return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
-        }
-
+    default boolean isPartitioned( long id ){
+        return false;
     }
 
 }

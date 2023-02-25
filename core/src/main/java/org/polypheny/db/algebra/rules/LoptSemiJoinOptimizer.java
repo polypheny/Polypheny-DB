@@ -51,6 +51,8 @@ import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -243,7 +245,7 @@ public class LoptSemiJoinOptimizer {
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsScan tmpFactRel = (LcsScan) factTable.toAlg( factRel::getCluster, factRel.getTraitSet() );
+        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).toAlg( factRel::getCluster, factRel.getTraitSet() );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =
@@ -339,7 +341,7 @@ public class LoptSemiJoinOptimizer {
      */
     private LcsEntity validateKeys( AlgNode factRel, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> actualLeftKeys ) {
         int keyIdx = 0;
-        AlgOptEntity theTable = null;
+        CatalogEntity theTable = null;
         ListIterator<Integer> keyIter = leftKeys.listIterator();
         while ( keyIter.hasNext() ) {
             boolean removeKey = false;
@@ -349,7 +351,7 @@ public class LoptSemiJoinOptimizer {
             if ( (colOrigin == null) || LucidDbSpecialOperators.isLcsRidColumnId( colOrigin.getOriginColumnOrdinal() ) ) {
                 removeKey = true;
             } else {
-                AlgOptEntity table = colOrigin.getOriginTable();
+                CatalogEntity table = colOrigin.getOriginTable();
                 if ( theTable == null ) {
                     if ( !(table instanceof LcsEntity) ) {
                         // not a column store table
@@ -663,7 +665,11 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private abstract static class LcsEntity implements AlgOptEntity {
+    private abstract static class LcsEntity extends CatalogEntity {
+
+        protected LcsEntity( CatalogEntityBuilder<?, ?> b ) {
+            super( b );
+        }
 
     }
 

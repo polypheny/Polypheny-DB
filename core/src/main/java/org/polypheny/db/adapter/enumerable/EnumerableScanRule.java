@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Entity;
@@ -64,8 +65,7 @@ public class EnumerableScanRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalRelScan scan = (LogicalRelScan) alg;
-        final AlgOptEntity algOptEntity = scan.getEntity();
-        final Entity entity = algOptEntity.unwrap( Entity.class );
+        final LogicalTable entity = scan.getEntity().unwrap( LogicalTable.class );
         if ( !EnumerableScan.canHandle( entity ) ) {
             return null;
         }

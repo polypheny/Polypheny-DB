@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
@@ -84,13 +84,13 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     private static EnforcementInformation getControl( AlgNode node, Statement statement ) {
         ModifyExtractor extractor = new ModifyExtractor();
         node.accept( extractor );
-        RelModify modify = extractor.getModify();
+        RelModify<?> modify = extractor.getModify();
 
         if ( modify == null ) {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        final LogicalTable table = getCatalogTable( modify );
+        final LogicalTable table = modify.entity.unwrap( LogicalTable.class );
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();
@@ -162,9 +162,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             for ( final CatalogForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
-                final AlgOptSchema algOptSchema = modify.getCatalogReader();
-                final AlgOptEntity scanOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getTableName() ) );
-                final AlgOptEntity refOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
+                final LogicalTable scanOptTable = statement.getDataContext().getRootSchema().getTable( foreignKey.tableId );
+                final LogicalTable refOptTable = statement.getDataContext().getRootSchema().getTable( foreignKey.referencedKeyTableId );
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
                 final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 

@@ -63,6 +63,7 @@ import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
@@ -281,7 +282,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
         @Override
-        public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
             return new AbstractTableQueryable<T>( dataContext, schema, this, tableName ) {
                 @Override
                 @SuppressWarnings("unchecked")
@@ -362,7 +363,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
         @Override
-        public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
+        public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
             return Expressions.field( schema.unwrap( ReflectiveSchema.class ).getTargetExpression( schema.getParentSchema(), schema.getName() ), field );
         }
 

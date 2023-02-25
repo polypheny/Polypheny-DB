@@ -19,7 +19,7 @@ package org.polypheny.db.webui.models;
 
 import javax.annotation.Nullable;
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 /**

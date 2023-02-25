@@ -19,14 +19,10 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.annotations.SerializedName;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
@@ -34,7 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -61,38 +57,26 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -1820,7 +1804,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param collectionId The id of the graph
      * @return The requested collection
      */
-    public abstract CatalogCollection getCollection( long collectionId );
+    public abstract LogicalCollection getCollection( long collectionId );
 
     /**
      * Get a collection of collections which match the given naming pattern.
@@ -1829,7 +1813,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param namePattern The naming pattern of the collection itself, null if all are matched
      * @return collection of collections matching conditions
      */
-    public abstract List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern );
+    public abstract List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
 
     /**
      * Add a new collection with the given parameters.
@@ -1923,459 +1907,5 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void clear();
 
-
-    public enum EntityType {
-        ENTITY( 1 ),
-        SOURCE( 2 ),
-        VIEW( 3 ),
-        MATERIALIZED_VIEW( 4 );
-        // STREAM, ...
-
-        private final int id;
-
-
-        EntityType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static EntityType getById( final int id ) {
-            for ( EntityType t : values() ) {
-                if ( t.id == id ) {
-                    return t;
-                }
-            }
-            throw new UnknownTableTypeRuntimeException( id );
-        }
-
-
-        public static EntityType getByName( final String name ) throws UnknownTableTypeException {
-            for ( EntityType t : values() ) {
-                if ( t.name().equalsIgnoreCase( name ) ) {
-                    return t;
-                }
-            }
-            throw new UnknownTableTypeException( name );
-        }
-
-
-        // Used for creating ResultSets
-        public Object[] getParameterArray() {
-            return new Object[]{ name() };
-        }
-
-
-        // Required for building JDBC result set
-        @RequiredArgsConstructor
-        public static class PrimitiveTableType {
-
-            public final String tableType;
-
-        }
-    }
-
-
-    public enum NamespaceType {
-        @SerializedName("relational")
-        RELATIONAL( 1 ),
-        @SerializedName("document")
-        DOCUMENT( 2 ),
-        @SerializedName("graph")
-        GRAPH( 3 );
-
-        // GRAPH, DOCUMENT, ...
-
-        private final int id;
-
-
-        NamespaceType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static NamespaceType getDefault() {
-            //return (NamespaceType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
-            return NamespaceType.RELATIONAL;
-        }
-
-
-        public static NamespaceType getById( final int id ) throws UnknownSchemaTypeException {
-            for ( NamespaceType t : values() ) {
-                if ( t.id == id ) {
-                    return t;
-                }
-            }
-            throw new UnknownSchemaTypeRuntimeException( id );
-        }
-
-
-        public static NamespaceType getByName( final String name ) throws UnknownSchemaTypeException {
-            for ( NamespaceType t : values() ) {
-                if ( t.name().equalsIgnoreCase( name ) ) {
-                    return t;
-                }
-            }
-            throw new UnknownSchemaTypeException( name );
-        }
-
-
-        public AlgTrait getModelTrait() {
-            if ( this == NamespaceType.RELATIONAL ) {
-                return ModelTrait.RELATIONAL;
-            } else if ( this == NamespaceType.DOCUMENT ) {
-                return ModelTrait.DOCUMENT;
-            } else if ( this == NamespaceType.GRAPH ) {
-                return ModelTrait.GRAPH;
-            }
-            throw new RuntimeException( "Not found a suitable NamespaceType." );
-        }
-    }
-
-
-    public enum Collation {
-        CASE_SENSITIVE( 1 ),
-        CASE_INSENSITIVE( 2 );
-
-        private final int id;
-
-
-        Collation( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static Collation getById( int id ) {
-            for ( Collation c : values() ) {
-                if ( c.id == id ) {
-                    return c;
-                }
-            }
-            throw new UnknownCollationIdRuntimeException( id );
-        }
-
-
-        public static Collation parse( @NonNull String str ) throws UnknownCollationException {
-            if ( str.equalsIgnoreCase( "CASE SENSITIVE" ) ) {
-                return Collation.CASE_SENSITIVE;
-            } else if ( str.equalsIgnoreCase( "CASE INSENSITIVE" ) ) {
-                return Collation.CASE_INSENSITIVE;
-            }
-            throw new UnknownCollationException( str );
-        }
-
-
-        public static Collation getDefaultCollation() {
-            return getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() );
-        }
-    }
-
-
-    public enum IndexType {
-        MANUAL( 1 ),
-        AUTOMATIC( 2 );
-
-        private final int id;
-
-
-        IndexType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static Catalog.IndexType getById( int id ) {
-            for ( Catalog.IndexType e : values() ) {
-                if ( e.id == id ) {
-                    return e;
-                }
-            }
-            throw new UnknownIndexTypeRuntimeException( id );
-        }
-
-
-        public static Catalog.IndexType parse( @NonNull String str ) throws UnknownIndexTypeException {
-            if ( str.equalsIgnoreCase( "MANUAL" ) ) {
-                return Catalog.IndexType.MANUAL;
-            } else if ( str.equalsIgnoreCase( "AUTOMATIC" ) ) {
-                return Catalog.IndexType.AUTOMATIC;
-            }
-            throw new UnknownIndexTypeException( str );
-        }
-    }
-
-
-    public enum ConstraintType {
-        UNIQUE( 1 ),
-        PRIMARY( 2 );
-
-        private final int id;
-
-
-        ConstraintType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static ConstraintType getById( int id ) {
-            for ( ConstraintType e : values() ) {
-                if ( e.id == id ) {
-                    return e;
-                }
-            }
-            throw new UnknownConstraintTypeRuntimeException( id );
-        }
-
-
-        public static ConstraintType parse( @NonNull String str ) throws UnknownConstraintTypeException {
-            if ( str.equalsIgnoreCase( "UNIQUE" ) ) {
-                return ConstraintType.UNIQUE;
-            }
-            throw new UnknownConstraintTypeException( str );
-        }
-    }
-
-
-    public enum ForeignKeyOption {
-        NONE( -1 ),
-        // IDs according to JDBC standard
-        //CASCADE( 0 ),
-        RESTRICT( 1 );
-        //SET_NULL( 2 ),
-        //SET_DEFAULT( 4 );
-
-        private final int id;
-
-
-        ForeignKeyOption( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static ForeignKeyOption getById( int id ) {
-            for ( ForeignKeyOption e : values() ) {
-                if ( e.id == id ) {
-                    return e;
-                }
-            }
-            throw new UnknownForeignKeyOptionRuntimeException( id );
-        }
-
-
-        public static ForeignKeyOption parse( @NonNull String str ) throws UnknownForeignKeyOptionException {
-            if ( str.equalsIgnoreCase( "NONE" ) ) {
-                return ForeignKeyOption.NONE;
-            } else if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
-                return ForeignKeyOption.RESTRICT;
-            } /*else if ( str.equalsIgnoreCase( "CASCADE" ) ) {
-                return ForeignKeyOption.CASCADE;
-            } else if ( str.equalsIgnoreCase( "SET NULL" ) ) {
-                return ForeignKeyOption.SET_NULL;
-            } else if ( str.equalsIgnoreCase( "SET DEFAULT" ) ) {
-                return ForeignKeyOption.SET_DEFAULT;
-            }*/
-            throw new UnknownForeignKeyOptionException( str );
-        }
-    }
-
-
-    public enum PlacementType {
-        MANUAL( 1 ),
-        AUTOMATIC( 2 ),
-        STATIC( 3 );
-
-        private final int id;
-
-
-        PlacementType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static PlacementType getById( int id ) {
-            for ( PlacementType e : values() ) {
-                if ( e.id == id ) {
-                    return e;
-                }
-            }
-            throw new UnknownPlacementTypeRuntimeException( id );
-        }
-
-
-        public static PlacementType parse( @NonNull String str ) throws UnknownPlacementTypeException {
-            if ( str.equalsIgnoreCase( "MANUAL" ) ) {
-                return PlacementType.MANUAL;
-            } else if ( str.equalsIgnoreCase( "AUTOMATIC" ) ) {
-                return PlacementType.AUTOMATIC;
-            }
-            throw new UnknownPlacementTypeException( str );
-        }
-
-
-    }
-
-
-    public enum PartitionType {
-        NONE( 0 ),
-        RANGE( 1 ),
-        LIST( 2 ),
-        HASH( 3 ),
-        //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partition Functions
-        TEMPERATURE( 4 );
-
-        private final int id;
-
-
-        PartitionType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static PartitionType getById( final int id ) {
-            for ( PartitionType t : values() ) {
-                if ( t.id == id ) {
-                    return t;
-                }
-            }
-            throw new UnknownPartitionTypeRuntimeException( id );
-        }
-
-
-        public static PartitionType getByName( final String name ) throws UnknownPartitionTypeException {
-            for ( PartitionType t : values() ) {
-                if ( t.name().equalsIgnoreCase( name ) ) {
-                    return t;
-                }
-            }
-            throw new UnknownPartitionTypeException( name );
-        }
-
-    }
-
-
-    public enum DataPlacementRole {
-        UPTODATE( 0 ),
-        REFRESHABLE( 1 );
-
-        private final int id;
-
-
-        DataPlacementRole( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static DataPlacementRole getById( final int id ) {
-            for ( DataPlacementRole t : values() ) {
-                if ( t.id == id ) {
-                    return t;
-                }
-            }
-            throw new UnknownPlacementRoleRuntimeException( id );
-        }
-
-
-        public static DataPlacementRole getByName( final String name ) throws UnknownPlacementRoleException {
-            for ( DataPlacementRole t : values() ) {
-                if ( t.name().equalsIgnoreCase( name ) ) {
-                    return t;
-                }
-            }
-            throw new UnknownPlacementRoleException( name );
-        }
-
-    }
-
-
-    public static class Pattern {
-
-        public final String pattern;
-        public final boolean containsWildcards;
-
-
-        public Pattern( String pattern ) {
-            this.pattern = pattern;
-            containsWildcards = pattern.contains( "%" ) || pattern.contains( "_" );
-        }
-
-
-        public Pattern toLowerCase() {
-            return new Pattern( pattern.toLowerCase() );
-        }
-
-
-        public static Pattern of( String pattern ) {
-            return new Pattern( pattern );
-        }
-
-
-        public String toRegex() {
-            return pattern.replace( "_", "(.)" ).replace( "%", "(.*)" );
-        }
-
-
-        @Override
-        public String toString() {
-            return "Pattern[" + pattern + "]";
-        }
-
-    }
-
-
-    /*
-     * Helpers
-     */
-
-
-    public static List<EntityType> convertTableTypeList( @NonNull final List<String> stringTypeList ) throws UnknownTableTypeException {
-        final List<EntityType> typeList = new ArrayList<>( stringTypeList.size() );
-        for ( String s : stringTypeList ) {
-            typeList.add( EntityType.getByName( s ) );
-        }
-        return typeList;
-    }
 
 }

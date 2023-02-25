@@ -18,7 +18,7 @@ package org.polypheny.db.partition.properties;
 
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 
 @SuperBuilder

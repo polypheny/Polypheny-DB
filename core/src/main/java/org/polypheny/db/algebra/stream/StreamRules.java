@@ -56,6 +56,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
@@ -267,21 +268,20 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final RelScan scan = call.alg( 1 );
+            final RelScan<?> scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
-            final AlgOptEntity algOptEntity = scan.getEntity();
-            final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
+            final StreamableEntity streamableTable = scan.entity.unwrap( StreamableEntity.class );
             if ( streamableTable != null ) {
                 final Entity entity1 = streamableTable.stream();
-                final LogicalTable catalogTable = algOptEntity.getCatalogEntity().unwrap( LogicalTable.class );
-                final CatalogPartitionPlacement placement = algOptEntity.getPartitionPlacement().unwrap( CatalogPartitionPlacement.class );
+                final LogicalTable catalogTable = scan.entity.unwrap( LogicalTable.class );
+                /*final CatalogPartitionPlacement placement = scan.entity.unwrap( PhysicalTable.class ).getPartitionPlacement().unwrap( CatalogPartitionPlacement.class );
                 final AlgOptEntity algOptEntity2 =
                         AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
                                 algOptEntity.getRowType(),
                                 entity1,
                                 catalogTable,
-                                placement );
-                final LogicalRelScan newScan = LogicalRelScan.create( cluster, algOptEntity2 );
+                                placement );*/
+                final LogicalRelScan newScan = LogicalRelScan.create( cluster, null );
                 call.transformTo( newScan );
             }
         }
@@ -309,9 +309,8 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final RelScan scan = call.alg( 1 );
-            final AlgOptEntity algOptEntity = scan.getEntity();
-            final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
+            final RelScan<?> scan = call.alg( 1 );
+            final StreamableEntity streamableTable = scan.getEntity().unwrap( StreamableEntity.class );
             final AlgBuilder builder = call.builder();
             if ( streamableTable == null ) {
                 call.transformTo( builder.values( delta.getRowType() ).build() );

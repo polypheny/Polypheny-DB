@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;

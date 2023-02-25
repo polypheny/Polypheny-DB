@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;

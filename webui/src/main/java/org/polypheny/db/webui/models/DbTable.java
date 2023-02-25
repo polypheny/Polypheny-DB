@@ -19,7 +19,7 @@ package org.polypheny.db.webui.models;
 
 import java.util.ArrayList;
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.logistic.EntityType;
 
 
 /**

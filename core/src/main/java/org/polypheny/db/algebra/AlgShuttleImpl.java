@@ -127,7 +127,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( RelScan scan ) {
+    public AlgNode visit( RelScan<?> scan ) {
         return scan;
     }
 

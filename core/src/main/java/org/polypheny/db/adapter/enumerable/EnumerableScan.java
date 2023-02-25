@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,18 +55,19 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.FilterableEntity;
+import org.polypheny.db.catalog.refactor.ProjectableFilterableEntity;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.FilterableEntity;
-import org.polypheny.db.schema.ProjectableFilterableEntity;
-import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -75,9 +75,9 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Implementation of {@link RelScan} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableScan extends RelScan implements EnumerableAlg {
+public class EnumerableScan extends RelScan<PhysicalTable> implements EnumerableAlg {
 
-    private final Class elementType;
+    private final Class<?> elementType;
 
 
     /**
@@ -85,7 +85,7 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you are doing.
      */
-    public EnumerableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, Class elementType ) {
+    public EnumerableScan( AlgOptCluster cluster, AlgTraitSet traitSet, PhysicalTable table, Class<?> elementType ) {
         super( cluster, traitSet, table );
         assert getConvention() instanceof EnumerableConvention;
         this.elementType = elementType;
@@ -95,18 +95,13 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
     /**
      * Creates an EnumerableScan.
      */
-    public static EnumerableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity ) {
-        final Entity entity = algOptEntity.unwrap( Entity.class );
-        Class elementType = EnumerableScan.deduceElementType( entity );
+    public static EnumerableScan create( AlgOptCluster cluster, CatalogEntity entity ) {
+        PhysicalTable physicalTable = entity.unwrap( PhysicalTable.class );
+        Class<?> elementType = EnumerableScan.deduceElementType( physicalTable );
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
-                        .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
-                            if ( entity != null ) {
-                                return entity.getStatistic().getCollations();
-                            }
-                            return ImmutableList.of();
-                        } );
-        return new EnumerableScan( cluster, traitSet, algOptEntity, elementType );
+                        .replaceIfs( AlgCollationTraitDef.INSTANCE, entity::getCollations );
+        return new EnumerableScan( cluster, traitSet, physicalTable, elementType );
     }
 
 
@@ -114,13 +109,13 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
     public boolean equals( Object obj ) {
         return obj == this
                 || obj instanceof EnumerableScan
-                && table.equals( ((EnumerableScan) obj).table );
+                && entity.id == ((EnumerableScan) obj).getEntity().id;
     }
 
 
     @Override
     public int hashCode() {
-        return table.hashCode();
+        return entity.hashCode();
     }
 
 
@@ -133,7 +128,7 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
     }
 
 
-    public static Class deduceElementType( Entity entity ) {
+    public static Class<?> deduceElementType( PhysicalTable entity ) {
         if ( entity instanceof QueryableEntity ) {
             final QueryableEntity queryableTable = (QueryableEntity) entity;
             final Type type = queryableTable.getElementType();
@@ -153,16 +148,8 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
     }
 
 
-    public static JavaRowFormat deduceFormat( AlgOptEntity table ) {
-        final Class elementType = deduceElementType( table.unwrap( Entity.class ) );
-        return elementType == Object[].class
-                ? JavaRowFormat.ARRAY
-                : JavaRowFormat.CUSTOM;
-    }
-
-
     private Expression getExpression( PhysType physType ) {
-        final Expression expression = table.getExpression( Queryable.class );
+        final Expression expression = entity.asExpression();
         final Expression expression2 = toEnumerable( expression );
         assert Types.isAssignableFrom( Enumerable.class, expression2.getType() );
         return toRows( physType, expression2 );
@@ -190,9 +177,9 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
         if ( physType.getFormat() == JavaRowFormat.SCALAR
                 && Object[].class.isAssignableFrom( elementType )
                 && getRowType().getFieldCount() == 1
-                && (table.unwrap( ScannableEntity.class ) != null
-                || table.unwrap( FilterableEntity.class ) != null
-                || table.unwrap( ProjectableFilterableEntity.class ) != null) ) {
+                && (entity.unwrap( ScannableEntity.class ) != null
+                || entity.unwrap( FilterableEntity.class ) != null
+                || entity.unwrap( ProjectableFilterableEntity.class ) != null) ) {
             return Expressions.call( BuiltInMethod.SLICE0.method, expression );
         }
         JavaRowFormat oldFormat = format();
@@ -200,7 +187,7 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
             return expression;
         }
         final ParameterExpression row_ = Expressions.parameter( elementType, "row" );
-        final int fieldCount = table.getRowType().getFieldCount();
+        final int fieldCount = entity.getRowType().getFieldCount();
         List<Expression> expressionList = new ArrayList<>( fieldCount );
         for ( int i = 0; i < fieldCount; i++ ) {
             expressionList.add( fieldExpression( row_, i, physType, oldFormat ) );
@@ -266,7 +253,7 @@ public class EnumerableScan extends RelScan implements EnumerableAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableScan( getCluster(), traitSet, table, elementType );
+        return new EnumerableScan( getCluster(), traitSet, entity, elementType );
     }
 
 

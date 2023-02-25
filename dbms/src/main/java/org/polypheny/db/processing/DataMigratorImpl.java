@@ -326,7 +326,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), traitSet, rootSchema );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         List<String> columnNames = new LinkedList<>();
@@ -368,7 +368,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), traitSet, rootSchema );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         // while adapters should be able to handle unsorted columnIds for prepared indexes,
@@ -412,7 +412,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), traitSet, rootSchema );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
@@ -473,7 +473,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Build Query
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), traitSet, rootSchema );
 
         AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, placementDistribution );
         return AlgRoot.of( node, Kind.SELECT );

@@ -115,14 +115,13 @@ public abstract class FilterScanRule extends AlgOptRule {
     }
 
 
-    public static boolean test( RelScan scan ) {
+    public static boolean test( RelScan<?> scan ) {
         // We can only push filters into a FilterableTable or ProjectableFilterableTable.
-        final AlgOptEntity table = scan.getEntity();
-        return table.unwrap( FilterableEntity.class ) != null || table.unwrap( ProjectableFilterableEntity.class ) != null;
+        return scan.entity.unwrap( FilterableEntity.class ) != null || scan.entity.unwrap( ProjectableFilterableEntity.class ) != null;
     }
 
 
-    protected void apply( AlgOptRuleCall call, Filter filter, RelScan scan ) {
+    protected void apply( AlgOptRuleCall call, Filter filter, RelScan<?> scan ) {
         final ImmutableIntList projects;
         final ImmutableList.Builder<RexNode> filters = ImmutableList.builder();
         if ( scan instanceof BindableScan ) {

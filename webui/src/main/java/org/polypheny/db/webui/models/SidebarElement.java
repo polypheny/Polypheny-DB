@@ -20,7 +20,7 @@ package org.polypheny.db.webui.models;
 import java.util.ArrayList;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 /**

@@ -73,6 +73,8 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -135,8 +137,8 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     }
 
 
-    public ImmutableList<AlgCollation> collations( RelScan scan, AlgMetadataQuery mq ) {
-        return ImmutableList.copyOf( table( scan.getEntity() ) );
+    public ImmutableList<AlgCollation> collations( RelScan<?> scan, AlgMetadataQuery mq ) {
+        return ImmutableList.copyOf( table( scan.entity ) );
     }
 
 
@@ -204,8 +206,8 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     /**
      * Helper method to determine a {@link RelScan}'s collation.
      */
-    public static List<AlgCollation> table( AlgOptEntity table ) {
-        return table.getCollationList();
+    public static List<AlgCollation> table( CatalogEntity table ) {
+        return table.getCollations();
     }
 
 

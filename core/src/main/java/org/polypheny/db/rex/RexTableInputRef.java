@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptEntity;
 
@@ -130,15 +131,15 @@ public class RexTableInputRef extends RexInputRef {
      */
     public static class AlgTableRef implements Comparable<AlgTableRef> {
 
-        private final AlgOptEntity table;
+        private final CatalogEntity table;
         private final int entityNumber;
         private final String digest;
 
 
-        private AlgTableRef( AlgOptEntity table, int entityNumber ) {
+        private AlgTableRef( CatalogEntity table, int entityNumber ) {
             this.table = table;
             this.entityNumber = entityNumber;
-            this.digest = table.getCatalogEntity().id + ".#" + entityNumber;
+            this.digest = table.id + ".#" + entityNumber;
         }
 
 
@@ -146,7 +147,7 @@ public class RexTableInputRef extends RexInputRef {
         public boolean equals( Object obj ) {
             return this == obj
                     || obj instanceof AlgTableRef
-                    && table.getCatalogEntity().id == ((AlgTableRef) obj).getTable().getCatalogEntity().id
+                    && table.id == ((AlgTableRef) obj).getTable().id
                     && entityNumber == ((AlgTableRef) obj).entityNumber;
         }
 
@@ -157,13 +158,13 @@ public class RexTableInputRef extends RexInputRef {
         }
 
 
-        public AlgOptEntity getTable() {
+        public CatalogEntity getTable() {
             return table;
         }
 
 
         public List<String> getQualifiedName() {
-            return List.of( table.getCatalogEntity().unwrap( LogicalTable.class ).getNamespaceName(), table.getCatalogEntity().name );
+            return List.of( table.unwrap( LogicalTable.class ).getNamespaceName(), table.name );
         }
 
 
@@ -178,7 +179,7 @@ public class RexTableInputRef extends RexInputRef {
         }
 
 
-        public static AlgTableRef of( AlgOptEntity table, int entityNumber ) {
+        public static AlgTableRef of( CatalogEntity table, int entityNumber ) {
             return new AlgTableRef( table, entityNumber );
         }
 

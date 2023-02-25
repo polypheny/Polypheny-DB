@@ -17,8 +17,8 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import java.io.Serializable;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 
 public class PhysicalGraph extends CatalogEntity implements Physical {

@@ -26,16 +26,17 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 
 @EqualsAndHashCode(callSuper = false)
-public class LogicalTable extends CatalogEntity implements CatalogObject, Comparable<LogicalTable>, Logical {
+public class LogicalTable extends CatalogEntity implements Comparable<LogicalTable>, Logical {
 
     private static final long serialVersionUID = 4653390333258552102L;
 
@@ -65,7 +66,7 @@ public class LogicalTable extends CatalogEntity implements CatalogObject, Compar
             final long namespaceId,
             final long databaseId,
             final int ownerId,
-            @NonNull final Catalog.EntityType type,
+            @NonNull final EntityType type,
             final Long primaryKey,
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
@@ -99,7 +100,7 @@ public class LogicalTable extends CatalogEntity implements CatalogObject, Compar
             final long namespaceId,
             final long databaseId,
             final int ownerId,
-            @NonNull final Catalog.EntityType type,
+            @NonNull final EntityType type,
             final Long primaryKey,
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
@@ -260,6 +261,12 @@ public class LogicalTable extends CatalogEntity implements CatalogObject, Compar
                 modifiable,
                 partitionProperty,
                 connectedViews );
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( Expressions.call( Catalog.class, "getInstance" ), "getTable", Expressions.constant( id ) );
     }
 
 

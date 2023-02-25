@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.IndexType;
+import org.polypheny.db.catalog.logistic.IndexType;
 
 
 @EqualsAndHashCode(callSuper = false)

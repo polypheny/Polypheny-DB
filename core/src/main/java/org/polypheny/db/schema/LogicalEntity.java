@@ -16,22 +16,28 @@
 
 package org.polypheny.db.schema;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.ScannableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
@@ -41,7 +47,7 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
-public class LogicalEntity extends AbstractQueryableEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity {
+public class LogicalEntity extends CatalogEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity {
 
     private AlgProtoDataType protoRowType;
 
@@ -70,7 +76,7 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
             List<String> logicalColumnNames,
             AlgProtoDataType protoRowType,
             NamespaceType namespaceType ) {
-        super( Object[].class, tableId, null, null );
+        super(  tableId, logicalTableName, EntityType.ENTITY, NamespaceType.RELATIONAL );
         this.logicalSchemaName = logicalSchemaName;
         this.logicalTableName = logicalTableName;
         this.columnIds = columnIds;
@@ -86,50 +92,39 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
 
 
     @Override
-    public RelModify toModificationAlg(
-            AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
-            AlgNode input,
-            Operation operation,
-            List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened ) {
+    public Modify<?> toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, CatalogEntity entity, AlgNode child, Operation operation, List<String> targets, List<RexNode> sources ) {
         return new LogicalRelModify(
-                cluster,
                 cluster.traitSetOf( Convention.NONE ),
-                table,
-                catalogReader,
-                input,
+                entity,
+                child,
                 operation,
-                updateColumnList,
-                sourceExpressionList,
-                flattened );
+                targets,
+                sources);
     }
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return protoRowType.apply( typeFactory );
+    public Serializable[] getParameterArray() {
+        return new Serializable[0];
     }
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-        throw new RuntimeException( "asQueryable() is not implemented for Logical Tables!" );
+    public State getCatalogType() {
+        return null;
     }
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext root ) {
-        throw new RuntimeException( "scan() is not implemented for Logical Tables!" );
+    public Expression asExpression() {
+        return null;
     }
+
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
-        throw new RuntimeException( "toAlg() is not implemented for Logical Tables!" );
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
+        return null;
     }
-
 
 }

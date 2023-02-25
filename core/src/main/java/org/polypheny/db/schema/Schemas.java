@@ -204,7 +204,7 @@ public final class Schemas {
     public static <E> Queryable<E> queryable( DataContext root, PolyphenyDbSchema schema, Class<E> clazz, String tableName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
         LogicalTable table = schema.getTable( List.of( tableName ) );
-        return table.asQueryable( root, schema, tableName );
+        return table.unwrap( QueryableEntity.class ).asQueryable( root, schema, tableName );
     }
 
 

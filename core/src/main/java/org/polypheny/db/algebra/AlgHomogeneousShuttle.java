@@ -68,7 +68,7 @@ public class AlgHomogeneousShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( RelScan scan ) {
+    public AlgNode visit( RelScan<?> scan ) {
         return visit( (AlgNode) scan );
     }
 

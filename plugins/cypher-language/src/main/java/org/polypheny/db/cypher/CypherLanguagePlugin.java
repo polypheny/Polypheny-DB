@@ -23,7 +23,7 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.cypher.parser.CypherParserImpl;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.LanguageManager;

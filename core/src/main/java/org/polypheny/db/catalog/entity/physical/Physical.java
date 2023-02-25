@@ -16,7 +16,11 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
-public interface Physical {
+import org.polypheny.db.catalog.refactor.CatalogType;
 
+public interface Physical extends CatalogType {
+    default State getCatalogType() {
+        return State.PHYSICAL;
+    }
 
 }

@@ -21,6 +21,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
@@ -54,12 +55,12 @@ public class LogicalLpgModify extends LpgModify<CatalogEntity> implements Relati
         List<AlgNode> modifies = new ArrayList<>();
 
         // modify of nodes
-        RelModify<?> nodeModify = RelationalTransformable.getModify( entities.get( 0 ), catalogReader, inputs.get( 0 ), operation );
+        Modify<?> nodeModify = RelationalTransformable.getModify( entities.get( 0 ), inputs.get( 0 ), operation );
         modifies.add( nodeModify );
 
         // modify of properties
         if ( inputs.get( 1 ) != null ) {
-            RelModify<?> nodePropertyModify = RelationalTransformable.getModify( entities.get( 1 ), catalogReader, inputs.get( 1 ), operation );
+            Modify<?> nodePropertyModify = RelationalTransformable.getModify( entities.get( 1 ), inputs.get( 1 ), operation );
             modifies.add( nodePropertyModify );
         }
 
@@ -68,12 +69,12 @@ public class LogicalLpgModify extends LpgModify<CatalogEntity> implements Relati
         }
 
         // modify of edges
-        RelModify<?> edgeModify = RelationalTransformable.getModify( entities.get( 2 ), catalogReader, inputs.get( 2 ), operation );
+        Modify<?> edgeModify = RelationalTransformable.getModify( entities.get( 2 ), inputs.get( 2 ), operation );
         modifies.add( edgeModify );
 
         // modify of edge properties
         if ( inputs.get( 3 ) != null ) {
-            RelModify<?> edgePropertyModify = RelationalTransformable.getModify( entities.get( 3 ), catalogReader, inputs.get( 3 ), operation );
+            Modify<?> edgePropertyModify = RelationalTransformable.getModify( entities.get( 3 ), inputs.get( 3 ), operation );
             modifies.add( edgePropertyModify );
         }
 

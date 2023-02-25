@@ -26,14 +26,14 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogObject;
 
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = false)
-public class LogicalGraph extends CatalogEntity implements CatalogObject, Comparable<LogicalGraph>, Logical {
+public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGraph>, Logical {
 
     private static final long serialVersionUID = 7343856827901459672L;
 

@@ -52,9 +52,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -128,13 +128,13 @@ public class ConstraintEnforceAttacher {
     public static void attachOnCommitConstraints( AlgNode node, Statement statement ) {
         ModifyExtractor extractor = new ModifyExtractor();
         node.accept( extractor );
-        RelModify modify = extractor.getModify();
+        RelModify<?> modify = extractor.getModify();
 
         if ( modify == null ) {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        statement.getTransaction().getCatalogTables().add( LogicalConstraintEnforcer.getCatalogTable( modify ) );
+        statement.getTransaction().getCatalogTables().add( modify.entity.unwrap( LogicalTable.class ) );
     }
 
 
@@ -197,7 +197,7 @@ public class ConstraintEnforceAttacher {
         if ( !(logicalRoot.alg instanceof RelModify) ) {
             return logicalRoot;
         }
-        final RelModify root = (RelModify) logicalRoot.alg;
+        final RelModify<?> root = (RelModify<?>) logicalRoot.alg;
 
         final Catalog catalog = Catalog.getInstance();
         final LogicalTable table;
@@ -205,7 +205,7 @@ public class ConstraintEnforceAttacher {
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
-        table = root.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
+        table = root.getEntity().unwrap( LogicalTable.class );
         primaryKey = catalog.getPrimaryKey( table.primaryKey );
         constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
         foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
@@ -332,8 +332,8 @@ public class ConstraintEnforceAttacher {
             final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
-                final AlgOptSchema algOptSchema = root.getCatalogReader();
-                final AlgOptEntity algOptEntity = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
+
+                final LogicalTable algOptEntity = statement.getDataContext().getRootSchema().getTable( foreignKey.referencedKeyTableId);
                 final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), algOptEntity );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );

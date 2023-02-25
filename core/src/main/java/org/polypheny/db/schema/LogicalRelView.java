@@ -18,7 +18,7 @@ package org.polypheny.db.schema;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 public class LogicalRelView extends LogicalEntity {

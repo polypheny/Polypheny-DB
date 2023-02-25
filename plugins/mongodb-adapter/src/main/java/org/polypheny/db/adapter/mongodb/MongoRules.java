@@ -83,7 +83,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -894,7 +894,7 @@ public class MongoRules {
 
 
             @Override
-            public AlgNode visit( RelScan scan ) {
+            public AlgNode visit( RelScan<?> scan ) {
                 supported = false;
                 return super.visit( scan );
             }
@@ -1349,7 +1349,7 @@ public class MongoRules {
         }
 
 
-        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogCollection catalogCollection ) {
+        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, LogicalCollection catalogCollection ) {
             Map<Integer, String> map = new HashMap<>();
             map.put( 0, "d" );
             return map;

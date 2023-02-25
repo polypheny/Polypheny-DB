@@ -18,7 +18,7 @@ package org.polypheny.db.catalog;
 
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 public class CatalogPlugin extends Plugin {
 

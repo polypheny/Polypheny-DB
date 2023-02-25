@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**
@@ -69,13 +70,16 @@ public class AlgOptCluster {
     private final AlgTraitSet emptyTraitSet;
     private AlgMetadataQuery mq;
 
+    @Getter
+    private final PolyphenyDbSchema rootSchema;
+
 
     /**
      * Creates a cluster.
      *
      * For use only from {@link #create} and {@link AlgOptQuery}.
      */
-    private AlgOptCluster( AlgOptPlanner planner, AlgDataTypeFactory typeFactory, RexBuilder rexBuilder, AlgTraitSet traitSet ) {
+    private AlgOptCluster( AlgOptPlanner planner, AlgDataTypeFactory typeFactory, RexBuilder rexBuilder, AlgTraitSet traitSet, PolyphenyDbSchema rootSchema ) {
         this.nextCorrel = new AtomicInteger( 0 );
         this.mapCorrelToAlg = new HashMap<>();
         this.planner = Objects.requireNonNull( planner );
@@ -87,33 +91,29 @@ public class AlgOptCluster {
         setMetadataProvider( DefaultAlgMetadataProvider.INSTANCE );
         this.emptyTraitSet = traitSet;
         assert emptyTraitSet.size() == planner.getAlgTraitDefs().size();
+        this.rootSchema = rootSchema;
     }
 
 
     /**
      * Creates a cluster.
      */
-    public static AlgOptCluster create( AlgOptPlanner planner, RexBuilder rexBuilder ) {
-        return AlgOptCluster.create( planner, rexBuilder, planner.emptyTraitSet() );
+    public static AlgOptCluster create( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, PolyphenyDbSchema rootSchema ) {
+        return AlgOptCluster.create( planner, rexBuilder, planner.emptyTraitSet(), rootSchema );
     }
 
 
-    public static AlgOptCluster createDocument( AlgOptPlanner planner, RexBuilder rexBuilder ) {
+    public static AlgOptCluster createDocument( AlgOptPlanner planner, RexBuilder rexBuilder, PolyphenyDbSchema rootSchema ) {
         AlgTraitSet traitSet = planner.emptyTraitSet().replace( ModelTrait.DOCUMENT );
 
-        return AlgOptCluster.create( planner, rexBuilder, traitSet );
+        return AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
     }
 
 
-    public static AlgOptCluster createGraph( AlgOptPlanner planner, RexBuilder rexBuilder ) {
+    public static AlgOptCluster createGraph( AlgOptPlanner planner, RexBuilder rexBuilder, PolyphenyDbSchema rootSchema ) {
         AlgTraitSet traitSet = planner.emptyTraitSet().replace( ModelTrait.GRAPH );
 
-        return AlgOptCluster.create( planner, rexBuilder, traitSet );
-    }
-
-
-    private static AlgOptCluster create( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet ) {
-        return new AlgOptCluster( planner, rexBuilder.getTypeFactory(), rexBuilder, traitSet );
+        return AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
     }
 
 

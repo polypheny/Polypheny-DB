@@ -63,7 +63,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static LogicalStreamer create( RelModify modify, AlgBuilder algBuilder ) {
+    public static LogicalStreamer create( RelModify<?> modify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
         if ( !isModifyApplicable( modify ) ) {
@@ -79,7 +79,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static LogicalStreamer getLogicalStreamer( RelModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
+    private static LogicalStreamer getLogicalStreamer( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
             throw new RuntimeException( "Error while creating Streamer." );
         }
@@ -136,7 +136,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static List<RexNode> createSourceList( RelModify modify, RexBuilder rexBuilder ) {
+    private static List<RexNode> createSourceList( RelModify<?> modify, RexBuilder rexBuilder ) {
         return modify.getUpdateColumnList()
                 .stream()
                 .map( name -> {
@@ -148,7 +148,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static void attachFilter( RelModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+    private static void attachFilter( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
         for ( AlgDataTypeField field : modify.getEntity().getRowType().getFieldList() ) {
@@ -173,7 +173,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static boolean isModifyApplicable( RelModify modify ) {
+    public static boolean isModifyApplicable( RelModify<?> modify ) {
 
         // simple delete, which all store should be able to handle by themselves
         if ( modify.isInsert() && modify.getInput() instanceof Values ) {

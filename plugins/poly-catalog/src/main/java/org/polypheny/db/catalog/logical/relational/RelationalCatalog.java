@@ -24,7 +24,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
 

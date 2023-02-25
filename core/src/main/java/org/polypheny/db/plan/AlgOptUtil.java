@@ -100,6 +100,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.LogicVisitor;
@@ -187,7 +188,7 @@ public abstract class AlgOptUtil {
     /**
      * Returns a set of tables used by this expression or its children
      */
-    public static Set<AlgOptEntity> findTables( AlgNode alg ) {
+    public static Set<CatalogEntity> findTables( AlgNode alg ) {
         return new LinkedHashSet<>( findAllTables( alg ) );
     }
 
@@ -195,9 +196,9 @@ public abstract class AlgOptUtil {
     /**
      * Returns a list of all tables used by this expression or its children
      */
-    public static List<AlgOptEntity> findAllTables( AlgNode alg ) {
+    public static List<CatalogEntity> findAllTables( AlgNode alg ) {
         final Multimap<Class<? extends AlgNode>, AlgNode> nodes = AlgMetadataQuery.instance().getNodeTypes( alg );
-        final List<AlgOptEntity> usedTables = new ArrayList<>();
+        final List<CatalogEntity> usedTables = new ArrayList<>();
         for ( Entry<Class<? extends AlgNode>, Collection<AlgNode>> e : nodes.asMap().entrySet() ) {
             if ( RelScan.class.isAssignableFrom( e.getKey() ) ) {
                 for ( AlgNode node : e.getValue() ) {

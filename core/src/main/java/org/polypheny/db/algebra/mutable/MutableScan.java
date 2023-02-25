@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.core.relational.RelScan;
  */
 public class MutableScan extends MutableLeafAlg {
 
-    private MutableScan( RelScan alg ) {
+    private MutableScan( RelScan<?> alg ) {
         super( MutableAlgType.TABLE_SCAN, alg );
     }
 
@@ -52,7 +52,7 @@ public class MutableScan extends MutableLeafAlg {
      *
      * @param scan The underlying Scan object
      */
-    public static MutableScan of( RelScan scan ) {
+    public static MutableScan of( RelScan<?> scan ) {
         return new MutableScan( scan );
     }
 
@@ -73,13 +73,13 @@ public class MutableScan extends MutableLeafAlg {
 
     @Override
     public StringBuilder digest( StringBuilder buf ) {
-        return buf.append( "Scan(table: " ).append( alg.getEntity().getCatalogEntity().name ).append( ")" );
+        return buf.append( "Scan(table: " ).append( alg.getEntity().name ).append( ")" );
     }
 
 
     @Override
     public MutableAlg clone() {
-        return MutableScan.of( (RelScan) alg );
+        return MutableScan.of( (RelScan<?>) alg );
     }
 
 }

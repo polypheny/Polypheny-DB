@@ -17,7 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 public abstract class CatalogNamespace implements CatalogObject, Serializable {
 

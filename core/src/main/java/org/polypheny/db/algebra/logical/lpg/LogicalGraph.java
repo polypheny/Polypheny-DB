@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -47,7 +48,7 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
 
     /**
-     * {@link org.polypheny.db.catalog.Catalog.NamespaceType#GRAPH} implementation of an entity, called graph
+     * {@link NamespaceType#GRAPH} implementation of an entity, called graph
      */
     public LogicalGraph( long id ) {
         this.id = id;

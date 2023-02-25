@@ -32,8 +32,8 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.excluded.CassandraExcluded;
@@ -90,7 +90,7 @@ public class DdlTest extends MqlTestTemplate {
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
 
-            CatalogCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            LogicalCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
             assertEquals( collection.placements.size(), 1 );
 
@@ -121,7 +121,7 @@ public class DdlTest extends MqlTestTemplate {
 
             CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
-            CatalogCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            LogicalCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
             assertEquals( collection.placements.size(), 1 );
 

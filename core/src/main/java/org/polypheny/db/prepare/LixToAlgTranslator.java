@@ -98,14 +98,14 @@ class LixToAlgTranslator {
                     input = translate( call.targetExpression );
                     return LogicalProject.create(
                             input,
-                            toRex( input, (FunctionExpression) call.expressions.get( 0 ) ),
+                            toRex( input, (FunctionExpression<?>) call.expressions.get( 0 ) ),
                             (List<String>) null );
 
                 case WHERE:
                     input = translate( call.targetExpression );
                     return LogicalFilter.create(
                             input,
-                            toRex( (FunctionExpression) call.expressions.get( 0 ), input ) );
+                            toRex( (FunctionExpression<?>) call.expressions.get( 0 ), input ) );
 
                 case AS_QUERYABLE:
                     return LogicalRelScan.create(
@@ -131,7 +131,7 @@ class LixToAlgTranslator {
     }
 
 
-    private List<RexNode> toRex( AlgNode child, FunctionExpression expression ) {
+    private List<RexNode> toRex( AlgNode child, FunctionExpression<?> expression ) {
         RexBuilder rexBuilder = cluster.getRexBuilder();
         List<RexNode> list = Collections.singletonList( rexBuilder.makeRangeReference( child ) );
         PolyphenyDbPrepareImpl.ScalarTranslator translator =

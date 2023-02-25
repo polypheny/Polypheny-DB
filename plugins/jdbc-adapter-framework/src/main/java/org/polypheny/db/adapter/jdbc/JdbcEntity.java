@@ -65,6 +65,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TableType;
@@ -218,7 +219,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
         return new JdbcTableQueryable<>( dataContext, schema, tableName );
     }
 

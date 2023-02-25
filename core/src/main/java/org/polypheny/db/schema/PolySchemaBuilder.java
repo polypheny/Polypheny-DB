@@ -35,9 +35,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -141,7 +141,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 continue;
             }
 
-            for ( CatalogCollection catalogEntity : catalog.getCollections( catalogSchema.id, null ) ) {
+            for ( LogicalCollection catalogEntity : catalog.getCollections( catalogSchema.id, null ) ) {
                 entities.put( Pair.of( catalogSchema.id, catalogEntity.id ), catalogEntity );
             }
         }
@@ -197,7 +197,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     //adapter.createNewSchema( rootSchema, schemaName, catalogSchema.id );
 
                     for ( long collectionId : collectionIds ) {
-                        CatalogCollection catalogCollection = catalog.getCollection( collectionId );
+                        LogicalCollection catalogCollection = catalog.getCollection( collectionId );
 
                         for ( CatalogCollectionPlacement partitionPlacement : catalogCollection.placements.stream().map( p -> catalog.getCollectionPlacement( collectionId, adapter.getAdapterId() ) ).collect( Collectors.toList() ) ) {
                             if ( catalogSchema.namespaceType != NamespaceType.DOCUMENT && catalogAdapter.getSupportedNamespaces().contains( catalogSchema.namespaceType ) ) {
@@ -293,7 +293,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                                 .collect( Collectors.toList() ) );
             }
         } else if ( catalogSchema.namespaceType == NamespaceType.DOCUMENT ) {
-            table = new LogicalCollection(
+            table = new org.polypheny.db.schema.LogicalCollection(
                     catalogTable.id,
                     catalogTable.getNamespaceName(),
                     catalogTable.name,

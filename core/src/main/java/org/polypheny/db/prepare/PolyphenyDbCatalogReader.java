@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -85,7 +85,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     @Override
     public AlgOptEntity getCollection( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
-        CatalogCollection collection = rootSchema.getCollection( names );
+        LogicalCollection collection = rootSchema.getCollection( names );
         if ( collection != null ) {
             return AlgOptEntityImpl.create( this, collection.getRowType(), collection, null, null );
         }

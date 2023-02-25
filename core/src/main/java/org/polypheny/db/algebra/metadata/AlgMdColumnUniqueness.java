@@ -88,7 +88,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
     }
 
 
-    public Boolean areColumnsUnique( RelScan alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
+    public Boolean areColumnsUnique( RelScan<?> alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         return alg.getEntity().isKey( columns );
     }
 

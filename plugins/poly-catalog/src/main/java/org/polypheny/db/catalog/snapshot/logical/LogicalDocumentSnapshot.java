@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Value;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logical.document.CatalogCollection;
 import org.polypheny.db.catalog.logical.document.CatalogDatabase;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;

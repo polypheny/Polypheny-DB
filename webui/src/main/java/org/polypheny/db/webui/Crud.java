@@ -100,13 +100,13 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.PartitionType;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.NameGenerator;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -471,7 +471,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        List<LogicalTable> tables = catalog.getTables( databaseId, new Catalog.Pattern( requestedSchema ), null );
+        List<LogicalTable> tables = catalog.getTables( databaseId, new org.polypheny.db.catalog.logistic.Pattern( requestedSchema ), null );
         ArrayList<DbTable> result = new ArrayList<>();
         for ( LogicalTable t : tables ) {
             result.add( new DbTable( t.name, t.getNamespaceName(), t.modifiable, t.entityType ) );
@@ -657,7 +657,7 @@ public class Crud implements InformationObserver {
         StringJoiner columns = new StringJoiner( ",", "(", ")" );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        List<CatalogColumn> catalogColumns = catalog.getColumns( new Catalog.Pattern( "APP" ), new Catalog.Pattern( split[0] ), new Catalog.Pattern( split[1] ), null );
+        List<CatalogColumn> catalogColumns = catalog.getColumns( new org.polypheny.db.catalog.logistic.Pattern( "APP" ), new org.polypheny.db.catalog.logistic.Pattern( split[0] ), new org.polypheny.db.catalog.logistic.Pattern( split[1] ), null );
         try {
             int i = 0;
             for ( CatalogColumn catalogColumn : catalogColumns ) {
@@ -1025,7 +1025,7 @@ public class Crud implements InformationObserver {
         Statement statement = transaction.createStatement();
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
 
-        List<CatalogColumn> catalogColumns = catalog.getColumns( new Catalog.Pattern( "APP" ), new Catalog.Pattern( split[0] ), new Catalog.Pattern( split[1] ), null );
+        List<CatalogColumn> catalogColumns = catalog.getColumns( new org.polypheny.db.catalog.logistic.Pattern( "APP" ), new org.polypheny.db.catalog.logistic.Pattern( split[0] ), new org.polypheny.db.catalog.logistic.Pattern( split[1] ), null );
 
         int i = 0;
         for ( CatalogColumn catalogColumn : catalogColumns ) {
@@ -2502,7 +2502,7 @@ public class Crud implements InformationObserver {
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
-        List<LogicalTable> catalogEntities = catalog.getTables( databaseId, new Catalog.Pattern( request.schema ), null );
+        List<LogicalTable> catalogEntities = catalog.getTables( databaseId, new org.polypheny.db.catalog.logistic.Pattern( request.schema ), null );
         for ( LogicalTable catalogTable : catalogEntities ) {
             if ( catalogTable.entityType == EntityType.ENTITY || catalogTable.entityType == EntityType.SOURCE ) {
                 // get foreign keys
@@ -2884,7 +2884,7 @@ public class Crud implements InformationObserver {
         // drop schema
         else if ( !schema.isCreate() && schema.isDrop() ) {
             if ( type == null ) {
-                List<CatalogSchema> namespaces = catalog.getSchemas( Catalog.defaultDatabaseId, new Catalog.Pattern( schema.getName() ) );
+                List<CatalogSchema> namespaces = catalog.getSchemas( Catalog.defaultDatabaseId, new org.polypheny.db.catalog.logistic.Pattern( schema.getName() ) );
                 assert namespaces.size() == 1;
                 type = namespaces.get( 0 ).namespaceType;
 
@@ -2981,7 +2981,7 @@ public class Crud implements InformationObserver {
      * Get available actions for foreign key constraints
      */
     void getForeignKeyActions( final Context ctx ) {
-        ForeignKeyOption[] options = Catalog.ForeignKeyOption.values();
+        ForeignKeyOption[] options = ForeignKeyOption.values();
         String[] arr = new String[options.length];
         for ( int i = 0; i < options.length; i++ ) {
             arr[i] = options[i].name();

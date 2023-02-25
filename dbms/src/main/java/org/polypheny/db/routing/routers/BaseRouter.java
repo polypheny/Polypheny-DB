@@ -54,10 +54,11 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -67,6 +68,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -74,7 +76,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -415,7 +416,7 @@ public abstract class BaseRouter implements Router {
 
         Catalog catalog = Catalog.getInstance();
 
-        CatalogSchema namespace = catalog.getSchema( alg.getGraph().id );
+        CatalogSchema namespace = catalog.getSchema( alg.entity.id );
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
             return handleGraphOnRelational( alg, namespace, statement, placementId );
@@ -424,7 +425,7 @@ public abstract class BaseRouter implements Router {
             return handleGraphOnDocument( alg, namespace, statement, placementId );
         }
 
-        LogicalGraph catalogGraph = alg.getGraph();
+        LogicalGraph catalogGraph = alg.entity.unwrap( LogicalGraph.class );
 
         List<AlgNode> scans = new ArrayList<>();
 
@@ -474,7 +475,7 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogSchema namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        List<CatalogCollection> collections = catalog.getCollections( namespace.id, null );
+        List<LogicalCollection> collections = catalog.getCollections( namespace.id, null );
         List<Pair<String, AlgNode>> scans = collections.stream()
                 .map( t -> {
                     RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
@@ -493,13 +494,12 @@ public abstract class BaseRouter implements Router {
 
 
     public AlgNode getRelationalScan( LogicalLpgScan alg, int adapterId, Statement statement ) {
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().id );
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
 
-        PreparingEntity nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
-        PreparingEntity nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId );
-        PreparingEntity edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId, adapterId );
-
-        PreparingEntity edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId, adapterId );
+        PhysicalTable nodesTable = statement.getDataContext().getRootSchema().getTable(  mapping.nodesId ).unwrap( PhysicalTable.class );
+        PhysicalTable nodePropertiesTable = statement.getDataContext().getRootSchema().getTable(  mapping.nodesPropertyId ).unwrap( PhysicalTable.class );
+        PhysicalTable edgesTable = statement.getDataContext().getRootSchema().getTable(  mapping.edgesId ).unwrap( PhysicalTable.class );
+        PhysicalTable edgePropertiesTable = statement.getDataContext().getRootSchema().getTable(  mapping.edgesPropertyId ).unwrap( PhysicalTable.class );
 
         AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );
 
@@ -510,7 +510,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    protected PreparingEntity getSubstitutionTable( Statement statement, long tableId, long columnId, int adapterId ) {
+    protected CatalogEntity getSubstitutionTable( Statement statement, long tableId, long columnId, int adapterId ) {
         LogicalTable nodes = Catalog.getInstance().getTable( tableId );
         CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( adapterId, columnId );
         List<String> qualifiedTableName = ImmutableList.of(
@@ -521,11 +521,11 @@ public abstract class BaseRouter implements Router {
                 ),
                 nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
 
-        return statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        return statement.getDataContext().getRootSchema().getTable( qualifiedTableName );
     }
 
 
-    protected AlgNode buildSubstitutionJoin( AlgNode alg, PreparingEntity nodesTable, PreparingEntity nodePropertiesTable ) {
+    protected AlgNode buildSubstitutionJoin( AlgNode alg, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable ) {
         AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
         LogicalRelScan nodes = new LogicalRelScan( alg.getCluster(), out, nodesTable );
         LogicalRelScan nodesProperty = new LogicalRelScan( alg.getCluster(), out, nodePropertiesTable );
@@ -541,19 +541,19 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, Integer adapterId ) {
+    protected RoutedAlgBuilder handleDocumentScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder, Integer adapterId ) {
         Catalog catalog = Catalog.getInstance();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
-        if ( alg.getCollection().getCatalogEntity().namespaceType != NamespaceType.DOCUMENT ) {
-            if ( alg.getCollection().getCatalogEntity().namespaceType == NamespaceType.GRAPH ) {
+        if ( alg.entity.namespaceType != NamespaceType.DOCUMENT ) {
+            if ( alg.entity.namespaceType == NamespaceType.GRAPH ) {
                 return handleDocumentOnGraph( alg, statement, builder );
             }
 
             return handleTransformerDocScan( alg, statement, builder );
         }
 
-        CatalogCollection collection = alg.getCollection().getCatalogEntity().unwrap( CatalogCollection.class );
+        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
 
         List<RoutedAlgBuilder> scans = new ArrayList<>();
 
@@ -589,8 +589,8 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private RoutedAlgBuilder handleTransformerDocScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder ) {
-        AlgNode scan = buildJoinedScan( statement, alg.getCluster(), selectPlacement( catalog.getTable( alg.getCollection().getCatalogEntity().id ) ) );
+    private RoutedAlgBuilder handleTransformerDocScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder ) {
+        AlgNode scan = buildJoinedScan( statement, alg.getCluster(), selectPlacement( catalog.getTable( alg.entity.id ) ) );
 
         builder.push( scan );
         AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
@@ -600,10 +600,10 @@ public abstract class BaseRouter implements Router {
 
 
     @NotNull
-    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Integer adapterId, Statement statement, RoutedAlgBuilder builder ) {
-        List<CatalogColumn> columns = catalog.getColumns( node.getCollection().getCatalogEntity().id );
+    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan<?> node, Integer adapterId, Statement statement, RoutedAlgBuilder builder ) {
+        List<CatalogColumn> columns = catalog.getColumns( node.entity.id );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
-        PreparingEntity subTable = getSubstitutionTable( statement, node.getCollection().getCatalogEntity().id, columns.get( 0 ).id, adapterId );
+        CatalogEntity subTable = getSubstitutionTable( statement, node.entity.id, columns.get( 0 ).id, adapterId );
         builder.scan( subTable );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( subTable.getRowType().getFieldList().get( 1 ).getType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false ) );
@@ -611,10 +611,10 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private RoutedAlgBuilder handleDocumentOnGraph( DocumentScan alg, Statement statement, RoutedAlgBuilder builder ) {
+    private RoutedAlgBuilder handleDocumentOnGraph( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder ) {
         AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.GRAPH );
-        builder.lpgScan( alg.getCollection().getCatalogEntity().id );
-        builder.lpgMatch( List.of( builder.lpgNodeMatch( List.of( alg.getCollection().getCatalogEntity().name ) ) ), List.of( "n" ) );
+        builder.lpgScan( alg.entity.id );
+        builder.lpgMatch( List.of( builder.lpgNodeMatch( List.of( alg.entity.name ) ) ), List.of( "n" ) );
         AlgNode unrouted = builder.build();
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( routeGraph( builder, (AlgNode & LpgAlg) unrouted, statement ) ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.GRAPH, ModelTrait.DOCUMENT, alg.getRowType(), true ) );
         return builder;

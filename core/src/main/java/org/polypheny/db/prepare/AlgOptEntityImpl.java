@@ -287,18 +287,18 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {
-            return LogicalRelScan.create( cluster, this );
+            //return LogicalRelScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE && entity instanceof QueryableEntity ) {
-            return EnumerableScan.create( cluster, this );
+            // return EnumerableScan.create( cluster, this );
         }
         if ( entity instanceof ScannableEntity
                 || entity instanceof FilterableEntity
                 || entity instanceof ProjectableFilterableEntity ) {
-            return LogicalRelScan.create( cluster, this );
+            //return LogicalRelScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE ) {
-            return EnumerableScan.create( cluster, this );
+            //return EnumerableScan.create( cluster, this );
         }
         throw new AssertionError();
     }

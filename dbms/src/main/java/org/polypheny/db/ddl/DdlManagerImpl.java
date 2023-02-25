@@ -50,19 +50,19 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.IndexType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.PartitionType;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.NameGenerator;
+import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -327,7 +327,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
             for ( long id : collectionsToDrop ) {
-                CatalogCollection collection = catalog.getCollection( id );
+                LogicalCollection collection = catalog.getCollection( id );
 
                 // Make sure that there is only one adapter
                 if ( collection.placements.size() != 1 ) {
@@ -2140,10 +2140,10 @@ public class DdlManagerImpl extends DdlManager {
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
         if ( algNode instanceof LogicalRelScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( algNode.getEntity().getCatalogEntity().id, underlyingColumns );
+            underlyingTables.put( algNode.getEntity().id, underlyingColumns );
         } else if ( algNode instanceof LogicalRelViewScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( algNode.getEntity().getCatalogEntity().id, underlyingColumns );
+            underlyingTables.put( algNode.getEntity().id, underlyingColumns );
         }
         if ( algNode instanceof BiAlg ) {
             findUnderlyingTablesOfView( ((BiAlg) algNode).getLeft(), underlyingTables, fieldList );
@@ -2156,7 +2156,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
-        LogicalTable table = algNode.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
+        LogicalTable table = algNode.getEntity().unwrap( LogicalTable.class );
         List<Long> columnIds = table.fieldIds;
         List<String> logicalColumnNames = table.getColumnNames();
         List<Long> underlyingColumns = new ArrayList<>();
@@ -2280,7 +2280,7 @@ public class DdlManagerImpl extends DdlManager {
                 true );
 
         // Initially create DataPlacement containers on every store the table should be placed.
-        CatalogCollection catalogCollection = catalog.getCollection( collectionId );
+        LogicalCollection catalogCollection = catalog.getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
         PolySchemaBuilder.getInstance().getCurrent();
@@ -2315,7 +2315,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropCollection( CatalogCollection catalogCollection, Statement statement ) {
+    public void dropCollection( LogicalCollection catalogCollection, Statement statement ) {
         AdapterManager manager = AdapterManager.getInstance();
 
         for ( Integer adapterId : catalogCollection.placements ) {
@@ -2328,7 +2328,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    public void removeDocumentLogistics( CatalogCollection catalogCollection, Statement statement ) {
+    public void removeDocumentLogistics( LogicalCollection catalogCollection, Statement statement ) {
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
         LogicalTable table = catalog.getTable( mapping.collectionId );
         catalog.deleteTable( table.id );
@@ -2345,7 +2345,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Initially create DataPlacement containers on every store the table should be placed.
-        CatalogCollection catalogCollection = catalog.getCollection( collectionId );
+        LogicalCollection catalogCollection = catalog.getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
         PolySchemaBuilder.getInstance().getCurrent();
@@ -2364,7 +2364,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropCollectionPlacement( long namespaceId, CatalogCollection collection, List<DataStore> dataStores, Statement statement ) {
+    public void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore> dataStores, Statement statement ) {
         for ( DataStore store : dataStores ) {
             store.dropCollection( statement.getPrepareContext(), collection );
 
@@ -2378,7 +2378,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void removeDocumentPlacementLogistics( CatalogCollection collection, DataStore store, Statement statement ) {
+    private void removeDocumentPlacementLogistics( LogicalCollection collection, DataStore store, Statement statement ) {
 
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( collection.id );
         LogicalTable table = catalog.getTable( mapping.collectionId );
@@ -2923,8 +2923,8 @@ public class DdlManagerImpl extends DdlManager {
                 CatalogSchema catalogSchema = catalog.getSchema( databaseId, schemaName );
 
                 // Drop all collections in this namespace
-                List<CatalogCollection> collections = catalog.getCollections( catalogSchema.id, null );
-                for ( CatalogCollection collection : collections ) {
+                List<LogicalCollection> collections = catalog.getCollections( catalogSchema.id, null );
+                for ( LogicalCollection collection : collections ) {
                     dropCollection( collection, statement );
                 }
 

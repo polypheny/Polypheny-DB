@@ -80,7 +80,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -93,6 +93,7 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableCollection;
 import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
@@ -119,7 +120,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
     private final LogicalTable catalogTable;
 
     @Getter
-    private final CatalogCollection catalogCollection;
+    private final LogicalCollection catalogCollection;
     @Getter
     private final TransactionProvider transactionProvider;
     @Getter
@@ -142,7 +143,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
     }
 
 
-    public MongoEntity( CatalogCollection catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long adapter, CatalogCollectionPlacement partitionPlacement ) {
+    public MongoEntity( LogicalCollection catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long adapter, CatalogCollectionPlacement partitionPlacement ) {
         super( Object[].class, catalogEntity.id, partitionPlacement.id, adapter );
         this.collectionName = MongoStore.getPhysicalTableName( catalogEntity.id, partitionPlacement.id );
         this.transactionProvider = transactionProvider;
@@ -167,7 +168,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
         return new MongoQueryable<>( dataContext, schema, this, tableName );
     }
 

@@ -78,7 +78,6 @@ import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ExtensibleEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.schema.TableType;
@@ -346,7 +345,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public <E> Queryable<E> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+            public <E> Queryable<E> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
                 return null;
             }
 
@@ -358,7 +357,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
+            public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
                 return null;
             }
 

@@ -255,7 +255,7 @@ public class PlannerImplMock implements Planner {
         ensure( State.STATE_4_VALIDATED );
         assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();
-        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
         final NodeToAlgConverter.Config config =
                 new NodeToAlgConverter.ConfigBuilder()
                         .config( sqlToRelConverterConfig )

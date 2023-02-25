@@ -48,7 +48,7 @@ public interface QueryableEntity extends Entity {
     /**
      * Converts this table into a {@link Queryable}.
      */
-    <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName );
+    <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName );
 
     /**
      * Returns the element type of the collection that will implement this table.
@@ -62,6 +62,6 @@ public interface QueryableEntity extends Entity {
      * @param tableName Table name (unique within schema)
      * @param clazz The desired collection class; for example {@code Queryable}.
      */
-    Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz );
+    Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz );
 }
 

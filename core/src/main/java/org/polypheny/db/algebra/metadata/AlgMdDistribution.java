@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.rex.RexLiteral;
@@ -102,7 +103,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
     }
 
 
-    public AlgDistribution distribution( RelScan scan, AlgMetadataQuery mq ) {
+    public AlgDistribution distribution( RelScan<?> scan, AlgMetadataQuery mq ) {
         return table( scan.getEntity() );
     }
 
@@ -130,7 +131,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
     /**
      * Helper method to determine a {@link RelScan}'s distribution.
      */
-    public static AlgDistribution table( AlgOptEntity table ) {
+    public static AlgDistribution table( CatalogEntity table ) {
         return table.getDistribution();
     }
 

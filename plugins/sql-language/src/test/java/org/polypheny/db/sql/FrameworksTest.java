@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
@@ -417,7 +417,7 @@ public class FrameworksTest extends SqlLanguageDependent {
 
 
         @Override
-        public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
             throw new UnsupportedOperationException();
         }
 
@@ -429,7 +429,7 @@ public class FrameworksTest extends SqlLanguageDependent {
 
 
         @Override
-        public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
+        public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
             throw new UnsupportedOperationException();
         }
 

@@ -16,7 +16,7 @@
 
 package org.polypheny.db.catalog.snapshot.logical;
 
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 public interface LogicalSnapshot extends Snapshot {

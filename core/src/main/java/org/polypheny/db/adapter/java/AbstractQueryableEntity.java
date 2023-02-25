@@ -37,8 +37,8 @@ package org.polypheny.db.adapter.java;
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractEntity;
 
@@ -64,7 +64,7 @@ public abstract class AbstractQueryableEntity extends AbstractEntity implements 
 
 
     @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
+    public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
         return Schemas.tableExpression( schema, elementType, tableName, clazz );
     }
 

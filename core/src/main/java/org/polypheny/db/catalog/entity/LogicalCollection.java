@@ -26,11 +26,12 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.entity.logical.Logical;
 
 
-public class CatalogCollection extends CatalogEntity implements CatalogObject {
+public class LogicalCollection extends CatalogEntity implements CatalogObject, Logical {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
@@ -44,7 +45,7 @@ public class CatalogCollection extends CatalogEntity implements CatalogObject {
     public final String physicalName;
 
 
-    public CatalogCollection( long databaseId, long namespaceId, long id, String name, @NonNull Collection<Integer> placements, EntityType type, String physicalName ) {
+    public LogicalCollection( long databaseId, long namespaceId, long id, String name, @NonNull Collection<Integer> placements, EntityType type, String physicalName ) {
         super( id, name, EntityType.ENTITY, NamespaceType.DOCUMENT );
         this.id = id;
         this.databaseId = databaseId;
@@ -62,16 +63,16 @@ public class CatalogCollection extends CatalogEntity implements CatalogObject {
     }
 
 
-    public CatalogCollection addPlacement( int adapterId ) {
+    public LogicalCollection addPlacement( int adapterId ) {
         List<Integer> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
-        return new CatalogCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+        return new LogicalCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
     }
 
 
-    public CatalogCollection removePlacement( int adapterId ) {
+    public LogicalCollection removePlacement( int adapterId ) {
         List<Integer> placements = this.placements.stream().filter( id -> id != adapterId ).collect( Collectors.toList() );
-        return new CatalogCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+        return new LogicalCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
     }
 
 
@@ -81,8 +82,8 @@ public class CatalogCollection extends CatalogEntity implements CatalogObject {
     }
 
 
-    public CatalogCollection setPhysicalName( String physicalCollectionName ) {
-        return new CatalogCollection( databaseId, namespaceId, id, name, placements, entityType, physicalCollectionName );
+    public LogicalCollection setPhysicalName( String physicalCollectionName ) {
+        return new LogicalCollection( databaseId, namespaceId, id, name, placements, entityType, physicalCollectionName );
     }
 
 

@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -222,19 +223,19 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
         final Set<AlgColumnOrigin> set = new HashSet<>();
 
-        AlgOptEntity table = alg.getEntity();
-        if ( table == null ) {
+        CatalogEntity entity = alg.getEntity();
+        if ( entity == null ) {
             // Somebody is making column values up out of thin air, like a VALUES clause, so we return an empty set.
             return set;
         }
 
         // Detect the case where a physical table expression is performing projection, and say we don't know instead of making any assumptions.
         // (Theoretically we could try to map the projection using column names.)  This detection assumes the table expression doesn't handle rename as well.
-        if ( table.getRowType() != alg.getRowType() ) {
+        if ( entity.getRowType() != alg.getRowType() ) {
             return null;
         }
 
-        set.add( new AlgColumnOrigin( table, iOutputColumn, false ) );
+        set.add( new AlgColumnOrigin( entity, iOutputColumn, false ) );
         return set;
     }
 

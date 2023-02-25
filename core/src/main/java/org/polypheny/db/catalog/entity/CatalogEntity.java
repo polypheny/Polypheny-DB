@@ -18,16 +18,20 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import java.util.List;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.StatisticsManager;
+import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.logical.Logical;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.CatalogType;
+import org.polypheny.db.catalog.refactor.Expressible;
 import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.ImmutableBitSet;
 
-public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Logical {
+@SuperBuilder(toBuilder = true)
+public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible {
 
     public final long id;
     public final EntityType entityType;
@@ -70,6 +74,16 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
 
     public <T extends AlgMultipleTrait> List<T> getCollations() {
+        return null;
+    }
+
+
+    public Boolean isKey( ImmutableBitSet columns ) {
+        return null;
+    }
+
+
+    public AlgDistribution getDistribution() {
         return null;
     }
 

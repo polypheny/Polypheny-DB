@@ -25,7 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode
 public class CatalogAdapter implements CatalogObject {

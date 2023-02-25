@@ -34,10 +34,10 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -375,14 +375,14 @@ public class LanguageCrud {
             context.json( new Placement( e ) );
             return;
         }
-        List<CatalogCollection> collections = catalog.getCollections( namespaceId, new Pattern( collectionName ) );
+        List<LogicalCollection> collections = catalog.getCollections( namespaceId, new Pattern( collectionName ) );
 
         if ( collections.size() != 1 ) {
             context.json( new Placement( new UnknownCollectionException( 0 ) ) );
             return;
         }
 
-        CatalogCollection collection = catalog.getCollection( collections.get( 0 ).id );
+        LogicalCollection collection = catalog.getCollection( collections.get( 0 ).id );
 
         Placement placement = new Placement( false, List.of(), EntityType.ENTITY );
 
