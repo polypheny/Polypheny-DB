@@ -36,15 +36,13 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
@@ -90,7 +88,7 @@ public class Qfs extends DataSource {
 
 
     @Override
-    public Entity createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
         return currentSchema.createFileTable( combinedTable, columnPlacementsOnStore, partitionPlacement );
     }
 
@@ -102,7 +100,7 @@ public class Qfs extends DataSource {
 
 
     @Override
-    public void truncate( Context context, CatalogTable table ) {
+    public void truncate( Context context, LogicalTable table ) {
         throw new RuntimeException( "QFS does not support truncate" );
     }
 

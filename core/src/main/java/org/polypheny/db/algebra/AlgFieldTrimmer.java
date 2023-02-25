@@ -53,15 +53,15 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -764,9 +764,9 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalModify}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelModify}.
      */
-    public TrimResult trimFields( LogicalModify modifier, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( LogicalRelModify modifier, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         // Ignore what consumer wants. We always project all columns.
         Util.discard( fieldsUsed );
 
@@ -788,7 +788,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
             throw new AssertionError( "Expected identity mapping, got " + inputMapping );
         }
 
-        LogicalModify newModifier = modifier;
+        LogicalRelModify newModifier = modifier;
         if ( newInput != input ) {
             newModifier =
                     modifier.copy(
@@ -891,7 +891,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
     /**
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelScan}.
      */
-    public TrimResult trimFields( final Scan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( final RelScan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final int fieldCount = tableAccessRel.getRowType().getFieldCount();
         if ( fieldsUsed.equals( ImmutableBitSet.range( fieldCount ) ) && extraFields.isEmpty() ) {
             // If there is nothing to project or if we are projecting everything then no need to introduce another AlgNode

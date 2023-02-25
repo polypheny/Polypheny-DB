@@ -22,7 +22,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -82,7 +82,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );

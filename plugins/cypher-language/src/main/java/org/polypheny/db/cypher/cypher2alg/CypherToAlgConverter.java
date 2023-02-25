@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
@@ -49,7 +49,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
@@ -109,7 +109,7 @@ public class CypherToAlgConverter {
             databaseId = parameters.getDatabaseId();
         }
 
-        CatalogGraphDatabase graph = Catalog.getInstance().getGraph( databaseId );
+        LogicalGraph graph = Catalog.getInstance().getGraph( databaseId );
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan
@@ -128,7 +128,7 @@ public class CypherToAlgConverter {
     }
 
 
-    private AlgNode buildFullScan( CatalogGraphDatabase graph ) {
+    private AlgNode buildFullScan( LogicalGraph graph ) {
         return new LogicalLpgScan(
                 cluster,
                 cluster.traitSet(),
@@ -405,7 +405,7 @@ public class CypherToAlgConverter {
         private final Queue<Pair<String, RexNode>> rexQueue = new LinkedList<>();
         private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
         public final CypherNode original;
-        public final CatalogGraphDatabase graph;
+        public final LogicalGraph graph;
 
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
@@ -423,7 +423,7 @@ public class CypherToAlgConverter {
 
         private CypherContext(
                 CypherNode original,
-                CatalogGraphDatabase graph,
+                LogicalGraph graph,
                 AlgOptCluster cluster,
                 AlgBuilder algBuilder,
                 RexBuilder rexBuilder,
@@ -703,7 +703,7 @@ public class CypherToAlgConverter {
                         edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).collect( Collectors.toList() ),
                         edgeType ) );
 
-                add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Operation.INSERT, null, null ) );
+                add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.INSERT, null, null ) );
             } else {
                 // filtered DML
                 List<Pair<String, RexNode>> newNodes = new LinkedList<>();
@@ -759,7 +759,7 @@ public class CypherToAlgConverter {
 
                 add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), pop(), Pair.right( nodesAndEdges ), adjustedNames ) );
 
-                add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Operation.INSERT, null, null ) );
+                add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.INSERT, null, null ) );
             }
             clearVariables();
         }
@@ -790,7 +790,7 @@ public class CypherToAlgConverter {
 
             List<Pair<String, RexNode>> updates = popNodes();
 
-            add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
+            add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
             clearVariables();
         }
 
@@ -802,7 +802,7 @@ public class CypherToAlgConverter {
 
             List<Pair<String, RexNode>> deletes = popNodes();
 
-            add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Operation.DELETE, Pair.left( deletes ), Pair.right( deletes ) ) );
+            add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.DELETE, Pair.left( deletes ), Pair.right( deletes ) ) );
             clearVariables();
         }
 
@@ -843,7 +843,7 @@ public class CypherToAlgConverter {
 
             List<Pair<String, RexNode>> updates = popNodes();
 
-            add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
+            add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
             clearVariables();
         }
 

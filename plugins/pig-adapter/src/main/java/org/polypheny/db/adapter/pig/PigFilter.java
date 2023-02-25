@@ -42,8 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
@@ -83,7 +83,7 @@ public class PigFilter extends Filter implements PigAlg {
      * Override this method so it looks down the tree to find the table this node is acting on.
      */
     @Override
-    public AlgOptEntity getEntity() {
+    public CatalogEntity getEntity() {
         return getInput().getEntity();
     }
 

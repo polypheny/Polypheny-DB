@@ -18,11 +18,11 @@ package org.polypheny.db.algebra.core.relational;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.schema.ModifiableEntity;
 
 
 /**
@@ -35,11 +35,11 @@ public interface RelationalTransformable {
     }
 
 
-    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptEntity> entities, CatalogReader catalogReader );
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader );
 
 
-    static Modify getModify( AlgOptEntity table, CatalogReader catalogReader, AlgNode alg, Operation operation ) {
-        return table.unwrap( ModifiableEntity.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
+    static Modify<?> getModify( CatalogEntity entity, AlgNode alg, Operation operation ) {
+        return entity.unwrap( ModifiableEntity.class ).toModificationAlg( alg.getCluster(), alg.getTraitSet(), entity, alg, operation, null, null );
     }
 
 }

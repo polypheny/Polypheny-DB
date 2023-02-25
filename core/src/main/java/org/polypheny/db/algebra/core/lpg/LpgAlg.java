@@ -16,7 +16,9 @@
 
 package org.polypheny.db.algebra.core.lpg;
 
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.schema.LogicalEntity;
 
 
 /**
@@ -26,9 +28,6 @@ public interface LpgAlg {
 
     NodeType getNodeType();
 
-    default CatalogGraphDatabase getGraph() {
-        return null;
-    }
 
     enum NodeType {
         MATCH,

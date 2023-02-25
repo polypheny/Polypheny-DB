@@ -22,8 +22,8 @@ import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -35,18 +35,18 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CottontailTableModificationRule extends CottontailConverterRule {
 
     CottontailTableModificationRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Modify.class, CottontailTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
+        super( RelModify.class, CottontailTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
     }
 
 
-    private static boolean supports( Modify modify ) {
+    private static boolean supports( RelModify modify ) {
         return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
     }
 
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
-        final Modify modify = call.alg( 0 );
+        final RelModify modify = call.alg( 0 );
         if ( modify.getEntity().unwrap( CottontailEntity.class ) == null ) {
             return false;
         }
@@ -54,13 +54,13 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
         if ( !modify.getEntity().unwrap( CottontailEntity.class ).getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
-        return modify.getOperation() != Operation.MERGE;
+        return modify.getOperation() != Modify.Operation.MERGE;
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final Modify modify = (Modify) alg;
+        final RelModify modify = (RelModify) alg;
 
         final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
 

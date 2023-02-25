@@ -107,7 +107,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
@@ -172,7 +172,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         LogicalProject.class,
                         LogicalSort.class,
                         LogicalTableFunctionScan.class,
-                        LogicalModify.class,
+                        LogicalRelModify.class,
                         LogicalRelScan.class,
                         LogicalUnion.class,
                         LogicalValues.class,

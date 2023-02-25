@@ -60,17 +60,17 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Match;
 import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -273,9 +273,9 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * @see #dispatch
      */
-    public Result visit( Scan e ) {
+    public Result visit( RelScan e ) {
         return result(
-                new SqlIdentifier( List.of( e.getEntity().unwrap( CatalogTable.class ).getNamespaceName(), e.getEntity().getCatalogEntity().name ), ParserPos.ZERO ),
+                new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).getNamespaceName(), e.getEntity().getCatalogEntity().name ), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
@@ -350,7 +350,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
         final Context context = aliasContext( pairs, false );
         SqlNode query;
-        final boolean rename = stack.size() <= 1 || !(Iterables.get( stack, 1 ).r instanceof Modify);
+        final boolean rename = stack.size() <= 1 || !(Iterables.get( stack, 1 ).r instanceof RelModify);
         final List<String> fieldNames = e.getRowType().getFieldNames();
         if ( !dialect.supportsAliasedValues() && rename ) {
             // Oracle does not support "AS t (c1, c2)". So instead of
@@ -448,7 +448,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * @see #dispatch
      */
-    public Result visit( Modify modify ) {
+    public Result visit( RelModify modify ) {
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
         final Context context = aliasContext( pairs, false );
 

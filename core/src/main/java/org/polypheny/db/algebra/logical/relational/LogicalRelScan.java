@@ -39,7 +39,8 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -69,7 +70,7 @@ import org.polypheny.db.schema.ModelTrait;
  *
  * can. It is the optimizer's responsibility to find these ways, by applying transformation rules.
  */
-public final class LogicalRelScan extends Scan {
+public final class LogicalRelScan extends RelScan<CatalogEntity> {
 
 
     /**
@@ -77,7 +78,7 @@ public final class LogicalRelScan extends Scan {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table ) {
+    public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table ) {
         super( cluster, traitSet, table );
     }
 
@@ -104,8 +105,7 @@ public final class LogicalRelScan extends Scan {
      * @param cluster Cluster
      * @param algOptEntity Table
      */
-    public static LogicalRelScan create( AlgOptCluster cluster, final AlgOptEntity algOptEntity ) {
-        final Entity entity = algOptEntity.unwrap( Entity.class );
+    public static LogicalRelScan create( AlgOptCluster cluster, final CatalogEntity entity ) {
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
@@ -114,12 +114,12 @@ public final class LogicalRelScan extends Scan {
                                 AlgCollationTraitDef.INSTANCE,
                                 () -> {
                                     if ( entity != null ) {
-                                        return entity.getStatistic().getCollations();
+                                        return entity.getCollations();
                                     }
                                     return ImmutableList.of();
                                 } );
 
-        return new LogicalRelScan( cluster, traitSet, algOptEntity );
+        return new LogicalRelScan( cluster, traitSet, entity );
     }
 
 }

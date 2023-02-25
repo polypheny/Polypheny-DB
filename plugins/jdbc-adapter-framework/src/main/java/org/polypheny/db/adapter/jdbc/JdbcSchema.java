@@ -62,7 +62,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
@@ -143,7 +143,7 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     public JdbcEntity createJdbcTable(
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             List<CatalogColumnPlacement> columnPlacementsOnStore,
             CatalogPartitionPlacement partitionPlacement ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,

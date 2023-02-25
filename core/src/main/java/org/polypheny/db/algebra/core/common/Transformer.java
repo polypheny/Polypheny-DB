@@ -24,7 +24,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -51,7 +51,7 @@ public class Transformer extends AbstractAlgNode {
      * Creates an {@link Transformer}, which is able to switch {@link ModelTraitDef} for
      * non-native underlying adapters if needed.
      * For example, it will transform the {@link LpgScan}, which can be handled directly by
-     * a native adapter, to a combination of {@link Scan} and {@link Union}.
+     * a native adapter, to a combination of {@link RelScan} and {@link Union}.
      */
     public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, @Nullable List<String> names, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, traitSet.replace( outModelTrait ) );

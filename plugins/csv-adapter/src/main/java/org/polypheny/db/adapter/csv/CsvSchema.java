@@ -49,7 +49,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -83,7 +83,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public Entity createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
+    public Entity createCsvTable( LogicalTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();

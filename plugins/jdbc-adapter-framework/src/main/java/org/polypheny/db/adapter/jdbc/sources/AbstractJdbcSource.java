@@ -37,7 +37,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.SchemaPlus;
@@ -119,7 +119,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
 
 
     @Override
-    public void truncate( Context context, CatalogTable catalogTable ) {
+    public void truncate( Context context, LogicalTable catalogTable ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.

@@ -42,10 +42,10 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.util.Bug;
@@ -176,7 +176,7 @@ public class AlgMdMaxRowCount implements MetadataHandler<BuiltInMetadata.MaxRowC
     }
 
 
-    public Double getMaxRowCount( Scan alg, AlgMetadataQuery mq ) {
+    public Double getMaxRowCount( RelScan alg, AlgMetadataQuery mq ) {
         // For typical tables, there is no upper bound to the number of rows.
         return Double.POSITIVE_INFINITY;
     }

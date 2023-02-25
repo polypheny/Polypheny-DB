@@ -59,7 +59,7 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
@@ -1000,13 +1000,13 @@ public class JdbcRules {
          * Creates a JdbcTableModificationRule.
          */
         private JdbcTableModificationRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Modify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
+            super( RelModify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
         }
 
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final Modify modify = call.alg( 0 );
+            final RelModify modify = call.alg( 0 );
             if ( modify.getEntity().unwrap( JdbcEntity.class ) != null ) {
                 JdbcEntity table = modify.getEntity().unwrap( JdbcEntity.class );
                 if ( out.getJdbcSchema() == table.getSchema() ) {
@@ -1019,7 +1019,7 @@ public class JdbcRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final Modify modify = (Modify) alg;
+            final RelModify modify = (RelModify) alg;
             final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -1043,7 +1043,7 @@ public class JdbcRules {
     /**
      * Table-modification operator implemented in JDBC convention.
      */
-    public static class JdbcTableModify extends Modify implements JdbcAlg {
+    public static class JdbcTableModify extends RelModify implements JdbcAlg {
 
         private final Expression expression;
 

@@ -26,7 +26,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
 @Slf4j
@@ -38,11 +38,11 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     // Returns the Index of the partition where to place the object
     @Override
-    public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
+    public abstract long getTargetPartitionId( LogicalTable catalogTable, String columnValue );
 
 
     @Override
-    public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold ) {
+    public boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
         for ( Long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
             List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
@@ -59,7 +59,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( LogicalTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
         Catalog catalog = Catalog.getInstance();
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
@@ -127,7 +127,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds ) {
         Map<Integer, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {

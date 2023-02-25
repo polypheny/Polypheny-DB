@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -72,7 +72,7 @@ public class RequestParserTest {
                 null,
                 "username",
                 "testdb" );
-        CatalogTable table = requestParser.parseCatalogTableName( "schema1.table1." );
+        LogicalTable table = requestParser.parseCatalogTableName( "schema1.table1." );
         verify( mockedCatalog ).getTable( "testdb", "schema1", "table1" );
     }
 

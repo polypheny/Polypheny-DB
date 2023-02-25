@@ -21,47 +21,45 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
-public class LogicalLpgModify extends LpgModify implements RelationalTransformable {
+public class LogicalLpgModify extends LpgModify<CatalogEntity> implements RelationalTransformable {
 
 
     /**
      * Subclass of {@link LpgModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogGraphDatabase graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
-        super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
+    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+        super( cluster, traits, entity, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, getGraph(), inputs.get( 0 ), operation, ids, operations );
+        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
     }
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<CatalogEntity> entities, CatalogReader catalogReader ) {
         List<AlgNode> modifies = new ArrayList<>();
 
         // modify of nodes
-        Modify nodeModify = RelationalTransformable.getModify( entities.get( 0 ), catalogReader, inputs.get( 0 ), operation );
+        RelModify<?> nodeModify = RelationalTransformable.getModify( entities.get( 0 ), catalogReader, inputs.get( 0 ), operation );
         modifies.add( nodeModify );
 
         // modify of properties
         if ( inputs.get( 1 ) != null ) {
-            Modify nodePropertyModify = RelationalTransformable.getModify( entities.get( 1 ), catalogReader, inputs.get( 1 ), operation );
+            RelModify<?> nodePropertyModify = RelationalTransformable.getModify( entities.get( 1 ), catalogReader, inputs.get( 1 ), operation );
             modifies.add( nodePropertyModify );
         }
 
@@ -70,12 +68,12 @@ public class LogicalLpgModify extends LpgModify implements RelationalTransformab
         }
 
         // modify of edges
-        Modify edgeModify = RelationalTransformable.getModify( entities.get( 2 ), catalogReader, inputs.get( 2 ), operation );
+        RelModify<?> edgeModify = RelationalTransformable.getModify( entities.get( 2 ), catalogReader, inputs.get( 2 ), operation );
         modifies.add( edgeModify );
 
         // modify of edge properties
         if ( inputs.get( 3 ) != null ) {
-            Modify edgePropertyModify = RelationalTransformable.getModify( entities.get( 3 ), catalogReader, inputs.get( 3 ), operation );
+            RelModify<?> edgePropertyModify = RelationalTransformable.getModify( entities.get( 3 ), catalogReader, inputs.get( 3 ), operation );
             modifies.add( edgePropertyModify );
         }
 

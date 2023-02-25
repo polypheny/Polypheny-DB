@@ -183,10 +183,10 @@ public interface DataContext {
         TIME_ZONE( "timeZone", TimeZone.class );
 
         public final String camelName;
-        public final Class clazz;
+        public final Class<?> clazz;
 
 
-        Variable( String camelName, Class clazz ) {
+        Variable( String camelName, Class<?> clazz ) {
             this.camelName = camelName;
             this.clazz = clazz;
             assert camelName.equals( CaseFormat.UPPER_UNDERSCORE.to( CaseFormat.LOWER_CAMEL, name() ) );

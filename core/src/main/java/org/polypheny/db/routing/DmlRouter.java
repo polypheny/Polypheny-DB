@@ -20,8 +20,8 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -33,7 +33,7 @@ public interface DmlRouter {
     /**
      * Routes DML queries and returns a RelNode.
      */
-    AlgNode routeDml( LogicalModify node, Statement statement );
+    AlgNode routeDml( LogicalRelModify node, Statement statement );
 
     /**
      * Routes conditional executes and directly returns a RelNode.
@@ -48,6 +48,6 @@ public interface DmlRouter {
 
     AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId );
 
-    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, CatalogGraphDatabase catalogGraph, List<Integer> placements );
+    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Integer> placements );
 
 }

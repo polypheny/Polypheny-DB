@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
@@ -639,7 +639,7 @@ public abstract class BuiltInMetadata {
      * Metadata about the predicates that hold in the rows emitted from a relational expression.
      *
      * The difference with respect to {@link Predicates} provider is that this provider tries to extract ALL predicates even if they are not applied on the output expressions of the relational expression; we rely
-     * on {@link RexTableInputRef} to reference origin columns in {@link Scan} for the result predicates.
+     * on {@link RexTableInputRef} to reference origin columns in {@link RelScan} for the result predicates.
      */
     public interface AllPredicates extends Metadata {
 
@@ -674,7 +674,7 @@ public abstract class BuiltInMetadata {
         /**
          * Returns whether each physical operator implementing this relational expression belongs to a different process than its inputs.
          *
-         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link Scan},
+         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link RelScan},
          * or with a phase-change node such as an {@link org.polypheny.db.algebra.core.Exchange}. Hadoop's shuffle operator (a form of sort-exchange) causes data to be sent across the network.
          */
         Boolean isPhaseTransition();

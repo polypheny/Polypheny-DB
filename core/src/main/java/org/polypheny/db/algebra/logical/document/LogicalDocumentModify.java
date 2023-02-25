@@ -19,9 +19,9 @@ package org.polypheny.db.algebra.logical.document;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -50,7 +50,7 @@ public class LogicalDocumentModify extends DocumentModify implements RelationalT
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader ) {
         return List.of( RelationalTransformable.getModify( entities.get( 0 ), catalogReader, values.get( 0 ), operation ) );
     }
 

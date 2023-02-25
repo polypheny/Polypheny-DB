@@ -50,11 +50,11 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -88,7 +88,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
     }
 
 
-    public Boolean areColumnsUnique( Scan alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
+    public Boolean areColumnsUnique( RelScan alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         return alg.getEntity().isKey( columns );
     }
 
@@ -327,7 +327,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
             if ( alg2 instanceof Aggregate
                     || alg2 instanceof Filter
                     || alg2 instanceof Values
-                    || alg2 instanceof Scan
+                    || alg2 instanceof RelScan
                     || simplyProjects( alg2, columns ) ) {
                 try {
                     final Boolean unique = mq.areColumnsUnique( alg2, columns, ignoreNulls );

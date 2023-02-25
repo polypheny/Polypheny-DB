@@ -36,7 +36,7 @@ import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;

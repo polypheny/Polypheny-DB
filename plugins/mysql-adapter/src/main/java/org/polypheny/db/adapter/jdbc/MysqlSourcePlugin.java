@@ -31,10 +31,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Entity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
@@ -96,7 +93,7 @@ public class MysqlSourcePlugin extends Plugin {
 
 
         @Override
-        public Entity createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
             return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
         }
 

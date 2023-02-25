@@ -61,12 +61,12 @@ import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -111,7 +111,7 @@ public abstract class BaseRouter implements Router {
     /**
      * Execute the table scan on the first placement of a table
      */
-    protected static Map<Long, List<CatalogColumnPlacement>> selectPlacement( CatalogTable table ) {
+    protected static Map<Long, List<CatalogColumnPlacement>> selectPlacement( LogicalTable table ) {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
@@ -424,7 +424,7 @@ public abstract class BaseRouter implements Router {
             return handleGraphOnDocument( alg, namespace, statement, placementId );
         }
 
-        CatalogGraphDatabase catalogGraph = alg.getGraph();
+        LogicalGraph catalogGraph = alg.getGraph();
 
         List<AlgNode> scans = new ArrayList<>();
 
@@ -438,7 +438,7 @@ public abstract class BaseRouter implements Router {
             CatalogGraphPlacement graphPlacement = catalog.getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-            CatalogGraphDatabase graph = reader.getGraph( name );
+            LogicalGraph graph = reader.getGraph( name );
 
             if ( !(graph instanceof TranslatableGraph) ) {
                 // needs substitution later on
@@ -460,7 +460,7 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogSchema namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        List<CatalogTable> tables = catalog.getTables( Catalog.defaultDatabaseId, new Pattern( namespace.name ), null );
+        List<LogicalTable> tables = catalog.getTables( Catalog.defaultDatabaseId, new Pattern( namespace.name ), null );
         List<Pair<String, AlgNode>> scans = tables.stream()
                 .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, selectPlacement( t ) ) ) )
                 .collect( Collectors.toList() );
@@ -511,7 +511,7 @@ public abstract class BaseRouter implements Router {
 
 
     protected PreparingEntity getSubstitutionTable( Statement statement, long tableId, long columnId, int adapterId ) {
-        CatalogTable nodes = Catalog.getInstance().getTable( tableId );
+        LogicalTable nodes = Catalog.getInstance().getTable( tableId );
         CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( adapterId, columnId );
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(

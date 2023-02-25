@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.neo4j;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
@@ -44,7 +45,6 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.util.Pair;
@@ -66,7 +66,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
 
     @Setter
     @Getter
-    private CatalogGraphDatabase graph;
+    private NeoGraph graph;
 
     @Setter
     @Getter

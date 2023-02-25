@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,7 +29,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
@@ -40,29 +40,26 @@ import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.TranslatableGraph;
-import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.QueryableGraph;
-import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
@@ -70,18 +67,18 @@ import org.polypheny.db.util.Pair;
 /**
  * Graph entity in the Neo4j representation.
  */
-public class NeoGraph extends AbstractNamespace implements ModifiableGraph, TranslatableGraph, QueryableGraph {
+public class NeoGraph extends PhysicalGraph implements TranslatableEntity, ModifiableEntity {
 
-    public final String name;
     public final TransactionProvider transactionProvider;
     public final Driver db;
     public final String mappingLabel;
     public final Neo4jStore store;
+    public final PhysicalGraph allocation;
 
 
-    public NeoGraph( String name, TransactionProvider transactionProvider, Driver db, long id, String mappingLabel, Neo4jStore store ) {
-        super( id );
-        this.name = name;
+    public NeoGraph( PhysicalGraph graph, TransactionProvider transactionProvider, Driver db, String mappingLabel, Neo4jStore store ) {
+        super( graph.id, graph.name, graph.entityType, graph.namespaceType );
+        this.allocation = graph;
         this.transactionProvider = transactionProvider;
         this.db = db;
         this.mappingLabel = mappingLabel;
@@ -90,69 +87,43 @@ public class NeoGraph extends AbstractNamespace implements ModifiableGraph, Tran
 
 
     /**
-     * Creates an {@link org.polypheny.db.algebra.core.Modify} algebra object, which is modifies this graph.
+     * Creates an {@link RelModify} algebra object, which is modifies this graph.
      *
-     * @param graph the {@link org.polypheny.db.schema.PolyphenyDbSchema} graph object
-     * @param input the child nodes of the created algebra node
+     * @param cluster
+     * @param child the child nodes of the created algebra node
      * @param operation the modify operation
-     * @param ids the ids, which are modified by the created algebra opertions
-     * @param operations the operations to perform
      */
     @Override
-    public LpgModify toModificationAlg(
+    public LpgModify<CatalogEntity> toModificationAlg(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            CatalogGraphDatabase graph,
-            PolyphenyDbCatalogReader catalogReader,
-            AlgNode input,
+            CatalogEntity physicalEntity,
+            AlgNode child,
             Operation operation,
-            List<String> ids, List<? extends RexNode> operations ) {
+            List<String> targets,
+            List<RexNode> sources ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalLpgModify(
                 cluster,
                 traits.replace( Convention.NONE ),
-                graph,
-                input,
+                physicalEntity,
+                child,
                 operation,
-                ids,
-                operations );
+                targets,
+                sources );
     }
 
 
     @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz ) {
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return null;
-    }
-
-
-    @Override
-    public Statistic getStatistic() {
-        return null;
-    }
-
-
-    @Override
-    public <C> C unwrap( Class<C> aClass ) {
-        return null;
-    }
-
-
-    @Override
-    public AlgNode toAlg( ToAlgContext context, org.polypheny.db.schema.graph.Graph graph ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
         return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
     }
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext root, QueryableGraph graph ) {
-        return new NeoQueryable<>( root, this );
+    public Serializable[] getParameterArray() {
+        return new Serializable[0];
     }
 
 
@@ -163,7 +134,7 @@ public class NeoGraph extends AbstractNamespace implements ModifiableGraph, Tran
         private final DataContext dataContext;
 
 
-        public NeoQueryable( DataContext dataContext, org.polypheny.db.schema.graph.Graph graph ) {
+        public NeoQueryable( DataContext dataContext, QueryableGraph graph ) {
             this.dataContext = dataContext;
             this.graph = (NeoGraph) graph;
         }
@@ -269,6 +240,12 @@ public class NeoGraph extends AbstractNamespace implements ModifiableGraph, Tran
             return null;
         }
 
+    }
+
+
+    @Override
+    public AlgDataType getRowType() {
+        return null;
     }
 
 }

@@ -57,7 +57,6 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -83,9 +82,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     private boolean isDml;
 
     @Getter
-    private AlgOptEntity table;
-
-    @Getter
+    @Setter
     private NeoEntity entity;
 
     @Getter
@@ -106,12 +103,6 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public void addAll( List<OperatorStatement> statements ) {
         statements.forEach( this::add );
-    }
-
-
-    public void setTable( AlgOptEntity table ) {
-        this.table = table;
-        this.entity = (NeoEntity) table.getEntity();
     }
 
 
@@ -184,7 +175,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     public static Pair<Integer, NeoStatements.OperatorStatement> createCreate( ImmutableList<ImmutableList<RexLiteral>> values, NeoEntity entity ) {
         int nodeI = 0;
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
-        AlgDataType rowType = entity.getRowType( entity.getTypeFactory() );
+        AlgDataType rowType = entity.getRowType();
 
         for ( ImmutableList<RexLiteral> row : values ) {
             int pos = 0;
@@ -196,7 +187,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
                 props.add( property_( rowType.getFieldList().get( pos ).getPhysicalName(), literal_( NeoUtil.rexAsString( value, null, false ) ) ) );
                 pos++;
             }
-            String name = entity.physicalEntityName;
+            String name = entity.name;
 
             nodes.add( NeoStatements.node_( name + nodeI, NeoStatements.labels_( name ), props ) );
             nodeI++;
@@ -226,7 +217,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity, NeoRelationalImplementor implementor ) {
         List<PropertyStatement> properties = new ArrayList<>();
-        List<AlgDataTypeField> fields = entity.getRowType( entity.getTypeFactory() ).getFieldList();
+        List<AlgDataTypeField> fields = entity.getRowType().getFieldList();
 
         int i = 0;
         for ( RexNode project : last.getProjects() ) {
@@ -241,7 +232,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             }
             i++;
         }
-        String name = entity.physicalEntityName;
+        String name = entity.name;
 
         return create_( node_( name, labels_( name ), properties ) );
     }
@@ -286,8 +277,8 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     private Map<String, String> getToPhysicalMapping( @Nullable AlgNode node ) {
         Map<String, String> mapping = new HashMap<>();
-        for ( AlgDataTypeField field : table.getRowType().getFieldList() ) {
-            mapping.put( field.getName(), entity.physicalEntityName + "." + field.getPhysicalName() );
+        for ( AlgDataTypeField field : entity.getRowType().getFieldList() ) {
+            mapping.put( field.getName(), entity.name + "." + field.getPhysicalName() );
         }
 
         if ( node instanceof NeoProject ) {
@@ -305,7 +296,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addDelete() {
-        add( delete_( false, literal_( entity.physicalEntityName ) ) );
+        add( delete_( false, literal_( entity.name ) ) );
     }
 
 

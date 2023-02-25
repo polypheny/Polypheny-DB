@@ -58,18 +58,18 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.transaction.PolyXid;
@@ -237,7 +237,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+        public void createTable( Context context, LogicalTable combinedTable, List<Long> partitionIds ) {
             Catalog catalog = Catalog.getInstance();
 
             if ( this.currentSchema == null ) {
@@ -286,7 +286,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+        public void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds ) {
             Catalog catalog = Catalog.getInstance();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             List<CatalogPartitionPlacement> partitionPlacements = partitionIds.stream()
@@ -303,7 +303,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+        public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             Catalog catalog = Catalog.getInstance();
@@ -458,7 +458,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
             return ImmutableList.of();
         }
 
@@ -495,13 +495,13 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public Entity createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-            return this.currentSchema.createTable( combinedTable, columnPlacementsOnStore, partitionPlacement );
+        public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
+            return this.currentSchema.createTable( boilerplate );
         }
 
 
         @Override
-        public void truncate( Context context, CatalogTable table ) {
+        public void truncate( Context context, LogicalTable table ) {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
@@ -513,7 +513,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
+        public void createGraph( Context context, LogicalGraph graphDatabase ) {
             catalog.updateGraphPlacementPhysicalNames( graphDatabase.id, getAdapterId(), getPhysicalGraphName( graphDatabase.id ) );
         }
 
@@ -528,14 +528,8 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void createGraphNamespace( SchemaPlus rootSchema, String name, long id ) {
-            this.currentGraph = new NeoGraph( name, this.transactionProvider, this.db, id, getMappingLabel( id ), this );
-        }
-
-
-        @Override
-        public Namespace getCurrentGraphNamespace() {
-            return currentGraph;
+        public void createGraphNamespace( PhysicalGraph graph ) {
+            this.currentGraph = new NeoGraph( graph, this.transactionProvider, this.db, getMappingLabel( graph.id ), this );
         }
 
 

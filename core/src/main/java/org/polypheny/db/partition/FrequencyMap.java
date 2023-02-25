@@ -16,7 +16,7 @@
 
 package org.polypheny.db.partition;
 
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
 public abstract class FrequencyMap {
@@ -37,6 +37,6 @@ public abstract class FrequencyMap {
 
     public abstract void terminate();
 
-    public abstract void determinePartitionFrequency( CatalogTable table, long invocationTimestamp );
+    public abstract void determinePartitionFrequency( LogicalTable table, long invocationTimestamp );
 
 }

@@ -39,12 +39,15 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -61,7 +64,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  *
  * Like any table scan, it serves as a leaf node of a query tree.
  */
-public class CsvScan extends Scan implements EnumerableAlg {
+public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
     final CsvTranslatableTable csvTable;
     final int[] fields;

@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -47,7 +47,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -222,13 +222,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogGraphDatabase getGraph( long id ) {
+    public LogicalGraph getGraph( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName ) {
+    public List<LogicalGraph> getGraphs( long databaseId, Pattern graphName ) {
         throw new NotImplementedException();
     }
 
@@ -300,49 +300,49 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) {
+    public List<LogicalTable> getTables( long schemaId, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<LogicalTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
+    public LogicalTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTableFromPartition( long partitionId ) {
+    public LogicalTable getTableFromPartition( long partitionId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<LogicalTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( long tableId ) {
+    public LogicalTable getTable( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException {
+    public LogicalTable getTable( long schemaId, String tableName ) throws UnknownTableException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
+    public LogicalTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
         throw new NotImplementedException();
     }
 
@@ -1169,7 +1169,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogTable> getTablesForPeriodicProcessing() {
+    public List<LogicalTable> getTablesForPeriodicProcessing() {
         throw new NotImplementedException();
     }
 

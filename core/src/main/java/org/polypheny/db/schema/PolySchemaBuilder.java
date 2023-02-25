@@ -43,12 +43,12 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -126,7 +126,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 continue;
             }
 
-            for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
+            for ( LogicalTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
                 entities.put( Pair.of( catalogSchema.id, catalogTable.id ), catalogTable );
             }
         }
@@ -153,7 +153,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     private Map<Triple<Long, Long, Long>, CatalogEntityPlacement> buildPhysicalGraphs( Catalog catalog, CatalogDatabase catalogDatabase ) {
         Map<Triple<Long, Long, Long>, CatalogEntityPlacement> placements = new HashMap<>();
         // Build adapter schema (physical schema) GRAPH
-        for ( CatalogGraphDatabase graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
+        for ( LogicalGraph graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
             for ( int adapterId : graph.placements ) {
 
                 CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
@@ -256,7 +256,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private void buildView( Map<String, LogicalEntity> tableMap, SchemaPlus s, CatalogTable catalogTable, List<String> columnNames, Builder fieldInfo, List<Long> columnIds ) {
+    private void buildView( Map<String, LogicalEntity> tableMap, SchemaPlus s, LogicalTable catalogTable, List<String> columnNames, Builder fieldInfo, List<Long> columnIds ) {
         LogicalRelView view = new LogicalRelView(
                 catalogTable.id,
                 catalogTable.getNamespaceName(),
@@ -269,7 +269,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private void buildEntity( Catalog catalog, CatalogSchema catalogSchema, Map<String, LogicalEntity> tableMap, SchemaPlus s, CatalogTable catalogTable, List<String> columnNames, AlgDataType rowType, List<Long> columnIds ) {
+    private void buildEntity( Catalog catalog, CatalogSchema catalogSchema, Map<String, LogicalEntity> tableMap, SchemaPlus s, LogicalTable catalogTable, List<String> columnNames, AlgDataType rowType, List<Long> columnIds ) {
         LogicalEntity table;
         if ( catalogSchema.namespaceType == NamespaceType.RELATIONAL ) {
             table = new LogicalEntity(

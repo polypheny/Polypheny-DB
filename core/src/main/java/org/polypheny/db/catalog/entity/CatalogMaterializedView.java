@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
@@ -93,7 +94,7 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+    public LogicalTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
         return new CatalogMaterializedView(
                 id,
                 name,
@@ -117,7 +118,7 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+    public LogicalTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
         return new CatalogMaterializedView(
                 id,
                 name,
@@ -141,7 +142,7 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogTable getRenamed( String newName ) {
+    public LogicalTable getRenamed( String newName ) {
         return new CatalogMaterializedView(
                 id,
                 newName,

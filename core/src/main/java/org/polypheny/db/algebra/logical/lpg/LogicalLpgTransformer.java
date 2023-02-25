@@ -19,7 +19,7 @@ package org.polypheny.db.algebra.logical.lpg;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;

@@ -36,7 +36,7 @@ package org.polypheny.db.adapter.geode.algebra;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -48,7 +48,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 /**
  * Relational expression representing a scan of a Geode collection.
  */
-public class GeodeScan extends Scan implements GeodeAlg {
+public class GeodeScan extends RelScan implements GeodeAlg {
 
     final GeodeEntity geodeTable;
     final AlgDataType projectRowType;

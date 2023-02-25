@@ -33,7 +33,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
@@ -145,7 +145,7 @@ public class Cql2RelConverter {
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 try {
                     if ( treeNode.isLeaf() ) {
-                        CatalogTable catalogTable = treeNode.getExternalNode().catalogTable;
+                        LogicalTable catalogTable = treeNode.getExternalNode().catalogTable;
                         algBuilderAtomicReference.set(
                                 algBuilderAtomicReference.get().scan( catalogTable.getNamespaceName(), catalogTable.name )
                         );
@@ -194,7 +194,7 @@ public class Cql2RelConverter {
                 try {
                     TableIndex tableIndex = treeNode.getExternalNode();
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
-                    CatalogTable catalogTable = tableIndex.catalogTable;
+                    LogicalTable catalogTable = tableIndex.catalogTable;
                     for ( Long columnId : catalogTable.fieldIds ) {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );

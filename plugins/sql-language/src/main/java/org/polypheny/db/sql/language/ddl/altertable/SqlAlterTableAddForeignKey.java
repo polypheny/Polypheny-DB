@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
@@ -109,8 +109,8 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
-        CatalogTable refTable = getCatalogTable( context, referencesTable );
+        LogicalTable catalogTable = getCatalogTable( context, table );
+        LogicalTable refTable = getCatalogTable( context, referencesTable );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         if ( catalogTable.entityType != EntityType.ENTITY ) {

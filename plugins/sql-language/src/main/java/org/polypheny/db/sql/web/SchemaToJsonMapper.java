@@ -27,7 +27,7 @@ import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
@@ -39,7 +39,7 @@ public class SchemaToJsonMapper {
     private final static Gson gson = new Gson();
 
 
-    public static String exportTableDefinitionAsJson( @NonNull CatalogTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
+    public static String exportTableDefinitionAsJson( @NonNull LogicalTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
         List<JsonColumn> columns = new LinkedList<>();
         for ( CatalogColumn catalogColumn : Catalog.getInstance().getColumns( catalogTable.id ) ) {
             String defaultValue = null;

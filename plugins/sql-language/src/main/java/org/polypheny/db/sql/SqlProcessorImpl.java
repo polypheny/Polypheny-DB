@@ -40,7 +40,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -251,7 +251,7 @@ public class SqlProcessorImpl extends Processor {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
 
         if ( oldColumnList != null ) {
-            CatalogTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            LogicalTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
             NamespaceType namespaceType = Catalog.getInstance().getSchema( catalogTable.namespaceId ).namespaceType;
 
             catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
@@ -361,8 +361,8 @@ public class SqlProcessorImpl extends Processor {
     }
 
 
-    private CatalogTable getCatalogTable( Transaction transaction, SqlIdentifier tableName ) {
-        CatalogTable catalogTable;
+    private LogicalTable getCatalogTable( Transaction transaction, SqlIdentifier tableName ) {
+        LogicalTable catalogTable;
         try {
             long schemaId;
             String tableOldName;

@@ -61,7 +61,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -177,7 +177,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             }
         }
         if ( clazz == PolyphenyDbSchema.class ) {
-            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).rootSchema, List.of( catalogEntity.unwrap( CatalogTable.class ).getNamespaceName(), catalogEntity.name ) ) );
+            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).rootSchema, List.of( catalogEntity.unwrap( LogicalTable.class ).getNamespaceName(), catalogEntity.name ) ) );
         }
         return null;
     }
@@ -359,7 +359,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public List<String> getQualifiedName() {
-        return List.of( catalogEntity.unwrap( CatalogTable.class ).getNamespaceName(), catalogEntity.name );
+        return List.of( catalogEntity.unwrap( LogicalTable.class ).getNamespaceName(), catalogEntity.name );
     }
 
 

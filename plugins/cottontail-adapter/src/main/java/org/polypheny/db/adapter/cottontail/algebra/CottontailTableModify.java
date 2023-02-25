@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImple
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -50,7 +50,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public class CottontailTableModify extends Modify implements CottontailAlg {
+public class CottontailTableModify extends RelModify implements CottontailAlg {
 
     public final CottontailEntity cottontailTable;
 

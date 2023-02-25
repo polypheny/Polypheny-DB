@@ -51,7 +51,6 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Sample;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
@@ -84,9 +83,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
@@ -97,7 +97,7 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.refactor.LogicalEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -115,7 +115,6 @@ import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.schema.LogicalCollection;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -449,8 +448,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
-        if ( !(scan.getEntity() instanceof LogicalCollection) ) {
-            alg = scan.getCollection().toAlg( toAlgContext, scan.traitSet );
+        if ( scan.entity.isPhysical() ) {
+            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, scan.traitSet );
         }
         setNewForOldRel( scan, alg );
     }
@@ -482,8 +481,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
-        if ( !(scan.getGraph() instanceof LogicalEntity) ) {
-            alg = scan.getGraph().toAlg( toAlgContext, scan.getGraph() );
+        if ( !(scan.entity.isPhysical()) ) {
+            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, scan.traitSet );
         }
         setNewForOldRel( scan, alg );
     }
@@ -526,11 +525,10 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalModify alg ) {
-        LogicalModify newAlg =
-                LogicalModify.create(
+    public void rewriteAlg( LogicalRelModify alg ) {
+        LogicalRelModify newAlg =
+                LogicalRelModify.create(
                         alg.getEntity(),
-                        alg.getCatalogReader(),
                         getNewForOldRel( alg.getInput() ),
                         alg.getOperation(),
                         alg.getUpdateColumnList(),
@@ -863,8 +861,9 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteAlg( Scan alg ) {
-        AlgNode newAlg = alg.getEntity().toAlg( toAlgContext, alg.traitSet );
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalRelScan alg ) {
+        AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, alg.traitSet );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(
@@ -879,16 +878,19 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDelta alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalChi alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalMatch alg ) {
         rewriteGeneric( alg );
     }

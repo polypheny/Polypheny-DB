@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
@@ -38,7 +38,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
@@ -50,7 +50,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( LogicalTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
@@ -62,7 +62,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(

@@ -17,36 +17,32 @@
 package org.polypheny.db.algebra.core.lpg;
 
 import java.util.List;
-import lombok.Getter;
-import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.core.common.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.PolyType;
 
 
-public abstract class LpgScan extends AbstractAlgNode implements LpgAlg {
-
-    @Getter
-    protected final CatalogGraphDatabase graph; //TranslatableGraph graph;
+public abstract class LpgScan<E extends CatalogEntity> extends Scan<E> implements LpgAlg {
 
 
     /**
      * Creates a {@link LpgScan}.
      * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node, which is able to scan a LPG graph.
      */
-    public LpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogGraphDatabase graph ) {
-        super( cluster, traitSet );
-        this.graph = graph;
+    public LpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, E graph ) {
+        super( cluster, traitSet, graph );
         this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + graph.id;
+        return "$" + getClass().getSimpleName() + "$" + entity.id;
     }
 
 

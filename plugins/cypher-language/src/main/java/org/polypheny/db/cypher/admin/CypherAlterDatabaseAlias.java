@@ -20,7 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.ddl.DdlManager;
@@ -53,7 +53,7 @@ public class CypherAlterDatabaseAlias extends CypherAdminCommand implements Exec
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        List<CatalogGraphDatabase> graphs = Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, new Pattern( targetName ) );
+        List<LogicalGraph> graphs = Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, new Pattern( targetName ) );
 
         if ( graphs.size() != 1 ) {
             if ( !ifExists ) {

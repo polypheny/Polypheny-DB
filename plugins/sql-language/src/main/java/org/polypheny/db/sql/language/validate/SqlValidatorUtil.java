@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -619,7 +619,7 @@ public class SqlValidatorUtil {
             return false;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
-        CatalogGraphDatabase graph = validator.getCatalogReader().getRootSchema().getGraph( id.names );
+        LogicalGraph graph = validator.getCatalogReader().getRootSchema().getGraph( id.names );
         if ( graph != null ) {
             return false;
         }

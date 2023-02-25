@@ -33,14 +33,14 @@ import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -255,7 +255,7 @@ public class EntityAccessMap {
             //  FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
             //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
-            if ( p instanceof Modify ) {
+            if ( p instanceof RelModify ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
                     extractWriteConstraints( (LogicalEntity) table.getEntity() );
@@ -272,7 +272,7 @@ public class EntityAccessMap {
                 relevantPartitions = accessedPartitions.get( p.getId() );
             } else if ( table.getCatalogEntity() != null ) {
                 if ( table.getCatalogEntity().namespaceType == NamespaceType.RELATIONAL ) {
-                    relevantPartitions = table.getCatalogEntity().unwrap( CatalogTable.class ).partitionProperty.partitionIds;
+                    relevantPartitions = table.getCatalogEntity().unwrap( LogicalTable.class ).partitionProperty.partitionIds;
                 } else {
                     relevantPartitions = List.of();
                 }

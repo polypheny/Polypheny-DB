@@ -48,12 +48,14 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
@@ -149,10 +151,10 @@ public abstract class Prepare {
         final AlgVisitor visitor = new AlgVisitor() {
             @Override
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
-                if ( node instanceof Scan ) {
+                if ( node instanceof RelScan ) {
                     final AlgOptCluster cluster = node.getCluster();
                     final ToAlgContext context = () -> cluster;
-                    final AlgNode r = node.getEntity().toAlg( context, node.getTraitSet() );
+                    final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).toAlg( context, node.getTraitSet() );
                     planner.registerClass( r );
                 }
                 super.visit( node, ordinal, parent );
@@ -200,20 +202,19 @@ public abstract class Prepare {
     protected abstract PreparedResult implement( AlgRoot root );
 
 
-
-    protected LogicalModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
+    protected LogicalRelModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
         if ( !isDml ) {
             return null;
         }
         switch ( Kind ) {
             case INSERT:
-                return LogicalModify.Operation.INSERT;
+                return Modify.Operation.INSERT;
             case DELETE:
-                return LogicalModify.Operation.DELETE;
+                return Modify.Operation.DELETE;
             case MERGE:
-                return LogicalModify.Operation.MERGE;
+                return Modify.Operation.MERGE;
             case UPDATE:
-                return LogicalModify.Operation.UPDATE;
+                return Modify.Operation.UPDATE;
             default:
                 return null;
         }
@@ -247,7 +248,7 @@ public abstract class Prepare {
 
         AlgOptEntity getCollection( List<String> names );
 
-        CatalogGraphDatabase getGraph( String name );
+        LogicalGraph getGraph( String name );
 
         ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
 
@@ -401,7 +402,7 @@ public abstract class Prepare {
         protected final AlgDataType parameterRowType;
         protected final AlgDataType rowType;
         protected final boolean isDml;
-        protected final LogicalModify.Operation tableModOp;
+        protected final LogicalRelModify.Operation tableModOp;
         protected final List<List<String>> fieldOrigins;
         protected final List<AlgCollation> collations;
 
@@ -412,7 +413,7 @@ public abstract class Prepare {
                 List<List<String>> fieldOrigins,
                 List<AlgCollation> collations,
                 AlgNode rootAlg,
-                LogicalModify.Operation tableModOp,
+                LogicalRelModify.Operation tableModOp,
                 boolean isDml ) {
             this.rowType = Objects.requireNonNull( rowType );
             this.parameterRowType = Objects.requireNonNull( parameterRowType );

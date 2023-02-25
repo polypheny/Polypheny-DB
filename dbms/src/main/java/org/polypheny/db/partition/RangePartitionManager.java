@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
@@ -42,7 +42,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 

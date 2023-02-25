@@ -20,7 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.ddl.DdlManager;
@@ -47,7 +47,7 @@ public class CypherDropAlias extends CypherAdminCommand implements ExecutableSta
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        List<CatalogGraphDatabase> graphs = Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, new Pattern( aliasName ) );
+        List<LogicalGraph> graphs = Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, new Pattern( aliasName ) );
         if ( graphs.size() != 1 ) {
             throw new RuntimeException( "Error while dropping a graph database alias." );
         }

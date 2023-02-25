@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entities.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
@@ -199,7 +199,7 @@ public class PolyCatalog implements Serializable, CatalogReader {
 
 
     @Override
-    public CatalogGraphDatabase getGraph( String name ) {
+    public LogicalGraph getGraph( String name ) {
         return null;
     }
 

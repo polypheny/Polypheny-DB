@@ -17,17 +17,17 @@
 package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
-import org.apache.calcite.linq4j.Queryable;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.AlgNode;
+import java.util.List;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
-import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.catalog.entity.logical.Logical;
+import org.polypheny.db.catalog.refactor.CatalogType;
+import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.schema.Wrapper;
 
-public abstract class CatalogEntity implements Wrapper, Serializable {
+public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Logical {
 
     public final long id;
     public final EntityType entityType;
@@ -60,13 +60,17 @@ public abstract class CatalogEntity implements Wrapper, Serializable {
     }
 
 
-    public <E> Queryable<E> asQueryable( DataContext root, PolyphenyDbSchema schema, String tableName ) {
-        throw new UnsupportedOperationException( "Not implemented by store" );
+    public double getRowCount() {
+        Integer count = StatisticsManager.getInstance().rowCountPerTable( id );
+        if ( count == null ) {
+            return 0;
+        }
+        return count;
     }
 
 
-    public AlgNode toAlg( ToAlgContext toAlgContext, CatalogGraphDatabase graph ) {
-        throw new UnsupportedOperationException( "Not implemented by store" );
+    public <T extends AlgMultipleTrait> List<T> getCollations() {
+        return null;
     }
 
 }

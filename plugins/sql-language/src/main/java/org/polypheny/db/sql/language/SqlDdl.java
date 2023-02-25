@@ -27,7 +27,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -66,8 +66,8 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected CatalogTable getCatalogTable( Context context, SqlIdentifier tableName ) {
-        CatalogTable catalogTable;
+    protected LogicalTable getCatalogTable( Context context, SqlIdentifier tableName ) {
+        LogicalTable catalogTable;
         try {
             long schemaId;
             String tableOldName;

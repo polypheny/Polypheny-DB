@@ -37,7 +37,7 @@ package org.polypheny.db.tools;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**
@@ -56,7 +56,7 @@ public interface AlgBuilderFactory {
     /**
      * Creates a AlgBuilder.
      */
-    AlgBuilder create( AlgOptCluster cluster, AlgOptSchema schema );
+    AlgBuilder create( AlgOptCluster cluster, PolyphenyDbSchema schema );
 
 }
 

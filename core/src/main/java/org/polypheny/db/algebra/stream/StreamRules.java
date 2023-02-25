@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -55,7 +55,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
@@ -246,7 +246,7 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that pushes a {@link Delta} into a {@link Scan} of a {@link StreamableEntity}.
+     * Planner rule that pushes a {@link Delta} into a {@link RelScan} of a {@link StreamableEntity}.
      *
      * Very likely, the stream was only represented as a table for uniformity with the other relations in the system. The Delta disappears and the stream can be implemented directly.
      */
@@ -259,7 +259,7 @@ public class StreamRules {
          */
         public DeltaScanRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Delta.class, operand( Scan.class, none() ) ),
+                    operand( Delta.class, operand( RelScan.class, none() ) ),
                     algBuilderFactory, null );
         }
 
@@ -267,13 +267,13 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final Scan scan = call.alg( 1 );
+            final RelScan scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
             final AlgOptEntity algOptEntity = scan.getEntity();
             final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
             if ( streamableTable != null ) {
                 final Entity entity1 = streamableTable.stream();
-                final CatalogTable catalogTable = algOptEntity.getCatalogEntity().unwrap( CatalogTable.class );
+                final LogicalTable catalogTable = algOptEntity.getCatalogEntity().unwrap( LogicalTable.class );
                 final CatalogPartitionPlacement placement = algOptEntity.getPartitionPlacement().unwrap( CatalogPartitionPlacement.class );
                 final AlgOptEntity algOptEntity2 =
                         AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
@@ -290,7 +290,7 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that converts {@link Delta} over a {@link Scan} of a table other than {@link StreamableEntity} to an empty {@link Values}.
+     * Planner rule that converts {@link Delta} over a {@link RelScan} of a table other than {@link StreamableEntity} to an empty {@link Values}.
      */
     public static class DeltaScanToEmptyRule extends AlgOptRule {
 
@@ -301,7 +301,7 @@ public class StreamRules {
          */
         public DeltaScanToEmptyRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Delta.class, operand( Scan.class, none() ) ),
+                    operand( Delta.class, operand( RelScan.class, none() ) ),
                     algBuilderFactory, null );
         }
 
@@ -309,7 +309,7 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final Scan scan = call.alg( 1 );
+            final RelScan scan = call.alg( 1 );
             final AlgOptEntity algOptEntity = scan.getEntity();
             final StreamableEntity streamableTable = algOptEntity.unwrap( StreamableEntity.class );
             final AlgBuilder builder = call.builder();

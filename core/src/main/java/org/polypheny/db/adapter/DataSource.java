@@ -24,7 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
@@ -46,7 +46,7 @@ public abstract class DataSource extends Adapter implements ExtensionPoint {
     public abstract Map<String, List<ExportedColumn>> getExportedColumns();
 
 
-    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
+    public void createGraph( Context context, LogicalGraph graphDatabase ) {
         throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
     }
 

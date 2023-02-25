@@ -20,7 +20,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.schema.graph.Graph;
 
-public interface TranslatableGraph extends Graph {
+public interface TranslatableGraph {
 
     /**
      * Converts this table into a {@link AlgNode relational expression}.

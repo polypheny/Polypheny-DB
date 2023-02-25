@@ -74,9 +74,9 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.externalize.AlgXmlWriter;
@@ -199,7 +199,7 @@ public abstract class AlgOptUtil {
         final Multimap<Class<? extends AlgNode>, AlgNode> nodes = AlgMetadataQuery.instance().getNodeTypes( alg );
         final List<AlgOptEntity> usedTables = new ArrayList<>();
         for ( Entry<Class<? extends AlgNode>, Collection<AlgNode>> e : nodes.asMap().entrySet() ) {
-            if ( Scan.class.isAssignableFrom( e.getKey() ) ) {
+            if ( RelScan.class.isAssignableFrom( e.getKey() ) ) {
                 for ( AlgNode node : e.getValue() ) {
                     usedTables.add( node.getEntity() );
                 }

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -94,7 +94,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {

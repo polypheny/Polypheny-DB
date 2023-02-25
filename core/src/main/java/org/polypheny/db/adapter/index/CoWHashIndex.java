@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
@@ -53,7 +53,7 @@ class CoWHashIndex extends Index {
             final long id,
             final String name,
             final CatalogSchema schema,
-            final CatalogTable table,
+            final LogicalTable table,
             final List<String> columns,
             final List<String> targetColumns ) {
         this.id = id;
@@ -69,7 +69,7 @@ class CoWHashIndex extends Index {
             final long id,
             final String name,
             final CatalogSchema schema,
-            final CatalogTable table,
+            final LogicalTable table,
             final String[] columns,
             final String[] targetColumns ) {
         this( id, name, schema, table, Arrays.asList( columns ), Arrays.asList( targetColumns ) );
@@ -376,7 +376,7 @@ class CoWHashIndex extends Index {
                 Boolean unique,
                 Boolean persistent,
                 CatalogSchema schema,
-                CatalogTable table,
+                LogicalTable table,
                 List<String> columns,
                 List<String> targetColumns ) {
             return new CoWHashIndex( id, name, schema, table, columns, targetColumns );

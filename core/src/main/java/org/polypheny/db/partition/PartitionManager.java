@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.PolyType;
 
 
@@ -29,11 +29,11 @@ public interface PartitionManager {
     /**
      * Returns the Index of the partition where to place the object
      */
-    long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
+    long getTargetPartitionId( LogicalTable catalogTable, String columnValue );
 
-    boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold );
+    boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold );
 
-    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters );
+    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( LogicalTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 
@@ -44,7 +44,7 @@ public interface PartitionManager {
      * @param partitionIds List of all requested partitions ids
      * @return Returns map of AdapterId  {@code ->} [Map PartitionsId {@code ->}needed Columns Placements]
      */
-    Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+    Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds );
 
     int getNumberOfPartitionsPerGroup( int numberOfPartitions );
 

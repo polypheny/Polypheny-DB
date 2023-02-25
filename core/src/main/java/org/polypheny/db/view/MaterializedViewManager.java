@@ -24,11 +24,11 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
@@ -89,10 +89,10 @@ public abstract class MaterializedViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalModify modify ) {
-            if ( modify.getOperation() != Operation.MERGE ) {
+        public AlgNode visit( LogicalRelModify modify ) {
+            if ( modify.getOperation() != Modify.Operation.MERGE ) {
                 if ( (modify.getEntity().getCatalogEntity() != null) ) {
-                    CatalogTable table = modify.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
+                    LogicalTable table = modify.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
                     names.add( table.getNamespaceName() );
                     names.add( table.name );
                 }

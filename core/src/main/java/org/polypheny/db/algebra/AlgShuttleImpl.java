@@ -39,8 +39,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -69,8 +69,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -127,7 +127,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( Scan scan ) {
+    public AlgNode visit( RelScan scan ) {
         return scan;
     }
 
@@ -205,7 +205,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( LogicalModify modify ) {
+    public AlgNode visit( LogicalRelModify modify ) {
         return visitChildren( modify );
     }
 

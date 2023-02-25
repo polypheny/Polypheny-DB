@@ -56,9 +56,9 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepAlgVertex;
@@ -80,7 +80,7 @@ import org.polypheny.db.util.Util;
  *
  * The goal of this provider is to infer the lineage for the given expression.
  *
- * The output expressions might contain references to columns produced by {@link Scan} operators ({@link RexTableInputRef}). In turn, each Scan operator is identified uniquely
+ * The output expressions might contain references to columns produced by {@link RelScan} operators ({@link RexTableInputRef}). In turn, each Scan operator is identified uniquely
  * by a {@link AlgTableRef} containing its qualified name and an identifier.
  *
  * If the lineage cannot be inferred, we return null.
@@ -117,11 +117,11 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
 
 
     /**
-     * Expression lineage from {@link Scan}.
+     * Expression lineage from {@link RelScan}.
      *
      * We extract the fields referenced by the expression and we express them using {@link RexTableInputRef}.
      */
-    public Set<RexNode> getExpressionLineage( Scan alg, AlgMetadataQuery mq, RexNode outputExpression ) {
+    public Set<RexNode> getExpressionLineage( RelScan alg, AlgMetadataQuery mq, RexNode outputExpression ) {
         final RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
 
         // Extract input fields referenced by expression

@@ -27,7 +27,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
@@ -43,7 +43,7 @@ public class DdlTest extends CypherTestTemplate {
 
         execute( "CREATE DATABASE " + graphName );
 
-        CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+        LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
         assertEquals( 1, catalog.getGraphs( graph.databaseId, new Pattern( graphName ) ).size() );
 
@@ -65,7 +65,7 @@ public class DdlTest extends CypherTestTemplate {
         try {
             execute( "CREATE DATABASE " + graphName );
 
-            CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 1, graph.placements.size() );
 
@@ -95,7 +95,7 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( String.format( "CREATE DATABASE %s ON STORE %s", graphName, "store1" ) );
 
-            CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 1, graph.placements.size() );
 
@@ -122,7 +122,7 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( "CREATE DATABASE " + graphName );
 
-            CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 1, graph.placements.size() );
 

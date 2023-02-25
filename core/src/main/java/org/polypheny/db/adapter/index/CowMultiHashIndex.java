@@ -31,7 +31,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
@@ -49,7 +49,7 @@ public class CowMultiHashIndex extends Index {
     private Map<PolyXid, List<Triple<List<Object>, List<Object>, Boolean>>> barrierIndex = new HashMap<>();
 
 
-    public CowMultiHashIndex( long id, String name, CatalogSchema schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
+    public CowMultiHashIndex( long id, String name, CatalogSchema schema, LogicalTable table, List<String> columns, List<String> targetColumns ) {
         this.id = id;
         this.name = name;
         this.schema = schema;
@@ -59,7 +59,7 @@ public class CowMultiHashIndex extends Index {
     }
 
 
-    public CowMultiHashIndex( long id, String name, CatalogSchema schema, CatalogTable table, String[] columns, String[] targetColumns ) {
+    public CowMultiHashIndex( long id, String name, CatalogSchema schema, LogicalTable table, String[] columns, String[] targetColumns ) {
         this( id, name, schema, table, Arrays.asList( columns ), Arrays.asList( targetColumns ) );
     }
 
@@ -370,7 +370,7 @@ public class CowMultiHashIndex extends Index {
                 Boolean unique,
                 Boolean persistent,
                 CatalogSchema schema,
-                CatalogTable table,
+                LogicalTable table,
                 List<String> columns,
                 List<String> targetColumns ) {
             return new CowMultiHashIndex( id, name, schema, table, columns, targetColumns );

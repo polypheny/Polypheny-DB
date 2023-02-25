@@ -16,6 +16,15 @@
 
 package org.polypheny.db.catalog.refactor;
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
+
 public interface TranslatableEntity {
+
+    /**
+     * Converts this entity into a {@link AlgNode}.
+     */
+    AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet );
 
 }

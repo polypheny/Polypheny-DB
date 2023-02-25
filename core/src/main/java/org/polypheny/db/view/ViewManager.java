@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -116,7 +116,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( Scan scan ) {
+        public AlgNode visit( RelScan scan ) {
             if ( depth == 0 ) {
                 return checkNode( scan );
             }
@@ -231,7 +231,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalModify modify ) {
+        public AlgNode visit( LogicalRelModify modify ) {
             handleNodeType( modify );
             depth++;
             return modify;
@@ -253,7 +253,7 @@ public class ViewManager {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
                 if ( other.getEntity() instanceof AlgOptEntityImpl ) {
-                    CatalogTable catalogTable = other.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
+                    LogicalTable catalogTable = other.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
                     if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogTable).isOrdered() ) {
                         return orderMaterialized( other );
                     }

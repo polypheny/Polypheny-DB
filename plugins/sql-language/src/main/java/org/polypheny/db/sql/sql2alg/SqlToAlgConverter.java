@@ -94,6 +94,7 @@ import org.polypheny.db.algebra.core.Sample;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
@@ -102,7 +103,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
@@ -123,7 +124,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -2161,7 +2162,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         if ( operator instanceof SqlUserDefinedTableMacro ) {
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
             final TranslatableEntity table = udf.getTable( typeFactory, callBinding.sqlOperands() );
-            final CatalogTable catalogTable = Catalog.getInstance().getTable( table.getId() );
+            final LogicalTable catalogTable = Catalog.getInstance().getTable( table.getId() );
             final AlgDataType rowType = table.getRowType( typeFactory );
             AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable, null );
             AlgNode converted = toAlg( algOptEntity );
@@ -2886,16 +2887,15 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     targetTable,
                     catalogReader,
                     source,
-                    LogicalModify.Operation.INSERT,
+                    Modify.Operation.INSERT,
                     null,
                     null,
                     false );
         }
-        return LogicalModify.create(
+        return LogicalRelModify.create(
                 targetTable,
-                catalogReader,
                 source,
-                LogicalModify.Operation.INSERT,
+                Modify.Operation.INSERT,
                 null,
                 null,
                 false );
@@ -3159,11 +3159,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private AlgNode convertDelete( SqlDelete call ) {
         AlgOptEntity targetTable = getTargetTable( call );
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
-        return LogicalModify.create(
+        return LogicalRelModify.create(
                 targetTable,
-                catalogReader,
                 sourceRel,
-                LogicalModify.Operation.DELETE,
+                Modify.Operation.DELETE,
                 null,
                 null,
                 false );
@@ -3194,11 +3193,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
 
-        return LogicalModify.create(
+        return LogicalRelModify.create(
                 targetTable,
-                catalogReader,
                 sourceRel,
-                LogicalModify.Operation.UPDATE,
+                Modify.Operation.UPDATE,
                 targetColumnNameList,
                 rexNodeSourceExpressionListBuilder.build(),
                 false );
@@ -3271,11 +3269,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         algBuilder.push( join ).project( projects );
 
-        return LogicalModify.create(
+        return LogicalRelModify.create(
                 targetTable,
-                catalogReader,
                 algBuilder.build(),
-                LogicalModify.Operation.MERGE,
+                Modify.Operation.MERGE,
                 targetColumnNameList,
                 null,
                 false );

@@ -43,7 +43,6 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -54,10 +53,11 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -359,7 +359,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param id The id of the graph to return
      * @return The graph entity with the provided id
      */
-    public abstract CatalogGraphDatabase getGraph( long id );
+    public abstract LogicalGraph getGraph( long id );
 
     /**
      * Get a collection of all graphs, which match the given conditions.
@@ -368,7 +368,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param graphName The pattern to which the name has to match, null if every name is matched
      * @return A collection of all graphs matching
      */
-    public abstract List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName );
+    public abstract List<LogicalGraph> getGraphs( long databaseId, Pattern graphName );
 
     /**
      * Add a new alias for a given graph.
@@ -411,7 +411,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern );
+    public abstract List<LogicalTable> getTables( long schemaId, Pattern tableNamePattern );
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -422,7 +422,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<LogicalTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given name in the specified database and schema.
@@ -432,7 +432,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param tableName The name of the table
      * @return The table
      */
-    public abstract CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException;
+    public abstract LogicalTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException;
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -443,7 +443,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<LogicalTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given id
@@ -451,7 +451,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param tableId The id of the table
      * @return The table
      */
-    public abstract CatalogTable getTable( long tableId );
+    public abstract LogicalTable getTable( long tableId );
 
     /**
      * Returns the table with the given name in the specified schema.
@@ -461,7 +461,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException;
+    public abstract LogicalTable getTable( long schemaId, String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table with the given name in the specified database and schema.
@@ -472,7 +472,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
+    public abstract LogicalTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table which is associated with a given partitionId
@@ -480,7 +480,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param partitionId to use for lookup
      * @return CatalogEntity that contains partitionId
      */
-    public abstract CatalogTable getTableFromPartition( long partitionId );
+    public abstract LogicalTable getTableFromPartition( long partitionId );
 
     /**
      * Adds a table to a specified schema.
@@ -1775,7 +1775,7 @@ public abstract class Catalog implements ExtensionPoint {
      *
      * @return List of tables which need to be periodically processed
      */
-    public abstract List<CatalogTable> getTablesForPeriodicProcessing();
+    public abstract List<LogicalTable> getTablesForPeriodicProcessing();
 
     /**
      * Registers a table to be considered for periodic processing

@@ -89,7 +89,7 @@ public class Frameworks {
      */
     public interface PlannerAction<R> {
 
-        R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, PolyphenyDbSchema rootSchema );
+        R apply( AlgOptCluster cluster, PolyphenyDbSchema rootSchema );
 
     }
 
@@ -118,7 +118,6 @@ public class Frameworks {
 
         public abstract R apply(
                 AlgOptCluster cluster,
-                AlgOptSchema algOptSchema,
                 PolyphenyDbSchema rootSchema );
 
     }
@@ -135,8 +134,8 @@ public class Frameworks {
         return withPrepare(
                 new Frameworks.PrepareAction<>( config ) {
                     @Override
-                    public R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, PolyphenyDbSchema rootSchema ) {
-                        return action.apply( cluster, algOptSchema, rootSchema );
+                    public R apply( AlgOptCluster cluster, PolyphenyDbSchema rootSchema ) {
+                        return action.apply( cluster, rootSchema );
                     }
                 } );
     }

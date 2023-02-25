@@ -30,11 +30,11 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
@@ -43,7 +43,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -84,13 +84,13 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     private static EnforcementInformation getControl( AlgNode node, Statement statement ) {
         ModifyExtractor extractor = new ModifyExtractor();
         node.accept( extractor );
-        Modify modify = extractor.getModify();
+        RelModify modify = extractor.getModify();
 
         if ( modify == null ) {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        final CatalogTable table = getCatalogTable( modify );
+        final LogicalTable table = getCatalogTable( modify );
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();
@@ -219,7 +219,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public static EnforcementInformation getControl( CatalogTable table, Statement statement, EnforcementTime enforcementTime ) {
+    public static EnforcementInformation getControl( LogicalTable table, Statement statement, EnforcementTime enforcementTime ) {
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = builder.getRexBuilder();
@@ -398,12 +398,12 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public static CatalogTable getCatalogTable( Modify modify ) {
+    public static LogicalTable getCatalogTable( RelModify modify ) {
         if ( modify.getEntity() == null ) {
             throw new RuntimeException( "The table was not found in the catalog!" );
         }
 
-        return (CatalogTable) modify.getEntity().getCatalogEntity();
+        return (LogicalTable) modify.getEntity().getCatalogEntity();
     }
 
 
@@ -435,11 +435,11 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     public static class ModifyExtractor extends AlgShuttleImpl {
 
         @Getter
-        private LogicalModify modify;
+        private LogicalRelModify modify;
 
 
         @Override
-        public AlgNode visit( LogicalModify modify ) {
+        public AlgNode visit( LogicalRelModify modify ) {
             this.modify = modify;
             return modify;
         }

@@ -42,7 +42,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -100,7 +100,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final Set<CatalogTable> catalogTables = new TreeSet<>();
+    private final Set<LogicalTable> catalogTables = new TreeSet<>();
 
     @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();

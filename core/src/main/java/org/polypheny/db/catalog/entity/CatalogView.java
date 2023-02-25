@@ -28,13 +28,14 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 
-public class CatalogView extends CatalogTable {
+public class CatalogView extends LogicalTable {
 
     private static final long serialVersionUID = -4771308114962700515L;
 
@@ -75,7 +76,7 @@ public class CatalogView extends CatalogTable {
 
 
     @Override
-    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+    public LogicalTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
         return new CatalogView(
                 id,
                 name,
@@ -97,7 +98,7 @@ public class CatalogView extends CatalogTable {
 
 
     @Override
-    public CatalogTable getRenamed( String newName ) {
+    public LogicalTable getRenamed( String newName ) {
         return new CatalogView(
                 id,
                 newName,
@@ -119,7 +120,7 @@ public class CatalogView extends CatalogTable {
 
 
     @Override
-    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+    public LogicalTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
         return new CatalogView(
                 id,
                 name,

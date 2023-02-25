@@ -40,13 +40,13 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 import org.polypheny.db.transaction.PUID;
@@ -149,7 +149,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             return;
         }
         // MonetDB does not support updating the column type directly. We need to do a work-around
-        CatalogTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
+        LogicalTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
         String tmpColName = columnPlacement.physicalColumnName + "tmp";
         StringBuilder builder;
 
@@ -229,7 +229,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Entity createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
         return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 
@@ -268,7 +268,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
         return ImmutableList.of(); // TODO
     }
 

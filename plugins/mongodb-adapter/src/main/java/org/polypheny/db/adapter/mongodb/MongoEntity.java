@@ -72,18 +72,18 @@ import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
@@ -116,7 +116,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
     @Getter
     private final MongoCollection<Document> collection;
     @Getter
-    private final CatalogTable catalogTable;
+    private final LogicalTable catalogTable;
 
     @Getter
     private final CatalogCollection catalogCollection;
@@ -129,7 +129,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
     /**
      * Creates a MongoTable.
      */
-    MongoEntity( CatalogTable catalogTable, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long storeId, CatalogPartitionPlacement partitionPlacement ) {
+    MongoEntity( LogicalTable catalogTable, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long storeId, CatalogPartitionPlacement partitionPlacement ) {
         super( Object[].class, catalogTable.id, partitionPlacement.partitionId, storeId );
         this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
         this.transactionProvider = transactionProvider;
@@ -315,7 +315,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
 
 
     @Override
-    public Modify toModificationAlg(
+    public RelModify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptEntity table,
             CatalogReader catalogReader,
@@ -325,7 +325,7 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         mongoSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalModify(
+        return new LogicalRelModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

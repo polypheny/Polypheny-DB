@@ -72,13 +72,14 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableAlg;
@@ -415,7 +416,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Returns a string describing the operations inside this query.
      *
-     * For example, "sfpahol" means {@link Scan} (s)
+     * For example, "sfpahol" means {@link RelScan} (s)
      * followed by {@link Filter} (f)
      * followed by {@link Project} (p)
      * followed by {@link Aggregate} (a)
@@ -429,7 +430,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         final StringBuilder b = new StringBuilder();
         boolean flag = false;
         for ( AlgNode alg : algs ) {
-            b.append( alg instanceof Scan ? 's'
+            b.append( alg instanceof RelScan ? 's'
                     : (alg instanceof Project && flag) ? 'o'
                             : (alg instanceof Filter && flag) ? 'h'
                                     : alg instanceof Aggregate ? 'a'
@@ -458,7 +459,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         for ( int i = 0; i < algs.size(); i++ ) {
             final AlgNode r = algs.get( i );
             if ( i == 0 ) {
-                if ( !(r instanceof Scan) ) {
+                if ( !(r instanceof RelScan) ) {
                     return litmus.fail( "first alg must be Scan, was ", r );
                 }
                 if ( r.getEntity() != table ) {
@@ -514,8 +515,8 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     }
 
 
-    public Scan getScan() {
-        return (Scan) algs.get( 0 );
+    public RelScan getScan() {
+        return (RelScan) algs.get( 0 );
     }
 
 
@@ -525,7 +526,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
 
 
     @Override
-    public AlgOptEntity getEntity() {
+    public CatalogEntity getEntity() {
         return table;
     }
 
@@ -538,8 +539,8 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         for ( AlgNode alg : algs ) {
-            if ( alg instanceof Scan ) {
-                Scan scan = (Scan) alg;
+            if ( alg instanceof RelScan ) {
+                RelScan scan = (RelScan) alg;
                 pw.item( "table", scan.getEntity().getCatalogEntity().id );
                 pw.item( "intervals", intervals );
             } else if ( alg instanceof Filter ) {
@@ -878,7 +879,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      *
      * @param aggCalls List of AggregateCalls to translate
      * @param aggNames List of aggregate names
-     * @param project Input project under the aggregate calls, or null if we have {@link Scan} immediately under the {@link Aggregate}
+     * @param project Input project under the aggregate calls, or null if we have {@link RelScan} immediately under the {@link Aggregate}
      * @param druidQuery Druid Query Rel
      * @return List of valid Druid {@link JsonAggregation}s, or null if any of the aggregates is not supported
      */

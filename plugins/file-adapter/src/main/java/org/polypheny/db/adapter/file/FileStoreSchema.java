@@ -41,7 +41,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -90,7 +90,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
 
 
     public Entity createFileTable(
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             List<CatalogColumnPlacement> columnPlacementsOnStore,
             CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );

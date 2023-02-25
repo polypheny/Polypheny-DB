@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
@@ -142,8 +142,8 @@ public class Combiner {
             }
         }
 
-        CatalogTable leftCatalogTable = left.catalogTable;
-        CatalogTable rightCatalogTable = right.catalogTable;
+        LogicalTable leftCatalogTable = left.catalogTable;
+        LogicalTable rightCatalogTable = right.catalogTable;
         List<String> columnList = Arrays.asList( columnStrs );
 
         if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) || !rightCatalogTable.getColumnNames().containsAll( columnList ) ) {

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -54,12 +54,12 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.transaction.Statement;
 
@@ -284,7 +284,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( Scan scan ) {
+    public AlgNode visit( RelScan scan ) {
         hashBasis.add( "Scan#" + scan.getEntity().getCatalogEntity().id );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
@@ -373,7 +373,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalModify modify ) {
+    public AlgNode visit( LogicalRelModify modify ) {
         hashBasis.add( "LogicalModify" );
         // e.g. inserts only have underlying values and need to attach the table correctly
         this.getAvailableColumns( modify );
@@ -390,7 +390,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     private void getAvailableColumns( AlgNode scan ) {
         this.entityId.add( scan.getEntity().getCatalogEntity().id );
-        final CatalogTable table = (CatalogTable) scan.getEntity().getCatalogEntity();
+        final LogicalTable table = (LogicalTable) scan.getEntity().getCatalogEntity();
         if ( table != null ) {
             final List<Long> ids = table.fieldIds;
             final List<String> names = table.getColumnNames();
@@ -410,11 +410,11 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
             return;
         }
 
-        handleIfPartitioned( filter, (CatalogTable) table.getCatalogEntity() );
+        handleIfPartitioned( filter, (LogicalTable) table.getCatalogEntity() );
     }
 
 
-    private void handleIfPartitioned( AlgNode node, CatalogTable catalogTable ) {
+    private void handleIfPartitioned( AlgNode node, LogicalTable catalogTable ) {
         // Only if table is partitioned
         if ( catalogTable.partitionProperty.isPartitioned ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
@@ -445,7 +445,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
             return;
         }
 
-        handleIfPartitioned( filter, (CatalogTable) table.getCatalogEntity() );
+        handleIfPartitioned( filter, (LogicalTable) table.getCatalogEntity() );
     }
 
 

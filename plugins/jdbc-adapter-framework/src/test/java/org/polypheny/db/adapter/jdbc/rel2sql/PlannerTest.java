@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.Parser;
@@ -179,7 +179,7 @@ public class PlannerTest extends SqlLanguageDependent {
     /**
      * Relational expression representing a "mock" scan of a table in a JDBC data source.
      */
-    private static class MockJdbcScan extends Scan implements JdbcAlg {
+    private static class MockJdbcScan extends RelScan implements JdbcAlg {
 
         MockJdbcScan( AlgOptCluster cluster, AlgOptEntity table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );

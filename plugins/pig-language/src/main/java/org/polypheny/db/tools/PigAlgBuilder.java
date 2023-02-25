@@ -40,16 +40,16 @@ import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
 
@@ -62,8 +62,8 @@ public class PigAlgBuilder extends AlgBuilder {
     private String lastAlias;
 
 
-    private PigAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
-        super( context, cluster, algOptSchema );
+    private PigAlgBuilder( Context context, AlgOptCluster cluster, PolyphenyDbSchema schema ) {
+        super( context, cluster, schema );
     }
 
 
@@ -72,12 +72,12 @@ public class PigAlgBuilder extends AlgBuilder {
      */
     public static PigAlgBuilder create( FrameworkConfig config ) {
         final AlgBuilder algBuilder = AlgBuilder.create( config );
-        return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.algOptSchema );
+        return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.schema );
     }
 
 
     public static PigAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
+        return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader().getRootSchema() );
     }
 
 
@@ -203,8 +203,8 @@ public class PigAlgBuilder extends AlgBuilder {
             return lastAlias;
         } else {
             AlgNode top = peek();
-            if ( top instanceof Scan ) {
-                return top.getEntity().getCatalogEntity().name;
+            if ( top instanceof RelScan ) {
+                return top.getEntity().name;
             } else {
                 return null;
             }

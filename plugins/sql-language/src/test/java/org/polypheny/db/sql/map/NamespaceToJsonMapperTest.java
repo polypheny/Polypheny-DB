@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.sql.SqlLanguageDependent;
@@ -51,7 +51,7 @@ public class NamespaceToJsonMapperTest extends SqlLanguageDependent {
     @Ignore
     @Test
     public void exportTest() {
-        CatalogTable catalogTable = new CatalogTable(
+        LogicalTable catalogTable = new LogicalTable(
                 4,
                 "stores",
                 ImmutableList.of(),

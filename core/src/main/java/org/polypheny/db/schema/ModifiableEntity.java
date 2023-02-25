@@ -36,7 +36,7 @@ package org.polypheny.db.schema;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -51,12 +51,12 @@ public interface ModifiableEntity extends QueryableEntity {
     /**
      * Creates a relational expression that modifies this table.
      */
-    Modify toModificationAlg(
+    RelModify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptEntity table,
             CatalogReader catalogReader,
             AlgNode child,
-            Modify.Operation operation,
+            RelModify.Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             boolean flattened );

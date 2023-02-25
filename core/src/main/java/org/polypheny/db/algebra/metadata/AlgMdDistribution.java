@@ -44,10 +44,10 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
@@ -102,7 +102,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
     }
 
 
-    public AlgDistribution distribution( Scan scan, AlgMetadataQuery mq ) {
+    public AlgDistribution distribution( RelScan scan, AlgMetadataQuery mq ) {
         return table( scan.getEntity() );
     }
 
@@ -128,7 +128,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     /**
-     * Helper method to determine a {@link Scan}'s distribution.
+     * Helper method to determine a {@link RelScan}'s distribution.
      */
     public static AlgDistribution table( AlgOptEntity table ) {
         return table.getDistribution();

@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -48,7 +48,7 @@ public abstract class ConditionalExecute extends BiAlg {
     protected CatalogSchema catalogSchema = null;
     @Getter
     @Setter
-    protected CatalogTable catalogTable = null;
+    protected LogicalTable catalogTable = null;
     @Getter
     @Setter
     protected List<String> catalogColumns = null;

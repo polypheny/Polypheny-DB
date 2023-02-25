@@ -27,7 +27,8 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -79,19 +80,19 @@ public class QueryProcessorHelpers {
     }
 
 
-    public static LogicalModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
+    public static LogicalRelModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
         if ( !isDml ) {
             return null;
         }
         switch ( sqlKind ) {
             case INSERT:
-                return LogicalModify.Operation.INSERT;
+                return Modify.Operation.INSERT;
             case DELETE:
-                return LogicalModify.Operation.DELETE;
+                return Modify.Operation.DELETE;
             case MERGE:
-                return LogicalModify.Operation.MERGE;
+                return Modify.Operation.MERGE;
             case UPDATE:
-                return LogicalModify.Operation.UPDATE;
+                return Modify.Operation.UPDATE;
             default:
                 return null;
         }

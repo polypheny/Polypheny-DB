@@ -39,12 +39,11 @@ import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -63,7 +62,7 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
      * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogGraphDatabase graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    public NeoLpgModify( AlgOptCluster cluster, AlgTraitSet traits, LogicalGraph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 

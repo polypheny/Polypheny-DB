@@ -32,39 +32,34 @@ import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class NeoScan extends Scan implements NeoRelAlg {
+public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
 
-    private final NeoEntity neoEntity;
-
-
-    public NeoScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, NeoEntity neoEntity ) {
-        super( cluster, traitSet, table );
-        this.neoEntity = neoEntity;
+    public NeoScan( AlgOptCluster cluster, AlgTraitSet traitSet, NeoEntity neoEntity ) {
+        super( cluster, traitSet, neoEntity );
     }
 
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-        if ( implementor.getTable() != null && !Objects.equals( table.getEntity().getId(), implementor.getTable().getEntity().getId() ) ) {
+        if ( implementor.getEntity() != null && !Objects.equals( entity.id, implementor.getEntity().id ) ) {
             handleInsertFromOther( implementor );
             return;
         }
 
-        implementor.setTable( table );
+        implementor.setEntity( entity );
 
-        implementor.add( match_( node_( neoEntity.physicalEntityName, labels_( neoEntity.physicalEntityName ) ) ) );
+        implementor.add( match_( node_( entity.name, labels_( entity.name ) ) ) );
 
         if ( !implementor.isDml() ) {
-            List<NeoStatement> mapping = table
+            List<NeoStatement> mapping = entity
                     .getRowType()
                     .getFieldList()
-                    .stream().map( f -> as_( literal_( neoEntity.physicalEntityName + "." + f.getPhysicalName() ), literal_( f.getName() ) ) )
+                    .stream().map( f -> as_( literal_( entity.name + "." + f.getPhysicalName() ), literal_( f.getName() ) ) )
                     .collect( Collectors.toList() );
 
             implementor.add( with_( list_( mapping ) ) );
@@ -73,13 +68,13 @@ public class NeoScan extends Scan implements NeoRelAlg {
 
 
     private void handleInsertFromOther( NeoRelationalImplementor implementor ) {
-        implementor.selectFromTable = (NeoEntity) table.getEntity();
+        implementor.selectFromTable = entity;
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new NeoScan( getCluster(), traitSet, this.getEntity(), neoEntity );
+        return new NeoScan( getCluster(), traitSet, entity );
     }
 
 }

@@ -21,9 +21,11 @@ import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.refactor.PhysicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.type.PolyType;
 
 public class NeoLpgScan extends LpgScan implements NeoGraphAlg {
@@ -35,7 +37,7 @@ public class NeoLpgScan extends LpgScan implements NeoGraphAlg {
      * @param cluster Cluster this expression belongs to
      * @param traitSet Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
      */
-    public NeoLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
+    public NeoLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, NeoGraph graph ) {
         super( cluster, traitSet, graph );
     }
 

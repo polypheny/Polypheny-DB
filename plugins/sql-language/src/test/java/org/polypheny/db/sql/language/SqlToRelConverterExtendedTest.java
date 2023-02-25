@@ -22,7 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.externalize.AlgJsonReader;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -64,7 +64,7 @@ public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
         final AlgOptSchema[] schemas = { null };
         alg.accept( new AlgShuttleImpl() {
             @Override
-            public AlgNode visit( Scan scan ) {
+            public AlgNode visit( RelScan scan ) {
                 schemas[0] = scan.getEntity().getRelOptSchema();
                 return super.visit( scan );
             }

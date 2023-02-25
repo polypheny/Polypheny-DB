@@ -19,7 +19,7 @@ package org.polypheny.db.restapi.models.requests;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.restapi.RequestColumn;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.util.Pair;
@@ -31,7 +31,7 @@ public class ResourcePatchRequest extends ResourceValuesRequest {
     public final Filters filters;
 
 
-    public ResourcePatchRequest( List<CatalogTable> tables, List<RequestColumn> requestColumns, List<List<Pair<RequestColumn, Object>>> values, Map<String, RequestColumn> nameMapping, Filters filters, boolean useDynamicParams ) {
+    public ResourcePatchRequest( List<LogicalTable> tables, List<RequestColumn> requestColumns, List<List<Pair<RequestColumn, Object>>> values, Map<String, RequestColumn> nameMapping, Filters filters, boolean useDynamicParams ) {
         super( tables, requestColumns, values, useDynamicParams );
         this.nameMapping = nameMapping;
         this.filters = filters;

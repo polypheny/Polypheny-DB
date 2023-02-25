@@ -26,33 +26,30 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -60,68 +57,49 @@ import org.polypheny.db.util.Pair;
 /**
  * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
  */
-public class NeoEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity {
-
-    public final String physicalEntityName;
-    public final AlgProtoDataType rowType;
+public class NeoEntity extends PhysicalTable implements TranslatableEntity, ModifiableEntity {
 
 
-    protected NeoEntity( String physicalEntityName, AlgProtoDataType proto, long id, long partitionId, long adapterId ) {
-        super( Object[].class, id, partitionId, adapterId );
-        this.physicalEntityName = physicalEntityName;
-        this.rowType = proto;
+    private final AlgDataType rowType;
+
+
+    protected NeoEntity( PhysicalTable table ) {
+        super( table );
+        this.rowType = getRowType();
     }
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-        return new NeoQueryable<>( dataContext, schema, this, tableName );
-    }
-
-
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return rowType.apply( getTypeFactory() );
-    }
-
-
-    @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), algOptEntity, this );
+        return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), this );
     }
 
 
     /**
-     * Creates an {@link org.polypheny.db.algebra.core.Modify} algebra object, which is modifies this relational entity.
+     * Creates an {@link RelModify} algebra object, which is modifies this relational entity.
      *
      * @param child child algebra nodes of the created algebra operation
      * @param operation the operation type
-     * @param updateColumnList the target elements of the modification
-     * @param sourceExpressionList the modify operation to create the new values
-     * @param flattened if the {@link Modify} is flattened
      */
     @Override
-    public Modify toModificationAlg(
+    public Modify<CatalogEntity> toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
+            AlgTraitSet traits,
+            CatalogEntity physical,
             AlgNode child,
             Operation operation,
-            List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened ) {
+            List<String> targets,
+            List<RexNode> sources ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
-        return new LogicalModify(
-                cluster,
-                cluster.traitSetOf( Convention.NONE ),
-                table,
-                catalogReader,
+        return new LogicalRelModify(
+                traits.replace( Convention.NONE ),
+                physical,
                 child,
                 operation,
-                updateColumnList,
-                sourceExpressionList,
-                flattened );
+                targets,
+                sources
+        );
     }
 
 
@@ -137,14 +115,14 @@ public class NeoEntity extends AbstractQueryableEntity implements TranslatableEn
             super( dataContext, schema, table, tableName );
             this.entity = (NeoEntity) table;
             this.namespace = schema.unwrap( NeoSchema.class );
-            this.rowType = entity.rowType.apply( entity.getTypeFactory() );
+            this.rowType = entity.rowType;
         }
 
 
         @Override
         public Enumerator<T> enumerator() {
             return execute(
-                    String.format( "MATCH (n:%s) RETURN %s", entity.physicalEntityName, buildAllQuery() ),
+                    String.format( "MATCH (n:%s) RETURN %s", entity.name, buildAllQuery() ),
                     getTypes(),
                     getComponentType(),
                     Map.of() ).enumerator();

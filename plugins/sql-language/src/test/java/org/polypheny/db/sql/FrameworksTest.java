@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -411,8 +411,8 @@ public class FrameworksTest extends SqlLanguageDependent {
 
 
         @Override
-        public Modify toModificationAlg( AlgOptCluster cluster, AlgOptEntity table, Prepare.CatalogReader catalogReader, AlgNode child, Modify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-            return LogicalModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+        public RelModify toModificationAlg( AlgOptCluster cluster, AlgOptEntity table, Prepare.CatalogReader catalogReader, AlgNode child, RelModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+            return LogicalRelModify.create( table, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 
 

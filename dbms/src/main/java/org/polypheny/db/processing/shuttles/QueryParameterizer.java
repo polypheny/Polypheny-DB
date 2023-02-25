@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -237,12 +237,12 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public AlgNode visit( LogicalModify initial ) {
+    public AlgNode visit( LogicalRelModify initial ) {
         if ( asymmetric ) {
             return visitAsymmetricModify( initial );
         }
 
-        LogicalModify modify = (LogicalModify) super.visit( initial );
+        LogicalRelModify modify = (LogicalRelModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
         if ( modify.getSourceExpressionList() != null ) {
             newSourceExpression = new ArrayList<>();
@@ -288,7 +288,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     input.getRowType()
             );
         }
-        return new LogicalModify(
+        return new LogicalRelModify(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 modify.getEntity(),
@@ -303,8 +303,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     }
 
 
-    public AlgNode visitAsymmetricModify( LogicalModify initial ) {
-        LogicalModify modify = (LogicalModify) super.visit( initial );
+    public AlgNode visitAsymmetricModify( LogicalRelModify initial ) {
+        LogicalRelModify modify = (LogicalRelModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
         if ( modify.getSourceExpressionList() != null ) {
             newSourceExpression = new ArrayList<>();
@@ -357,7 +357,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     input.getRowType()
             );
         }
-        return new LogicalModify(
+        return new LogicalRelModify(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 modify.getEntity(),

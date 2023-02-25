@@ -59,11 +59,11 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
@@ -77,9 +77,9 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -88,7 +88,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.FilterableEntity;
 import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.schema.ScannableEntity;
@@ -152,7 +151,7 @@ public class Bindables {
 
 
     /**
-     * Rule that converts a {@link Scan} to bindable convention.
+     * Rule that converts a {@link RelScan} to bindable convention.
      */
     public static class BindableScanRule extends AlgOptRule {
 
@@ -169,9 +168,9 @@ public class Bindables {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final LogicalRelScan scan = call.alg( 0 );
-            final AlgOptEntity table = scan.getEntity();
+            final CatalogEntity table = scan.entity;
             if ( BindableScan.canHandle( table ) ) {
-                call.transformTo( BindableScan.create( scan.getCluster(), table ) );
+                call.transformTo( BindableScan.create( scan.getCluster(), scan.entity ) );
             }
         }
 
@@ -181,7 +180,7 @@ public class Bindables {
     /**
      * Scan of a table that implements {@link ScannableEntity} and therefore can be converted into an {@link Enumerable}.
      */
-    public static class BindableScan extends Scan implements BindableAlg {
+    public static class BindableScan extends RelScan<CatalogEntity> implements BindableAlg {
 
         public final ImmutableList<RexNode> filters;
         public final ImmutableIntList projects;
@@ -192,44 +191,38 @@ public class Bindables {
          *
          * Use {@link #create} unless you know what you are doing.
          */
-        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
-            super( cluster, traitSet, table );
+        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity entity, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
+            super( cluster, traitSet, entity );
             this.filters = Objects.requireNonNull( filters );
             this.projects = Objects.requireNonNull( projects );
-            Preconditions.checkArgument( canHandle( table ) );
+            Preconditions.checkArgument( canHandle( entity ) );
         }
 
 
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity ) {
-            return create( cluster, algOptEntity, ImmutableList.of(), identity( algOptEntity ) );
+        public static BindableScan create( AlgOptCluster cluster, CatalogEntity entity ) {
+            return create( cluster, entity, ImmutableList.of(), identity( entity ) );
         }
 
 
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, AlgOptEntity algOptEntity, List<RexNode> filters, List<Integer> projects ) {
-            final Entity entity = algOptEntity.unwrap( Entity.class );
+        public static BindableScan create( AlgOptCluster cluster, CatalogEntity entity, List<RexNode> filters, List<Integer> projects ) {
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
-                            .replace( entity.getNamespaceType().getModelTrait() )
-                            .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
-                                if ( entity != null ) {
-                                    return entity.getStatistic().getCollations();
-                                }
-                                return ImmutableList.of();
-                            } );
-            return new BindableScan( cluster, traitSet, algOptEntity, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
+                            .replace( entity.namespaceType.getModelTrait() )
+                            .replaceIfs( AlgCollationTraitDef.INSTANCE, entity::getCollations );
+            return new BindableScan( cluster, traitSet, entity, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
         }
 
 
         @Override
         public AlgDataType deriveRowType() {
             final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-            final List<AlgDataTypeField> fieldList = table.getRowType().getFieldList();
+            final List<AlgDataTypeField> fieldList = entity.getRowType().getFieldList();
             for ( int project : projects ) {
                 builder.add( fieldList.get( project ) );
             }
@@ -258,7 +251,7 @@ public class Bindables {
 
             // Cost factor for pushing fields
             // The "+ 2d" on top and bottom keeps the function fairly smooth.
-            double p = ((double) projects.size() + 2d) / ((double) table.getRowType().getFieldCount() + 2d);
+            double p = ((double) projects.size() + 2d) / ((double) entity.getRowType().getFieldCount() + 2d);
 
             // Multiply the cost by a factor that makes a scan more attractive if filters and projects are pushed to the table scan
             return super.computeSelfCost( planner, mq ).multiplyBy( f * p * 0.01d * 100.0d );  //TODO(s3lph): Temporary *100, otherwise foreign key enforcement breaks
@@ -268,23 +261,23 @@ public class Bindables {
         @Override
         public String algCompareString() {
             return "BindableScan$" +
-                    "." + table.getCatalogEntity().id +
+                    "." + entity.id +
                     (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                     (projects != null ? projects.toString() : "") + "&";
         }
 
 
-        public static boolean canHandle( AlgOptEntity table ) {
-            return table.unwrap( ScannableEntity.class ) != null
-                    || table.unwrap( FilterableEntity.class ) != null
-                    || table.unwrap( ProjectableFilterableEntity.class ) != null;
+        public static boolean canHandle( CatalogEntity entity ) {
+            return entity.unwrap( ScannableEntity.class ) != null
+                    || entity.unwrap( FilterableEntity.class ) != null
+                    || entity.unwrap( ProjectableFilterableEntity.class ) != null;
         }
 
 
         @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
-            return table.unwrap( ScannableEntity.class ).scan( dataContext );
+            return entity.unwrap( ScannableEntity.class ).scan( dataContext );
         }
 
 

@@ -34,8 +34,8 @@
 package org.polypheny.db.algebra;
 
 
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -64,8 +64,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -76,7 +76,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
  */
 public interface AlgShuttle {
 
-    AlgNode visit( Scan scan );
+    AlgNode visit( RelScan scan );
 
     AlgNode visit( TableFunctionScan scan );
 
@@ -104,7 +104,7 @@ public interface AlgShuttle {
 
     AlgNode visit( LogicalExchange exchange );
 
-    AlgNode visit( LogicalModify modify );
+    AlgNode visit( LogicalRelModify modify );
 
     AlgNode visit( LogicalConditionalExecute lce );
 

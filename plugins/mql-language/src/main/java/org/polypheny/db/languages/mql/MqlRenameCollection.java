@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
@@ -59,10 +59,10 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
         try {
             CatalogSchema schema = catalog.getSchema( Catalog.defaultDatabaseId, database );
-            List<CatalogTable> tables = catalog.getTables( schema.id, null );
+            List<LogicalTable> tables = catalog.getTables( schema.id, null );
 
             if ( dropTarget ) {
-                Optional<CatalogTable> newTable = tables.stream()
+                Optional<LogicalTable> newTable = tables.stream()
                         .filter( t -> t.name.equals( newName ) )
                         .findAny();
 
@@ -71,7 +71,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
                 }
             }
 
-            Optional<CatalogTable> table = tables.stream()
+            Optional<LogicalTable> table = tables.stream()
                     .filter( t -> t.name.equals( getCollection() ) )
                     .findAny();
 

@@ -34,11 +34,11 @@ import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
@@ -65,11 +65,11 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
     }
 
 
-    public abstract void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
+    public abstract void createTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
 
-    public abstract void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
+    public abstract void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
 
-    public abstract void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn );
+    public abstract void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn );
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
@@ -83,7 +83,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
 
     public abstract AvailableIndexMethod getDefaultIndexMethod();
 
-    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable );
+    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
     /**
@@ -91,7 +91,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the LPG data model natively.
      */
-    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
+    public void createGraph( Context context, LogicalGraph graphDatabase ) {
         // overwrite this if the datastore supports graph
         createGraphSubstitution( context, graphDatabase );
     }
@@ -112,19 +112,19 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void createGraphSubstitution( Context context, CatalogGraphDatabase graphDatabase ) {
+    private void createGraphSubstitution( Context context, LogicalGraph graphDatabase ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
 
-        CatalogTable nodes = Catalog.getInstance().getTable( mapping.nodesId );
+        LogicalTable nodes = Catalog.getInstance().getTable( mapping.nodesId );
         createTable( context, nodes, nodes.partitionProperty.partitionIds );
 
-        CatalogTable nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
+        LogicalTable nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
         createTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
 
-        CatalogTable edges = Catalog.getInstance().getTable( mapping.edgesId );
+        LogicalTable edges = Catalog.getInstance().getTable( mapping.edgesId );
         createTable( context, edges, edges.partitionProperty.partitionIds );
 
-        CatalogTable edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
+        LogicalTable edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
         createTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
     }
 
@@ -137,16 +137,16 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         Catalog catalog = Catalog.getInstance();
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
 
-        CatalogTable nodes = catalog.getTable( mapping.nodesId );
+        LogicalTable nodes = catalog.getTable( mapping.nodesId );
         dropTable( context, nodes, nodes.partitionProperty.partitionIds );
 
-        CatalogTable nodeProperty = catalog.getTable( mapping.nodesPropertyId );
+        LogicalTable nodeProperty = catalog.getTable( mapping.nodesPropertyId );
         dropTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
 
-        CatalogTable edges = catalog.getTable( mapping.edgesId );
+        LogicalTable edges = catalog.getTable( mapping.edgesId );
         dropTable( context, edges, edges.partitionProperty.partitionIds );
 
-        CatalogTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
+        LogicalTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
         dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
     }
 
@@ -170,7 +170,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
-        CatalogTable collectionEntity = catalog.getTable( mapping.collectionId );
+        LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
         createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
     }
 
@@ -194,7 +194,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
-        CatalogTable collectionEntity = catalog.getTable( mapping.collectionId );
+        LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
         dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
     }
 

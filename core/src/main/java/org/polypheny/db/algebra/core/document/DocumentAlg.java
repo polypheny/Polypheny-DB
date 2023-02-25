@@ -27,11 +27,6 @@ public interface DocumentAlg {
 
     DocType getDocType();
 
-    default AlgOptEntity getCollection() {
-        assert this instanceof AlgNode;
-        return ((AlgNode) this).getEntity();
-    }
-
     enum DocType {
         SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, MODIFY
     }

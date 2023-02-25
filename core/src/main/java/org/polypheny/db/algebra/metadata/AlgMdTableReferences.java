@@ -49,9 +49,9 @@ import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
@@ -102,7 +102,7 @@ public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.Tab
     /**
      * Scan table reference.
      */
-    public Set<AlgTableRef> getTableReferences( Scan alg, AlgMetadataQuery mq ) {
+    public Set<AlgTableRef> getTableReferences( RelScan alg, AlgMetadataQuery mq ) {
         return ImmutableSet.of( AlgTableRef.of( alg.getEntity(), 0 ) );
     }
 

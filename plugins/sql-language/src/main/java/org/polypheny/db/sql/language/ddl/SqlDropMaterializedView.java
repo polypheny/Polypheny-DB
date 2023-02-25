@@ -20,7 +20,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -49,7 +49,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final CatalogTable catalogTable;
+        final LogicalTable catalogTable;
 
         try {
             catalogTable = getCatalogTable( context, name );

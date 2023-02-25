@@ -36,7 +36,7 @@ package org.polypheny.db.adapter.mongodb;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
@@ -53,7 +53,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  *
  * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */
-public class MongoScan extends Scan implements MongoAlg {
+public class MongoScan extends RelScan implements MongoAlg {
 
     final MongoEntity mongoEntity;
     final AlgDataType projectRowType;

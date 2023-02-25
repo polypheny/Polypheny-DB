@@ -82,11 +82,11 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Match;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
@@ -103,7 +103,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
@@ -164,7 +165,7 @@ public class AlgBuilder {
 
     @Getter
     protected final AlgOptCluster cluster;
-    protected final AlgOptSchema algOptSchema;
+    protected final PolyphenyDbSchema schema;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
     private final AlgFactories.AggregateFactory aggregateFactory;
@@ -184,9 +185,9 @@ public class AlgBuilder {
     private final RexSimplify simplifier;
 
 
-    protected AlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
+    protected AlgBuilder( Context context, AlgOptCluster cluster, PolyphenyDbSchema schema ) {
         this.cluster = cluster;
-        this.algOptSchema = algOptSchema;
+        this.schema = schema;
         if ( context == null ) {
             context = Contexts.EMPTY_CONTEXT;
         }
@@ -273,17 +274,17 @@ public class AlgBuilder {
      */
     public static AlgBuilder create( FrameworkConfig config ) {
         final AlgOptCluster[] clusters = { null };
-        final AlgOptSchema[] algOptSchemas = { null };
+        final PolyphenyDbSchema[] schemas = { null };
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, PolyphenyDbSchema rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, PolyphenyDbSchema rootSchema ) {
                         clusters[0] = cluster;
-                        algOptSchemas[0] = algOptSchema;
+                        schemas[0] = rootSchema;
                         return null;
                     }
                 } );
-        return new AlgBuilder( config.getContext(), clusters[0], algOptSchemas[0] );
+        return new AlgBuilder( config.getContext(), clusters[0], schemas[0] );
     }
 
 
@@ -295,7 +296,7 @@ public class AlgBuilder {
 
 
     public static AlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
+        return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader().getRootSchema() );
     }
 
 
@@ -1317,7 +1318,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link Scan} of the table with a given name.
+     * Creates a {@link RelScan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -1327,7 +1328,7 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( Iterable<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final AlgOptEntity algOptEntity = algOptSchema.getTableForMember( names );
+        final CatalogEntity algOptEntity = schema.getTable( names );
         if ( algOptEntity == null ) {
             throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
         }
@@ -1338,16 +1339,16 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder scan( @Nonnull AlgOptEntity algOptEntity ) {
-        final AlgNode scan = scanFactory.createScan( cluster, algOptEntity );
+    public AlgBuilder scan( @Nonnull CatalogEntity entity ) {
+        final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
-        rename( algOptEntity.getRowType().getFieldNames() );
+        rename( entity.getRowType().getFieldNames() );
         return this;
     }
 
 
     /**
-     * Creates a {@link Scan} of the table with a given name.
+     * Creates a {@link RelScan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -1373,7 +1374,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder lpgScan( long id ) {
-        CatalogGraphDatabase graph = Catalog.getInstance().getGraph( id );
+        LogicalGraph graph = Catalog.getInstance().getGraph( id );
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
         return this;
     }
@@ -2919,8 +2920,8 @@ public class AlgBuilder {
 
 
         private static String deriveAlias( AlgNode alg ) {
-            if ( alg instanceof Scan ) {
-                return alg.getEntity().getCatalogEntity().name;
+            if ( alg instanceof RelScan ) {
+                return alg.getEntity().name;
             }
             return null;
         }

@@ -46,8 +46,8 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -98,7 +98,7 @@ public class CatalogTest {
         assertEquals( schemaId, schema.id );
 
         long tableId = catalog.addTable( "test_table", schemaId, userId, EntityType.ENTITY, true );
-        CatalogTable table = catalog.getTable( schemaId, "test_table" );
+        LogicalTable table = catalog.getTable( schemaId, "test_table" );
         assertEquals( tableId, table.id );
 
         long columnId = catalog.addColumn( "test_column", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );

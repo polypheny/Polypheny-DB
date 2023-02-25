@@ -69,7 +69,8 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
@@ -238,7 +239,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public Entity createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
             return currentSchema.createTable( combinedTable, columnPlacementsOnStore, getAdapterId(), partitionPlacement );
         }
 
@@ -250,7 +251,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void truncate( Context context, CatalogTable table ) {
+        public void truncate( Context context, LogicalTable table ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
@@ -304,7 +305,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+        public void createTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
             Catalog catalog = Catalog.getInstance();
             commitAll();
 
@@ -377,7 +378,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+        public void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             //transactionProvider.startTransaction();
@@ -393,7 +394,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+        public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             // updates all columns with this field if a default value is provided
@@ -578,7 +579,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
             return ImmutableList.of();
         }
 

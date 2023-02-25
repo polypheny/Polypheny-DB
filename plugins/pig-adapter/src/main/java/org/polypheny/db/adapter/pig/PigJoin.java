@@ -41,8 +41,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
@@ -82,7 +82,7 @@ public class PigJoin extends Join implements PigAlg {
      * The Pig alias of the joined relation will have the same name as one from the left side of the join.
      */
     @Override
-    public AlgOptEntity getEntity() {
+    public CatalogEntity getEntity() {
         return getLeft().getEntity();
     }
 

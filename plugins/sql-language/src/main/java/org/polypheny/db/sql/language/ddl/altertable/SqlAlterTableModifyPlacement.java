@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
@@ -116,7 +116,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );

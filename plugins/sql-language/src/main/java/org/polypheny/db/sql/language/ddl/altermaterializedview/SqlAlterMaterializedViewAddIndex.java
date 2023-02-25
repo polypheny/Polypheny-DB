@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -119,7 +119,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getCatalogTable( context, table );
         if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }

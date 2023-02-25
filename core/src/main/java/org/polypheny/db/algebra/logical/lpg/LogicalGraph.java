@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.Entity;
@@ -55,7 +55,7 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader ) {
         return null;
     }
 

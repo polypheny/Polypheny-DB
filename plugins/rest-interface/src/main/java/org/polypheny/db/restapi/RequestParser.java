@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -139,7 +139,7 @@ public class RequestParser {
 
     public ResourceGetRequest parseGetResourceRequest( HttpServletRequest req, String resourceName ) throws ParserException {
 
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<LogicalTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( req ), tables );
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
@@ -158,7 +158,7 @@ public class RequestParser {
 
 
     public ResourcePostRequest parsePostResourceRequest( Context ctx, String resourceName, Gson gson ) throws ParserException {
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<LogicalTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( ctx, gson, nameMapping );
@@ -168,7 +168,7 @@ public class RequestParser {
 
 
     public ResourcePostRequest parsePostMultipartRequest( String resourceName, String[] projections, List<Object> insertValues ) throws ParserException {
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<LogicalTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
@@ -179,7 +179,7 @@ public class RequestParser {
 
     public ResourcePatchRequest parsePatchResourceRequest( Context ctx, String resourceName, Gson gson ) throws ParserException {
         // TODO js: make sure it's only a single resource
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<LogicalTable> tables = this.parseTables( resourceName );
         // TODO js: make sure there are no actual projections
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
@@ -193,7 +193,7 @@ public class RequestParser {
 
 
     public ResourcePatchRequest parsePatchMultipartRequest( String resourceName, String[] projections, Map<String, String[]> filterMap, List<Object> insertValues ) {
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<LogicalTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         Filters filters = this.parseFilters( filterMap, nameMapping );
@@ -204,7 +204,7 @@ public class RequestParser {
 
     public ResourceDeleteRequest parseDeleteResourceRequest( HttpServletRequest request, String resourceName ) throws ParserException {
         // TODO js: make sure it's only a single resource
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<LogicalTable> tables = this.parseTables( resourceName );
 
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
 
@@ -224,16 +224,16 @@ public class RequestParser {
      * @throws ParserException thrown if unable to parse table list
      */
     @VisibleForTesting
-    List<CatalogTable> parseTables( String tableList ) throws ParserException {
+    List<LogicalTable> parseTables( String tableList ) throws ParserException {
         log.debug( "Starting to parse table list: {}", tableList );
         if ( tableList == null ) {
             throw new ParserException( ParserErrorCode.TABLE_LIST_GENERIC, "null" );
         }
         String[] tableNameList = tableList.split( "," );
 
-        List<CatalogTable> tables = new ArrayList<>();
+        List<LogicalTable> tables = new ArrayList<>();
         for ( String tableName : tableNameList ) {
-            CatalogTable temp = this.parseCatalogTableName( tableName );
+            LogicalTable temp = this.parseCatalogTableName( tableName );
             tables.add( temp );
             log.debug( "Added table \"{}\" to table list.", tableName );
         }
@@ -251,7 +251,7 @@ public class RequestParser {
      * @throws ParserException thrown if unable to parse table name
      */
     @VisibleForTesting
-    CatalogTable parseCatalogTableName( String tableName ) throws ParserException {
+    LogicalTable parseCatalogTableName( String tableName ) throws ParserException {
         String[] tableElements = tableName.split( "\\." );
         if ( tableElements.length != 2 ) {
             log.warn( "Table name \"{}\" not possible to parse.", tableName );
@@ -259,7 +259,7 @@ public class RequestParser {
         }
 
         try {
-            CatalogTable table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
+            LogicalTable table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
             if ( log.isDebugEnabled() ) {
                 log.debug( "Finished parsing table \"{}\".", tableName );
             }
@@ -272,12 +272,12 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<RequestColumn> newParseProjectionsAndAggregations( String[] possibleProjectionValues, List<CatalogTable> tables ) throws ParserException {
+    List<RequestColumn> newParseProjectionsAndAggregations( String[] possibleProjectionValues, List<LogicalTable> tables ) throws ParserException {
         // Helper structures & data
         Map<Long, Integer> tableOffsets = new HashMap<>();
         Set<Long> validColumns = new HashSet<>();
         int columnOffset = 0;
-        for ( CatalogTable table : tables ) {
+        for ( LogicalTable table : tables ) {
             tableOffsets.put( table.id, columnOffset );
             validColumns.addAll( table.fieldIds );
             columnOffset += table.fieldIds.size();
@@ -304,10 +304,10 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<RequestColumn> generateRequestColumnsWithoutProject( List<CatalogTable> tables, Map<Long, Integer> tableOffsets ) {
+    List<RequestColumn> generateRequestColumnsWithoutProject( List<LogicalTable> tables, Map<Long, Integer> tableOffsets ) {
         List<RequestColumn> columns = new ArrayList<>();
         long internalPosition = 0L;
-        for ( CatalogTable table : tables ) {
+        for ( LogicalTable table : tables ) {
             for ( long columnId : table.fieldIds ) {
                 CatalogColumn column = this.catalog.getColumn( columnId );
                 int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
@@ -744,9 +744,9 @@ public class RequestParser {
     }
 
 
-    public Map<String, CatalogColumn> generateNameMapping( List<CatalogTable> tables ) {
+    public Map<String, CatalogColumn> generateNameMapping( List<LogicalTable> tables ) {
         Map<String, CatalogColumn> nameMapping = new HashMap<>();
-        for ( CatalogTable table : tables ) {
+        for ( LogicalTable table : tables ) {
             for ( CatalogColumn column : this.catalog.getColumns( table.id ) ) {
                 nameMapping.put( column.getSchemaName() + "." + column.getTableName() + "." + column.name, column );
             }

@@ -53,7 +53,7 @@ import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
@@ -108,7 +108,7 @@ public class MongoSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public MongoEntity createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
+    public MongoEntity createTable( LogicalTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 

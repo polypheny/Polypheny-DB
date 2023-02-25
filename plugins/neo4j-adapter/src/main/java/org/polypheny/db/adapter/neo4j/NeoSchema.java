@@ -16,24 +16,15 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 public class NeoSchema extends AbstractNamespace implements Schema {
@@ -64,29 +55,13 @@ public class NeoSchema extends AbstractNamespace implements Schema {
 
 
     /**
-     * Creates a new table according to the given {@link CatalogTable}
+     * Creates a new table according to the given {@link LogicalTable}
      *
-     * @param combinedTable the table according to which the table is created
-     * @param columnPlacementsOnStore the placements ofr the table on the store
-     * @param partitionPlacement reference to the partition
      * @return the created table
      */
-    public Entity createTable( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+    public NeoEntity createTable( PhysicalTable table ) {
 
-        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, Neo4jPlugin.getPhysicalFieldName( catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
-        }
-
-        return new NeoEntity(
-                Neo4jPlugin.getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionPlacement.partitionId ),
-                AlgDataTypeImpl.proto( fieldInfo.build() ),
-                combinedTable.id,
-                partitionPlacement.partitionId,
-                store.getAdapterId() );
+        return new NeoEntity( table );
     }
 
 

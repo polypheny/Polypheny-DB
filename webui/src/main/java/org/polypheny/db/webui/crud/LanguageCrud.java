@@ -40,10 +40,10 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -190,7 +190,7 @@ public class LanguageCrud {
 
         boolean hasMoreRows = implementation.hasMoreRows();
 
-        CatalogTable catalogTable = null;
+        LogicalTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
@@ -324,12 +324,12 @@ public class LanguageCrud {
     private Placement getPlacements( final Index index ) {
         Catalog catalog = Catalog.getInstance();
         String graphName = index.getSchema();
-        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) );
+        List<LogicalGraph> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) );
         if ( graphs.size() != 1 ) {
             log.error( "The requested graph does not exist." );
             return new Placement( new RuntimeException( "The requested graph does not exist." ) );
         }
-        CatalogGraphDatabase graph = graphs.get( 0 );
+        LogicalGraph graph = graphs.get( 0 );
         EntityType type = EntityType.ENTITY;
         Placement p = new Placement( false, List.of(), EntityType.ENTITY );
         if ( type == EntityType.VIEW ) {

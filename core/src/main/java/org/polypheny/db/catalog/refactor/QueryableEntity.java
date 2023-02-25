@@ -16,6 +16,15 @@
 
 package org.polypheny.db.catalog.refactor;
 
+import org.apache.calcite.linq4j.Queryable;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.schema.graph.QueryableGraph;
+
 public interface QueryableEntity {
+
+    /**
+     * Converts this table into a {@link Queryable}.
+     */
+    <T> Queryable<T> asQueryable( DataContext root, QueryableGraph graph );
 
 }

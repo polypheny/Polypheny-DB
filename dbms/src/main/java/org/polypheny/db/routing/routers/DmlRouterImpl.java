@@ -33,13 +33,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentScan;
@@ -66,7 +67,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
@@ -85,11 +86,11 @@ import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -127,7 +128,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
      * Default implementation: Execute DML on all placements
      */
     @Override
-    public AlgNode routeDml( LogicalModify modify, Statement statement ) {
+    public AlgNode routeDml( LogicalRelModify modify, Statement statement ) {
         AlgOptCluster cluster = modify.getCluster();
 
         if ( modify.getEntity() == null ) {
@@ -137,7 +138,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         AlgOptEntityImpl table = (AlgOptEntityImpl) modify.getEntity();
 
         // Get placements of this table
-        CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
+        LogicalTable catalogTable = table.getCatalogEntity().unwrap( LogicalTable.class );
 
         // Make sure that this table can be modified
         if ( !catalogTable.modifiable ) {
@@ -193,7 +194,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             List<RexNode> sourceExpressionList = modify.getSourceExpressionList();
             if ( placementsOnAdapter.size() != catalogTable.fieldIds.size() ) {
 
-                if ( modify.getOperation() == Operation.UPDATE ) {
+                if ( modify.getOperation() == Modify.Operation.UPDATE ) {
                     updateColumnList = new LinkedList<>( modify.getUpdateColumnList() );
                     sourceExpressionList = new LinkedList<>( modify.getSourceExpressionList() );
                     Iterator<String> updateColumnListIterator = updateColumnList.iterator();
@@ -262,7 +263,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 String partitionValue = "";
                 // Set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
 
-                if ( modify.getOperation() == Operation.UPDATE ) {
+                if ( modify.getOperation() == Modify.Operation.UPDATE ) {
                     // In case of update always use worst case routing for now.
                     // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
                     int index = 0;
@@ -333,7 +334,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         accessedPartitionList = new HashSet<>( catalogTable.partitionProperty.partitionIds );
                     }
 
-                } else if ( modify.getOperation() == Operation.INSERT ) {
+                } else if ( modify.getOperation() == Modify.Operation.INSERT ) {
                     int i;
 
                     if ( modify.getInput() instanceof LogicalValues ) {
@@ -415,7 +416,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
                                 // Build DML
-                                Modify adjustedModify = modifiableTable.toModificationAlg(
+                                RelModify adjustedModify = modifiableTable.toModificationAlg(
                                         cluster,
                                         physical,
                                         catalogReader,
@@ -437,7 +438,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
                         List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
 
-                        LogicalModify ltm = modify;
+                        LogicalRelModify ltm = modify;
                         LogicalProject lproject = (LogicalProject) ltm.getInput();
 
                         List<RexNode> fieldValues = lproject.getProjects();
@@ -506,7 +507,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
                                         // Build DML
-                                        Modify adjustedModify = modifiableTable.toModificationAlg(
+                                        RelModify adjustedModify = modifiableTable.toModificationAlg(
                                                 cluster,
                                                 physical,
                                                 catalogReader,
@@ -550,7 +551,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     }
 
 
-                } else if ( modify.getOperation() == Operation.DELETE ) {
+                } else if ( modify.getOperation() == Modify.Operation.DELETE ) {
                     if ( whereClauseValues == null ) {
                         worstCaseRouting = true;
                     } else {
@@ -594,7 +595,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     AlgOptEntity physical = catalogReader.getTableForMember( qualifiedTableName );
 
                     // Build DML
-                    Modify adjustedModify;
+                    RelModify adjustedModify;
                     AlgNode input = buildDml(
                             super.recursiveCopy( modify.getInput( 0 ) ),
                             RoutedAlgBuilder.create( statement, cluster ),
@@ -620,9 +621,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 modify.isFlattened()
                         );
                     } else {
-                        adjustedModify = LogicalModify.create(
+                        adjustedModify = LogicalRelModify.create(
                                 physical,
-                                catalogReader,
                                 input,
                                 modify.getOperation(),
                                 updateColumnList,
@@ -663,8 +663,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         AlgNode action;
         if ( lce.getRight() instanceof LogicalConditionalExecute ) {
             action = handleConditionalExecute( lce.getRight(), statement, queryInformation );
-        } else if ( lce.getRight() instanceof LogicalModify ) {
-            action = routeDml( (LogicalModify) lce.getRight(), statement );
+        } else if ( lce.getRight() instanceof LogicalRelModify ) {
+            action = routeDml( (LogicalRelModify) lce.getRight(), statement );
         } else {
             throw new IllegalArgumentException();
         }
@@ -679,9 +679,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, alg.getCluster() );
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, statement, alg.getCluster(), queryInformation );
 
-        if ( constraint.getLeft() instanceof Modify ) {
+        if ( constraint.getLeft() instanceof RelModify ) {
             return LogicalConstraintEnforcer.create(
-                    routeDml( (LogicalModify) constraint.getLeft(), statement ),
+                    routeDml( (LogicalRelModify) constraint.getLeft(), statement ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
@@ -701,8 +701,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation ) {
         LogicalBatchIterator iterator = (LogicalBatchIterator) alg;
         AlgNode input;
-        if ( iterator.getInput() instanceof Modify ) {
-            input = routeDml( (LogicalModify) iterator.getInput(), statement );
+        if ( iterator.getInput() instanceof RelModify ) {
+            input = routeDml( (LogicalRelModify) iterator.getInput(), statement );
         } else if ( iterator.getInput() instanceof ConditionalExecute ) {
             input = handleConditionalExecute( iterator.getInput(), statement, queryInformation );
         } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
@@ -762,13 +762,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement ) {
-        CatalogGraphDatabase catalogGraph = alg.getGraph();
+        LogicalGraph catalogGraph = alg.getGraph();
         return routeGraphDml( alg, statement, catalogGraph, catalogGraph.placements );
     }
 
 
     @Override
-    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, CatalogGraphDatabase catalogGraph, List<Integer> placements ) {
+    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Integer> placements ) {
         if ( alg.getGraph() == null ) {
             throw new RuntimeException( "Error while routing graph" );
         }
@@ -783,7 +783,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-            CatalogGraphDatabase graph = reader.getGraph( name );
+            LogicalGraph graph = reader.getGraph( name );
             if ( graph == null ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, adapterId, statement ) );
@@ -878,7 +878,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         RoutedAlgBuilder builder = attachDocUpdate( alg.getInput(), statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation, adapterId );
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         AlgBuilder algBuilder = AlgBuilder.create( statement );
-        if ( alg.operation == Operation.UPDATE ) {
+        if ( alg.operation == Modify.Operation.UPDATE ) {
             assert alg.getUpdates().size() == 1;
             AlgNode old = builder.build();
             builder.push(
@@ -896,11 +896,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 rexBuilder.makeInputRef( collectionTable.getRowType().getFieldList().get( 0 ).getType(), 0 ),
                 rexBuilder.makeDynamicParam( collectionTable.getRowType().getFieldList().get( 0 ).getType(), 0 ) ) );
 
-        LogicalModify modify;
-        if ( alg.operation == Operation.UPDATE ) {
-            modify = (LogicalModify) getModify( collectionTable, builder.build(), statement, alg.operation, List.of( "_data_" ), List.of( rexBuilder.makeDynamicParam( alg.getCluster().getTypeFactory().createPolyType( PolyType.JSON ), 1 ) ) );
+        LogicalRelModify modify;
+        if ( alg.operation == Modify.Operation.UPDATE ) {
+            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), statement, alg.operation, List.of( "_data_" ), List.of( rexBuilder.makeDynamicParam( alg.getCluster().getTypeFactory().createPolyType( PolyType.JSON ), 1 ) ) );
         } else {
-            modify = (LogicalModify) getModify( collectionTable, builder.build(), statement, alg.operation, null, null );
+            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), statement, alg.operation, null, null );
         }
 
         modify.isStreamed( true );
@@ -967,7 +967,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode attachRelationalModify( LogicalLpgModify alg, int adapterId, Statement statement ) {
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().id );
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
 
         PreparingEntity nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
         PreparingEntity nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId );
@@ -1036,7 +1036,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.UPDATE );
+        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.UPDATE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
 
     }
@@ -1058,7 +1058,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.DELETE );
+        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.DELETE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
 
     }
@@ -1079,7 +1079,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
                                 rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
 
-        inputs.add( getModify( nodesTable, algBuilder.build(), statement, Operation.DELETE, null, null ) );
+        inputs.add( getModify( nodesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
 
         // id = ?
         algBuilder
@@ -1089,7 +1089,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
                                 rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
 
-        inputs.add( getModify( nodePropertiesTable, algBuilder.build(), statement, Operation.DELETE, null, null ) );
+        inputs.add( getModify( nodePropertiesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
 
         return inputs;
     }
@@ -1111,7 +1111,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.INSERT );
+        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.INSERT );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
     }
 
@@ -1129,7 +1129,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ) ), // label
                 nodesTable.getRowType() );
 
-        inputs.add( getModify( nodesTable, preparedNodes, statement, Operation.INSERT, null, null ) );
+        inputs.add( getModify( nodesTable, preparedNodes, statement, Modify.Operation.INSERT, null, null ) );
 
         LogicalProject preparedNProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
@@ -1139,7 +1139,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
                 nodePropertiesTable.getRowType() );
 
-        inputs.add( getModify( nodePropertiesTable, preparedNProperties, statement, Operation.INSERT, null, null ) );
+        inputs.add( getModify( nodePropertiesTable, preparedNProperties, statement, Modify.Operation.INSERT, null, null ) );
 
         return inputs;
     }
@@ -1159,7 +1159,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
 
-        inputs.add( getModify( edgesTable, algBuilder.build(), statement, Operation.DELETE, null, null ) );
+        inputs.add( getModify( edgesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
 
         // id = ?
         algBuilder
@@ -1188,7 +1188,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 3 ) ), // target
                 edgesTable.getRowType() );
 
-        inputs.add( getModify( edgesTable, preparedEdges, statement, Operation.INSERT, null, null ) );
+        inputs.add( getModify( edgesTable, preparedEdges, statement, Modify.Operation.INSERT, null, null ) );
 
         LogicalProject preparedEProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
@@ -1198,7 +1198,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
                 edgePropertiesTable.getRowType() );
 
-        inputs.add( getModify( edgePropertiesTable, preparedEProperties, statement, Operation.INSERT, null, null ) );
+        inputs.add( getModify( edgePropertiesTable, preparedEProperties, statement, Modify.Operation.INSERT, null, null ) );
 
         return inputs;
 
@@ -1210,7 +1210,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private Modify getModify( AlgOptEntity table, AlgNode input, Statement statement, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
+    private RelModify getModify( AlgOptEntity table, AlgNode input, Statement statement, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
         return table.unwrap( ModifiableEntity.class ).toModificationAlg( input.getCluster(), table, statement.getTransaction().getCatalogReader(), input, operation, updateList, sourceList, true );
     }
 
@@ -1218,7 +1218,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private AlgBuilder buildDml(
             AlgNode node,
             RoutedAlgBuilder builder,
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             List<CatalogColumnPlacement> placements,
             CatalogPartitionPlacement partitionPlacement,
             Statement statement,
@@ -1341,10 +1341,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgBuilder handleSelectFromOtherTable( RoutedAlgBuilder builder, CatalogTable catalogTable, Statement statement, AlgOptEntityImpl table ) {
-        CatalogTable fromTable;
+    private AlgBuilder handleSelectFromOtherTable( RoutedAlgBuilder builder, LogicalTable catalogTable, Statement statement, AlgOptEntityImpl table ) {
+        LogicalTable fromTable;
         // Select from other table
-        fromTable = table.getCatalogEntity().unwrap( CatalogTable.class );
+        fromTable = table.getCatalogEntity().unwrap( LogicalTable.class );
 
         if ( fromTable.partitionProperty.isPartitioned ) {
             throw new UnsupportedOperationException( "DMLs from other partitioned tables is not supported" );
@@ -1359,7 +1359,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
             catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
-            fromTable = table.getCatalogEntity().unwrap( CatalogTable.class );
+            fromTable = table.getCatalogEntity().unwrap( LogicalTable.class );
 
             CatalogPartitionPlacement partition = catalog.getPartitionPlacement( pkPlacement.adapterId, fromTable.partitionProperty.partitionIds.get( 0 ) );
 
@@ -1385,7 +1385,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private void dmlConditionCheck( LogicalFilter node, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
+    private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
         if ( operand instanceof RexInputRef ) {
             int index = ((RexInputRef) operand).getIndex();
             AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );

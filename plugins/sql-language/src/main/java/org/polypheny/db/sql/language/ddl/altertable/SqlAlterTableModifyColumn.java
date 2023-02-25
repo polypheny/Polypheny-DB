@@ -23,7 +23,7 @@ import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.ddl.DdlManager;
@@ -145,7 +145,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, tableName );
+        LogicalTable catalogTable = getCatalogTable( context, tableName );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -46,7 +46,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             Statement statement,
             LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -79,7 +79,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             Statement statement,
             LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -93,7 +93,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             Statement statement,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
@@ -125,7 +125,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( AlgNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
 
@@ -138,7 +138,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         // Get used columns from analyze
         List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 

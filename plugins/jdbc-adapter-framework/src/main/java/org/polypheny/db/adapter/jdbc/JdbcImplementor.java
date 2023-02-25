@@ -40,7 +40,7 @@ import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -83,7 +83,7 @@ public class JdbcImplementor extends AlgToSqlConverter {
 
     @Override
     public SqlIdentifier getPhysicalColumnName( CatalogPartitionPlacement placement, String columnName ) {
-        CatalogTable catalogTable = Catalog.getInstance().getTable( placement.tableId );
+        LogicalTable catalogTable = Catalog.getInstance().getTable( placement.tableId );
         JdbcEntity table = schema.getTableMap().get( catalogTable.name + "_" + placement.partitionId );
         if ( table.hasPhysicalColumnName( columnName ) ) {
             return table.physicalColumnName( columnName );

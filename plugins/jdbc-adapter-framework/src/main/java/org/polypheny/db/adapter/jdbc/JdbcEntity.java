@@ -48,9 +48,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -235,7 +235,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
 
 
     @Override
-    public Modify toModificationAlg(
+    public RelModify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptEntity table,
             CatalogReader catalogReader,
@@ -245,7 +245,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalModify(
+        return new LogicalRelModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

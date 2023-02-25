@@ -36,8 +36,8 @@ package org.polypheny.db.algebra;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -51,7 +51,7 @@ public interface AlgInput {
 
     AlgTraitSet getTraitSet();
 
-    AlgOptEntity getTable( String table );
+    CatalogEntity getEntity( String entity );
 
     /**
      * Returns the input relational expression. Throws if there is not precisely one input.

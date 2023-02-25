@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -85,7 +85,7 @@ public class Nodes {
         }
 
 
-        public void visit( Scan scan ) {
+        public void visit( RelScan scan ) {
             final ImmutableList<RexNode> filters = ImmutableList.of();
             node = ScanNode.create( this, scan, filters, null );
         }

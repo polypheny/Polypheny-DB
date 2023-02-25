@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.pig.data.DataType;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -50,9 +50,9 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**
- * Implementation of {@link Scan} in {@link PigAlg#CONVENTION Pig calling convention}.
+ * Implementation of {@link RelScan} in {@link PigAlg#CONVENTION Pig calling convention}.
  */
-public class PigScan extends Scan implements PigAlg {
+public class PigScan extends RelScan implements PigAlg {
 
     /**
      * Creates a PigScan.

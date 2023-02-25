@@ -53,14 +53,14 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
@@ -183,7 +183,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public Entity createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
             return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
         }
 
@@ -195,7 +195,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+        public void createTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             for ( long partitionId : partitionIds ) {
@@ -225,7 +225,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+        public void dropTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             // TODO check if it is on this store?
 
@@ -244,7 +244,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+        public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             CatalogColumnPlacement ccp = null;
@@ -451,7 +451,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void truncate( Context context, CatalogTable table ) {
+        public void truncate( Context context, LogicalTable table ) {
             //context.getStatement().getTransaction().registerInvolvedStore( this );
             for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
                 FileTranslatableEntity fileTable = (FileTranslatableEntity) currentSchema.getEntity( table.name + "_" + partitionPlacement.partitionId );
@@ -487,7 +487,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
             // TODO: Check if this is correct and ind better approach
             List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
             return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );

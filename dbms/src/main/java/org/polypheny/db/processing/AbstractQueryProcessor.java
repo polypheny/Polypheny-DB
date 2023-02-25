@@ -71,8 +71,8 @@ import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -80,7 +80,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
@@ -613,10 +613,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 @Override
                 public AlgNode visit( AlgNode node ) {
                     RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-                    if ( node instanceof LogicalModify ) {
+                    if ( node instanceof LogicalRelModify ) {
                         final Catalog catalog = Catalog.getInstance();
-                        final LogicalModify ltm = (LogicalModify) node;
-                        final CatalogTable table = ltm.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
+                        final LogicalRelModify ltm = (LogicalRelModify) node;
+                        final LogicalTable table = ltm.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
                         final CatalogSchema schema = catalog.getSchema( table.namespaceId );
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
@@ -911,7 +911,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
-                    final CatalogTable ctable = scan.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
+                    final LogicalTable ctable = scan.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
                     if ( idx == null ) {
@@ -958,8 +958,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return routeGraph( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.getModel() == ModelTrait.DOCUMENT ) {
             return routeDocument( logicalRoot, queryInformation, dmlRouter );
-        } else if ( logicalRoot.alg instanceof LogicalModify ) {
-            AlgNode routedDml = dmlRouter.routeDml( (LogicalModify) logicalRoot.alg, statement );
+        } else if ( logicalRoot.alg instanceof LogicalRelModify ) {
+            AlgNode routedDml = dmlRouter.routeDml( (LogicalRelModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, statement, queryInformation );
@@ -1316,7 +1316,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
 
                 // Get placements of this table
-                CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
+                LogicalTable catalogTable = table.getCatalogEntity().unwrap( LogicalTable.class );
 
                 if ( aggregatedPartitionValues.containsKey( scanId ) ) {
                     if ( aggregatedPartitionValues.get( scanId ) != null ) {

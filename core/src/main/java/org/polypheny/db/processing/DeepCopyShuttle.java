@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
@@ -50,7 +50,7 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( Scan scan ) {
+    public AlgNode visit( RelScan scan ) {
         final AlgNode node = super.visit( scan );
         return new LogicalRelScan( node.getCluster(), copy( node.getTraitSet() ), node.getEntity() );
     }

@@ -25,9 +25,9 @@ import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
@@ -86,7 +86,7 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
 
 
     @Override
-    public Modify toModificationAlg(
+    public RelModify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptEntity table,
             CatalogReader catalogReader,
@@ -95,7 +95,7 @@ public class LogicalEntity extends AbstractQueryableEntity implements Translatab
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
-        return new LogicalModify(
+        return new LogicalRelModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

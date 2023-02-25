@@ -37,7 +37,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -50,7 +50,7 @@ import org.polypheny.db.schema.ModelTrait;
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
-public class JdbcScan extends Scan implements JdbcAlg {
+public class JdbcScan extends RelScan implements JdbcAlg {
 
     protected final JdbcEntity jdbcTable;
 

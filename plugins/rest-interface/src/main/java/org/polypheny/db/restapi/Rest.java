@@ -38,15 +38,16 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -181,13 +182,13 @@ public class Rest {
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
         AlgNode algNode = algBuilder.build();
-        Modify modify = new LogicalModify(
+        RelModify modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
                 catalogReader,
                 algNode,
-                LogicalModify.Operation.UPDATE,
+                Modify.Operation.UPDATE,
                 valueColumnNames,
                 rexValues,
                 false
@@ -234,13 +235,13 @@ public class Rest {
         AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
 
         AlgNode algNode = algBuilder.build();
-        Modify modify = new LogicalModify(
+        RelModify modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
                 catalogReader,
                 algNode,
-                LogicalModify.Operation.DELETE,
+                Modify.Operation.DELETE,
                 null,
                 null,
                 false
@@ -286,13 +287,13 @@ public class Rest {
 
         // Table Modify
         AlgNode algNode = algBuilder.build();
-        Modify modify = new LogicalModify(
+        RelModify modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
                 catalogReader,
                 algNode,
-                LogicalModify.Operation.INSERT,
+                Modify.Operation.INSERT,
                 null,
                 null,
                 false
@@ -313,9 +314,9 @@ public class Rest {
 
 
     @VisibleForTesting
-    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
+    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<LogicalTable> tables ) {
         boolean firstTable = true;
-        for ( CatalogTable catalogTable : tables ) {
+        for ( LogicalTable catalogTable : tables ) {
             if ( firstTable ) {
                 algBuilder = algBuilder.scan( catalogTable.getNamespaceName(), catalogTable.name );
                 firstTable = false;

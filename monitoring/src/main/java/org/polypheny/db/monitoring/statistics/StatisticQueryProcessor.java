@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -93,8 +93,8 @@ public class StatisticQueryProcessor {
         List<CatalogSchema> schemas = catalog.getSchemas( databaseId, null );
         for ( CatalogSchema schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<CatalogTable> childTables = catalog.getTables( schema.id, null );
-            for ( CatalogTable childTable : childTables ) {
+            List<LogicalTable> childTables = catalog.getTables( schema.id, null );
+            for ( LogicalTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
                 List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
                 for ( CatalogColumn catalogColumn : childColumns ) {
@@ -142,15 +142,15 @@ public class StatisticQueryProcessor {
      *
      * @return all the tables ids
      */
-    public List<CatalogTable> getAllTable() {
+    public List<LogicalTable> getAllTable() {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogTable> catalogEntities = catalog.getTables(
+        List<LogicalTable> catalogEntities = catalog.getTables(
                 null,
                 null,
                 null );
-        List<CatalogTable> allTables = new ArrayList<>();
+        List<LogicalTable> allTables = new ArrayList<>();
 
-        for ( CatalogTable catalogTable : catalogEntities ) {
+        for ( LogicalTable catalogTable : catalogEntities ) {
             if ( catalogTable.entityType != EntityType.VIEW ) {
                 allTables.add( catalogTable );
             }

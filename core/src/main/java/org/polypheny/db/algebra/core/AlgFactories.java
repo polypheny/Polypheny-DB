@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
@@ -67,13 +68,13 @@ import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -530,14 +531,14 @@ public class AlgFactories {
 
 
     /**
-     * Can create a {@link Scan} of the appropriate type for a rule's calling convention.
+     * Can create a {@link RelScan} of the appropriate type for a rule's calling convention.
      */
     public interface ScanFactory {
 
         /**
-         * Creates a {@link Scan}.
+         * Creates a {@link RelScan}.
          */
-        AlgNode createScan( AlgOptCluster cluster, AlgOptEntity table );
+        AlgNode createScan( AlgOptCluster cluster, CatalogEntity entity );
 
     }
 
@@ -548,13 +549,13 @@ public class AlgFactories {
     private static class ScanFactoryImpl implements ScanFactory {
 
         @Override
-        public AlgNode createScan( AlgOptCluster cluster, AlgOptEntity table ) {
+        public AlgNode createScan( AlgOptCluster cluster, CatalogEntity entity ) {
 
             // Check if RelOptTable contains a View, in this case a LogicalViewScan needs to be created
-            if ( table.getCatalogEntity().entityType == EntityType.VIEW ) {
-                return LogicalRelViewScan.create( cluster, table );
+            if ( entity.entityType == EntityType.VIEW ) {
+                return LogicalRelViewScan.create( cluster, entity );
             } else {
-                return LogicalRelScan.create( cluster, table );
+                return LogicalRelScan.create( cluster, entity );
             }
         }
 
@@ -569,13 +570,13 @@ public class AlgFactories {
      */
     @Nonnull
     public static ScanFactory expandingScanFactory( @Nonnull ScanFactory scanFactory ) {
-        return ( cluster, table ) -> {
-            final TranslatableEntity translatableTable = table.unwrap( TranslatableEntity.class );
+        return ( cluster, entity ) -> {
+            final TranslatableEntity translatableTable = entity.unwrap( TranslatableEntity.class );
             if ( translatableTable != null ) {
                 final ToAlgContext toAlgContext = () -> cluster;
-                return translatableTable.toAlg( toAlgContext, table, cluster.traitSet() );
+                return translatableTable.toAlg( toAlgContext, cluster.traitSet() );
             }
-            return scanFactory.createScan( cluster, table );
+            return scanFactory.createScan( cluster, entity );
         };
     }
 

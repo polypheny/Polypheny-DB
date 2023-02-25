@@ -53,8 +53,8 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -110,7 +110,7 @@ public class AlgJsonReader {
     private void readAlg( final Map<String, Object> jsonAlg ) {
         String id = (String) jsonAlg.get( "id" );
         String type = (String) jsonAlg.get( "relOp" );
-        Constructor constructor = algJson.getConstructor( type );
+        Constructor<?> constructor = algJson.getConstructor( type );
         AlgInput input = new AlgInput() {
             @Override
             public AlgOptCluster getCluster() {
@@ -125,22 +125,22 @@ public class AlgJsonReader {
 
 
             @Override
-            public AlgOptEntity getTable( String table ) {
+            public CatalogEntity getEntity( String entity ) {
                 final List<String> list;
-                if ( jsonAlg.get( table ) instanceof String ) {
-                    String str = (String) jsonAlg.get( table );
+                if ( jsonAlg.get( entity ) instanceof String ) {
+                    String str = (String) jsonAlg.get( entity );
                     // MV: This is not a nice solution...
                     if ( str.startsWith( "[" ) && str.endsWith( "]" ) ) {
                         str = str.substring( 1, str.length() - 1 );
                         list = new LinkedList<>();
                         list.add( StringUtils.join( Arrays.asList( str.split( "," ) ), ", " ) );
                     } else {
-                        list = getStringList( table );
+                        list = getStringList( entity );
                     }
                 } else {
-                    list = getStringList( table );
+                    list = getStringList( entity );
                 }
-                return algOptSchema.getTableForMember( list );
+                return null; // todo change
             }
 
 

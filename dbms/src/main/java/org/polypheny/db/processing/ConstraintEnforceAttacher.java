@@ -37,7 +37,7 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
@@ -60,7 +60,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -128,7 +128,7 @@ public class ConstraintEnforceAttacher {
     public static void attachOnCommitConstraints( AlgNode node, Statement statement ) {
         ModifyExtractor extractor = new ModifyExtractor();
         node.accept( extractor );
-        Modify modify = extractor.getModify();
+        RelModify modify = extractor.getModify();
 
         if ( modify == null ) {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
@@ -138,7 +138,7 @@ public class ConstraintEnforceAttacher {
     }
 
 
-    public static List<EnforcementInformation> getConstraintAlg( Set<CatalogTable> catalogTables, Statement statement, EnforcementTime enforcementTime ) {
+    public static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> catalogTables, Statement statement, EnforcementTime enforcementTime ) {
         return catalogTables
                 .stream()
                 .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
@@ -194,18 +194,18 @@ public class ConstraintEnforceAttacher {
         if ( !logicalRoot.kind.belongsTo( Kind.DML ) ) {
             return logicalRoot;
         }
-        if ( !(logicalRoot.alg instanceof Modify) ) {
+        if ( !(logicalRoot.alg instanceof RelModify) ) {
             return logicalRoot;
         }
-        final Modify root = (Modify) logicalRoot.alg;
+        final RelModify root = (RelModify) logicalRoot.alg;
 
         final Catalog catalog = Catalog.getInstance();
-        final CatalogTable table;
+        final LogicalTable table;
         final CatalogPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
-        table = root.getEntity().getCatalogEntity().unwrap( CatalogTable.class );
+        table = root.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
         primaryKey = catalog.getPrimaryKey( table.primaryKey );
         constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
         foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
@@ -484,7 +484,7 @@ public class ConstraintEnforceAttacher {
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
                 builder.push( input );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
@@ -560,7 +560,7 @@ public class ConstraintEnforceAttacher {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
+                final LogicalTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
@@ -655,7 +655,7 @@ public class ConstraintEnforceAttacher {
         private boolean testConstraintsValid() {
             if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() || RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
                 try {
-                    List<CatalogTable> tables = Catalog
+                    List<LogicalTable> tables = Catalog
                             .getInstance()
                             .getTables( null, null, null )
                             .stream()

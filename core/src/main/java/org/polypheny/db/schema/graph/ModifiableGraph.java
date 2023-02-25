@@ -19,11 +19,11 @@ package org.polypheny.db.schema.graph;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -32,9 +32,9 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 
 
-public interface ModifiableGraph extends Graph {
+public interface ModifiableGraph {
 
-    LpgModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, CatalogGraphDatabase graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );
+    LpgModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, LogicalGraph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );
 
     Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz );
 

@@ -22,11 +22,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Streamer;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -63,7 +63,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static LogicalStreamer create( Modify modify, AlgBuilder algBuilder ) {
+    public static LogicalStreamer create( RelModify modify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
         if ( !isModifyApplicable( modify ) ) {
@@ -79,7 +79,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static LogicalStreamer getLogicalStreamer( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
+    private static LogicalStreamer getLogicalStreamer( RelModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
             throw new RuntimeException( "Error while creating Streamer." );
         }
@@ -124,9 +124,8 @@ public class LogicalStreamer extends Streamer {
             );
         }
 
-        LogicalModify prepared = LogicalModify.create(
+        LogicalRelModify prepared = LogicalRelModify.create(
                         modify.getEntity(),
-                        modify.getCatalogReader(),
                         algBuilder.build(),
                         modify.getOperation(),
                         modify.getUpdateColumnList(),
@@ -137,7 +136,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static List<RexNode> createSourceList( Modify modify, RexBuilder rexBuilder ) {
+    private static List<RexNode> createSourceList( RelModify modify, RexBuilder rexBuilder ) {
         return modify.getUpdateColumnList()
                 .stream()
                 .map( name -> {
@@ -149,7 +148,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static void attachFilter( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+    private static void attachFilter( RelModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
         for ( AlgDataTypeField field : modify.getEntity().getRowType().getFieldList() ) {
@@ -174,14 +173,14 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static boolean isModifyApplicable( Modify modify ) {
+    public static boolean isModifyApplicable( RelModify modify ) {
 
         // simple delete, which all store should be able to handle by themselves
         if ( modify.isInsert() && modify.getInput() instanceof Values ) {
             // simple insert, which all store should be able to handle by themselves
             return false;
         } else {
-            return !modify.isDelete() || !(modify.getInput() instanceof Scan);
+            return !modify.isDelete() || !(modify.getInput() instanceof RelScan);
         }
     }
 

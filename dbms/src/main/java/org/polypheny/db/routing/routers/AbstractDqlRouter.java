@@ -38,13 +38,13 @@ import org.polypheny.db.algebra.core.lpg.LpgAlg.NodeType;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexBuilder;
@@ -90,7 +90,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      */
     protected abstract List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             Statement statement,
             LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -99,7 +99,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     protected abstract List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             Statement statement,
             LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -108,7 +108,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     protected abstract List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
-            CatalogTable catalogTable,
+            LogicalTable catalogTable,
             Statement statement,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
@@ -123,7 +123,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         // Reset cancel query this run
         this.cancelQuery = false;
 
-        if ( logicalRoot.alg instanceof LogicalModify ) {
+        if ( logicalRoot.alg instanceof LogicalRelModify ) {
             throw new IllegalStateException( "Should never happen for DML" );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             throw new IllegalStateException( "Should never happen for conditional executes" );
@@ -225,7 +225,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
             }
 
-            CatalogTable catalogTable = table.getCatalogEntity().unwrap( CatalogTable.class );
+            LogicalTable catalogTable = table.getCatalogEntity().unwrap( LogicalTable.class );
 
             // Check if table is even horizontal partitioned
             if ( catalogTable.partitionProperty.isPartitioned ) {

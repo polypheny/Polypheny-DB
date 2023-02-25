@@ -34,7 +34,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -174,7 +174,7 @@ public class IndexManager {
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final CatalogTable table = Catalog.getInstance().getTable( key.tableId );
+        final LogicalTable table = Catalog.getInstance().getTable( key.tableId );
         final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
@@ -214,7 +214,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns ) {
+    public Index getIndex( CatalogSchema schema, LogicalTable table, List<String> columns ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -224,7 +224,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
+    public Index getIndex( CatalogSchema schema, LogicalTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -236,7 +236,7 @@ public class IndexManager {
     }
 
 
-    public List<Index> getIndices( CatalogSchema schema, CatalogTable table ) {
+    public List<Index> getIndices( CatalogSchema schema, LogicalTable table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
                 .collect( Collectors.toList() );

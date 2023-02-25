@@ -52,9 +52,9 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -114,7 +114,7 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
     /**
      * Extract predicates for a table scan.
      */
-    public AlgOptPredicateList getAllPredicates( Scan table, AlgMetadataQuery mq ) {
+    public AlgOptPredicateList getAllPredicates( RelScan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;
     }
 

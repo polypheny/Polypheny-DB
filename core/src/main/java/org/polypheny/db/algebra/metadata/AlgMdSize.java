@@ -47,11 +47,11 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -178,7 +178,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
-    public List<Double> averageColumnSizes( Scan alg, AlgMetadataQuery mq ) {
+    public List<Double> averageColumnSizes( RelScan alg, AlgMetadataQuery mq ) {
         final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( AlgDataTypeField field : fields ) {

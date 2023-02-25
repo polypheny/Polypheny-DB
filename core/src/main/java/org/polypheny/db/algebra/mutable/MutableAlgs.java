@@ -49,10 +49,10 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sample;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
@@ -249,9 +249,8 @@ public abstract class MutableAlgs {
             }
             case TABLE_MODIFY:
                 final MutableTableModify modify = (MutableTableModify) node;
-                return LogicalModify.create(
+                return LogicalRelModify.create(
                         modify.table,
-                        modify.catalogReader,
                         fromMutable( modify.getInput(), algBuilder ),
                         modify.operation,
                         modify.updateColumnList,
@@ -323,8 +322,8 @@ public abstract class MutableAlgs {
             return toMutable(
                     Util.first( ((AlgSubset) alg).getBest(), ((AlgSubset) alg).getOriginal() ) );
         }
-        if ( alg instanceof Scan ) {
-            return MutableScan.of( (Scan) alg );
+        if ( alg instanceof RelScan ) {
+            return MutableScan.of( (RelScan) alg );
         }
         if ( alg instanceof Values ) {
             return MutableValues.of( (Values) alg );
@@ -374,8 +373,8 @@ public abstract class MutableAlgs {
             final MutableAlg input = toMutable( window.getInput() );
             return MutableWindow.of( window.getRowType(), input, window.groups, window.getConstants() );
         }
-        if ( alg instanceof Modify ) {
-            final Modify modify = (Modify) alg;
+        if ( alg instanceof RelModify ) {
+            final RelModify modify = (RelModify) alg;
             final MutableAlg input = toMutable( modify.getInput() );
             return MutableTableModify.of(
                     modify.getRowType(),

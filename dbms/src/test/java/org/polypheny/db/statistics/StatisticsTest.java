@@ -32,7 +32,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -254,8 +254,8 @@ public class StatisticsTest {
                     );
                     waiter.await( 20, TimeUnit.SECONDS );
                     try {
-                        CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nation" );
-                        CatalogTable catalogTableRegion = Catalog.getInstance().getTable( "APP", "statisticschema", "region" );
+                        LogicalTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nation" );
+                        LogicalTable catalogTableRegion = Catalog.getInstance().getTable( "APP", "statisticschema", "region" );
 
                         Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                         Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
@@ -314,7 +314,7 @@ public class StatisticsTest {
                     continue;
                 }
                 inCatalog = true;
-                CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
+                LogicalTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
                 Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {

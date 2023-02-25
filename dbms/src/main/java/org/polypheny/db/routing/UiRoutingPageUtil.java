@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -93,7 +93,7 @@ public class UiRoutingPageUtil {
             proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
                 CatalogPartition catalogPartition = Catalog.getInstance().getPartition( k );
                 CatalogPartitionGroup catalogPartitionGroup = Catalog.getInstance().getPartitionGroup( catalogPartition.partitionGroupId );
-                CatalogTable catalogTable = Catalog.getInstance().getTable( catalogPartition.tableId );
+                LogicalTable catalogTable = Catalog.getInstance().getTable( catalogPartition.tableId );
                 v.forEach( p -> {
                     CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getColumnPlacement( p.left, p.right );
                     CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getPartitionPlacement( p.left, k );

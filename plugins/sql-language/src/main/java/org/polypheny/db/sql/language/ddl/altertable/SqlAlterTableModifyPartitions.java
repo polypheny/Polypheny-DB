@@ -29,7 +29,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.languages.ParserPos;
@@ -99,7 +99,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );

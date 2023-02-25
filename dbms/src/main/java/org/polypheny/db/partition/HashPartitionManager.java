@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
@@ -35,7 +35,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
         long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now

@@ -50,11 +50,11 @@ import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
@@ -144,9 +144,9 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = mongoEntity.getCatalogEntity().unwrap( CatalogTable.class ).getColumnNames().indexOf( name );
+            int index = mongoEntity.getCatalogEntity().unwrap( LogicalTable.class ).getColumnNames().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogEntity().unwrap( CatalogTable.class ).fieldIds.get( index ) );
+                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogEntity().unwrap( LogicalTable.class ).fieldIds.get( index ) );
             }
             throw new RuntimeException( "This column is not part of the table." );
         }
@@ -195,7 +195,7 @@ public interface MongoAlg extends AlgNode {
 
 
         @Override
-        public AlgNode visit( Scan scan ) {
+        public AlgNode visit( RelScan scan ) {
             super.visit( scan );
 
             return scan;

@@ -24,9 +24,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.util.BuiltInMethod;
@@ -34,7 +34,7 @@ import org.polypheny.db.util.BuiltInMethod;
 
 public interface PolyphenyDbSchema {
 
-    default CatalogTable getTable( List<String> names ) {
+    default LogicalTable getTable( List<String> names ) {
         switch ( names.size() ) {
             case 3:
                 return Catalog.getInstance().getTables( Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ), Pattern.of( names.get( 2 ) ) ).get( 0 );
@@ -65,7 +65,7 @@ public interface PolyphenyDbSchema {
         }
     }
 
-    default CatalogGraphDatabase getGraph( List<String> names ) {
+    default LogicalGraph getGraph( List<String> names ) {
 
         if ( names.size() == 1 ) {// TODO add methods
             return Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );

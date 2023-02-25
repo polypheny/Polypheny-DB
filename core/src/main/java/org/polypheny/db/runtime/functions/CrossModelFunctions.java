@@ -34,7 +34,8 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.graph.PolyEdge;
@@ -60,10 +61,10 @@ public class CrossModelFunctions {
      */
     @SuppressWarnings("unused")
     public static Enumerable<?> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
-        if ( operation == Operation.DELETE ) {
+        if ( operation == Modify.Operation.DELETE ) {
             return sendDeletes( context, enumerables, order );
         }
-        if ( operation == Operation.UPDATE ) {
+        if ( operation == Modify.Operation.UPDATE ) {
             return sendUpdates( context, enumerables, order );
         }
 

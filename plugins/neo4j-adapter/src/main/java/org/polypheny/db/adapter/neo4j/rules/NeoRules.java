@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.plan.AlgOptRule;
@@ -62,10 +62,10 @@ public interface NeoRules {
 
     class NeoModifyRule extends NeoConverterRule {
 
-        public static NeoModifyRule INSTANCE = new NeoModifyRule( Modify.class, NeoModifyRule::supports, "NeoModifyRule" );
+        public static NeoModifyRule INSTANCE = new NeoModifyRule( RelModify.class, NeoModifyRule::supports, "NeoModifyRule" );
 
 
-        private static boolean supports( Modify modify ) {
+        private static boolean supports( RelModify modify ) {
             return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
         }
 
@@ -77,7 +77,7 @@ public interface NeoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            Modify modify = (Modify) alg;
+            RelModify modify = (RelModify) alg;
             return new NeoModify(
                     modify.getCluster(),
                     modify.getTraitSet().replace( NeoConvention.INSTANCE ),

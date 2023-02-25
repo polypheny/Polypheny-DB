@@ -45,7 +45,7 @@ import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -61,7 +61,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  *
  * Trivially modified from CsvScan.
  */
-class HtmlScan extends Scan implements EnumerableAlg {
+class HtmlScan extends RelScan implements EnumerableAlg {
 
     private final HtmlEntity webTable;
     private final int[] fields;

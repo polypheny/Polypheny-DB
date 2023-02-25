@@ -20,7 +20,7 @@ package org.polypheny.db.sql.language.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -77,7 +77,7 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable table = getCatalogTable( context, name );
+        LogicalTable table = getCatalogTable( context, name );
 
         DdlManager.getInstance().truncate( table, statement );
     }

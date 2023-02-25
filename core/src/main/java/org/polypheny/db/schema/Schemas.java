@@ -54,7 +54,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
@@ -203,7 +203,7 @@ public final class Schemas {
      */
     public static <E> Queryable<E> queryable( DataContext root, PolyphenyDbSchema schema, Class<E> clazz, String tableName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
-        CatalogTable table = schema.getTable( List.of( tableName ) );
+        LogicalTable table = schema.getTable( List.of( tableName ) );
         return table.asQueryable( root, schema, tableName );
     }
 
@@ -244,7 +244,7 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over object arrays, given a fully-qualified table name which leads to a {@link ScannableEntity}.
      */
-    public static CatalogTable table( DataContext root, String... names ) {
+    public static LogicalTable table( DataContext root, String... names ) {
         PolyphenyDbSchema schema = root.getRootSchema();
         return schema.getTable( List.of( names ) );
     }

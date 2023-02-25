@@ -79,7 +79,7 @@ import org.polypheny.db.adapter.enumerable.SourceSorter;
 import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgMatch.MatchEnumerable;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;

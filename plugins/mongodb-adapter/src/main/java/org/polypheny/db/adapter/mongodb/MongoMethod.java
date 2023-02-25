@@ -36,7 +36,7 @@ package org.polypheny.db.adapter.mongodb;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 
 import java.lang.reflect.Method;
 import java.util.List;

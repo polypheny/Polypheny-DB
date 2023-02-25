@@ -37,7 +37,7 @@ package org.polypheny.db.adapter.elasticsearch;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -55,7 +55,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  * <p> Additional operations might be applied,
  * using the "find" method.</p>
  */
-public class ElasticsearchScan extends Scan implements ElasticsearchRel {
+public class ElasticsearchScan extends RelScan implements ElasticsearchRel {
 
     private final ElasticsearchEntity elasticsearchTable;
     private final AlgDataType projectRowType;

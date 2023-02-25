@@ -23,7 +23,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -44,14 +44,14 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, CatalogTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Do same as without any partitioning
         return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, CatalogTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Get placements and convert into placement distribution
         final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
 
@@ -64,7 +64,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, CatalogTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
 

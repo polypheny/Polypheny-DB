@@ -26,9 +26,9 @@ import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable
 import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
@@ -109,7 +109,7 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
 
 
     @Override
-    public Modify toModificationAlg(
+    public RelModify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptEntity table,
             CatalogReader catalogReader,
@@ -119,7 +119,7 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         this.cottontailSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalModify(
+        return new LogicalRelModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

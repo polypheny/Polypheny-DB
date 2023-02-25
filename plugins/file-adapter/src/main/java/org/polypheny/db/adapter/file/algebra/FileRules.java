@@ -32,7 +32,7 @@ import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -74,12 +74,12 @@ public class FileRules {
 
 
         public FileTableModificationRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Modify.class, FileTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
+            super( RelModify.class, FileTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
             this.convention = out;
         }
 
 
-        private static boolean supports( Modify node ) {
+        private static boolean supports( RelModify node ) {
             if ( node.getSourceExpressionList() != null ) {
                 return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressionList() );
             }
@@ -89,7 +89,7 @@ public class FileRules {
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final Modify modify = call.alg( 0 );
+            final RelModify modify = call.alg( 0 );
             if ( modify.getEntity().unwrap( FileTranslatableEntity.class ) == null ) {
                 // todo insert from select is not correctly implemented
                 return false;
@@ -107,7 +107,7 @@ public class FileRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final Modify modify = (Modify) alg;
+            final RelModify modify = (RelModify) alg;
             final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
 
             if ( modifiableTable == null ) {

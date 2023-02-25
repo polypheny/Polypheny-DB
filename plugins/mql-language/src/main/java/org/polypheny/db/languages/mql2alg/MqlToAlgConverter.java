@@ -47,9 +47,9 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -527,7 +527,7 @@ public class MqlToAlgConverter {
      * @param key the left associated parent key
      * @param mergedUpdates collection, which combines all performed update steps according to the operation
      * @param rowType the default rowtype at this point
-     * @param node the transformed operation up to this step e.g. {@link Scan} or {@link LogicalDocumentAggregate}
+     * @param node the transformed operation up to this step e.g. {@link RelScan} or {@link LogicalDocumentAggregate}
      * @param table the active table
      * @return the unified UPDATE AlgNode
      */
@@ -586,7 +586,7 @@ public class MqlToAlgConverter {
                 table,
                 node,
                 catalogReader,
-                Operation.UPDATE,
+                Modify.Operation.UPDATE,
                 Collections.singletonList( key ),
                 Collections.singletonList( createJsonify( updateChain ) ) );
     }
@@ -767,7 +767,7 @@ public class MqlToAlgConverter {
         return LogicalDocumentModify.create(
                 table,
                 node,
-                catalogReader, Operation.DELETE,
+                catalogReader, Modify.Operation.DELETE,
                 null,
                 null );
     }
@@ -784,7 +784,7 @@ public class MqlToAlgConverter {
         return LogicalDocumentModify.create(
                 table,
                 convertMultipleValues( query.getValues(), table.getRowType() ),
-                catalogReader, Operation.INSERT,
+                catalogReader, Modify.Operation.INSERT,
                 null,
                 null );
     }

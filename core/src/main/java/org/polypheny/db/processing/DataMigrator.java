@@ -22,8 +22,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
@@ -38,7 +38,7 @@ public interface DataMigrator {
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, List, List)}  } instead
+     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, LogicalTable, LogicalTable, List, List, List)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -51,13 +51,13 @@ public interface DataMigrator {
     void copySelectiveData(
             Transaction transaction,
             CatalogAdapter store,
-            CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns,
+            LogicalTable sourceTable, LogicalTable targetTable, List<CatalogColumn> columns,
             Map<Long, List<CatalogColumnPlacement>> placementDistribution,
             List<Long> targetPartitionIds );
 
     /**
      * Currently used to to transfer data if unpartitioned is about to be partitioned.
-     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
+     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, LogicalTable, LogicalTable, List, Map, List)}   } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -70,8 +70,8 @@ public interface DataMigrator {
     void copyPartitionData(
             Transaction transaction,
             CatalogAdapter store,
-            CatalogTable sourceTable,
-            CatalogTable targetTable,
+            LogicalTable sourceTable,
+            LogicalTable targetTable,
             List<CatalogColumn> columns,
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
@@ -86,6 +86,6 @@ public interface DataMigrator {
     AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
 
 
-    void copyGraphData( CatalogGraphDatabase graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
+    void copyGraphData( LogicalGraph graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
 
 }

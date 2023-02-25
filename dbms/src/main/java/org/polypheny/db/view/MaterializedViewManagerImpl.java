@@ -45,7 +45,7 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -178,7 +178,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public void addTables( Transaction transaction, List<String> tableNames ) {
         if ( tableNames.size() > 1 ) {
             try {
-                CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
+                LogicalTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
                 long id = catalogTable.id;
                 if ( !catalogTable.getConnectedViews().isEmpty() ) {
                     updateCandidates.put( transaction.getXid(), id );
@@ -211,11 +211,11 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void materializedUpdate( Long potentialInteresting ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( potentialInteresting );
+        LogicalTable catalogTable = catalog.getTable( potentialInteresting );
         List<Long> connectedViews = catalogTable.getConnectedViews();
 
         for ( Long id : connectedViews ) {
-            CatalogTable view = catalog.getTable( id );
+            LogicalTable view = catalog.getTable( id );
             if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
@@ -272,7 +272,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( materializedId );
+        LogicalTable catalogTable = catalog.getTable( materializedId );
 
         try {
             Transaction transaction = getTransactionManager().startTransaction(

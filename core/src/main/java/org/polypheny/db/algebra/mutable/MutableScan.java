@@ -34,15 +34,15 @@
 package org.polypheny.db.algebra.mutable;
 
 
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 
 
 /**
- * Mutable equivalent of {@link Scan}.
+ * Mutable equivalent of {@link RelScan}.
  */
 public class MutableScan extends MutableLeafAlg {
 
-    private MutableScan( Scan alg ) {
+    private MutableScan( RelScan alg ) {
         super( MutableAlgType.TABLE_SCAN, alg );
     }
 
@@ -52,7 +52,7 @@ public class MutableScan extends MutableLeafAlg {
      *
      * @param scan The underlying Scan object
      */
-    public static MutableScan of( Scan scan ) {
+    public static MutableScan of( RelScan scan ) {
         return new MutableScan( scan );
     }
 
@@ -79,7 +79,7 @@ public class MutableScan extends MutableLeafAlg {
 
     @Override
     public MutableAlg clone() {
-        return MutableScan.of( (Scan) alg );
+        return MutableScan.of( (RelScan) alg );
     }
 
 }

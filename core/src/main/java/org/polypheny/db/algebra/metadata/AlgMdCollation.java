@@ -66,12 +66,12 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.SortExchange;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
@@ -135,7 +135,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     }
 
 
-    public ImmutableList<AlgCollation> collations( Scan scan, AlgMetadataQuery mq ) {
+    public ImmutableList<AlgCollation> collations( RelScan scan, AlgMetadataQuery mq ) {
         return ImmutableList.copyOf( table( scan.getEntity() ) );
     }
 
@@ -202,7 +202,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     /**
-     * Helper method to determine a {@link Scan}'s collation.
+     * Helper method to determine a {@link RelScan}'s collation.
      */
     public static List<AlgCollation> table( AlgOptEntity table ) {
         return table.getCollationList();

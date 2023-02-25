@@ -60,10 +60,10 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -156,7 +156,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * Infers predicates for a table scan.
      */
-    public AlgOptPredicateList getPredicates( Scan table, AlgMetadataQuery mq ) {
+    public AlgOptPredicateList getPredicates( RelScan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;
     }
 

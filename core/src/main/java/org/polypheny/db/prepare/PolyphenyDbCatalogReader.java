@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -94,14 +94,14 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public CatalogGraphDatabase getGraph( final String name ) {
+    public LogicalGraph getGraph( final String name ) {
         return rootSchema.getGraph( List.of( name ) );
     }
 
 
     @Override
     public AlgDataType getNamedType( Identifier typeName ) {
-        CatalogTable table = rootSchema.getTable( typeName.getNames() );
+        LogicalTable table = rootSchema.getTable( typeName.getNames() );
         if ( table != null ) {
             return table.getRowType();
         } else {

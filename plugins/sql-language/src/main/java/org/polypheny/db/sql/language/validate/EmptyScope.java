@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.language.SqlCall;
@@ -93,7 +93,7 @@ class EmptyScope implements SqlValidatorScope {
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
         // Look in the default schema, then default catalog, then root schema.
-        CatalogTable table = validator.catalogReader.getRootSchema().getTable( names );
+        LogicalTable table = validator.catalogReader.getRootSchema().getTable( names );
         if ( table != null ) {
             resolves.add( new Resolve( validator.catalogReader.getRootSchema().getTable( names ) ) );
         }
@@ -104,7 +104,7 @@ class EmptyScope implements SqlValidatorScope {
     private void resolve_( final PolyphenyDbSchema rootSchema, List<String> names, List<String> schemaNames, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         final List<String> concat = ImmutableList.<String>builder().addAll( schemaNames ).addAll( names ).build();
 
-        CatalogTable table = rootSchema.getTable( concat );
+        LogicalTable table = rootSchema.getTable( concat );
         if ( table != null ) {
             resolved.found( table );
             return;

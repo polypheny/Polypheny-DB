@@ -22,7 +22,7 @@ import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -33,7 +33,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTrait;
 
 
-public class FileScan extends Scan implements FileAlg {
+public class FileScan extends RelScan implements FileAlg {
 
     private final FileTranslatableEntity fileTable;
 

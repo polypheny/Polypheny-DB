@@ -51,7 +51,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -73,9 +73,9 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Implementation of {@link Scan} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link RelScan} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableScan extends Scan implements EnumerableAlg {
+public class EnumerableScan extends RelScan implements EnumerableAlg {
 
     private final Class elementType;
 

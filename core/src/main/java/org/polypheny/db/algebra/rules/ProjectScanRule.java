@@ -39,7 +39,7 @@ import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
@@ -56,7 +56,7 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 /**
  * Planner rule that converts a {@link Project}
- * on a {@link Scan}
+ * on a {@link RelScan}
  * of a {@link ProjectableFilterableEntity}
  * to a {@link BindableScan}.
  *
@@ -72,13 +72,13 @@ public abstract class ProjectScanRule extends AlgOptRule {
      */
     public static final ProjectScanRule INSTANCE =
             new ProjectScanRule(
-                    operand( Project.class, operandJ( Scan.class, null, ProjectScanRule::test, none() ) ),
+                    operand( Project.class, operandJ( RelScan.class, null, ProjectScanRule::test, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ProjectScanRule" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final Project project = call.alg( 0 );
-                    final Scan scan = call.alg( 1 );
+                    final RelScan scan = call.alg( 1 );
                     apply( call, project, scan );
                 }
             };
@@ -88,13 +88,13 @@ public abstract class ProjectScanRule extends AlgOptRule {
      */
     public static final ProjectScanRule INTERPRETER =
             new ProjectScanRule(
-                    operand( Project.class, operand( EnumerableInterpreter.class, operandJ( Scan.class, null, ProjectScanRule::test, none() ) ) ),
+                    operand( Project.class, operand( EnumerableInterpreter.class, operandJ( RelScan.class, null, ProjectScanRule::test, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ProjectScanRule:interpreter" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final Project project = call.alg( 0 );
-                    final Scan scan = call.alg( 2 );
+                    final RelScan scan = call.alg( 2 );
                     apply( call, project, scan );
                 }
             };
@@ -108,14 +108,14 @@ public abstract class ProjectScanRule extends AlgOptRule {
     }
 
 
-    protected static boolean test( Scan scan ) {
+    protected static boolean test( RelScan scan ) {
         // We can only push projects into a ProjectableFilterableTable.
         final AlgOptEntity table = scan.getEntity();
         return table.unwrap( ProjectableFilterableEntity.class ) != null;
     }
 
 
-    protected void apply( AlgOptRuleCall call, Project project, Scan scan ) {
+    protected void apply( AlgOptRuleCall call, Project project, RelScan scan ) {
         final AlgOptEntity table = scan.getEntity();
         assert table.unwrap( ProjectableFilterableEntity.class ) != null;
 

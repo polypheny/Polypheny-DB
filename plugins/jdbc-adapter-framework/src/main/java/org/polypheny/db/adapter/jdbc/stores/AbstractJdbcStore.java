@@ -34,7 +34,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.languages.ParserPos;
@@ -123,7 +123,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+    public void createTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.getNamespaceName() );
         qualifiedNames.add( catalogTable.name );
@@ -161,7 +161,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     }
 
 
-    protected StringBuilder buildCreateTableQuery( String schemaName, String physicalTableName, CatalogTable catalogTable ) {
+    protected StringBuilder buildCreateTableQuery( String schemaName, String physicalTableName, LogicalTable catalogTable ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE TABLE " )
                 .append( dialect.quoteIdentifier( schemaName ) )
@@ -185,7 +185,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
         String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
             String physicalTableName = partitionPlacement.physicalTableName;
@@ -208,7 +208,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     }
 
 
-    protected StringBuilder buildAddColumnQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+    protected StringBuilder buildAddColumnQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
@@ -308,7 +308,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+    public void dropTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
@@ -353,7 +353,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void truncate( Context context, CatalogTable catalogTable ) {
+    public void truncate( Context context, LogicalTable catalogTable ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
