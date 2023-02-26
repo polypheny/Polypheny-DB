@@ -16,51 +16,33 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+import lombok.Data;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 
 
 /**
  * Boilerplate of a column to guide the handling and pattern of a column
  */
-@Slf4j
+@Data
 class QueryResult {
 
     @Getter
-    private final long schemaId;
-
+    private final CatalogEntity entity;
     @Getter
-    private final long tableId;
-
-    @Getter
-    private final long columnId;
-
-    @Getter
-    private final PolyType type;
+    private final CatalogColumn column;
 
 
-    QueryResult( long schemaId, long tableId, Long columnId, PolyType type ) {
-        this.schemaId = schemaId;
-        this.tableId = tableId;
-        this.columnId = columnId;
-        this.type = type;
-
-        Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsEntity( tableId ) ) {
-            this.schema = catalog.getSchema( schemaId ).id;
-            this.tableId = catalog.getTable( tableId ).id;
-            if ( columnId != null ) {
-                this.column = catalog.getColumn( columnId ).id;
-            }
-        }
+    QueryResult( CatalogEntity entity, CatalogColumn column ) {
+        this.entity = entity;
+        this.column = column;
     }
 
 
     public static QueryResult fromCatalogColumn( CatalogColumn column ) {
-        return new QueryResult( column.schemaId, column.tableId, column.id, column.type );
+        return new QueryResult( Catalog.getInstance().getTable( column.tableId ), column );
     }
 
 }

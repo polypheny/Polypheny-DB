@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.schema.ColumnStrategy;
 
 
 @EqualsAndHashCode(callSuper = false)
@@ -267,6 +268,11 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
     @Override
     public Expression asExpression() {
         return Expressions.call( Expressions.call( Catalog.class, "getInstance" ), "getTable", Expressions.constant( id ) );
+    }
+
+
+    public List<ColumnStrategy> getColumnStrategies() {
+        return null;
     }
 
 

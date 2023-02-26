@@ -19,14 +19,14 @@ package org.polypheny.db.catalog.refactor;
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.schema.graph.QueryableGraph;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 
 public interface QueryableEntity {
 
     /**
      * Converts this table into a {@link Queryable}.
      */
-    <T> Queryable<T> asQueryable( DataContext root, QueryableGraph graph );
+    <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, long entityId );
 
     Type getElementType();
 

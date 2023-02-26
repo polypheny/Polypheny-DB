@@ -39,9 +39,9 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -292,7 +292,6 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getCluster(),
                 modify.getTraitSet(),
                 modify.getEntity(),
-                modify.getCatalogReader(),
                 input,
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
@@ -361,7 +360,6 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getCluster(),
                 modify.getTraitSet(),
                 modify.getEntity(),
-                modify.getCatalogReader(),
                 input,
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
@@ -421,7 +419,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         }
         return new LogicalDocumentModify(
                 modify.getTraitSet(),
-                modify.getCollection(),
+                modify.getEntity(),
                 modify.getCatalogReader(),
                 input,
                 modify.operation,

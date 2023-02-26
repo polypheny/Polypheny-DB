@@ -21,7 +21,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptEntity;
 
 
 public interface CottontailAlg extends AlgNode {
@@ -49,7 +48,7 @@ public interface CottontailAlg extends AlgNode {
 
         public String tableName;
 
-        public AlgOptEntity table;
+        public CottontailEntity table;
         public CottontailEntity cottontailTable;
 
         public Expression filterBuilder;

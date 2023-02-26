@@ -42,11 +42,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
@@ -213,19 +212,17 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         }
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            AlgOptEntityImpl table = (AlgOptEntityImpl) node.getEntity();
+            LogicalEntity logicalTable = node.getEntity().unwrap( LogicalEntity.class );
 
-            if ( table == null ) {
+            if ( logicalTable == null ) {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
 
-            LogicalEntity logicalTable = ((LogicalEntity) table.getEntity());
-
-            if ( table.getCatalogEntity() == null || table.getCatalogEntity().namespaceType == NamespaceType.GRAPH ) {
+            if ( logicalTable == null || logicalTable.getNamespaceType() == NamespaceType.GRAPH ) {
                 return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
             }
 
-            LogicalTable catalogTable = table.getCatalogEntity().unwrap( LogicalTable.class );
+            LogicalTable catalogTable = logicalTable.unwrap( LogicalTable.class );
 
             // Check if table is even horizontal partitioned
             if ( catalogTable.partitionProperty.isPartitioned ) {
@@ -267,7 +264,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 node.getTraitSet().replace( ModelTrait.RELATIONAL ),
                 ModelTrait.GRAPH,
                 ModelTrait.RELATIONAL,
-                logicalTable.getRowType( algBuilder.getTypeFactory() ), false ) );
+                logicalTable.getRowType(), false ) );
         return builders;
     }
 

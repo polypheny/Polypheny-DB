@@ -17,13 +17,18 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import java.io.Serializable;
+import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 
 public class AllocationTable extends CatalogEntity implements Allocation {
+
+    public List<CatalogColumnPlacement> placements;
+
 
     protected AllocationTable( long id, LogicalGraph graph ) {
         super( id, graph.name, graph.entityType, graph.namespaceType );

@@ -78,9 +78,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
@@ -97,7 +98,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
@@ -616,7 +616,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalRelModify ) {
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalRelModify ltm = (LogicalRelModify) node;
-                        final LogicalTable table = ltm.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
+                        final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class );
                         final CatalogSchema schema = catalog.getSchema( table.namespaceId );
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
@@ -911,7 +911,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
-                    final LogicalTable ctable = scan.getEntity().getCatalogEntity().unwrap( LogicalTable.class );
+                    final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class );
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
                     if ( idx == null ) {
@@ -1306,17 +1306,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             boolean fallback = false;
             if ( alg.getEntity() != null ) {
-                AlgOptEntityImpl table = (AlgOptEntityImpl) alg.getEntity();
+                CatalogEntity table = alg.getEntity();
 
                 int scanId = alg.getId();
 
-                if ( table.getCatalogEntity() == null ) {
+                if ( table == null ) {
                     // todo dl: remove after RowType refactor
                     return accessedPartitionList;
                 }
 
                 // Get placements of this table
-                LogicalTable catalogTable = table.getCatalogEntity().unwrap( LogicalTable.class );
+                LogicalTable catalogTable = table.unwrap( LogicalTable.class );
 
                 if ( aggregatedPartitionValues.containsKey( scanId ) ) {
                     if ( aggregatedPartitionValues.get( scanId ) != null ) {

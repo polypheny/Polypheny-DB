@@ -26,18 +26,17 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
-public class CottontailScan extends RelScan implements CottontailAlg {
+public class CottontailScan extends RelScan<CottontailEntity> implements CottontailAlg {
 
     protected final CottontailEntity cottontailTable;
 
 
-    public CottontailScan( AlgOptCluster cluster, AlgOptEntity table, CottontailEntity cottontailTable, AlgTraitSet traitSet, CottontailConvention cottontailConvention ) {
-        super( cluster, traitSet.replace( cottontailConvention ), table );
+    public CottontailScan( AlgOptCluster cluster, CottontailEntity cottontailTable, AlgTraitSet traitSet, CottontailConvention cottontailConvention ) {
+        super( cluster, traitSet.replace( cottontailConvention ), cottontailTable );
         this.cottontailTable = cottontailTable;
     }
 
@@ -45,7 +44,7 @@ public class CottontailScan extends RelScan implements CottontailAlg {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new CottontailScan( getCluster(), this.table, this.cottontailTable, traitSet, (CottontailConvention) this.getConvention() );
+        return new CottontailScan( getCluster(), this.cottontailTable, traitSet, (CottontailConvention) this.getConvention() );
     }
 
 

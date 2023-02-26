@@ -53,6 +53,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.information.InformationGraph;
@@ -183,7 +184,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
+        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
             return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
         }
 

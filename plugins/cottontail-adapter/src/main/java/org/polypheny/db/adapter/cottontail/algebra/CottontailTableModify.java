@@ -35,12 +35,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
@@ -50,7 +47,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public class CottontailTableModify extends RelModify implements CottontailAlg {
+public class CottontailTableModify extends RelModify<CottontailEntity> implements CottontailAlg {
 
     public final CottontailEntity cottontailTable;
 
@@ -63,10 +60,8 @@ public class CottontailTableModify extends RelModify implements CottontailAlg {
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
      * </blockquote>
      *
-     * @param cluster Cluster this relational expression belongs to
      * @param traitSet Traits of this relational expression
      * @param table Target table to modify
-     * @param catalogReader accessor to the table metadata.
      * @param input Sub-query or filter condition
      * @param operation Modify operation (INSERT, UPDATE, DELETE)
      * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
@@ -74,16 +69,14 @@ public class CottontailTableModify extends RelModify implements CottontailAlg {
      * @param flattened Whether set flattens the input row type
      */
     public CottontailTableModify(
-            AlgOptCluster cluster,
             AlgTraitSet traitSet,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
+            CottontailEntity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
-        super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+        super( input.getCluster(), traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
         this.cottontailTable = table.unwrap( CottontailEntity.class );
     }
 
@@ -91,10 +84,8 @@ public class CottontailTableModify extends RelModify implements CottontailAlg {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new CottontailTableModify(
-                getCluster(),
                 traitSet,
-                getEntity(),
-                getCatalogReader(),
+                entity,
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),
                 getUpdateColumnList(),
@@ -118,7 +109,7 @@ public class CottontailTableModify extends RelModify implements CottontailAlg {
     @Override
     public void implement( CottontailImplementContext context ) {
         context.cottontailTable = this.cottontailTable;
-        context.table = this.table;
+        context.table = this.entity;
         context.schemaName = this.cottontailTable.getPhysicalSchemaName();
         context.tableName = this.cottontailTable.getPhysicalTableName();
         context.visitChild( 0, getInput() );
@@ -155,7 +146,7 @@ public class CottontailTableModify extends RelModify implements CottontailAlg {
         final List<String> physicalColumnNames = new ArrayList<>();
         final List<String> logicalColumnNames = new ArrayList<>();
         final List<PolyType> columnTypes = new ArrayList<>();
-        for ( AlgDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
+        for ( AlgDataTypeField field : context.cottontailTable.getRowType().getFieldList() ) {
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
             logicalColumnNames.add( field.getName() );
             columnTypes.add( field.getType().getPolyType() );

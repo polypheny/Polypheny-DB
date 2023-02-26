@@ -89,7 +89,7 @@ public class AlgOptCluster {
 
         // set up a default alg metadata provider, giving the planner first crack at everything
         setMetadataProvider( DefaultAlgMetadataProvider.INSTANCE );
-        this.emptyTraitSet = traitSet;
+        this.emptyTraitSet = traitSet == null ? AlgTraitSet.createEmpty() : traitSet;
         assert emptyTraitSet.size() == planner.getAlgTraitDefs().size();
         this.rootSchema = rootSchema;
     }

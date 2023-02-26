@@ -25,7 +25,7 @@ import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
-import org.polypheny.db.schema.Entity;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -98,7 +98,7 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
             CottontailWrapper wrapper,
             CottontailStore cottontailStore
     ) {
-        final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CottontailSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( parentSchema.polyphenyDbSchema(), name, CottontailSchema.class );
         final CottontailConvention convention = CottontailConvention.of( name, expression );
         return new CottontailSchema( id, wrapper, convention, cottontailStore, name );
     }
@@ -135,7 +135,7 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, CatalogEntity> getTableMap() {
         return ImmutableMap.copyOf( this.tableMap );
     }
 

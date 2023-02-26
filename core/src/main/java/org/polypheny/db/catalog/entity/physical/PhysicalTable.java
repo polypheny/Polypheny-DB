@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -45,7 +46,7 @@ public class PhysicalTable extends CatalogEntity implements Physical {
     }
 
 
-    public PhysicalTable( PhysicalTable table ) {
+    public PhysicalTable( AllocationTable table ) {
         this( table.id, table.name, table.entityType, table.namespaceType, table.placements );
     }
 

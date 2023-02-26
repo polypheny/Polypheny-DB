@@ -69,8 +69,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -4026,7 +4026,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
         }
         final Set<Integer> assignedFields = new HashSet<>();
-        final AlgOptEntity algOptEntity = table instanceof AlgOptEntity ? ((AlgOptEntity) table) : null;
+        final CatalogEntity algOptEntity = null; //table instanceof AlgOptEntity ? ((AlgOptEntity) table) : null; todo dl
         for ( Node node : targetColumnList ) {
             SqlIdentifier id = (SqlIdentifier) node;
             AlgDataTypeField targetField =
@@ -4057,7 +4057,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
         validateNamespace( targetNamespace, unknownType );
-        final AlgOptEntity algOptEntity =
+        final CatalogEntity algOptEntity =
                 SqlValidatorUtil.getAlgOptTable(
                         targetNamespace,
                         catalogReader.unwrap( Prepare.CatalogReader.class ),
@@ -4341,7 +4341,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final AlgOptEntity algOptEntity =
+        final CatalogEntity algOptEntity =
                 SqlValidatorUtil.getAlgOptTable(
                         targetNamespace,
                         catalogReader.unwrap( Prepare.CatalogReader.class ),

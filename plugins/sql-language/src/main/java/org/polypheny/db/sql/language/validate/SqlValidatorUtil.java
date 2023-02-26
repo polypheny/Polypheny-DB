@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -88,8 +89,10 @@ public class SqlValidatorUtil {
      * @param datasetName Name of sample dataset to substitute, or null to use the regular table
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      */
-    public static AlgOptEntity getAlgOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
-        if ( namespace.isWrapperFor( TableNamespace.class ) ) {
+    public static CatalogEntity getAlgOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
+        final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
+        return catalogReader.getRootSchema().getTable( tableNamespace.getTable().getQualifiedName() );
+        /*if ( namespace.isWrapperFor( TableNamespace.class ) ) {
             final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
             return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
         } else if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
@@ -106,7 +109,7 @@ public class SqlValidatorUtil {
                 return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, extendedFields );
             }
         }
-        return null;
+        return null;*/
     }
 
 
@@ -266,7 +269,7 @@ public class SqlValidatorUtil {
     }
 
 
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptEntity table ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, CatalogEntity table ) {
         return getTargetField( rowType, typeFactory, id, catalogReader, table, false );
     }
 
@@ -279,7 +282,7 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptEntity table, boolean isDocument ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, CatalogEntity table, boolean isDocument ) {
         final Entity t = table == null ? null : table.unwrap( Entity.class );
 
         if ( !(t instanceof CustomColumnResolvingEntity) ) {

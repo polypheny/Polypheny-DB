@@ -42,10 +42,8 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
-import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -145,7 +143,8 @@ public abstract class AlgOptAbstractEntity implements AlgOptEntity {
 
     @Override
     public List<ColumnStrategy> getColumnStrategies() {
-        return AlgOptEntityImpl.columnStrategies( this );
+        return null;
+        //return AlgOptEntityImpl.columnStrategies( this );
     }
 
 }

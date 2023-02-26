@@ -103,8 +103,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
@@ -121,10 +121,12 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -141,7 +143,6 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgOptSamplingParameters;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -167,8 +168,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.ModifiableEntity;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -2120,17 +2119,17 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
         final String datasetName = datasetStack.isEmpty() ? null : datasetStack.peek();
         final boolean[] usedDataset = { false };
-        AlgOptEntity table = SqlValidatorUtil.getAlgOptTable( fromNamespace, catalogReader, datasetName, usedDataset );
+        CatalogEntity table = SqlValidatorUtil.getAlgOptTable( fromNamespace, catalogReader, datasetName, usedDataset );
         if ( extendedColumns != null && extendedColumns.size() > 0 ) {
             assert table != null;
             final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class );
             final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), validatorTable, extendedColumns );
-            table = table.extend( extendedFields );
+            table = table; // table.extend( extendedFields ); todo dl
         }
         final AlgNode tableRel;
         if ( config.isConvertTableAccess() ) {
             tableRel = toAlg( table );
-        } else if ( table instanceof AlgOptEntityImpl && table.getCatalogEntity() != null && table.getCatalogEntity().entityType == EntityType.VIEW ) {
+        } else if ( table.entityType == EntityType.VIEW ) {
             tableRel = LogicalRelViewScan.create( cluster, table );
         } else {
             tableRel = LogicalRelScan.create( cluster, table );
@@ -2161,12 +2160,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final SqlCallBinding callBinding = new SqlCallBinding( bb.scope.getValidator(), bb.scope, call );
         if ( operator instanceof SqlUserDefinedTableMacro ) {
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
-            final TranslatableEntity table = udf.getTable( typeFactory, callBinding.sqlOperands() );
-            final LogicalTable catalogTable = Catalog.getInstance().getTable( table.getId() );
-            final AlgDataType rowType = table.getRowType( typeFactory );
-            AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable, null );
-            AlgNode converted = toAlg( algOptEntity );
-            bb.setRoot( converted, true );
+            //final TranslatableEntity table = udf.getTable( typeFactory, callBinding.sqlOperands() );
+            //final LogicalTable catalogTable = Catalog.getInstance().getTable( table.getId() );
+            //final AlgDataType rowType = table.getRowType( typeFactory );
+            //AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable, null );
+            //AlgNode converted = toAlg( algOptEntity );
+            //bb.setRoot( converted, true );
             return;
         }
 
@@ -2865,7 +2864,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     protected AlgNode convertInsert( SqlInsert call ) {
-        AlgOptEntity targetTable = getTargetTable( call );
+        CatalogEntity targetTable = getTargetTable( call );
 
         final AlgDataType targetRowType = validator.getValidatedNodeType( call );
         assert targetRowType != null;
@@ -2879,18 +2878,17 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     /**
      * Creates a relational expression to modify a table or modifiable view.
      */
-    private AlgNode createModify( AlgOptEntity targetTable, AlgNode source ) {
+    private AlgNode createModify( CatalogEntity targetTable, AlgNode source ) {
         final ModifiableEntity modifiableTable = targetTable.unwrap( ModifiableEntity.class );
         if ( modifiableTable != null && modifiableTable == targetTable.unwrap( Entity.class ) ) {
             return modifiableTable.toModificationAlg(
                     cluster,
+                    source.getTraitSet(),
                     targetTable,
-                    catalogReader,
                     source,
                     Modify.Operation.INSERT,
                     null,
-                    null,
-                    false );
+                    null );
         }
         return LogicalRelModify.create(
                 targetTable,
@@ -2907,8 +2905,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
-    public AlgNode toAlg( final AlgOptEntity table ) {
-        final AlgNode scan = table.toAlg( createToRelContext(), cluster.traitSet() );
+    public AlgNode toAlg( final CatalogEntity table ) {
+        final AlgNode scan = table.unwrap( TranslatableEntity.class ).toAlg( createToRelContext(), cluster.traitSet() );
 
         final InitializerExpressionFactory ief =
                 Util.first(
@@ -2943,7 +2941,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
-    protected AlgOptEntity getTargetTable( SqlNode call ) {
+    protected CatalogEntity getTargetTable( SqlNode call ) {
         final SqlValidatorNamespace targetNs = validator.getSqlNamespace( call );
         if ( targetNs.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = targetNs.unwrap( SqlValidatorImpl.DmlNamespace.class );
@@ -2974,8 +2972,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final List<RexNode> columnExprs = new ArrayList<>();
         collectInsertTargets( call, sourceRef, targetColumnNames, columnExprs );
 
-        final AlgOptEntity targetTable = getTargetTable( call );
-        final AlgDataType targetRowType = AlgOptEntityImpl.realRowType( targetTable );
+        final CatalogEntity targetTable = getTargetTable( call );
+        final AlgDataType targetRowType = targetTable.getRowType();//AlgOptEntityImpl.realRowType( targetTable );
         final List<AlgDataTypeField> targetFields = targetRowType.getFieldList();
         boolean isDocument = call.getSchemaType() == NamespaceType.DOCUMENT;
 
@@ -3025,12 +3023,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     /**
      * Creates a blackboard for translating the expressions of generated columns in an INSERT statement.
      */
-    private Blackboard createInsertBlackboard( AlgOptEntity targetTable, RexNode sourceRef, List<String> targetColumnNames ) {
+    private Blackboard createInsertBlackboard( CatalogEntity targetTable, RexNode sourceRef, List<String> targetColumnNames ) {
         final Map<String, RexNode> nameToNodeMap = new HashMap<>();
         int j = 0;
 
         // Assign expressions for non-generated columns.
-        final List<ColumnStrategy> strategies = targetTable.getColumnStrategies();
+        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).getColumnStrategies();
         final List<String> targetFields = targetTable.getRowType().getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
@@ -3084,7 +3082,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * @param columnExprs List of expressions, to be populated
      */
     protected void collectInsertTargets( SqlInsert call, final RexNode sourceRef, final List<String> targetColumnNames, List<RexNode> columnExprs ) {
-        final AlgOptEntity targetTable = getTargetTable( call );
+        final CatalogEntity targetTable = getTargetTable( call );
         final AlgDataType tableRowType = targetTable.getRowType();
         SqlNodeList targetColumnList = call.getTargetColumnList();
         if ( targetColumnList == null ) {
@@ -3123,7 +3121,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final Blackboard bb = createInsertBlackboard( targetTable, sourceRef, targetColumnNames );
 
         // Next, assign expressions for generated columns.
-        final List<ColumnStrategy> strategies = targetTable.getColumnStrategies();
+        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).getColumnStrategies();
         for ( String columnName : targetColumnNames ) {
             final int i = tableRowType.getFieldNames().indexOf( columnName );
             final RexNode expr;
@@ -3157,7 +3155,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     private AlgNode convertDelete( SqlDelete call ) {
-        AlgOptEntity targetTable = getTargetTable( call );
+        CatalogEntity targetTable = getTargetTable( call );
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
         return LogicalRelModify.create(
                 targetTable,
@@ -3179,7 +3177,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             rexNodeSourceExpressionListBuilder.add( rn );
         }
 
-        AlgOptEntity targetTable = getTargetTable( call );
+        CatalogEntity targetTable = getTargetTable( call );
 
         // convert update column list from SqlIdentifier to String
         final List<String> targetColumnNameList = new ArrayList<>();
@@ -3204,7 +3202,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     private AlgNode convertMerge( SqlMerge call ) {
-        AlgOptEntity targetTable = getTargetTable( call );
+        CatalogEntity targetTable = getTargetTable( call );
 
         // convert update column list from SqlIdentifier to String
         final List<String> targetColumnNameList = new ArrayList<>();

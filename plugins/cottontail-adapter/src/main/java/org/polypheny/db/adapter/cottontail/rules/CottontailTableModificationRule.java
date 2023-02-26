@@ -22,8 +22,8 @@ import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -74,10 +74,8 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
         final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
 
         return new CottontailTableModify(
-                modify.getCluster(),
                 traitSet,
-                modify.getEntity(),
-                modify.getCatalogReader(),
+                modify.getEntity().unwrap( CottontailEntity.class ),
                 AlgOptRule.convert( modify.getInput(), traitSet ),
                 modify.getOperation(),
                 modify.getUpdateColumnList(),

@@ -31,6 +31,8 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -91,7 +93,7 @@ public class MonetdbSource extends AbstractJdbcSource {
 
 
     @Override
-    public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
+    public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
         return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 

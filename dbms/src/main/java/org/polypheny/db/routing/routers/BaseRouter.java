@@ -54,26 +54,25 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
@@ -479,7 +478,7 @@ public abstract class BaseRouter implements Router {
         List<Pair<String, AlgNode>> scans = collections.stream()
                 .map( t -> {
                     RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
-                    AlgOptEntity collection = statement.getTransaction().getCatalogReader().getCollection( List.of( t.getNamespaceName(), t.name ) );
+                    LogicalCollection collection = statement.getTransaction().getCatalogReader().getRootSchema().getCollection( List.of( t.getNamespaceName(), t.name ) );
                     AlgNode scan = algBuilder.documentScan( collection ).build();
                     routeDocument( algBuilder, (AlgNode & DocumentAlg) scan, statement );
                     return Pair.of( t.name, algBuilder.build() );
@@ -574,7 +573,7 @@ public abstract class BaseRouter implements Router {
             CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, placementId );
             String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             String collectionName = collection.name + "_" + placement.id;
-            AlgOptEntity collectionTable = reader.getCollection( List.of( namespaceName, collectionName ) );
+            LogicalCollection collectionTable = reader.getRootSchema().getCollection( List.of( namespaceName, collectionName ) );
             // we might previously have pushed the non-native transformer
             builder.clear();
             return builder.push( LogicalDocumentScan.create( alg.getCluster(), collectionTable ) );

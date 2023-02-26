@@ -16,33 +16,35 @@
 
 package org.polypheny.db.adapter.cottontail;
 
+import java.lang.reflect.Type;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
+import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
@@ -53,13 +55,15 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 
 
-public class CottontailEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity {
+public class CottontailEntity extends PhysicalTable implements TranslatableEntity, ModifiableEntity, QueryableEntity {
 
+    private final LogicalTable logical;
+    private final AllocationTable allocation;
     private AlgProtoDataType protoRowType;
     private CottontailSchema cottontailSchema;
 
     @Getter
-    private EntityName entity;
+    private EntityName entityName;
 
     @Getter
     private final String physicalSchemaName;
@@ -72,26 +76,22 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
 
     protected CottontailEntity(
             CottontailSchema cottontailSchema,
-            String logicalSchemaName,
-            String logicalTableName,
-            List<String> logicalColumnNames,
-            AlgProtoDataType protoRowType,
             String physicalSchemaName,
-            String physicalTableName,
-            List<String> physicalColumnNames,
-            Long tableId,
-            long partitionId, long adapterId ) {
-        super( Object[].class, tableId, partitionId, adapterId );
+            LogicalTable logical,
+            AllocationTable allocation ) {
+        super( allocation );
 
         this.cottontailSchema = cottontailSchema;
-        this.protoRowType = protoRowType;
 
-        this.logicalColumnNames = logicalColumnNames;
+        this.logicalColumnNames = logical.getColumnNames();
         this.physicalSchemaName = physicalSchemaName;
-        this.physicalTableName = physicalTableName;
-        this.physicalColumnNames = physicalColumnNames;
+        this.physicalTableName = CottontailNameUtil.createPhysicalTableName( logical.id, allocation.id );
+        this.physicalColumnNames = allocation.placements.stream().map( p -> CottontailNameUtil.createPhysicalColumnName( p.columnId ) ).collect( Collectors.toList() );
 
-        this.entity = EntityName.newBuilder()
+        this.logical = logical;
+        this.allocation = allocation;
+
+        this.entityName = EntityName.newBuilder()
                 .setName( this.physicalTableName )
                 .setSchema( SchemaName.newBuilder().setName( physicalSchemaName ).build() )
                 .build();
@@ -110,44 +110,35 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
 
 
     @Override
-    public RelModify toModificationAlg(
+    public Modify<?> toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
+            AlgTraitSet traitSet,
+            CatalogEntity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened ) {
+            List<RexNode> sourceExpressionList
+    ) {
         this.cottontailSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalRelModify(
-                cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,
-                catalogReader,
                 input,
                 operation,
                 updateColumnList,
-                sourceExpressionList,
-                flattened );
+                sourceExpressionList );
     }
 
 
     @Override
-    public Queryable<Object[]> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-        return new CottontailTableQueryable( dataContext, schema, tableName );
+    public Queryable<Object[]> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, long entityId ) {
+        return new CottontailTableQueryable( dataContext, schema, this );
     }
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
-        return new CottontailScan( context.getCluster(), algOptEntity, this, traitSet, this.cottontailSchema.getConvention() );
-    }
-
-
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return protoRowType.apply( typeFactory );
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
+        return new CottontailScan( context.getCluster(), this, traitSet, this.cottontailSchema.getConvention() );
     }
 
 
@@ -156,10 +147,16 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
     }
 
 
+    @Override
+    public Type getElementType() {
+        return Object[].class;
+    }
+
+
     private class CottontailTableQueryable extends AbstractTableQueryable<Object[]> {
 
-        public CottontailTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-            super( dataContext, schema, CottontailEntity.this, tableName );
+        public CottontailTableQueryable( DataContext dataContext, PolyphenyDbSchema schema, PhysicalTable physicalTable ) {
+            super( dataContext, schema, null, physicalTable.name );
         }
 
 
@@ -169,7 +166,7 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
             final CottontailEntity cottontailTable = (CottontailEntity) this.table;
             final long txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
             final Query query = Query.newBuilder()
-                    .setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() )
+                    .setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entityName ) ).build() )
                     .build();
             final QueryMessage queryMessage = QueryMessage.newBuilder()
                     .setMetadata( Metadata.newBuilder().setTransactionId( txId ) )
@@ -177,7 +174,7 @@ public class CottontailEntity extends AbstractQueryableEntity implements Transla
                     .build();
             return new CottontailQueryEnumerable(
                     cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
-                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames )
+                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType(), cottontailTable.physicalColumnNames )
             ).enumerator();
         }
 

@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.docker.DockerManager;
@@ -229,7 +230,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
+    public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
         return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 

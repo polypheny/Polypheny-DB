@@ -40,16 +40,13 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
@@ -57,7 +54,6 @@ import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.vitrivr.cottontail.CottontailKt;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
@@ -213,43 +209,12 @@ public class CottontailPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
-            final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-            final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-            List<String> logicalColumnNames = new LinkedList<>();
-            List<String> physicalColumnNames = new LinkedList<>();
-            Long tableId = combinedTable.id;
-
-            String physicalSchemaName = partitionPlacement.physicalTableName != null
-                    ? partitionPlacement.physicalSchemaName
-                    : this.dbName;
-            String physicalTableName = partitionPlacement.physicalTableName != null
-                    ? partitionPlacement.physicalTableName
-                    : CottontailNameUtil.createPhysicalTableName( combinedTable.id, partitionPlacement.partitionId );
-
-            for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-
-                AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
-                fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-                logicalColumnNames.add( catalogColumn.name );
-                physicalColumnNames.add( placement.physicalColumnName != null
-                        ? placement.physicalColumnName
-                        : CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            }
-
+        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
             return new CottontailEntity(
                     this.currentSchema,
-                    combinedTable.getNamespaceName(),
-                    combinedTable.name,
-                    logicalColumnNames,
-                    AlgDataTypeImpl.proto( fieldInfo.build() ),
-                    physicalSchemaName,
-                    physicalTableName,
-                    physicalColumnNames,
-                    tableId,
-                    partitionPlacement.partitionId,
-                    getAdapterId()
+                    this.dbName,
+                    logical,
+                    allocationTable
             );
         }
 

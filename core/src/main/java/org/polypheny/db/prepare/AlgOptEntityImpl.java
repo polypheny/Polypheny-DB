@@ -43,7 +43,6 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.StatisticsManager;
-import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
@@ -52,7 +51,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
@@ -385,7 +383,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     /**
      * Helper for {@link #getColumnStrategies()}.
      */
-    public static List<ColumnStrategy> columnStrategies( final AlgOptEntity table ) {
+    public static List<ColumnStrategy> columnStrategies( final CatalogEntity table ) {
         final int fieldCount = table.getRowType().getFieldCount();
         final InitializerExpressionFactory ief = Util.first(
                 table.unwrap( InitializerExpressionFactory.class ),
@@ -409,8 +407,8 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Converts the ordinal of a field into the ordinal of a stored field.
      * That is, it subtracts the number of virtual fields that come before it.
      */
-    public static int realOrdinal( final AlgOptEntity table, int i ) {
-        List<ColumnStrategy> strategies = table.getColumnStrategies();
+    public static int realOrdinal( final CatalogEntity table, int i ) {
+        List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).getColumnStrategies();
         int n = 0;
         for ( int j = 0; j < i; j++ ) {
             switch ( strategies.get( j ) ) {
@@ -426,7 +424,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Returns the row type of a table after any {@link ColumnStrategy#VIRTUAL} columns have been removed. This is the type
      * of the records that are actually stored.
      */
-    public static AlgDataType realRowType( AlgOptEntity table ) {
+    public static AlgDataType realRowType( CatalogEntity table ) {
         final AlgDataType rowType = table.getRowType();
         final List<ColumnStrategy> strategies = columnStrategies( table );
         if ( !strategies.contains( ColumnStrategy.VIRTUAL ) ) {

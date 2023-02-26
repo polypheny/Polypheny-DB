@@ -48,8 +48,8 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -293,7 +293,8 @@ public abstract class Prepare {
 
         @Override
         public List<ColumnStrategy> getColumnStrategies() {
-            return AlgOptEntityImpl.columnStrategies( AbstractPreparingEntity.this );
+            return null;
+            //return AlgOptEntityImpl.columnStrategies( AbstractPreparingEntity.this );
         }
 
     }

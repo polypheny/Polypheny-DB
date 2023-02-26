@@ -38,7 +38,7 @@ public class StatisticQueryResult extends QueryResult {
      * @param data map consisting of different values to a given statistic
      */
     public StatisticQueryResult( QueryResult queryResult, final Comparable<?>[] data ) {
-        super( queryResult.getSchemaId(), queryResult.getTableId(), queryResult.getColumnId(), queryResult.getType() );
+        super( queryResult.getEntity(), queryResult.getColumn() );
         this.data = data;
     }
 

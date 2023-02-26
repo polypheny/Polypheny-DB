@@ -61,10 +61,12 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
@@ -495,8 +497,8 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createTableSchema( PhysicalTable boilerplate ) {
-            return this.currentSchema.createTable( boilerplate );
+        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
+            return this.currentSchema.createTable( allocationTable );
         }
 
 
