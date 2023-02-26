@@ -53,7 +53,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -61,6 +60,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -72,7 +72,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
@@ -338,10 +337,6 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<?> reevaluateColumn( QueryResult column ) {
-        if ( !Catalog.getInstance().checkIfExistsEntity( column.getTableId() )
-                && !Catalog.getInstance().checkIfExistsColumn( column.getTableId(), column.getColumn() ) ) {
-            return null;
-        }
 
         if ( column.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
             return this.reevaluateNumericalColumn( column );
@@ -536,10 +531,10 @@ public class StatisticsManagerImpl extends StatisticsManager {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
         AlgBuilder relBuilder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = relBuilder.getRexBuilder();
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, traitSet, rootSchema );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getRootSchema() );
 
         AlgNode queryNode;
-        LogicalRelScan tableScan = getLogicalScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
+        LogicalRelScan tableScan = getLogicalScan( queryResult.getSchemaId(), queryResult.getTableId(), reader, cluster );
         switch ( nodeType ) {
             case MIN:
             case MAX:
@@ -564,18 +559,17 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Gets a tableScan for a given table.
      */
-    private LogicalRelScan getLogicalScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
-        AlgOptEntity relOptTable = reader.getTable( Arrays.asList( schema, table ) );
-        return LogicalRelScan.create( cluster, relOptTable );
+    private LogicalRelScan getLogicalScan( long tableId, CatalogReader reader, AlgOptCluster cluster ) {
+        return LogicalRelScan.create( cluster, reader.getRootSchema().getTable( tableId ) );
     }
 
 
     /**
      * Queries the database with an aggregate query, to get the min value or max value.
      */
-    private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, RelScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
+    private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, RelScan<?> tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
-            if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
+            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumnId() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
                         tableScan,
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),

@@ -26,14 +26,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TranslatableGraph;
@@ -62,7 +61,7 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
 
     @Override
-    public Entity getEntity( String name ) {
+    public CatalogEntity getEntity( String name ) {
         return null;
     }
 
@@ -110,7 +109,7 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
 
     @Override
-    public Expression getExpression( SchemaPlus parentSchema, String name ) {
+    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
         return Schemas.subSchemaExpression( parentSchema, name, LogicalGraph.class );
     }
 

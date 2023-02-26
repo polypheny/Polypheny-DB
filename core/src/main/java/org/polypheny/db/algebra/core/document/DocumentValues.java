@@ -124,7 +124,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     public LogicalValues getRelationalEquivalent() {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
-        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, rootSchema );
+        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getRootSchema() );
 
         return new LogicalValues( cluster, out, ((DocumentType) rowType).asRelational(), relationalize( documentTuples, cluster.getRexBuilder() ) );
     }

@@ -67,6 +67,7 @@ import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
@@ -238,7 +239,7 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     @Override
-    public Expression getExpression( SchemaPlus parentSchema, String name ) {
+    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
         return Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
     }
 

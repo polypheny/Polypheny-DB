@@ -107,9 +107,9 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
             final QueryableEntity table = tableQueryable.table;
 
             if ( table instanceof TranslatableEntity ) {
-                return ((TranslatableEntity) table).toAlg( translator.toAlgContext(), algOptTable, translator.cluster.traitSet() );
+                return ((TranslatableEntity) table).toAlg( translator.toAlgContext(), null, translator.cluster.traitSet() );
             } else {
-                return LogicalRelScan.create( translator.cluster, algOptTable );
+                return LogicalRelScan.create( translator.cluster, null );
             }
         }
         return translator.translate( queryable.getExpression() );

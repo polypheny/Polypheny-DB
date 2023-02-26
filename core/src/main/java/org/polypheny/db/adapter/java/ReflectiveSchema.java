@@ -34,16 +34,13 @@
 package org.polypheny.db.adapter.java;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.Enumerable;
@@ -59,13 +56,13 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableEntity;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
@@ -75,7 +72,6 @@ import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -85,7 +81,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
     private final Class clazz;
     private Object target;
-    private Map<String, Entity> tableMap;
+    private Map<String, CatalogEntity> tableMap;
     private Multimap<String, Function> functionMap;
 
 
@@ -119,7 +115,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    public Map<String, Entity> getTableMap() {
+    public Map<String, CatalogEntity> getTableMap() {
         if ( tableMap == null ) {
             tableMap = createTableMap();
         }
@@ -127,17 +123,17 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     }
 
 
-    private Map<String, Entity> createTableMap() {
-        final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
+    private Map<String, CatalogEntity> createTableMap() {
+        final ImmutableMap.Builder<String, CatalogEntity> builder = ImmutableMap.builder();
         for ( Field field : clazz.getFields() ) {
             final String fieldName = field.getName();
-            final Entity entity = fieldRelation( field );
+            final CatalogEntity entity = fieldRelation( field );
             if ( entity == null ) {
                 continue;
             }
             builder.put( fieldName, entity );
         }
-        Map<String, Entity> tableMap = builder.build();
+        Map<String, CatalogEntity> tableMap = builder.build();
         // Unique-Key - Foreign-Key
         for ( Field field : clazz.getFields() ) {
             if ( AlgReferentialConstraint.class.isAssignableFrom( field.getType() ) ) {
@@ -147,9 +143,10 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
                 } catch ( IllegalAccessException e ) {
                     throw new RuntimeException( "Error while accessing field " + field, e );
                 }
-                FieldEntity table = (FieldEntity) tableMap.get( Util.last( rc.getSourceQualifiedName() ) );
-                assert table != null;
-                table.statistic = Statistics.of( ImmutableList.copyOf( Iterables.concat( table.getStatistic().getReferentialConstraints(), Collections.singleton( rc ) ) ) );
+                // CatalogEntity table = (FieldEntity) tableMap.get( Util.last( rc.getSourceQualifiedName() ) );
+                // assert table != null;
+                // table.statistic = Statistics.of( ImmutableList.copyOf( Iterables.concat( table.getStatistic().getReferentialConstraints(), Collections.singleton( rc ) ) ) );
+                // todo dl;
             }
         }
         return tableMap;
@@ -184,7 +181,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Returns an expression for the object wrapped by this schema (not the schema itself).
      */
-    Expression getTargetExpression( SchemaPlus parentSchema, String name ) {
+    Expression getTargetExpression( PolyphenyDbSchema parentSchema, String name ) {
         return Types.castIfNecessary(
                 target.getClass(),
                 Expressions.call(
@@ -196,7 +193,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Returns a table based on a particular field of this schema. If the field is not of the right type to be a relation, returns null.
      */
-    private <T> Entity fieldRelation( final Field field ) {
+    private <T> CatalogEntity fieldRelation( final Field field ) {
         final Type elementType = getElementType( field.getType() );
         if ( elementType == null ) {
             return null;
@@ -207,15 +204,16 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
         } catch ( IllegalAccessException e ) {
             throw new RuntimeException( "Error while accessing field " + field, e );
         }
-        @SuppressWarnings("unchecked") final Enumerable<T> enumerable = toEnumerable( o );
-        return new FieldEntity<>( field, elementType, enumerable, null, null, null );
+        final Enumerable<T> enumerable = (Enumerable<T>) toEnumerable( o );
+        return null;
+        // return new FieldEntity<>( field, elementType, enumerable, null, null, null ); todo dl
     }
 
 
     /**
      * Deduces the element type of a collection; same logic as {@link #toEnumerable}
      */
-    private static Type getElementType( Class clazz ) {
+    private static Type getElementType( Class<?> clazz ) {
         if ( clazz.isArray() ) {
             return clazz.getComponentType();
         }
@@ -226,7 +224,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     }
 
 
-    private static Enumerable toEnumerable( final Object o ) {
+    private static Enumerable<?> toEnumerable( final Object o ) {
         if ( o.getClass().isArray() ) {
             if ( o instanceof Object[] ) {
                 return Linq4j.asEnumerable( (Object[]) o );
@@ -364,7 +362,8 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
         @Override
         public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
-            return Expressions.field( schema.unwrap( ReflectiveSchema.class ).getTargetExpression( schema.getParentSchema(), schema.getName() ), field );
+            return null; // todo dl
+            // return Expressions.field( schema.unwrap( ReflectiveSchema.class ).getTargetExpression( schema.getParentSchema(), schema.getName() ), field );
         }
 
     }

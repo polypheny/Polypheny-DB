@@ -41,9 +41,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -69,11 +67,11 @@ public class EnumerableScanRule extends ConverterRule {
         if ( !EnumerableScan.canHandle( entity ) ) {
             return null;
         }
-        final Expression expression = algOptEntity.getExpression( Object.class );
+        final Expression expression = entity.asExpression();
         if ( expression == null ) {
             return null;
         }
-        return EnumerableScan.create( scan.getCluster(), algOptEntity );
+        return EnumerableScan.create( scan.getCluster(), entity );
     }
 
 }

@@ -101,15 +101,15 @@ public final class Schemas {
     /**
      * Returns the expression for a schema.
      */
-    public static Expression expression( SchemaPlus schema ) {
-        return schema.getExpression( schema.getParentSchema(), schema.getName() );
+    public static Expression expression( PolyphenyDbSchema schema ) {
+        return null;// return schema.getExpression( schema, schema.getName() ); todo dl
     }
 
 
     /**
      * Returns the expression for a sub-schema.
      */
-    public static Expression subSchemaExpression( SchemaPlus schema, String name, Class type ) {
+    public static Expression subSchemaExpression( PolyphenyDbSchema schema, String name, Class<?> type ) {
         // (Type) schemaExpression.getSubSchema("name")
         final Expression schemaExpression = expression( schema );
         Expression call =
@@ -137,7 +137,7 @@ public final class Schemas {
     /**
      * Returns the expression to access a table within a schema.
      */
-    public static Expression tableExpression( SchemaPlus schema, Type elementType, String tableName, Class clazz ) {
+    public static Expression tableExpression( PolyphenyDbSchema schema, Type elementType, String tableName, Class clazz ) {
         final MethodCallExpression expression;
         if ( Entity.class.isAssignableFrom( clazz ) ) {
             expression = Expressions.call(

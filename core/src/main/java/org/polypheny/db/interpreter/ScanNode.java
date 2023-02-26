@@ -53,7 +53,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -151,7 +150,7 @@ public class ScanNode implements Node {
                 return new Row( values );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, List.of( alg.entity.unwrap( LogicalTable.class ).getNamespaceName(), algOptEntity.getCatalogEntity().name ) );
+            rowEnumerable = Schemas.queryable( root, Row.class, List.of( alg.entity.unwrap( LogicalTable.class ).getNamespaceName(), alg.getEntity().name ) );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }

@@ -57,9 +57,9 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -252,10 +252,10 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      */
     private void findRemovableSelfJoins( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
         // Candidates for self-joins must be simple factors
-        Map<Integer, AlgOptEntity> simpleFactors = getSimpleFactors( mq, multiJoin );
+        Map<Integer, CatalogEntity> simpleFactors = getSimpleFactors( mq, multiJoin );
 
         // See if a simple factor is repeated and therefore potentially is part of a self-join.  Restrict each factor to at most one self-join.
-        final List<AlgOptEntity> repeatedTables = new ArrayList<>();
+        final List<CatalogEntity> repeatedTables = new ArrayList<>();
         final TreeSet<Integer> sortedFactors = new TreeSet<>();
         sortedFactors.addAll( simpleFactors.keySet() );
         final Map<Integer, Integer> selfJoinPairs = new HashMap<>();
@@ -267,7 +267,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             for ( int j = i + 1; j < factors.length; j++ ) {
                 int leftFactor = factors[i];
                 int rightFactor = factors[j];
-                if ( simpleFactors.get( leftFactor ).getCatalogEntity().id == simpleFactors.get( rightFactor ).getCatalogEntity().id ) {
+                if ( simpleFactors.get( leftFactor ).id == simpleFactors.get( rightFactor ).id ) {
                     selfJoinPairs.put( leftFactor, rightFactor );
                     repeatedTables.add( simpleFactors.get( leftFactor ) );
                     break;
@@ -298,8 +298,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * @param multiJoin join factors being optimized
      * @return map consisting of the simple factors and the tables they correspond
      */
-    private Map<Integer, AlgOptEntity> getSimpleFactors( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
-        final Map<Integer, AlgOptEntity> returnList = new HashMap<>();
+    private Map<Integer, CatalogEntity> getSimpleFactors( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
+        final Map<Integer, CatalogEntity> returnList = new HashMap<>();
 
         // Loop through all join factors and locate the ones where each column referenced from the factor is not derived and originates from the same underlying table.  Also, discard factors that
         // are null-generating or will be removed because of semijoins.
@@ -311,7 +311,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                 continue;
             }
             final AlgNode alg = multiJoin.getJoinFactor( factIdx );
-            final AlgOptEntity table = mq.getTableOrigin( alg );
+            final CatalogEntity table = mq.getTableOrigin( alg );
             if ( table != null ) {
                 returnList.put( factIdx, table );
             }
@@ -1509,15 +1509,15 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
         // Make sure the join is between the same simple factor
         final AlgMetadataQuery mq = joinRel.getCluster().getMetadataQuery();
-        final AlgOptEntity leftTable = mq.getTableOrigin( left );
+        final CatalogEntity leftTable = mq.getTableOrigin( left );
         if ( leftTable == null ) {
             return false;
         }
-        final AlgOptEntity rightTable = mq.getTableOrigin( right );
+        final CatalogEntity rightTable = mq.getTableOrigin( right );
         if ( rightTable == null ) {
             return false;
         }
-        if ( leftTable.getCatalogEntity().id != rightTable.getCatalogEntity().id ) {
+        if ( leftTable.id != rightTable.id ) {
             return false;
         }
 

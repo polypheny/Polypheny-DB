@@ -25,10 +25,12 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.Logical;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.entity.logical.Logical;
 
 
 public class LogicalCollection extends CatalogEntity implements CatalogObject, Logical {
@@ -86,5 +88,10 @@ public class LogicalCollection extends CatalogEntity implements CatalogObject, L
         return new LogicalCollection( databaseId, namespaceId, id, name, placements, entityType, physicalCollectionName );
     }
 
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getCollection", Expressions.constant( id ) );
+    }
 
 }

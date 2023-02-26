@@ -17,6 +17,9 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import java.io.Serializable;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 
@@ -39,6 +42,11 @@ public class AllocationGraph extends CatalogEntity implements Allocation {
         return new Serializable[0];
     }
 
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAllocGraph", Expressions.constant( id ) );
+    }
 
 
 }

@@ -26,33 +26,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
-import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
 
@@ -256,7 +250,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private void buildView( Map<String, LogicalEntity> tableMap, SchemaPlus s, LogicalTable catalogTable, List<String> columnNames, Builder fieldInfo, List<Long> columnIds ) {
+    private void buildView( Map<String, LogicalEntity> tableMap, PolyphenyDbSchema s, LogicalTable catalogTable, List<String> columnNames, Builder fieldInfo, List<Long> columnIds ) {
         LogicalRelView view = new LogicalRelView(
                 catalogTable.id,
                 catalogTable.getNamespaceName(),
@@ -264,7 +258,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 columnIds,
                 columnNames,
                 AlgDataTypeImpl.proto( fieldInfo.build() ) );
-        s.add( catalogTable.name, view );
+        //s.add( catalogTable.name, view );
         tableMap.put( catalogTable.name, view );
     }
 
@@ -303,7 +297,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             throw new RuntimeException( "Model is not supported" );
         }
 
-        s.add( catalogTable.name, table );
+        //s.add( catalogTable.name, table );
         tableMap.put( catalogTable.name, table );
     }
 
@@ -318,24 +312,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     public void propertyChange( PropertyChangeEvent evt ) {
         // Catalog changed, flag as outdated
         isOutdated = true;
-    }
-
-
-    /**
-     * Schema that has no parents.
-     */
-    private static class RootSchema extends AbstractNamespace implements Schema {
-
-        RootSchema() {
-            super( -1L );
-        }
-
-
-        @Override
-        public Expression getExpression( SchemaPlus parentSchema, String name ) {
-            return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
-        }
-
     }
 
 

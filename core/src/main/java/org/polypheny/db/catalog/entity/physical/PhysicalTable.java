@@ -19,17 +19,19 @@ package org.polypheny.db.catalog.entity.physical;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 public class PhysicalTable extends CatalogEntity implements Physical {
@@ -65,6 +67,12 @@ public class PhysicalTable extends CatalogEntity implements Physical {
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getPhysicalTable", Expressions.constant( id ) );
     }
 
 }

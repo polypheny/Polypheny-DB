@@ -43,10 +43,10 @@ import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.schema.Entity;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 
@@ -87,7 +87,7 @@ public class AbstractNamespace implements Namespace {
 
 
     @Override
-    public Expression getExpression( SchemaPlus parentSchema, String name ) {
+    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
         return Schemas.subSchemaExpression( parentSchema, name, getClass() );
     }
 
@@ -101,7 +101,7 @@ public class AbstractNamespace implements Namespace {
      *
      * @return Map of tables in this schema by name
      */
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, CatalogEntity> getTableMap() {
         return ImmutableMap.of();
     }
 
@@ -113,7 +113,7 @@ public class AbstractNamespace implements Namespace {
 
 
     @Override
-    public final Entity getEntity( String name ) {
+    public final CatalogEntity getEntity( String name ) {
         return getTableMap().get( name );
     }
 

@@ -26,10 +26,12 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogObject;
 
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = false)
@@ -86,5 +88,10 @@ public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGra
         return toBuilder().placements( ImmutableList.copyOf( placements.stream().filter( i -> i != adapterId ).collect( Collectors.toList() ) ) ).build();
     }
 
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getCollection", Expressions.constant( id ) );
+    }
 
 }

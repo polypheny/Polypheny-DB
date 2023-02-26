@@ -39,12 +39,10 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Blocks;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
-import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
@@ -79,11 +77,6 @@ class LixToAlgTranslator {
     }
 
 
-    public <T> AlgNode translate( Queryable<T> queryable ) {
-        QueryableAlgBuilder<T> translatorQueryable = new QueryableAlgBuilder<>( this );
-        return translatorQueryable.toAlg( queryable );
-    }
-
 
     public AlgNode translate( Expression expression ) {
         if ( expression instanceof MethodCallExpression ) {
@@ -110,18 +103,20 @@ class LixToAlgTranslator {
                 case AS_QUERYABLE:
                     return LogicalRelScan.create(
                             cluster,
-                            AlgOptEntityImpl.create(
+                            null
+                            /*AlgOptEntityImpl.create(
                                     null,
                                     typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) )
-                            ) );
+                            )*/ );
 
                 case SCHEMA_GET_TABLE:
                     return LogicalRelScan.create(
                             cluster,
-                            AlgOptEntityImpl.create(
+                            null
+                            /*AlgOptEntityImpl.create(
                                     null,
                                     typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value )
-                            ) );
+                            )*/ );
 
                 default:
                     throw new UnsupportedOperationException( "unknown method " + call.method );

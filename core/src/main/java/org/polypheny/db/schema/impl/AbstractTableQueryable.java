@@ -43,8 +43,8 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableEntity;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.SchemaPlus;
 
 
 /**
@@ -57,12 +57,12 @@ import org.polypheny.db.schema.SchemaPlus;
 public abstract class AbstractTableQueryable<T> extends AbstractQueryable<T> {
 
     public final DataContext dataContext;
-    public final SchemaPlus schema;
+    public final PolyphenyDbSchema schema;
     public final QueryableEntity table;
     public final String tableName;
 
 
-    public AbstractTableQueryable( DataContext dataContext, SchemaPlus schema, QueryableEntity table, String tableName ) {
+    public AbstractTableQueryable( DataContext dataContext, PolyphenyDbSchema schema, QueryableEntity table, String tableName ) {
         this.dataContext = dataContext;
         this.schema = schema;
         this.table = table;

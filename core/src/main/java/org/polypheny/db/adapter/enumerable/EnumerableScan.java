@@ -67,7 +67,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoCost;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -122,7 +121,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     /**
      * Returns whether EnumerableScan can generate code to handle a particular variant of the Table SPI.
      */
-    public static boolean canHandle( Entity entity ) {
+    public static boolean canHandle( CatalogEntity entity ) {
         // FilterableTable and ProjectableFilterableTable cannot be handled in/ enumerable convention because they might reject filters and those filters would need to be handled dynamically.
         return entity instanceof QueryableEntity || entity instanceof ScannableEntity;
     }

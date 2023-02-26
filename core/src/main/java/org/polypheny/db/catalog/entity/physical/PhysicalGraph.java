@@ -17,9 +17,12 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import java.io.Serializable;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 
 public class PhysicalGraph extends CatalogEntity implements Physical {
 
@@ -31,6 +34,12 @@ public class PhysicalGraph extends CatalogEntity implements Physical {
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getPhysicalGraph", Expressions.constant( id ) );
     }
 
 }

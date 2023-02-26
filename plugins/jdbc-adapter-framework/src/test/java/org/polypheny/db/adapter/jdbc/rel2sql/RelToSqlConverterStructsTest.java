@@ -54,6 +54,7 @@ import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
@@ -118,7 +119,7 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public Expression getExpression( SchemaPlus parentSchema, String name ) {
+        public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
             return null;
         }
 
