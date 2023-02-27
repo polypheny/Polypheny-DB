@@ -19,5 +19,19 @@
  * Query optimizer rules for Java calling convention.
  */
 
+<<<<<<<< HEAD:core/src/main/java/org/polypheny/db/algebra/enumerable/package-info.java
 package org.polypheny.db.algebra.enumerable;
+========
+import java.util.Map;
+import org.polypheny.db.catalog.NCatalog;
+import org.polypheny.db.catalog.Snapshot;
+
+public class FullSnapshot implements Snapshot {
+
+
+    public FullSnapshot( Map<Long, NCatalog> catalogs ) {
+
+    }
+
+>>>>>>>> afc600594 (boilerplate for interface of schemaSnapshot):core/src/main/java/org/polypheny/db/algebra/enumerable/FullSnapshot.java
 
