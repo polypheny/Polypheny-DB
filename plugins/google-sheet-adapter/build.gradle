@@ -2,11 +2,12 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":plugins:sql-language")
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":dbms")
 
     implementation 'com.google.api-client:google-api-client:1.33.0'
-    implementation 'com.google.oauth-client:google-oauth-client-jetty:1.32.1'
+    implementation group: 'com.google.oauth-client', name: 'google-oauth-client-jetty', version: oauth_client_version
     implementation 'com.google.apis:google-api-services-sheets:v4-rev20210629-1.32.1'
 
 //     --- Test Compile ---

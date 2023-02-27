@@ -74,10 +74,7 @@ public class GoogleSheetSchema extends AbstractSchema {
             fieldIds.add( (int) placement.physicalPosition );
         }
 
-        String tableName = Catalog
-                .getInstance()
-                .getColumnPlacementsOnAdapterPerTable( googleSheetSource.getAdapterId(), catalogTable.id ).iterator().next()
-                .getLogicalTableName();
+        String tableName = googleSheetSource.sheet;
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         // build table and return later based on what you need for the table

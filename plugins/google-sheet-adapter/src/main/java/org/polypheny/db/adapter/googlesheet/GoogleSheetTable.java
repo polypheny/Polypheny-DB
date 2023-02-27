@@ -102,10 +102,10 @@ public class GoogleSheetTable extends AbstractTable implements QueryableTable, T
     public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( googleSheetSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
-                return new GoogleSheetEnumerator<>( sheetsUrl, querySize, tableName, cancelFlag, fieldTypes, fields );
+                return new GoogleSheetEnumerator<>( sheetsUrl, querySize, tableName, cancelFlag, fieldTypes, fields, Pair.of( googleSheetSource.clientId, googleSheetSource.clientKey ) );
             }
         };
     }

@@ -16,21 +16,42 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets.Details;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.SheetsScopes;
+import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -39,31 +60,46 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 @Slf4j
-@Adapter.AdapterProperties(
+@AdapterProperties(
         name = "GoogleSheets",
         description = "An adapter for querying online Google Sheets, using the Google Sheets Java API. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.REMOTE)
-@Adapter.AdapterSettingString(name = "sheetsURL", description = "The URL of the Google Sheets to query", defaultValue = "https://docs.google.com/spreadsheets/d/1-int7xwx0UyyigB4FLGMOxaCiuHXSNhi09fYSuAIX2Q/edit#gid=0", position = 1)
-@Adapter.AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
+@AdapterSettingString(name = "sheetsURL", description = "The URL of the Google Sheets to query", defaultValue = "https://docs.google.com/spreadsheets/d/1oDSHJkGIvgCfmBoi6oDr6EpjL5d9ntWwRApXCRlXxII/edit#gid=0", position = 1)
+@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-@Adapter.AdapterSettingInteger(name = "querySize", defaultValue = 1000, position = 3,
+@AdapterSettingInteger(name = "querySize", defaultValue = 1000, position = 3,
         description = "How many rows should be queried per network call. Can be larger than number of rows.")
-@Adapter.AdapterSettingString(name = "resetRefreshToken", defaultValue = "No", position = 4, description = "If you want to change the current email used to access the Google Sheet, input \"YES\".")
+@AdapterSettingBoolean(name = "resetRefreshToken", defaultValue = false, position = 4, description = "If you want to change the current email used to access the Google Sheet, input \"YES\".")
+@AdapterSettingString(name = "oAuth-Client-ID", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "", position = 5)
+@AdapterSettingString(name = "oAuth-Client-Key", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "")
+@AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
 public class GoogleSheetSource extends DataSource {
 
+    static final String APPLICATION_NAME = "POLYPHENY GOOGLE SHEET";
+    static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+    static final List<String> SCOPES = Collections.singletonList( SheetsScopes.SPREADSHEETS_READONLY );
+    public final String clientId;
+    public final String clientKey;
+
+    public static final File TOKENS_PATH = PolyphenyHomeDirManager.getInstance().registerNewFolder( "tokens" );
+    public final String sheet;
     private URL sheetsUrl;
-    private int querySize;
+    private final int querySize;
     private GoogleSheetSchema currentSchema;
     private final int maxStringLength;
-    private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
     public GoogleSheetSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 
+        this.clientId = getSettingOrFail( "oAuth-Client-ID", settings );
+        this.clientKey = getSettingOrFail( "oAuth-Client-Key", settings );
+        this.sheet = getSettingOrFail( "sheetName", settings );
         maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
         if ( maxStringLength < 1 ) {
             throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
@@ -77,9 +113,57 @@ public class GoogleSheetSource extends DataSource {
         createInformationPage();
         enableInformationPage();
         if ( settings.get( "resetRefreshToken" ).equalsIgnoreCase( "yes" ) ) {
-            GoogleSheetReader r = new GoogleSheetReader( sheetsUrl, querySize );
+            GoogleSheetReader r = new GoogleSheetReader( sheetsUrl, querySize, Pair.of( clientId, clientKey ) );
             r.deleteToken();
         }
+    }
+
+
+    static Credential getCredentials( Pair<String, String> oAuthIdKey, final NetHttpTransport HTTP_TRANSPORT ) throws IOException {
+        // Load client secrets.
+        GoogleClientSecrets clientSecrets = new GoogleClientSecrets();
+
+        Details details = new Details();
+        details.set( "client_id", oAuthIdKey.getKey() );
+        details.set( "client_secret", oAuthIdKey.getValue() );
+        details.setRedirectUris( List.of(
+                "http://localhost:" + RuntimeConfig.WEBUI_SERVER_PORT,
+                "http://localhost:" + RuntimeConfig.WEBUI_SERVER_PORT + "/Callback",
+                "http://localhost:8888/Callback",
+                "http://localhost:8888" ) );
+        details.set( "auth_provider_x509_cert_url", "https://www.googleapis.com/oauth2/v1/certs" );
+        clientSecrets.setInstalled( details );
+
+        // Build flow and trigger user authorization request.
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES )
+                .setDataStoreFactory( new FileDataStoreFactory( TOKENS_PATH ) )
+                .setAccessType( "offline" )
+                .build();
+        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort( 8888 ).build();
+        AuthorizationCodeInstalledApp auth = new AuthorizationCodeInstalledApp( flow, receiver );
+        return auth.authorize( "user" );
+    }
+
+
+    static Sheets getSheets( Pair<String, String> oAuthIdKey ) {
+        final NetHttpTransport HTTP_TRANSPORT;
+        try {
+            HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+            return new Sheets.Builder( HTTP_TRANSPORT, JSON_FACTORY, getCredentials( oAuthIdKey, HTTP_TRANSPORT ) )
+                    .setApplicationName( APPLICATION_NAME )
+                    .build();
+        } catch ( GeneralSecurityException | IOException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    private String getSettingOrFail( String key, Map<String, String> settings ) {
+        if ( !settings.containsKey( key ) ) {
+            throw new RuntimeException( "Settings do not contain required key: " + key );
+        }
+        return settings.get( key );
     }
 
 
@@ -100,7 +184,6 @@ public class GoogleSheetSource extends DataSource {
 
             InformationTable table = new InformationTable(
                     group,
-                    // Arrays.asList( "Position", "Column Name", "Type", "Primary" ) );
                     Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 table.addRow(
@@ -120,12 +203,9 @@ public class GoogleSheetSource extends DataSource {
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        if ( exportedColumnCache != null ) {
-            return exportedColumnCache;
-        }
 
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
-        GoogleSheetReader reader = new GoogleSheetReader( sheetsUrl, querySize );
+        GoogleSheetReader reader = new GoogleSheetReader( sheetsUrl, querySize, Pair.of( clientId, clientKey ) );
         HashMap<String, List<Object>> tablesData = reader.getTableSurfaceData();
 
         for ( Map.Entry<String, List<Object>> entry : tablesData.entrySet() ) {

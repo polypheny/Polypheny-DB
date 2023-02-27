@@ -51,6 +51,8 @@ dependencies {
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
 
+    // workaround for oauth, uses IOUtils...
+    implementation group: 'com.google.oauth-client', name: 'google-oauth-client-jetty', version: oauth_client_version
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

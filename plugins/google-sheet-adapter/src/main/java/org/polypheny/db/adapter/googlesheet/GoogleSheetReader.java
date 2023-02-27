@@ -16,34 +16,22 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
-import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.GridProperties;
 import com.google.api.services.sheets.v4.model.Sheet;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -51,29 +39,25 @@ import java.util.Objects;
  */
 public class GoogleSheetReader {
 
-    private final String APPLICATION_NAME = "POLYPHENY GOOGLE SHEET READER";
-    private final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-    private final String TOKENS_DIRECTORY_PATH = "google-sheet-adapter/src/main/resources/tokens";
-    private final List<String> SCOPES = Collections.singletonList( SheetsScopes.SPREADSHEETS_READONLY );
-    private final String CREDENTIALS_FILE_PATH = "/credentials.json";
-
 
     private final URL url;
     private final int querySize;
-    private HashMap<String, List<Object>> tableSurfaceData = new HashMap<>();
-    private HashMap<String, List<List<Object>>> tableData = new HashMap<>();
-    private HashMap<String, Integer> tableStart = new HashMap<>();
-    private HashMap<String, Integer> tableLeftOffset = new HashMap<>();
-    private HashMap<String, Integer> enumPointer = new HashMap<>();
+    private final Pair<String, String> oAuthIdKey;
+    private final HashMap<String, List<Object>> tableSurfaceData = new HashMap<>();
+    private final HashMap<String, List<List<Object>>> tableData = new HashMap<>();
+    private final HashMap<String, Integer> tableStart = new HashMap<>();
+    private final HashMap<String, Integer> tableLeftOffset = new HashMap<>();
+    private final HashMap<String, Integer> enumPointer = new HashMap<>();
 
 
     /**
      * @param url - url of the Google Sheet to source.
      * @param querySize - size of the query (in case of large files)
      */
-    public GoogleSheetReader( URL url, int querySize ) {
+    public GoogleSheetReader( URL url, int querySize, Pair<String, String> oAuthIdKey ) {
         this.url = url;
         this.querySize = querySize;
+        this.oAuthIdKey = oAuthIdKey;
     }
 
 
@@ -85,12 +69,9 @@ public class GoogleSheetReader {
             return;
         }
         try {
-            final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            final String spreadsheetId = parseUrlToString( url );
 
-            Sheets service = new Sheets.Builder( HTTP_TRANSPORT, JSON_FACTORY, getCredentials( HTTP_TRANSPORT ) )
-                    .setApplicationName( APPLICATION_NAME )
-                    .build();
+            final String spreadsheetId = parseUrlToString( url );
+            Sheets service = GoogleSheetSource.getSheets( oAuthIdKey );
 
             // get the properties of all the sheets
             Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute();
@@ -129,7 +110,7 @@ public class GoogleSheetReader {
                     break;
                 }
             }
-        } catch ( IOException | GeneralSecurityException e ) {
+        } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -143,27 +124,8 @@ public class GoogleSheetReader {
     }
 
 
-    private Credential getCredentials( final NetHttpTransport HTTP_TRANSPORT ) throws IOException {
-        // Load client secrets.
-        InputStream in = GoogleSheetReader.class.getResourceAsStream( CREDENTIALS_FILE_PATH );
-        if ( in == null ) {
-            throw new FileNotFoundException( "Resource not found: " + CREDENTIALS_FILE_PATH );
-        }
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load( JSON_FACTORY, new InputStreamReader( in ) );
-
-        // Build flow and trigger user authorization request.
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES )
-                .setDataStoreFactory( new FileDataStoreFactory( new java.io.File( TOKENS_DIRECTORY_PATH ) ) )
-                .setAccessType( "offline" )
-                .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort( 8888 ).build();
-        return new AuthorizationCodeInstalledApp( flow, receiver ).authorize( "user" );
-    }
-
-
     public void deleteToken() {
-        File file = new File( TOKENS_DIRECTORY_PATH + "/StoredCredential" );
+        File file = new File( GoogleSheetSource.TOKENS_PATH, "/StoredCredential" );
         if ( file.exists() ) {
             file.delete();
         }
@@ -188,8 +150,8 @@ public class GoogleSheetReader {
             final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
             final String spreadsheetId = parseUrlToString( url );
 
-            Sheets service = new Sheets.Builder( HTTP_TRANSPORT, JSON_FACTORY, getCredentials( HTTP_TRANSPORT ) )
-                    .setApplicationName( APPLICATION_NAME )
+            Sheets service = new Sheets.Builder( HTTP_TRANSPORT, GoogleSheetSource.JSON_FACTORY, GoogleSheetSource.getCredentials( oAuthIdKey, HTTP_TRANSPORT ) )
+                    .setApplicationName( GoogleSheetSource.APPLICATION_NAME )
                     .build();
 
             // first query! let's start searching till we find first row.
@@ -197,10 +159,13 @@ public class GoogleSheetReader {
                 Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute(); // get all the sheets
                 Sheet chosen_sheet = new Sheet();
                 for ( Sheet sheet : s.getSheets() ) {
-                    if ( Objects.equals( sheet.getProperties().getTitle(), tableName ) ) {
+                    if ( tableName.equalsIgnoreCase( sheet.getProperties().getTitle() ) ) {
                         chosen_sheet = sheet;
                         break;
                     }
+                }
+                if ( chosen_sheet.isEmpty() ) {
+                    chosen_sheet = s.getSheets().get( 0 );
                 }
 
                 int queryStartRow = 1;
