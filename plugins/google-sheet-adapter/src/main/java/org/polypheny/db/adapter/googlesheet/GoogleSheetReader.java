@@ -48,16 +48,18 @@ public class GoogleSheetReader {
     private final HashMap<String, Integer> tableStart = new HashMap<>();
     private final HashMap<String, Integer> tableLeftOffset = new HashMap<>();
     private final HashMap<String, Integer> enumPointer = new HashMap<>();
+    private final GoogleSheetSource googleSheetSource;
 
 
     /**
      * @param url - url of the Google Sheet to source.
      * @param querySize - size of the query (in case of large files)
      */
-    public GoogleSheetReader( URL url, int querySize, Pair<String, String> oAuthIdKey ) {
+    public GoogleSheetReader( URL url, int querySize, GoogleSheetSource googleSheetSource ) {
         this.url = url;
         this.querySize = querySize;
-        this.oAuthIdKey = oAuthIdKey;
+        this.googleSheetSource = googleSheetSource;
+        this.oAuthIdKey = Pair.of( googleSheetSource.clientId, googleSheetSource.clientKey );
     }
 
 
@@ -71,7 +73,7 @@ public class GoogleSheetReader {
         try {
 
             final String spreadsheetId = parseUrlToString( url );
-            Sheets service = GoogleSheetSource.getSheets( oAuthIdKey );
+            Sheets service = GoogleSheetSource.getSheets( oAuthIdKey, googleSheetSource );
 
             // get the properties of all the sheets
             Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute();
@@ -150,7 +152,7 @@ public class GoogleSheetReader {
             final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
             final String spreadsheetId = parseUrlToString( url );
 
-            Sheets service = new Sheets.Builder( HTTP_TRANSPORT, GoogleSheetSource.JSON_FACTORY, GoogleSheetSource.getCredentials( oAuthIdKey, HTTP_TRANSPORT ) )
+            Sheets service = new Sheets.Builder( HTTP_TRANSPORT, GoogleSheetSource.JSON_FACTORY, GoogleSheetSource.getCredentials( oAuthIdKey, HTTP_TRANSPORT, googleSheetSource ) )
                     .setApplicationName( GoogleSheetSource.APPLICATION_NAME )
                     .build();
 

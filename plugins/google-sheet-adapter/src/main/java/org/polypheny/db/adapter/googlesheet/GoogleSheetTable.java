@@ -105,7 +105,7 @@ public class GoogleSheetTable extends AbstractTable implements QueryableTable, T
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
-                return new GoogleSheetEnumerator<>( sheetsUrl, querySize, tableName, cancelFlag, fieldTypes, fields, Pair.of( googleSheetSource.clientId, googleSheetSource.clientKey ) );
+                return new GoogleSheetEnumerator<>( sheetsUrl, querySize, tableName, cancelFlag, fieldTypes, fields, googleSheetSource );
             }
         };
     }

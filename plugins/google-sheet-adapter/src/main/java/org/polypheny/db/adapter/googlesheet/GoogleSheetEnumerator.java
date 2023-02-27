@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -57,16 +56,16 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
     private E current;
 
 
-    GoogleSheetEnumerator( URL sheetsUrl, int querySize, String tableName, AtomicBoolean cancelFlag, RowConverter<E> rowConverter, Pair<String, String> oAuthIdKey ) {
+    GoogleSheetEnumerator( URL sheetsUrl, int querySize, String tableName, AtomicBoolean cancelFlag, RowConverter<E> rowConverter, GoogleSheetSource googleSheetSource ) {
         this.tableName = tableName;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
-        this.reader = new GoogleSheetReader( sheetsUrl, querySize, oAuthIdKey );
+        this.reader = new GoogleSheetReader( sheetsUrl, querySize, googleSheetSource );
     }
 
 
-    GoogleSheetEnumerator( URL sheetsUrl, int querySize, String tableName, AtomicBoolean cancelFlag, List<GoogleSheetFieldType> fieldTypes, int[] fields, Pair<String, String> oAuthIdKey ) {
-        this( sheetsUrl, querySize, tableName, cancelFlag, (RowConverter<E>) converter( fieldTypes, fields ), oAuthIdKey );
+    GoogleSheetEnumerator( URL sheetsUrl, int querySize, String tableName, AtomicBoolean cancelFlag, List<GoogleSheetFieldType> fieldTypes, int[] fields, GoogleSheetSource googleSheetSource ) {
+        this( sheetsUrl, querySize, tableName, cancelFlag, (RowConverter<E>) converter( fieldTypes, fields ), googleSheetSource );
     }
 
 

@@ -26,7 +26,6 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import java.io.File;
@@ -41,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
@@ -48,6 +49,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.googlesheet.util.PolyphenyTokenStoreFactory;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -93,6 +95,10 @@ public class GoogleSheetSource extends DataSource {
     private GoogleSheetSchema currentSchema;
     private final int maxStringLength;
 
+    @Getter
+    @Setter
+    Credential credentials;
+
 
     public GoogleSheetSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
@@ -113,13 +119,16 @@ public class GoogleSheetSource extends DataSource {
         createInformationPage();
         enableInformationPage();
         if ( settings.get( "resetRefreshToken" ).equalsIgnoreCase( "yes" ) ) {
-            GoogleSheetReader r = new GoogleSheetReader( sheetsUrl, querySize, Pair.of( clientId, clientKey ) );
+            GoogleSheetReader r = new GoogleSheetReader( sheetsUrl, querySize, this );
             r.deleteToken();
         }
     }
 
 
-    static Credential getCredentials( Pair<String, String> oAuthIdKey, final NetHttpTransport HTTP_TRANSPORT ) throws IOException {
+    static Credential getCredentials( Pair<String, String> oAuthIdKey, final NetHttpTransport HTTP_TRANSPORT, GoogleSheetSource googleSheetSource ) throws IOException {
+        if ( googleSheetSource.getCredentials() != null ) {
+            return googleSheetSource.getCredentials();
+        }
         // Load client secrets.
         GoogleClientSecrets clientSecrets = new GoogleClientSecrets();
 
@@ -137,20 +146,21 @@ public class GoogleSheetSource extends DataSource {
         // Build flow and trigger user authorization request.
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                 HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES )
-                .setDataStoreFactory( new FileDataStoreFactory( TOKENS_PATH ) )
+                .setDataStoreFactory( new PolyphenyTokenStoreFactory( TOKENS_PATH ) )// own store, due to plugin system
                 .setAccessType( "offline" )
                 .build();
         LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort( 8888 ).build();
         AuthorizationCodeInstalledApp auth = new AuthorizationCodeInstalledApp( flow, receiver );
-        return auth.authorize( "user" );
+        googleSheetSource.setCredentials( auth.authorize( "user" ) );
+        return googleSheetSource.getCredentials();
     }
 
 
-    static Sheets getSheets( Pair<String, String> oAuthIdKey ) {
+    static Sheets getSheets( Pair<String, String> oAuthIdKey, GoogleSheetSource googleSheetSource ) {
         final NetHttpTransport HTTP_TRANSPORT;
         try {
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            return new Sheets.Builder( HTTP_TRANSPORT, JSON_FACTORY, getCredentials( oAuthIdKey, HTTP_TRANSPORT ) )
+            return new Sheets.Builder( HTTP_TRANSPORT, JSON_FACTORY, getCredentials( oAuthIdKey, HTTP_TRANSPORT, googleSheetSource ) )
                     .setApplicationName( APPLICATION_NAME )
                     .build();
         } catch ( GeneralSecurityException | IOException e ) {
@@ -205,7 +215,7 @@ public class GoogleSheetSource extends DataSource {
     public Map<String, List<ExportedColumn>> getExportedColumns() {
 
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
-        GoogleSheetReader reader = new GoogleSheetReader( sheetsUrl, querySize, Pair.of( clientId, clientKey ) );
+        GoogleSheetReader reader = new GoogleSheetReader( sheetsUrl, querySize, this );
         HashMap<String, List<Object>> tablesData = reader.getTableSurfaceData();
 
         for ( Map.Entry<String, List<Object>> entry : tablesData.entrySet() ) {
