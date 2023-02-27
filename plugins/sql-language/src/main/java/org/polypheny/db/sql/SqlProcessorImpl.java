@@ -154,7 +154,7 @@ public class SqlProcessorImpl extends Processor {
         }
 
         final Conformance conformance = parserConfig.conformance();
-        final PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
+        final PolyphenyDbCatalogReader catalogReader = transaction.getSnapshot();
         validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );
 
@@ -191,14 +191,14 @@ public class SqlProcessorImpl extends Processor {
         Config sqlToAlgConfig = NodeToAlgConverter.configBuilder().build();
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
 
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getRootSchema() );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
         final Config config =
                 NodeToAlgConverter.configBuilder()
                         .config( sqlToAlgConfig )
                         .trimUnusedFields( false )
                         .convertTableAccess( false )
                         .build();
-        final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getSnapshot(), cluster, StandardConvertletTable.INSTANCE, config );
         AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( query, false, true );
 
         // Decorrelate

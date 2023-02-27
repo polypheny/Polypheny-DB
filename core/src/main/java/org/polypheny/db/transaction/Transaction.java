@@ -22,14 +22,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 public interface Transaction {
@@ -48,13 +47,11 @@ public interface Transaction {
 
     List<Adapter> getInvolvedAdapters();
 
-    PolyphenyDbSchema getSchema();
+    Snapshot getSnapshot();
 
     boolean isActive();
 
     JavaTypeFactory getTypeFactory();
-
-    PolyphenyDbCatalogReader getCatalogReader();
 
     Processor getProcessor( QueryLanguage language );
 

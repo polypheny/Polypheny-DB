@@ -1912,4 +1912,6 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract void clear();
 
 
+    public abstract Snapshot getSnapshot( long id );
+
 }

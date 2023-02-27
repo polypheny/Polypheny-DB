@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -55,7 +56,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
     private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
 
-    private AbstractPolyphenyDbSchema current;
+    private Snapshot current;
     private boolean isOutdated = true;
 
 
@@ -69,7 +70,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    public AbstractPolyphenyDbSchema getCurrent() {
+    public Snapshot getCurrent() {
         if ( !RuntimeConfig.SCHEMA_CACHING.getBoolean() ) {
             return buildSchema();
         }
@@ -80,7 +81,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private synchronized AbstractPolyphenyDbSchema buildSchema() {
+    private synchronized Snapshot buildSchema() {
 
         Catalog catalog = Catalog.getInstance();
         CatalogDatabase catalogDatabase = catalog.getDatabase( Catalog.defaultDatabaseId );
@@ -104,7 +105,8 @@ public class PolySchemaBuilder implements PropertyChangeListener {
         Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalGraph = buildPhysicalGraphs( catalog, catalogDatabase );
 
         isOutdated = false;
-        return new SimplePolyphenyDbSchema( logicalRelational, logicalDocument, logicalGraph, physicalRelational, physicalDocument, physicalGraph );
+        return null;
+        //return new SimplePolyphenyDbSchema( logicalRelational, logicalDocument, logicalGraph, physicalRelational, physicalDocument, physicalGraph );
     }
 
 

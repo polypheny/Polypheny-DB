@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.snapshot.logical;
+package org.polypheny.db.catalog.snapshot;
 
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.snapshot.Snapshot;
+import java.util.Map;
+import org.polypheny.db.catalog.NCatalog;
+import org.polypheny.db.catalog.Snapshot;
 
-public interface LogicalSnapshot extends Snapshot {
+public class FullSnapshot implements Snapshot {
 
-    NamespaceType getType();
+
+    public FullSnapshot( Map<Long, NCatalog> catalogs ) {
+
+    }
 
 
 }

@@ -147,7 +147,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
         final AlgOptCluster cluster = AlgOptCluster.createDocument( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
-        final MqlToAlgConverter mqlToAlgConverter = new MqlToAlgConverter( this, statement.getTransaction().getCatalogReader(), cluster );
+        final MqlToAlgConverter mqlToAlgConverter = new MqlToAlgConverter( this, statement.getTransaction().getSnapshot(), cluster );
         AlgRoot logicalRoot = mqlToAlgConverter.convert( mql, parameters );
 
         // Decorrelate

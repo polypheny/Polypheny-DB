@@ -77,13 +77,13 @@ public class PigAlgBuilder extends AlgBuilder {
 
 
     public static PigAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader().getRootSchema() );
+        return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
 
     public static PigAlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, traitSet, rootSchema );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
         return create( statement, cluster );
     }
 

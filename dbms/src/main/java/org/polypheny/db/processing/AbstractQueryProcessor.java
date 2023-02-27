@@ -1168,7 +1168,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             try {
-                CatalogReader.THREAD_LOCAL.set( statement.getTransaction().getCatalogReader() );
+                CatalogReader.THREAD_LOCAL.set( statement.getTransaction().getSnapshot() );
                 final Conformance conformance = statement.getPrepareContext().config().conformance();
 
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();

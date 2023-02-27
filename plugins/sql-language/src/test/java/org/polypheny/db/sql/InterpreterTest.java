@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -78,7 +79,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
 
         @Override
-        public SchemaPlus getRootSchema() {
+        public Snapshot getSnapshot() {
             return rootSchema;
         }
 

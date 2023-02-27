@@ -433,7 +433,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     private void prepareSourceRel( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceRel ) {
         AlgOptCluster cluster = AlgOptCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
-                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ), null, sourceStatement.getDataContext().getRootSchema() );
+                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ), null, sourceStatement.getDataContext().getSnapshot() );
 
         prepareNode( sourceRel, cluster, algCollation );
     }

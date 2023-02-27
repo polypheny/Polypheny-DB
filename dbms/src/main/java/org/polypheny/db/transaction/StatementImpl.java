@@ -89,7 +89,7 @@ public class StatementImpl implements Statement {
             dataContext = new DataContextImpl(
                     new QueryProviderImpl(),
                     map,
-                    transaction.getSchema(),
+                    transaction.getSnapshot(),
                     transaction.getTypeFactory(),
                     this );
         }
@@ -101,7 +101,7 @@ public class StatementImpl implements Statement {
     public ContextImpl getPrepareContext() {
         if ( prepareContext == null ) {
             prepareContext = new ContextImpl(
-                    transaction.getSchema(),
+                    transaction.getSnapshot(),
                     getDataContext(),
                     transaction.getDefaultSchema().name,
                     transaction.getDatabase().id,

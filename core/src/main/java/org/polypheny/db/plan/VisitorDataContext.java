@@ -44,6 +44,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
@@ -51,7 +52,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -72,7 +72,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public PolyphenyDbSchema getRootSchema() {
+    public Snapshot getSnapshot() {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 

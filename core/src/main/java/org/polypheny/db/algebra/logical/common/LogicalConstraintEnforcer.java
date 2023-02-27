@@ -160,8 +160,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             for ( final CatalogForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
-                final LogicalTable scanOptTable = statement.getDataContext().getRootSchema().getTable( foreignKey.tableId );
-                final LogicalTable refOptTable = statement.getDataContext().getRootSchema().getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable scanOptTable = statement.getDataContext().getSnapshot().getTable( foreignKey.tableId );
+                final LogicalTable refOptTable = statement.getDataContext().getSnapshot().getTable( foreignKey.referencedKeyTableId );
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
                 final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 

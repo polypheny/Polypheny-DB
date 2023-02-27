@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -350,7 +351,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
         @Override
-        public SchemaPlus getRootSchema() {
+        public Snapshot getSnapshot() {
             throw new RuntimeException( "Unsupported" );
         }
 

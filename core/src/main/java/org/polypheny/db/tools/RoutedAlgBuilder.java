@@ -28,7 +28,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
@@ -53,7 +52,7 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     public static RoutedAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader().getRootSchema() );
+        return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
 

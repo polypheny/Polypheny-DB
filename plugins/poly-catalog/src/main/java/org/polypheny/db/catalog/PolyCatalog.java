@@ -34,7 +34,7 @@ import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.snapshot.logical.LogicalFullSnapshot;
+import org.polypheny.db.catalog.snapshot.FullSnapshot;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -64,7 +64,7 @@ public class PolyCatalog implements Serializable, CatalogReader {
     public final Map<Long, CatalogUser> users;
 
     private final IdBuilder idBuilder = new IdBuilder();
-    private LogicalFullSnapshot logicalFullSnapshot;
+    private FullSnapshot fullSnapshot;
 
 
     public PolyCatalog() {
@@ -83,7 +83,7 @@ public class PolyCatalog implements Serializable, CatalogReader {
 
 
     private void updateSnapshot() {
-        this.logicalFullSnapshot = new LogicalFullSnapshot( catalogs );
+        this.fullSnapshot = new FullSnapshot( catalogs );
     }
 
 

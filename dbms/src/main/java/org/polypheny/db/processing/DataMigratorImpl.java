@@ -321,12 +321,12 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        AlgOptEntity physical = statement.getTransaction().getSnapshot().getLogicalTable( qualifiedTableName );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getTransaction().getSchema() );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getTransaction().getSnapshot() );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         List<String> columnNames = new LinkedList<>();
@@ -343,7 +343,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
                 physical,
-                statement.getTransaction().getCatalogReader(),
+                statement.getTransaction().getSnapshot(),
                 builder.build(),
                 Modify.Operation.DELETE,
                 null,
@@ -363,12 +363,12 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        AlgOptEntity physical = statement.getTransaction().getSnapshot().getTableForMember( qualifiedTableName );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getRootSchema() );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         // while adapters should be able to handle unsorted columnIds for prepared indexes,
@@ -389,7 +389,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
                 physical,
-                statement.getTransaction().getCatalogReader(),
+                statement.getTransaction().getSnapshot(),
                 builder.build(),
                 Modify.Operation.INSERT,
                 null,
@@ -407,12 +407,12 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptEntity physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        AlgOptEntity physical = statement.getTransaction().getSnapshot().getTableForMember( qualifiedTableName );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getRootSchema() );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
@@ -450,7 +450,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
                 physical,
-                statement.getTransaction().getCatalogReader(),
+                statement.getTransaction().getSnapshot(),
                 builder.build(),
                 Modify.Operation.UPDATE,
                 columnNames,
@@ -473,7 +473,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Build Query
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getRootSchema() );
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 
         AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, placementDistribution );
         return AlgRoot.of( node, Kind.SELECT );

@@ -52,7 +52,7 @@ public class PigRelBuilderTest {
     public static Frameworks.ConfigBuilder config() {
         Transaction transaction = null; // TODO MV: FIX
 
-        final SchemaPlus rootSchema = transaction.getSchema().plus();
+        final SchemaPlus rootSchema = transaction.getSnapshot().plus();
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubNamespace( transaction.getDefaultSchema().name ) )

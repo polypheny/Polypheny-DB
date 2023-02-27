@@ -149,7 +149,7 @@ public class AlgBuilderTest {
 
 
     private AlgBuilder createAlgBuilder() {
-        final PolyphenyDbSchema rootSchema = transaction.getSchema();
+        final PolyphenyDbSchema rootSchema = transaction.getSnapshot();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema )

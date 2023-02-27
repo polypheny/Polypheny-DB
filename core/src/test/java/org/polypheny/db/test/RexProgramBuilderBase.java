@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -59,7 +60,6 @@ import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 
@@ -117,7 +117,7 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public PolyphenyDbSchema getRootSchema() {
+        public Snapshot getSnapshot() {
             return null;
         }
 

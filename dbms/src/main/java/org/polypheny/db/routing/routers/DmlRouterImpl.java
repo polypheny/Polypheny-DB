@@ -33,14 +33,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentScan;
@@ -48,6 +47,7 @@ import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
@@ -67,9 +67,9 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -78,28 +78,27 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.processing.WhereClauseVisitor;
@@ -183,7 +182,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         Map<Long, Object> newParameterValues = new HashMap<>();
         for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
-            CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+            CatalogReader catalogReader = statement.getTransaction().getSnapshot();
 
             // Get placements on store
             List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
@@ -713,7 +712,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId ) {
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
 
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
 
@@ -766,7 +765,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Integer> placements ) {
 
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
 
         List<AlgNode> modifies = new ArrayList<>();
         boolean usedSubstitution = false;
@@ -792,7 +791,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     alg.getCluster(),
                     alg.getTraitSet(),
                     graph,
-                    statement.getTransaction().getCatalogReader(),
+                    statement.getTransaction().getSnapshot(),
                     buildGraphDml( alg.getInput(), statement, adapterId ),
                     alg.operation,
                     alg.ids,
@@ -949,7 +948,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private List<AlgNode> attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, int adapterId ) {
         if ( alg.getInput() instanceof DocumentValues ) {
             // simple value insert
-            AlgNode values = ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getCatalogReader() ).get( 0 );
+            AlgNode values = ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getSnapshot() ).get( 0 );
             return List.of( getModify( collectionTable, values, statement, alg.operation, null, null ) );
         }
 
@@ -970,7 +969,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             case INSERT:
                 if ( alg.getInput() instanceof LpgValues ) {
                     // simple value insert
-                    inputs.addAll( ((LogicalLpgValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getCatalogReader() ) );
+                    inputs.addAll( ((LogicalLpgValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getSnapshot() ) );
                 }
                 if ( alg.getInput() instanceof LpgProject ) {
                     return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
@@ -1335,7 +1334,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private AlgBuilder handleSelectFromOtherTable( RoutedAlgBuilder builder, LogicalTable catalogTable, Statement statement ) {
         LogicalTable fromTable = catalogTable;
         // Select from other table
-        if ( statement.getDataContext().getRootSchema().isPartitioned( fromTable.id )) {
+        if ( statement.getDataContext().getSnapshot().isPartitioned( fromTable.id ) ) {
             throw new UnsupportedOperationException( "DMLs from other partitioned tables is not supported" );
         }
 

@@ -39,26 +39,23 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.ConstraintEnforceAttacher;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -138,8 +135,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public PolyphenyDbSchema getSchema() {
-        return PolySchemaBuilder.getInstance().getCurrent();
+    public Snapshot getSnapshot() {
+        return Catalog.getInstance().getSnapshot( getId() );
     }
 
 
@@ -259,14 +256,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean isActive() {
         return transactionManager.isActive( xid );
-    }
-
-
-    @Override
-    public PolyphenyDbCatalogReader getCatalogReader() {
-        return new PolyphenyDbCatalogReader(
-                getSchema(),
-                getTypeFactory() );
     }
 
 

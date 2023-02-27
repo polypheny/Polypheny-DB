@@ -38,9 +38,9 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -156,7 +156,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getSnapshot();
         PreparingEntity table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getNamespaceName(), resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
@@ -215,7 +215,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getSnapshot();
         PreparingEntity table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
@@ -268,7 +268,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getSnapshot();
         PreparingEntity table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).name ) );
 
         // Values

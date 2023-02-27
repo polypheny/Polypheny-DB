@@ -93,7 +93,7 @@ public class CypherToAlgConverter {
 
 
     public CypherToAlgConverter( Statement statement, AlgBuilder builder, RexBuilder rexBuilder, AlgOptCluster cluster ) {
-        this.catalogReader = statement.getTransaction().getCatalogReader();
+        this.catalogReader = statement.getTransaction().getSnapshot();
         this.statement = statement;
         this.algBuilder = builder;
         this.rexBuilder = rexBuilder;

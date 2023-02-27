@@ -411,7 +411,7 @@ public abstract class BaseRouter implements Router {
 
 
     public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Integer placementId ) {
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
 
         Catalog catalog = Catalog.getInstance();
 
@@ -478,7 +478,7 @@ public abstract class BaseRouter implements Router {
         List<Pair<String, AlgNode>> scans = collections.stream()
                 .map( t -> {
                     RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
-                    LogicalCollection collection = statement.getTransaction().getCatalogReader().getRootSchema().getCollection( List.of( t.getNamespaceName(), t.name ) );
+                    LogicalCollection collection = statement.getTransaction().getSnapshot().getCollection( List.of( t.getNamespaceName(), t.name ) );
                     AlgNode scan = algBuilder.documentScan( collection ).build();
                     routeDocument( algBuilder, (AlgNode & DocumentAlg) scan, statement );
                     return Pair.of( t.name, algBuilder.build() );
@@ -495,10 +495,10 @@ public abstract class BaseRouter implements Router {
     public AlgNode getRelationalScan( LogicalLpgScan alg, int adapterId, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
 
-        PhysicalTable nodesTable = statement.getDataContext().getRootSchema().getTable(  mapping.nodesId ).unwrap( PhysicalTable.class );
-        PhysicalTable nodePropertiesTable = statement.getDataContext().getRootSchema().getTable(  mapping.nodesPropertyId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgesTable = statement.getDataContext().getRootSchema().getTable(  mapping.edgesId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgePropertiesTable = statement.getDataContext().getRootSchema().getTable(  mapping.edgesPropertyId ).unwrap( PhysicalTable.class );
+        PhysicalTable nodesTable = statement.getDataContext().getSnapshot().getTable( mapping.nodesId ).unwrap( PhysicalTable.class );
+        PhysicalTable nodePropertiesTable = statement.getDataContext().getSnapshot().getTable( mapping.nodesPropertyId ).unwrap( PhysicalTable.class );
+        PhysicalTable edgesTable = statement.getDataContext().getSnapshot().getTable( mapping.edgesId ).unwrap( PhysicalTable.class );
+        PhysicalTable edgePropertiesTable = statement.getDataContext().getSnapshot().getTable( mapping.edgesPropertyId ).unwrap( PhysicalTable.class );
 
         AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );
 
@@ -520,7 +520,7 @@ public abstract class BaseRouter implements Router {
                 ),
                 nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
 
-        return statement.getDataContext().getRootSchema().getTable( qualifiedTableName );
+        return statement.getDataContext().getSnapshot().getTable( qualifiedTableName );
     }
 
 
@@ -542,7 +542,7 @@ public abstract class BaseRouter implements Router {
 
     protected RoutedAlgBuilder handleDocumentScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder, Integer adapterId ) {
         Catalog catalog = Catalog.getInstance();
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
 
         if ( alg.entity.namespaceType != NamespaceType.DOCUMENT ) {
             if ( alg.entity.namespaceType == NamespaceType.GRAPH ) {

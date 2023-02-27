@@ -524,10 +524,10 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     @Nullable
     private AlgNode getQueryNode( QueryResult queryResult, NodeType nodeType ) {
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
         AlgBuilder relBuilder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = relBuilder.getRexBuilder();
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getRootSchema() );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
 
         AlgNode queryNode;
         LogicalRelScan tableScan = getLogicalScan( queryResult.getEntity().id, reader, cluster );

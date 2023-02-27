@@ -30,8 +30,8 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Holder;
 
@@ -42,7 +42,9 @@ import org.polypheny.db.util.Holder;
 public class DataContextImpl implements DataContext {
 
     private final Map<String, Object> map;
-    private final PolyphenyDbSchema rootSchema;
+
+    @Getter
+    private final Snapshot snapshot;
     @Getter
     private final QueryProvider queryProvider;
     @Getter
@@ -67,10 +69,10 @@ public class DataContextImpl implements DataContext {
     private boolean isMixedModel = false;
 
 
-    private DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, Object>> parameterValues ) {
+    private DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, Object>> parameterValues ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
-        this.rootSchema = rootSchema;
+        this.snapshot = snapshot;
         this.statement = statement;
         this.map = getMedaInfo( parameters );
         this.parameterTypes = parameterTypes;
@@ -79,8 +81,8 @@ public class DataContextImpl implements DataContext {
     }
 
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
-        this( queryProvider, parameters, rootSchema, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
+    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
+        this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
     }
 
 
@@ -174,7 +176,7 @@ public class DataContextImpl implements DataContext {
     @Override
     public DataContext switchContext() {
         if ( otherParameterValues.containsKey( i ) ) {
-            return new DataContextImpl( queryProvider, map, rootSchema, typeFactory, statement, parameterTypes, otherParameterValues.get( i++ ) );
+            return new DataContextImpl( queryProvider, map, snapshot, typeFactory, statement, parameterTypes, otherParameterValues.get( i++ ) );
         }
         return this;
     }
@@ -195,12 +197,6 @@ public class DataContextImpl implements DataContext {
         } else {
             parameterValues = new ArrayList<>();
         }
-    }
-
-
-    @Override
-    public PolyphenyDbSchema getRootSchema() {
-        return rootSchema;
     }
 
 
