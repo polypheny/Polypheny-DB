@@ -52,7 +52,7 @@ dependencies {
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
 
     // workaround for oauth, uses IOUtils...
-    implementation group: 'com.google.oauth-client', name: 'google-oauth-client-jetty', version: oauth_client_version
+    implementation group: 'com.google.oauth-client', name: 'google-oauth-client-jetty', version: oauth_client_version // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -159,6 +159,7 @@ licensee {
 
     // transitive
     allowDependency('org.yaml', 'snakeyaml', '1.15') { because 'Apache 2.0 license' }
+    allowDependency('org.checkerframework', 'checker-compat-qual', '2.5.5') { because 'Dual License MIT ' }
 }
 
 compileJava {

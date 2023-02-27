@@ -86,6 +86,7 @@ licensee {
     allowDependency('org.javassist', 'javassist', '3.28.0-GA') { because 'Apache 2.0 license' }
     allowDependency('org.reflections', 'reflections', '0.10.2') { because 'Apache 2.0 license' }
     allowDependency('org.yaml', 'snakeyaml', '1.15') { because 'Apache 2.0 license' }
+    allowDependency('org.checkerframework', 'checker-compat-qual', '2.5.5') { because 'Dual License MIT ' }
 
     allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
