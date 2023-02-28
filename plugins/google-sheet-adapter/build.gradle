@@ -1,0 +1,48 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":dbms")
+
+    implementation group: "com.google.api-client", name: "google-api-client", version: google_api_client_version
+    implementation group: "com.google.oauth-client", name: "google-oauth-client-jetty", version: oauth_client_version
+    implementation group: "com.google.apis", name: "google-api-services-sheets", version: google_api_sheets_version
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+}
+
+
+compileJava {
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+    allow('MIT')
+}
