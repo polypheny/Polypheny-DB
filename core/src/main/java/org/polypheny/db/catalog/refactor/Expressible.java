@@ -17,9 +17,14 @@
 package org.polypheny.db.catalog.refactor;
 
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 
 public interface Expressible {
 
     Expression asExpression();
+
+    default Expression asExpression( Class<?> clazz ) {
+        return Expressions.typeAs( asExpression(), clazz );
+    }
 
 }
