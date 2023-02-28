@@ -49,7 +49,7 @@ public class GoogleSheetSourceTest {
                 settings.put( "mode", "remote" );
                 settings.put( "resetRefreshToken", "No" );
                 Gson gson = new Gson();
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"googlesheetunit\" USING 'GoogleSheets' AS 'Source' WITH '" + gson.toJson( settings ) + "'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"googlesheetunit\" USING 'GoogleSheets' AS SOURCE WITH '" + gson.toJson( settings ) + "'" );
             }
         }
     }

@@ -39,7 +39,6 @@ import org.polypheny.db.util.Pair;
  */
 public class GoogleSheetReader {
 
-
     private final URL url;
     private final int querySize;
     private final Pair<String, String> oAuthIdKey;
@@ -52,8 +51,8 @@ public class GoogleSheetReader {
 
 
     /**
-     * @param url - url of the Google Sheet to source.
-     * @param querySize - size of the query (in case of large files)
+     * @param url URL of the Google Sheet to source.
+     * @param querySize Size of the query (in case of large files)
      */
     public GoogleSheetReader( URL url, int querySize, GoogleSheetSource googleSheetSource ) {
         this.url = url;
@@ -71,11 +70,10 @@ public class GoogleSheetReader {
             return;
         }
         try {
-
             final String spreadsheetId = parseUrlToString( url );
             Sheets service = GoogleSheetSource.getSheets( oAuthIdKey, googleSheetSource );
 
-            // get the properties of all the sheets
+            // Get the properties of all the sheets
             Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute();
 
             for ( Sheet sheet : s.getSheets() ) {
@@ -131,7 +129,6 @@ public class GoogleSheetReader {
         if ( file.exists() ) {
             file.delete();
         }
-
     }
 
 
@@ -156,7 +153,7 @@ public class GoogleSheetReader {
                     .setApplicationName( GoogleSheetSource.APPLICATION_NAME )
                     .build();
 
-            // first query! let's start searching till we find first row.
+            // First query! let's start searching till we find first row.
             if ( !tableStart.containsKey( tableName ) ) {
                 Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute(); // get all the sheets
                 Sheet chosen_sheet = new Sheet();
@@ -172,7 +169,7 @@ public class GoogleSheetReader {
 
                 int queryStartRow = 1;
                 while ( true ) {
-                    // nothing in sheet
+                    // Nothing in sheet
                     if ( queryStartRow > chosen_sheet.getProperties().getGridProperties().getRowCount() ) {
                         tableStart.put( tableName, -1 );
                         return;
@@ -208,7 +205,7 @@ public class GoogleSheetReader {
                     }
 
                     // TODO: optimize this
-                    // add the remaining data to tableData
+                    // Add the remaining data to tableData
                     for ( int i = firstRowIndex; i < values.size(); i++ ) {
                         List<Object> fullRow = values.get( i );
                         List<Object> trueRow = fullRow.subList( tableLeftOffset.get( tableName ), fullRow.size() );
@@ -223,12 +220,10 @@ public class GoogleSheetReader {
                     }
 
                     break;
-
                 }
             } else if ( tableStart.get( tableName ) == -1 ) { // end of document already
                 return;
             } else { // begin getting from
-
                 Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute(); // get all the sheets
                 Sheet chosen_sheet = new Sheet();
                 for ( Sheet sheet : s.getSheets() ) {
@@ -265,7 +260,7 @@ public class GoogleSheetReader {
                 }
                 tableData.put( tableName, currData );
 
-                // final check: if the current data that we have is smaller than our query, we reached
+                // Final check: if the current data that we have is smaller than our query, we reached
                 // the end, so we set our start to -1.
                 if ( values.size() < querySize ) {
                     tableStart.put( tableName, -1 );
@@ -288,7 +283,7 @@ public class GoogleSheetReader {
             readTable( tableName );
         }
 
-        // still true, so we've reached the end of the google sheet
+        // Still true, so we've reached the end of the google sheet
         if ( tableData.get( tableName ).size() <= enumPointer.get( tableName ) ) {
             return null;
         }

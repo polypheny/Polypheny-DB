@@ -109,7 +109,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
 
 
     /**
-     * Doesn't need to do any thing to close
+     * Doesn't need to do anything to close
      */
     @Override
     public void close() {
@@ -136,37 +136,43 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
                         return null;
                     }
                     return Boolean.parseBoolean( string );
+
                 case BYTE:
                     if ( string.length() == 0 ) {
                         return null;
                     }
                     return Byte.parseByte( string );
+
                 case SHORT:
                     if ( string.length() == 0 ) {
                         return null;
                     }
                     return Short.parseShort( string );
+
                 case INT:
                     if ( string.length() == 0 ) {
                         return null;
                     }
                     return Integer.parseInt( string );
+
                 case LONG:
                     if ( string.length() == 0 ) {
                         return null;
                     }
-
                     return new BigInteger( string );
+
                 case FLOAT:
                     if ( string.length() == 0 ) {
                         return null;
                     }
                     return Float.parseFloat( string );
+
                 case DOUBLE:
                     if ( string.length() == 0 ) {
                         return null;
                     }
                     return Double.parseDouble( string );
+
                 case DATE:
                     if ( string.length() == 0 ) {
                         return null;
@@ -177,6 +183,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
                     } catch ( ParseException e ) {
                         return null;
                     }
+
                 case TIME:
                     if ( string.length() == 0 ) {
                         return null;
@@ -187,6 +194,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
                     } catch ( ParseException e ) {
                         return null;
                     }
+
                 case TIMESTAMP:
                     if ( string.length() == 0 ) {
                         return null;
@@ -197,6 +205,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
                     } catch ( Exception e ) {
                         return null;
                     }
+
                 case STRING:
                 default:
                     return string;
@@ -213,7 +222,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
 
         private final GoogleSheetFieldType[] fieldTypes;
         private final int[] fields;
-        // whether the row to convert is from a stream
+        // Whether the row to convert is from a stream
         private final boolean stream;
 
 
@@ -250,7 +259,6 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
                 } else {
                     objects[i] = convert( fieldTypes[i], "" );
                 }
-
             }
             return objects;
         }
