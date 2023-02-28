@@ -301,13 +301,13 @@ public class SchemaExtractor {
      */
     void execute(long[] namespaceIds, String[] namespaceNames) {
 
-        JsonArrayBuilder inputBuilder = Json.createArrayBuilder();
+        JsonObjectBuilder inputBuilder = Json.createObjectBuilder();
 
         int i;
         for (i = 0; i < namespaceIds.length; i++) {
             // Build input
-            String inputJsonStr = buildInput(namespaceIds[i], namespaceNames[i]);
-            inputBuilder.add(inputJsonStr);
+            JsonObjectBuilder namespaceJson = buildInput(namespaceIds[i], namespaceNames[i]);
+            inputBuilder.add(namespaceNames[i], namespaceJson);
         }
 
         String inputJsonStrs = inputBuilder.build().toString();
@@ -324,7 +324,7 @@ public class SchemaExtractor {
      * @param namespaceName
      * @return A JSON string
      */
-    private String buildInput(long namespaceId, String namespaceName) {
+    private JsonObjectBuilder buildInput(long namespaceId, String namespaceName) {
         Catalog catalog = Catalog.getInstance();
         CatalogSchema catalogSchema = catalog.getSchema(namespaceId);
         JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder()
@@ -435,7 +435,8 @@ public class SchemaExtractor {
                 break;
         }
         jsonObjectBuilder.add( "tables", tablesBuilder );
-        return jsonObjectBuilder.build().toString();
+        return jsonObjectBuilder;
+        //return jsonObjectBuilder.build().toString();
     }
 
 
@@ -588,7 +589,7 @@ public class SchemaExtractor {
             Server.broadcastMessage("Server", "valentineParameters", sampleSize);
             return "Successfully set valentine parameters!";
         }).withParameters("valentineParameters");
-        setValentineAlgo.setOrder(10);
+        setValentineParameters.setOrder(10);
         im.registerInformation(setValentineParameters);
 
 //        InformationGroup groundTruthGroup = new InformationGroup(page, "Ground Truth").setOrder(6);
