@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import org.pf4j.Plugin;

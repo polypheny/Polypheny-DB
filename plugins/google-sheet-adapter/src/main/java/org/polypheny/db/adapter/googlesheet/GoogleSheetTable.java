@@ -16,11 +16,6 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
-/**
- * Questions:
- * - What is protoRowType?
- */
-
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
