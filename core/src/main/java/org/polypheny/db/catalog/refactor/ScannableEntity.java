@@ -16,6 +16,14 @@
 
 package org.polypheny.db.catalog.refactor;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.adapter.DataContext;
+
 public interface ScannableEntity {
+
+    Enumerable<Object[]> scan( DataContext dataContext );
 
 }
