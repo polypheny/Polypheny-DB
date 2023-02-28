@@ -41,7 +41,6 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -107,8 +106,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public JdbcEntity createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable ) {
-        return currentJdbcSchema.createJdbcTable( logicalTable, allocationTable, physicalTable );
+    public JdbcEntity createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
+        return currentJdbcSchema.createJdbcTable( logicalTable, allocationTable );
     }
 
 

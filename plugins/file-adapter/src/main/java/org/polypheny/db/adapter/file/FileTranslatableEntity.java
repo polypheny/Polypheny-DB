@@ -18,8 +18,6 @@ package org.polypheny.db.adapter.file;
 
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,6 +30,7 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
@@ -64,9 +63,9 @@ public class FileTranslatableEntity extends PhysicalTable implements Translatabl
 
     public FileTranslatableEntity(
             final FileSchema fileSchema,
-            final AllocationTable allocationTable,
+            LogicalTable logicalTable, final AllocationTable allocationTable,
             final List<Long> pkIds ) {
-        super( allocationTable );
+        super( allocationTable, logicalTable.name, logicalTable.getNamespaceName(), logicalTable.getColumnNames() );
         this.fileSchema = fileSchema;
         this.rootDir = fileSchema.getRootDir();
         this.adapterId = (long) fileSchema.getAdapterId();

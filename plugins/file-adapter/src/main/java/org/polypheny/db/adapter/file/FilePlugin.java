@@ -184,7 +184,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
             return currentSchema.createFileTable( logical, allocationTable );
         }
 
@@ -196,32 +196,17 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createPhysicalTable( Context context, LogicalTable catalogTable, AllocationTable allocationTable ) {
+        public PhysicalTable createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-            for ( long partitionId : partitionIds ) {
-                catalog.updatePartitionPlacementPhysicalNames(
-                        getAdapterId(),
-                        partitionId,
-                        "unused",
-                        "unused" );
-
-                for ( Long colId : catalogTable.fieldIds ) {
-                    File newColumnFolder = getColumnFolder( colId, partitionId );
-                    if ( !newColumnFolder.mkdir() ) {
-                        throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
-                    }
+            for ( Long colId : logicalTable.fieldIds ) {
+                File newColumnFolder = getColumnFolder( colId, allocationTable.id );
+                if ( !newColumnFolder.mkdir() ) {
+                    throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
                 }
             }
 
-            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
-                catalog.updateColumnPlacementPhysicalNames(
-                        getAdapterId(),
-                        placement.columnId,
-                        "unused",
-                        "unused",
-                        true );
-            }
+            return this.currentSchema.createFileTable( logicalTable, allocationTable );
         }
 
 

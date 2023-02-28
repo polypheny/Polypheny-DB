@@ -93,7 +93,7 @@ public class MonetdbSource extends AbstractJdbcSource {
 
 
     @Override
-    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
         return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 

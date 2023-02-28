@@ -68,8 +68,8 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -240,8 +240,8 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable ) {
-            return currentSchema.createTable( logicalTable, allocationTable, physicalTable );
+        public PhysicalTable createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
+            return currentSchema.createTable( logicalTable, allocationTable );
         }
 
 
@@ -306,17 +306,17 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createPhysicalTable( Context context, LogicalTable catalogTable, AllocationTable allocationTable ) {
+        public PhysicalTable createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable ) {
             commitAll();
 
             if ( this.currentSchema == null ) {
-                createNewSchema( null, catalogTable.getNamespaceName(), catalogTable.namespaceId );
+                createNewSchema( null, logicalTable.getNamespaceName(), logicalTable.namespaceId );
             }
 
-            String physicalTableName = getPhysicalTableName( catalogTable.id, allocationTable.id );
+            String physicalTableName = getPhysicalTableName( logicalTable.id, allocationTable.id );
             this.currentSchema.database.createCollection( physicalTableName );
 
-            return new PhysicalTable( allocationTable, catalogTable.getNamespaceName(), physicalTableName, allocationTable.getColumns().values().stream().map( this::getPhysicalColumnName ).collect( Collectors.toList() ) );
+            return this.currentSchema.createTable( logicalTable, allocationTable );
         }
 
 

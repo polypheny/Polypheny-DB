@@ -133,7 +133,7 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
         return currentSchema.createCsvTable( logical, allocationTable, this );
     }
 

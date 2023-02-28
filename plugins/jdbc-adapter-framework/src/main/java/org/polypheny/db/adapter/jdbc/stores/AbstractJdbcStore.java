@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
@@ -137,7 +136,8 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         }
         executeUpdate( query, context );
 
-        return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
+        return this.currentJdbcSchema.createJdbcTable( logicalTable, allocationTable );
+        //return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
     }
 
 
@@ -406,7 +406,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     }
 
 
-    protected String getPhysicalTableName( long tableId, long partitionId ) {
+    public String getPhysicalTableName( long tableId, long partitionId ) {
         String physicalTableName = "tab" + tableId;
         if ( partitionId >= 0 ) {
             physicalTableName += "_part" + partitionId;
@@ -415,7 +415,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     }
 
 
-    protected String getPhysicalColumnName( long columnId ) {
+    public String getPhysicalColumnName( long columnId ) {
         return "col" + columnId;
     }
 
@@ -425,6 +425,6 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     }
 
 
-    protected abstract String getDefaultPhysicalSchemaName();
+    public abstract String getDefaultPhysicalSchemaName();
 
 }

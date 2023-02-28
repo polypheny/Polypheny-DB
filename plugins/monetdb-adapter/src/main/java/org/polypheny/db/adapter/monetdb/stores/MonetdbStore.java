@@ -230,7 +230,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
         return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 

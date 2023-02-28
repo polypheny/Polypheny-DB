@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.file;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,27 +31,17 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 public class FileStoreSchema extends AbstractNamespace implements FileSchema, Schema {
@@ -89,21 +78,20 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
 
 
     public PhysicalTable createFileTable(
-            LogicalTable catalogTable,
+            LogicalTable logicalTable,
             AllocationTable allocationTable ) {
         List<Long> pkIds;
-        if ( catalogTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        if ( logicalTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( logicalTable.primaryKey );
             pkIds = primaryKey.columnIds;
         } else {
             pkIds = new ArrayList<>();
         }
-        FileTranslatableEntity table = new FileTranslatableEntity(
+        return new FileTranslatableEntity(
                 this,
+                logicalTable,
                 allocationTable,
                 pkIds );
-        tables.put( catalogTable.name + "_" + allocationTable.id, table );
-        return table;
     }
 
 

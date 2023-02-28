@@ -41,7 +41,6 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTrait;
@@ -50,7 +49,7 @@ import org.polypheny.db.schema.ModelTrait;
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
-public class JdbcScan extends RelScan implements JdbcAlg {
+public class JdbcScan extends RelScan<JdbcEntity> implements JdbcAlg {
 
     protected final JdbcEntity jdbcTable;
 
@@ -61,17 +60,16 @@ public class JdbcScan extends RelScan implements JdbcAlg {
     }
 
 
-    public JdbcScan( AlgOptCluster cluster, AlgOptEntity table, JdbcEntity jdbcTable, JdbcConvention jdbcConvention ) {
-        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), table );
+    public JdbcScan( AlgOptCluster cluster, JdbcEntity jdbcTable, JdbcConvention jdbcConvention ) {
+        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), jdbcTable );
         this.jdbcTable = jdbcTable;
-        assert jdbcTable != null;
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new JdbcScan( getCluster(), table, jdbcTable, (JdbcConvention) getConvention() );
+        return new JdbcScan( getCluster(), entity, (JdbcConvention) getConvention() );
     }
 
 

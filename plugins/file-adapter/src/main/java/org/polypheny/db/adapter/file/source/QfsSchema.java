@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.file.source;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,25 +35,15 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
@@ -100,7 +89,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
         }
         FileTranslatableEntity table = new FileTranslatableEntity(
                 this,
-                allocationTable,
+                logicalTable, allocationTable,
                 pkIds );
         tableMap.put( logicalTable.name + "_" + allocationTable.name, table );
         return table;

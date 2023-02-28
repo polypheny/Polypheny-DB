@@ -84,7 +84,6 @@ import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.refactor.QueryableEntity;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -117,23 +116,26 @@ public class MongoEntity extends PhysicalTable implements TranslatableEntity, Mo
 
     public final LogicalTable logical;
     public final AllocationTable allocation;
-    public final PhysicalTable physical;
 
 
     /**
      * Creates a MongoTable.
      */
-    MongoEntity( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable, MongoSchema schema, TransactionProvider transactionProvider ) {
-        super( physicalTable );
-        this.collectionName = physicalTable.name;
+    MongoEntity( LogicalTable logicalTable, AllocationTable allocationTable, MongoSchema schema, TransactionProvider transactionProvider ) {
+        super( allocationTable, MongoStore.getPhysicalTableName( logicalTable.id, allocationTable.id ), logicalTable.name, getColumnNames( allocationTable ) );
+        this.collectionName = name;
         this.transactionProvider = transactionProvider;
         this.logical = logicalTable;
         this.allocation = allocationTable;
-        this.physical = physicalTable;
         this.catalogCollection = null;
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = allocation.adapterId;
+    }
+
+
+    private static List<String> getColumnNames( AllocationTable allocationTable ) {
+        return allocationTable.getColumns().values().stream().map( c -> MongoStore.getPhysicalColumnName( c.name, c.id ) ).collect( Collectors.toList() );
     }
 
 

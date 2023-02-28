@@ -497,7 +497,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
             return this.currentSchema.createTable( allocationTable );
         }
 

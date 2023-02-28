@@ -89,7 +89,7 @@ public class Qfs extends DataSource {
 
 
     @Override
-    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocation, PhysicalTable physicalTable ) {
+    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocation ) {
         return currentSchema.createFileTable( logical, allocation );
     }
 

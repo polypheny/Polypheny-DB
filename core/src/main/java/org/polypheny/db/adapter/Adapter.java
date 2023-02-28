@@ -324,7 +324,8 @@ public abstract class Adapter {
 
     public abstract void createNewSchema( Snapshot snapshot, String name, long id );
 
-    public abstract PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable );
+    @Deprecated
+    public abstract PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable );
 
     public abstract Namespace getCurrentSchema();
 

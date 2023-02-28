@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,32 +45,32 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
 import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -93,11 +92,10 @@ import org.polypheny.db.util.Util;
  * applying Queryable operators such as {@link org.apache.calcite.linq4j.Queryable#where(org.apache.calcite.linq4j.function.Predicate2)}.
  * The resulting queryable can then be converted to a SQL query, which can be executed efficiently on the JDBC server.
  */
-public class JdbcEntity extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableEntity {
+public class JdbcEntity extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableEntity, QueryableEntity {
 
     private final AllocationTable allocation;
     private final LogicalTable logical;
-    private final PhysicalTable physical;
     private JdbcSchema jdbcSchema;
 
     private final TableType jdbcTableType;
@@ -107,21 +105,40 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
             JdbcSchema jdbcSchema,
             LogicalTable logicalTable,
             AllocationTable allocationTable,
-            PhysicalTable physicalTable,
             @NonNull TableType jdbcTableType ) {
-        super( physicalTable );
+        super(
+                allocationTable,
+                getPhysicalTableName( jdbcSchema.adapter, logicalTable, allocationTable ),
+                getPhysicalSchemaName( jdbcSchema.adapter ),
+                getPhysicalColumnNames( jdbcSchema.adapter, allocationTable ) );
         this.logical = logicalTable;
         this.allocation = allocationTable;
-        this.physical = physicalTable;
         this.jdbcSchema = jdbcSchema;
         this.jdbcTableType = jdbcTableType;
     }
 
 
-    public String toString() {
-        return "JdbcTable {" + physical.namespaceName + "." + physical.name + "}";
+    private static List<String> getPhysicalColumnNames( Adapter adapter, AllocationTable allocationTable ) {
+        AbstractJdbcStore store = (AbstractJdbcStore) adapter;
+        return allocationTable.getColumns().values().stream().map( c -> store.getPhysicalColumnName( c.id ) ).collect( Collectors.toList() );
     }
 
+
+    private static String getPhysicalSchemaName( Adapter adapter ) {
+        AbstractJdbcStore store = (AbstractJdbcStore) adapter;
+        return store.getDefaultPhysicalSchemaName();
+    }
+
+
+    private static String getPhysicalTableName( Adapter adapter, LogicalTable logicalTable, AllocationTable allocationTable ) {
+        AbstractJdbcStore store = (AbstractJdbcStore) adapter;
+        return store.getPhysicalTableName( logicalTable.id, allocationTable.id );
+    }
+
+
+    public String toString() {
+        return "JdbcTable {" + namespaceName + "." + name + "}";
+    }
 
 
     private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
@@ -137,12 +154,12 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
     SqlString generateSql() {
         List<SqlNode> pcnl = Expressions.list();
-        for ( String str : physical.columnNames ) {
-            pcnl.add( new SqlIdentifier( Arrays.asList( physical.name, str ), ParserPos.ZERO ) );
+        for ( String str : columnNames ) {
+            pcnl.add( new SqlIdentifier( Arrays.asList( name, str ), ParserPos.ZERO ) );
         }
 
         final SqlNodeList selectList = new SqlNodeList( pcnl, ParserPos.ZERO );
-        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physical.namespaceName, physical.name ), ParserPos.ZERO );
+        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( namespaceName, name ), ParserPos.ZERO );
         SqlSelect node = new SqlSelect(
                 ParserPos.ZERO,
                 SqlNodeList.EMPTY,
@@ -162,28 +179,28 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     public SqlIdentifier physicalTableName() {
-        return new SqlIdentifier( Arrays.asList( physical.namespaceName, physical.name ), ParserPos.ZERO );
+        return new SqlIdentifier( Arrays.asList( namespaceName, name ), ParserPos.ZERO );
     }
 
 
     public SqlIdentifier physicalColumnName( String logicalColumnName ) {
-        String physicalName = physicalColumnNames.get( logicalColumnNames.indexOf( logicalColumnName ) );
+        String physicalName = columnNames.get( List.copyOf( allocation.getColumnNames().values() ).indexOf( logicalColumnName ) );
         return new SqlIdentifier( Collections.singletonList( physicalName ), ParserPos.ZERO );
     }
 
 
     public boolean hasPhysicalColumnName( String logicalColumnName ) {
-        return logicalColumnNames.contains( logicalColumnName );
+        return List.copyOf( allocation.getColumnNames().values() ).contains( logicalColumnName );
     }
 
 
     public SqlNodeList getNodeList() {
         List<SqlNode> pcnl = Expressions.list();
         int i = 0;
-        for ( String str : physicalColumnNames ) {
+        for ( String str : columnNames ) {
             SqlNode[] operands = new SqlNode[]{
-                    new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), ParserPos.ZERO ),
-                    new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), ParserPos.ZERO )
+                    new SqlIdentifier( Arrays.asList( namespaceName, name, str ), ParserPos.ZERO ),
+                    new SqlIdentifier( Collections.singletonList( List.copyOf( allocation.getColumnNames().values() ).get( i++ ) ), ParserPos.ZERO )
             };
             pcnl.add( new SqlBasicCall( (SqlOperator) OperatorRegistry.get( OperatorName.AS ), operands, ParserPos.ZERO ) );
         }
@@ -192,14 +209,14 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
-        return new JdbcScan( context.getCluster(), algOptEntity, this, jdbcSchema.getConvention() );
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
+        return new JdbcScan( context.getCluster(), this, jdbcSchema.getConvention() );
     }
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-        return new JdbcTableQueryable<>( dataContext, schema, tableName );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId ) {
+        return new JdbcTableQueryable<>( dataContext, snapshot, this );
     }
 
 
@@ -215,26 +232,22 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     @Override
-    public RelModify toModificationAlg(
+    public Modify<?> toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
+            AlgTraitSet algTraits,
+            CatalogEntity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened ) {
+            List<? extends RexNode> sourceExpressionList ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalRelModify(
-                cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,
-                catalogReader,
                 input,
                 operation,
                 updateColumnList,
-                sourceExpressionList,
-                flattened );
+                sourceExpressionList );
     }
 
 
@@ -256,14 +269,14 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
      */
     private class JdbcTableQueryable<T> extends AbstractTableQueryable<T, JdbcEntity> {
 
-        JdbcTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-            super( dataContext, schema, JdbcEntity.this, tableName );
+        JdbcTableQueryable( DataContext dataContext, Snapshot snapshot, JdbcEntity entity ) {
+            super( dataContext, snapshot, entity );
         }
 
 
         @Override
         public String toString() {
-            return "JdbcTableQueryable {table: " + physicalSchemaName + "." + tableName + "}";
+            return "JdbcTableQueryable {table: " + table.namespaceName + "." + table.name + "}";
         }
 
 

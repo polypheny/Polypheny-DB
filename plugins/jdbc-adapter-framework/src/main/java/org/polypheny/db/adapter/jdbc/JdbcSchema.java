@@ -39,8 +39,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.sql.DataSource;
@@ -55,27 +53,20 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TableType;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 /**
@@ -96,7 +87,7 @@ public class JdbcSchema implements Namespace, Schema {
     private final Map<String, JdbcEntity> tableMap;
     private final Map<String, String> physicalToLogicalTableNameMap;
 
-    private final Adapter adapter;
+    public final Adapter adapter;
     @Getter
     private final long id;
 
@@ -145,13 +136,11 @@ public class JdbcSchema implements Namespace, Schema {
 
     public JdbcEntity createJdbcTable(
             LogicalTable logicalTable,
-            AllocationTable allocationTable,
-            PhysicalTable physicalTable ) {
+            AllocationTable allocationTable ) {
         return new JdbcEntity(
                 this,
                 logicalTable,
                 allocationTable,
-                physicalTable,
                 TableType.TABLE );
     }
 

@@ -39,29 +39,15 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 /**
@@ -105,8 +91,8 @@ public class MongoSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public MongoEntity createTable( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable ) {
-        return new MongoEntity( logicalTable, allocationTable, physicalTable, this, transactionProvider );
+    public MongoEntity createTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
+        return new MongoEntity( logicalTable, allocationTable, this, transactionProvider );
     }
 
 

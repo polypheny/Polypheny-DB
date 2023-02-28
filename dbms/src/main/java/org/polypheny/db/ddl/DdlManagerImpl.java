@@ -50,19 +50,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.ConstraintType;
-import org.polypheny.db.catalog.logistic.DataPlacementRole;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.ForeignKeyOption;
-import org.polypheny.db.catalog.logistic.IndexType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -70,7 +59,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -79,11 +67,13 @@ import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -101,6 +91,16 @@ import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.catalog.logistic.NameGenerator;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -910,7 +910,7 @@ public class DdlManagerImpl extends DdlManager {
         PolySchemaBuilder.getInstance().getCurrent();
 
         // Create table on store
-        dataStore.createPhysicalTable( statement.getPrepareContext(), catalogTable, , catalogTable.partitionProperty.partitionIds );
+        dataStore.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
         // Copy data to the newly added placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( dataStore.getAdapterId() ), addedColumns, partitionIds );
@@ -1468,7 +1468,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     DataPlacementRole.UPTODATE )
             );
-            storeInstance.createPhysicalTable( statement.getPrepareContext(), catalogTable, , newPartitionIdsOnDataPlacement );
+            storeInstance.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
         }
 
         // Copy the data to the newly added column placements
@@ -1523,7 +1523,7 @@ public class DdlManagerImpl extends DdlManager {
                         DataPlacementRole.UPTODATE );
             }
 
-            storeInstance.createPhysicalTable( statement.getPrepareContext(), catalogTable, , newPartitions );
+            storeInstance.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
 
             // Get only columns that are actually on that store
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
@@ -1868,7 +1868,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     DataPlacementRole.UPTODATE );
 
-            store.createPhysicalTable( statement.getPrepareContext(), catalogMaterializedView, , catalogMaterializedView.partitionProperty.partitionIds );
+            store.createPhysicalTable( statement.getPrepareContext(), catalogMaterializedView, null );
         }
 
         // Selected data from tables is added into the newly crated materialized view
@@ -2240,7 +2240,7 @@ public class DdlManagerImpl extends DdlManager {
                         null,
                         DataPlacementRole.UPTODATE );
 
-                store.createPhysicalTable( statement.getPrepareContext(), catalogTable, , catalogTable.partitionProperty.partitionIds );
+                store.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
             }
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
@@ -2682,7 +2682,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
             // First create new tables
-            store.createPhysicalTable( statement.getPrepareContext(), partitionedTable, , partitionedTable.partitionProperty.partitionIds );
+            store.createPhysicalTable( statement.getPrepareContext(), partitionedTable, null );
 
             // Copy data from unpartitioned to partitioned
             // Get only columns that are actually on that store
@@ -2792,7 +2792,7 @@ public class DdlManagerImpl extends DdlManager {
                     DataPlacementRole.UPTODATE );
 
             // First create new tables
-            store.createPhysicalTable( statement.getPrepareContext(), mergedTable, , mergedTable.partitionProperty.partitionIds );
+            store.createPhysicalTable( statement.getPrepareContext(), mergedTable, null );
 
             // Get only columns that are actually on that store
             List<CatalogColumn> necessaryColumns = new LinkedList<>();

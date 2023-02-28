@@ -210,7 +210,7 @@ public class CottontailPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
             return new CottontailEntity(
                     this.currentSchema,
                     this.dbName,
