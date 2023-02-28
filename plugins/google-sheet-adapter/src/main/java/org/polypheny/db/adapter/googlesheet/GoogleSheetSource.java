@@ -71,7 +71,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         name = "GoogleSheets",
         description = "An adapter for querying online Google Sheets, using the Google Sheets Java API. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.REMOTE)
-@AdapterSettingString(name = "sheetsURL", description = "The URL of the Google Sheets to query", defaultValue = "https://docs.google.com/spreadsheets/d/1oDSHJkGIvgCfmBoi6oDr6EpjL5d9ntWwRApXCRlXxII/edit#gid=0", position = 1)
+@AdapterSettingString(name = "sheetsURL", description = "The URL of the Google Sheet to query.", defaultValue = "", position = 1)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 @AdapterSettingInteger(name = "querySize", defaultValue = 1000, position = 3,

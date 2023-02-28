@@ -45,7 +45,7 @@ public class GoogleSheetSourceTest {
                 Map<String, String> settings = new HashMap<>();
                 settings.put( "maxStringLength", "255" );
                 settings.put( "querySize", "1000" );
-                settings.put( "sheetsURL", "https://docs.google.com/spreadsheets/d/1-int7xwx0UyyigB4FLGMOxaCiuHXSNhi09fYSuAIX2Q/edit#gid=0" );
+                settings.put( "sheetsURL", "-----ADD-----" );
                 settings.put( "mode", "remote" );
                 settings.put( "resetRefreshToken", "No" );
                 Gson gson = new Gson();
