@@ -27,7 +27,8 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that projects from a {@GoogleTable} scan just the columns needed to satisfy a projection. If the projection's expressions are trivial, the projection is removed.
+ * Planner rule that projects from a {@GoogleTable} scan just the columns needed to satisfy a projection. If the
+ * projection's expressions are trivial, the projection is removed.
  */
 public class GoogleSheetProjectTableScanRule extends AlgOptRule {
 
@@ -52,8 +53,7 @@ public class GoogleSheetProjectTableScanRule extends AlgOptRule {
             // Project contains expressions more complex than just field references.
             return;
         }
-        call.transformTo(
-                new GoogleSheetTableScanProject( scan.getCluster(), scan.getTable(), scan.googleSheetTable, fields ) );
+        call.transformTo( new GoogleSheetTableScanProject( scan.getCluster(), scan.getTable(), scan.googleSheetTable, fields ) );
     }
 
 

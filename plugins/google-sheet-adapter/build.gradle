@@ -10,7 +10,8 @@ dependencies {
     implementation group: 'com.google.oauth-client', name: 'google-oauth-client-jetty', version: oauth_client_version
     implementation 'com.google.apis:google-api-services-sheets:v4-rev20210629-1.32.1'
 
-//     --- Test Compile ---
+
+    // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version

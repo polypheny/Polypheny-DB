@@ -51,6 +51,7 @@ dependencies {
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
 
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 

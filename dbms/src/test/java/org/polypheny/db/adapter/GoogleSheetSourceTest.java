@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+
 @Ignore // for debug purpose
 public class GoogleSheetSourceTest {
 
@@ -126,6 +127,3 @@ public class GoogleSheetSourceTest {
     }
 
 }
-
-
-

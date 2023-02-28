@@ -46,5 +46,4 @@ public class GoogleSheetPlugin extends Plugin {
         Adapter.addAdapter( GoogleSheetSource.class, "GOOGLESHEETS", settings );
     }
 
-
 }

@@ -79,6 +79,7 @@ public class CsvTest {
         return escapeString( new StringBuilder(), s ).toString();
     }
 
+
     /**
      * Quotes a string for Java or JSON, into a builder.
      */

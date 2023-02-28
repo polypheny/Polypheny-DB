@@ -66,7 +66,6 @@ public class MysqlSourceTest extends AbstractSourceTest {
                 statement.executeUpdate( "ALTER ADAPTERS ADD mariadbunit USING 'Mysql' AS 'Source' WITH '" + gson.toJson( settings ) + "'" );
             }
         }
-        System.out.println("RAN HERE");
     }
 
 

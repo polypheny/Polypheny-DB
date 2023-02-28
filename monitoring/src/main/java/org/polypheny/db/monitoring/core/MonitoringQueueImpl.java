@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,22 +88,23 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                     eventQueue );
         }
 
-        // instantiated thread count
+        // Instantiated thread count
         this.threadCount = threadPoolWorkers.getPoolSize();
 
-        // create a scheduled, separate thread which gets new thread count every 500 milliseconds
+        // Create a scheduled, separate thread which gets new thread count every 500 milliseconds
         Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
+        timer.scheduleAtFixedRate( new TimerTask() {
             @Override
             public synchronized void run() {
                 int newThreadCount = threadPoolWorkers.getPoolSize();
-
-                if (newThreadCount != threadCount) {
+                if ( newThreadCount != threadCount ) {
                     threadCount = newThreadCount;
-                    log.debug( "Thread count is now: {}", threadCount );
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( "Thread count is now: {}", threadCount );
+                    }
                 }
             }
-        }, 500, 500);
+        }, 500, 500 );
     }
 
 
@@ -254,6 +255,5 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         }
 
     }
-
 
 }
