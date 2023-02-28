@@ -299,12 +299,20 @@ public class SchemaExtractor {
      * @param namespaceId   The id of the namespace to analyze
      * @param namespaceName
      */
-    void execute(long namespaceId, String namespaceName) {
-        // Build input
-        String inputJsonStr = buildInput(namespaceId, namespaceName);
+    void execute(long[] namespaceIds, String[] namespaceNames) {
 
+        JsonArrayBuilder inputBuilder = Json.createArrayBuilder();
+
+        int i;
+        for (i = 0; i < namespaceIds.length; i++) {
+            // Build input
+            String inputJsonStr = buildInput(namespaceIds[i], namespaceNames[i]);
+            inputBuilder.add(inputJsonStr);
+        }
+
+        String inputJsonStrs = inputBuilder.build().toString();
         // Send json to listener
-        Server.broadcastMessage("Server", "namespaceInfo", inputJsonStr);
+        Server.broadcastMessage("Server", "namespaceInfo", inputJsonStrs);
     }
 
 
@@ -446,28 +454,35 @@ public class SchemaExtractor {
 
         InformationText actionText = new InformationText(
                 actionGroup,
-                "Run schema integration on specified namespace." );
+                "Run schema integration on specified namespace(s). Multiple namespace format: 'namespace,namespace2'." );
         actionText.setOrder( 1 );
         im.registerInformation( actionText );
 
         InformationAction runAction = new InformationAction( actionGroup, "Run", parameters -> {
-            if ( parameters == null || parameters.size() != 1 || parameters.get( "namespace" ) == null ) {
+            if ( parameters == null || parameters.get( "namespaces" ) == null ) {
                 return "No or invalid parameter!";
             }
-            String namespaceName = parameters.get( "namespace" );
+            String namespaceNames = parameters.get( "namespaces" );
+            String[] arrNamespaceNames = namespaceNames.split(",");
+            long[] catalogSchemaIds = new long[arrNamespaceNames.length];
             CatalogSchema catalogSchema;
-            try {
-                catalogSchema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, namespaceName );
-            } catch ( UnknownSchemaException e ) {
-                return "There is no namespace with this name!";
+            int i = 0;
+            for (String namespaceName : arrNamespaceNames) {
+                try {
+                    catalogSchema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, namespaceName );
+                } catch ( UnknownSchemaException e ) {
+                    return "There is no namespace with this name! " + namespaceName;
+                }
+                catalogSchemaIds[i] = catalogSchema.id;
+                i += 1;
             }
             if ( Server.listenerMap.isEmpty() ) {
                 return "No listeners!";
             } else {
-                SchemaExtractor.getInstance().execute(catalogSchema.id, namespaceName );
+                SchemaExtractor.getInstance().execute( catalogSchemaIds, arrNamespaceNames );
             }
             return "Running schema integration!";
-        }).withParameters("namespace");
+        }).withParameters("namespaces");
         runAction.setOrder(2);
         im.registerInformation(runAction);
 
@@ -558,6 +573,23 @@ public class SchemaExtractor {
         }).withParameters("kBestMappings");
         setKBestMappings.setOrder(8);
         im.registerInformation(setKBestMappings);
+
+        InformationText setValentineParametersText = new InformationText(
+                configParametersGroup,
+                "Set Valentine matching algorithm parameters. Format: 'Parameter name:value,parameter name 2:value2'. Default: automatic. \r\n");
+        setValentineParametersText.setOrder(9);
+        im.registerInformation(setValentineParametersText);
+
+        InformationAction setValentineParameters = new InformationAction(configParametersGroup, "Set", parameters -> {
+            if (parameters == null || parameters.get("valentineParameters") == null) {
+                return "No or invalid parameter!";
+            }
+            String sampleSize = parameters.get("valentineParameters");
+            Server.broadcastMessage("Server", "valentineParameters", sampleSize);
+            return "Successfully set valentine parameters!";
+        }).withParameters("valentineParameters");
+        setValentineAlgo.setOrder(10);
+        im.registerInformation(setValentineParameters);
 
 //        InformationGroup groundTruthGroup = new InformationGroup(page, "Ground Truth").setOrder(6);
 //        im.addGroup(groundTruthGroup);
