@@ -39,17 +39,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.prepare.ContextImpl;
@@ -58,7 +59,6 @@ import org.polypheny.db.prepare.PlannerImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**
@@ -89,7 +89,7 @@ public class Frameworks {
      */
     public interface PlannerAction<R> {
 
-        R apply( AlgOptCluster cluster, PolyphenyDbSchema rootSchema );
+        R apply( AlgOptCluster cluster, Snapshot snapshot );
 
     }
 
@@ -118,7 +118,7 @@ public class Frameworks {
 
         public abstract R apply(
                 AlgOptCluster cluster,
-                PolyphenyDbSchema rootSchema );
+                Snapshot snapshot );
 
     }
 
@@ -134,8 +134,8 @@ public class Frameworks {
         return withPrepare(
                 new Frameworks.PrepareAction<>( config ) {
                     @Override
-                    public R apply( AlgOptCluster cluster, PolyphenyDbSchema rootSchema ) {
-                        return action.apply( cluster, rootSchema );
+                    public R apply( AlgOptCluster cluster, Snapshot snapshot ) {
+                        return action.apply( cluster, snapshot );
                     }
                 } );
     }
@@ -148,11 +148,11 @@ public class Frameworks {
      * @return Return value from action
      */
     public static <R> R withPlanner( final PlannerAction<R> action ) {
-        PolyphenyDbSchema rootSchema = Frameworks.createRootSchema( true );
+        Snapshot snapshot = Frameworks.createSnapshot( true );
         FrameworkConfig config = newConfigBuilder()
-                .defaultSchema( rootSchema )
+                .defaultSchema( snapshot )
                 .prepareContext( new ContextImpl(
-                        rootSchema,
+                        snapshot,
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -195,8 +195,8 @@ public class Frameworks {
      *
      * @param cache Whether to create a caching schema.
      */
-    public static PolyphenyDbSchema createRootSchema( boolean cache ) {
-        return AbstractPolyphenyDbSchema.createRootSchema();
+    public static Snapshot createSnapshot( boolean cache ) {
+        return AbstractPolyphenyDbSchema.createSnapshot();
     }
 
 
@@ -227,10 +227,12 @@ public class Frameworks {
         private OperatorTable operatorTable;
         private ImmutableList<Program> programs;
         private Context context;
-        private ImmutableList<AlgTraitDef> traitDefs;
+        private ImmutableList<AlgTraitDef<?>> traitDefs;
         private ParserConfig parserConfig;
         private NodeToAlgConverter.Config sqlToRelConverterConfig;
-        private PolyphenyDbSchema defaultSchema;
+        @Getter
+        @Setter
+        private Snapshot snapshot;
         private RexExecutor executor;
         private AlgOptCostFactory costFactory;
         private AlgDataTypeSystem typeSystem;
@@ -257,7 +259,7 @@ public class Frameworks {
             traitDefs = config.getTraitDefs();
             parserConfig = config.getParserConfig();
             sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
-            defaultSchema = config.getDefaultSchema();
+            snapshot = config.getSnapshot();
             executor = config.getExecutor();
             costFactory = config.getCostFactory();
             typeSystem = config.getTypeSystem();
@@ -274,7 +276,7 @@ public class Frameworks {
                     traitDefs,
                     parserConfig,
                     sqlToRelConverterConfig,
-                    defaultSchema,
+                    snapshot,
                     costFactory,
                     typeSystem,
                     executor,
@@ -300,7 +302,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder traitDefs( List<AlgTraitDef> traitDefs ) {
+        public ConfigBuilder traitDefs( List<AlgTraitDef<?>> traitDefs ) {
             if ( traitDefs == null ) {
                 this.traitDefs = null;
             } else {
@@ -310,7 +312,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder traitDefs( AlgTraitDef... traitDefs ) {
+        public ConfigBuilder traitDefs( AlgTraitDef<?>... traitDefs ) {
             this.traitDefs = ImmutableList.copyOf( traitDefs );
             return this;
         }
@@ -328,8 +330,8 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder defaultSchema( PolyphenyDbSchema defaultSchema ) {
-            this.defaultSchema = defaultSchema;
+        public ConfigBuilder defaultSchema( Snapshot snapshot ) {
+            this.snapshot = snapshot;
             return this;
         }
 
@@ -386,13 +388,13 @@ public class Frameworks {
         private final OperatorTable operatorTable;
         private final ImmutableList<Program> programs;
 
-        private final ImmutableList<AlgTraitDef> traitDefs;
+        private final ImmutableList<AlgTraitDef<?>> traitDefs;
 
         private final ParserConfig parserConfig;
 
         private final NodeToAlgConverter.Config sqlToRelConverterConfig;
 
-        private final PolyphenyDbSchema defaultSchema;
+        private final Snapshot snapshot;
 
         private final AlgOptCostFactory costFactory;
 
@@ -407,10 +409,10 @@ public class Frameworks {
                 Context context,
                 OperatorTable operatorTable,
                 ImmutableList<Program> programs,
-                ImmutableList<AlgTraitDef> traitDefs,
+                ImmutableList<AlgTraitDef<?>> traitDefs,
                 ParserConfig parserConfig,
                 NodeToAlgConverter.Config nodeToRelConverterConfig,
-                PolyphenyDbSchema defaultSchema,
+                Snapshot snapshot,
                 AlgOptCostFactory costFactory,
                 AlgDataTypeSystem typeSystem,
                 RexExecutor executor,
@@ -421,7 +423,7 @@ public class Frameworks {
             this.traitDefs = traitDefs;
             this.parserConfig = parserConfig;
             this.sqlToRelConverterConfig = nodeToRelConverterConfig;
-            this.defaultSchema = defaultSchema;
+            this.snapshot = snapshot;
             this.costFactory = costFactory;
             this.typeSystem = typeSystem;
             this.executor = executor;

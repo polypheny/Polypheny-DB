@@ -25,11 +25,10 @@ import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -93,12 +92,12 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
 
     public static CottontailSchema create(
             Long id,
-            SchemaPlus parentSchema,
+            Snapshot snapshot,
             String name,
             CottontailWrapper wrapper,
             CottontailStore cottontailStore
     ) {
-        final Expression expression = Schemas.subSchemaExpression( parentSchema.polyphenyDbSchema(), name, CottontailSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
         final CottontailConvention convention = CottontailConvention.of( name, expression );
         return new CottontailSchema( id, wrapper, convention, cottontailStore, name );
     }
@@ -129,13 +128,13 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
-        return Schemas.subSchemaExpression( parentSchema, name, CottontailSchema.class );
+    public Expression getExpression( Snapshot snapshot, String name ) {
+        return Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
     }
 
 
     @Override
-    protected Map<String, CatalogEntity> getTableMap() {
+    protected Map<String, CatalogEntity> getTables() {
         return ImmutableMap.copyOf( this.tableMap );
     }
 

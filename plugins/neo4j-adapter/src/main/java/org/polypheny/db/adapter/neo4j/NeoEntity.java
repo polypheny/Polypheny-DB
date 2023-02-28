@@ -90,7 +90,7 @@ public class NeoEntity extends PhysicalTable implements TranslatableEntity, Modi
             AlgNode child,
             Operation operation,
             List<String> targets,
-            List<RexNode> sources ) {
+            List<? extends RexNode> sources ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalRelModify(
                 traits.replace( Convention.NONE ),

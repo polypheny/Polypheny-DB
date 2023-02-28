@@ -55,19 +55,19 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
@@ -144,57 +144,26 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     public JdbcEntity createJdbcTable(
-            LogicalTable catalogTable,
-            List<CatalogColumnPlacement> columnPlacementsOnStore,
-            CatalogPartitionPlacement partitionPlacement ) {
-        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
-        // not a type; before being used, the proto-type will be copied into a real type factory.
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        List<String> logicalColumnNames = new LinkedList<>();
-        List<String> physicalColumnNames = new LinkedList<>();
-        String physicalSchemaName = null;
-
-        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            if ( physicalSchemaName == null ) {
-                physicalSchemaName = placement.physicalSchemaName;
-            }
-
-            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-            logicalColumnNames.add( catalogColumn.name );
-            physicalColumnNames.add( placement.physicalColumnName );
-        }
-
-        JdbcEntity table = new JdbcEntity(
+            LogicalTable logicalTable,
+            AllocationTable allocationTable,
+            PhysicalTable physicalTable ) {
+        return new JdbcEntity(
                 this,
-                catalogTable.getNamespaceName(),
-                catalogTable.name,
-                logicalColumnNames,
-                TableType.TABLE,
-                AlgDataTypeImpl.proto( fieldInfo.build() ),
-                physicalSchemaName,
-                partitionPlacement.physicalTableName,
-                physicalColumnNames,
-                catalogTable.id,
-                partitionPlacement.partitionId,
-                adapter.getAdapterId()
-        );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
-        physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );
-        return table;
+                logicalTable,
+                allocationTable,
+                physicalTable,
+                TableType.TABLE );
     }
 
 
     public static JdbcSchema create(
             Long id,
-            SchemaPlus parentSchema,
+            Snapshot snapshot,
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
             Adapter adapter ) {
-        final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( snapshot, name, JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
         return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
     }
@@ -239,8 +208,8 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     @Override
-    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
-        return Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
+    public Expression getExpression( Snapshot snapshot, String name ) {
+        return Schemas.subSchemaExpression( snapshot, name, JdbcSchema.class );
     }
 
 
@@ -263,7 +232,7 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     @Override
-    public Entity getEntity( String name ) {
+    public CatalogEntity getEntity( String name ) {
         return getTableMap().get( name );
     }
 

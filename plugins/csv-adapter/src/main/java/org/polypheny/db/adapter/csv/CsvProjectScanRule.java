@@ -71,12 +71,13 @@ public class CsvProjectScanRule extends AlgOptRule {
         final LogicalProject project = call.alg( 0 );
         final CsvScan scan = call.alg( 1 );
         int[] fields = getProjectFields( project.getProjects() );
-        if ( fields == null ) {
+        if ( fields == null || scan.getEntity().unwrap( CsvTable.class ) == null ) {
             // Project contains expressions more complex than just field references.
             return;
         }
+
         call.transformTo(
-                new CsvScan( scan.getCluster(), scan.getEntity(), scan.csvTable, fields ) );
+                new CsvScan( scan.getCluster(), scan.getEntity().unwrap( CsvTable.class ), scan.csvTable, fields ) );
     }
 
 

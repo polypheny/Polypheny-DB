@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 
 
@@ -130,11 +131,11 @@ public interface Namespace {
     /**
      * Returns the expression by which this schema can be referenced in generated code.
      *
-     * @param parentSchema Parent schema
+     * @param snapshot Parent schema
      * @param name Name of this schema
      * @return Expression by which this schema can be referenced in generated code
      */
-    Expression getExpression( PolyphenyDbSchema parentSchema, String name );
+    Expression getExpression( Snapshot snapshot, String name );
 
     /**
      * Returns whether the user is allowed to create new tables, functions and sub-schemas in this schema, in addition to

@@ -23,6 +23,7 @@ import java.util.Properties;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -32,7 +33,7 @@ import org.polypheny.db.transaction.Statement;
 public class ContextImpl implements Context {
 
     @Getter
-    private final PolyphenyDbSchema rootSchema;
+    private final Snapshot snapshot;
     @Getter
     private final JavaTypeFactory typeFactory;
     @Getter
@@ -47,8 +48,8 @@ public class ContextImpl implements Context {
     private final int currentUserId;
 
 
-    public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, Statement statement ) {
-        this.rootSchema = rootSchema;
+    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, Statement statement ) {
+        this.snapshot = snapshot;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
         this.defaultSchemaName = defaultSchemaName;

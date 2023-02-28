@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.LanguageManager;
@@ -209,13 +210,13 @@ public class SqlLanguagePlugin extends Plugin {
     }
 
 
-    public static PolyphenyDbSqlValidator getSqlValidator( org.polypheny.db.prepare.Context context, PolyphenyDbCatalogReader catalogReader ) {
+    public static PolyphenyDbSqlValidator getSqlValidator( org.polypheny.db.prepare.Context context, Snapshot snapshot ) {
 
         final OperatorTable opTab0 = fun( OperatorTable.class, SqlStdOperatorTable.instance() );
-        final OperatorTable opTab = ChainedOperatorTable.of( opTab0, catalogReader );
+        final OperatorTable opTab = ChainedOperatorTable.of( opTab0, snapshot );
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Conformance conformance = context.config().conformance();
-        return new PolyphenyDbSqlValidator( opTab, catalogReader, typeFactory, conformance );
+        return new PolyphenyDbSqlValidator( opTab, snapshot, typeFactory, conformance );
     }
 
 

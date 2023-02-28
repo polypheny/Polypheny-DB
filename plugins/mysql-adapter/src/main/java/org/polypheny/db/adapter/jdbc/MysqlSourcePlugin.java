@@ -95,7 +95,7 @@ public class MysqlSourcePlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
+        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
             return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
         }
 

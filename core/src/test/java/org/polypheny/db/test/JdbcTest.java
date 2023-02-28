@@ -21,11 +21,12 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.impl.AbstractEntity;
 
 
@@ -44,10 +45,10 @@ public class JdbcTest {
         }
 
 
-        @Override
-        public RelModify toModificationAlg(
+        //@Override
+        public RelModify<?> toModificationAlg(
                 AlgOptCluster cluster,
-                AlgOptEntity table,
+                CatalogEntity entity,
                 Prepare.CatalogReader catalogReader,
                 AlgNode child,
                 RelModify.Operation operation,
@@ -55,7 +56,7 @@ public class JdbcTest {
                 List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             return LogicalRelModify.create(
-                    table,
+                    entity,
                     child,
                     operation,
                     updateColumnList,

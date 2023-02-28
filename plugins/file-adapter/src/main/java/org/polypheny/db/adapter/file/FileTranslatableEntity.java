@@ -22,145 +22,91 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.algebra.FileScan;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableEntity;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableEntity;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 
 
-public class FileTranslatableEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity {
+public class FileTranslatableEntity extends PhysicalTable implements TranslatableEntity, ModifiableEntity {
 
     private final File rootDir;
     @Getter
-    private final String tableName;
+    private final Map<Long, String> columnNames;
+
     @Getter
-    private final Long partitionId;
+    private final Map<String, Long> columnNamesIds;
     @Getter
-    private final List<String> columnNames;
-    @Getter
-    private final Map<String, Long> columnIdMap;
-    @Getter
-    private final Map<String, PolyType> columnTypeMap;
+    private final Map<Long, PolyType> columnTypeMap;
     @Getter
     private final List<Long> pkIds; // Ids of the columns that are part of the primary key
     @Getter
     private final Long adapterId;
     @Getter
     private final FileSchema fileSchema;
-    private final AlgProtoDataType protoRowType;
+    public final AllocationTable allocation;
 
 
     public FileTranslatableEntity(
             final FileSchema fileSchema,
-            final String tableName,
-            final Long tableId,
-            final long partitionId,
-            long adapterId, final List<Long> columnIds,
-            final ArrayList<PolyType> columnTypes,
-            final List<String> columnNames,
-            final List<Long> pkIds,
-            final AlgProtoDataType protoRowType ) {
-        super( Object[].class, tableId, partitionId, adapterId );
+            final AllocationTable allocationTable,
+            final List<Long> pkIds ) {
+        super( allocationTable );
         this.fileSchema = fileSchema;
         this.rootDir = fileSchema.getRootDir();
-        this.tableName = tableName;
-        this.partitionId = partitionId;
         this.adapterId = (long) fileSchema.getAdapterId();
         this.pkIds = pkIds;
-        this.protoRowType = protoRowType;
+        this.allocation = allocationTable;
 
-        this.columnNames = columnNames;
-        this.columnIdMap = new HashMap<>();
-        this.columnTypeMap = new HashMap<>();
-        int i = 0;
-        for ( String columnName : columnNames ) {
-            this.columnIdMap.put( columnName, columnIds.get( i ) );
-            this.columnTypeMap.put( columnName, columnTypes.get( i ) );
-            i++;
-        }
+        this.columnNames = allocationTable.getColumnNames();
+        this.columnNamesIds = allocationTable.getColumnNamesIds();
+        this.columnTypeMap = allocationTable.getColumns().entrySet().stream().collect( Collectors.toMap( Entry::getKey, a -> a.getValue().type ) );
     }
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
-        return new FileScan( context.getCluster(), algOptEntity, this );
+        return new FileScan( context.getCluster(), allocation, this );
     }
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return protoRowType.apply( typeFactory );
-    }
-
-
-    @Override
-    public RelModify toModificationAlg(
+    public Modify<?> toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
+            AlgTraitSet traits,
+            CatalogEntity entity,
             AlgNode child,
             Operation operation,
             List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened ) {
+            List<? extends RexNode> sourceExpressionList
+    ) {
         fileSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalRelModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
-                table,
-                catalogReader,
+                entity,
                 child,
                 operation,
                 updateColumnList,
                 sourceExpressionList,
-                flattened );
+                true );
     }
 
-
-    @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-        throw new UnsupportedOperationException();
-        //System.out.println("as Queryable");
-        //fileSchema.getConvention().register( dataContext.getStatement().getQueryProcessor().getPlanner() );
-        //return new FileQueryable<>( dataContext, schema, this, tableName );
-    }
-
-
-    public class FileQueryable<T> extends AbstractTableQueryable<T> {
-
-        public FileQueryable( DataContext dataContext, SchemaPlus schema, FileTranslatableEntity table, String tableName ) {
-            super( dataContext, schema, FileTranslatableEntity.this, tableName );
-        }
-
-
-        @Override
-        public Enumerator<T> enumerator() {
-            throw new RuntimeException( "FileQueryable enumerator not yet implemented" );
-        }
-
-    }
 
 }

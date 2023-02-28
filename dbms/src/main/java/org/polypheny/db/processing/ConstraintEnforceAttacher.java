@@ -330,8 +330,8 @@ public class ConstraintEnforceAttacher {
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
 
-                final LogicalTable algOptEntity = statement.getDataContext().getSnapshot().getTable( foreignKey.referencedKeyTableId );
-                final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), algOptEntity );
+                final LogicalTable entity = statement.getDataContext().getSnapshot().getLogicalTable( foreignKey.referencedKeyTableId );
+                final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), entity );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
                 builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );

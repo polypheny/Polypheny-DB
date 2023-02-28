@@ -30,10 +30,10 @@ import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.ModelTrait;
@@ -124,13 +124,13 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     public LogicalValues getRelationalEquivalent() {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
-        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getRootSchema() );
+        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
 
         return new LogicalValues( cluster, out, ((DocumentType) rowType).asRelational(), relationalize( documentTuples, cluster.getRexBuilder() ) );
     }
 
 
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, Snapshot snapshot ) {
         return List.of( getRelationalEquivalent() );
     }
 

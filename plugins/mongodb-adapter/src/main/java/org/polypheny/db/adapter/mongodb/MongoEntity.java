@@ -68,34 +68,27 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.algebra.core.document.DocumentModify;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.LogicalCollection;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableCollection;
-import org.polypheny.db.schema.ModifiableEntity;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.util.BsonUtil;
@@ -106,18 +99,14 @@ import org.polypheny.db.util.Util;
  * Table based on a MongoDB collection.
  */
 @Slf4j
-public class MongoEntity extends AbstractQueryableEntity implements TranslatableEntity, ModifiableEntity, ModifiableCollection {
+public class MongoEntity extends PhysicalTable implements TranslatableEntity, ModifiableEntity, QueryableEntity {
 
     @Getter
     private final String collectionName;
     @Getter
-    private final AlgProtoDataType protoRowType;
-    @Getter
     private final MongoSchema mongoSchema;
     @Getter
     private final MongoCollection<Document> collection;
-    @Getter
-    private final LogicalTable catalogTable;
 
     @Getter
     private final LogicalCollection catalogCollection;
@@ -126,34 +115,39 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
     @Getter
     private final long storeId;
 
+    public final LogicalTable logical;
+    public final AllocationTable allocation;
+    public final PhysicalTable physical;
+
 
     /**
      * Creates a MongoTable.
      */
-    MongoEntity( LogicalTable catalogTable, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long storeId, CatalogPartitionPlacement partitionPlacement ) {
-        super( Object[].class, catalogTable.id, partitionPlacement.partitionId, storeId );
-        this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
+    MongoEntity( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable, MongoSchema schema, TransactionProvider transactionProvider ) {
+        super( physicalTable );
+        this.collectionName = physicalTable.name;
         this.transactionProvider = transactionProvider;
-        this.catalogTable = catalogTable;
+        this.logical = logicalTable;
+        this.allocation = allocationTable;
+        this.physical = physicalTable;
         this.catalogCollection = null;
-        this.protoRowType = proto;
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
-        this.storeId = storeId;
+        this.storeId = allocation.adapterId;
     }
 
 
-    public MongoEntity( LogicalCollection catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long adapter, CatalogCollectionPlacement partitionPlacement ) {
+    /*public MongoEntity( LogicalCollection catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long adapter, CatalogCollectionPlacement partitionPlacement ) {
         super( Object[].class, catalogEntity.id, partitionPlacement.id, adapter );
         this.collectionName = MongoStore.getPhysicalTableName( catalogEntity.id, partitionPlacement.id );
         this.transactionProvider = transactionProvider;
-        this.catalogTable = null;
+        this.logical = null;
         this.catalogCollection = catalogEntity;
         this.protoRowType = proto;
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = adapter;
-    }
+    }*/
 
 
     public String toString() {
@@ -162,21 +156,15 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return protoRowType.apply( typeFactory );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId ) {
+        return new MongoQueryable<>( dataContext, snapshot, this );
     }
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-        return new MongoQueryable<>( dataContext, schema, this, tableName );
-    }
-
-
-    @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), algOptEntity, this, null );
+        return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), this, null );
     }
 
 
@@ -256,8 +244,8 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
             }
         }
 
-        if ( logicalCols.size() != 0 && catalogTable != null ) {
-            list.add( 0, getPhysicalProjections( logicalCols, catalogTable.getColumnNames(), catalogTable.fieldIds ) );
+        if ( logicalCols.size() != 0 && logical != null ) {
+            list.add( 0, getPhysicalProjections( logicalCols, logical.getColumnNames(), logical.fieldIds ) );
         }
 
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
@@ -316,41 +304,39 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
 
 
     @Override
-    public RelModify toModificationAlg(
+    public Modify<?> toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
+            AlgTraitSet traitSet,
+            CatalogEntity table,
             AlgNode child,
             Operation operation,
             List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened ) {
+            List<? extends RexNode> sourceExpressionList
+    ) {
         mongoSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalRelModify(
-                cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,
-                catalogReader,
                 child,
                 operation,
                 updateColumnList,
-                sourceExpressionList,
-                flattened );
+                sourceExpressionList
+        );
     }
 
 
-    @Override
-    public DocumentModify toModificationAlg(
+    /*@Override
+    public Modify<?> toModificationAlg(
             AlgOptCluster cluster,
-            AlgOptEntity table,
-            CatalogReader catalogReader,
+            AlgTraitSet traitSet,
+            CatalogEntity entity,
             AlgNode child,
             Operation operation,
             List<String> keys,
             List<RexNode> updates ) {
         mongoSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalDocumentModify( child.getTraitSet(), table, catalogReader, child, operation, keys, updates );
-    }
+        return new LogicalDocumentModify( child.getTraitSet(), entity, catalogReader, child, operation, keys, updates );
+    }*/
 
 
     /**
@@ -358,10 +344,10 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
      *
      * @param <T> element type
      */
-    public static class MongoQueryable<T> extends AbstractTableQueryable<T> {
+    public static class MongoQueryable<T> extends AbstractTableQueryable<T, MongoEntity> {
 
-        MongoQueryable( DataContext dataContext, SchemaPlus schema, MongoEntity table, String tableName ) {
-            super( dataContext, schema, table, tableName );
+        MongoQueryable( DataContext dataContext, Snapshot snapshot, MongoEntity table ) {
+            super( dataContext, snapshot, table );
         }
 
 
@@ -374,12 +360,12 @@ public class MongoEntity extends AbstractQueryableEntity implements Translatable
 
 
         private MongoDatabase getMongoDb() {
-            return schema.unwrap( MongoSchema.class ).database;
+            return table.mongoSchema.database;
         }
 
 
         private MongoEntity getTable() {
-            return (MongoEntity) table;
+            return table;
         }
 
 

@@ -40,16 +40,16 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -67,6 +67,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 
     private final URL directoryUrl;
     private final CsvTable.Flavor flavor;
+    @Getter
     private final Map<String, CsvTable> tableMap = new HashMap<>();
 
 
@@ -83,12 +84,12 @@ public class CsvSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public Entity createCsvTable( LogicalTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
+    public PhysicalTable createCsvTable( LogicalTable catalogTable, AllocationTable allocationTable, CsvSource csvSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
-        List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
-        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
+        List<Integer> fieldIds = new ArrayList<>( allocationTable.placements.size() );
+        for ( CatalogColumnPlacement placement : allocationTable.placements ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
@@ -107,29 +108,23 @@ public class CsvSchema extends AbstractNamespace implements Schema {
             throw new RuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        CsvTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource, catalogTable.id );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+        CsvTable table = createTable( source, allocationTable, fieldTypes, fields, csvSource );
+        tableMap.put( catalogTable.name + "_" + allocationTable.id, table );
         return table;
-    }
-
-
-    @Override
-    public Map<String, Entity> getTableMap() {
-        return new HashMap<>( tableMap );
     }
 
 
     /**
      * Creates different subtype of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
+    private CsvTable createTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         switch ( flavor ) {
             case TRANSLATABLE:
-                return new CsvTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+                return new CsvTranslatableTable( source, table, fieldTypes, fields, csvSource );
             case SCANNABLE:
-                return new CsvScannableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+                return new CsvScannableTable( source, table, fieldTypes, fields, csvSource );
             case FILTERABLE:
-                return new CsvFilterableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+                return new CsvFilterableTable( source, table, fieldTypes, fields, csvSource );
             default:
                 throw new AssertionError( "Unknown flavor " + this.flavor );
         }
@@ -218,7 +213,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 //
 //
 //    @Override
-//    public Map<String, Table> getTableMap() {
+//    public Map<String, Table> getTables() {
 //        if ( tableMap == null ) {
 //            tableMap = createTableMap();
 //        }
@@ -250,7 +245,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 //            }
 //            final Source sourceSansCsv = sourceSansGz.trim( ".csv" );
 //
-//            final Table table = createTable( source );
+//            final Table table = createPhysicalTable( source );
 //            builder.put( sourceSansCsv.relative( baseSource ).path(), table );
 //        }
 //        return builder.build();

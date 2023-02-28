@@ -70,7 +70,7 @@ public class GeodeUtils {
     /**
      * Cache for the client proxy regions created in the current ClientCache.
      */
-    private static final Map<String, Region> REGION_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, Region<?, ?>> REGION_MAP = new ConcurrentHashMap<>();
 
     private static String currentLocatorHost = "";
     private static int currentLocatorPort = -1;
@@ -133,10 +133,10 @@ public class GeodeUtils {
      * @param regionName Name of the region to create proxy for.
      * @return Returns a Region proxy to a remote (on the Server) regions.
      */
-    public static synchronized Region createRegion( GemFireCache cache, String regionName ) {
+    public static synchronized Region<?, ?> createRegion( GemFireCache cache, String regionName ) {
         Objects.requireNonNull( cache, "cache" );
         Objects.requireNonNull( regionName, "regionName" );
-        Region region = REGION_MAP.get( regionName );
+        Region<?, ?> region = REGION_MAP.get( regionName );
         if ( region == null ) {
             try {
                 region = ((ClientCache) cache).createClientRegionFactory( ClientRegionShortcut.PROXY ).create( regionName );

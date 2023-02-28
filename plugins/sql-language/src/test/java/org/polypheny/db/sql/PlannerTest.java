@@ -233,7 +233,7 @@ public class PlannerTest extends SqlLanguageDependent {
     @Test
     public void testValidateUserDefinedAggregate() throws Exception {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createSnapshot( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
@@ -288,7 +288,7 @@ public class PlannerTest extends SqlLanguageDependent {
 
     private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createSnapshot( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
@@ -1002,7 +1002,7 @@ public class PlannerTest extends SqlLanguageDependent {
      * Checks that a query returns a particular plan, using a planner with MultiJoinOptimizeBushyRule enabled.
      */
     private void checkBushy( String sql, String expected ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema(), -1 ), NamespaceType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createSnapshot( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
@@ -1058,7 +1058,7 @@ public class PlannerTest extends SqlLanguageDependent {
 
 
     public String checkTpchQuery( String tpchTestQuery ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createSnapshot( false ).add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.configBuilder().setLex( Lex.MYSQL ).build() )
@@ -1117,7 +1117,7 @@ public class PlannerTest extends SqlLanguageDependent {
     @Test
     public void testOrderByNonSelectColumn() throws Exception {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createSnapshot( true )
                 .add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
 
         String query = "select t.psPartkey from \n"
@@ -1200,7 +1200,7 @@ public class PlannerTest extends SqlLanguageDependent {
 
     private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, AlgConversionException {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createSnapshot( true )
                 .add( "hr", new ReflectiveSchema( -1L, new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()

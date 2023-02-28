@@ -345,7 +345,7 @@ public class ScannableEntityTest {
 //            final Schema schema =
 //                    new AbstractSchema() {
 //                        @Override
-//                        protected Map<String, Table> getTableMap() {
+//                        protected Map<String, Table> getTables() {
 //                            return ImmutableMap.of( "TENS",
 //                                    new SimpleTable() {
 //                                        private Enumerable<Object[]> superScan( DataContext root ) {

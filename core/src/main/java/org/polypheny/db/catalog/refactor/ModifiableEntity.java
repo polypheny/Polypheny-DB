@@ -34,7 +34,7 @@ public interface ModifiableEntity {
             AlgNode child,
             Operation operation,
             List<String> targets,
-            List<RexNode> sources );
+            List<? extends RexNode> sources );
 
 
 }

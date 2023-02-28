@@ -67,6 +67,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
@@ -149,14 +150,14 @@ public class AlgBuilderTest {
 
 
     private AlgBuilder createAlgBuilder() {
-        final PolyphenyDbSchema rootSchema = transaction.getSnapshot();
+        final Snapshot snapshot = transaction.getSnapshot();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
-                .defaultSchema( rootSchema )
-                .traitDefs( (List<AlgTraitDef>) null )
+                .defaultSchema( snapshot )
+                .traitDefs( (List<AlgTraitDef<?>>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(
-                        rootSchema,
+                        snapshot,
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {

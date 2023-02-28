@@ -47,12 +47,12 @@ public final class LogicalRelModify extends RelModify<CatalogEntity> {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalRelModify( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public LogicalRelModify( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
-    public LogicalRelModify( AlgTraitSet traits, CatalogEntity table, AlgNode child, Operation operation, List<String> targets, List<RexNode> sources ) {
+    public LogicalRelModify( AlgTraitSet traits, CatalogEntity table, AlgNode child, Operation operation, List<String> targets, List<? extends RexNode> sources ) {
         super( child.getCluster(), traits, table, child, operation, targets, sources, false );
     }
 
@@ -60,7 +60,7 @@ public final class LogicalRelModify extends RelModify<CatalogEntity> {
     /**
      * Creates a LogicalModify.
      */
-    public static LogicalRelModify create( CatalogEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public static LogicalRelModify create( CatalogEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelModify( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );

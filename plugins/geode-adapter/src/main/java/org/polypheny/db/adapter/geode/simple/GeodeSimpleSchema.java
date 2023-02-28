@@ -39,6 +39,7 @@ import java.util.Map;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.client.ClientCache;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -54,7 +55,7 @@ public class GeodeSimpleSchema extends AbstractNamespace implements Schema {
     private String[] regionNames;
     private String pdxAutoSerializerPackageExp;
     private ClientCache clientCache;
-    private ImmutableMap<String, Entity> tableMap;
+    private ImmutableMap<String, CatalogEntity> tableMap;
 
 
     public GeodeSimpleSchema( long id, String locatorHost, int locatorPort, String[] regionNames, String pdxAutoSerializerPackageExp ) {
@@ -69,12 +70,12 @@ public class GeodeSimpleSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, CatalogEntity> getTables() {
         if ( tableMap == null ) {
-            final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
+            final ImmutableMap.Builder<String, CatalogEntity> builder = ImmutableMap.builder();
             for ( String regionName : regionNames ) {
                 Region region = GeodeUtils.createRegion( clientCache, regionName );
-                Entity entity = new GeodeSimpleScannableEntity( regionName, GeodeUtils.autodetectRelTypeFromRegion( region ), clientCache );
+                CatalogEntity entity = new GeodeSimpleScannableEntity( regionName, GeodeUtils.autodetectRelTypeFromRegion( region ), clientCache, null );
                 builder.put( regionName, entity );
             }
             tableMap = builder.build();

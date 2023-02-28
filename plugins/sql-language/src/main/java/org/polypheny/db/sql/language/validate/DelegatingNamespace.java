@@ -20,7 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Pair;
 
@@ -50,7 +50,7 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public ValidatorTable getTable() {
+    public CatalogEntity getTable() {
         return namespace.getTable();
     }
 

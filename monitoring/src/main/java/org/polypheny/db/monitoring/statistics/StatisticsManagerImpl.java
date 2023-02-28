@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -524,13 +525,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     @Nullable
     private AlgNode getQueryNode( QueryResult queryResult, NodeType nodeType ) {
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
         AlgBuilder relBuilder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = relBuilder.getRexBuilder();
         final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
 
         AlgNode queryNode;
-        LogicalRelScan tableScan = getLogicalScan( queryResult.getEntity().id, reader, cluster );
+        LogicalRelScan tableScan = getLogicalScan( queryResult.getEntity().id, snapshot, cluster );
         switch ( nodeType ) {
             case MIN:
             case MAX:
@@ -555,8 +556,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Gets a tableScan for a given table.
      */
-    private LogicalRelScan getLogicalScan( long tableId, CatalogReader reader, AlgOptCluster cluster ) {
-        return LogicalRelScan.create( cluster, reader.getRootSchema().getTable( tableId ) );
+    private LogicalRelScan getLogicalScan( long tableId, Snapshot snapshot, AlgOptCluster cluster ) {
+        return LogicalRelScan.create( cluster, snapshot.getLogicalTable( tableId ) );
     }
 
 

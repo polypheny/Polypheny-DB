@@ -113,7 +113,7 @@ public class PlannerImplMock implements Planner {
      */
     public PlannerImplMock( FrameworkConfig config ) {
         this.config = config;
-        this.defaultSchema = config.getDefaultSchema();
+        this.defaultSchema = config.getSnapshot();
         this.programs = config.getPrograms();
         this.parserConfig = config.getParserConfig();
         this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();

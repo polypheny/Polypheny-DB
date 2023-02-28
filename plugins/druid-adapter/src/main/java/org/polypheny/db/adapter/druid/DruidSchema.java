@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -60,7 +61,7 @@ public class DruidSchema extends AbstractNamespace implements Schema {
     final String url;
     final String coordinatorUrl;
     private final boolean discoverTables;
-    private Map<String, Entity> tableMap = null;
+    private Map<String, CatalogEntity> tableMap = null;
 
 
     /**
@@ -79,7 +80,7 @@ public class DruidSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, CatalogEntity> getTables() {
         if ( !discoverTables ) {
             return ImmutableMap.of();
         }
@@ -95,14 +96,15 @@ public class DruidSchema extends AbstractNamespace implements Schema {
     }
 
 
-    private Entity table( String tableName, DruidConnectionImpl connection ) {
+    private CatalogEntity table( String tableName, DruidConnectionImpl connection ) {
         final Map<String, PolyType> fieldMap = new LinkedHashMap<>();
         final Set<String> metricNameSet = new LinkedHashSet<>();
         final Map<String, List<ComplexMetric>> complexMetrics = new HashMap<>();
 
         connection.metadata( tableName, DruidEntity.DEFAULT_TIMESTAMP_COLUMN, null, fieldMap, metricNameSet, complexMetrics );
 
-        return DruidEntity.create( DruidSchema.this, tableName, null, fieldMap, metricNameSet, DruidEntity.DEFAULT_TIMESTAMP_COLUMN, complexMetrics );
+        //return DruidEntity.create( DruidSchema.this, tableName, null, fieldMap, metricNameSet, DruidEntity.DEFAULT_TIMESTAMP_COLUMN, complexMetrics );
+        return null;
     }
 
 }

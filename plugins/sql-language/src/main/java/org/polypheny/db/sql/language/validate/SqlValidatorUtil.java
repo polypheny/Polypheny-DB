@@ -38,17 +38,16 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.plan.AlgOptSchemaWithSampling;
-import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ExtensibleEntity;
@@ -85,55 +84,55 @@ public class SqlValidatorUtil {
      * Otherwise, returns null.
      *
      * @param namespace Namespace
-     * @param catalogReader Schema
      * @param datasetName Name of sample dataset to substitute, or null to use the regular table
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      */
-    public static CatalogEntity getAlgOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
-        final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
-        return catalogReader.getRootSchema().getTable( tableNamespace.getTable().getQualifiedName() );
+    public static CatalogEntity getLogicalEntity( SqlValidatorNamespace namespace, Snapshot snapshot, String datasetName, boolean[] usedDataset ) {
+        final EntityNamespace entityNamespace = namespace.unwrap( EntityNamespace.class );
+        return entityNamespace.getTable();
         /*if ( namespace.isWrapperFor( TableNamespace.class ) ) {
             final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
-            return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
+            return getLogicalEntity( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
         } else if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = namespace.unwrap( SqlValidatorImpl.DmlNamespace.class );
             final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
             if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
                 final TableNamespace tableNamespace = resolvedNamespace.unwrap( TableNamespace.class );
-                final ValidatorTable validatorTable = tableNamespace.getTable();
+                final ValidatorTable validatorTable = tableNamespace.getLogicalTable();
                 final AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
                 final List<AlgDataTypeField> extendedFields =
                         dmlNamespace.extendList == null
                                 ? ImmutableList.of()
                                 : getExtendedColumns( typeFactory, validatorTable, dmlNamespace.extendList );
-                return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, extendedFields );
+                return getLogicalEntity( tableNamespace, catalogReader, datasetName, usedDataset, extendedFields );
             }
         }
         return null;*/
     }
 
 
-    private static AlgOptEntity getAlgOptTable( TableNamespace tableNamespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset, List<AlgDataTypeField> extendedFields ) {
-        final List<String> names = tableNamespace.getTable().getQualifiedName();
-        AlgOptEntity table;
+    private static LogicalTable getLogicalEntity( EntityNamespace entityNamespace, Snapshot snapshot, String datasetName, boolean[] usedDataset, List<AlgDataTypeField> extendedFields ) {
+        // final List<String> names = entityNamespace.getTable().getQualifiedName();
+        /*AlgOptEntity table;
         if ( datasetName != null && catalogReader instanceof AlgOptSchemaWithSampling ) {
             final AlgOptSchemaWithSampling reader = (AlgOptSchemaWithSampling) catalogReader;
-            table = reader.getTableForMember( names, datasetName, usedDataset );
+            table = snapshot.getTableForMember( names, datasetName, usedDataset );
         } else {
             // Schema does not support substitution. Ignore the data set, if any.
             table = catalogReader.getTableForMember( names );
-        }
-        if ( !extendedFields.isEmpty() ) {
+        }*/
+
+        /*if ( !extendedFields.isEmpty() ) { // todo dl
             table = table.extend( extendedFields );
-        }
-        return table;
+        }*/
+        return entityNamespace.getTable().unwrap( LogicalTable.class );
     }
 
 
     /**
      * Gets a list of extended columns with field indices to the underlying table.
      */
-    public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, ValidatorTable table, SqlNodeList extendedColumns ) {
+    public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, CatalogEntity table, SqlNodeList extendedColumns ) {
         final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
         final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class );
         int extendedFieldOffset =
@@ -264,13 +263,13 @@ public class SqlValidatorUtil {
     /**
      * Factory method for {@link SqlValidator}.
      */
-    public static SqlValidatorWithHints newValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
+    public static SqlValidatorWithHints newValidator( OperatorTable opTab, Snapshot catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
         return new SqlValidatorImpl( opTab, catalogReader, typeFactory, conformance );
     }
 
 
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, CatalogEntity table ) {
-        return getTargetField( rowType, typeFactory, id, catalogReader, table, false );
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, CatalogEntity table ) {
+        return getTargetField( rowType, typeFactory, id, snapshot, table, false );
     }
 
 
@@ -282,11 +281,11 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, CatalogEntity table, boolean isDocument ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, CatalogEntity table, boolean isDocument ) {
         final Entity t = table == null ? null : table.unwrap( Entity.class );
 
         if ( !(t instanceof CustomColumnResolvingEntity) ) {
-            final NameMatcher nameMatcher = catalogReader.nameMatcher;
+            final NameMatcher nameMatcher = snapshot.nameMatcher;
             AlgDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
 
             if ( typeField == null && isDocument ) {
@@ -309,7 +308,7 @@ public class SqlValidatorUtil {
     }
 
 
-    public static void getSchemaObjectMonikers( ValidatorCatalogReader catalogReader, List<String> names, List<Moniker> hints ) {
+    public static void getSchemaObjectMonikers( Snapshot snapshot, List<String> names, List<Moniker> hints ) {
         // Assume that the last name is 'dummy' or similar.
         List<String> subNames = Util.skipLast( names );
 
@@ -489,7 +488,7 @@ public class SqlValidatorUtil {
             String originalRelName = expr.names.get( 0 );
             String originalFieldName = expr.names.get( 1 );
 
-            final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher;
+            final NameMatcher nameMatcher = scope.getValidator().getSnapshot().nameMatcher;
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
 
@@ -622,11 +621,11 @@ public class SqlValidatorUtil {
             return false;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
-        LogicalGraph graph = validator.getCatalogReader().getRootSchema().getGraph( id.names );
+        LogicalGraph graph = validator.getSnapshot().getLogicalGraph( id.names );
         if ( graph != null ) {
             return false;
         }
-        LogicalCollection collection = validator.getCatalogReader().getRootSchema().getCollection( id.names );
+        LogicalCollection collection = validator.getSnapshot().getLogicalCollection( id.names );
         if ( collection != null ) {
             return false;
         }

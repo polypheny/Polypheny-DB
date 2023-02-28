@@ -38,10 +38,10 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaVersion;
 
 
@@ -82,8 +82,8 @@ public class DelegatingNamespace implements Namespace {
 
 
     @Override
-    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
-        return namespace.getExpression( parentSchema, name );
+    public Expression getExpression( Snapshot snapshot, String name ) {
+        return namespace.getExpression( snapshot, name );
     }
 
 

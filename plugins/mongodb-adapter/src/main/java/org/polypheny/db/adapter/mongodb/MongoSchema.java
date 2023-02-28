@@ -48,12 +48,14 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
@@ -103,28 +105,12 @@ public class MongoSchema extends AbstractNamespace implements Schema {
     }
 
 
-    private String buildDatabaseName( CatalogColumn column ) {
-        return column.getDatabaseName() + "_" + column.getSchemaName() + "_" + column.name;
+    public MongoEntity createTable( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+        return new MongoEntity( logicalTable, allocationTable, physicalTable, this, transactionProvider );
     }
 
 
-    public MongoEntity createTable( LogicalTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-
-        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.name, catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
-        }
-        MongoEntity table = new MongoEntity( catalogTable, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
-
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
-        return table;
-    }
-
-
-    public Entity createCollection( LogicalCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+    /*public Entity createCollection( LogicalCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
@@ -135,7 +121,7 @@ public class MongoSchema extends AbstractNamespace implements Schema {
 
         tableMap.put( catalogEntity.name + "_" + partitionPlacement.id, table );
         return table;
-    }
+    }*/
 
 }
 

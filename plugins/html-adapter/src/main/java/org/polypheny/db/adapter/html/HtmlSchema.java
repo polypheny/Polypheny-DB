@@ -93,7 +93,7 @@ class HtmlSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, Entity> getTables() {
         final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
 
         for ( Map<String, Object> tableDef : this.tables ) {

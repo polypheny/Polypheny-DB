@@ -62,7 +62,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -910,7 +910,7 @@ public class DdlManagerImpl extends DdlManager {
         PolySchemaBuilder.getInstance().getCurrent();
 
         // Create table on store
-        dataStore.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
+        dataStore.createPhysicalTable( statement.getPrepareContext(), catalogTable, , catalogTable.partitionProperty.partitionIds );
         // Copy data to the newly added placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( dataStore.getAdapterId() ), addedColumns, partitionIds );
@@ -1468,7 +1468,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     DataPlacementRole.UPTODATE )
             );
-            storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
+            storeInstance.createPhysicalTable( statement.getPrepareContext(), catalogTable, , newPartitionIdsOnDataPlacement );
         }
 
         // Copy the data to the newly added column placements
@@ -1523,7 +1523,7 @@ public class DdlManagerImpl extends DdlManager {
                         DataPlacementRole.UPTODATE );
             }
 
-            storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
+            storeInstance.createPhysicalTable( statement.getPrepareContext(), catalogTable, , newPartitions );
 
             // Get only columns that are actually on that store
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
@@ -1868,7 +1868,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     DataPlacementRole.UPTODATE );
 
-            store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
+            store.createPhysicalTable( statement.getPrepareContext(), catalogMaterializedView, , catalogMaterializedView.partitionProperty.partitionIds );
         }
 
         // Selected data from tables is added into the newly crated materialized view
@@ -2240,7 +2240,7 @@ public class DdlManagerImpl extends DdlManager {
                         null,
                         DataPlacementRole.UPTODATE );
 
-                store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
+                store.createPhysicalTable( statement.getPrepareContext(), catalogTable, , catalogTable.partitionProperty.partitionIds );
             }
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
@@ -2682,7 +2682,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
             // First create new tables
-            store.createTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds );
+            store.createPhysicalTable( statement.getPrepareContext(), partitionedTable, , partitionedTable.partitionProperty.partitionIds );
 
             // Copy data from unpartitioned to partitioned
             // Get only columns that are actually on that store
@@ -2792,7 +2792,7 @@ public class DdlManagerImpl extends DdlManager {
                     DataPlacementRole.UPTODATE );
 
             // First create new tables
-            store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
+            store.createPhysicalTable( statement.getPrepareContext(), mergedTable, , mergedTable.partitionProperty.partitionIds );
 
             // Get only columns that are actually on that store
             List<CatalogColumn> necessaryColumns = new LinkedList<>();

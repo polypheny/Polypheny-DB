@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -39,10 +40,10 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
 
-public class FileTableModify extends RelModify implements FileAlg {
+public class FileTableModify extends RelModify<FileTranslatableEntity> implements FileAlg {
 
-    public FileTableModify( AlgOptCluster cluster, AlgTraitSet traits, AlgOptEntity table, CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+    public FileTableModify( AlgOptCluster cluster, AlgTraitSet traits, FileTranslatableEntity table, AlgNode child, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
+        super( cluster, traits, table, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
@@ -57,8 +58,7 @@ public class FileTableModify extends RelModify implements FileAlg {
         return new FileTableModify(
                 getCluster(),
                 traitSet,
-                getEntity(),
-                getCatalogReader(),
+                entity,
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),
                 getUpdateColumnList(),
@@ -77,8 +77,8 @@ public class FileTableModify extends RelModify implements FileAlg {
     public void implement( final FileImplementor implementor ) {
         setOperation( implementor );//do it first, so children know that we have an insert/update/delete
         implementor.visitChild( 0, getInput() );
-        FileTranslatableEntity fileTable = (FileTranslatableEntity) getEntity().getEntity();
-        implementor.setFileTable( fileTable );
+
+        implementor.setFileTable( entity );
         if ( getOperation() == Operation.UPDATE ) {
             if ( getSourceExpressionList() != null ) {
                 if ( implementor.getUpdates() == null ) {
@@ -89,9 +89,9 @@ public class FileTableModify extends RelModify implements FileAlg {
                 int i = 0;
                 for ( RexNode src : getSourceExpressionList() ) {
                     if ( src instanceof RexLiteral ) {
-                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).getValueForFileCondition(), false ) );
+                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).getValueForFileCondition(), false ) );
                     } else if ( src instanceof RexDynamicParam ) {
-                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexDynamicParam) src).getIndex(), true ) );
+                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), ((RexDynamicParam) src).getIndex(), true ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
                         values.add( Value.fromArrayRexCall( (RexCall) src ) );
                     } else {

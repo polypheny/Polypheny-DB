@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;

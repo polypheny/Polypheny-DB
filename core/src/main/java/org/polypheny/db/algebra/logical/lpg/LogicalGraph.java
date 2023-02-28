@@ -26,13 +26,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TranslatableGraph;
@@ -55,7 +54,7 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, Snapshot snapshot ) {
         return null;
     }
 
@@ -109,8 +108,8 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
 
     @Override
-    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
-        return Schemas.subSchemaExpression( parentSchema, name, LogicalGraph.class );
+    public Expression getExpression( Snapshot snapshot, String name ) {
+        return Schemas.subSchemaExpression( snapshot, name, LogicalGraph.class );
     }
 
 

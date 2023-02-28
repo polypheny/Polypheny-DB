@@ -18,7 +18,7 @@ package org.polypheny.db.sql.language.validate;
 
 
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -45,7 +45,7 @@ class UnnestNamespace extends AbstractNamespace {
 
 
     @Override
-    public ValidatorTable getTable() {
+    public CatalogEntity getTable() {
         final SqlNode toUnnest = unnest.operand( 0 );
         if ( toUnnest instanceof SqlIdentifier ) {
             // When operand of SqlIdentifier type does not have struct, fake a table for UnnestNamespace

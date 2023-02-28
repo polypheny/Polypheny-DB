@@ -160,8 +160,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             for ( final CatalogForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
-                final LogicalTable scanOptTable = statement.getDataContext().getSnapshot().getTable( foreignKey.tableId );
-                final LogicalTable refOptTable = statement.getDataContext().getSnapshot().getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable scanOptTable = statement.getDataContext().getSnapshot().getLogicalTable( foreignKey.tableId );
+                final LogicalTable refOptTable = statement.getDataContext().getSnapshot().getLogicalTable( foreignKey.referencedKeyTableId );
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
                 final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 
@@ -255,7 +255,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.scan( table.getSchemaName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
-                builder.scan( table.getNamespaceName(), table.name );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
+                builder.scan( table.getNamespaceName(), table.name );//LogicalTableScan.create( modify.getCluster(), modify.getLogicalTable() );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexInputRef> keys = constraint.key
                         .getColumnNames()

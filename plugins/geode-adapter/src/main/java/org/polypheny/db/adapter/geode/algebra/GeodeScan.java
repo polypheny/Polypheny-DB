@@ -38,6 +38,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -63,7 +64,7 @@ public class GeodeScan extends RelScan implements GeodeAlg {
      * @param geodeTable Geode table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    GeodeScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, GeodeEntity geodeTable, AlgDataType projectRowType ) {
+    GeodeScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, GeodeEntity geodeTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.geodeTable = geodeTable;
         this.projectRowType = projectRowType;
@@ -99,7 +100,7 @@ public class GeodeScan extends RelScan implements GeodeAlg {
     public void implement( GeodeImplementContext geodeImplementContext ) {
         // Note: Scan is the leaf and we do NOT visit its inputs
         geodeImplementContext.geodeTable = geodeTable;
-        geodeImplementContext.table = table;
+        geodeImplementContext.table = entity;
     }
 
 }

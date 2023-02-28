@@ -55,7 +55,7 @@ public class PigSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, Entity> getTables() {
         return tableMap;
     }
 

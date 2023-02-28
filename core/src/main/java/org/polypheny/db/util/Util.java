@@ -96,8 +96,13 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.nodes.BasicNodeVisitor;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Literal;
@@ -2012,6 +2017,22 @@ public class Util {
      */
     public static <E> Iterator<E> filter( Iterator<E> iterator, Predicate<E> predicate ) {
         return new FilteringIterator<>( iterator, predicate );
+    }
+
+
+    public static Monotonicity getMonotonicity( CatalogEntity entity, String columnName ) {
+        if ( entity.namespaceType != NamespaceType.RELATIONAL ) {
+            return Monotonicity.NOT_MONOTONIC;
+        }
+
+        for ( AlgCollation collation : entity.getStatistic().getCollations() ) {
+            final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
+            final int fieldIndex = fieldCollation.getFieldIndex();
+            if ( fieldIndex < entity.getRowType().getFieldCount() && entity.getRowType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+                return fieldCollation.direction.monotonicity();
+            }
+        }
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 

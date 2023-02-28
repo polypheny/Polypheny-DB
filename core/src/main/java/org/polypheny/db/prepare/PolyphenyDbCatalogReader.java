@@ -35,22 +35,20 @@ package org.polypheny.db.prepare;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.LogicalCollection;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.prepare.Prepare.PreparingEntity;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
@@ -63,45 +61,37 @@ import org.polypheny.db.util.ValidatorUtil;
  */
 public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
-    protected final PolyphenyDbSchema rootSchema;
+    protected final Snapshot snapshot;
     protected final AlgDataTypeFactory typeFactory;
 
 
-    public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, AlgDataTypeFactory typeFactory ) {
-        this.rootSchema = Objects.requireNonNull( rootSchema );
+    public PolyphenyDbCatalogReader( @NonNull Snapshot snapshot, AlgDataTypeFactory typeFactory ) {
+        this.snapshot = snapshot;
         this.typeFactory = typeFactory;
     }
 
 
     @Override
-    public PreparingEntity getTable( final List<String> names ) {
-        // First look in the default schema, if any. If not found, look in the root schema.
-        CatalogEntity entity = rootSchema.getTable( names );
-        return AlgOptEntityImpl.create( this, entity.getRowType(), entity, null, null );
-
+    public LogicalTable getTable( final List<String> names ) {
+        return snapshot.getLogicalTable( names );
     }
 
 
     @Override
-    public AlgOptEntity getCollection( final List<String> names ) {
-        // First look in the default schema, if any. If not found, look in the root schema.
-        LogicalCollection collection = rootSchema.getCollection( names );
-        if ( collection != null ) {
-            return AlgOptEntityImpl.create( this, collection.getRowType(), collection, null, null );
-        }
-        return null;
+    public LogicalCollection getCollection( final List<String> names ) {
+        return snapshot.getLogicalCollection( names );
     }
 
 
     @Override
     public LogicalGraph getGraph( final String name ) {
-        return rootSchema.getGraph( List.of( name ) );
+        return snapshot.getLogicalGraph( List.of( name ) );
     }
 
 
     @Override
     public AlgDataType getNamedType( Identifier typeName ) {
-        LogicalTable table = rootSchema.getTable( typeName.getNames() );
+        LogicalTable table = snapshot.getLogicalTable( typeName.getNames() );
         if ( table != null ) {
             return table.getRowType();
         } else {
@@ -112,18 +102,16 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
-        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, names, Wrapper.nameMatcher );
         final List<Moniker> result = new ArrayList<>();
-
-        for ( String subSchema : rootSchema.getNamespaceNames() ) {
-            result.add( moniker( schema, subSchema, MonikerType.SCHEMA ) );
+        for ( String subSchema : snapshot.getNamespaces( null ).stream().map( n -> n.name ).collect( Collectors.toList() ) ) {
+            result.add( moniker( subSchema, MonikerType.SCHEMA ) );
         }
 
         return result;
     }
 
 
-    private Moniker moniker( PolyphenyDbSchema schema, String name, MonikerType type ) {
+    private Moniker moniker( String name, MonikerType type ) {
         /*final List<String> path = schema.path( name );
         if ( path.size() == 1 && !schema.root().getName().equals( "" ) && type == MonikerType.SCHEMA ) {
             type = MonikerType.CATALOG;
@@ -133,7 +121,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public PreparingEntity getTableForMember( List<String> names ) {
+    public LogicalTable getTableForMember( List<String> names ) {
         return getTable( names );
     }
 
@@ -157,8 +145,8 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public PolyphenyDbSchema getRootSchema() {
-        return rootSchema;
+    public Snapshot getSnapshot() {
+        return snapshot;
     }
 
 

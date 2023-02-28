@@ -53,7 +53,7 @@ public final class CatalogSchema extends CatalogNamespace implements CatalogObje
             @NonNull final String ownerName,
             @NonNull final NamespaceType namespaceType,
             boolean caseSensitive ) {
-        super( id, namespaceType );
+        super( id, name, namespaceType );
         this.id = id;
         this.name = name;
         this.databaseId = databaseId;

@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
@@ -231,12 +232,12 @@ public class SqlTypeUtil {
     public NodeToAlgConverter createToRelConverter(
             QueryLanguage language,
             Validator validator,
-            CatalogReader catalogReader,
+            Snapshot snapshot,
             AlgOptCluster cluster,
             RexConvertletTable convertletTable,
             Config config ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
-            return getSqlToRelConverter( (SqlValidator) validator, catalogReader, cluster, (SqlRexConvertletTable) convertletTable, config );
+            return getSqlToRelConverter( (SqlValidator) validator, snapshot, cluster, (SqlRexConvertletTable) convertletTable, config );
         }
 
         throw new UnsupportedLanguageOperation( language );
@@ -245,22 +246,22 @@ public class SqlTypeUtil {
 
     private SqlToAlgConverter getSqlToRelConverter(
             SqlValidator validator,
-            CatalogReader catalogReader,
+            Snapshot snapshot,
             AlgOptCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
-        return new SqlToAlgConverter( validator, catalogReader, cluster, convertletTable, config );
+        return new SqlToAlgConverter( validator, snapshot, cluster, convertletTable, config );
     }
 
 
     public Validator createPolyphenyValidator(
             QueryLanguage language,
             OperatorTable operatorTable,
-            PolyphenyDbCatalogReader catalogReader,
+            Snapshot snapshot,
             JavaTypeFactory typeFactory,
             Conformance conformance ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
-            return new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
+            return new PolyphenyDbSqlValidator( operatorTable, snapshot, typeFactory, conformance );
         }
 
         throw new UnsupportedLanguageOperation( language );

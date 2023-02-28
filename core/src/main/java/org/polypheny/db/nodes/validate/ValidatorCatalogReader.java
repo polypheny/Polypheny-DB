@@ -19,6 +19,8 @@ package org.polypheny.db.nodes.validate;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
@@ -45,7 +47,7 @@ public interface ValidatorCatalogReader extends Wrapper {
      * @param names Name of table, may be qualified or fully-qualified
      * @return Table with the given name, or null
      */
-    ValidatorTable getTable( List<String> names );
+    LogicalTable getTable( List<String> names );
 
     /**
      * Finds a user-defined type with the given name, possibly qualified.
@@ -72,6 +74,6 @@ public interface ValidatorCatalogReader extends Wrapper {
     /**
      * Returns the root namespace for name resolution.
      */
-    PolyphenyDbSchema getRootSchema();
+    Snapshot getSnapshot();
 
 }

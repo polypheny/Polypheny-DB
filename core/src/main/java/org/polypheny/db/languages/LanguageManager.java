@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import lombok.Getter;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.prepare.Context;
@@ -59,7 +60,7 @@ public class LanguageManager {
     }
 
 
-    public void addQueryLanguage( NamespaceType namespaceType, String serializedName, List<String> otherNames, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier ) {
+    public void addQueryLanguage( NamespaceType namespaceType, String serializedName, List<String> otherNames, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, Snapshot, Validator> validatorSupplier ) {
         QueryLanguage language = new QueryLanguage( namespaceType, serializedName, otherNames, factory, processorSupplier, validatorSupplier );
         REGISTER.add( language );
         listeners.firePropertyChange( "language", null, language );

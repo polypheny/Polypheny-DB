@@ -43,22 +43,23 @@ import org.apache.geode.cache.client.ClientCache;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.schema.ScannableEntity;
-import org.polypheny.db.schema.impl.AbstractEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.ScannableEntity;
 
 
 /**
  * Geode Simple Scannable Table Abstraction
  */
-public class GeodeSimpleScannableEntity extends AbstractEntity implements ScannableEntity {
+public class GeodeSimpleScannableEntity extends PhysicalTable implements ScannableEntity {
 
     private final AlgDataType algDataType;
     private String regionName;
     private ClientCache clientCache;
 
 
-    public GeodeSimpleScannableEntity( String regionName, AlgDataType algDataType, ClientCache clientCache ) {
-        super( null, null, null );
+    public GeodeSimpleScannableEntity( String regionName, AlgDataType algDataType, ClientCache clientCache, AllocationTable allocationTable ) {
+        super( allocationTable );
         this.regionName = regionName;
         this.clientCache = clientCache;
         this.algDataType = algDataType;
@@ -71,18 +72,13 @@ public class GeodeSimpleScannableEntity extends AbstractEntity implements Scanna
     }
 
 
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return algDataType;
-    }
-
 
     @Override
     public Enumerable<Object[]> scan( DataContext root ) {
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new GeodeSimpleEnumerator<Object[]>( clientCache, regionName ) {
+                return new GeodeSimpleEnumerator<>( clientCache, regionName ) {
                     @Override
                     public Object[] convert( Object obj ) {
                         Object values = convertToRowValues( algDataType.getFieldList(), obj );

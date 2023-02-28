@@ -121,6 +121,7 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -149,7 +150,6 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCallBinding;
@@ -255,7 +255,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
     protected final SqlValidator validator;
     protected final RexBuilder rexBuilder;
-    protected final CatalogReader catalogReader;
+    protected final Snapshot snapshot;
     protected final AlgOptCluster cluster;
     private SubQueryConverter subQueryConverter;
     protected final List<AlgNode> leaves = new ArrayList<>();
@@ -285,13 +285,13 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     /* Creates a converter. */
-    public SqlToAlgConverter( SqlValidator validator, CatalogReader catalogReader, AlgOptCluster cluster, SqlRexConvertletTable convertletTable, Config config ) {
+    public SqlToAlgConverter( SqlValidator validator, Snapshot snapshot, AlgOptCluster cluster, SqlRexConvertletTable convertletTable, Config config ) {
         this.opTab =
                 (validator == null)
                         ? SqlStdOperatorTable.instance()
                         : validator.getOperatorTable();
         this.validator = validator;
-        this.catalogReader = catalogReader;
+        this.snapshot = snapshot;
         this.subQueryConverter = new NoOpSubQueryConverter();
         this.rexBuilder = cluster.getRexBuilder();
         this.typeFactory = rexBuilder.getTypeFactory();
@@ -412,7 +412,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                         Pair.right( validatedFields ),
                         ValidatorUtil.uniquify(
                                 Pair.left( validatedFields ),
-                                catalogReader.nameMatcher.isCaseSensitive() ) );
+                                false ) );
         /*int diff = validatedFields.size() - result.getRowType().getFieldList().size();
         if ( diff > 0 ) {
             for ( int i = 0; i < diff; i++ ) {
@@ -1868,7 +1868,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 if ( isNatural ) {
                     final AlgDataType leftRowType = leftNamespace.getRowType();
                     final AlgDataType rightRowType = rightNamespace.getRowType();
-                    final List<String> columnList = SqlValidatorUtil.deriveNaturalJoinColumnList( catalogReader.nameMatcher, leftRowType, rightRowType );
+                    final List<String> columnList = SqlValidatorUtil.deriveNaturalJoinColumnList( snapshot.nameMatcher, leftRowType, rightRowType );
                     conditionExp = convertUsing( leftNamespace, rightNamespace, columnList );
                 } else {
                     conditionExp =
@@ -2119,11 +2119,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
         final String datasetName = datasetStack.isEmpty() ? null : datasetStack.peek();
         final boolean[] usedDataset = { false };
-        CatalogEntity table = SqlValidatorUtil.getAlgOptTable( fromNamespace, catalogReader, datasetName, usedDataset );
+        CatalogEntity table = SqlValidatorUtil.getLogicalEntity( fromNamespace, snapshot, datasetName, usedDataset );
         if ( extendedColumns != null && extendedColumns.size() > 0 ) {
             assert table != null;
             final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class );
-            final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), validatorTable, extendedColumns );
+            final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendedColumns );
             table = table; // table.extend( extendedFields ); todo dl
         }
         final AlgNode tableRel;
@@ -2160,8 +2160,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final SqlCallBinding callBinding = new SqlCallBinding( bb.scope.getValidator(), bb.scope, call );
         if ( operator instanceof SqlUserDefinedTableMacro ) {
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
-            //final TranslatableEntity table = udf.getTable( typeFactory, callBinding.sqlOperands() );
-            //final LogicalTable catalogTable = Catalog.getInstance().getTable( table.getId() );
+            //final TranslatableEntity table = udf.getLogicalTable( typeFactory, callBinding.sqlOperands() );
+            //final LogicalTable catalogTable = Catalog.getInstance().getLogicalTable( table.getId() );
             //final AlgDataType rowType = table.getRowType( typeFactory );
             //AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable, null );
             //AlgNode converted = toAlg( algOptEntity );
@@ -2414,7 +2414,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     private @Nonnull
     RexNode convertUsing( SqlValidatorNamespace leftNamespace, SqlValidatorNamespace rightNamespace, List<String> nameList ) {
-        final NameMatcher nameMatcher = catalogReader.nameMatcher;
+        final NameMatcher nameMatcher = snapshot.nameMatcher;
         final List<RexNode> list = new ArrayList<>();
         for ( String name : nameList ) {
             List<RexNode> operands = new ArrayList<>();
@@ -2945,10 +2945,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final SqlValidatorNamespace targetNs = validator.getSqlNamespace( call );
         if ( targetNs.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = targetNs.unwrap( SqlValidatorImpl.DmlNamespace.class );
-            return SqlValidatorUtil.getAlgOptTable( dmlNamespace, catalogReader, null, null );
+            return SqlValidatorUtil.getLogicalEntity( dmlNamespace, snapshot, null, null );
         }
         final SqlValidatorNamespace resolvedNamespace = targetNs.resolve();
-        return SqlValidatorUtil.getAlgOptTable( resolvedNamespace, catalogReader, null, null );
+        return SqlValidatorUtil.getLogicalEntity( resolvedNamespace, snapshot, null, null );
     }
 
 
@@ -2989,7 +2989,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // Walk the name list and place the associated value in the expression list according to the ordinal value returned from the table construct, leaving nulls in the list for columns
         // that are not referenced.
-        final NameMatcher nameMatcher = catalogReader.nameMatcher;
+        final NameMatcher nameMatcher = snapshot.nameMatcher;
 
         for ( Pair<String, RexNode> p : Pair.zip( targetColumnNames, columnExprs ) ) {
             AlgDataTypeField field = nameMatcher.field( targetRowType, p.left );
@@ -3044,7 +3044,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
-    private InitializerExpressionFactory getInitializerFactory( ValidatorTable validatorTable ) {
+    private InitializerExpressionFactory getInitializerFactory( CatalogEntity validatorTable ) {
         // We might unwrap a null instead of a InitializerExpressionFactory.
         final Entity entity = unwrap( validatorTable, Entity.class );
         if ( entity != null ) {
@@ -3109,7 +3109,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                 tableRowType,
                                 typeFactory,
                                 id,
-                                catalogReader,
+                                snapshot,
                                 targetTable,
                                 allowDynamic );
                 assert field != null : "column " + id.toString() + " not found";
@@ -3184,7 +3184,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgDataType targetRowType = targetTable.getRowType();
         for ( SqlNode node : call.getTargetColumnList().getSqlList() ) {
             SqlIdentifier id = (SqlIdentifier) node;
-            AlgDataTypeField field = SqlValidatorUtil.getTargetField( targetRowType, typeFactory, id, catalogReader, targetTable );
+            AlgDataTypeField field = SqlValidatorUtil.getTargetField( targetRowType, typeFactory, id, snapshot, targetTable );
             assert field != null : "column " + id.toString() + " not found";
             targetColumnNameList.add( field.getName() );
         }
@@ -3216,7 +3216,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                 targetRowType,
                                 typeFactory,
                                 id,
-                                catalogReader,
+                                snapshot,
                                 targetTable );
                 assert field != null : "column " + id.toString() + " not found";
                 targetColumnNameList.add( field.getName() );
@@ -3504,7 +3504,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             fieldNames.add( deriveAlias( expr, aliases, i ) );
         }
 
-        fieldNames = ValidatorUtil.uniquify( fieldNames, catalogReader.nameMatcher.isCaseSensitive() );
+        fieldNames = ValidatorUtil.uniquify( fieldNames, snapshot.nameMatcher.isCaseSensitive() );
 
         algBuilder.push( bb.root ).projectNamed( exprs, fieldNames, true );
         bb.setRoot( algBuilder.build(), false );
@@ -3854,7 +3854,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 }
                 return Pair.of( node, null );
             }
-            final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher;
+            final NameMatcher nameMatcher = scope.getValidator().getSnapshot().nameMatcher;
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( qualified.prefix(), nameMatcher, false, resolved );
             if ( !(resolved.count() == 1) ) {

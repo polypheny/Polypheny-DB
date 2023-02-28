@@ -32,10 +32,10 @@ import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
@@ -107,19 +107,23 @@ public class FileRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final RelModify modify = (RelModify) alg;
+            final RelModify<?> modify = (RelModify<?>) alg;
             final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
 
             if ( modifiableTable == null ) {
                 log.warn( "Returning null during conversion" );
                 return null;
             }
+            if ( modify.getEntity().unwrap( FileTranslatableEntity.class ) == null ) {
+                log.warn( "Returning null during conversion" );
+                return null;
+            }
+
             final AlgTraitSet traitSet = modify.getTraitSet().replace( convention );
             return new FileTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getEntity(),
-                    modify.getCatalogReader(),
+                    modify.getEntity().unwrap( FileTranslatableEntity.class ),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),

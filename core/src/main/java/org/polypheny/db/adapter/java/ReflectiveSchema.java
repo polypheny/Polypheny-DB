@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.java;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -56,13 +57,16 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
@@ -115,7 +119,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    public Map<String, CatalogEntity> getTableMap() {
+    public Map<String, CatalogEntity> getTables() {
         if ( tableMap == null ) {
             tableMap = createTableMap();
         }
@@ -181,11 +185,11 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Returns an expression for the object wrapped by this schema (not the schema itself).
      */
-    Expression getTargetExpression( PolyphenyDbSchema parentSchema, String name ) {
+    Expression getTargetExpression( Snapshot snapshot, String name ) {
         return Types.castIfNecessary(
                 target.getClass(),
                 Expressions.call(
-                        Schemas.unwrap( getExpression( parentSchema, name ), ReflectiveSchema.class ),
+                        Schemas.unwrap( getExpression( snapshot, name ), ReflectiveSchema.class ),
                         BuiltInMethod.REFLECTIVE_SCHEMA_GET_TARGET.method ) );
     }
 
@@ -242,22 +246,17 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Table that is implemented by reading from a Java object.
      */
-    private static class ReflectiveEntity extends AbstractQueryableEntity implements Entity, ScannableEntity {
+    private static class ReflectiveEntity extends LogicalTable implements ScannableEntity {
 
         private final Type elementType;
         private final Enumerable enumerable;
 
 
         ReflectiveEntity( Type elementType, Enumerable<?> enumerable, Long id, Long partitionId, Long adapterId ) {
-            super( elementType, id, partitionId, adapterId );
+            //super( elementType, id, partitionId, adapterId );
+            super( id, "test", null, -1, -1, -1, EntityType.ENTITY, null, ImmutableList.of(), false, null );
             this.elementType = elementType;
             this.enumerable = enumerable;
-        }
-
-
-        @Override
-        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-            return ((JavaTypeFactory) typeFactory).createType( elementType );
         }
 
 
@@ -274,21 +273,21 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
                 return enumerable;
             } else {
                 //noinspection unchecked
-                return enumerable.select( new FieldSelector( (Class) elementType ) );
+                return enumerable.select( new FieldSelector( (Class<?>) elementType ) );
             }
         }
 
 
-        @Override
-        public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-            return new AbstractTableQueryable<T>( dataContext, schema, this, tableName ) {
+        /*@Override
+        public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, String tableName ) {
+            return new AbstractTableQueryable<T>( dataContext, snapshot, this, tableName ) {
                 @Override
                 @SuppressWarnings("unchecked")
                 public Enumerator<T> enumerator() {
                     return (Enumerator<T>) enumerable.enumerator();
                 }
             };
-        }
+        }*/
 
     }
 
@@ -359,12 +358,6 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
             return statistic;
         }
 
-
-        @Override
-        public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
-            return null; // todo dl
-            // return Expressions.field( schema.unwrap( ReflectiveSchema.class ).getTargetExpression( schema.getParentSchema(), schema.getName() ), field );
-        }
 
     }
 

@@ -42,12 +42,5 @@ public interface ValidatorTable extends Wrapper {
      */
     Monotonicity getMonotonicity( String columnName );
 
-    /**
-     * Returns the access type of the table
-     */
-    AccessType getAllowedAccess();
-
-    boolean supportsModality( Modality modality );
-
 }
 

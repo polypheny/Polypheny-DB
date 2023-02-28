@@ -23,11 +23,13 @@ public abstract class CatalogNamespace implements CatalogObject, Serializable {
 
     public final long id;
     public final NamespaceType namespaceType;
+    public final String name;
 
 
-    public CatalogNamespace( long id, NamespaceType type ) {
+    public CatalogNamespace( long id, String name, NamespaceType type ) {
         this.id = id;
         this.namespaceType = type;
+        this.name = name;
     }
 
 }

@@ -304,7 +304,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     DataPlacementRole.UPTODATE );
                         }
 
-                        store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
+                        store.createPhysicalTable( statement.getPrepareContext(), table, , hotPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
                         catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
@@ -352,7 +352,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     null,
                                     null, DataPlacementRole.UPTODATE );
                         }
-                        store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
+                        store.createPhysicalTable( statement.getPrepareContext(), table, , coldPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
                         catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );

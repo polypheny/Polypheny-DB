@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.type.PolyTypeUtil;
 
@@ -257,14 +258,13 @@ public class ValidatorUtil {
      *
      * If not found, returns null.
      *
-     * @param rootSchema root schema
      * @param schemaPath full schema path of required schema
      * @param nameMatcher name matcher
      * @return PolyphenyDbSchema that corresponds specified schemaPath
      */
-    public static PolyphenyDbSchema getSchema( PolyphenyDbSchema rootSchema, Iterable<String> schemaPath, NameMatcher nameMatcher ) {
+    public static Snapshot getSchema( Snapshot snapshot, Iterable<String> schemaPath, NameMatcher nameMatcher ) {
 
-        return rootSchema;
+        return snapshot;
     }
 
 

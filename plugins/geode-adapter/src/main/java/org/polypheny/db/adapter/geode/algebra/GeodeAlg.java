@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.Convention;
 
@@ -74,7 +75,7 @@ public interface GeodeAlg extends AlgNode {
         final Map<String, String> oqlAggregateFunctions = new LinkedHashMap<>();
 
         Long limitValue;
-        AlgOptEntity table;
+        CatalogEntity table;
         GeodeEntity geodeTable;
 
 

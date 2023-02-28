@@ -41,6 +41,7 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -49,7 +50,6 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -127,14 +127,14 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
+    public void createNewSchema( Snapshot snapshot, String name, long id ) {
         currentSchema = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
     }
 
 
     @Override
-    public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
-        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
+    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+        return currentSchema.createCsvTable( logical, allocationTable, this );
     }
 
 

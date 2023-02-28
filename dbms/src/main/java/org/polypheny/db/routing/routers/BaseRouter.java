@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -61,20 +62,21 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -82,7 +84,6 @@ import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -411,11 +412,9 @@ public abstract class BaseRouter implements Router {
 
 
     public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Integer placementId ) {
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        Catalog catalog = Catalog.getInstance();
-
-        CatalogSchema namespace = catalog.getSchema( alg.entity.id );
+        CatalogNamespace namespace = snapshot.getNamespace( alg.entity.id );
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
             return handleGraphOnRelational( alg, namespace, statement, placementId );
@@ -438,9 +437,9 @@ public abstract class BaseRouter implements Router {
             CatalogGraphPlacement graphPlacement = catalog.getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-            LogicalGraph graph = reader.getGraph( name );
+            PhysicalGraph graph = snapshot.getPhysicalGraph( catalogGraph.id, adapterId );
 
-            if ( !(graph instanceof TranslatableGraph) ) {
+            if ( !(graph instanceof TranslatableEntity) ) {
                 // needs substitution later on
                 scans.add( getRelationalScan( alg, adapterId, statement ) );
                 continue;
@@ -458,7 +457,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogSchema namespace, Statement statement, Integer placementId ) {
+    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalTable> tables = catalog.getTables( Catalog.defaultDatabaseId, new Pattern( namespace.name ), null );
         List<Pair<String, AlgNode>> scans = tables.stream()
@@ -472,14 +471,13 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogSchema namespace, Statement statement, Integer placementId ) {
+    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalCollection> collections = catalog.getCollections( namespace.id, null );
         List<Pair<String, AlgNode>> scans = collections.stream()
                 .map( t -> {
                     RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
-                    LogicalCollection collection = statement.getTransaction().getSnapshot().getCollection( List.of( t.getNamespaceName(), t.name ) );
-                    AlgNode scan = algBuilder.documentScan( collection ).build();
+                    AlgNode scan = algBuilder.documentScan( t ).build();
                     routeDocument( algBuilder, (AlgNode & DocumentAlg) scan, statement );
                     return Pair.of( t.name, algBuilder.build() );
                 } )
@@ -495,10 +493,10 @@ public abstract class BaseRouter implements Router {
     public AlgNode getRelationalScan( LogicalLpgScan alg, int adapterId, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
 
-        PhysicalTable nodesTable = statement.getDataContext().getSnapshot().getTable( mapping.nodesId ).unwrap( PhysicalTable.class );
-        PhysicalTable nodePropertiesTable = statement.getDataContext().getSnapshot().getTable( mapping.nodesPropertyId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgesTable = statement.getDataContext().getSnapshot().getTable( mapping.edgesId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgePropertiesTable = statement.getDataContext().getSnapshot().getTable( mapping.edgesPropertyId ).unwrap( PhysicalTable.class );
+        PhysicalTable nodesTable = statement.getDataContext().getSnapshot().getLogicalTable( mapping.nodesId ).unwrap( PhysicalTable.class );
+        PhysicalTable nodePropertiesTable = statement.getDataContext().getSnapshot().getLogicalTable( mapping.nodesPropertyId ).unwrap( PhysicalTable.class );
+        PhysicalTable edgesTable = statement.getDataContext().getSnapshot().getLogicalTable( mapping.edgesId ).unwrap( PhysicalTable.class );
+        PhysicalTable edgePropertiesTable = statement.getDataContext().getSnapshot().getLogicalTable( mapping.edgesPropertyId ).unwrap( PhysicalTable.class );
 
         AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );
 
@@ -520,7 +518,7 @@ public abstract class BaseRouter implements Router {
                 ),
                 nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
 
-        return statement.getDataContext().getSnapshot().getTable( qualifiedTableName );
+        return statement.getDataContext().getSnapshot().getLogicalTable( qualifiedTableName );
     }
 
 
@@ -541,8 +539,7 @@ public abstract class BaseRouter implements Router {
 
 
     protected RoutedAlgBuilder handleDocumentScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder, Integer adapterId ) {
-        Catalog catalog = Catalog.getInstance();
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         if ( alg.entity.namespaceType != NamespaceType.DOCUMENT ) {
             if ( alg.entity.namespaceType == NamespaceType.GRAPH ) {
@@ -573,7 +570,7 @@ public abstract class BaseRouter implements Router {
             CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, placementId );
             String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             String collectionName = collection.name + "_" + placement.id;
-            LogicalCollection collectionTable = reader.getRootSchema().getCollection( List.of( namespaceName, collectionName ) );
+            PhysicalTable collectionTable = snapshot.getPhysicalTable( collection.id, adapterId );
             // we might previously have pushed the non-native transformer
             builder.clear();
             return builder.push( LogicalDocumentScan.create( alg.getCluster(), collectionTable ) );

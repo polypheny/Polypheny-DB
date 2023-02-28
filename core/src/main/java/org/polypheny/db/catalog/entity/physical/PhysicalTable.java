@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity.physical;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -38,16 +39,33 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 public class PhysicalTable extends CatalogEntity implements Physical {
 
     public final ImmutableList<CatalogColumnPlacement> placements;
+    public final ImmutableList<Long> columnIds;
+    public final ImmutableList<String> columnNames;
+    public final String namespaceName;
 
 
-    protected PhysicalTable( long id, String name, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements ) {
+    protected PhysicalTable( long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
         super( id, name, type, namespaceType );
+        this.namespaceName = namespaceName;
         this.placements = ImmutableList.copyOf( placements );
+        this.columnIds = ImmutableList.copyOf( placements.stream().map( p -> p.columnId ).collect( Collectors.toList() ) );
+        this.columnNames = ImmutableList.copyOf( columnNames );
     }
 
 
-    public PhysicalTable( AllocationTable table ) {
-        this( table.id, table.name, table.entityType, table.namespaceType, table.placements );
+    public PhysicalTable( AllocationTable table, String name, String namespaceName, List<String> columnNames ) {
+        this( table.id, name, namespaceName, table.entityType, table.namespaceType, table.placements, columnNames );
+    }
+
+
+    public PhysicalTable( PhysicalTable physicalTable ) {
+        this( physicalTable.id, physicalTable.name, physicalTable.namespaceName, physicalTable.entityType, physicalTable.namespaceType, physicalTable.placements, physicalTable.columnNames );
+    }
+
+
+    @Override
+    public AlgDataType getRowType() {
+        return buildProto().apply( AlgDataTypeFactory.DEFAULT );
     }
 
 

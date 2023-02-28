@@ -103,9 +103,11 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
@@ -128,7 +130,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -165,7 +166,7 @@ public class AlgBuilder {
 
     @Getter
     protected final AlgOptCluster cluster;
-    protected final PolyphenyDbSchema schema;
+    protected final Snapshot snapshot;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
     private final AlgFactories.AggregateFactory aggregateFactory;
@@ -185,9 +186,9 @@ public class AlgBuilder {
     private final RexSimplify simplifier;
 
 
-    protected AlgBuilder( Context context, AlgOptCluster cluster, PolyphenyDbSchema schema ) {
+    protected AlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
         this.cluster = cluster;
-        this.schema = schema;
+        this.snapshot = snapshot;
         if ( context == null ) {
             context = Contexts.EMPTY_CONTEXT;
         }
@@ -273,18 +274,18 @@ public class AlgBuilder {
      * Creates a AlgBuilder.
      */
     public static AlgBuilder create( FrameworkConfig config ) {
-        final AlgOptCluster[] clusters = { null };
-        final PolyphenyDbSchema[] schemas = { null };
+        final AlgOptCluster[] cluster = new AlgOptCluster[1];
+        final Snapshot[] snapshot = new Snapshot[1];
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, PolyphenyDbSchema rootSchema ) {
-                        clusters[0] = cluster;
-                        schemas[0] = rootSchema;
+                    public Void apply( AlgOptCluster c, Snapshot s ) {
+                        cluster[0] = c;
+                        snapshot[0] = s;
                         return null;
                     }
                 } );
-        return new AlgBuilder( config.getContext(), clusters[0], schemas[0] );
+        return new AlgBuilder( config.getContext(), cluster[0], snapshot[0] );
     }
 
 
@@ -332,7 +333,7 @@ public class AlgBuilder {
      * Just add a {@link AlgOptCluster} and a {@link AlgOptSchema}
      */
     public static AlgBuilderFactory proto( final Context context ) {
-        return ( cluster, schema ) -> new AlgBuilder( context, cluster, schema );
+        return ( cluster, snapshot ) -> new AlgBuilder( context, cluster, snapshot );
     }
 
 
@@ -1328,13 +1329,13 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( Iterable<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final CatalogEntity algOptEntity = schema.getTable( names );
-        if ( algOptEntity == null ) {
+        final LogicalTable entity = snapshot.getLogicalTable( names );
+        if ( entity == null ) {
             throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
         }
-        final AlgNode scan = scanFactory.createScan( cluster, algOptEntity );
+        final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
-        rename( algOptEntity.getRowType().getFieldNames() );
+        rename( entity.getRowType().getFieldNames() );
         return this;
     }
 

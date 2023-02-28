@@ -39,6 +39,8 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Entity.Table;
 import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.util.Source;
@@ -47,10 +49,9 @@ import org.polypheny.db.util.Source;
 /**
  * Base class for table that reads CSV files.
  */
-public abstract class CsvTable extends AbstractEntity implements Table {
+public abstract class CsvTable extends PhysicalTable implements Table {
 
     protected final Source source;
-    protected final AlgProtoDataType protoRowType;
     protected List<CsvFieldType> fieldTypes;
     protected final int[] fields;
     protected final CsvSource csvSource;
@@ -59,17 +60,16 @@ public abstract class CsvTable extends AbstractEntity implements Table {
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
-        super( tableId, null, null );
+    CsvTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( table );
         this.source = source;
-        this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.csvSource = csvSource;
     }
 
 
-    @Override
+    /*@Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
@@ -80,7 +80,7 @@ public abstract class CsvTable extends AbstractEntity implements Table {
         } else {
             return CsvEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
         }
-    }
+    }*/
 
 
     /**

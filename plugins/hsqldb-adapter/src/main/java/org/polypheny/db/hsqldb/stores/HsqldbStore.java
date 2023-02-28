@@ -30,6 +30,7 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.jdbc.JdbcEntity;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
@@ -106,8 +107,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
+    public JdbcEntity createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+        return currentJdbcSchema.createJdbcTable( logicalTable, allocationTable, physicalTable );
     }
 
 

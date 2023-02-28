@@ -22,11 +22,15 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.CatalogType;
 import org.polypheny.db.catalog.refactor.Expressible;
 import org.polypheny.db.plan.AlgMultipleTrait;
+import org.polypheny.db.schema.Statistic;
+import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -48,7 +52,15 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
 
     public AlgDataType getRowType() {
-        return null;
+        switch ( namespaceType ) {
+            case RELATIONAL:
+                throw new UnsupportedOperationException( "Should be overwritten by child" );
+            case DOCUMENT:
+                return new DocumentType();
+            case GRAPH:
+                return new GraphType();
+        }
+        throw new RuntimeException( "Error while generating the RowType" );
     }
 
 
@@ -84,6 +96,11 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
 
     public AlgDistribution getDistribution() {
+        return null;
+    }
+
+
+    public Statistic getStatistic() {
         return null;
     }
 

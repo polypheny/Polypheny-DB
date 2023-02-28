@@ -20,12 +20,13 @@ package org.polypheny.db.sql.language.validate;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import lombok.Getter;
+import lombok.NonNull;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ExtensibleEntity;
@@ -40,23 +41,24 @@ import org.polypheny.db.util.ValidatorUtil;
 /**
  * Namespace based on a table from the catalog.
  */
-class TableNamespace extends AbstractNamespace {
+class EntityNamespace extends AbstractNamespace {
 
-    private final ValidatorTable table;
+    @Getter
+    private final CatalogEntity table;
     public final ImmutableList<AlgDataTypeField> extendedFields;
 
 
     /**
      * Creates a TableNamespace.
      */
-    private TableNamespace( SqlValidatorImpl validator, ValidatorTable table, List<AlgDataTypeField> fields ) {
+    private EntityNamespace( SqlValidatorImpl validator, @NonNull CatalogEntity entity, List<AlgDataTypeField> fields ) {
         super( validator, null );
-        this.table = Objects.requireNonNull( table );
+        this.table = entity;
         this.extendedFields = ImmutableList.copyOf( fields );
     }
 
 
-    TableNamespace( SqlValidatorImpl validator, ValidatorTable table ) {
+    EntityNamespace( SqlValidatorImpl validator, CatalogEntity table ) {
         this( validator, table, ImmutableList.of() );
     }
 
@@ -81,15 +83,15 @@ class TableNamespace extends AbstractNamespace {
 
 
     @Override
-    public ValidatorTable getTable() {
+    public CatalogEntity getTable() {
         return table;
     }
 
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final ValidatorTable table = getTable();
-        return table.getMonotonicity( columnName );
+        final CatalogEntity table = getTable();
+        return Util.getMonotonicity( table, columnName );
     }
 
 
@@ -98,7 +100,7 @@ class TableNamespace extends AbstractNamespace {
      *
      * Extended fields are "hidden" or undeclared fields that may nevertheless be present if you ask for them.
      */
-    public TableNamespace extend( SqlNodeList extendList ) {
+    public EntityNamespace extend( SqlNodeList extendList ) {
         final List<SqlNode> identifierList = Util.quotientList( extendList.getSqlList(), 2, 0 );
         SqlValidatorUtil.checkIdentifierListForDuplicates( identifierList, validator.getValidationErrorFunction() );
         final ImmutableList.Builder<AlgDataTypeField> builder = ImmutableList.builder();
@@ -108,11 +110,11 @@ class TableNamespace extends AbstractNamespace {
         final Entity schemaEntity = table.unwrap( Entity.class );
         if ( schemaEntity != null && table instanceof AlgOptEntity && schemaEntity instanceof ExtensibleEntity ) {
             checkExtendedColumnTypes( extendList );
-            final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
-            final ValidatorTable validatorTable = algOptEntity.unwrap( ValidatorTable.class );
-            return new TableNamespace( validator, validatorTable, ImmutableList.of() );
+            //final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
+            //final CatalogEntity validatorTable = algOptEntity.unwrap( ValidatorTable.class );
+            return new EntityNamespace( validator, table, ImmutableList.of() );
         }
-        return new TableNamespace( validator, table, extendedFields );
+        return new EntityNamespace( validator, table, extendedFields );
     }
 
 

@@ -38,23 +38,29 @@ import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
+import org.polypheny.db.catalog.refactor.ScannableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -64,12 +70,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TableType;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -90,80 +93,56 @@ import org.polypheny.db.util.Util;
  * applying Queryable operators such as {@link org.apache.calcite.linq4j.Queryable#where(org.apache.calcite.linq4j.function.Predicate2)}.
  * The resulting queryable can then be converted to a SQL query, which can be executed efficiently on the JDBC server.
  */
-public class JdbcEntity extends AbstractQueryableEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity {
+public class JdbcEntity extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableEntity {
 
-    private final AlgProtoDataType protoRowType;
+    private final AllocationTable allocation;
+    private final LogicalTable logical;
+    private final PhysicalTable physical;
     private JdbcSchema jdbcSchema;
-
-    private final String physicalSchemaName;
-    private final String physicalTableName;
-    private final List<String> physicalColumnNames;
-
-    private final List<String> logicalColumnNames;
 
     private final TableType jdbcTableType;
 
 
     public JdbcEntity(
             JdbcSchema jdbcSchema,
-            String logicalSchemaName,
-            String logicalTableName,
-            List<String> logicalColumnNames,
-            TableType jdbcTableType,
-            AlgProtoDataType protoRowType,
-            String physicalSchemaName,
-            String physicalTableName,
-            List<String> physicalColumnNames,
-            long tableId,
-            long partitionId,
-            long adapterId ) {
-        super( Object[].class, tableId, partitionId, adapterId );
+            LogicalTable logicalTable,
+            AllocationTable allocationTable,
+            PhysicalTable physicalTable,
+            @NonNull TableType jdbcTableType ) {
+        super( physicalTable );
+        this.logical = logicalTable;
+        this.allocation = allocationTable;
+        this.physical = physicalTable;
         this.jdbcSchema = jdbcSchema;
-        this.logicalColumnNames = logicalColumnNames;
-        this.physicalSchemaName = physicalSchemaName;
-        this.physicalTableName = physicalTableName;
-        this.physicalColumnNames = physicalColumnNames;
-        this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
-        this.protoRowType = protoRowType;
+        this.jdbcTableType = jdbcTableType;
     }
 
 
     public String toString() {
-        return "JdbcTable {" + physicalSchemaName + "." + physicalTableName + "}";
+        return "JdbcTable {" + physical.namespaceName + "." + physical.name + "}";
     }
 
-
-    @Override
-    public TableType getJdbcTableType() {
-        return jdbcTableType;
-    }
-
-
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return protoRowType.apply( typeFactory );
-    }
 
 
     private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
-        final AlgDataType rowType = protoRowType.apply( typeFactory );
-        return Lists.transform( rowType.getFieldList(), f -> {
+        final AlgDataType rowType = getRowType();
+        return rowType.getFieldList().stream().map( f -> {
             final AlgDataType type = f.getType();
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );
-            final ColumnMetaData.Rep rep = Util.first( ColumnMetaData.Rep.of( clazz ), ColumnMetaData.Rep.OBJECT );
+            final Rep rep = Util.first( Rep.of( clazz ), Rep.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
-        } );
+        } ).collect( Collectors.toList() );
     }
 
 
     SqlString generateSql() {
         List<SqlNode> pcnl = Expressions.list();
-        for ( String str : physicalColumnNames ) {
-            pcnl.add( new SqlIdentifier( Arrays.asList( physicalTableName, str ), ParserPos.ZERO ) );
+        for ( String str : physical.columnNames ) {
+            pcnl.add( new SqlIdentifier( Arrays.asList( physical.name, str ), ParserPos.ZERO ) );
         }
 
         final SqlNodeList selectList = new SqlNodeList( pcnl, ParserPos.ZERO );
-        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), ParserPos.ZERO );
+        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physical.namespaceName, physical.name ), ParserPos.ZERO );
         SqlSelect node = new SqlSelect(
                 ParserPos.ZERO,
                 SqlNodeList.EMPTY,
@@ -183,7 +162,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
 
 
     public SqlIdentifier physicalTableName() {
-        return new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName ), ParserPos.ZERO );
+        return new SqlIdentifier( Arrays.asList( physical.namespaceName, physical.name ), ParserPos.ZERO );
     }
 
 
@@ -275,7 +254,7 @@ public class JdbcEntity extends AbstractQueryableEntity implements TranslatableE
      *
      * @param <T> element type
      */
-    private class JdbcTableQueryable<T> extends AbstractTableQueryable<T> {
+    private class JdbcTableQueryable<T> extends AbstractTableQueryable<T, JdbcEntity> {
 
         JdbcTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
             super( dataContext, schema, JdbcEntity.this, tableName );

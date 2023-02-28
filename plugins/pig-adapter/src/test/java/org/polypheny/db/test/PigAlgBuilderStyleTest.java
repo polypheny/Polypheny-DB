@@ -230,7 +230,7 @@ public class PigAlgBuilderStyleTest extends AbstractPigTest {
 
 
     private SchemaPlus createTestSchema() {
-        SchemaPlus result = Frameworks.createRootSchema( false );
+        SchemaPlus result = Frameworks.createSnapshot( false );
         result.add( "t", new PigEntity( "build/test-classes/data.txt", new String[]{ "tc0", "tc1" } ) );
         result.add( "s", new PigEntity( "build/test-classes/data2.txt", new String[]{ "sc0", "sc1" } ) );
         return result;

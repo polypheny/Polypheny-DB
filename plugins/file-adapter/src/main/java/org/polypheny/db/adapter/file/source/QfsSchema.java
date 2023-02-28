@@ -41,10 +41,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
@@ -66,11 +68,11 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     private final FileConvention convention;
 
 
-    public QfsSchema( long id, SchemaPlus parentSchema, String schemaName, Qfs source ) {
+    public QfsSchema( long id, Snapshot snapshot, String schemaName, Qfs source ) {
         super( id );
         this.schemaName = schemaName;
         this.source = source;
-        final Expression expression = Schemas.subSchemaExpression( parentSchema, schemaName, QfsSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( snapshot, schemaName, QfsSchema.class );
         this.convention = new QfsConvention( schemaName, expression, this );
     }
 
@@ -87,63 +89,20 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     }
 
 
-    @Override
-    protected Map<String, Entity> getTableMap() {
-        return new HashMap<>( tableMap );
-    }
+    public FileTranslatableEntity createFileTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
 
-
-    public Entity createFileTable( LogicalTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        ArrayList<Long> columnIds = new ArrayList<>();
-        ArrayList<PolyType> columnTypes = new ArrayList<>();
-        ArrayList<String> columnNames = new ArrayList<>();
-        columnPlacementsOnStore.sort( Comparator.comparingLong( p -> p.columnId ) );
-        for ( CatalogColumnPlacement p : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn;
-            catalogColumn = Catalog.getInstance().getColumn( p.columnId );
-            if ( p.adapterId == source.getAdapterId() ) {
-                columnIds.add( p.columnId );
-                if ( catalogColumn.collectionsType != null ) {
-                    columnTypes.add( PolyType.ARRAY );
-                } else {
-                    columnTypes.add( catalogColumn.type );
-                }
-                columnNames.add( catalogColumn.name );
-
-                if ( catalogColumn.type.allowsScale() && catalogColumn.length != null && catalogColumn.scale != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length, catalogColumn.scale )
-                            .nullable( catalogColumn.nullable );
-                } else if ( catalogColumn.type.allowsPrec() && catalogColumn.length != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length )
-                            .nullable( catalogColumn.nullable );
-                } else {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type )
-                            .nullable( catalogColumn.nullable );
-                }
-            }
-        }
-        AlgProtoDataType protoRowType = AlgDataTypeImpl.proto( fieldInfo.build() );
         List<Long> pkIds;
-        if ( catalogTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        if ( logicalTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( logicalTable.primaryKey );
             pkIds = primaryKey.columnIds;
         } else {
             pkIds = new ArrayList<>();
         }
         FileTranslatableEntity table = new FileTranslatableEntity(
                 this,
-                catalogTable.name + "_" + partitionPlacement.partitionId,
-                catalogTable.id,
-                partitionPlacement.partitionId,
-                getAdapterId(),
-                columnIds,
-                columnTypes,
-                columnNames,
-                pkIds,
-                protoRowType );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+                allocationTable,
+                pkIds );
+        tableMap.put( logicalTable.name + "_" + allocationTable.name, table );
         return table;
     }
 
@@ -151,6 +110,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     /**
      * Called from generated code
      */
+    @SuppressWarnings("unused")
     public static Enumerable<Object[]> execute(
             final Operation operation,
             final Integer adapterId,
@@ -164,7 +124,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
             final Condition condition,
             final Value[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object[]> enumerator() {
                 return new QfsEnumerator<>( dataContext, path, columnIds, projectionMapping, condition );

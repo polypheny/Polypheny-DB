@@ -36,10 +36,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
@@ -114,10 +114,10 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, Snapshot snapshot ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
-        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, catalogReader.getRootSchema() );
+        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
 
         LogicalValues nodeValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes ) );
         LogicalValues nodePropertyValues = new LogicalValues( cluster, out, entities.get( 1 ).getRowType(), getNodePropertyValues( nodes ) );

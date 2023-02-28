@@ -21,7 +21,6 @@ import java.util.List;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.util.AccessType;
 
 
 /**
@@ -59,11 +58,6 @@ public abstract class DelegatingSqlValidatorTable implements ValidatorTable {
         return table.getMonotonicity( columnName );
     }
 
-
-    @Override
-    public AccessType getAllowedAccess() {
-        return table.getAllowedAccess();
-    }
 
 }
 

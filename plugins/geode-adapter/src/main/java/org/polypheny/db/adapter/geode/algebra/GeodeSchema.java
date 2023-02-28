@@ -42,6 +42,7 @@ import java.util.Objects;
 import org.apache.geode.cache.GemFireCache;
 import org.apache.geode.cache.Region;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -54,7 +55,7 @@ public class GeodeSchema extends AbstractNamespace implements Schema {
 
     final GemFireCache cache;
     private final List<String> regionNames;
-    private ImmutableMap<String, Entity> tableMap;
+    private ImmutableMap<String, CatalogEntity> tableMap;
 
 
     GeodeSchema( long id, String locatorHost, int locatorPort, Iterable<String> regionNames, String pdxAutoSerializerPackageExp ) {
@@ -70,12 +71,12 @@ public class GeodeSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, CatalogEntity> getTables() {
         if ( tableMap == null ) {
-            final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
+            final ImmutableMap.Builder<String, CatalogEntity> builder = ImmutableMap.builder();
             for ( String regionName : regionNames ) {
                 Region region = GeodeUtils.createRegion( cache, regionName );
-                Entity entity = new GeodeEntity( region, null, null, null );
+                CatalogEntity entity = new GeodeEntity( region, null );
                 builder.put( regionName, entity );
             }
             tableMap = builder.build();

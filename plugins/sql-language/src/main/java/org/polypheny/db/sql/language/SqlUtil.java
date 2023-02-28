@@ -35,11 +35,15 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor;
@@ -52,6 +56,7 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.CoreUtil;
@@ -597,6 +602,26 @@ public abstract class SqlUtil {
 
     public static SqlLiteral symbol( Enum<?> o, ParserPos parserPos ) {
         return SqlLiteral.createSymbol( o, parserPos );
+    }
+
+
+    public static AlgDataType getNamedType( Identifier node, Snapshot snapshot ) {
+        LogicalTable table = snapshot.getLogicalTable( node.getNames() );
+        if ( table != null ) {
+            return table.getRowType();
+        } else {
+            return null;
+        }
+    }
+
+
+    public static boolean supportsModality( Modality modality, CatalogEntity entity ) {
+
+        if ( Objects.requireNonNull( modality ) == Modality.STREAM ) {
+            return entity instanceof StreamableEntity;
+        }
+        return !(entity instanceof StreamableEntity);
+
     }
 
 

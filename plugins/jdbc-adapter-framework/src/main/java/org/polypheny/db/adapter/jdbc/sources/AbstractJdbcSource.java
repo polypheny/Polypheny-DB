@@ -37,10 +37,10 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
@@ -113,8 +113,8 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, rootSchema, name, connectionFactory, dialect, this );
+    public void createNewSchema( Snapshot snapshot, String name, long id ) {
+        currentJdbcSchema = JdbcSchema.create( id, snapshot, name, connectionFactory, dialect, this );
     }
 
 

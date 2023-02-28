@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
@@ -54,7 +55,6 @@ import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
@@ -119,7 +119,7 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
+        public Expression getExpression( Snapshot snapshot, String name ) {
             return null;
         }
 
@@ -217,7 +217,7 @@ public class RelToSqlConverterStructsTest {
         }
     };
 
-    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( "" ).add( "myDb", NAMESPACE, NamespaceType.RELATIONAL ).plus();
+    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createSnapshot( "" ).add( "myDb", NAMESPACE, NamespaceType.RELATIONAL ).plus();
 
 
     private AlgToSqlConverterTest.Sql sql( String sql ) {

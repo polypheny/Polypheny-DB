@@ -95,14 +95,14 @@ public abstract class ListScope extends DelegatingScope {
             }
 
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
-            /*final ValidatorTable table = child.namespace.getTable();
+            /*final ValidatorTable table = child.namespace.getLogicalTable();
             if ( table != null ) {
                 final ResolvedImpl resolved = new ResolvedImpl();
                 resolveTable( names, nameMatcher, Path.EMPTY, resolved );
                 if ( resolved.count() == 1
                         && resolved.only().remainingNames.isEmpty()
                         && resolved.only().namespace instanceof TableNamespace
-                        && resolved.only().namespace.getTable().getQualifiedName().equals( table.getQualifiedName() ) ) {
+                        && resolved.only().namespace.getLogicalTable().getQualifiedName().equals( table.getQualifiedName() ) ) {
                     return child;
                 }
             }*/
@@ -132,7 +132,7 @@ public abstract class ListScope extends DelegatingScope {
     @Override
     public Pair<String, SqlValidatorNamespace>
     findQualifyingTableName( final String columnName, SqlNode ctx ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
+        final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
         final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, ctx, nameMatcher );
         switch ( map.size() ) {
             case 0:
@@ -214,7 +214,7 @@ public abstract class ListScope extends DelegatingScope {
 
     @Override
     public AlgDataType resolveColumn( String columnName, SqlNode ctx ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
+        final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
         int found = 0;
         AlgDataType type = null;
         for ( ScopeChild child : children ) {

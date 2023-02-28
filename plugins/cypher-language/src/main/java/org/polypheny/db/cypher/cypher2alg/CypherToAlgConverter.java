@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.CypherNode;
@@ -85,7 +86,7 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class CypherToAlgConverter {
 
-    private final PolyphenyDbCatalogReader catalogReader;
+    private final Snapshot snapshot;
     private final AlgBuilder algBuilder;
     private final Statement statement;
     private final RexBuilder rexBuilder;
@@ -93,7 +94,7 @@ public class CypherToAlgConverter {
 
 
     public CypherToAlgConverter( Statement statement, AlgBuilder builder, RexBuilder rexBuilder, AlgOptCluster cluster ) {
-        this.catalogReader = statement.getTransaction().getSnapshot();
+        this.snapshot = statement.getTransaction().getSnapshot();
         this.statement = statement;
         this.algBuilder = builder;
         this.rexBuilder = rexBuilder;
@@ -120,7 +121,7 @@ public class CypherToAlgConverter {
             throw new RuntimeException( "Used a unsupported query." );
         }
 
-        CypherContext context = new CypherContext( query, graph, cluster, algBuilder, rexBuilder, catalogReader );
+        CypherContext context = new CypherContext( query, graph, cluster, algBuilder, rexBuilder, snapshot );
 
         convertQuery( query, context );
 
@@ -413,7 +414,7 @@ public class CypherToAlgConverter {
         public final AlgDataType edgeType;
         public final AlgDataType pathType;
         public final AlgDataType numberType;
-        public final PolyphenyDbCatalogReader catalogReader;
+        public final Snapshot snapshot;
         public final AlgDataTypeFactory typeFactory;
         public CypherNode active;
         public Kind kind;
@@ -427,7 +428,7 @@ public class CypherToAlgConverter {
                 AlgOptCluster cluster,
                 AlgBuilder algBuilder,
                 RexBuilder rexBuilder,
-                PolyphenyDbCatalogReader catalogReader ) {
+                Snapshot snapshot ) {
             this.original = original;
             this.graph = graph;
             this.cluster = cluster;
@@ -440,7 +441,7 @@ public class CypherToAlgConverter {
             this.pathType = cluster.getTypeFactory().createPolyType( PolyType.PATH );
             this.numberType = cluster.getTypeFactory().createPolyType( PolyType.INTEGER );
             this.typeFactory = cluster.getTypeFactory();
-            this.catalogReader = catalogReader;
+            this.snapshot = snapshot;
         }
 
 

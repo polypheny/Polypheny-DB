@@ -41,9 +41,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,33 +55,33 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.AbstractQueryable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.ModelTraitDef;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableEntity;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.type.PolyType;
 
 
 /**
  * Table based on an Elasticsearch type.
  */
-public class ElasticsearchEntity extends AbstractQueryableEntity implements TranslatableEntity {
+@Slf4j
+public class ElasticsearchEntity extends PhysicalTable implements TranslatableEntity, QueryableEntity {
 
     /**
      * Used for constructing (possibly nested) Elastic aggregation nodes.
@@ -97,7 +99,7 @@ public class ElasticsearchEntity extends AbstractQueryableEntity implements Tran
      * Creates an ElasticsearchTable.
      */
     ElasticsearchEntity( ElasticsearchTransport transport, Long id, Long partitionId, Long adapterId ) {
-        super( Object[].class, id, partitionId, adapterId );
+        super( null );
         this.transport = Objects.requireNonNull( transport, "transport" );
         this.version = transport.version;
         this.indexName = transport.indexName;
@@ -313,14 +315,14 @@ public class ElasticsearchEntity extends AbstractQueryableEntity implements Tran
     }
 
 
-    @Override
+    /*@Override
     public AlgDataType getRowType( AlgDataTypeFactory algDataTypeFactory ) {
         final AlgDataType mapType = algDataTypeFactory.createMapType(
                 algDataTypeFactory.createPolyType( PolyType.VARCHAR ),
                 algDataTypeFactory.createTypeWithNullability( algDataTypeFactory.createPolyType( PolyType.ANY ), true ) );
         // TODO (PCP)
         return algDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
-    }
+    }*/
 
 
     @Override
@@ -330,15 +332,22 @@ public class ElasticsearchEntity extends AbstractQueryableEntity implements Tran
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-        return new ElasticsearchQueryable<>( dataContext, schema, this, tableName );
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
+        final AlgOptCluster cluster = context.getCluster();
+        // return new ElasticsearchScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ).replace( traitSet.getTrait( ModelTraitDef.INSTANCE ) ), algOptEntity, this, null );
+        return null;
     }
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
-        final AlgOptCluster cluster = context.getCluster();
-        return new ElasticsearchScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ).replace( traitSet.getTrait( ModelTraitDef.INSTANCE ) ), algOptEntity, this, null );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long id ) {
+        return new ElasticsearchQueryable<>( dataContext, snapshot, this, id );
+    }
+
+
+    @Override
+    public Type getElementType() {
+        return Object[].class;
     }
 
 
@@ -347,21 +356,21 @@ public class ElasticsearchEntity extends AbstractQueryableEntity implements Tran
      *
      * @param <T> element type
      */
-    public static class ElasticsearchQueryable<T> extends AbstractTableQueryable<T> {
+    public static class ElasticsearchQueryable<T> extends AbstractQueryable<T> {
 
-        ElasticsearchQueryable( DataContext dataContext, SchemaPlus schema, ElasticsearchEntity table, String tableName ) {
-            super( dataContext, schema, table, tableName );
+        @Getter
+        private final ElasticsearchEntity table;
+
+
+        ElasticsearchQueryable( DataContext dataContext, Snapshot snapshot, ElasticsearchEntity elasticsearchEntity, long id ) {
+            this.table = elasticsearchEntity;
+            //super( dataContext, snapshot, table, tableName );
         }
 
 
         @Override
         public Enumerator<T> enumerator() {
             return null;
-        }
-
-
-        private ElasticsearchEntity getTable() {
-            return (ElasticsearchEntity) table;
         }
 
 
@@ -388,6 +397,30 @@ public class ElasticsearchEntity extends AbstractQueryableEntity implements Tran
             } catch ( IOException e ) {
                 throw new UncheckedIOException( "Failed to query " + getTable().indexName, e );
             }
+        }
+
+
+        @Override
+        public Type getElementType() {
+            return null;
+        }
+
+
+        @Override
+        public Expression getExpression() {
+            return null;
+        }
+
+
+        @Override
+        public QueryProvider getProvider() {
+            return null;
+        }
+
+
+        @Override
+        public Iterator<T> iterator() {
+            return null;
         }
 
     }

@@ -28,7 +28,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -231,6 +235,20 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
     }
 
 
+    @Override
+    public AlgDataType getRowType() {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
+
+        for ( Long id : fieldIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( id );
+            AlgDataType sqlType = catalogColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            fieldInfo.add( catalogColumn.name, null, sqlType ).nullable( catalogColumn.nullable );
+        }
+
+        return AlgDataTypeImpl.proto( fieldInfo.build() ).apply( AlgDataTypeFactory.DEFAULT );
+    }
+
+
     public LogicalTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
         return new LogicalTable(
                 id,
@@ -267,7 +285,7 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( Expressions.call( Catalog.class, "getInstance" ), "getTable", Expressions.constant( id ) );
+        return Expressions.call( Expressions.call( Catalog.class, "getInstance" ), "getLogicalTable", Expressions.constant( id ) );
     }
 
 

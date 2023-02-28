@@ -22,14 +22,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -51,7 +50,7 @@ public class LogicalLpgModify extends LpgModify<CatalogEntity> implements Relati
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<CatalogEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<CatalogEntity> entities, Snapshot snapshot ) {
         List<AlgNode> modifies = new ArrayList<>();
 
         // modify of nodes

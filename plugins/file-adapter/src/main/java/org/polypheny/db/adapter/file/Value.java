@@ -114,14 +114,14 @@ public class Value {
         List<Value> valueList = new ArrayList<>();
         int offset;
         boolean noCheck;
-        if ( exps.size() == implementor.getColumnNames().size() ) {
+        if ( exps.size() == implementor.getFileTable().columnIds.size() ) {
             noCheck = true;
             offset = 0;
         } else {
             noCheck = false;
-            offset = implementor.getColumnNames().size();
+            offset = implementor.getFileTable().columnIds.size();
         }
-        for ( int i = offset; i < implementor.getColumnNames().size() + offset; i++ ) {
+        for ( int i = offset; i < implementor.getFileTable().columnIds.size() + offset; i++ ) {
             if ( noCheck || exps.size() > i ) {
                 RexNode lit = exps.get( i );
                 if ( lit instanceof RexLiteral ) {

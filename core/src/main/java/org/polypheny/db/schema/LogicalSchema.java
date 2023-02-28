@@ -23,6 +23,7 @@ import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Namespace.Schema;
 
@@ -96,8 +97,8 @@ public class LogicalSchema implements Namespace, Schema {
 
 
     @Override
-    public Expression getExpression( PolyphenyDbSchema parentSchema, String name ) {
-        return Schemas.subSchemaExpression( parentSchema, name, LogicalSchema.class );
+    public Expression getExpression( Snapshot snapshot, String name ) {
+        return Schemas.subSchemaExpression( snapshot, name, LogicalSchema.class );
     }
 
 

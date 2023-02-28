@@ -33,7 +33,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.excluded.CassandraExcluded;

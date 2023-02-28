@@ -43,8 +43,10 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableEntity;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.QueryableEntity;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
 
 
 /**
@@ -54,25 +56,24 @@ import org.polypheny.db.schema.QueryableEntity;
  *
  * @param <T> element type
  */
-public abstract class AbstractTableQueryable<T> extends AbstractQueryable<T> {
+public abstract class AbstractTableQueryable<T, K extends CatalogEntity & QueryableEntity> extends AbstractQueryable<T> {
 
     public final DataContext dataContext;
-    public final PolyphenyDbSchema schema;
-    public final QueryableEntity table;
-    public final String tableName;
+    public final Snapshot snapshot;
+    public final K table;
 
 
-    public AbstractTableQueryable( DataContext dataContext, PolyphenyDbSchema schema, QueryableEntity table, String tableName ) {
+    public AbstractTableQueryable( DataContext dataContext, Snapshot snapshot, K table ) {
         this.dataContext = dataContext;
-        this.schema = schema;
+        this.snapshot = snapshot;
+        assert table.unwrap( QueryableEntity.class ) != null;
         this.table = table;
-        this.tableName = tableName;
     }
 
 
     @Override
     public Expression getExpression() {
-        return table.getExpression( schema, tableName, Queryable.class );
+        return table.asExpression();
     }
 
 

@@ -59,6 +59,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
@@ -67,7 +68,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -81,7 +82,6 @@ import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -229,7 +229,7 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
+        public void createNewSchema( Snapshot snapshot, String name, long id ) {
             String[] splits = name.split( "_" );
             String database = name;
             if ( splits.length >= 2 ) {
@@ -240,8 +240,8 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
-            return currentSchema.createTable( combinedTable, columnPlacementsOnStore, getAdapterId(), partitionPlacement );
+        public PhysicalTable createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+            return currentSchema.createTable( logicalTable, allocationTable, physicalTable );
         }
 
 
@@ -264,7 +264,7 @@ public class MongoPlugin extends Plugin {
 
         @Override
         public Entity createDocumentSchema( LogicalCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
-            return this.currentSchema.createCollection( catalogEntity, partitionPlacement );
+            return null;//this.currentSchema.createCollection( catalogEntity, partitionPlacement );
         }
 
 
@@ -306,33 +306,17 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void createTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
-            Catalog catalog = Catalog.getInstance();
+        public PhysicalTable createPhysicalTable( Context context, LogicalTable catalogTable, AllocationTable allocationTable ) {
             commitAll();
 
             if ( this.currentSchema == null ) {
                 createNewSchema( null, catalogTable.getNamespaceName(), catalogTable.namespaceId );
             }
 
-            for ( long partitionId : partitionIds ) {
-                String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
-                this.currentSchema.database.createCollection( physicalTableName );
+            String physicalTableName = getPhysicalTableName( catalogTable.id, allocationTable.id );
+            this.currentSchema.database.createCollection( physicalTableName );
 
-                catalog.updatePartitionPlacementPhysicalNames(
-                        getAdapterId(),
-                        partitionId,
-                        catalogTable.getNamespaceName(),
-                        physicalTableName );
-
-                for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
-                    catalog.updateColumnPlacementPhysicalNames(
-                            getAdapterId(),
-                            placement.columnId,
-                            catalogTable.getNamespaceName(),
-                            physicalTableName,
-                            true );
-                }
-            }
+            return new PhysicalTable( allocationTable, catalogTable.getNamespaceName(), physicalTableName, allocationTable.getColumns().values().stream().map( this::getPhysicalColumnName ).collect( Collectors.toList() ) );
         }
 
 

@@ -144,7 +144,7 @@ public class TestFixture {
 
         final Holder<RexExecutorImpl> holder = Holder.of( null );
 
-        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
+        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createSnapshot( "" );
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( rootSchema.plus() )
                 .prepareContext( new ContextImpl(

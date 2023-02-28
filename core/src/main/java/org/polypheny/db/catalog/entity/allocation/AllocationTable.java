@@ -18,20 +18,32 @@ package org.polypheny.db.catalog.entity.allocation;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.type.PolyType;
 
 public class AllocationTable extends CatalogEntity implements Allocation {
 
-    public List<CatalogColumnPlacement> placements;
+    public final List<CatalogColumnPlacement> placements;
+    public final long adapterId;
 
 
-    protected AllocationTable( long id, LogicalGraph graph ) {
-        super( id, graph.name, graph.entityType, graph.namespaceType );
+    protected AllocationTable( long id, String name, long adapterId, List<CatalogColumnPlacement> placements ) {
+        super( id, name, EntityType.ENTITY, NamespaceType.RELATIONAL );
+        this.adapterId = adapterId;
+        this.placements = placements;
     }
 
 
@@ -44,6 +56,21 @@ public class AllocationTable extends CatalogEntity implements Allocation {
     @Override
     public Expression asExpression() {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAllocTable", Expressions.constant( id ) );
+    }
+
+
+    public Map<Long, String> getColumnNames() {
+        return null;
+    }
+
+
+    public Map<Long, CatalogColumn> getColumns() {
+        return null;
+    }
+
+
+    public Map<String, Long> getColumnNamesIds() {
+        return getColumnNames().entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
     }
 
 }

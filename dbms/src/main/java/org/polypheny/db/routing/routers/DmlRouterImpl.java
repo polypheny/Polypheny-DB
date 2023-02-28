@@ -78,6 +78,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
@@ -87,10 +88,11 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -182,21 +184,21 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         Map<Long, Object> newParameterValues = new HashMap<>();
         for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
-            CatalogReader catalogReader = statement.getTransaction().getSnapshot();
+            Snapshot snapshot = statement.getTransaction().getSnapshot();
 
             // Get placements on store
             List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
 
             // If this is an update, check whether we need to execute on this store at all
             List<String> updateColumnList = modify.getUpdateColumnList();
-            List<RexNode> sourceExpressionList = modify.getSourceExpressionList();
+            List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
             if ( placementsOnAdapter.size() != catalogTable.fieldIds.size() ) {
 
                 if ( modify.getOperation() == Modify.Operation.UPDATE ) {
                     updateColumnList = new LinkedList<>( modify.getUpdateColumnList() );
                     sourceExpressionList = new LinkedList<>( modify.getSourceExpressionList() );
                     Iterator<String> updateColumnListIterator = updateColumnList.iterator();
-                    Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
+                    Iterator<? extends RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
                     while ( updateColumnListIterator.hasNext() ) {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
@@ -410,7 +412,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 pkPlacement.physicalSchemaName
                                         ),
                                         catalogTable.name + "_" + currentPartitionId );
-                                PhysicalTable physical = catalogReader.getRootSchema().getTable( qualifiedTableName ).unwrap( PhysicalTable.class );
+                                PhysicalTable physical = snapshot.getPhysicalTable( currentPartitionId );
                                 ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
                                 // Build DML
@@ -500,7 +502,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         pkPlacement.physicalSchemaName
                                                 ),
                                                 catalogTable.name + "_" + entry.getKey() );
-                                        PhysicalTable physical = catalogReader.getRootSchema().getTable( qualifiedTableName ).unwrap( PhysicalTable.class );
+                                        PhysicalTable physical = snapshot.getPhysicalTable( entry.getKey() );
                                         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
                                         // Build DML
@@ -588,7 +590,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     pkPlacement.physicalSchemaName
                             ),
                             catalogTable.name + "_" + partitionId );
-                    PhysicalTable physical = catalogReader.getRootSchema().getTable( qualifiedTableName ).unwrap( PhysicalTable.class );
+                    PhysicalTable physical = snapshot.getPhysicalTable( partitionId );
 
                     // Build DML
                     Modify<?> adjustedModify;
@@ -712,7 +714,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId ) {
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
 
@@ -730,7 +732,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             String collectionName = collection.name + "_" + placement.id;
 
-            PhysicalCollection document = reader.getRootSchema().getCollection( List.of( namespaceName, collectionName ) ).unwrap( PhysicalCollection.class );
+            PhysicalCollection document = snapshot.getPhysicalCollection( placement.id );
             if ( !adapter.getSupportedNamespaces().contains( NamespaceType.DOCUMENT ) ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, statement, placementId, queryInformation ) );
@@ -765,7 +767,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Integer> placements ) {
 
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getSnapshot();
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         List<AlgNode> modifies = new ArrayList<>();
         boolean usedSubstitution = false;
@@ -775,7 +777,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-            LogicalGraph graph = reader.getGraph( name );
+            PhysicalGraph graph = snapshot.getPhysicalGraph( catalogGraph.id, adapterId );
             if ( graph == null ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, adapterId, statement ) );
@@ -787,11 +789,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 throw new RuntimeException( "Graph is not modifiable." );
             }
 
-            modifies.add( ((ModifiableGraph) graph).toModificationAlg(
+            modifies.add( ((ModifiableEntity) graph).toModificationAlg(
                     alg.getCluster(),
                     alg.getTraitSet(),
                     graph,
-                    statement.getTransaction().getSnapshot(),
                     buildGraphDml( alg.getInput(), statement, adapterId ),
                     alg.operation,
                     alg.ids,

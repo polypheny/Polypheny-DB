@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -65,7 +66,6 @@ import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ModelTraitDef;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
@@ -242,11 +242,12 @@ public class DruidEntity extends AbstractEntity implements TranslatableEntity {
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
         // ViewScan needed for Views
-        final LogicalRelScan scan = LogicalRelScan.create( cluster, algOptEntity );
-        return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ).replace( traitSet.getTrait( ModelTraitDef.INSTANCE ) ), algOptEntity, this, ImmutableList.of( scan ) );
+        //final LogicalRelScan scan = LogicalRelScan.create( cluster, dr );
+        //return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ).replace( traitSet.getTrait( ModelTraitDef.INSTANCE ) ), algOptEntity, this, ImmutableList.of( scan ) );
+        return null;
     }
 
 

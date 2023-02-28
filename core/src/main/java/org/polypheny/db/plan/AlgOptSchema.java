@@ -35,6 +35,7 @@ package org.polypheny.db.plan;
 
 
 import java.util.List;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
 /**
@@ -51,6 +52,6 @@ public interface AlgOptSchema {
      *
      * @param names Qualified name
      */
-    AlgOptEntity getTableForMember( List<String> names );
+    LogicalTable getTableForMember( List<String> names );
 
 }

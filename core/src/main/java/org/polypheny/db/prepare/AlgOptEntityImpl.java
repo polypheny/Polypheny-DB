@@ -49,7 +49,6 @@ import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
-import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -75,10 +74,8 @@ import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.util.AccessType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.NullInitializerExpressionFactory;
@@ -175,7 +172,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             }
         }
         if ( clazz == PolyphenyDbSchema.class ) {
-            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).rootSchema, List.of( catalogEntity.unwrap( LogicalTable.class ).getNamespaceName(), catalogEntity.name ) ) );
+            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).snapshot, List.of( catalogEntity.unwrap( LogicalTable.class ).getNamespaceName(), catalogEntity.name ) ) );
         }
         return null;
     }
@@ -192,7 +189,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         } else if ( catalogEntity != null ) {
             return Expressions.call(
                     Expressions.call( Catalog.class, "getInstance" ),
-                    "getTable",
+                    "getLogicalTable",
                     Expressions.constant( catalogEntity.id ) );
         }
 
@@ -345,17 +342,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
 
     @Override
-    public boolean supportsModality( Modality modality ) {
-        switch ( modality ) {
-            case STREAM:
-                return entity instanceof StreamableEntity;
-            default:
-                return !(entity instanceof StreamableEntity);
-        }
-    }
-
-
-    @Override
     public List<String> getQualifiedName() {
         return List.of( catalogEntity.unwrap( LogicalTable.class ).getNamespaceName(), catalogEntity.name );
     }
@@ -371,12 +357,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             }
         }
         return Monotonicity.NOT_MONOTONIC;
-    }
-
-
-    @Override
-    public AccessType getAllowedAccess() {
-        return AccessType.ALL;
     }
 
 

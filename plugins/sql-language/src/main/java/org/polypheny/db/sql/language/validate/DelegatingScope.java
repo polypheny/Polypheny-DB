@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
@@ -92,7 +93,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
         final AlgDataType rowType = ns.getRowType();
         if ( rowType.isStruct() ) {
-            ValidatorTable validatorTable = ns.getTable();
+            CatalogEntity validatorTable = ns.getTable();
             if ( validatorTable instanceof PreparingEntity ) {
                 Entity t = ((PreparingEntity) validatorTable).unwrap( Entity.class );
                 if ( t instanceof CustomColumnResolvingEntity ) {

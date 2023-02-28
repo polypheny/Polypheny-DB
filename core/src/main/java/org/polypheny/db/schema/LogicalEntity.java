@@ -22,15 +22,12 @@ import java.util.Set;
 import java.util.TreeSet;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -39,14 +36,12 @@ import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
-
+@Deprecated
 public class LogicalEntity extends CatalogEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity {
 
     private AlgProtoDataType protoRowType;
@@ -92,14 +87,14 @@ public class LogicalEntity extends CatalogEntity implements TranslatableEntity, 
 
 
     @Override
-    public Modify<?> toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, CatalogEntity entity, AlgNode child, Operation operation, List<String> targets, List<RexNode> sources ) {
+    public Modify<?> toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, CatalogEntity entity, AlgNode child, Operation operation, List<String> targets, List<? extends RexNode> sources ) {
         return new LogicalRelModify(
                 cluster.traitSetOf( Convention.NONE ),
                 entity,
                 child,
                 operation,
                 targets,
-                sources);
+                sources );
     }
 
 
@@ -121,9 +116,14 @@ public class LogicalEntity extends CatalogEntity implements TranslatableEntity, 
     }
 
 
-
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
+        return null;
+    }
+
+
+    @Override
+    public Enumerable<Object[]> scan( DataContext dataContext ) {
         return null;
     }
 

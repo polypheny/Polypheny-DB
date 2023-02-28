@@ -167,7 +167,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
                     .build();
     protected QuerySpec querySpec;
 
-    final AlgOptEntity table;
+    final CatalogEntity table;
     final DruidEntity druidTable;
     final ImmutableList<Interval> intervals;
     final ImmutableList<AlgNode> algs;
@@ -194,7 +194,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      * @param algs Internal relational expressions
      * @param converterOperatorMap mapping of Polypheny-DB Sql Operator to Druid Expression API.
      */
-    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, DruidEntity druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         super( cluster, traitSet );
         this.table = table;
         this.druidTable = druidTable;
@@ -216,7 +216,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<AlgNode> algs ) {
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, DruidEntity druidTable, List<AlgNode> algs ) {
         final ImmutableMap.Builder<Operator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
         for ( DruidSqlOperatorConverter converter : DEFAULT_OPERATORS_LIST ) {
             mapBuilder.put( converter.polyphenyDbOperator(), converter );
@@ -228,7 +228,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, DruidEntity druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return create( cluster, traitSet, table, druidTable, druidTable.intervals, algs, converterOperatorMap );
     }
 
@@ -236,7 +236,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, DruidEntity druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, DruidEntity druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return new DruidQuery( cluster, traitSet, table, druidTable, intervals, algs, converterOperatorMap );
     }
 
@@ -541,7 +541,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         for ( AlgNode alg : algs ) {
             if ( alg instanceof RelScan ) {
                 RelScan scan = (RelScan) alg;
-                pw.item( "table", scan.getEntity().getCatalogEntity().id );
+                pw.item( "table", scan.getEntity().id );
                 pw.item( "intervals", intervals );
             } else if ( alg instanceof Filter ) {
                 pw.item( "filter", ((Filter) alg).getCondition() );
@@ -626,7 +626,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     @Override
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
-                "." + table.getCatalogEntity().id + "$" +
+                "." + table.id + "$" +
                 (algs != null ? algs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 

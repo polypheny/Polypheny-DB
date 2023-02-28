@@ -48,6 +48,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -63,7 +64,6 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -175,17 +175,17 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
+        public void createNewSchema( Snapshot snapshot, String name, long id ) {
             // it might be worth it to check why createNewSchema is called multiple times with different names
             if ( currentSchema == null ) {
-                currentSchema = new FileStoreSchema( id, rootSchema, name, this );
+                currentSchema = new FileStoreSchema( id, snapshot, name, this );
             }
         }
 
 
         @Override
-        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
-            return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
+        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
+            return currentSchema.createFileTable( logical, allocationTable );
         }
 
 
@@ -196,7 +196,7 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void createTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
+        public PhysicalTable createPhysicalTable( Context context, LogicalTable catalogTable, AllocationTable allocationTable ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             for ( long partitionId : partitionIds ) {
@@ -457,8 +457,8 @@ public class FilePlugin extends Plugin {
             for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
                 FileTranslatableEntity fileTable = (FileTranslatableEntity) currentSchema.getEntity( table.name + "_" + partitionPlacement.partitionId );
                 try {
-                    for ( String colName : fileTable.getColumnNames() ) {
-                        File columnFolder = getColumnFolder( fileTable.getColumnIdMap().get( colName ), fileTable.getPartitionId() );
+                    for ( long id : fileTable.columnIds ) {
+                        File columnFolder = getColumnFolder( id, fileTable.allocation.id );
                         FileUtils.cleanDirectory( columnFolder );
                     }
                 } catch ( IOException e ) {

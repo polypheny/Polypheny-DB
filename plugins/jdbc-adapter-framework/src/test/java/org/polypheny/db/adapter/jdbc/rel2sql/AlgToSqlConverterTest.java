@@ -121,14 +121,14 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
      */
     private Sql sql( String sql ) {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createSnapshot( true )
                 .add( "foodmart", new ReflectiveSchema( new FoodmartSchema(), -1 ), NamespaceType.RELATIONAL );
         return new Sql( schema, sql, PolyphenyDbSqlDialect.DEFAULT, DEFAULT_REL_CONFIG, ImmutableList.of() );
     }
 
 
     private static Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, SchemaPlus schema, Config sqlToRelConf, Program... programs ) {
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
+        final SchemaPlus rootSchema = Frameworks.createSnapshot( false );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )
@@ -178,7 +178,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
      */
     private static AlgBuilder algBuilder() {
         // Creates a config based on the "scott" schema.
-        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema(), -1 ), NamespaceType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createSnapshot( true ).add( "scott", new ReflectiveSchema( new ScottSchema(), -1 ), NamespaceType.RELATIONAL );
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( schema )

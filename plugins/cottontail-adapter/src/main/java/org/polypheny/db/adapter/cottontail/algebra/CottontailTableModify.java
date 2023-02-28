@@ -74,7 +74,7 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
+            List<? extends RexNode> sourceExpressionList,
             boolean flattened ) {
         super( input.getCluster(), traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
         this.cottontailTable = table.unwrap( CottontailEntity.class );

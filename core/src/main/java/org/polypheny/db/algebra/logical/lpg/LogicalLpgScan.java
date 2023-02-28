@@ -28,30 +28,31 @@ import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.schema.ModelTrait;
 
 
-public class LogicalLpgScan extends LpgScan<LogicalGraph> implements RelationalTransformable {
+public class LogicalLpgScan extends LpgScan<CatalogEntity> implements RelationalTransformable {
 
     /**
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalGraph graph, AlgDataType rowType ) {
+    public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity graph, AlgDataType rowType ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
     }
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<CatalogEntity> entities, CatalogReader catalogReader ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<CatalogEntity> entities, Snapshot snapshot ) {
         assert !entities.isEmpty();
         AlgTraitSet out = getTraitSet().replace( ModelTrait.RELATIONAL );
         LogicalRelScan nodes = new LogicalRelScan( getCluster(), out, entities.get( 0 ) );

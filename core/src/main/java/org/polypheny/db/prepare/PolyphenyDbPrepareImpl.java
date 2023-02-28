@@ -102,6 +102,7 @@ import org.polypheny.db.algebra.stream.StreamRules;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
@@ -263,8 +264,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for cluster.
      */
-    protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, PolyphenyDbSchema rootSchema ) {
-        return AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
+    protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
+        return AlgOptCluster.create( planner, rexBuilder, traitSet, snapshot );
     }
 
     /**
@@ -456,8 +457,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final AlgOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
-        final AlgOptCluster cluster = createCluster( planner, rexBuilder, null, prepareContext.getRootSchema() );
-        return action.apply( cluster, prepareContext.getRootSchema() );
+        final AlgOptCluster cluster = createCluster( planner, rexBuilder, null, prepareContext.getDataContext().getSnapshot() );
+        return action.apply( cluster, prepareContext.getDataContext().getSnapshot() );
     }
 
 
@@ -481,14 +482,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         PolyphenyDbPreparingStmt(
                 PolyphenyDbPrepareImpl prepare,
                 Context context,
-                CatalogReader catalogReader,
+                Snapshot snapshot,
                 AlgDataTypeFactory typeFactory,
                 PolyphenyDbSchema schema,
                 Prefer prefer,
                 AlgOptPlanner planner,
                 Convention resultConvention,
                 RexConvertletTable convertletTable ) {
-            super( context, catalogReader, resultConvention );
+            super( context, snapshot, resultConvention );
             this.prepare = prepare;
             this.schema = schema;
             this.prefer = prefer;
@@ -516,15 +517,15 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        protected Validator createSqlValidator( CatalogReader catalogReader ) {
-            return QueryLanguage.from( "sql" ).getValidatorSupplier().apply( context, (PolyphenyDbCatalogReader) catalogReader );
+        protected Validator createSqlValidator( Snapshot snapshot ) {
+            return QueryLanguage.from( "sql" ).getValidatorSupplier().apply( context, snapshot );
         }
 
 
         @Override
         protected Validator getSqlValidator() {
             if ( sqlValidator == null ) {
-                sqlValidator = createSqlValidator( catalogReader );
+                sqlValidator = createSqlValidator( snapshot );
             }
             return sqlValidator;
         }
@@ -563,7 +564,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 }
 
                 try {
-                    CatalogReader.THREAD_LOCAL.set( catalogReader );
+                    CatalogReader.THREAD_LOCAL.set( snapshot );
                     final Conformance conformance = context.config().conformance();
                     internalParameters.put( "_conformance", conformance );
                     Pair<Bindable<Object[]>, String> implementationPair = EnumerableInterpretable.toBindable(

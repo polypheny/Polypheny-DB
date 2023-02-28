@@ -42,7 +42,7 @@ public class EnumerableTableModifyToStreamerRule extends AlgOptRule {
 
         LogicalStreamer streamer = LogicalStreamer.create(
                 modify,
-                AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCluster().getRootSchema() ) );
+                AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCluster().getSnapshot() ) );
 
         if ( streamer != null ) {
             call.transformTo( streamer );

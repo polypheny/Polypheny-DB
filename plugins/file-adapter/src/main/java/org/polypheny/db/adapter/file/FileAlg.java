@@ -43,6 +43,7 @@ public interface FileAlg extends AlgNode {
 
 
         @Getter
+        @Setter
         private transient FileTranslatableEntity fileTable;
         @Getter
         private final List<String> columnNames = new ArrayList<>();
@@ -68,19 +69,10 @@ public interface FileAlg extends AlgNode {
             //intentionally empty
         }
 
-
-        public void setFileTable( final FileTranslatableEntity fileTable ) {
-            this.fileTable = fileTable;
-            this.columnNames.clear();
-            this.columnNames.addAll( fileTable.getColumnNames() );
-        }
-
-
         public void setColumnNames( final List<String> columnNames ) {
             this.columnNames.clear();
             this.columnNames.addAll( columnNames );
         }
-
 
         /**
          * A FileProject can directly provide the projectionMapping, a FileModify will provide the columnNames only
@@ -105,7 +97,7 @@ public interface FileAlg extends AlgNode {
                 int i = 0;
                 List<Integer> mapping = new ArrayList<>();
                 for ( Value update : updates ) {
-                    int index = getFileTable().getColumnNames().indexOf( columnNames.get( i ) );
+                    int index = new ArrayList<>( getFileTable().getColumnNames().values() ).indexOf( columnNames.get( i ) );
                     update.setColumnReference( index );
                     mapping.add( index );
                     i++;
@@ -146,7 +138,7 @@ public interface FileAlg extends AlgNode {
                     if ( ithProject.contains( "." ) ) {
                         ithProject = ithProject.substring( ithProject.lastIndexOf( "." ) + 1 );
                     }
-                    int indexOf = columnNames.indexOf( ithProject );
+                    int indexOf = new ArrayList<>( fileTable.getColumnNames().values() ).indexOf( ithProject );
                     if ( indexOf == -1 ) {
                         throw new RuntimeException( "Could not perform the projection." );
                     }

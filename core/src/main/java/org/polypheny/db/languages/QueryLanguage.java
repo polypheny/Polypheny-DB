@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import lombok.Getter;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.prepare.Context;
@@ -43,12 +44,12 @@ public class QueryLanguage {
     @Getter
     private final Supplier<Processor> processorSupplier;
     @Getter
-    private final BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier;
+    private final BiFunction<Context, Snapshot, Validator> validatorSupplier;
     @Getter
     private final List<String> otherNames;
 
 
-    public QueryLanguage( NamespaceType namespaceType, String serializedName, List<String> otherNames, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier ) {
+    public QueryLanguage( NamespaceType namespaceType, String serializedName, List<String> otherNames, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, Snapshot, Validator> validatorSupplier ) {
         this.namespaceType = namespaceType;
         this.serializedName = serializedName;
         this.factory = factory;

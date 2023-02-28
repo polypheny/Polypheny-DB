@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -154,8 +155,8 @@ public class SqlProcessorImpl extends Processor {
         }
 
         final Conformance conformance = parserConfig.conformance();
-        final PolyphenyDbCatalogReader catalogReader = transaction.getSnapshot();
-        validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
+        final Snapshot snapshot = transaction.getSnapshot();
+        validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), snapshot, transaction.getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );
 
         Node validated;

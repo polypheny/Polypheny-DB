@@ -52,20 +52,20 @@ import org.apache.geode.cache.query.SelectResults;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
 import org.polypheny.db.adapter.geode.util.JavaTypeFactoryExtImpl;
-import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
@@ -75,14 +75,14 @@ import org.polypheny.db.util.Util;
  * Table based on a Geode Region
  */
 @Slf4j
-public class GeodeEntity extends AbstractQueryableEntity implements TranslatableEntity {
+public class GeodeEntity extends PhysicalTable implements TranslatableEntity, QueryableEntity {
 
     private final String regionName;
     private final AlgDataType rowType;
 
 
-    GeodeEntity( Region<?, ?> region, Long id, Long partitionId, Long adapterId ) {
-        super( Object[].class, id, partitionId, adapterId );
+    GeodeEntity( Region<?, ?> region, AllocationTable allocation ) {
+        super( allocation );
         this.regionName = region.getName();
         this.rowType = GeodeUtils.autodetectRelTypeFromRegion( region );
     }
@@ -216,21 +216,15 @@ public class GeodeEntity extends AbstractQueryableEntity implements Translatable
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-        return new GeodeQueryable<>( dataContext, schema, this, tableName );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long id ) {
+        return new GeodeQueryable<>( dataContext, snapshot, this );
     }
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new GeodeScan( cluster, cluster.traitSetOf( GeodeAlg.CONVENTION ), algOptEntity, this, null );
-    }
-
-
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return rowType;
+        return new GeodeScan( cluster, cluster.traitSetOf( GeodeAlg.CONVENTION ), this, this, null );
     }
 
 
@@ -239,10 +233,10 @@ public class GeodeEntity extends AbstractQueryableEntity implements Translatable
      *
      * @param <T> type
      */
-    public static class GeodeQueryable<T> extends AbstractTableQueryable<T> {
+    public static class GeodeQueryable<T> extends AbstractTableQueryable<T, GeodeEntity> {
 
-        public GeodeQueryable( DataContext dataContext, SchemaPlus schema, GeodeEntity table, String tableName ) {
-            super( dataContext, schema, table, tableName );
+        public GeodeQueryable( DataContext dataContext, Snapshot snapshot, GeodeEntity table ) {
+            super( dataContext, snapshot, table );
         }
 
 
@@ -254,12 +248,13 @@ public class GeodeEntity extends AbstractQueryableEntity implements Translatable
 
 
         private GeodeEntity getTable() {
-            return (GeodeEntity) table;
+            return table;
         }
 
 
         private GemFireCache getClientCache() {
-            return schema.unwrap( GeodeSchema.class ).cache;
+            return null;
+            //return schema.unwrap( GeodeSchema.class ).cache;
         }
 
 

@@ -40,6 +40,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -53,7 +54,6 @@ import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -68,7 +68,7 @@ public class PlannerImpl implements Planner {
     /**
      * Holds the trait definitions to be registered with planner. May be null.
      */
-    private final ImmutableList<AlgTraitDef> traitDefs;
+    private final ImmutableList<AlgTraitDef<?>> traitDefs;
 
     private State state;
 
@@ -76,7 +76,7 @@ public class PlannerImpl implements Planner {
     private boolean open;
 
     // set in STATE_2_READY
-    private PolyphenyDbSchema defaultSchema;
+    private Snapshot snapshot;
     private JavaTypeFactory typeFactory;
     private AlgOptPlanner planner;
     private RexExecutor executor;
@@ -89,7 +89,7 @@ public class PlannerImpl implements Planner {
      */
     public PlannerImpl( FrameworkConfig config ) {
         this.config = config;
-        this.defaultSchema = config.getDefaultSchema();
+        this.snapshot = config.getSnapshot();
         this.programs = config.getPrograms();
         this.state = State.STATE_0_CLOSED;
         this.traitDefs = config.getTraitDefs();

@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -44,7 +45,6 @@ import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
@@ -117,7 +117,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,
-            List<RexNode> sourceExpressionList
+            List<? extends RexNode> sourceExpressionList
     ) {
         this.cottontailSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalRelModify(
@@ -131,8 +131,8 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public Queryable<Object[]> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, long entityId ) {
-        return new CottontailTableQueryable( dataContext, schema, this );
+    public Queryable<Object[]> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId ) {
+        return new CottontailTableQueryable( dataContext, snapshot, this );
     }
 
 
@@ -153,10 +153,10 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
     }
 
 
-    private class CottontailTableQueryable extends AbstractTableQueryable<Object[]> {
+    private static class CottontailTableQueryable extends AbstractTableQueryable<Object[], CottontailEntity> {
 
-        public CottontailTableQueryable( DataContext dataContext, PolyphenyDbSchema schema, PhysicalTable physicalTable ) {
-            super( dataContext, schema, null, physicalTable.name );
+        public CottontailTableQueryable( DataContext dataContext, Snapshot snapshot, CottontailEntity physicalTable ) {
+            super( dataContext, snapshot, physicalTable );
         }
 
 

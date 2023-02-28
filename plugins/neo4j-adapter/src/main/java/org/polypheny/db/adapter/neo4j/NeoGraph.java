@@ -101,7 +101,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
             AlgNode child,
             Operation operation,
             List<String> targets,
-            List<RexNode> sources ) {
+            List<? extends RexNode> sources ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalLpgModify(
                 cluster,

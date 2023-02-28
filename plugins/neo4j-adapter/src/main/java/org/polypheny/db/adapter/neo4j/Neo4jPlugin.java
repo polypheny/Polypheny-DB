@@ -53,6 +53,7 @@ import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -72,7 +73,6 @@ import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
@@ -239,7 +239,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void createTable( Context context, LogicalTable combinedTable, List<Long> partitionIds ) {
+        public PhysicalTable createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable allocationTable ) {
             Catalog catalog = Catalog.getInstance();
 
             if ( this.currentSchema == null ) {
@@ -497,7 +497,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
+        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
             return this.currentSchema.createTable( allocationTable );
         }
 

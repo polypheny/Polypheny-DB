@@ -19,15 +19,17 @@ package org.polypheny.db.catalog.refactor;
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.catalog.Snapshot;
 
 public interface QueryableEntity {
 
     /**
      * Converts this table into a {@link Queryable}.
      */
-    <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, long entityId );
+    <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId );
 
-    Type getElementType();
+    default Type getElementType() {
+        return Object[].class;
+    }
 
 }

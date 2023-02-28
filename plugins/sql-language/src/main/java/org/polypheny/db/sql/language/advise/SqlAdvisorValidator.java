@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
@@ -56,12 +57,11 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
      * Creates a SqlAdvisor validator.
      *
      * @param opTab Operator table
-     * @param catalogReader Catalog reader
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    public SqlAdvisorValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
-        super( opTab, catalogReader, typeFactory, conformance );
+    public SqlAdvisorValidator( OperatorTable opTab, Snapshot snapshot, AlgDataTypeFactory typeFactory, Conformance conformance ) {
+        super( opTab, snapshot, typeFactory, conformance );
     }
 
 

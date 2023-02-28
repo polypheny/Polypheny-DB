@@ -25,9 +25,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTrait;
@@ -38,7 +38,7 @@ public class FileScan extends RelScan implements FileAlg {
     private final FileTranslatableEntity fileTable;
 
 
-    public FileScan( AlgOptCluster cluster, AlgOptEntity table, FileTranslatableEntity fileTable ) {
+    public FileScan( AlgOptCluster cluster, CatalogEntity table, FileTranslatableEntity fileTable ) {
         //convention was: EnumerableConvention.INSTANCE
         super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ).replace( ModelTrait.RELATIONAL ), table );
         this.fileTable = fileTable;
@@ -47,13 +47,13 @@ public class FileScan extends RelScan implements FileAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new FileScan( getCluster(), table, fileTable );
+        return new FileScan( getCluster(), entity, fileTable );
     }
 
 
     @Override
     public AlgDataType deriveRowType() {
-        return fileTable.getRowType( getCluster().getTypeFactory() );
+        return fileTable.getRowType();
     }
 
 

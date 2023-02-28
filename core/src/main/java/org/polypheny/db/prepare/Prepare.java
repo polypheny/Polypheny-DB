@@ -54,7 +54,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.nodes.Node;
@@ -93,7 +96,7 @@ public abstract class Prepare {
     protected static final Logger LOGGER = PolyphenyDbTrace.getStatementTracer();
 
     protected final Context context;
-    protected final CatalogReader catalogReader;
+    protected final Snapshot snapshot;
     /**
      * Convention via which results should be returned by execution.
      */
@@ -114,10 +117,10 @@ public abstract class Prepare {
     public static final TryThreadLocal<Boolean> THREAD_EXPAND = TryThreadLocal.of( false );
 
 
-    public Prepare( Context context, CatalogReader catalogReader, Convention resultConvention ) {
+    public Prepare( Context context, Snapshot snapshot, Convention resultConvention ) {
         assert context != null;
         this.context = context;
-        this.catalogReader = catalogReader;
+        this.snapshot = snapshot;
         this.resultConvention = resultConvention;
     }
 
@@ -241,16 +244,16 @@ public abstract class Prepare {
     public interface CatalogReader extends AlgOptSchema, ValidatorCatalogReader, OperatorTable {
 
         @Override
-        PreparingEntity getTableForMember( List<String> names );
+        LogicalTable getTableForMember( List<String> names );
 
         @Override
-        PreparingEntity getTable( List<String> names );
+        LogicalTable getTable( List<String> names );
 
-        AlgOptEntity getCollection( List<String> names );
+        LogicalCollection getCollection( List<String> names );
 
         LogicalGraph getGraph( String name );
 
-        ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
+        ThreadLocal<Snapshot> THREAD_LOCAL = new ThreadLocal<>();
 
     }
 

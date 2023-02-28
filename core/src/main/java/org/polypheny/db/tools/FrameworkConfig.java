@@ -37,6 +37,7 @@ package org.polypheny.db.tools;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.AlgOptCostFactory;
@@ -68,7 +69,7 @@ public interface FrameworkConfig {
      * Returns the default schema that should be checked before looking at the root schema.
      * Returns null to only consult the root schema.
      */
-    PolyphenyDbSchema getDefaultSchema();
+    Snapshot getSnapshot();
 
     /**
      * Returns the executor used to evaluate constant expressions.
@@ -106,7 +107,7 @@ public interface FrameworkConfig {
      * {@link AlgTraitDef#convert} in the order of this list. The most important trait comes first in the list,
      * followed by the second most important one, etc.
      */
-    ImmutableList<AlgTraitDef> getTraitDefs();
+    ImmutableList<AlgTraitDef<?>> getTraitDefs();
 
     /**
      * Returns the convertlet table that should be used when converting from SQL to row expressions

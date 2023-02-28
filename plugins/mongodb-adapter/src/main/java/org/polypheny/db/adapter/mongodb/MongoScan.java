@@ -53,9 +53,8 @@ import org.polypheny.db.plan.AlgTraitSet;
  *
  * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */
-public class MongoScan extends RelScan implements MongoAlg {
+public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
 
-    final MongoEntity mongoEntity;
     final AlgDataType projectRowType;
 
 
@@ -65,15 +64,12 @@ public class MongoScan extends RelScan implements MongoAlg {
      * @param cluster Cluster
      * @param traitSet Traits
      * @param table Table
-     * @param mongoEntity MongoDB table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    protected MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, MongoEntity mongoEntity, AlgDataType projectRowType ) {
+    protected MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, MongoEntity table, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
-        this.mongoEntity = mongoEntity;
         this.projectRowType = projectRowType;
 
-        assert mongoEntity != null;
         assert getConvention() == CONVENTION;
     }
 
@@ -109,8 +105,8 @@ public class MongoScan extends RelScan implements MongoAlg {
 
     @Override
     public void implement( Implementor implementor ) {
-        implementor.mongoEntity = mongoEntity;
-        implementor.table = table;
+        implementor.mongoEntity = entity;
+        implementor.table = entity;
         implementor.setStaticRowType( (AlgRecordType) rowType );
         implementor.physicalMapper.addAll( rowType.getFieldNames() );
     }

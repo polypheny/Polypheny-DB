@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.sql.language.SqlInsert;
 import org.polypheny.db.util.Conformance;
@@ -32,10 +33,10 @@ public class PolyphenyDbSqlValidator extends SqlValidatorImpl {
 
     public PolyphenyDbSqlValidator(
             OperatorTable opTab,
-            PolyphenyDbCatalogReader catalogReader,
+            Snapshot snapshot,
             JavaTypeFactory typeFactory,
             Conformance conformance ) {
-        super( opTab, catalogReader, typeFactory, conformance );
+        super( opTab, snapshot, typeFactory, conformance );
     }
 
 

@@ -68,7 +68,7 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
      * The default schema that is used in these tests provides tables sorted on the primary key. Due to this scan operators always come with a {@link AlgCollation} trait.
      */
     private AlgNode transform( String sql, RuleSet prepareRules ) throws Exception {
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        final SchemaPlus rootSchema = Frameworks.createSnapshot( true );
         final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema( rootSchema.getId() ), NamespaceType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )

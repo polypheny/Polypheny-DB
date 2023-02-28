@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
@@ -56,6 +57,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
@@ -102,17 +104,17 @@ public final class Schemas {
     /**
      * Returns the expression for a schema.
      */
-    public static Expression expression( PolyphenyDbSchema schema ) {
-        return null;// return schema.getExpression( schema, schema.getName() ); todo dl
+    public static Expression expression( Snapshot snapshot ) {
+        return snapshot.getSnapshotExpression( snapshot.getId() );
     }
 
 
     /**
      * Returns the expression for a sub-schema.
      */
-    public static Expression subSchemaExpression( PolyphenyDbSchema schema, String name, Class<?> type ) {
+    public static Expression subSchemaExpression( Snapshot snapshot, String name, Class<?> type ) {
         // (Type) schemaExpression.getSubSchema("name")
-        final Expression schemaExpression = expression( schema );
+        final Expression schemaExpression = expression( snapshot );
         Expression call =
                 Expressions.call(
                         schemaExpression,
@@ -130,7 +132,7 @@ public final class Schemas {
     /**
      * Converts a schema expression to a given type by calling the {@link SchemaPlus#unwrap(Class)} method.
      */
-    public static Expression unwrap( Expression call, Class type ) {
+    public static Expression unwrap( Expression call, Class<?> type ) {
         return Expressions.convert_( Expressions.call( call, BuiltInMethod.SCHEMA_PLUS_UNWRAP.method, Expressions.constant( type ) ), type );
     }
 
@@ -138,11 +140,11 @@ public final class Schemas {
     /**
      * Returns the expression to access a table within a schema.
      */
-    public static Expression tableExpression( PolyphenyDbSchema schema, Type elementType, String tableName, Class clazz ) {
+    public static Expression tableExpression( Snapshot snapshot, Type elementType, String tableName, Class<?> clazz ) {
         final MethodCallExpression expression;
         if ( Entity.class.isAssignableFrom( clazz ) ) {
             expression = Expressions.call(
-                    expression( schema ),
+                    expression( snapshot ),
                     BuiltInMethod.SCHEMA_GET_TABLE.method,
                     Expressions.constant( tableName ) );
             if ( ScannableEntity.class.isAssignableFrom( clazz ) ) {
@@ -167,7 +169,7 @@ public final class Schemas {
             expression = Expressions.call(
                     BuiltInMethod.SCHEMAS_QUERYABLE.method,
                     DataContext.ROOT,
-                    expression( schema ),
+                    expression( snapshot ),
                     Expressions.constant( elementType ),
                     Expressions.constant( tableName ) );
         }
@@ -175,8 +177,8 @@ public final class Schemas {
     }
 
 
-    public static DataContext createDataContext( PolyphenyDbSchema rootSchema ) {
-        return new DummyDataContext( rootSchema );
+    public static DataContext createDataContext( Snapshot snapshot ) {
+        return new DummyDataContext( snapshot );
     }
 
 
@@ -192,9 +194,9 @@ public final class Schemas {
      * Returns a {@link Queryable}, given a fully-qualified table name as an iterable.
      */
     public static <E> Queryable<E> queryable( DataContext root, Class<E> clazz, Iterable<? extends String> names ) {
-        PolyphenyDbSchema schema = root.getSnapshot();
+        Snapshot snapshot = root.getSnapshot();
 
-        return queryable( root, schema, clazz, names.iterator().next() );
+        return queryable( root, snapshot, clazz, names.iterator().next() );
 
     }
 
@@ -202,10 +204,10 @@ public final class Schemas {
     /**
      * Returns a {@link Queryable}, given a schema and table name.
      */
-    public static <E> Queryable<E> queryable( DataContext root, PolyphenyDbSchema schema, Class<E> clazz, String tableName ) {
+    public static <E> Queryable<E> queryable( DataContext root, Snapshot snapshot, Class<E> clazz, String tableName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
-        LogicalTable table = schema.getTable( List.of( tableName ) );
-        return table.unwrap( QueryableEntity.class ).asQueryable( root, schema, tableName );
+        LogicalTable table = snapshot.getLogicalTable( List.of( tableName ) );
+        return table.unwrap( QueryableEntity.class ).asQueryable( root, snapshot, table.id );
     }
 
 
@@ -243,57 +245,17 @@ public final class Schemas {
 
 
     /**
-     * Returns an {@link org.apache.calcite.linq4j.Enumerable} over object arrays, given a fully-qualified table name which leads to a {@link ScannableEntity}.
-     */
-    public static LogicalTable table( DataContext root, String... names ) {
-        PolyphenyDbSchema schema = root.getSnapshot();
-        return schema.getTable( List.of( names ) );
-    }
-
-    /**
-     * Parses and validates a SQL query. For use within Polypheny-DB only.
-     */
-    /*public static ParseResult parse( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
-        final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
-        final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
-        final Context context = makeContext( schema, schemaPath, null, propValues );
-        PolyphenyDbPrepare.Dummy.push( context );
-        try {
-            return prepare.parse( context, sql );
-        } finally {
-            PolyphenyDbPrepare.Dummy.pop( context );
-        }
-    }*/
-
-    /**
-     * Parses and validates a SQL query and converts to relational algebra. For use within Polypheny-DB only.
-     */
-    /*public static PolyphenyDbPrepare.ConvertResult convert( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
-        final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
-        final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
-        final Context context = makeContext( schema, schemaPath, null, propValues );
-        PolyphenyDbPrepare.Dummy.push( context );
-        try {
-            return prepare.convert( context, sql );
-        } finally {
-            PolyphenyDbPrepare.Dummy.pop( context );
-        }
-    }*/
-
-
-    /**
      * Creates a context for the purposes of preparing a statement.
      *
-     * @param schema Schema
      * @param schemaPath Path wherein to look for functions
      * @param objectPath Path of the object being analyzed (usually a view), or null
      * @param propValues Connection properties
      * @return Context
      */
-    private static Context makeContext( PolyphenyDbSchema schema, List<String> schemaPath, List<String> objectPath, final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues ) {
+    private static Context makeContext( Snapshot snapshot, List<String> schemaPath, List<String> objectPath, final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues ) {
         final Context context0 = PolyphenyDbPrepare.Dummy.peek();
         final PolyphenyDbConnectionConfig config = mutate( context0.config(), propValues );
-        return makeContext( config, context0.getTypeFactory(), context0.getDataContext(), schema, schemaPath, objectPath );
+        return makeContext( config, context0.getTypeFactory(), context0.getDataContext(), snapshot, schemaPath, objectPath );
     }
 
 
@@ -309,7 +271,7 @@ public final class Schemas {
             final PolyphenyDbConnectionConfig connectionConfig,
             final JavaTypeFactory typeFactory,
             final DataContext dataContext,
-            final PolyphenyDbSchema schema,
+            final Snapshot snapshot,
             final List<String> schemaPath,
             final List<String> objectPath_ ) {
         final ImmutableList<String> objectPath = objectPath_ == null ? null : ImmutableList.copyOf( objectPath_ );
@@ -321,8 +283,8 @@ public final class Schemas {
 
 
             @Override
-            public PolyphenyDbSchema getRootSchema() {
-                return schema;
+            public Snapshot getSnapshot() {
+                return snapshot;
             }
 
 
@@ -399,13 +361,13 @@ public final class Schemas {
      *
      * The result is null if the initial schema is null or any sub-schema does not exist.
      */
-    public static PolyphenyDbSchema subSchema( PolyphenyDbSchema schema, Iterable<String> names ) {
+    public static Snapshot subSchema( Snapshot snapshot, Iterable<String> names ) {
         for ( String string : names ) {
-            if ( schema == null ) {
+            if ( snapshot == null ) {
                 return null;
             }
         }
-        return schema;
+        return snapshot;
     }
 
 
@@ -431,19 +393,14 @@ public final class Schemas {
      */
     private static class DummyDataContext implements DataContext {
 
-        private final PolyphenyDbSchema rootSchema;
+        @Getter
+        private final Snapshot snapshot;
         private final ImmutableMap<String, Object> map;
 
 
-        DummyDataContext( PolyphenyDbSchema rootSchema ) {
-            this.rootSchema = rootSchema;
+        DummyDataContext( Snapshot snapshot ) {
+            this.snapshot = snapshot;
             this.map = ImmutableMap.of();
-        }
-
-
-        @Override
-        public Snapshot getSnapshot() {
-            return rootSchema;
         }
 
 

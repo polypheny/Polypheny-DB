@@ -48,12 +48,14 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -63,12 +65,12 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public final class HrClusteredSchema extends AbstractNamespace implements Schema {
 
-    private final ImmutableMap<String, Entity> tables;
+    private final ImmutableMap<String, CatalogEntity> tables;
 
 
     public HrClusteredSchema( long id ) {
         super( id );
-        tables = ImmutableMap.<String, Entity>builder()
+        tables = ImmutableMap.<String, CatalogEntity>builder()
                 .put(
                         "emps",
                         new PkClusteredEntity(
@@ -105,7 +107,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, CatalogEntity> getTables() {
         return tables;
     }
 
@@ -113,7 +115,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
     /**
      * A table sorted (ascending direction and nulls last) on the primary key.
      */
-    private static class PkClusteredEntity extends AbstractEntity implements ScannableEntity {
+    private static class PkClusteredEntity extends LogicalTable implements ScannableEntity {
 
         private final ImmutableBitSet pkColumns;
         private final List<Object[]> data;
@@ -121,7 +123,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
 
         PkClusteredEntity( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
-            super( null, null, null );
+            super( -1, "", null, -1, -1, -1, EntityType.ENTITY, null, ImmutableList.of(), false, null );
             this.data = data;
             this.typeBuilder = dataTypeBuilder;
             this.pkColumns = pkColumns;
@@ -137,18 +139,10 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
             return Statistics.of( (double) data.size(), ImmutableList.of( pkColumns ), ImmutableList.of( AlgCollations.of( collationFields ) ) );
         }
 
-
-        @Override
-        public AlgDataType getRowType( final AlgDataTypeFactory typeFactory ) {
-            return typeBuilder.apply( typeFactory );
-        }
-
-
         @Override
         public Enumerable<Object[]> scan( final DataContext root ) {
             return Linq4j.asEnumerable( data );
         }
-
     }
 
 }

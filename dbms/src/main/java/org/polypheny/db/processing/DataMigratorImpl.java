@@ -54,17 +54,17 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.tools.AlgBuilder;
@@ -321,7 +321,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptEntity physical = statement.getTransaction().getSnapshot().getLogicalTable( qualifiedTableName );
+        PhysicalTable physical = statement.getTransaction().getSnapshot().getPhysicalTable( partitionId );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
@@ -342,13 +342,12 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
+                cluster.traitSet(),
                 physical,
-                statement.getTransaction().getSnapshot(),
                 builder.build(),
                 Modify.Operation.DELETE,
                 null,
-                null,
-                true
+                null
         );
 
         return AlgRoot.of( node, Kind.DELETE );
@@ -363,7 +362,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptEntity physical = statement.getTransaction().getSnapshot().getTableForMember( qualifiedTableName );
+        PhysicalTable physical = statement.getTransaction().getSnapshot().getPhysicalTable( partitionId );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
@@ -388,13 +387,12 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
+                cluster.traitSet(),
                 physical,
-                statement.getTransaction().getSnapshot(),
                 builder.build(),
                 Modify.Operation.INSERT,
                 null,
-                null,
-                true
+                null
         );
         return AlgRoot.of( node, Kind.INSERT );
     }
@@ -407,7 +405,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
-        AlgOptEntity physical = statement.getTransaction().getSnapshot().getTableForMember( qualifiedTableName );
+        PhysicalTable physical = statement.getTransaction().getSnapshot().getPhysicalTable( partitionId );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
@@ -449,13 +447,12 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
+                cluster.traitSet(),
                 physical,
-                statement.getTransaction().getSnapshot(),
                 builder.build(),
                 Modify.Operation.UPDATE,
                 columnNames,
-                values,
-                false
+                values
         );
         AlgRoot algRoot = AlgRoot.of( node, Kind.UPDATE );
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(

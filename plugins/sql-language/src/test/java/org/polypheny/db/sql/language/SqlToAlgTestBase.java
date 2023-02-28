@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDynamic;
 import org.polypheny.db.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
@@ -279,7 +280,7 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public AlgOptEntity getTableForMember( List<String> names ) {
+        public LogicalTable getTableForMember( List<String> names ) {
             final ValidatorTable table = catalogReader.getTable( names );
             final AlgDataType rowType = table.getRowType();
             final List<AlgCollation> collationList = deduceMonotonicity( table );

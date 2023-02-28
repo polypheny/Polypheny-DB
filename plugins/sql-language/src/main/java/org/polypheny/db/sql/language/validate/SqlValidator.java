@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
@@ -104,7 +105,7 @@ public interface SqlValidator extends Validator {
      *
      * @return catalog reader
      */
-    ValidatorCatalogReader getCatalogReader();
+    Snapshot getSnapshot();
 
     /**
      * Returns the operator table used by this validator.

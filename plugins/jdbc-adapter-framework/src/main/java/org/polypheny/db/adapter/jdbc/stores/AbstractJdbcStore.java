@@ -19,9 +19,9 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
@@ -31,16 +31,18 @@ import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
@@ -109,8 +111,8 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, rootSchema, name, connectionFactory, dialect, this );
+    public void createNewSchema( Snapshot snapshot, String name, long id ) {
+        currentJdbcSchema = JdbcSchema.create( id, snapshot, name, connectionFactory, dialect, this );
     }
 
 
@@ -123,45 +125,23 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void createTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getNamespaceName() );
-        qualifiedNames.add( catalogTable.name );
+    public PhysicalTable createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable ) {
+        String physicalTableName = getPhysicalTableName( logicalTable.id, allocationTable.id );
 
-        List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
-
-        // Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement
-        for ( long partitionId : partitionIds ) {
-            String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
-
-            if ( log.isDebugEnabled() ) {
-                log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
-            }
-            StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
-            if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                log.info( "{} on store {}", query.toString(), this.getUniqueName() );
-            }
-            executeUpdate( query, context );
-
-            catalog.updatePartitionPlacementPhysicalNames(
-                    getAdapterId(),
-                    partitionId,
-                    getDefaultPhysicalSchemaName(),
-                    physicalTableName );
-
-            for ( CatalogColumnPlacement placement : existingPlacements ) {
-                catalog.updateColumnPlacementPhysicalNames(
-                        getAdapterId(),
-                        placement.columnId,
-                        getDefaultPhysicalSchemaName(),
-                        getPhysicalColumnName( placement.columnId ),
-                        true );
-            }
+        if ( log.isDebugEnabled() ) {
+            log.debug( "[{}] createPhysicalTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), getDefaultPhysicalSchemaName(), physicalTableName );
         }
+        StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, allocationTable );
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
+            log.info( "{} on store {}", query.toString(), this.getUniqueName() );
+        }
+        executeUpdate( query, context );
+
+        return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
     }
 
 
-    protected StringBuilder buildCreateTableQuery( String schemaName, String physicalTableName, LogicalTable catalogTable ) {
+    protected StringBuilder buildCreateTableQuery( String schemaName, String physicalTableName, AllocationTable allocationTable ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE TABLE " )
                 .append( dialect.quoteIdentifier( schemaName ) )
@@ -169,8 +149,8 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
                 .append( dialect.quoteIdentifier( physicalTableName ) )
                 .append( " ( " );
         boolean first = true;
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
-            CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
+        for ( CatalogColumnPlacement placement : allocationTable.placements ) {
+            CatalogColumn catalogColumn = allocationTable.getColumns().get( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
             }

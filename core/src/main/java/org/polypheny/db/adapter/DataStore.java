@@ -28,17 +28,19 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
@@ -65,7 +67,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
     }
 
 
-    public abstract void createTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
+    public abstract PhysicalTable createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable allocationTable );
 
     public abstract void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
 
@@ -116,16 +118,16 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
 
         LogicalTable nodes = Catalog.getInstance().getTable( mapping.nodesId );
-        createTable( context, nodes, nodes.partitionProperty.partitionIds );
+        createPhysicalTable( context, nodes, null );
 
         LogicalTable nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
-        createTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
+        createPhysicalTable( context, nodeProperty, null );
 
         LogicalTable edges = Catalog.getInstance().getTable( mapping.edgesId );
-        createTable( context, edges, edges.partitionProperty.partitionIds );
+        createPhysicalTable( context, edges, null );
 
         LogicalTable edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
-        createTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
+        createPhysicalTable( context, edgeProperty, null );
     }
 
 
@@ -171,7 +173,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
         LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
-        createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
+        createPhysicalTable( prepareContext, collectionEntity, null );
     }
 
 

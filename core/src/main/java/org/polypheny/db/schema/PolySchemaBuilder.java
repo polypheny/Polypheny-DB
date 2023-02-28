@@ -43,7 +43,7 @@ import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -235,7 +235,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             }
 
                             /*
-                            Entity entity = adapter.createTableSchema(
+                            Entity entity = adapter.createAdapterTable(
                                     catalogTable,
                                     Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ),
                                     partitionPlacement );

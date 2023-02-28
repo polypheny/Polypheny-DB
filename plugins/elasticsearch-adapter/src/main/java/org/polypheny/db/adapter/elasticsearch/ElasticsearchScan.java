@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -70,7 +71,7 @@ public class ElasticsearchScan extends RelScan implements ElasticsearchRel {
      * @param elasticsearchTable Elasticsearch table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    ElasticsearchScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptEntity table, ElasticsearchEntity elasticsearchTable, AlgDataType projectRowType ) {
+    ElasticsearchScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, ElasticsearchEntity elasticsearchTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.elasticsearchTable = Objects.requireNonNull( elasticsearchTable, "elasticsearchTable" );
         this.projectRowType = projectRowType;
@@ -114,7 +115,7 @@ public class ElasticsearchScan extends RelScan implements ElasticsearchRel {
     @Override
     public void implement( Implementor implementor ) {
         implementor.elasticsearchTable = elasticsearchTable;
-        implementor.table = table;
+        implementor.table = entity;
     }
 
 }

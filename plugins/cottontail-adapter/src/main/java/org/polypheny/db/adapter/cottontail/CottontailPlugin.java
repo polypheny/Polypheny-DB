@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Plugin;
@@ -42,6 +43,7 @@ import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -51,7 +53,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -203,13 +204,13 @@ public class CottontailPlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name, Long id ) {
-            this.currentSchema = CottontailSchema.create( id, rootSchema, name, this.wrapper, this );
+        public void createNewSchema( Snapshot snapshot, String name, long id ) {
+            this.currentSchema = CottontailSchema.create( id, snapshot, name, this.wrapper, this );
         }
 
 
         @Override
-        public PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable ) {
+        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable ) {
             return new CottontailEntity(
                     this.currentSchema,
                     this.dbName,
@@ -226,7 +227,7 @@ public class CottontailPlugin extends Plugin {
 
 
         @Override
-        public void createTable( Context context, LogicalTable combinedTable, List<Long> partitionIds ) {
+        public PhysicalTable createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable allocationTable ) {
 
             /* Begin or continue Cottontail DB transaction. */
             final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
@@ -234,40 +235,31 @@ public class CottontailPlugin extends Plugin {
             /* Prepare CREATE TABLE message. */
             final List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), combinedTable.id ) );
 
-            for ( long partitionId : partitionIds ) {
-                final String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id, partitionId );
-                catalog.updatePartitionPlacementPhysicalNames(
-                        getAdapterId(),
-                        partitionId,
-                        this.dbName,
-                        physicalTableName );
+            final String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id, allocationTable.id );
+            catalog.updatePartitionPlacementPhysicalNames(
+                    getAdapterId(),
+                    allocationTable.id,
+                    this.dbName,
+                    physicalTableName );
 
-                final EntityName tableEntity = EntityName.newBuilder()
-                        .setSchema( this.currentSchema.getCottontailSchema() )
-                        .setName( physicalTableName )
-                        .build();
-                final EntityDefinition definition = EntityDefinition.newBuilder()
-                        .setEntity( tableEntity )
-                        .addAllColumns( columns )
-                        .build();
+            final EntityName tableEntity = EntityName.newBuilder()
+                    .setSchema( this.currentSchema.getCottontailSchema() )
+                    .setName( physicalTableName )
+                    .build();
+            final EntityDefinition definition = EntityDefinition.newBuilder()
+                    .setEntity( tableEntity )
+                    .addAllColumns( columns )
+                    .build();
 
-                CreateEntityMessage createEntityMessage = CreateEntityMessage.newBuilder()
-                        .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
-                        .setDefinition( definition ).build();
-                boolean success = this.wrapper.createEntityBlocking( createEntityMessage );
-                if ( !success ) {
-                    throw new RuntimeException( "Unable to create table." );
-                }
-
+            CreateEntityMessage createEntityMessage = CreateEntityMessage.newBuilder()
+                    .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
+                    .setDefinition( definition ).build();
+            boolean success = this.wrapper.createEntityBlocking( createEntityMessage );
+            if ( !success ) {
+                throw new RuntimeException( "Unable to create table." );
             }
-            for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), combinedTable.id ) ) {
-                this.catalog.updateColumnPlacementPhysicalNames(
-                        this.getAdapterId(),
-                        placement.columnId,
-                        this.dbName,
-                        CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
-                        true );
-            }
+
+            return new PhysicalTable( allocationTable, physicalTableName, this.dbName, allocationTable.getColumnNames().keySet().stream().map( CottontailNameUtil::createPhysicalColumnName ).collect( Collectors.toList() ) );
         }
 
 

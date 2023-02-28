@@ -69,8 +69,11 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -85,12 +88,12 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -103,7 +106,6 @@ import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.ExInst;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -159,6 +161,7 @@ import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -171,6 +174,8 @@ import org.slf4j.Logger;
  * Default implementation of {@link SqlValidator}.
  */
 public class SqlValidatorImpl implements SqlValidatorWithHints {
+
+    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
 
     public static final Logger TRACER = PolyphenyDbTrace.PARSER_LOGGER;
 
@@ -191,7 +196,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     private final OperatorTable opTab;
-    final ValidatorCatalogReader catalogReader;
+
+    @Getter
+    final Snapshot snapshot;
 
     /**
      * Maps ParsePosition strings to the {@link SqlIdentifier} identifier objects at these positions
@@ -294,13 +301,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * Creates a validator.
      *
      * @param opTab Operator table
-     * @param catalogReader Catalog reader
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    public SqlValidatorImpl( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
+    public SqlValidatorImpl( OperatorTable opTab, Snapshot snapshot, AlgDataTypeFactory typeFactory, Conformance conformance ) {
         this.opTab = Objects.requireNonNull( opTab );
-        this.catalogReader = Objects.requireNonNull( catalogReader );
+        this.snapshot = Objects.requireNonNull( snapshot );
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.conformance = Objects.requireNonNull( conformance );
 
@@ -320,12 +326,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public Conformance getConformance() {
         return conformance;
-    }
-
-
-    @Override
-    public ValidatorCatalogReader getCatalogReader() {
-        return catalogReader;
     }
 
 
@@ -369,7 +369,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     select,
                     Util.first( originalType, unknownType ),
                     list,
-                    catalogReader.nameMatcher.createSet(),
+                    nameMatcher.createSet(),
                     types,
                     includeSystemVars );
         }
@@ -546,7 +546,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             default:
                 final SqlIdentifier prefixId = identifier.skipLast( 1 );
                 final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-                final NameMatcher nameMatcher = scope.validator.catalogReader.nameMatcher;
+                final NameMatcher nameMatcher = scope.validator.nameMatcher;
                 scope.resolve( prefixId.names, nameMatcher, true, resolved );
                 if ( resolved.count() == 0 ) {
                     // e.g. "select s.t.* from e" or "select r.* from e"
@@ -707,7 +707,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 if ( pos.toString().equals( id.getComponent( i ).getPos().toString() ) ) {
                     final List<Moniker> objNames = new ArrayList<>();
                     SqlValidatorUtil.getSchemaObjectMonikers(
-                            getCatalogReader(),
+                            this.getSnapshot(),
                             id.names.subList( 0, i + 1 ),
                             objNames );
                     for ( Moniker objName : objNames ) {
@@ -775,7 +775,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             for ( String name : subNames ) {
                 if ( ns == null ) {
                     final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-                    final NameMatcher nameMatcher = catalogReader.nameMatcher;
+                    final NameMatcher nameMatcher = snapshot.nameMatcher;
                     scope.resolve( ImmutableList.of( name ), nameMatcher, false, resolved );
                     if ( resolved.count() == 1 ) {
                         //ns = resolved.only().namespace;
@@ -818,7 +818,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private static void findAllValidUdfNames( List<String> names, SqlValidator validator, Collection<Moniker> result ) {
         final List<Moniker> objNames = new ArrayList<>();
-        SqlValidatorUtil.getSchemaObjectMonikers( validator.getCatalogReader(), names, objNames );
+        SqlValidatorUtil.getSchemaObjectMonikers( validator.getSnapshot(), names, objNames );
         for ( Moniker objName : objNames ) {
             if ( objName.getType() == MonikerType.FUNCTION ) {
                 result.add( objName );
@@ -1023,7 +1023,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private SqlValidatorNamespace getNamespace( SqlIdentifier id, DelegatingScope scope ) {
         if ( id.isSimple() ) {
-            final NameMatcher nameMatcher = catalogReader.nameMatcher;
+            final NameMatcher nameMatcher = snapshot.nameMatcher;
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( id.names, nameMatcher, false, resolved );
             if ( resolved.count() == 1 ) {
@@ -1569,7 +1569,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return getValidatedNodeType( original );
         }
         if ( node instanceof SqlIdentifier ) {
-            return getCatalogReader().getNamedType( (SqlIdentifier) node );
+            return SqlUtil.getNamedType( (SqlIdentifier) node, snapshot );
         }
         return null;
     }
@@ -1633,7 +1633,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public AlgDataType deriveConstructorType( SqlValidatorScope scope, SqlCall call, SqlFunction unresolvedConstructor, SqlFunction resolvedConstructor, List<AlgDataType> argTypes ) {
         SqlIdentifier sqlIdentifier = unresolvedConstructor.getSqlIdentifier();
         assert sqlIdentifier != null;
-        AlgDataType type = catalogReader.getNamedType( sqlIdentifier );
+        AlgDataType type = SqlUtil.getNamedType( sqlIdentifier, snapshot );
         if ( type == null ) {
             // TODO: Proper type name formatting
             throw newValidationError( sqlIdentifier, RESOURCE.unknownDatatypeName( sqlIdentifier.toString() ) );
@@ -3003,9 +3003,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( leftOrRight instanceof SqlIdentifier ) {
             SqlIdentifier from = (SqlIdentifier) leftOrRight;
             CatalogEntity entity = findTable(
-                    catalogReader.getRootSchema(),
                     Util.last( from.names ),
-                    catalogReader.nameMatcher.isCaseSensitive() );
+                    snapshot.nameMatcher.isCaseSensitive() );
             String name = Util.last( identifier.names );
 
             if ( entity != null && entity.isRolledUp( name ) ) {
@@ -3073,7 +3072,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             // Join on fields that occur exactly once on each side. Ignore fields that occur more than once on either side.
             final AlgDataType leftRowType = getSqlNamespace( left ).getRowType();
             final AlgDataType rightRowType = getSqlNamespace( right ).getRowType();
-            final NameMatcher nameMatcher = catalogReader.nameMatcher;
+            final NameMatcher nameMatcher = snapshot.nameMatcher;
             List<String> naturalColumnNames = SqlValidatorUtil.deriveNaturalJoinColumnList( nameMatcher, leftRowType, rightRowType );
 
             // Check compatibility of the chosen columns.
@@ -3144,7 +3143,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             String name = id.names.get( 0 );
             final SqlValidatorNamespace namespace = getSqlNamespace( leftOrRight );
             final AlgDataType rowType = namespace.getRowType();
-            final NameMatcher nameMatcher = catalogReader.nameMatcher;
+            final NameMatcher nameMatcher = snapshot.nameMatcher;
             final AlgDataTypeField field = nameMatcher.field( rowType, name );
             if ( field != null ) {
                 if ( nameMatcher.frequency( rowType.getFieldNames(), name ) > 1 ) {
@@ -3193,7 +3192,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // Make sure that items in FROM clause have distinct aliases.
         final SelectScope fromScope = (SelectScope) getFromScope( select );
         List<String> names = fromScope.getChildNames();
-        if ( !catalogReader.nameMatcher.isCaseSensitive() ) {
+        if ( !snapshot.nameMatcher.isCaseSensitive() ) {
             names = names.stream().map( s -> s.toUpperCase( Locale.ROOT ) ).collect( Collectors.toList() );
         }
         final int duplicateAliasOrdinal = Util.firstDuplicate( names );
@@ -3395,8 +3394,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private @Nullable CatalogEntity findTable( PolyphenyDbSchema schema, String tableName, boolean caseSensitive ) {
-        return schema.getTable( List.of( tableName ) );
+    private @Nullable CatalogEntity findTable( String tableName, boolean caseSensitive ) {
+        return snapshot.getLogicalTable( List.of( tableName ) );
     }
 
 
@@ -3404,7 +3403,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * Given a table alias, find the corresponding {@link Entity} associated with it
      */
     private CatalogEntity findTable( String alias ) {
-        return findTable( catalogReader.getRootSchema(), alias, catalogReader.nameMatcher.isCaseSensitive() );
+        return findTable( alias, snapshot.nameMatcher.isCaseSensitive() );
     }
 
 
@@ -3654,14 +3653,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateSequenceValue( SqlValidatorScope scope, SqlIdentifier id ) {
         // Resolve identifier as a table.
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-        scope.resolveTable( id.names, catalogReader.nameMatcher, SqlValidatorScope.Path.EMPTY, resolved );
+        scope.resolveTable( id.names, snapshot.nameMatcher, SqlValidatorScope.Path.EMPTY, resolved );
         if ( resolved.count() != 1 ) {
             throw newValidationError( id, RESOURCE.tableNameNotFound( id.toString() ) );
         }
         // We've found a table. But is it a sequence?
         //final SqlValidatorNamespace ns = resolved.only().namespace;
         /*if ( ns instanceof TableNamespace ) {
-            final Entity entity = ns.getTable().unwrap( Entity.class );
+            final Entity entity = ns.getLogicalTable().unwrap( Entity.class );
             switch ( entity.getJdbcTableType() ) {
                 case SEQUENCE:
                 case TEMPORARY_SEQUENCE:
@@ -4000,7 +3999,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    protected AlgDataType createTargetRowType( ValidatorTable table, SqlNodeList targetColumnList, boolean append ) {
+    protected AlgDataType createTargetRowType( CatalogEntity table, SqlNodeList targetColumnList, boolean append ) {
         return createTargetRowType( table, targetColumnList, append, false );
     }
 
@@ -4013,7 +4012,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param append Whether to append fields to those in <code>baseRowType</code>
      * @return Rowtype
      */
-    protected AlgDataType createTargetRowType( ValidatorTable table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
+    protected AlgDataType createTargetRowType( CatalogEntity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
         AlgDataType baseRowType = table.getRowType();
         if ( targetColumnList == null ) {
             return baseRowType;
@@ -4034,7 +4033,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             baseRowType,
                             typeFactory,
                             id,
-                            catalogReader,
+                            snapshot,
                             algOptEntity,
                             allowDynamic );
 
@@ -4057,16 +4056,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
         validateNamespace( targetNamespace, unknownType );
-        final CatalogEntity algOptEntity =
-                SqlValidatorUtil.getAlgOptTable(
+        final CatalogEntity table =
+                SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
-                        catalogReader.unwrap( Prepare.CatalogReader.class ),
+                        snapshot,
                         null,
                         null );
-        final ValidatorTable table =
-                algOptEntity == null
-                        ? targetNamespace.getTable()
-                        : algOptEntity.unwrap( ValidatorTable.class );
 
         boolean allowDynamic = false;
         if ( insert.getSchemaType() == NamespaceType.DOCUMENT ) {
@@ -4111,7 +4106,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private void checkFieldCount( SqlNode node, ValidatorTable table, SqlNode source, AlgDataType logicalSourceRowType, AlgDataType logicalTargetRowType ) {
+    private void checkFieldCount( SqlNode node, CatalogEntity table, SqlNode source, AlgDataType logicalSourceRowType, AlgDataType logicalTargetRowType ) {
         final int sourceFieldCount = logicalSourceRowType.getFieldCount();
         final int targetFieldCount = logicalTargetRowType.getFieldCount();
         if ( sourceFieldCount != targetFieldCount ) {
@@ -4331,7 +4326,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final ValidatorTable table = targetNamespace.getTable();
+        final CatalogEntity table = targetNamespace.getTable();
 
         validateAccess( call.getTargetTable(), table, AccessEnum.DELETE );
     }
@@ -4341,16 +4336,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final CatalogEntity algOptEntity =
-                SqlValidatorUtil.getAlgOptTable(
+        final CatalogEntity table =
+                SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
-                        catalogReader.unwrap( Prepare.CatalogReader.class ),
+                        snapshot,
                         null,
                         null );
-        final ValidatorTable table =
-                algOptEntity == null
-                        ? targetNamespace.getTable()
-                        : algOptEntity.unwrap( ValidatorTable.class );
 
         final AlgDataType targetRowType =
                 createTargetRowType(
@@ -4380,7 +4371,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         IdentifierNamespace targetNamespace = (IdentifierNamespace) getSqlNamespace( call.getTargetTable() );
         validateNamespace( targetNamespace, unknownType );
 
-        ValidatorTable table = targetNamespace.getTable();
+        CatalogEntity table = targetNamespace.getTable();
         validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
 
         AlgDataType targetRowType = unknownType;
@@ -4417,11 +4408,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param table Table
      * @param requiredAccess Access requested on table
      */
-    private void validateAccess( SqlNode node, ValidatorTable table, AccessEnum requiredAccess ) {
+    private void validateAccess( SqlNode node, CatalogEntity table, AccessEnum requiredAccess ) {
         if ( table != null ) {
-            AccessType access = table.getAllowedAccess();
+            AccessType access = AccessType.ALL;
+            ;
             if ( !access.allowsAccess( requiredAccess ) ) {
-                throw newValidationError( node, RESOURCE.accessNotAllowed( requiredAccess.name(), table.getQualifiedName().toString() ) );
+                throw newValidationError( node, RESOURCE.accessNotAllowed( requiredAccess.name(), table.name ) );
             }
         }
     }
@@ -4625,7 +4617,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     SqlValidatorNamespace lookupFieldNamespace( AlgDataType rowType, String name ) {
-        final NameMatcher nameMatcher = catalogReader.nameMatcher;
+        final NameMatcher nameMatcher = snapshot.nameMatcher;
         final AlgDataTypeField field = nameMatcher.field( rowType, name );
         if ( field == null ) {
             return null;
@@ -4859,7 +4851,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     private void validateDefinitions( SqlMatchRecognize mr, MatchRecognizeScope scope ) {
-        final Set<String> aliases = catalogReader.nameMatcher.createSet();
+        final Set<String> aliases = snapshot.nameMatcher.createSet();
         for ( SqlNode item : mr.getPatternDefList().getSqlList() ) {
             final String alias = alias( item );
             if ( !aliases.add( alias ) ) {
@@ -5078,11 +5070,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( selectItem instanceof SqlIdentifier ) {
                 final SqlQualified qualified = scope.fullyQualify( (SqlIdentifier) selectItem );
                 SqlValidatorNamespace namespace = qualified.namespace;
-                final ValidatorTable table = namespace.getTable();
+                final CatalogEntity table = namespace.getTable();
                 if ( table == null ) {
                     return null;
                 }
-                final List<String> origin = new ArrayList<>( table.getQualifiedName() );
+                final List<String> origin = List.of( table.name );
                 for ( String name : qualified.suffix() ) {
                     namespace = namespace.lookupChild( name );
                     if ( namespace == null ) {
@@ -5396,7 +5388,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 // REVIEW jvs: The name resolution rules used here are supposed to match SQL:2003 Part 2 Section 6.6 (identifier chain), but we don't currently have enough
                 // information to get everything right.  In particular, routine parameters are currently looked up via resolve; we could do a better job if they were looked up via resolveColumn.
 
-                final NameMatcher nameMatcher = catalogReader.nameMatcher;
+                final NameMatcher nameMatcher = snapshot.nameMatcher;
                 final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
                 scope.resolve( id.getNames().subList( 0, i ), nameMatcher, false, resolved );
                 if ( resolved.count() == 1 ) {
@@ -5435,7 +5427,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     name = "*";
                     field = null;
                 } else {
-                    final NameMatcher nameMatcher = catalogReader.nameMatcher;
+                    final NameMatcher nameMatcher = snapshot.nameMatcher;
                     field = nameMatcher.field( type, name );
                 }
                 if ( field == null ) {
@@ -5614,7 +5606,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 String alias = id.getSimple();
                 final SqlValidatorNamespace selectNs = getSqlNamespace( select );
                 final AlgDataType rowType = selectNs.getRowTypeSansSystemColumns();
-                final NameMatcher nameMatcher = catalogReader.nameMatcher;
+                final NameMatcher nameMatcher = snapshot.nameMatcher;
                 AlgDataTypeField field = nameMatcher.field( rowType, alias );
                 if ( field != null ) {
                     return nthSelectItem( field.getIndex(), id.getPos() );
@@ -5663,7 +5655,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     : validator.getConformance().isGroupByAlias()) ) {
                 String name = id.getSimple();
                 SqlNode expr = null;
-                final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
+                final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
                 int n = 0;
                 for ( Node s : select.getSqlSelectList() ) {
                     final String alias = SqlValidatorUtil.getAlias( (SqlNode) s, -1 );
@@ -6140,7 +6132,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         private AlgDataTypeField field( String name ) {
-            return catalogReader.nameMatcher.field( rowType, name );
+            return snapshot.nameMatcher.field( rowType, name );
         }
 
 
@@ -6151,7 +6143,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             switch ( join.getConditionType() ) {
                 case USING:
                     final ImmutableList.Builder<String> list = ImmutableList.builder();
-                    final Set<String> names = catalogReader.nameMatcher.createSet();
+                    final Set<String> names = snapshot.nameMatcher.createSet();
                     for ( Node node : (SqlNodeList) join.getCondition() ) {
                         final String name = ((SqlIdentifier) node).getSimple();
                         if ( names.add( name ) ) {
@@ -6163,7 +6155,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     if ( join.isNatural() ) {
                         final AlgDataType t0 = getValidatedNodeType( join.getLeft() );
                         final AlgDataType t1 = getValidatedNodeType( join.getRight() );
-                        return SqlValidatorUtil.deriveNaturalJoinColumnList( catalogReader.nameMatcher, t0, t1 );
+                        return SqlValidatorUtil.deriveNaturalJoinColumnList( snapshot.nameMatcher, t0, t1 );
                     }
             }
             return null;

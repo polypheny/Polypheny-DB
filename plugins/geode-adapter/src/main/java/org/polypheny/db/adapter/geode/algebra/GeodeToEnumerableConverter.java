@@ -126,7 +126,7 @@ public class GeodeToEnumerableConverter extends ConverterImpl implements Enumera
         // Expression meta-program for calling the GeodeTable.GeodeQueryable#query method form the generated code
         final BlockBuilder blockBuilder = new BlockBuilder().append(
                 Expressions.call(
-                        geodeImplementContext.table.getExpression( GeodeEntity.GeodeQueryable.class ),
+                        geodeImplementContext.table.asExpression( GeodeEntity.GeodeQueryable.class ),
                         GEODE_QUERY_METHOD,
                         // fields
                         constantArrayList( Pair.zip( geodeFieldNames( rowType ), physFieldClasses ), Pair.class ),

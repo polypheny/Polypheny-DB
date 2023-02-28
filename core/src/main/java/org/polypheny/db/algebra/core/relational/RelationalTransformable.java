@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -35,7 +36,7 @@ public interface RelationalTransformable {
     }
 
 
-    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, CatalogReader catalogReader );
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<CatalogEntity> entities, Snapshot snapshot );
 
 
     static Modify<?> getModify( CatalogEntity entity, AlgNode alg, Operation operation ) {

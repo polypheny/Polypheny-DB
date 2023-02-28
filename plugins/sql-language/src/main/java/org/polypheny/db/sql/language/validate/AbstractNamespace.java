@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -147,7 +147,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public ValidatorTable getTable() {
+    public CatalogEntity getTable() {
         return null;
     }
 
@@ -161,7 +161,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     @Override
     public boolean fieldExists( String name ) {
         final AlgDataType rowType = getRowType();
-        return validator.catalogReader.nameMatcher.field( rowType, name ) != null;
+        return validator.snapshot.nameMatcher.field( rowType, name ) != null;
     }
 
 

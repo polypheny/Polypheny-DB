@@ -44,26 +44,29 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.util.Source;
 
 
 /**
  * Table based on a CSV file.
  */
-public class CsvTranslatableTable extends CsvTable implements QueryableEntity, TranslatableEntity {
+public class CsvTranslatableTable extends CsvTable implements TranslatableEntity {
 
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
-        super( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+    CsvTranslatableTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( source, table, fieldTypes, fields, csvSource );
     }
 
 
@@ -80,7 +83,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableEntity, T
     public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, fieldTypes, fields );
@@ -90,27 +93,9 @@ public class CsvTranslatableTable extends CsvTable implements QueryableEntity, T
 
 
     @Override
-    public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
-        return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
-    }
-
-
-    @Override
-    public Type getElementType() {
-        return Object[].class;
-    }
-
-
-    @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, PolyphenyDbSchema schema, String tableName ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptEntity algOptEntity, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         // Request all fields.
-        return new CsvScan( context.getCluster(), algOptEntity, this, fields );
+        return new CsvScan( context.getCluster(), this, this, fields );
     }
 
 }

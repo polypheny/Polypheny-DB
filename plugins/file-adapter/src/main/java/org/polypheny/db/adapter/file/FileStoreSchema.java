@@ -37,11 +37,15 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -55,18 +59,19 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
 
     @Getter
     private final String schemaName;
-    private final Map<String, FileTranslatableEntity> tableMap = new HashMap<>();
+    @Getter
+    private final Map<String, CatalogEntity> tables = new HashMap<>();
     @Getter
     private final FileStore store;
     @Getter
     private final FileConvention convention;
 
 
-    public FileStoreSchema( long id, SchemaPlus parentSchema, String schemaName, FileStore store ) {
+    public FileStoreSchema( long id, Snapshot snapshot, String schemaName, FileStore store ) {
         super( id );
         this.schemaName = schemaName;
         this.store = store;
-        final Expression expression = Schemas.subSchemaExpression( parentSchema, schemaName, FileStoreSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( snapshot, schemaName, FileStoreSchema.class );
         this.convention = new FileConvention( schemaName, expression, this );
     }
 
@@ -83,44 +88,9 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
     }
 
 
-    @Override
-    protected Map<String, Entity> getTableMap() {
-        return new HashMap<>( tableMap );
-    }
-
-
-    public Entity createFileTable(
+    public PhysicalTable createFileTable(
             LogicalTable catalogTable,
-            List<CatalogColumnPlacement> columnPlacementsOnStore,
-            CatalogPartitionPlacement partitionPlacement ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        ArrayList<Long> columnIds = new ArrayList<>();
-        ArrayList<PolyType> columnTypes = new ArrayList<>();
-        ArrayList<String> columnNames = new ArrayList<>();
-        columnPlacementsOnStore.sort( Comparator.comparingLong( p -> p.columnId ) );
-        for ( CatalogColumnPlacement p : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn;
-            catalogColumn = Catalog.getInstance().getColumn( p.columnId );
-            if ( p.adapterId == store.getAdapterId() ) {
-                columnIds.add( p.columnId );
-                if ( catalogColumn.collectionsType != null ) {
-                    columnTypes.add( PolyType.ARRAY );
-                } else {
-                    columnTypes.add( catalogColumn.type );
-                }
-                columnNames.add( catalogColumn.name );
-
-                if ( catalogColumn.type.allowsScale() && catalogColumn.length != null && catalogColumn.scale != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length, catalogColumn.scale ).nullable( catalogColumn.nullable );
-                } else if ( catalogColumn.type.allowsPrec() && catalogColumn.length != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length ).nullable( catalogColumn.nullable );
-                } else {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type ).nullable( catalogColumn.nullable );
-                }
-            }
-        }
-        AlgProtoDataType protoRowType = AlgDataTypeImpl.proto( fieldInfo.build() );
+            AllocationTable allocationTable ) {
         List<Long> pkIds;
         if ( catalogTable.primaryKey != null ) {
             CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
@@ -128,19 +98,11 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
         } else {
             pkIds = new ArrayList<>();
         }
-        // FileTable table = new FileTable( store.getRootDir(), schemaName, catalogEntity.id, columnIds, columnTypes, columnNames, store, this );
         FileTranslatableEntity table = new FileTranslatableEntity(
                 this,
-                catalogTable.name + "_" + partitionPlacement.partitionId,
-                catalogTable.id,
-                partitionPlacement.partitionId,
-                getAdapterId(),
-                columnIds,
-                columnTypes,
-                columnNames,
-                pkIds,
-                protoRowType );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+                allocationTable,
+                pkIds );
+        tables.put( catalogTable.name + "_" + allocationTable.id, table );
         return table;
     }
 

@@ -50,6 +50,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -68,7 +69,7 @@ public class ElasticsearchSchema extends AbstractNamespace implements Schema {
 
     private final ObjectMapper mapper;
 
-    private final Map<String, Entity> tableMap;
+    private final Map<String, CatalogEntity> tableMap;
 
     /**
      * Default batch size to be used during scrolling.
@@ -115,16 +116,16 @@ public class ElasticsearchSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    protected Map<String, Entity> getTableMap() {
+    protected Map<String, CatalogEntity> getTables() {
         return tableMap;
     }
 
 
-    private Map<String, Entity> createTables( Iterable<String> types, Long id, Long partitionId, Long adapterId ) {
-        final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
+    private Map<String, CatalogEntity> createTables( Iterable<String> types, Long id, Long partitionId, Long adapterId ) {
+        final ImmutableMap.Builder<String, CatalogEntity> builder = ImmutableMap.builder();
         for ( String type : types ) {
             final ElasticsearchTransport transport = new ElasticsearchTransport( client, mapper, index, type, fetchSize );
-            builder.put( type, new ElasticsearchEntity( transport, id, partitionId, adapterId ) );
+            //builder.put( type, new ElasticsearchEntity( transport, id, partitionId, adapterId ) );
         }
         return builder.build();
     }

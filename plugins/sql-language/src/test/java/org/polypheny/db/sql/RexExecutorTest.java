@@ -84,7 +84,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
     protected void check( final Action action ) throws Exception {
-        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
+        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createSnapshot( "" );
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( rootSchema.plus() )
                 .prepareContext( new ContextImpl(

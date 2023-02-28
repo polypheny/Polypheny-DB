@@ -83,9 +83,9 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
         ArrayList<Expression> columnIds = new ArrayList<>();
         ArrayList<Expression> columnTypes = new ArrayList<>();
-        for ( String colName : fileImplementor.getColumnNames() ) {
-            columnIds.add( Expressions.constant( fileImplementor.getFileTable().getColumnIdMap().get( colName ), Long.class ) );
-            columnTypes.add( Expressions.constant( fileImplementor.getFileTable().getColumnTypeMap().get( colName ), PolyType.class ) );
+        for ( long id : fileImplementor.getFileTable().columnIds ) {
+            columnIds.add( Expressions.constant( id, Long.class ) );
+            columnTypes.add( Expressions.constant( fileImplementor.getFileTable().getColumnTypeMap().get( id ), PolyType.class ) );
         }
 
         Expression _insertValues = Expressions.constant( null );
@@ -120,7 +120,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             enumeratorMethod,
                             Expressions.constant( fileImplementor.getOperation() ),
                             Expressions.constant( fileImplementor.getFileTable().getAdapterId() ),
-                            Expressions.constant( fileImplementor.getFileTable().getPartitionId() ),
+                            Expressions.constant( fileImplementor.getFileTable().allocation.id ),
                             DataContext.ROOT,
                             Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
@@ -137,7 +137,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             FileMethod.EXECUTE_MODIFY.method,
                             Expressions.constant( fileImplementor.getOperation() ),
                             Expressions.constant( fileImplementor.getFileTable().getAdapterId() ),
-                            Expressions.constant( fileImplementor.getFileTable().getPartitionId() ),
+                            Expressions.constant( fileImplementor.getFileTable().allocation.id ),
                             DataContext.ROOT,
                             Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),

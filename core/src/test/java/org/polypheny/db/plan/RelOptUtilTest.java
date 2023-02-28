@@ -35,13 +35,13 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.type.PolyType;
@@ -60,15 +60,15 @@ public class RelOptUtilTest {
      * Creates a config based on the "scott" schema.
      */
     private static Frameworks.ConfigBuilder config() {
-        final PolyphenyDbSchema schema = Frameworks
-                .createRootSchema( false );
+        final Snapshot snapshot = Frameworks
+                .createSnapshot( false );
         //.add( "scott", new ReflectiveSchema( new ScottSchema(), -1 ), NamespaceType.RELATIONAL );
 
         return Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
-                .defaultSchema( schema )
+                .defaultSchema( snapshot )
                 .prepareContext( new ContextImpl(
-                        schema,
+                        snapshot,
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {

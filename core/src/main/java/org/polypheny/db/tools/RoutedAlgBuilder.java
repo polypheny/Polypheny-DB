@@ -26,13 +26,13 @@ import lombok.Getter;
 import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
@@ -46,8 +46,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
 
-    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, PolyphenyDbSchema rootSchema ) {
-        super( context, cluster, rootSchema );
+    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
+        super( context, cluster, snapshot );
     }
 
 
@@ -109,4 +109,4 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-   }
+}

@@ -70,7 +70,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
     final int[] fields;
 
 
-    protected CsvScan( AlgOptCluster cluster, AlgOptEntity table, CsvTranslatableTable csvTable, int[] fields ) {
+    protected CsvScan( AlgOptCluster cluster, CsvTable table, CsvTranslatableTable csvTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.csvTable = csvTable;
         this.fields = fields;
@@ -82,7 +82,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new CsvScan( getCluster(), table, csvTable, fields );
+        return new CsvScan( getCluster(), entity, csvTable, fields );
     }
 
 
@@ -94,7 +94,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
     @Override
     public AlgDataType deriveRowType() {
-        final List<AlgDataTypeField> fieldList = table.getRowType().getFieldList();
+        final List<AlgDataTypeField> fieldList = entity.getRowType().getFieldList();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );
@@ -116,7 +116,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
         // The "+ 2D" on top and bottom keeps the function fairly smooth.
         //
         // For example, if table has 3 fields, project has 1 field, then factor = (1 + 2) / (3 + 2) = 0.6
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) table.getRowType().getFieldCount() + 2D) );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getRowType().getFieldCount() + 2D) );
     }
 
 
@@ -127,7 +127,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
         /*if ( table instanceof JsonTable ) {
             return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( JsonTable.class ), "enumerable" ) ) );
         }*/
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( CsvTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( CsvTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }
 
 }

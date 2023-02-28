@@ -154,7 +154,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
     @Before
     public void setUp() {
-        rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
+        rootSchema = Frameworks.createSnapshot( true ).add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )

@@ -27,17 +27,19 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.util.CyclicDefinitionException;
 import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -50,7 +52,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     public final SqlNodeList extendList;
 
     /**
-     * The underlying namespace. Often a {@link TableNamespace}. Set on validate.
+     * The underlying namespace. Often a {@link EntityNamespace}. Set on validate.
      */
     private SqlValidatorNamespace resolvedNamespace;
 
@@ -94,7 +96,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     private SqlValidatorNamespace resolveImpl( SqlIdentifier id ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
+        final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
         final List<String> names = SqlIdentifier.toStar( id.names );
         try {
@@ -153,11 +155,11 @@ public class IdentifierNamespace extends AbstractNamespace {
     @Override
     public AlgDataType validateImpl( AlgDataType targetRowType ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
-        if ( resolvedNamespace instanceof TableNamespace ) {
-            ValidatorTable table = resolvedNamespace.getTable();
+        if ( resolvedNamespace instanceof EntityNamespace ) {
+            CatalogEntity table = resolvedNamespace.getTable();
             if ( validator.shouldExpandIdentifiers() ) {
                 // TODO:  expand qualifiers for column references also
-                List<String> qualifiedNames = table.getQualifiedName();
+                List<String> qualifiedNames = List.of( table.name );
                 if ( qualifiedNames != null ) {
                     // Assign positions to the components of the fully-qualified identifier, as best we can. We assume that qualification adds names to the front, e.g. FOO.BAR becomes BAZ.FOO.BAR.
                     List<ParserPos> poses = new ArrayList<>( Collections.nCopies( qualifiedNames.size(), id.getPos() ) );
@@ -177,10 +179,10 @@ public class IdentifierNamespace extends AbstractNamespace {
         AlgDataType rowType = resolvedNamespace.getRowType();
 
         if ( extendList != null ) {
-            if ( !(resolvedNamespace instanceof TableNamespace) ) {
+            if ( !(resolvedNamespace instanceof EntityNamespace) ) {
                 throw new RuntimeException( "cannot convert" );
             }
-            resolvedNamespace = ((TableNamespace) resolvedNamespace).extend( extendList );
+            resolvedNamespace = ((EntityNamespace) resolvedNamespace).extend( extendList );
             rowType = resolvedNamespace.getRowType();
         }
 
@@ -220,7 +222,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     @Override
-    public ValidatorTable getTable() {
+    public CatalogEntity getTable() {
         return resolvedNamespace == null ? null : resolve().getTable();
     }
 
@@ -233,18 +235,19 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final ValidatorTable table = getTable();
-        return table.getMonotonicity( columnName );
+        final CatalogEntity table = getTable();
+        return Util.getMonotonicity( table, columnName );
     }
 
 
     @Override
     public boolean supportsModality( Modality modality ) {
-        final ValidatorTable table = getTable();
+        final CatalogEntity table = getTable();
         if ( table == null ) {
             return modality == Modality.RELATION;
         }
-        return table.supportsModality( modality );
+
+        return SqlUtil.supportsModality( modality, table );
     }
 
 }

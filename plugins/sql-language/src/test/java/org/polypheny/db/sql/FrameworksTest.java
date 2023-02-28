@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.config.RuntimeConfig;
@@ -164,7 +165,7 @@ public class FrameworksTest extends SqlLanguageDependent {
      */
     @Test
     public void testCreateRootSchemaWithNoMetadataSchema() {
-        SchemaPlus rootSchema = Frameworks.createRootSchema( false );
+        SchemaPlus rootSchema = Frameworks.createSnapshot( false );
         assertThat( rootSchema.getSubNamespaceNames().size(), equalTo( 0 ) );
     }
 
@@ -180,7 +181,7 @@ public class FrameworksTest extends SqlLanguageDependent {
     public void testTypeSystem() {
         checkTypeSystem( 19, Frameworks.newConfigBuilder()
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
+                        PolyphenyDbSchema.from( Frameworks.createSnapshot( false ) ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -194,7 +195,7 @@ public class FrameworksTest extends SqlLanguageDependent {
                 .build() );
         checkTypeSystem( 25, Frameworks.newConfigBuilder().typeSystem( HiveLikeTypeSystem.INSTANCE )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
+                        PolyphenyDbSchema.from( Frameworks.createSnapshot( false ) ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -208,7 +209,7 @@ public class FrameworksTest extends SqlLanguageDependent {
                 .build() );
         checkTypeSystem( 31, Frameworks.newConfigBuilder().typeSystem( new HiveLikeTypeSystem2() )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
+                        PolyphenyDbSchema.from( Frameworks.createSnapshot( false ) ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -246,7 +247,7 @@ public class FrameworksTest extends SqlLanguageDependent {
     @Test
     public void testFrameworksValidatorWithIdentifierExpansion() throws Exception {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createSnapshot( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
@@ -281,13 +282,13 @@ public class FrameworksTest extends SqlLanguageDependent {
     @Test
     public void testSchemaPath() {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createSnapshot( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
                 .build();
-        final Path path = Schemas.path( config.getDefaultSchema() );
+        final Path path = Schemas.path( config.getSnapshot() );
         assertThat( path.size(), is( 2 ) );
         assertThat( path.get( 0 ).left, is( "" ) );
         assertThat( path.get( 1 ).left, is( "hr" ) );
@@ -318,7 +319,7 @@ public class FrameworksTest extends SqlLanguageDependent {
     @Ignore // test is no longer needed? as the streamer prevents this error and uses different end implementation
     public void testUpdate() throws Exception {
         Entity entity = new EntityImpl();
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        final SchemaPlus rootSchema = Frameworks.createSnapshot( true );
         SchemaPlus schema = rootSchema.add( "x", new AbstractNamespace( -1 ), NamespaceType.RELATIONAL );
         schema.add( "MYTABLE", entity );
         List<AlgTraitDef> traitDefs = new ArrayList<>();
@@ -429,7 +430,7 @@ public class FrameworksTest extends SqlLanguageDependent {
 
 
         @Override
-        public Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz ) {
+        public Expression getExpression( Snapshot snapshot, String tableName, Class<?> clazz ) {
             throw new UnsupportedOperationException();
         }
 

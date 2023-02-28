@@ -47,10 +47,11 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.LogicalCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -69,7 +70,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.PolyXid;
 
 @Getter
@@ -322,9 +322,9 @@ public abstract class Adapter {
     }
 
 
-    public abstract void createNewSchema( SchemaPlus rootSchema, String name, Long id );
+    public abstract void createNewSchema( Snapshot snapshot, String name, long id );
 
-    public abstract PhysicalTable createTableSchema( LogicalTable logical, AllocationTable allocationTable );
+    public abstract PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable, PhysicalTable physicalTable );
 
     public abstract Namespace getCurrentSchema();
 

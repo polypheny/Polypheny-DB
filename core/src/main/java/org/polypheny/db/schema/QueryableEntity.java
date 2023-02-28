@@ -38,6 +38,7 @@ import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.catalog.Snapshot;
 
 
 /**
@@ -58,10 +59,10 @@ public interface QueryableEntity extends Entity {
     /**
      * Generates an expression with which this table can be referenced in generated code.
      *
-     * @param schema Schema
+     * @param snapshot Schema
      * @param tableName Table name (unique within schema)
      * @param clazz The desired collection class; for example {@code Queryable}.
      */
-    Expression getExpression( PolyphenyDbSchema schema, String tableName, Class<?> clazz );
+    Expression getExpression( Snapshot snapshot, String tableName, Class<?> clazz );
 }
 
