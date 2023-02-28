@@ -763,7 +763,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                                        .collect( Collectors.toList() );
 //                            }
 //                            final {@link AlgNode} replacement = LogicalModify.create(
-//                                    ltm.getTable(),
+//                                    ltm.getLogicalTable(),
 //                                    transaction.getCatalogReader(),
 //                                    newProject,
 //                                    ltm.getOperation(),
