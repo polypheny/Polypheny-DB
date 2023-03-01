@@ -29,9 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -115,7 +113,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
     private void createGraphSubstitution( Context context, LogicalGraph graphDatabase ) {
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
+        /*CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
 
         LogicalTable nodes = Catalog.getInstance().getTable( mapping.nodesId );
         createPhysicalTable( context, nodes, null );
@@ -127,7 +125,8 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         createPhysicalTable( context, edges, null );
 
         LogicalTable edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
-        createPhysicalTable( context, edgeProperty, null );
+        createPhysicalTable( context, edgeProperty, null );*/
+        // todo dl
     }
 
 
@@ -136,7 +135,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
     private void dropGraphSubstitution( Context context, CatalogGraphPlacement graphPlacement ) {
-        Catalog catalog = Catalog.getInstance();
+        /*Catalog catalog = Catalog.getInstance();
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
 
         LogicalTable nodes = catalog.getTable( mapping.nodesId );
@@ -149,7 +148,8 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         dropTable( context, edges, edges.partitionProperty.partitionIds );
 
         LogicalTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
-        dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
+        dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );*/
+        // todo dl
     }
 
 
@@ -169,11 +169,12 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
     private void createCollectionSubstitution( Context prepareContext, LogicalCollection catalogCollection ) {
-        Catalog catalog = Catalog.getInstance();
+        /*Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
         LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
-        createPhysicalTable( prepareContext, collectionEntity, null );
+        createPhysicalTable( prepareContext, collectionEntity, null );*/
+        // todo dl
     }
 
 
@@ -193,11 +194,12 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
     private void dropCollectionSubstitution( Context prepareContext, LogicalCollection catalogCollection ) {
-        Catalog catalog = Catalog.getInstance();
+        /*Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
         LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
-        dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
+        dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );*/
+        // todo dl
     }
 
 
@@ -220,7 +222,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                columnNames.add( Catalog.getInstance().getColumn( columnId ).name );
+                columnNames.add( Catalog.getInstance().getLogicalRel( names ).getColumn( columnId ).name );
             }
             return columnNames;
         }

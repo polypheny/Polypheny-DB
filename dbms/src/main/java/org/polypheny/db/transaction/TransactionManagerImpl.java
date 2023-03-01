@@ -101,7 +101,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( long userId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownSchemaException {
         Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( (int) userId );
         CatalogDatabase catalogDatabase = catalog.getDatabase( databaseId );
@@ -111,7 +111,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( long userId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
         return startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 

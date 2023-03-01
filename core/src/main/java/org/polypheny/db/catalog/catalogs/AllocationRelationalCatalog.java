@@ -90,7 +90,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId );
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
 
     /**
      * Get column placements on a adapter. On column detail level

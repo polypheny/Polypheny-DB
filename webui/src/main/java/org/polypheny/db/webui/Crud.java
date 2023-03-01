@@ -3579,7 +3579,7 @@ public class Crud implements InformationObserver {
 
     public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId, String origin ) {
         try {
-            Transaction transaction = transactionManager.startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.FILE );
+            Transaction transaction = transactionManager.startTransaction( userId, analyze, origin, MultimediaFlavor.FILE );
             transaction.setUseCache( useCache );
             return transaction;
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {

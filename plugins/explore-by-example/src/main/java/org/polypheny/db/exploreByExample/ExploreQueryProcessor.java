@@ -66,7 +66,7 @@ public class ExploreQueryProcessor {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userId, databaseId, false, "Explore-by-Example", MultimediaFlavor.FILE );
+            return transactionManager.startTransaction( userId, false, "Explore-by-Example", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

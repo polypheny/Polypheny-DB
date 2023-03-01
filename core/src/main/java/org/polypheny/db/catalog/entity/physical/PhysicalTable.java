@@ -52,8 +52,8 @@ public class PhysicalTable extends PhysicalEntity<LogicalTable> {
     public AllocationTable allocation;
 
 
-    public PhysicalTable( AllocationTable allocation, long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
-        super( allocation.logical, id, name, namespaceName, type, namespaceType, allocation.adapterId );
+    public PhysicalTable( AllocationTable allocation, long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
+        super( allocation.logical, id, name, namespaceId, namespaceName, type, namespaceType, allocation.adapterId );
         this.allocation = allocation;
         this.namespaceName = namespaceName;
         this.placements = ImmutableList.copyOf( placements );
@@ -63,7 +63,7 @@ public class PhysicalTable extends PhysicalEntity<LogicalTable> {
 
 
     public PhysicalTable( AllocationTable table, String name, String namespaceName, List<String> columnNames ) {
-        this( table, table.id, name, namespaceName, table.entityType, table.namespaceType, table.placements, columnNames );
+        this( table, table.id, name, table.namespaceId, namespaceName, table.entityType, table.namespaceType, table.placements, columnNames );
     }
 
 

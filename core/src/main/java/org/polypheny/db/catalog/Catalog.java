@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -100,6 +101,8 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract AllocationDocumentCatalog getAllocDoc( long id );
 
     public abstract AllocationGraphCatalog getAllocGraph( long id );
+
+    public abstract PhysicalEntity<?> getPhysicalEntity( long id );
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
@@ -354,5 +357,8 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract List<CatalogIndex> getIndexes();
+
+
+    public abstract List<LogicalTable> getTablesForPeriodicProcessing();
 
 }

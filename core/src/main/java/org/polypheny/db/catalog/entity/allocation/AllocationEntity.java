@@ -32,8 +32,8 @@ public abstract class AllocationEntity<L extends LogicalEntity> extends LogicalE
     public L logical;
 
 
-    protected AllocationEntity( L logical, long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( id, name, namespaceName, type, namespaceType );
+    protected AllocationEntity( L logical, long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
+        super( id, name, namespaceId, namespaceName, type, namespaceType );
         this.adapterId = adapterId;
         this.logical = logical;
     }

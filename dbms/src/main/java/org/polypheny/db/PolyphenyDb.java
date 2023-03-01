@@ -34,7 +34,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -42,6 +41,7 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -346,12 +346,12 @@ public class PolyphenyDb {
                 throw new RuntimeException( "There was no catalog submitted, aborting." );
             }
 
-            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
             loadDefaults();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
-            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
             trx.commit();

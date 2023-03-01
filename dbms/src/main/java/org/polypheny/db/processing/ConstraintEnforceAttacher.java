@@ -658,7 +658,7 @@ public class ConstraintEnforceAttacher {
                             .stream()
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getNamespaceType() == NamespaceType.RELATIONAL )
                             .collect( Collectors.toList() );
-                    Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "ConstraintEnforcement" );
+                    Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );
                     Statement statement = transaction.createStatement();
                     QueryProcessor processor = statement.getQueryProcessor();
                     List<EnforcementInformation> infos = ConstraintEnforceAttacher

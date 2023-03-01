@@ -23,8 +23,8 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 public abstract class PhysicalEntity<L extends LogicalEntity> extends AllocationEntity<L> {
 
-    protected PhysicalEntity( L logical, long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( logical, id, name, namespaceName, type, namespaceType, adapterId );
+    protected PhysicalEntity( L logical, long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
+        super( logical, id, name, namespaceId, namespaceName, type, namespaceType, adapterId );
     }
 
 

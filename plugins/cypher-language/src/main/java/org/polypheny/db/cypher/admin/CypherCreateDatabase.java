@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
@@ -82,13 +81,11 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
         }
 
         DdlManager.getInstance().createGraph(
-                Catalog.defaultDatabaseId,
                 databaseName,
                 true,
                 dataStore,
                 ifNotExists,
-                replace,
-                statement );
+                replace, true, statement );
     }
 
 

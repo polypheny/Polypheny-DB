@@ -24,7 +24,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
@@ -159,7 +158,7 @@ public class CypherProcessorImpl extends AutomaticDdlProcessor {
         try {
             DdlManager ddlManager = DdlManager.getInstance();
             long namespaceId = ddlManager.createGraph(
-                    Catalog.defaultDatabaseId, ((ExtendedQueryParameters) parameters).getDatabaseName(), true, null, true, false, statement );
+                    ((ExtendedQueryParameters) parameters).getDatabaseName(), true, null, true, false, true, statement );
 
             statement.getTransaction().commit();
             ((ExtendedQueryParameters) parameters).setDatabaseId( namespaceId );

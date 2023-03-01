@@ -44,7 +44,7 @@ public interface PartitionManager {
      * @param partitionIds List of all requested partitions ids
      * @return Returns map of AdapterId  {@code ->} [Map PartitionsId {@code ->}needed Columns Placements]
      */
-    Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds );
+    Map<Long, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds );
 
     int getNumberOfPartitionsPerGroup( int numberOfPartitions );
 

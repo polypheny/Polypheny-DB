@@ -30,14 +30,13 @@ import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGraph>, LogicalEntity {
+public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGraph> {
 
     private static final long serialVersionUID = 7343856827901459672L;
 
@@ -48,8 +47,8 @@ public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGra
     public boolean caseSensitive;
 
 
-    public LogicalGraph( long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements, boolean caseSensitive ) {
-        super( id, name, EntityType.ENTITY, NamespaceType.GRAPH );
+    public LogicalGraph( long id, String name, long namespaceId, String namespaceName, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements, boolean caseSensitive ) {
+        super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.GRAPH );
         this.ownerId = ownerId;
         this.modifiable = modifiable;
         this.placements = ImmutableList.copyOf( placements );
@@ -58,7 +57,7 @@ public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGra
 
 
     public LogicalGraph( LogicalGraph graph ) {
-        this( graph.id, graph.name, graph.ownerId, graph.modifiable, graph.placements, graph.caseSensitive );
+        this( graph.id, graph.name, graph.namespaceId, graph.namespaceName, graph.ownerId, graph.modifiable, graph.placements, graph.caseSensitive );
     }
 
 

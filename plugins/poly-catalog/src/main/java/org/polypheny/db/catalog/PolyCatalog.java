@@ -46,6 +46,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -437,6 +438,12 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public List<CatalogIndex> getIndexes() {
+        return null;
+    }
+
+
+    @Override
+    public List<LogicalTable> getTablesForPeriodicProcessing() {
         return null;
     }
 

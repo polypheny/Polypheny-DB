@@ -29,7 +29,7 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
      * @param graphId The id of the graph for which a new placement is added
      * @return The id of the new placement
      */
-    public abstract long addGraphPlacement( int adapterId, long graphId );
+    public abstract long addGraphPlacement( long adapterId, long graphId );
 
     /**
      * Gets a collection of graph placements for a given adapter.
@@ -37,7 +37,7 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
      * @param adapterId The id of the adapter on which the placements are placed
      * @return The collection of graph placements
      */
-    public abstract List<CatalogGraphPlacement> getGraphPlacements( int adapterId );
+    public abstract List<CatalogGraphPlacement> getGraphPlacements( long adapterId );
 
     /**
      * Deletes a specific graph placement for a given graph and adapter.
@@ -45,7 +45,7 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
      * @param adapterId The id of the adapter on which the placement is removed
      * @param graphId The id of the graph for which the placement is removed
      */
-    public abstract void deleteGraphPlacement( int adapterId, long graphId );
+    public abstract void deleteGraphPlacement( long adapterId, long graphId );
 
     /**
      * Gets a specific placement for a graph on a given adapter.
@@ -54,6 +54,6 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
      * @param adapterId The id of the adapter on which the placement is placed
      * @return The placement matching the conditions
      */
-    public abstract CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId );
+    public abstract CatalogGraphPlacement getGraphPlacement( long graphId, long adapterId );
 
 }

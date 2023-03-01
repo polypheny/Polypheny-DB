@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -34,24 +35,22 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
     /**
      * Get a collection of collections which match the given naming pattern.
      *
-     * @param namespaceId The id of the namespace to which the collection belongs
      * @param namePattern The naming pattern of the collection itself, null if all are matched
      * @return collection of collections matching conditions
      */
-    public abstract List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
+    public abstract List<LogicalCollection> getCollections( Pattern namePattern );
 
     /**
      * Add a new collection with the given parameters.
      *
      * @param id ID of the collection to add, null if a new one needs to be generated
      * @param name The name of the collection
-     * @param schemaId The id of the namespace to which the collection is added
      * @param currentUserId The user, which adds the collection
      * @param entity The type of entity of the collection
      * @param modifiable If the collection is modifiable
      * @return The id of the added collection
      */
-    public abstract long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable );
+    public abstract long addCollection( Long id, String name, int currentUserId, EntityType entity, boolean modifiable );
 
 
     /**
@@ -60,5 +59,7 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
      * @param id The id of the collection to delete
      */
     public abstract void deleteCollection( long id );
+
+    long addCollectionLogistics( String name, List<DataStore> stores, boolean placementOnly );
 
 }

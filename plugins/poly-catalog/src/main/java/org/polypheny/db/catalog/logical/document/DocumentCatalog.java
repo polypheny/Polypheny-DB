@@ -127,13 +127,13 @@ public class DocumentCatalog implements NCatalog, Serializable, LogicalDocumentC
 
 
     @Override
-    public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
+    public List<LogicalCollection> getCollections( Pattern namePattern ) {
         return null;
     }
 
 
     @Override
-    public long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
+    public long addCollection( Long id, String name, int currentUserId, EntityType entity, boolean modifiable ) {
         return 0;
     }
 

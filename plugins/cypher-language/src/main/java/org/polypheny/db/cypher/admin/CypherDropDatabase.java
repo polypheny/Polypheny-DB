@@ -73,7 +73,7 @@ public class CypherDropDatabase extends CypherAdminCommand implements Executable
             return;
         }
 
-        DdlManager.getInstance().removeGraphDatabase( databases.get( 0 ).id, ifExists, statement );
+        DdlManager.getInstance().removeGraph( databases.get( 0 ).id, ifExists, statement );
     }
 
 

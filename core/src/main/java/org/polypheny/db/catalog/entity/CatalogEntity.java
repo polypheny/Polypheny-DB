@@ -44,10 +44,12 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
     public EntityType entityType;
     public NamespaceType namespaceType;
     public String name;
+    public long namespaceId;
 
 
-    protected CatalogEntity( long id, String name, EntityType type, NamespaceType namespaceType ) {
+    protected CatalogEntity( long id, String name, long namespaceId, EntityType type, NamespaceType namespaceType ) {
         this.id = id;
+        this.namespaceId = namespaceId;
         this.name = name;
         this.entityType = type;
         this.namespaceType = namespaceType;

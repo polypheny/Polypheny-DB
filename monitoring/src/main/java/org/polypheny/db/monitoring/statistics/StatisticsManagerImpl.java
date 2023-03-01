@@ -193,7 +193,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private Transaction getTransaction() {
         Transaction transaction;
         try {
-            transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Statistic Manager" );
+            transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, false, "Statistic Manager" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }

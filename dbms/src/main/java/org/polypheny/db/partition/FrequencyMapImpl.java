@@ -36,7 +36,6 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
@@ -217,7 +216,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             // Which of those are currently in cold --> action needed
 
-            List<CatalogPartition> currentHotPartitions = Catalog.INSTANCE.getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
+            List<CatalogPartition> currentHotPartitions = Catalog.getInstance().getAllocRel( table.namespaceId ).getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
             for ( CatalogPartition catalogPartition : currentHotPartitions ) {
 
                 // Remove partitions from List if they are already in HOT (not necessary to send to DataMigrator)
@@ -261,13 +260,13 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         Transaction transaction = null;
         try {
-            transaction = transactionManager.startTransaction( Catalog.defaultUserId, table.databaseId, false, "FrequencyMap" );
+            transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "FrequencyMap" );
 
             Statement statement = transaction.createStatement();
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
 
-            List<CatalogAdapter> adaptersWithHot = Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
-            List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId() );
+            List<CatalogAdapter> adaptersWithHot = Catalog.getInstance().getAllocRel( table.namespaceId ).getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
+            List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getAllocRel( table.namespaceId ).getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId() );
 
             log.debug( "Get adapters to create physical tables" );
             // Validate that partition does not already exist on store
@@ -281,52 +280,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                 }
 
                 // First create new HOT tables
-                Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
-                if ( adapter instanceof DataStore ) {
-                    DataStore store = (DataStore) adapter;
-
-                    List<Long> hotPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromColdToHot );
-                    //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
-
-                    // If this store contains both Groups HOT {@literal &}  COLD do nothing
-                    if ( hotPartitionsToCreate.size() != 0 ) {
-                        Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
-
-                        for ( long partitionId : hotPartitionsToCreate ) {
-                            catalog.addPartitionPlacement(
-                                    table.namespaceId,
-                                    store.getAdapterId(),
-                                    table.id,
-                                    partitionId,
-                                    PlacementType.AUTOMATIC,
-                                    null,
-                                    null,
-                                    DataPlacementRole.UPTODATE );
-                        }
-
-                        store.createPhysicalTable( statement.getPrepareContext(), table, null );
-
-                        List<LogicalColumn> logicalColumns = new ArrayList<>();
-                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getColumn( cp.columnId ) ) );
-
-                        dataMigrator.copyData(
-                                statement.getTransaction(),
-                                catalog.getAdapter( store.getAdapterId() ),
-                                logicalColumns,
-                                hotPartitionsToCreate );
-
-                        if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
-                            partitionsToRemoveFromStore.put( store, partitionsFromHotToCold );
-                        } else {
-                            partitionsToRemoveFromStore.replace(
-                                    store,
-                                    Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromHotToCold )
-                                            .flatMap( Collection::stream )
-                                            .collect( Collectors.toList() )
-                            );
-                        }
-                    }
-                }
+                createHotTables( table, partitionsFromColdToHot, partitionsFromHotToCold, partitionsToRemoveFromStore, statement, dataMigrator, catalogAdapter );
             }
 
             for ( CatalogAdapter catalogAdapter : adaptersWithCold ) {
@@ -335,40 +289,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                     continue;
                 }
                 // First create new HOT tables
-                Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
-                if ( adapter instanceof DataStore ) {
-                    DataStore store = (DataStore) adapter;
-                    List<Long> coldPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
-                    if ( coldPartitionsToCreate.size() != 0 ) {
-                        Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
-
-                        for ( long partitionId : coldPartitionsToCreate ) {
-                            catalog.addPartitionPlacement(
-                                    table.namespaceId,
-                                    store.getAdapterId(),
-                                    table.id,
-                                    partitionId,
-                                    PlacementType.AUTOMATIC,
-                                    null,
-                                    null, DataPlacementRole.UPTODATE );
-                        }
-                        store.createPhysicalTable( statement.getPrepareContext(), table, null );
-
-                        List<LogicalColumn> logicalColumns = new ArrayList<>();
-                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getColumn( cp.columnId ) ) );
-
-                        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), logicalColumns, coldPartitionsToCreate );
-
-                        if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
-                            partitionsToRemoveFromStore.put( store, partitionsFromColdToHot );
-                        } else {
-                            partitionsToRemoveFromStore.replace(
-                                    store,
-                                    Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromColdToHot ).flatMap( Collection::stream ).collect( Collectors.toList() )
-                            );
-                        }
-                    }
-                }
+                createHotTables( table, partitionsFromHotToCold, partitionsFromColdToHot, partitionsToRemoveFromStore, statement, dataMigrator, catalogAdapter );
             }
 
             // DROP all partitions on each store
@@ -377,8 +298,8 @@ public class FrequencyMapImpl extends FrequencyMap {
             long coldPartitionGroupId = ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId();
 
             // Update catalogInformation
-            partitionsFromColdToHot.forEach( p -> Catalog.getInstance().updatePartition( p, hotPartitionGroupId ) );
-            partitionsFromHotToCold.forEach( p -> Catalog.getInstance().updatePartition( p, coldPartitionGroupId ) );
+            partitionsFromColdToHot.forEach( p -> Catalog.getInstance().getAllocRel( table.namespaceId ).updatePartition( p, hotPartitionGroupId ) );
+            partitionsFromHotToCold.forEach( p -> Catalog.getInstance().getAllocRel( table.namespaceId ).updatePartition( p, coldPartitionGroupId ) );
 
             // Remove all tables that have been moved
             for ( DataStore store : partitionsToRemoveFromStore.keySet() ) {
@@ -386,7 +307,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             transaction.commit();
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException | TransactionException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             log.error( "Error while reassigning new location for temperature-based partitions", e );
             if ( transaction != null ) {
                 try {
@@ -399,18 +320,69 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
+    private void createHotTables( LogicalTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold, Map<DataStore, List<Long>> partitionsToRemoveFromStore, Statement statement, DataMigrator dataMigrator, CatalogAdapter catalogAdapter ) {
+        Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
+        if ( adapter instanceof DataStore ) {
+            DataStore store = (DataStore) adapter;
+
+            List<Long> hotPartitionsToCreate = filterList( table.namespaceId, catalogAdapter.id, table.id, partitionsFromColdToHot );
+            //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
+
+            // If this store contains both Groups HOT {@literal &}  COLD do nothing
+            if ( hotPartitionsToCreate.size() != 0 ) {
+                Catalog.getInstance().getAllocRel( table.namespaceId ).getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
+
+                for ( long partitionId : hotPartitionsToCreate ) {
+                    catalog.getAllocRel( table.namespaceId ).addPartitionPlacement(
+                            table.namespaceId,
+                            store.getAdapterId(),
+                            table.id,
+                            partitionId,
+                            PlacementType.AUTOMATIC,
+                            null,
+                            null,
+                            DataPlacementRole.UPTODATE );
+                }
+
+                store.createPhysicalTable( statement.getPrepareContext(), table, null );
+
+                List<LogicalColumn> logicalColumns = new ArrayList<>();
+                catalog.getAllocRel( table.namespaceId ).getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getLogicalRel( table.namespaceId ).getColumn( cp.columnId ) ) );
+
+                dataMigrator.copyData(
+                        statement.getTransaction(),
+                        catalog.getAdapter( store.getAdapterId() ),
+                        logicalColumns,
+                        hotPartitionsToCreate );
+
+                if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
+                    partitionsToRemoveFromStore.put( store, partitionsFromHotToCold );
+                } else {
+                    partitionsToRemoveFromStore.replace(
+                            store,
+                            Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromHotToCold )
+                                    .flatMap( Collection::stream )
+                                    .collect( Collectors.toList() )
+                    );
+                }
+            }
+        }
+    }
+
+
     /**
      * Cleanses the List if physical partitions already resides on store. Happens if PartitionGroups HOT and COLD logically reside on same store.
      * Therefore no actual data distribution has to take place
      *
+     * @param namespaceId
      * @param adapterId Adapter which ist subject of receiving new tables
      * @param tableId Id of temperature partitioned table
      * @param partitionsToFilter List of partitions to be filtered
      * @return The filtered and cleansed list
      */
-    private List<Long> filterList( int adapterId, long tableId, List<Long> partitionsToFilter ) {
+    private List<Long> filterList( long namespaceId, long adapterId, long tableId, List<Long> partitionsToFilter ) {
         // Remove partition from list if it's already contained on the store
-        for ( long partitionId : Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, tableId ) ) {
+        for ( long partitionId : Catalog.getInstance().getAllocRel( namespaceId ).getPartitionsOnDataPlacement( adapterId, tableId ) ) {
             if ( partitionsToFilter.contains( partitionId ) ) {
                 partitionsToFilter.remove( partitionId );
             }

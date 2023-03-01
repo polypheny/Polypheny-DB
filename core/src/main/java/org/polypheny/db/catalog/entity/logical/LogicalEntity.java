@@ -29,11 +29,13 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public abstract class LogicalEntity extends CatalogEntity {
 
     public String namespaceName;
+    public long namespaceId;
 
 
-    protected LogicalEntity( long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType ) {
-        super( id, name, type, namespaceType );
+    protected LogicalEntity( long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType ) {
+        super( id, name, namespaceId, type, namespaceType );
         this.namespaceName = namespaceName;
+        this.namespaceId = namespaceId;
     }
 
 

@@ -41,7 +41,7 @@ public class MqlDropDatabase extends MqlNode implements ExecutableStatement {
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
-            DdlManager.getInstance().dropSchema( Catalog.defaultDatabaseId, database, true, statement );
+            DdlManager.getInstance().dropNamespace( database, true, statement );
         } catch ( SchemaNotExistException | DdlOnSourceException e ) {
             throw new RuntimeException( e );
         }

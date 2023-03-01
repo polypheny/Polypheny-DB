@@ -84,7 +84,7 @@ public class SqlDropSchema extends SqlDrop implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
-            DdlManager.getInstance().dropSchema( context.getDatabaseId(), name.getSimple(), ifExists, statement );
+            DdlManager.getInstance().dropNamespace( name.getSimple(), ifExists, statement );
         } catch ( SchemaNotExistException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.getSimple() ) );
         } catch ( DdlOnSourceException e ) {

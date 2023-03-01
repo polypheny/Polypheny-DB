@@ -426,12 +426,12 @@ public abstract class DdlManager {
      */
     public abstract void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException;
 
-    public abstract void removeGraphDatabase( long graphId, boolean ifExists, Statement statement );
+    public abstract void removeGraph( long graphId, boolean ifExists, Statement statement );
 
     /**
      * Create a new table
      *
-     * @param schemaId the id of the schema to which the table belongs
+     * @param namespaceId the id of the schema to which the table belongs
      * @param tableName the name of the new table
      * @param columns all columns of the table
      * @param constraints all constraints for the table
@@ -440,30 +440,30 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Create a new view
      *
      * @param viewName the name of the new view
-     * @param schemaId the id of the schema to which the view belongs
+     * @param namespaceId the id of the schema to which the view belongs
      * @param algNode the algNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long namespaceId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
 
     /**
      * Create a new materialized view
      *
      * @param viewName the name of the new view
-     * @param schemaId the id of the schema to which the view belongs
+     * @param namespaceId the id of the schema to which the view belongs
      * @param algRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+    public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
 
-    public abstract void createCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException;
+    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException;
 
     public abstract void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement );
 
@@ -485,22 +485,22 @@ public abstract class DdlManager {
     /**
      * Adds a new constraint to a table
      *
+     * @param namespaceId
      * @param constraintName the name of the constraint
      * @param constraintType the type of the constraint
      * @param columnNames the names of the columns for which to create the constraint
      * @param tableId the id of the table
      */
-    public abstract void addConstraint( String constraintName, ConstraintType constraintType, List<String> columnNames, long tableId ) throws UnknownColumnException, GenericCatalogException;
+    public abstract void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<String> columnNames, long tableId ) throws UnknownColumnException, GenericCatalogException;
 
     /**
      * Drop a schema
      *
-     * @param databaseId the id of the database the schema belongs
      * @param schemaName the name of the schema to drop
      * @param ifExists whether to silently ignore if the schema does not exist
      * @param statement the used statement
      */
-    public abstract void dropSchema( long databaseId, String schemaName, boolean ifExists, Statement statement ) throws SchemaNotExistException, DdlOnSourceException;
+    public abstract void dropNamespace( String schemaName, boolean ifExists, Statement statement ) throws SchemaNotExistException, DdlOnSourceException;
 
     /**
      * Drop a table
@@ -556,7 +556,7 @@ public abstract class DdlManager {
     public abstract void refreshView( Statement statement, Long materializedId );
 
 
-    public abstract long createGraph( long databaseId, String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement );
+    public abstract long createGraph( String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement );
 
     public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 

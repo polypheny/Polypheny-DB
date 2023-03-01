@@ -21,7 +21,6 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -33,9 +32,9 @@ public interface TransactionManager {
 
     Transaction startTransaction( CatalogUser user, LogicalNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor );
 
-    Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
+    Transaction startTransaction( long userId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownSchemaException;
 
-    Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
+    Transaction startTransaction( long userId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownSchemaException;
 
     void removeTransaction( PolyXid xid );
 

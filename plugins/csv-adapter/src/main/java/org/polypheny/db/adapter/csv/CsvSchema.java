@@ -89,7 +89,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( allocationTable.placements.size() );
         for ( CatalogColumnPlacement placement : allocationTable.placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( placement.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( allocationTable.namespaceId ).getColumn( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, logicalColumn.type, logicalColumn.length, logicalColumn.scale, null );
             fieldInfo.add( logicalColumn.name, placement.physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( logicalColumn.type ) );
@@ -98,6 +98,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 
         String csvFileName = Catalog
                 .getInstance()
+                .getAllocRel( allocationTable.namespaceId )
                 .getColumnPlacementsOnAdapterPerTable( csvSource.getAdapterId(), catalogTable.id ).iterator().next()
                 .physicalSchemaName;
         Source source;

@@ -25,19 +25,19 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.Value;
+import lombok.With;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class LogicalCollection extends CatalogEntity implements CatalogObject, LogicalEntity {
+@With
+public class LogicalCollection extends LogicalEntity implements CatalogObject {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
@@ -45,23 +45,21 @@ public class LogicalCollection extends CatalogEntity implements CatalogObject, L
     public long id;
     public ImmutableList<Integer> placements;
     public String name;
-    public long databaseId;
     public long namespaceId;
     public EntityType entityType;
     public String physicalName;
 
 
     public LogicalCollection(
-            long databaseId,
             long namespaceId,
+            String namespaceName,
             long id,
             String name,
             @NonNull Collection<Integer> placements,
             EntityType type,
             String physicalName ) {
-        super( id, name, EntityType.ENTITY, NamespaceType.DOCUMENT );
+        super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.DOCUMENT );
         this.id = id;
-        this.databaseId = databaseId;
         this.namespaceId = namespaceId;
         this.name = name;
         this.placements = ImmutableList.copyOf( placements );
@@ -79,25 +77,17 @@ public class LogicalCollection extends CatalogEntity implements CatalogObject, L
     public LogicalCollection addPlacement( int adapterId ) {
         List<Integer> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
-        return new LogicalCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+        return new LogicalCollection( id, name, namespaceId, namespaceName, placements, EntityType.ENTITY, physicalName );
     }
 
 
     public LogicalCollection removePlacement( int adapterId ) {
         List<Integer> placements = this.placements.stream().filter( id -> id != adapterId ).collect( Collectors.toList() );
-        return new LogicalCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+        return new LogicalCollection( id, name, namespaceId, namespaceName, placements, EntityType.ENTITY, physicalName );
     }
 
 
-    @SneakyThrows
-    public String getNamespaceName() {
-        return Catalog.getInstance().getNamespace( namespaceId ).name;
-    }
 
-
-    public LogicalCollection setPhysicalName( String physicalCollectionName ) {
-        return new LogicalCollection( databaseId, namespaceId, id, name, placements, entityType, physicalCollectionName );
-    }
 
 
     @Override

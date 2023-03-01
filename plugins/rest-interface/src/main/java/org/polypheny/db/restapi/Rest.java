@@ -550,7 +550,7 @@ public class Rest {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userId, databaseId, false, "REST Interface", MultimediaFlavor.FILE );
+            return transactionManager.startTransaction( userId, false, "REST Interface", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

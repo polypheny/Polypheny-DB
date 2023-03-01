@@ -44,9 +44,7 @@ import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
-import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
-import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
@@ -65,7 +63,6 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -79,11 +76,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -113,7 +108,6 @@ import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -151,11 +145,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = catalogTable.primaryKey;
-        List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
-        LogicalColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
+        List<Long> pkColumnIds = catalog.getLogicalRel( modify.entity.namespaceId ).getPrimaryKey( pkid ).columnIds;
+        LogicalColumn pkColumn = catalog.getLogicalRel( modify.entity.namespaceId ).getColumn( pkColumnIds.get( 0 ) );
 
         // Essentially gets a list of all stores where this table resides
-        List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
+        List<CatalogColumnPlacement> pkPlacements = catalog.getAllocRel( modify.entity.namespaceId ).getColumnPlacement( pkColumn.id );
 
         if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
             log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
@@ -163,8 +157,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 log.debug(
                         "\t\t -> '{}' {}\t{}",
                         dataPlacement.adapterUniqueName,
-                        catalog.getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
-                        catalog.getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
+                        catalog.getAllocRel( modify.entity.namespaceId ).getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
+                        catalog.getAllocRel( modify.entity.namespaceId ).getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
             }
         }
 
@@ -185,12 +179,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             Snapshot snapshot = statement.getTransaction().getSnapshot();
 
             // Get placements on store
-            List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
+            List<CatalogColumnPlacement> placementsOnAdapter = catalog.getAllocRel( modify.entity.namespaceId ).getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
 
             // If this is an update, check whether we need to execute on this store at all
             List<String> updateColumnList = modify.getUpdateColumnList();
             List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
-            if ( placementsOnAdapter.size() != catalogTable.fieldIds.size() ) {
+            if ( placementsOnAdapter.size() != catalogTable.columns.size() ) {
 
                 if ( modify.getOperation() == Modify.Operation.UPDATE ) {
                     updateColumnList = new LinkedList<>( modify.getUpdateColumnList() );
@@ -201,8 +195,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
                         try {
-                            LogicalColumn logicalColumn = catalog.getColumn( catalogTable.id, columnName );
-                            if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, logicalColumn.id ) ) {
+                            LogicalColumn logicalColumn = catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
+                            if ( !catalog.getAllocRel( catalogTable.namespaceId ).checkIfExistsColumnPlacement( pkPlacement.adapterId, logicalColumn.id ) ) {
                                 updateColumnListIterator.remove();
                                 sourceExpressionListIterator.remove();
                             }
@@ -227,7 +221,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                 PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
 
-                WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.getColumnIds().indexOf( catalogTable.partitionProperty.partitionColumnId ) );
                 modify.accept( new AlgShuttleImpl() {
                     @Override
                     public AlgNode visit( LogicalFilter filter ) {
@@ -268,7 +262,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                     for ( String cn : updateColumnList ) {
                         try {
-                            if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
+                            if ( catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
                                 if ( log.isDebugEnabled() ) {
                                     log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionProperty.partitionColumnId, index );
                                 }
@@ -345,10 +339,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                             int columnIndex = catalogTable.getColumnNames().indexOf( columnFieldName );
-                            resultColMapping.put( catalogTable.fieldIds.get( columnIndex ), j );
+                            resultColMapping.put( catalogTable.getColumnIds().get( columnIndex ), j );
 
                             // Determine location of partitionColumn in fieldList
-                            if ( catalogTable.fieldIds.get( columnIndex ) == catalogTable.partitionProperty.partitionColumnId ) {
+                            if ( catalogTable.getColumnIds().get( columnIndex ) == catalogTable.partitionProperty.partitionColumnId ) {
                                 partitionColumnIndex = columnIndex;
                                 if ( log.isDebugEnabled() ) {
                                     log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionProperty.partitionColumnId, j );
@@ -381,7 +375,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
                             Long currentPartitionId = partitionMapping.getKey();
 
-                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( currentPartitionId ) ) {
+                            if ( !catalog.getAllocRel( catalogTable.namespaceId ).getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( currentPartitionId ) ) {
                                 continue;
                             }
 
@@ -397,19 +391,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         RoutedAlgBuilder.create( statement, cluster ),
                                         catalogTable,
                                         placementsOnAdapter,
-                                        catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
+                                        catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
                                         statement,
                                         cluster,
                                         true,
                                         statement.getDataContext().getParameterValues() ).build();
 
-                                List<String> qualifiedTableName = ImmutableList.of(
-                                        PolySchemaBuilder.buildAdapterSchemaName(
-                                                pkPlacement.adapterUniqueName,
-                                                catalogTable.getNamespaceName(),
-                                                pkPlacement.physicalSchemaName
-                                        ),
-                                        catalogTable.name + "_" + currentPartitionId );
                                 PhysicalTable physical = snapshot.getPhysicalTable( currentPartitionId );
                                 ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
@@ -432,7 +419,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     } else if ( modify.getInput() instanceof LogicalProject
                             && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
 
-                        String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
+                        String partitionColumnName = catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
                         List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
 
                         LogicalRelModify ltm = modify;
@@ -461,7 +448,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                         tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
 
-                                        if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
+                                        if ( !catalog.getAllocRel( catalogTable.namespaceId ).getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
                                             continue;
                                         }
 
@@ -487,19 +474,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 RoutedAlgBuilder.create( statement, cluster ),
                                                 catalogTable,
                                                 placementsOnAdapter,
-                                                catalog.getPartitionPlacement( pkPlacement.adapterId, entry.getKey() ),
+                                                catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( pkPlacement.adapterId, entry.getKey() ),
                                                 statement,
                                                 cluster,
                                                 false,
                                                 entry.getValue() ).build();
 
-                                        List<String> qualifiedTableName = ImmutableList.of(
-                                                PolySchemaBuilder.buildAdapterSchemaName(
-                                                        pkPlacement.adapterUniqueName,
-                                                        catalogTable.getNamespaceName(),
-                                                        pkPlacement.physicalSchemaName
-                                                ),
-                                                catalogTable.name + "_" + entry.getKey() );
                                         PhysicalTable physical = snapshot.getPhysicalTable( entry.getKey() );
                                         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
@@ -540,8 +520,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     }
 
                     if ( log.isDebugEnabled() ) {
-                        String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
-                        String partitionName = catalog.getPartitionGroup( identPart ).partitionGroupName;
+                        String partitionColumnName = catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
+                        String partitionName = catalog.getAllocRel( catalogTable.namespaceId ).getPartitionGroup( identPart ).partitionGroupName;
                         log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
                                 partitionValue, identPart, partitionName, partitionColumnName );
                     }
@@ -577,17 +557,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 for ( long partitionId : accessedPartitionList ) {
 
-                    if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( partitionId ) ) {
+                    if ( !catalog.getAllocRel( catalogTable.namespaceId ).getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( partitionId ) ) {
                         continue;
                     }
 
-                    List<String> qualifiedTableName = ImmutableList.of(
-                            PolySchemaBuilder.buildAdapterSchemaName(
-                                    pkPlacement.adapterUniqueName,
-                                    catalogTable.getNamespaceName(),
-                                    pkPlacement.physicalSchemaName
-                            ),
-                            catalogTable.name + "_" + partitionId );
                     PhysicalTable physical = snapshot.getPhysicalTable( partitionId );
 
                     // Build DML
@@ -597,7 +570,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             RoutedAlgBuilder.create( statement, cluster ),
                             catalogTable,
                             placementsOnAdapter,
-                            catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
+                            catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( pkPlacement.adapterId, partitionId ),
                             statement,
                             cluster,
                             false,
@@ -725,10 +698,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         for ( int placementId : placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( placementId );
-            CatalogCollectionPlacement placement = Catalog.getInstance().getCollectionPlacement( collection.id, placementId );
-            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
-
-            String collectionName = collection.name + "_" + placement.id;
+            CatalogCollectionPlacement placement = Catalog.getInstance().getAllocDoc( alg.entity.namespaceId ).getCollectionPlacement( collection.id, placementId );
 
             PhysicalCollection document = snapshot.getPhysicalCollection( placement.id );
             if ( !adapter.supportedNamespaces.contains( NamespaceType.DOCUMENT ) ) {
@@ -772,8 +742,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         for ( int adapterId : placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
-            CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
-            String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+            CatalogGraphPlacement graphPlacement = Catalog.getInstance().getAllocGraph( alg.entity.namespaceId ).getGraphPlacement( catalogGraph.id, adapterId );
 
             PhysicalGraph graph = snapshot.getPhysicalGraph( catalogGraph.id, adapterId );
             if ( graph == null ) {
@@ -819,7 +788,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     private AlgNode buildDocumentDml( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         if ( node instanceof DocumentScan ) {
-            return super.handleDocumentScan( (DocumentScan) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), null ).build();
+            return super.handleDocumentScan( (DocumentScan<?>) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), null ).build();
         }
         int i = 0;
         List<AlgNode> inputs = new ArrayList<>();
@@ -846,7 +815,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement, int adapterId, LogicalQueryInformation queryInformation ) {
-        CatalogCollectionMapping mapping = Catalog.getInstance().getCollectionMapping( alg.entity.id );
 
         switch ( alg.operation ) {
             case INSERT:
@@ -956,7 +924,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode attachRelationalModify( LogicalLpgModify alg, int adapterId, Statement statement ) {
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
+        /*CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
 
         PhysicalTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId ).unwrap( PhysicalTable.class );
         PhysicalTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId ).unwrap( PhysicalTable.class );
@@ -1004,6 +972,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.GRAPH ), modifies, true );
+        */// todo dl
+        return null;
     }
 
 
@@ -1229,19 +1199,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             builder = super.handleScan(
                     builder,
                     statement,
-                    placements.get( 0 ).tableId,
-                    placements.get( 0 ).adapterUniqueName,
-                    catalogTable.getNamespaceName(),
-                    catalogTable.name,
-                    placements.get( 0 ).physicalSchemaName,
-                    partitionPlacement.physicalTableName,
-                    partitionPlacement.partitionId,
-                    catalogTable.getNamespaceType() );
+                    partitionPlacement.partitionId
+            );
             LogicalRelScan scan = (LogicalRelScan) builder.build();
             builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
             return builder;
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-
 
             // Special handling for INSERT INTO foo SELECT * FROM foo2
             if ( false ) {
@@ -1251,14 +1214,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             builder = super.handleScan(
                     builder,
                     statement,
-                    placements.get( 0 ).tableId,
-                    placements.get( 0 ).adapterUniqueName,
-                    catalogTable.getNamespaceName(),
-                    catalogTable.name,
-                    placements.get( 0 ).physicalSchemaName,
-                    partitionPlacement.physicalTableName,
-                    partitionPlacement.partitionId,
-                    catalogTable.getNamespaceType() );
+                    partitionPlacement.partitionId
+            );
 
             return builder;
 
@@ -1272,7 +1229,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             builder = super.handleValues( values, builder );
 
-            if ( catalogTable.fieldIds.size() == placements.size() ) { // full placement, no additional checks required
+            if ( catalogTable.columns.size() == placements.size() ) { // full placement, no additional checks required
                 return builder;
             } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                 // This is a prepared statement. Actual values are in the project. Do nothing
@@ -1285,7 +1242,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 return builder.project( rexNodes );
             }
         } else if ( node instanceof LogicalProject ) {
-            if ( catalogTable.fieldIds.size() == placements.size() ) { // full placement, generic handling is sufficient
+            if ( catalogTable.columns.size() == placements.size() ) { // full placement, generic handling is sufficient
                 if ( catalogTable.partitionProperty.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
                     return remapParameterizedDml( node, builder, statement, parameterValues );
                 } else {
@@ -1316,7 +1273,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
             }
         } else if ( node instanceof LogicalFilter ) {
-            if ( catalogTable.fieldIds.size() != placements.size() ) { // partitioned, check if there is a illegal condition
+            if ( catalogTable.columns.size() != placements.size() ) { // partitioned, check if there is a illegal condition
                 RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
 
                 for ( RexNode operand : call.operands ) {
@@ -1338,28 +1295,22 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = fromTable.primaryKey;
-        List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
-        LogicalColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
-        List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
+        List<Long> pkColumnIds = catalog.getLogicalRel( catalogTable.namespaceId ).getPrimaryKey( pkid ).columnIds;
+        LogicalColumn pkColumn = catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( pkColumnIds.get( 0 ) );
+        List<CatalogColumnPlacement> pkPlacements = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( pkColumn.id );
 
         List<AlgNode> nodes = new ArrayList<>();
         for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
-            catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, fromTable.id );
+            catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, fromTable.id );
 
-            CatalogPartitionPlacement partition = catalog.getPartitionPlacement( pkPlacement.adapterId, fromTable.partitionProperty.partitionIds.get( 0 ) );
+            CatalogPartitionPlacement partition = catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( pkPlacement.adapterId, fromTable.partitionProperty.partitionIds.get( 0 ) );
 
             nodes.add( super.handleScan(
                     builder,
                     statement,
-                    pkPlacements.get( 0 ).tableId,
-                    pkPlacements.get( 0 ).adapterUniqueName,
-                    fromTable.getNamespaceName(),
-                    fromTable.name,
-                    pkPlacements.get( 0 ).physicalSchemaName,
-                    partition.physicalTableName,
-                    partition.partitionId,
-                    fromTable.namespaceType ).build() );
+                    partition.partitionId
+            ).build() );
 
         }
 
@@ -1397,11 +1348,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 } else {
                     throw new RuntimeException( "Invalid column name: " + field.getName() );
                 }
-                column = catalog.getColumn( catalogTable.id, columnName );
+                column = catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
             } catch ( UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
-            if ( !catalog.checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
+            if ( !catalog.getAllocRel( catalogTable.namespaceId ).checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

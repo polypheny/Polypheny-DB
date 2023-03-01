@@ -62,7 +62,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds ) {
+    public Map<Long, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(

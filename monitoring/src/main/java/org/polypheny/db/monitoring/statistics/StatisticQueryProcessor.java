@@ -202,7 +202,7 @@ public class StatisticQueryProcessor {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userId, databaseId, false, "Statistics", MultimediaFlavor.FILE );
+            return transactionManager.startTransaction( userId, false, "Statistics", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

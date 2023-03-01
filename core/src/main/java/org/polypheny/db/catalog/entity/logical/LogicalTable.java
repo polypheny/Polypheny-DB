@@ -97,7 +97,7 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
             @Deserialize("modifiable") boolean modifiable,
             @Deserialize("partitionProperty") PartitionProperty partitionProperty,
             @Deserialize("connectedViews") List<Long> connectedViews ) {
-        super( id, name, namespaceName, type, NamespaceType.RELATIONAL );
+        super( id, name, namespaceId, namespaceName, type, NamespaceType.RELATIONAL );
         this.id = id;
         this.name = name;
         this.columns = ImmutableList.copyOf( columns );

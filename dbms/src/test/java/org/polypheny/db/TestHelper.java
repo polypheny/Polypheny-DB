@@ -127,7 +127,7 @@ public class TestHelper {
 
     public Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, true, "Test Helper" );
+            return transactionManager.startTransaction( Catalog.defaultUserId, true, "Test Helper" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

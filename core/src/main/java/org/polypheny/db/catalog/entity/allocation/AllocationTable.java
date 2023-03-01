@@ -42,8 +42,8 @@ public class AllocationTable extends AllocationEntity<LogicalTable> {
     public LogicalTable logicalTable;
 
 
-    public AllocationTable( LogicalTable logicalTable, long id, long logicalId, String name, String namespaceName, long adapterId, List<CatalogColumnPlacement> placements ) {
-        super( logicalTable, id, name, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
+    public AllocationTable( LogicalTable logicalTable, long id, long logicalId, String name, long namespaceId, String namespaceName, long adapterId, List<CatalogColumnPlacement> placements ) {
+        super( logicalTable, id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.logicalTable = logicalTable;
         this.logicalId = logicalId;
         this.adapterId = adapterId;
