@@ -24,7 +24,6 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
