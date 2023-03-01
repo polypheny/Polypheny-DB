@@ -17,37 +17,43 @@
 package org.polypheny.db.catalog.logical.graph;
 
 import io.activej.serializer.BinarySerializer;
-import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
+import java.util.List;
 import lombok.Getter;
 import lombok.Value;
+import lombok.With;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
+import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
-public class GraphCatalog implements NCatalog, Serializable {
+@With
+public class GraphCatalog implements NCatalog, Serializable, LogicalGraphCatalog {
 
     @Getter
     public BinarySerializer<GraphCatalog> serializer = Serializable.builder.get().build( GraphCatalog.class );
+    @Getter
+    public LogicalNamespace logicalNamespace;
+    public IdBuilder idBuilder;
 
-    @Serialize
-    public long id;
-
-    @Serialize
-    public String name;
 
     @NonFinal
     boolean openChanges = false;
 
 
-    public GraphCatalog(
-            @Deserialize("id") long id,
-            @Deserialize("name") String name ) {
+    public GraphCatalog( LogicalNamespace logicalNamespace, IdBuilder idBuilder ) {
 
-        this.id = id;
-        this.name = name;
+        this.logicalNamespace = logicalNamespace;
+        this.idBuilder = idBuilder;
     }
 
 
@@ -79,6 +85,60 @@ public class GraphCatalog implements NCatalog, Serializable {
     @Override
     public GraphCatalog copy() {
         return deserialize( serialize(), GraphCatalog.class );
+    }
+
+
+    @Override
+    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
+        return false;
+    }
+
+
+    @Override
+    public boolean checkIfExistsEntity( long tableId ) {
+        return false;
+    }
+
+
+    @Override
+    public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+
+    }
+
+
+    @Override
+    public void removeGraphAlias( long graphId, String alias, boolean ifExists ) {
+
+    }
+
+
+    @Override
+    public long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
+        return 0;
+    }
+
+
+    @Override
+    public void deleteGraph( long id ) {
+
+    }
+
+
+    @Override
+    public LogicalGraph getGraph( long id ) {
+        return null;
+    }
+
+
+    @Override
+    public List<LogicalGraph> getGraphs( Pattern graphName ) {
+        return null;
+    }
+
+
+    @Override
+    public void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException {
+
     }
 
 }

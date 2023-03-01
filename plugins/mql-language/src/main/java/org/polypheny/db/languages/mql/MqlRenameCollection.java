@@ -19,7 +19,7 @@ package org.polypheny.db.languages.mql;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -58,7 +58,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
-            CatalogSchema schema = catalog.getSchema( Catalog.defaultDatabaseId, database );
+            LogicalNamespace schema = catalog.getSchema( Catalog.defaultDatabaseId, database );
             List<LogicalTable> tables = catalog.getTables( schema.id, null );
 
             if ( dropTarget ) {

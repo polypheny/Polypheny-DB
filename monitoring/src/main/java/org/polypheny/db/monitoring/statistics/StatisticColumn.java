@@ -87,7 +87,7 @@ public abstract class StatisticColumn<T> {
 
         Catalog catalog = Catalog.getInstance();
         if ( catalog.checkIfExistsEntity( tableId ) ) {
-            this.schema = catalog.getSchema( schemaId ).name;
+            this.schema = catalog.getNamespace( schemaId ).name;
             this.table = catalog.getTable( tableId ).name;
             this.column = catalog.getColumn( columnId ).name;
         }

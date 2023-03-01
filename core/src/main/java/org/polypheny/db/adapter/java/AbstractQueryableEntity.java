@@ -36,7 +36,7 @@ package org.polypheny.db.adapter.java;
 
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.Schemas;

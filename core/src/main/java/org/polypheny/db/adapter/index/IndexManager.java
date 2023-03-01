@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -182,7 +182,7 @@ public class IndexManager {
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getSchema( key.schemaId ),
+                Catalog.getInstance().getNamespace( key.schemaId ),
                 table,
                 key.getColumnNames(),
                 pk.getColumnNames() );
@@ -214,7 +214,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, LogicalTable table, List<String> columns ) {
+    public Index getIndex( LogicalNamespace schema, LogicalTable table, List<String> columns ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -224,7 +224,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, LogicalTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
+    public Index getIndex( LogicalNamespace schema, LogicalTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -236,7 +236,7 @@ public class IndexManager {
     }
 
 
-    public List<Index> getIndices( CatalogSchema schema, LogicalTable table ) {
+    public List<Index> getIndices( LogicalNamespace schema, LogicalTable table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
                 .collect( Collectors.toList() );

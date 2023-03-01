@@ -22,20 +22,24 @@ import java.io.Serializable;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Value;
+import lombok.With;
 
 
 @EqualsAndHashCode
+@Value
+@With
 public class CatalogQueryInterface implements CatalogObject {
 
     private static final long serialVersionUID = 7212289724539530050L;
 
-    public final int id;
-    public final String name;
-    public final String clazz;
-    public final ImmutableMap<String, String> settings;
+    public long id;
+    public String name;
+    public String clazz;
+    public ImmutableMap<String, String> settings;
 
 
-    public CatalogQueryInterface( final int id, @NonNull final String uniqueName, @NonNull final String clazz, @NonNull final Map<String, String> settings ) {
+    public CatalogQueryInterface( final long id, @NonNull final String uniqueName, @NonNull final String clazz, @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.name = uniqueName;
         this.clazz = clazz;

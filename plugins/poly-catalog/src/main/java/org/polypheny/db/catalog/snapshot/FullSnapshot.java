@@ -19,8 +19,7 @@ package org.polypheny.db.catalog.snapshot;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import org.polypheny.db.catalog.NCatalog;
-import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -40,7 +39,7 @@ public class FullSnapshot implements Snapshot {
     private final long id;
 
 
-    public FullSnapshot( long id, Map<Long, NCatalog> catalogs ) {
+    public FullSnapshot( long id, Map<Long, LogicalCatalog> catalogs ) {
         this.id = id;
 
 

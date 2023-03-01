@@ -54,7 +54,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -72,6 +71,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -562,7 +562,7 @@ public abstract class BaseRouter implements Router {
             CatalogAdapter adapter = catalog.getAdapter( placementId );
             NamespaceType sourceModel = collection.namespaceType;
 
-            if ( !adapter.getSupportedNamespaces().contains( sourceModel ) ) {
+            if ( !adapter.supportedNamespaces.contains( sourceModel ) ) {
                 // document on relational
                 scans.add( handleDocumentOnRelational( alg, placementId, statement, builder ) );
                 continue;

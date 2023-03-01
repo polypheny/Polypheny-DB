@@ -37,9 +37,10 @@ package org.polypheny.db.schema;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
-import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
 
@@ -82,7 +83,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Creates a root schema.
      */
     public static Snapshot createSnapshot() {
-        return PolySchemaBuilder.getInstance().getCurrent();
+        return Catalog.getInstance().getSnapshot( 0 );
     }
 
 

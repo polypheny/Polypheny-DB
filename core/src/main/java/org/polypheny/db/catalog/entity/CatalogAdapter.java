@@ -17,48 +17,41 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Value;
+import lombok.With;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode
+@Value
+@With
 public class CatalogAdapter implements CatalogObject {
 
     private static final long serialVersionUID = -6140489767408917639L;
 
-    public final int id;
-    public final String uniqueName;
-    public final String adapterName;
-    public final AdapterType type;
-    public final ImmutableMap<String, String> settings;
-    private List<NamespaceType> supportedNamespaces;
+    public long id;
+    public String uniqueName;
+    public String adapterName;
+    public AdapterType type;
+    public ImmutableMap<String, String> settings;
+    public ImmutableList<NamespaceType> supportedNamespaces;
 
-    private String adapterTypeName;
-
-
-    public String getAdapterTypeName() {
-        if ( adapterTypeName == null ) {
-            // General settings are provided by the annotations of the adapter class
-            AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
-            this.adapterTypeName = annotations.name();
-        }
-        return adapterTypeName;
-
-
-    }
+    public String adapterTypeName;
 
 
     public enum AdapterType {STORE, SOURCE}
 
 
     public CatalogAdapter(
-            final int id,
+            final long id,
             @NonNull final String uniqueName,
             @NonNull final String adapterName,
             @NonNull final AdapterType adapterType,
@@ -68,16 +61,22 @@ public class CatalogAdapter implements CatalogObject {
         this.adapterName = adapterName;
         this.type = adapterType;
         this.settings = ImmutableMap.copyOf( settings );
+        this.supportedNamespaces = ImmutableList.copyOf( createSupportedNamespaces() );
+        this.adapterTypeName = getAdapterName();
     }
 
 
-    public List<NamespaceType> getSupportedNamespaces() {
-        if ( supportedNamespaces == null ) {
-            // General settings are provided by the annotations of the adapter class
-            AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
-            this.supportedNamespaces = List.of( annotations.supportedNamespaceTypes() );
-        }
-        return supportedNamespaces;
+    private String getAdapterTypeName() {
+        // General settings are provided by the annotations of the adapter class
+        AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
+        return annotations.name();
+    }
+
+
+    private List<NamespaceType> createSupportedNamespaces() {
+        // General settings are provided by the annotations of the adapter class
+        AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
+        return List.of( annotations.supportedNamespaceTypes() );
     }
 
 

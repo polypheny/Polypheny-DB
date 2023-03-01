@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
@@ -62,8 +63,6 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
@@ -81,9 +80,9 @@ import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -94,8 +93,6 @@ import org.polypheny.db.catalog.exceptions.GraphAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
-import org.polypheny.db.catalog.exceptions.UnknownCollectionPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
@@ -127,6 +124,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -159,8 +157,8 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<String, CatalogDatabase> databaseNames;
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
 
-    private static BTreeMap<Long, CatalogSchema> schemas;
-    private static BTreeMap<Object[], CatalogSchema> schemaNames;
+    private static BTreeMap<Long, LogicalNamespace> schemas;
+    private static BTreeMap<Object[], LogicalNamespace> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
 
     private static BTreeMap<Long, LogicalTable> tables;
@@ -170,9 +168,6 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, LogicalCollection> collections;
     private static BTreeMap<Object[], LogicalCollection> collectionNames;
 
-    private static BTreeMap<Object[], CatalogCollectionPlacement> collectionPlacements;
-
-    private static BTreeMap<Long, CatalogCollectionMapping> documentMappings;
 
     private static BTreeMap<Long, LogicalColumn> columns;
     private static BTreeMap<Object[], LogicalColumn> columnNames;
@@ -204,7 +199,6 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], LogicalGraph> graphNames;
     private static BTreeMap<Object[], CatalogGraphPlacement> graphPlacements;
 
-    private static BTreeMap<Long, CatalogGraphMapping> graphMappings;
 
     private static Long openTable;
 
@@ -523,7 +517,7 @@ public class CatalogImpl extends Catalog {
                         AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
-                                new ExtendedQueryParameters( query, NamespaceType.DOCUMENT, getSchema( defaultDatabaseId ).name ) );
+                                new ExtendedQueryParameters( query, NamespaceType.DOCUMENT, getNamespace( defaultDatabaseId ).name ) );
                         nodeInfo.put( c.id, mqlRel.alg );
                         break;
                 }
@@ -693,7 +687,6 @@ public class CatalogImpl extends Catalog {
         graphNames = db.treeMap( "graphNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
         graphPlacements = db.treeMap( "graphPlacements", new SerializerArrayTuple( Serializer.LONG, Serializer.INTEGER ), Serializer.JAVA ).createOrOpen();
 
-        graphMappings = db.treeMap( "graphMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         graphAliases = db.treeMap( "graphAliases", Serializer.STRING, Serializer.JAVA ).createOrOpen();
     }
 
@@ -703,9 +696,6 @@ public class CatalogImpl extends Catalog {
         collections = db.treeMap( "collections", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         collectionNames = db.treeMap( "collectionNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
 
-        documentMappings = db.treeMap( "documentMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
-
-        collectionPlacements = db.treeMap( "collectionPlacements", new SerializerArrayTuple( Serializer.LONG, Serializer.INTEGER ), Serializer.JAVA ).createOrOpen();
     }
 
 
@@ -765,9 +755,9 @@ public class CatalogImpl extends Catalog {
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ "public" } ) ) {
-            schemaId = addNamespace( "public", 1, NamespaceType.getDefault() );
+            schemaId = addNamespace( "public", NamespaceType.getDefault(), false );
         } else {
-            schemaId = getSchema( "public" ).id;
+            schemaId = getNamespace( "public" ).id;
         }
 
         //////////////
@@ -827,7 +817,7 @@ public class CatalogImpl extends Catalog {
      * Initiates default columns for csv files
      */
     private void addDefaultCsvColumns( CatalogAdapter csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException, UnknownColumnException {
-        CatalogSchema schema = getSchema( "public" );
+        LogicalNamespace schema = getNamespace( "public" );
         LogicalTable depts = getTable( schema.id, "depts" );
 
         addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
@@ -1038,9 +1028,9 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public List<CatalogSchema> getSchemas( Pattern schemaNamePattern ) {
-        if ( schemaNamePattern != null ) {
-            return schemaNames.values().stream().filter( s -> s.name.matches( schemaNamePattern.toRegex() ) ).collect( Collectors.toList() );
+    public @NonNull List<LogicalNamespace> getNamespaces( Pattern name ) {
+        if ( name != null ) {
+            return schemaNames.values().stream().filter( s -> s.name.matches( name.toRegex() ) ).collect( Collectors.toList() );
         }
         return new ArrayList<>();
     }
@@ -1050,11 +1040,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public CatalogSchema getSchema( long schemaId ) {
+    public LogicalNamespace getNamespace( long id ) {
         try {
-            return Objects.requireNonNull( schemas.get( schemaId ) );
+            return Objects.requireNonNull( schemas.get( id ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownSchemaIdRuntimeException( schemaId );
+            throw new UnknownSchemaIdRuntimeException( id );
         }
     }
 
@@ -1063,7 +1053,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public CatalogSchema getSchema( final String schemaName ) throws UnknownSchemaException {
+    public LogicalNamespace getNamespace( final String schemaName ) throws UnknownSchemaException {
         String name = schemaName.toLowerCase();
         try {
             return Objects.requireNonNull( schemaNames.get( new Object[]{ name } ) );
@@ -1077,11 +1067,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public long addNamespace( String name, int ownerId, NamespaceType namespaceType ) {
+    public long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
         name = name.toLowerCase();
         CatalogUser owner = getUser( ownerId );
         long id = namespaceIdBuilder.getAndIncrement();
-        CatalogSchema schema = new CatalogSchema( id, name, ownerId, owner.name, namespaceType, namespaceType == NamespaceType.DOCUMENT || namespaceType == NamespaceType.GRAPH );
+        LogicalNamespace schema = new LogicalNamespace( id, name, ownerId, owner.name, namespaceType, namespaceType == NamespaceType.DOCUMENT || namespaceType == NamespaceType.GRAPH );
         synchronized ( this ) {
             schemas.put( id, schema );
             schemaNames.put( new Object[]{ name }, schema );
@@ -1096,9 +1086,9 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public boolean checkIfExistsSchema( String schemaName ) {
-        schemaName = schemaName.toLowerCase();
-        return schemaNames.containsKey( new Object[]{ schemaName } );
+    public boolean checkIfExistsNamespace( String name ) {
+        name = name.toLowerCase();
+        return schemaNames.containsKey( new Object[]{ name } );
     }
 
 
@@ -1106,11 +1096,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void renameSchema( long schemaId, String name ) {
+    public void renameNamespace( long schemaId, String name ) {
         name = name.toLowerCase();
         try {
-            CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, name, old.ownerId, old.ownerName, old.namespaceType, false );
+            LogicalNamespace old = Objects.requireNonNull( schemas.get( schemaId ) );
+            LogicalNamespace schema = new LogicalNamespace( old.id, name, old.ownerId, old.ownerName, old.namespaceType, false );
 
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
@@ -1127,11 +1117,10 @@ public class CatalogImpl extends Catalog {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void setSchemaOwner( long schemaId, long ownerId ) {
+    public void setNamespaceOwner( long schemaId, long ownerId ) {
         try {
-            CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, old.name, (int) ownerId, old.ownerName, old.namespaceType, false );
+            LogicalNamespace old = Objects.requireNonNull( schemas.get( schemaId ) );
+            LogicalNamespace schema = new LogicalNamespace( old.id, old.name, (int) ownerId, old.ownerName, old.namespaceType, false );
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.name }, schema );
@@ -1152,7 +1141,7 @@ public class CatalogImpl extends Catalog {
             throw new GraphAlreadyExistsException( name );
         }
 
-        long id = addNamespace( name, Catalog.defaultUserId, NamespaceType.GRAPH );
+        long id = addNamespace( name, NamespaceType.GRAPH, false );
 
         LogicalGraph graph = new LogicalGraph( id, name, Catalog.defaultUserId, modifiable, ImmutableList.of(), true );
 
@@ -1204,14 +1193,6 @@ public class CatalogImpl extends Catalog {
         listeners.firePropertyChange( "graphAlias", alias, null );
     }
 
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public CatalogGraphMapping getGraphMapping( long graphId ) {
-        return Objects.requireNonNull( graphMappings.get( graphId ) );
-    }
 
 
     /**
@@ -1548,18 +1529,14 @@ public class CatalogImpl extends Catalog {
                     keyEdgePropertyId,
                     valueEdgePropertyId );
 
-            graphMappings.put( id, mapping );
         }
 
     }
 
 
     private void removeGraphLogistics( long graphId ) {
-        if ( !graphMappings.containsKey( graphId ) ) {
-            throw new UnknownGraphException( graphId );
-        }
 
-        deleteSchema( graphId );
+        deleteNamespace( graphId );
     }
 
 
@@ -1580,7 +1557,6 @@ public class CatalogImpl extends Catalog {
             old.placements.forEach( a -> graphPlacements.remove( new Object[]{ old.id, a } ) );
             graphs.remove( id );
             graphNames.remove( new Object[]{ old.name } );
-            graphMappings.remove( id );
         }
         listeners.firePropertyChange( "graph", old, null );
     }
@@ -1619,8 +1595,8 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void deleteSchema( long schemaId ) {
-        CatalogSchema schema = getSchema( schemaId );
+    public void deleteNamespace( long schemaId ) {
+        LogicalNamespace schema = getNamespace( schemaId );
         synchronized ( this ) {
             schemaNames.remove( new Object[]{ schema.name } );
 
@@ -1642,7 +1618,7 @@ public class CatalogImpl extends Catalog {
     public List<LogicalTable> getTables( long schemaId, Pattern tableNamePattern ) {
         if ( schemas.containsKey( schemaId ) ) {
 
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            LogicalNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
             if ( tableNamePattern != null ) {
                 return Collections.singletonList( tableNames.get( new Object[]{ schemaId, tableNamePattern.pattern } ) );
             } else {
@@ -1659,12 +1635,12 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<LogicalTable> getTables( Pattern schemaNamePattern, Pattern tableNamePattern ) {
         if ( schemaNamePattern != null && tableNamePattern != null ) {
-            CatalogSchema schema = schemaNames.get( new Object[]{ schemaNamePattern.pattern } );
+            LogicalNamespace schema = schemaNames.get( new Object[]{ schemaNamePattern.pattern } );
             if ( schema != null ) {
                 return Collections.singletonList( Objects.requireNonNull( tableNames.get( new Object[]{ schema.id, tableNamePattern.pattern } ) ) );
             }
         } else if ( schemaNamePattern != null ) {
-            CatalogSchema schema = schemaNames.get( new Object[]{ schemaNamePattern.pattern } );
+            LogicalNamespace schema = schemaNames.get( new Object[]{ schemaNamePattern.pattern } );
             if ( schema != null ) {
                 return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ schema.id } ).values() );
             }
@@ -1695,7 +1671,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public LogicalTable getTable( long schemaId, String tableName ) throws UnknownTableException {
         try {
-            CatalogSchema schema = getSchema( schemaId );
+            LogicalNamespace schema = getNamespace( schemaId );
             if ( !schema.caseSensitive ) {
                 tableName = tableName.toLowerCase();
             }
@@ -1721,7 +1697,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public LogicalTable getTable( String schemaName, String tableName ) throws UnknownTableException, UnknownSchemaException {
         try {
-            CatalogSchema schema = getSchema( schemaName );
+            LogicalNamespace schema = getNamespace( schemaName );
             if ( !schema.caseSensitive ) {
                 tableName = tableName.toLowerCase();
             }
@@ -1739,7 +1715,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
         long id = entityIdBuilder.getAndIncrement();
-        CatalogSchema schema = getSchema( namespaceId );
+        LogicalNamespace schema = getNamespace( namespaceId );
         if ( !schema.caseSensitive ) {
             name = name.toLowerCase();
         }
@@ -1790,7 +1766,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = entityIdBuilder.getAndIncrement();
-        CatalogSchema schema = getSchema( namespaceId );
+        LogicalNamespace schema = getNamespace( namespaceId );
 
         if ( !schema.caseSensitive ) {
             name = name.toLowerCase();
@@ -1838,7 +1814,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = entityIdBuilder.getAndIncrement();
-        CatalogSchema schema = getSchema( namespaceId );
+        LogicalNamespace schema = getNamespace( namespaceId );
 
         if ( !schema.caseSensitive ) {
             name = name.toLowerCase();
@@ -1900,7 +1876,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Update all information after the addition of all kind of tables
      */
-    private void updateEntityLogistics( String name, long namespaceId, long id, CatalogSchema schema, LogicalTable entity ) {
+    private void updateEntityLogistics( String name, long namespaceId, long id, LogicalNamespace schema, LogicalTable entity ) {
         synchronized ( this ) {
             tables.put( id, entity );
             tableChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -1960,7 +1936,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
-        CatalogSchema schema = getSchema( namespaceId );
+        LogicalNamespace schema = getNamespace( namespaceId );
         if ( !schema.caseSensitive ) {
             entityName = entityName.toLowerCase();
         }
@@ -1983,7 +1959,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameTable( long tableId, String name ) {
         LogicalTable old = getTable( tableId );
-        if ( !getSchema( old.namespaceId ).caseSensitive ) {
+        if ( !getNamespace( old.namespaceId ).caseSensitive ) {
             name = name.toLowerCase();
         }
 
@@ -2112,36 +2088,6 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName ) {
-        try {
-            CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
-            CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
-                    old.namespaceId,
-                    old.tableId,
-                    old.adapterId,
-                    old.adapterUniqueName,
-                    old.placementType,
-                    physicalSchemaName,
-                    physicalTableName,
-                    old.partitionId,
-                    old.role );
-
-            synchronized ( this ) {
-                partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
-                listeners.firePropertyChange( "partitionPlacement", old, placement );
-            }
-        } catch ( NullPointerException e ) {
-            getAdapter( adapterId );
-            getPartition( partitionId );
-            throw new UnknownPartitionPlacementException( adapterId, partitionId );
-        }
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void updateMaterializedViewRefreshTime( long materializedViewId ) {
         CatalogMaterializedView old = (CatalogMaterializedView) getTable( materializedViewId );
 
@@ -2178,7 +2124,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
         if ( schemas.containsKey( namespaceId ) ) {
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( namespaceId ) );
+            LogicalNamespace schema = Objects.requireNonNull( schemas.get( namespaceId ) );
             if ( namePattern != null ) {
                 LogicalCollection collection = collectionNames.get( new Object[]{ namespaceId, namePattern.pattern } );
                 if ( collection == null ) {
@@ -2203,7 +2149,7 @@ public class CatalogImpl extends Catalog {
             collectionId = id;
         }
 
-        CatalogSchema namespace = getSchema( schemaId );
+        LogicalNamespace namespace = getNamespace( schemaId );
         LogicalCollection collection = new LogicalCollection(
                 Catalog.defaultDatabaseId,
                 schemaId,
@@ -2220,63 +2166,6 @@ public class CatalogImpl extends Catalog {
         listeners.firePropertyChange( "collection", null, entity );
 
         return collectionId;
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long addCollectionPlacement( long namespaceId, int adapterId, long collectionId, PlacementType placementType ) {
-        long id = partitionIdBuilder.getAndIncrement();
-        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( namespaceId, adapterId, collectionId, null, null, id );
-        LogicalCollection old = collections.get( collectionId );
-        if ( old == null ) {
-            throw new UnknownCollectionException( collectionId );
-        }
-
-        LogicalCollection collection = old.addPlacement( adapterId );
-
-        synchronized ( this ) {
-            collectionPlacements.put( new Object[]{ collectionId, adapterId }, placement );
-            collections.replace( collectionId, collection );
-            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
-        }
-        listeners.firePropertyChange( "collectionPlacement", null, placement );
-        return id;
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void updateCollectionPartitionPhysicalNames( long namespaceId, long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
-        LogicalCollection old = getCollection( collectionId );
-        if ( old == null ) {
-            throw new UnknownCollectionException( collectionId );
-        }
-
-        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( namespaceId, adapterId, collectionId, physicalCollectionName, physicalNamespaceName, old.id );
-        LogicalCollection collection = old.setPhysicalName( physicalCollectionName );
-        synchronized ( this ) {
-            collections.replace( collectionId, collection );
-            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
-            collectionPlacements.replace( new Object[]{ collectionId, adapterId }, placement );
-        }
-        listeners.firePropertyChange( "collectionPlacements", old, collection );
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public CatalogCollectionMapping getCollectionMapping( long id ) {
-        if ( !documentMappings.containsKey( id ) ) {
-            throw new UnknownTableIdRuntimeException( id );
-        }
-        return Objects.requireNonNull( documentMappings.get( id ) );
     }
 
 
@@ -2334,11 +2223,6 @@ public class CatalogImpl extends Catalog {
 
         addPrimaryKey( tableId, List.of( idId, dataId ) );
 
-        if ( !onlyPlacement ) {
-            CatalogCollectionMapping mapping = new CatalogCollectionMapping( tableId, idId, dataId );
-            documentMappings.put( tableId, mapping );
-        }
-
         return tableId;
     }
 
@@ -2353,7 +2237,6 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             collections.remove( collection.namespaceId );
             collectionNames.remove( new Object[]{ collection.databaseId, collection.namespaceId, collection.name } );
-            collection.placements.forEach( p -> collectionPlacements.remove( new Object[]{ collection.id, p } ) );
         }
         listeners.firePropertyChange( "collection", null, null );
     }
@@ -2362,47 +2245,8 @@ public class CatalogImpl extends Catalog {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void dropCollectionPlacement( long id, int adapterId ) {
-        LogicalCollection oldCollection = Objects.requireNonNull( collections.get( id ) );
-        LogicalCollection collection = oldCollection.removePlacement( adapterId );
-
-        synchronized ( this ) {
-            collectionPlacements.remove( new Object[]{ id, adapterId } );
-            collections.replace( id, collection );
-            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
-        }
-        listeners.firePropertyChange( "collectionPlacement", null, null );
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
     public List<CatalogGraphPlacement> getGraphPlacements( int adapterId ) {
         return graphPlacements.entrySet().stream().filter( e -> e.getKey()[1].equals( adapterId ) ).map( Entry::getValue ).collect( Collectors.toList() );
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId ) {
-        return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId ) {
-        if ( !collectionPlacements.containsKey( new Object[]{ collectionId, adapterId } ) ) {
-            throw new UnknownCollectionPlacementException( collectionId, adapterId );
-        }
-
-        return collectionPlacements.get( new Object[]{ collectionId, adapterId } );
     }
 
 
@@ -2487,20 +2331,6 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId ) {
-        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingLong( p -> p.physicalPosition );
-        return getColumnPlacementsOnAdapter( adapterId )
-                .stream()
-                .filter( p -> p.tableId == tableId )
-                .sorted( columnPlacementComparator )
-                .collect( Collectors.toList() );
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
         return columnPlacements.values()
                 .stream()
@@ -2551,15 +2381,6 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId ) {
-        return null;
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public long getPartitionGroupByPartition( long partitionId ) {
         return getPartition( partitionId ).partitionGroupId;
     }
@@ -2586,7 +2407,7 @@ public class CatalogImpl extends Catalog {
             return getColumnPlacementsOnAdapter( adapterId ).stream().filter( p -> Objects.requireNonNull( columns.get( p.columnId ) ).schemaId == schemaId ).collect( Collectors.toList() );
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
-            getSchema( schemaId );
+            getNamespace( schemaId );
             return new ArrayList<>();
         }
     }
@@ -2762,7 +2583,7 @@ public class CatalogImpl extends Catalog {
     public LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         try {
             LogicalTable table = getTable( tableId );
-            if ( !getSchema( table.namespaceId ).caseSensitive ) {
+            if ( !getNamespace( table.namespaceId ).caseSensitive ) {
                 columnName = columnName.toLowerCase();
             }
             return Objects.requireNonNull( columnNames.get( new Object[]{ table.namespaceId, table.id, columnName } ) );
@@ -2793,7 +2614,7 @@ public class CatalogImpl extends Catalog {
     public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
         LogicalTable table = getTable( tableId );
 
-        if ( !getSchema( table.namespaceId ).caseSensitive ) {
+        if ( !getNamespace( table.namespaceId ).caseSensitive ) {
             name = name.toLowerCase();
         }
 
@@ -2851,7 +2672,7 @@ public class CatalogImpl extends Catalog {
     public void renameColumn( long columnId, String name ) {
         LogicalColumn old = getColumn( columnId );
 
-        if ( !getSchema( old.schemaId ).caseSensitive ) {
+        if ( !getNamespace( old.schemaId ).caseSensitive ) {
             name = name.toLowerCase();
         }
 
@@ -3545,11 +3366,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public CatalogUser getUser( String userName ) throws UnknownUserException {
+    public CatalogUser getUser( String name ) throws UnknownUserException {
         try {
-            return Objects.requireNonNull( userNames.get( userName ) );
+            return Objects.requireNonNull( userNames.get( name ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownUserException( userName );
+            throw new UnknownUserException( name );
         }
     }
 
@@ -3558,11 +3379,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public CatalogUser getUser( int userId ) {
+    public CatalogUser getUser( long id ) {
         try {
-            return Objects.requireNonNull( users.get( userId ) );
+            return Objects.requireNonNull( users.get( id ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownUserIdRuntimeException( userId );
+            throw new UnknownUserIdRuntimeException( id );
         }
     }
 
@@ -3594,11 +3415,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public CatalogAdapter getAdapter( int adapterId ) {
+    public CatalogAdapter getAdapter( long id ) {
         try {
-            return Objects.requireNonNull( adapters.get( adapterId ) );
+            return Objects.requireNonNull( adapters.get( id ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownAdapterIdRuntimeException( adapterId );
+            throw new UnknownAdapterIdRuntimeException( id );
         }
     }
 
@@ -3607,8 +3428,8 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public boolean checkIfExistsAdapter( int adapterId ) {
-        return adapters.containsKey( adapterId );
+    public boolean checkIfExistsAdapter( long id ) {
+        return adapters.containsKey( id );
     }
 
 
@@ -3616,7 +3437,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public int addAdapter( String uniqueName, String adapterName, AdapterType type, Map<String, String> settings ) {
+    public long addAdapter( String uniqueName, String adapterName, AdapterType type, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
 
         int id = adapterIdBuilder.getAndIncrement();
@@ -3640,7 +3461,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void updateAdapterSettings( int adapterId, Map<String, String> newSettings ) {
+    public void updateAdapterSettings( long adapterId, Map<String, String> newSettings ) {
         CatalogAdapter old = getAdapter( adapterId );
         Map<String, String> temp = new HashMap<>();
         newSettings.forEach( temp::put );
@@ -3657,11 +3478,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void deleteAdapter( int adapterId ) {
+    public void deleteAdapter( long id ) {
         try {
-            CatalogAdapter adapter = Objects.requireNonNull( adapters.get( adapterId ) );
+            CatalogAdapter adapter = Objects.requireNonNull( adapters.get( id ) );
             synchronized ( this ) {
-                adapters.remove( adapterId );
+                adapters.remove( id );
                 adapterNames.remove( adapter.uniqueName );
             }
             try {
@@ -3676,7 +3497,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "adapter", adapter, null );
         } catch ( NullPointerException e ) {
-            throw new UnknownAdapterIdRuntimeException( adapterId );
+            throw new UnknownAdapterIdRuntimeException( id );
         }
     }
 
@@ -3708,11 +3529,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public CatalogQueryInterface getQueryInterface( int ifaceId ) {
+    public CatalogQueryInterface getQueryInterface( long id ) {
         try {
-            return Objects.requireNonNull( queryInterfaces.get( ifaceId ) );
+            return Objects.requireNonNull( queryInterfaces.get( id ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownQueryInterfaceRuntimeException( ifaceId );
+            throw new UnknownQueryInterfaceRuntimeException( id );
         }
     }
 
@@ -3721,7 +3542,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
 
         int id = queryInterfaceIdBuilder.getAndIncrement();
@@ -3745,11 +3566,11 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void deleteQueryInterface( int ifaceId ) {
+    public void deleteQueryInterface( long id ) {
         try {
-            CatalogQueryInterface queryInterface = Objects.requireNonNull( queryInterfaces.get( ifaceId ) );
+            CatalogQueryInterface queryInterface = Objects.requireNonNull( queryInterfaces.get( id ) );
             synchronized ( this ) {
-                queryInterfaces.remove( ifaceId );
+                queryInterfaces.remove( id );
                 queryInterfaceNames.remove( queryInterface.name );
             }
             try {
@@ -3759,7 +3580,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "queryInterface", queryInterface, null );
         } catch ( NullPointerException e ) {
-            throw new UnknownQueryInterfaceRuntimeException( ifaceId );
+            throw new UnknownQueryInterfaceRuntimeException( id );
         }
     }
 
@@ -3774,7 +3595,7 @@ public class CatalogImpl extends Catalog {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Creating partitionGroup of type '{}' with id '{}'", partitionType, id );
             }
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            LogicalNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
 
             List<Long> partitionIds = new ArrayList<>();
             for ( int i = 0; i < numberOfInternalPartitions; i++ ) {
@@ -3940,7 +3761,7 @@ public class CatalogImpl extends Catalog {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Creating partition with id '{}'", id );
             }
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            LogicalNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
 
             CatalogPartition partition = new CatalogPartition(
                     id,
@@ -4626,27 +4447,6 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public void updateGraphPlacementPhysicalNames( long graphId, int adapterId, String physicalGraphName ) {
-        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
-            throw new UnknownGraphPlacementsException( graphId, adapterId );
-        }
-
-        CatalogGraphPlacement old = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
-
-        CatalogGraphPlacement placement = old.replacePhysicalName( physicalGraphName );
-
-        synchronized ( this ) {
-            graphPlacements.replace( new Object[]{ graphId, adapterId }, placement );
-        }
-
-        listeners.firePropertyChange( "graphPlacement", old, placement );
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void deleteGraphPlacement( int adapterId, long graphId ) {
         if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
             throw new UnknownGraphPlacementsException( graphId, adapterId );
@@ -4669,9 +4469,7 @@ public class CatalogImpl extends Catalog {
 
 
     private void deleteGraphPlacementLogistics( long graphId, int adapterId ) {
-        if ( !graphMappings.containsKey( graphId ) ) {
-            throw new UnknownGraphException( graphId );
-        }
+        /*
         CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
         if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
             throw new UnknownGraphPlacementsException( graphId, adapterId );
@@ -4681,7 +4479,7 @@ public class CatalogImpl extends Catalog {
         removeSingleDataPlacementFromTable( placement.adapterId, mapping.nodesId );
         removeSingleDataPlacementFromTable( placement.adapterId, mapping.nodesPropertyId );
         removeSingleDataPlacementFromTable( placement.adapterId, mapping.edgesId );
-        removeSingleDataPlacementFromTable( placement.adapterId, mapping.edgesPropertyId );
+         */
     }
 
 

@@ -53,8 +53,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -62,6 +61,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -175,15 +175,15 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     @Override
-    public void updateSchemaName( CatalogSchema catalogSchema, String newName ) {
-        if ( statisticSchemaMap.containsKey( catalogSchema.id ) ) {
-            Map<Long, Map<Long, StatisticColumn<?>>> tableInformation = statisticSchemaMap.get( catalogSchema.id );
+    public void updateSchemaName( LogicalNamespace logicalNamespace, String newName ) {
+        if ( statisticSchemaMap.containsKey( logicalNamespace.id ) ) {
+            Map<Long, Map<Long, StatisticColumn<?>>> tableInformation = statisticSchemaMap.get( logicalNamespace.id );
             for ( long tableId : tableInformation.keySet() ) {
-                Map<Long, StatisticColumn<?>> columnsInformation = statisticSchemaMap.get( catalogSchema.id ).remove( tableId );
+                Map<Long, StatisticColumn<?>> columnsInformation = statisticSchemaMap.get( logicalNamespace.id ).remove( tableId );
                 for ( Entry<Long, StatisticColumn<?>> columnInfo : columnsInformation.entrySet() ) {
                     StatisticColumn<?> statisticColumn = columnInfo.getValue();
                     statisticColumn.updateSchemaName( newName );
-                    statisticSchemaMap.get( catalogSchema.id ).get( tableId ).put( columnInfo.getKey(), statisticColumn );
+                    statisticSchemaMap.get( logicalNamespace.id ).get( tableId ).put( columnInfo.getKey(), statisticColumn );
                 }
             }
         }

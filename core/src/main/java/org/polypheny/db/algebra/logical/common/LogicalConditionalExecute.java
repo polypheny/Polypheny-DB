@@ -58,7 +58,7 @@ public class LogicalConditionalExecute extends ConditionalExecute {
                 copy.exceptionClass,
                 copy.exceptionMessage );
         lce.checkDescription = description;
-        lce.catalogSchema = copy.catalogSchema;
+        lce.logicalNamespace = copy.logicalNamespace;
         lce.catalogTable = copy.catalogTable;
         lce.catalogColumns = copy.catalogColumns;
         lce.values = copy.values;
@@ -77,7 +77,7 @@ public class LogicalConditionalExecute extends ConditionalExecute {
                 exceptionClass,
                 exceptionMessage );
         lce.setCheckDescription( checkDescription );
-        lce.setCatalogSchema( catalogSchema );
+        lce.setLogicalNamespace( logicalNamespace );
         lce.setCatalogTable( catalogTable );
         lce.setCatalogColumns( catalogColumns );
         lce.setValues( values );

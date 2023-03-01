@@ -52,5 +52,4 @@ public interface NCatalog {
         return clazz.cast( this );
     }
 
-
 }

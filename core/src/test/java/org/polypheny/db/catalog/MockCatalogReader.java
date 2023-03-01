@@ -40,13 +40,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgFieldCollation;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
@@ -54,16 +52,13 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
@@ -147,7 +142,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     protected void registerType( final List<String> names, final AlgProtoDataType algProtoDataType ) {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
-        //final PolyphenyDbSchema schema = ValidatorUtil.getSchema( snapshot, schemaPath, NameMatchers.withCaseSensitive( true ) );
+        //final PolyphenyDbSchema schema = ValidatorUtil.getNamespace( snapshot, schemaPath, NameMatchers.withCaseSensitive( true ) );
         //schema.add( Util.last( names ), algProtoDataType );
     }
 
@@ -174,7 +169,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
         final String tableName = Util.last( names );
-        //final PolyphenyDbSchema schema = ValidatorUtil.getSchema( snapshot, schemaPath, NameMatchers.withCaseSensitive( true ) );
+        //final PolyphenyDbSchema schema = ValidatorUtil.getNamespace( snapshot, schemaPath, NameMatchers.withCaseSensitive( true ) );
         //schema.add( tableName, entity );
     }
 

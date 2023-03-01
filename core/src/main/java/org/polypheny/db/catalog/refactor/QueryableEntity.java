@@ -19,7 +19,7 @@ package org.polypheny.db.catalog.refactor;
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 public interface QueryableEntity {
 

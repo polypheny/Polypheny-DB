@@ -32,10 +32,10 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
@@ -57,7 +57,7 @@ public class DdlTest extends MqlTestTemplate {
         Catalog catalog = Catalog.getInstance();
         String name = "testCollection";
 
-        CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
+        LogicalNamespace namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
         int size = catalog.getCollections( namespace.id, null ).size();
 
@@ -83,7 +83,7 @@ public class DdlTest extends MqlTestTemplate {
 
         String placement = "store1";
         try {
-            CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
+            LogicalNamespace namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
             List<String> collectionNames = catalog.getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
@@ -119,7 +119,7 @@ public class DdlTest extends MqlTestTemplate {
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
 
-            CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
+            LogicalNamespace namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
             LogicalCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 

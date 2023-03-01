@@ -19,7 +19,7 @@ package org.polypheny.db;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
@@ -88,6 +88,6 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract void updateTableName( LogicalTable catalogTable, String newName );
 
-    public abstract void updateSchemaName( CatalogSchema catalogSchema, String newName );
+    public abstract void updateSchemaName( LogicalNamespace logicalNamespace, String newName );
 
 }

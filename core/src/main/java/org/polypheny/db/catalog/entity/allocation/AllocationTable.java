@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
@@ -39,10 +40,12 @@ public class AllocationTable extends CatalogEntity implements Allocation {
     public List<CatalogColumnPlacement> placements;
     public long adapterId;
     public long logicalId;
+    public LogicalTable logicalTable;
 
 
-    public AllocationTable( long id, long logicalId, String name, long adapterId, List<CatalogColumnPlacement> placements ) {
+    public AllocationTable( LogicalTable logicalTable, long id, long logicalId, String name, long adapterId, List<CatalogColumnPlacement> placements ) {
         super( id, name, EntityType.ENTITY, NamespaceType.RELATIONAL );
+        this.logicalTable = logicalTable;
         this.logicalId = logicalId;
         this.adapterId = adapterId;
         this.placements = placements;
@@ -79,5 +82,6 @@ public class AllocationTable extends CatalogEntity implements Allocation {
     public String getNamespaceName() {
         return null;
     }
+
 
 }

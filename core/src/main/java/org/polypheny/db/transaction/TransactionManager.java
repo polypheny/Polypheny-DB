@@ -18,8 +18,8 @@ package org.polypheny.db.transaction;
 
 
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -29,9 +29,9 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 
 public interface TransactionManager {
 
-    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin );
+    Transaction startTransaction( CatalogUser user, LogicalNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin );
 
-    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor );
+    Transaction startTransaction( CatalogUser user, LogicalNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor );
 
     Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
 

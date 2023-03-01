@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -52,7 +52,7 @@ class CoWHashIndex extends Index {
     public CoWHashIndex(
             final long id,
             final String name,
-            final CatalogSchema schema,
+            final LogicalNamespace schema,
             final LogicalTable table,
             final List<String> columns,
             final List<String> targetColumns ) {
@@ -68,7 +68,7 @@ class CoWHashIndex extends Index {
     public CoWHashIndex(
             final long id,
             final String name,
-            final CatalogSchema schema,
+            final LogicalNamespace schema,
             final LogicalTable table,
             final String[] columns,
             final String[] targetColumns ) {
@@ -375,7 +375,7 @@ class CoWHashIndex extends Index {
                 String method,
                 Boolean unique,
                 Boolean persistent,
-                CatalogSchema schema,
+                LogicalNamespace schema,
                 LogicalTable table,
                 List<String> columns,
                 List<String> targetColumns ) {

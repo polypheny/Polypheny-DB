@@ -75,7 +75,7 @@ public final class CatalogPartitionGroup implements CatalogObject {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
+        return Catalog.getInstance().getNamespace( schemaId ).name;
     }
 
 

@@ -148,7 +148,7 @@ public class CatalogTest {
                     ImmutableList.of( schemaTest ) );
 
         } catch ( SQLException e ) {
-            log.error( "Exception while testing getSchemas()", e );
+            log.error( "Exception while testing getNamespaces()", e );
         }
     }
 

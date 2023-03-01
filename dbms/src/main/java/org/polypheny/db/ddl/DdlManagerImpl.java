@@ -65,9 +65,9 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -131,7 +131,6 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
@@ -209,7 +208,7 @@ public class DdlManagerImpl extends DdlManager {
     public long createNamespace( String name, long databaseId, NamespaceType type, int userId, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException {
         name = name.toLowerCase();
         // Check if there is already a schema with this name
-        if ( catalog.checkIfExistsSchema( name ) ) {
+        if ( catalog.checkIfExistsNamespace( name ) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
                 try {
@@ -223,7 +222,7 @@ public class DdlManagerImpl extends DdlManager {
                 throw new NamespaceAlreadyExistsException();
             }
         } else {
-            return catalog.addNamespace( name, userId, type );
+            return catalog.addNamespace( name, type, false );
         }
     }
 
@@ -406,23 +405,23 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void alterSchemaOwner( String schemaName, String ownerName, long databaseId ) throws UnknownUserException, UnknownSchemaException {
-        CatalogSchema catalogSchema = catalog.getSchema( databaseId, schemaName );
+        LogicalNamespace logicalNamespace = catalog.getSchema( databaseId, schemaName );
         CatalogUser catalogUser = catalog.getUser( ownerName );
-        catalog.setSchemaOwner( catalogSchema.id, catalogUser.id );
+        // catalog.setNamespaceOwner( logicalNamespace.id, catalogUser.id );
     }
 
 
     @Override
     public void renameSchema( String newName, String oldName, long databaseId ) throws NamespaceAlreadyExistsException, UnknownSchemaException {
         newName = newName.toLowerCase();
-        if ( catalog.checkIfExistsSchema( newName ) ) {
+        if ( catalog.checkIfExistsNamespace( newName ) ) {
             throw new NamespaceAlreadyExistsException();
         }
-        CatalogSchema catalogSchema = catalog.getSchema( databaseId, oldName );
-        catalog.renameSchema( catalogSchema.id, newName );
+        LogicalNamespace logicalNamespace = catalog.getSchema( databaseId, oldName );
+        catalog.renameNamespace( logicalNamespace.id, newName );
 
         // Update Name in statistics
-        StatisticsManager.getInstance().updateSchemaName( catalogSchema, newName );
+        StatisticsManager.getInstance().updateSchemaName( logicalNamespace, newName );
     }
 
 
@@ -907,7 +906,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Make sure that the stores have created the schema
-        PolySchemaBuilder.getInstance().getCurrent();
+        Catalog.getInstance().getSnapshot( 0 );
 
         // Create table on store
         dataStore.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
@@ -1659,7 +1658,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
-        if ( catalog.getSchema( catalogTable.namespaceId ).caseSensitive ) {
+        if ( catalog.getNamespace( catalogTable.namespaceId ).caseSensitive ) {
             newTableName = newTableName.toLowerCase();
         }
 
@@ -1752,7 +1751,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private String adjustNameIfNeeded( String name, long namespaceId ) {
-        if ( !catalog.getSchema( namespaceId ).caseSensitive ) {
+        if ( !catalog.getNamespace( namespaceId ).caseSensitive ) {
             return name.toLowerCase();
         }
         return name;
@@ -1855,7 +1854,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addPrimaryKey( tableId, columnIds );
 
         CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( tableId );
-        PolySchemaBuilder.getInstance().getCurrent();
+        Catalog.getInstance().getSnapshot( 0 );
 
         for ( DataStore store : stores ) {
             catalog.addPartitionPlacement(
@@ -1925,7 +1924,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         LogicalGraph graph = catalog.getGraph( graphId );
-        PolySchemaBuilder.getInstance().getCurrent();
+        Catalog.getInstance().getSnapshot( 0 );
 
         List<Integer> preExistingPlacements = graph.placements
                 .stream()
@@ -1963,7 +1962,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.deleteGraphPlacement( store.getAdapterId(), graphId );
 
-        PolySchemaBuilder.getInstance().getCurrent();
+        Catalog.getInstance().getSnapshot( 0 );
 
     }
 
@@ -2228,7 +2227,7 @@ public class DdlManagerImpl extends DdlManager {
             LogicalTable catalogTable = catalog.getTable( tableId );
 
             // Trigger rebuild of schema; triggers schema creation on adapters
-            PolySchemaBuilder.getInstance().getCurrent();
+            Catalog.getInstance().getSnapshot( 0 );
 
             for ( DataStore store : stores ) {
                 catalog.addPartitionPlacement(
@@ -2283,7 +2282,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalCollection catalogCollection = catalog.getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
-        PolySchemaBuilder.getInstance().getCurrent();
+        Catalog.getInstance().getSnapshot( 0 );
 
         for ( DataStore store : stores ) {
             catalog.addCollectionPlacement(
@@ -2348,7 +2347,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalCollection catalogCollection = catalog.getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
-        PolySchemaBuilder.getInstance().getCurrent();
+        Catalog.getInstance().getSnapshot( 0 );
 
         for ( DataStore store : stores ) {
             catalog.addCollectionPlacement(
@@ -2410,7 +2409,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void checkDocumentModel( long schemaId, List<FieldInformation> columns, List<ConstraintInformation> constraints ) {
-        if ( catalog.getSchema( schemaId ).namespaceType == NamespaceType.DOCUMENT ) {
+        if ( catalog.getNamespace( schemaId ).namespaceType == NamespaceType.DOCUMENT ) {
             List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
 
             if ( names.contains( "_id" ) ) {
@@ -2919,23 +2918,23 @@ public class DdlManagerImpl extends DdlManager {
         try {
             schemaName = schemaName.toLowerCase();
             // Check if there is a schema with this name
-            if ( catalog.checkIfExistsSchema( schemaName ) ) {
-                CatalogSchema catalogSchema = catalog.getSchema( databaseId, schemaName );
+            if ( catalog.checkIfExistsNamespace( schemaName ) ) {
+                LogicalNamespace logicalNamespace = catalog.getSchema( databaseId, schemaName );
 
                 // Drop all collections in this namespace
-                List<LogicalCollection> collections = catalog.getCollections( catalogSchema.id, null );
+                List<LogicalCollection> collections = catalog.getCollections( logicalNamespace.id, null );
                 for ( LogicalCollection collection : collections ) {
                     dropCollection( collection, statement );
                 }
 
                 // Drop all tables in this schema
-                List<LogicalTable> catalogEntities = catalog.getTables( catalogSchema.id, null );
+                List<LogicalTable> catalogEntities = catalog.getTables( logicalNamespace.id, null );
                 for ( LogicalTable catalogTable : catalogEntities ) {
                     dropTable( catalogTable, statement );
                 }
 
                 // Drop schema
-                catalog.deleteSchema( catalogSchema.id );
+                catalog.deleteNamespace( logicalNamespace.id );
             } else {
                 if ( ifExists ) {
                     // This is ok because "IF EXISTS" was specified

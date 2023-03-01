@@ -145,13 +145,13 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
+        return Catalog.getInstance().getNamespace( schemaId ).name;
     }
 
 
     @SneakyThrows
     public String getTableName() {
-        return Catalog.getInstance().getTable( tableId ).name;
+        return Catalog.getInstance().getSnapshot( 0 ).getLogicalTable( tableId ).name;
     }
 
 

@@ -24,8 +24,8 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.ConnectionHandle;
 import org.apache.calcite.avatica.Meta.ConnectionProperties;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.transaction.PUID.ConnectionId;
 import org.polypheny.db.transaction.PUID.UserId;
 import org.polypheny.db.transaction.Transaction;
@@ -44,7 +44,7 @@ public class PolyphenyDbConnectionHandle {
     @Getter
     private final CatalogUser user;
     private final CatalogDatabase database;
-    private final CatalogSchema schema;
+    private final LogicalNamespace schema;
 
     private final ConnectionId connectionId;
     private Transaction currentTransaction;
@@ -55,7 +55,7 @@ public class PolyphenyDbConnectionHandle {
     private final ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, "APP", "public" );
 
 
-    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final CatalogSchema schema, final TransactionManager transactionManager ) {
+    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final LogicalNamespace schema, final TransactionManager transactionManager ) {
         this.handle = handle;
 
         this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser
@@ -67,7 +67,7 @@ public class PolyphenyDbConnectionHandle {
     }
 
 
-    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final CatalogSchema schema, final TransactionManager transactionManager ) {
+    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final LogicalNamespace schema, final TransactionManager transactionManager ) {
         this.handle = handle;
 
         this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser

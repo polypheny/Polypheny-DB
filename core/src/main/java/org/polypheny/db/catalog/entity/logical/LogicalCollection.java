@@ -91,7 +91,7 @@ public class LogicalCollection extends CatalogEntity implements CatalogObject, L
 
     @SneakyThrows
     public String getNamespaceName() {
-        return Catalog.getInstance().getSchema( namespaceId ).name;
+        return Catalog.getInstance().getNamespace( namespaceId ).name;
     }
 
 

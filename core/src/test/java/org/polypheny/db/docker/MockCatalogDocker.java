@@ -20,9 +20,9 @@ package org.polypheny.db.docker;
 import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.catalog.MockCatalog;
-import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 /**
  * This is a bare-bone catalog which allows to mock register adapters
@@ -35,7 +35,7 @@ public class MockCatalogDocker extends MockCatalog {
 
 
     @Override
-    public int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
+    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
         i++;
         adapters.put( i, new CatalogAdapter( i, uniqueName, clazz, type, settings ) );
         return i;
@@ -49,14 +49,14 @@ public class MockCatalogDocker extends MockCatalog {
 
 
     @Override
-    public boolean checkIfExistsAdapter( int adapterId ) {
-        return adapters.containsKey( adapterId );
+    public boolean checkIfExistsAdapter( long id ) {
+        return adapters.containsKey( id );
     }
 
 
     @Override
-    public CatalogAdapter getAdapter( int adapterId ) {
-        return adapters.get( adapterId );
+    public CatalogAdapter getAdapter( long id ) {
+        return adapters.get( id );
     }
 
 }

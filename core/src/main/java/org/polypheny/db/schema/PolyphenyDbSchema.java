@@ -65,14 +65,14 @@ public interface PolyphenyDbSchema {
         CatalogNamespace namespace;
         switch ( names.size() ) {
             case 3:
-                namespace = Catalog.getInstance().getSchemas( Pattern.of( names.get( 1 ) ) ).get( 0 );
+                namespace = Catalog.getInstance().getNamespaces( Pattern.of( names.get( 1 ) ) ).get( 0 );
                 return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 2 ) ) ).get( 0 );
             case 2:
-                namespace = Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );
+                namespace = Catalog.getInstance().getNamespaces( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );
                 return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 1 ) ) ).get( 0 );
             case 1:
                 // TODO add methods
-                namespace = Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, null ).get( 0 );
+                namespace = Catalog.getInstance().getNamespaces( Catalog.defaultDatabaseId, null ).get( 0 );
                 return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 0 ) ) ).get( 0 );
             default:
                 return null;
@@ -111,7 +111,7 @@ public interface PolyphenyDbSchema {
     }
 
     default List<String> getNamespaceNames() {
-        return Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, null ).stream().map( t -> t.name ).collect( Collectors.toList() );
+        return Catalog.getInstance().getNamespaces( Catalog.defaultDatabaseId, null ).stream().map( t -> t.name ).collect( Collectors.toList() );
     }
 
     default boolean isPartitioned( long id ){

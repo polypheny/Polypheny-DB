@@ -79,9 +79,9 @@ import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalNamespace.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -346,9 +346,9 @@ public class DbmsMeta implements ProtobufMeta {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
+                log.trace( "getNamespaces( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
             }
-            final List<CatalogSchema> schemas = catalog.getSchemas(
+            final List<LogicalNamespace> schemas = catalog.getNamespaces(
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
             );
             StatementHandle statementHandle = createStatement( ch );
@@ -1415,7 +1415,7 @@ public class DbmsMeta implements ProtobufMeta {
 //            Authorizer.hasAccess( user, database );
 
         // Check schema access
-        final CatalogSchema schema;
+        final LogicalNamespace schema;
         try {
             schema = catalog.getSchema( database.id, defaultSchemaName );
         } catch ( UnknownSchemaException e ) {

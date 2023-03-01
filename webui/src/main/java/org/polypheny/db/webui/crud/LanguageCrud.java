@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -306,9 +306,9 @@ public class LanguageCrud {
      */
     public void getDocumentDatabases( final Context ctx ) {
         Map<String, String> names = Catalog.getInstance()
-                .getSchemas( Catalog.defaultDatabaseId, null )
+                .getNamespaces( Catalog.defaultDatabaseId, null )
                 .stream()
-                .collect( Collectors.toMap( CatalogSchema::getName, s -> s.namespaceType.name() ) );
+                .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.namespaceType.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
         ctx.json( new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data ) );

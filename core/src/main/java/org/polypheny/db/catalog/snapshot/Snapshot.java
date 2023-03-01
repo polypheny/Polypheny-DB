@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog;
+package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -22,12 +22,14 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
@@ -85,6 +87,8 @@ public interface Snapshot extends OperatorTable {
     LogicalTable getLogicalTable( long namespaceId, String name );
 
     List<LogicalTable> getLogicalTables( long namespaceId, Pattern name );
+
+    LogicalColumn getLogicalColumn( long id );
 
     LogicalCollection getLogicalCollection( long id );
 

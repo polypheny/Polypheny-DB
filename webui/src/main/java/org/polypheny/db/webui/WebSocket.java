@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -146,7 +146,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 } else {//TableRequest, is equal to UIRequest
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
-                        CatalogSchema namespace = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, uiRequest.getSchemaName() );
+                        LogicalNamespace namespace = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, uiRequest.getSchemaName() );
                         switch ( namespace.namespaceType ) {
                             case RELATIONAL:
                                 result = crud.getTable( uiRequest );

@@ -19,43 +19,52 @@ package org.polypheny.db.catalog.logical.document;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
+import lombok.With;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
+import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
-public class DocumentCatalog implements NCatalog, Serializable {
+@With
+public class DocumentCatalog implements NCatalog, Serializable, LogicalDocumentCatalog {
 
     @Getter
     public BinarySerializer<DocumentCatalog> serializer = Serializable.builder.get().build( DocumentCatalog.class );
 
     @Serialize
-    public Map<Long, CatalogCollection> collections;
-
+    public IdBuilder idBuilder;
     @Serialize
-    public String name;
-
+    public Map<Long, LogicalCollection> collections;
+    @Getter
     @Serialize
-    public long id;
+    public LogicalNamespace logicalNamespace;
 
 
-    public DocumentCatalog( long id, String name ) {
-        this( id, name, new ConcurrentHashMap<>() );
+    public DocumentCatalog( LogicalNamespace logicalNamespace, IdBuilder idBuilder ) {
+        this( logicalNamespace, idBuilder, new ConcurrentHashMap<>() );
     }
 
 
     public DocumentCatalog(
-            @Deserialize("id") long id,
-            @Deserialize("name") String name,
-            @Deserialize("collections") Map<Long, CatalogCollection> collections ) {
+            @Deserialize("logicalNamespace") LogicalNamespace logicalNamespace,
+            @Deserialize("idBuilder") IdBuilder idBuilder,
+            @Deserialize("collections") Map<Long, LogicalCollection> collections ) {
+        this.logicalNamespace = logicalNamespace;
         this.collections = collections;
-        this.id = id;
-        this.name = name;
+
+        this.idBuilder = idBuilder;
     }
 
 
@@ -96,6 +105,42 @@ public class DocumentCatalog implements NCatalog, Serializable {
     @Override
     public DocumentCatalog copy() {
         return deserialize( serialize(), DocumentCatalog.class );
+    }
+
+
+    @Override
+    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
+        return false;
+    }
+
+
+    @Override
+    public boolean checkIfExistsEntity( long tableId ) {
+        return false;
+    }
+
+
+    @Override
+    public LogicalCollection getCollection( long collectionId ) {
+        return null;
+    }
+
+
+    @Override
+    public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
+        return 0;
+    }
+
+
+    @Override
+    public void deleteCollection( long id ) {
+
     }
 
 }

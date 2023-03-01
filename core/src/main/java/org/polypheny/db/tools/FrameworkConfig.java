@@ -37,7 +37,7 @@ package org.polypheny.db.tools;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.AlgOptCostFactory;
@@ -45,7 +45,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**

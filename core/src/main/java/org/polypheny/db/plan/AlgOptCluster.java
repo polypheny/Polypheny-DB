@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -48,11 +47,10 @@ import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.metadata.MetadataFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**

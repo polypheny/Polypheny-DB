@@ -79,7 +79,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
@@ -617,7 +617,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalRelModify ltm = (LogicalRelModify) node;
                         final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class );
-                        final CatalogSchema schema = catalog.getSchema( table.namespaceId );
+                        final LogicalNamespace schema = catalog.getNamespace( table.namespaceId );
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
                         // Check if there are any indexes effected by this table modify
@@ -859,7 +859,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalConditionalExecute ) {
                         final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
                         final Index index = IndexManager.getInstance().getIndex(
-                                lce.getCatalogSchema(),
+                                lce.getLogicalNamespace(),
                                 lce.getCatalogTable(),
                                 lce.getCatalogColumns()
                         );
@@ -910,7 +910,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ctypes.add( field.getType() );
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
-                    final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
+                    final LogicalNamespace schema = statement.getTransaction().getDefaultSchema();
                     final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class );
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );

@@ -38,8 +38,8 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -93,8 +93,8 @@ public class CatalogTest {
         CatalogDatabase database = catalog.getDatabase( "test_db" );
         assertEquals( databaseId, database.id );
 
-        long schemaId = catalog.addNamespace( "test_schema", userId, NamespaceType.RELATIONAL );
-        CatalogSchema schema = catalog.getSchema( databaseId, "test_schema" );
+        long schemaId = catalog.addNamespace( "test_schema", NamespaceType.RELATIONAL, false );
+        LogicalNamespace schema = catalog.getSchema( databaseId, "test_schema" );
         assertEquals( schemaId, schema.id );
 
         long tableId = catalog.addTable( "test_table", schemaId, userId, EntityType.ENTITY, true );
@@ -142,22 +142,22 @@ public class CatalogTest {
         // test adding of schema
 
         for ( String name : names ) {
-            ids.add( catalog.addNamespace( name, userId, NamespaceType.RELATIONAL ) );
+            ids.add( catalog.addNamespace( name, NamespaceType.RELATIONAL, false ) );
         }
-        assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
+        assertEquals( catalog.getNamespaces( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
 
         // test renaming of schema
         String replacedName = "newName";
         Long id = ids.get( 0 );
-        catalog.renameSchema( id, replacedName );
+        catalog.renameNamespace( id, replacedName );
         names.remove( 0 );
         names.add( 0, replacedName.toLowerCase() );
 
-        assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
+        assertEquals( catalog.getNamespaces( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
 
         // test changing owner of schema
         int newUserId = catalog.addUser( "newUser", "" );
-        catalog.setSchemaOwner( id, newUserId );
+        catalog.setNamespaceOwner( id, newUserId );
 
         assertEquals( catalog.getSchema( databaseId, replacedName ).ownerId, newUserId );
     }
@@ -170,7 +170,7 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
 
-        long schemaId = catalog.addNamespace( "schema1", userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", NamespaceType.RELATIONAL, false );
 
         List<String> names = new ArrayList<>( Arrays.asList( "table1", "table2", "table3", "table4", "table5" ) );
         List<Long> ids = new ArrayList<>();
@@ -232,7 +232,7 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
 
-        long schemaId = catalog.addNamespace( "schema1", userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", NamespaceType.RELATIONAL, false );
 
         long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
@@ -313,7 +313,7 @@ public class CatalogTest {
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        long schemaId = catalog.addNamespace( "schema1", userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", NamespaceType.RELATIONAL, false );
         long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
@@ -344,7 +344,7 @@ public class CatalogTest {
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        long schemaId = catalog.addNamespace( "schema1", userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", NamespaceType.RELATIONAL, false );
         long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );

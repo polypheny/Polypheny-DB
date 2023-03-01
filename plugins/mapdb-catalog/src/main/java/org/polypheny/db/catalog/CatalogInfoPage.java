@@ -162,7 +162,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultNamespaceId );
             } );
-            catalog.getSchemas( null ).forEach( s -> {
+            catalog.getNamespaces( null ).forEach( s -> {
                 namespaceInformation.addRow( s.id, s.name, s.databaseId, s.namespaceType, s.caseSensitive );
             } );
             catalog.getTables( null, null ).forEach( t -> {

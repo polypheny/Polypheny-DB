@@ -211,7 +211,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         try {
             // Cannot use getLogicalTable() here since table does not yet exist
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( name.names.get( 1 ) ).id;
+                schemaId = catalog.getNamespace( name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
                 schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;

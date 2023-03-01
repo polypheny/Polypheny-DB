@@ -31,14 +31,45 @@ public class IdBuilder {
     private final AtomicLong verticalId;
 
     private final AtomicLong horizontalId;
+    private final AtomicLong indexId;
+
+    private final AtomicLong keyId;
+
+    private final AtomicLong adapterId;
+
+    private final AtomicLong interfaceId;
 
 
     public IdBuilder() {
-        this( new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ) );
+        this(
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ) );
     }
 
 
-    public IdBuilder( AtomicLong snapshotId, AtomicLong databaseId, AtomicLong namespaceId, AtomicLong entityId, AtomicLong fieldId, AtomicLong userId, AtomicLong verticalId, AtomicLong horizontalId ) {
+    public IdBuilder(
+            AtomicLong snapshotId,
+            AtomicLong databaseId,
+            AtomicLong namespaceId,
+            AtomicLong entityId,
+            AtomicLong fieldId,
+            AtomicLong userId,
+            AtomicLong verticalId,
+            AtomicLong horizontalId,
+            AtomicLong indexId,
+            AtomicLong keyId,
+            AtomicLong adapterId,
+            AtomicLong interfaceId ) {
         this.snapshotId = snapshotId;
 
         this.databaseId = databaseId;
@@ -46,9 +77,14 @@ public class IdBuilder {
         this.entityId = entityId;
         this.fieldId = fieldId;
 
+        this.indexId = indexId;
+        this.keyId = keyId;
         this.userId = userId;
         this.verticalId = verticalId;
         this.horizontalId = horizontalId;
+
+        this.adapterId = adapterId;
+        this.interfaceId = interfaceId;
     }
 
 
@@ -89,6 +125,26 @@ public class IdBuilder {
 
     public long getNewHorizontalId() {
         return horizontalId.getAndIncrement();
+    }
+
+
+    public long getNewIndexId() {
+        return indexId.getAndIncrement();
+    }
+
+
+    public long getNewKeyId() {
+        return keyId.getAndIncrement();
+    }
+
+
+    public long getNewAdapterId() {
+        return adapterId.getAndIncrement();
+    }
+
+
+    public long getNewInterfaceId() {
+        return interfaceId.getAndIncrement();
     }
 
 }

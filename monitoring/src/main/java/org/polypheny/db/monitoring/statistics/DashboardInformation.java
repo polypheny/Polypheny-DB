@@ -81,9 +81,9 @@ public class DashboardInformation {
         this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
 
         catalog.getAdapters().forEach( v -> {
-            this.availableAdapter.put( v.uniqueName, Pair.of( v.getAdapterTypeName(), v.type ) );
+            this.availableAdapter.put( v.uniqueName, Pair.of( v.adapterTypeName, v.type ) );
         } );
-        catalog.getSchemas( null ).forEach( v -> {
+        catalog.getNamespaces( null ).forEach( v -> {
             availableSchemas.put( v.id, Pair.of( v.name, v.namespaceType ) );
         } );
     }

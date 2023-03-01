@@ -17,68 +17,29 @@
 package org.polypheny.db.catalog;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.List;
 import java.util.Map;
+import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.pf4j.ExtensionPoint;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphMapping;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MaterializedCriteria;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.DataPlacementRole;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.ForeignKeyOption;
-import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -183,47 +144,47 @@ public abstract class Catalog implements ExtensionPoint {
 
     /**
      * Get all schemas which fit to the specified filter pattern.
-     * <code>getSchemas(xid, null, null)</code> returns all schemas of all databases.
+     * <code>getNamespaces(xid, null, null)</code> returns all schemas of all databases.
      *
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param name Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( Pattern schemaNamePattern );
+    public abstract @NonNull List<LogicalNamespace> getNamespaces( Pattern name );
 
     /**
      * Returns the schema with the specified id.
      *
-     * @param schemaId The id of the schema
+     * @param id The id of the schema
      * @return The schema
      */
-    public abstract CatalogSchema getSchema( long schemaId );
+    public abstract LogicalNamespace getNamespace( long id );
 
     /**
      * Returns the schema with the given name in the specified database.
      *
-     * @param schemaName The name of the schema
+     * @param name The name of the schema
      * @return The schema
      * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getSchema( String schemaName ) throws UnknownSchemaException;
+    public abstract LogicalNamespace getNamespace( String name ) throws UnknownSchemaException;
 
     /**
      * Adds a schema in a specified database
      *
      * @param name The name of the schema
-     * @param ownerId The owner of this schema
      * @param namespaceType The type of this schema
+     * @param caseSensitive
      * @return The id of the inserted schema
      */
-    public abstract long addNamespace( String name, int ownerId, NamespaceType namespaceType );
+    public abstract long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive );
 
     /**
      * Checks weather a schema with the specified name exists in a database.
      *
-     * @param schemaName The name of the schema to check
+     * @param name The name of the schema to check
      * @return True if there is a schema with this name. False if not.
      */
-    public abstract boolean checkIfExistsSchema( String schemaName );
+    public abstract boolean checkIfExistsNamespace( String name );
 
     /**
      * Renames a schema
@@ -231,802 +192,33 @@ public abstract class Catalog implements ExtensionPoint {
      * @param schemaId The if of the schema to rename
      * @param name New name of the schema
      */
-    public abstract void renameSchema( long schemaId, String name );
+    public abstract void renameNamespace( long schemaId, String name );
 
-    /**
-     * Change owner of a schema
-     *
-     * @param schemaId The id of the schema
-     * @param ownerId ID of the new owner
-     */
-    public abstract void setSchemaOwner( long schemaId, long ownerId );
-
-    /**
-     * Adds a new graph to the catalog, on the same layer as schema in relational.
-     *
-     * @param name The name of the graph
-     * @param stores The datastores on which the graph is placed
-     * @param modifiable If the graph is modifiable
-     * @param ifNotExists If the task fails when the graph already exists
-     * @param replace If the graph should replace an existing one
-     * @return The id of the newly added graph
-     */
-    public abstract long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
-
-    /**
-     * Additional operations for the creation of a graph entity.
-     *
-     * @param id The predefined id of the already added graph
-     * @param stores The stores on which the graph was placed
-     * @param onlyPlacement If the substitution only creates the placements and not the entites
-     */
-    public abstract void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException;
-
-    /**
-     * Deletes an existing graph.
-     *
-     * @param id The id of the graph to delete
-     */
-    public abstract void deleteGraph( long id );
-
-    /**
-     * Returns an existing graph.
-     *
-     * @param id The id of the graph to return
-     * @return The graph entity with the provided id
-     */
-    public abstract LogicalGraph getGraph( long id );
-
-    /**
-     * Get a collection of all graphs, which match the given conditions.
-     *
-     * @param graphName The pattern to which the name has to match, null if every name is matched
-     * @return A collection of all graphs matching
-     */
-    public abstract List<LogicalGraph> getGraphs( Pattern graphName );
-
-    /**
-     * Add a new alias for a given graph.
-     *
-     * @param graphId The id of the graph to which the alias is added
-     * @param alias The alias to add
-     * @param ifNotExists If the alias should only be added if it not already exists
-     */
-    public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
-
-    /**
-     * Removes a given alias for a specific graph.
-     *
-     * @param graphId The id of the graph for which the alias is removed
-     * @param alias The alias to remove
-     * @param ifExists If the alias should only be removed if it exists
-     */
-    public abstract void removeGraphAlias( long graphId, String alias, boolean ifExists );
-
-    /**
-     * Returns the mapping of the graph used for substitution in other data models.
-     *
-     * @param graphId The id of the graph for which the mapping is requested
-     * @return The mapping for the graph
-     */
-    public abstract CatalogGraphMapping getGraphMapping( long graphId );
 
     /**
      * Delete a schema from the catalog
      *
-     * @param schemaId The id of the schema to delete
+     * @param id The id of the schema to delete
      */
-    public abstract void deleteSchema( long schemaId );
+    public abstract void deleteNamespace( long id );
 
-    /**
-     * Get all tables of the specified schema which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
-     *
-     * @param schemaId The id of the schema
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
-     */
-    public abstract List<LogicalTable> getTables( long schemaId, Pattern tableNamePattern );
-
-    /**
-     * Get all tables of the specified database which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
-     *
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
-     */
-    public abstract List<LogicalTable> getTables( Pattern schemaNamePattern, Pattern tableNamePattern );
-
-    /**
-     * Returns the table with the given name in the specified database and schema.
-     *
-     * @param schemaName The name of the schema
-     * @param tableName The name of the table
-     * @return The table
-     */
-    public abstract LogicalTable getTable( String schemaName, String tableName ) throws UnknownTableException, UnknownSchemaException;
-
-
-    /**
-     * Returns the table with the given id
-     *
-     * @param tableId The id of the table
-     * @return The table
-     */
-    public abstract LogicalTable getTable( long tableId );
-
-    /**
-     * Returns the table with the given name in the specified schema.
-     *
-     * @param schemaId The id of the schema
-     * @param tableName The name of the table
-     * @return The table
-     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
-     */
-    public abstract LogicalTable getTable( long schemaId, String tableName ) throws UnknownTableException;
-
-    /**
-     * Returns the table which is associated with a given partitionId
-     *
-     * @param partitionId to use for lookup
-     * @return CatalogEntity that contains partitionId
-     */
-    public abstract LogicalTable getTableFromPartition( long partitionId );
-
-    /**
-     * Adds a table to a specified schema.
-     *
-     * @param name The name of the table to add
-     * @param namespaceId The id of the schema
-     * @param ownerId The if of the owner
-     * @param entityType The table type
-     * @param modifiable Whether the content of the table can be modified
-     * @return The id of the inserted table
-     */
-    public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
-
-
-    /**
-     * Adds a view to a specified schema.
-     *
-     * @param name The name of the view to add
-     * @param namespaceId The id of the schema
-     * @param ownerId The if of the owner
-     * @param entityType The table type
-     * @param modifiable Whether the content of the table can be modified
-     * @param definition {@link AlgNode} used to create Views
-     * @param underlyingTables all tables and columns used within the view
-     * @param fieldList all columns used within the View
-     * @return The id of the inserted table
-     */
-    public abstract long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
-
-    /**
-     * Adds a materialized view to a specified schema.
-     *
-     * @param name of the view to add
-     * @param namespaceId id of the schema
-     * @param ownerId id of the owner
-     * @param entityType type of table
-     * @param modifiable Whether the content of the table can be modified
-     * @param definition {@link AlgNode} used to create Views
-     * @param algCollation relCollation used for materialized view
-     * @param underlyingTables all tables and columns used within the view
-     * @param fieldList all columns used within the View
-     * @param materializedCriteria Information like freshness and last updated
-     * @param query used to define materialized view
-     * @param language query language used to define materialized view
-     * @param ordered if materialized view is ordered or not
-     * @return id of the inserted materialized view
-     */
-    public abstract long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
-
-    /**
-     * Checks if there is a table with the specified name in the specified schema.
-     *
-     * @param namespaceId The id of the schema
-     * @param entityName The name to check for
-     * @return true if there is a table with this name, false if not.
-     */
-    public abstract boolean checkIfExistsEntity( long namespaceId, String entityName );
-
-    /**
-     * Checks if there is a table with the specified id.
-     *
-     * @param tableId id of the table
-     * @return true if there is a table with this id, false if not.
-     */
-    public abstract boolean checkIfExistsEntity( long tableId );
-
-    /**
-     * Renames a table
-     *
-     * @param tableId The if of the table to rename
-     * @param name New name of the table
-     */
-    public abstract void renameTable( long tableId, String name );
-
-    /**
-     * Delete the specified table. Columns need to be deleted before.
-     *
-     * @param tableId The id of the table to delete
-     */
-    public abstract void deleteTable( long tableId );
-
-    /**
-     * Change owner of a table
-     *
-     * @param tableId The if of the table
-     * @param ownerId ID of the new owner
-     */
-    public abstract void setTableOwner( long tableId, int ownerId );
-
-    /**
-     * Set the primary key of a table
-     *
-     * @param tableId The id of the table
-     * @param keyId The id of the key to set as primary key. Set null to set no primary key.
-     */
-    public abstract void setPrimaryKey( long tableId, Long keyId );
-
-    /**
-     * Adds a placement for a column.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param columnId The id of the column to be placed
-     * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
-     * @param physicalColumnName The column name on the adapter
-     */
-    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName );
-
-    /**
-     * Deletes all dependent column placements
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param columnOnly columnOnly If delete originates from a dropColumn
-     */
-    public abstract void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly );
-
-    /**
-     * Gets a collective list of column placements per column on an adapter.
-     * Effectively used to retrieve all relevant placements including partitions.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @return The specific column placement
-     */
-    public abstract CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId );
-
-    /**
-     * Checks if there is a column with the specified name in the specified table.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @return true if there is a column placement, false if not.
-     */
-    public abstract boolean checkIfExistsColumnPlacement( int adapterId, long columnId );
-
-    /**
-     * Get all column placements of a column
-     *
-     * @param columnId The id of the specific column
-     * @return List of column placements of specific column
-     */
-    public abstract List<CatalogColumnPlacement> getColumnPlacement( long columnId );
-
-    /**
-     * Get column placements of a specific table on a specific adapter on column detail level.
-     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
-     *
-     * @param adapterId The id of the adapter
-     * @return List of column placements of the table on the specified adapter
-     */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId );
-
-    /**
-     * Gets a collection of placements on a specific adapter sorted by their position.
-     *
-     * @param adapterId The adapter on which the placements are placed
-     * @param tableId The id of the table of the placements
-     * @return The collection of column placements sorted
-     */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId );
-
-    /**
-     * Get column placements on a adapter. On column detail level
-     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
-     *
-     * @param adapterId The id of the adapter
-     * @return List of column placements on the specified adapter
-     */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId );
-
-    /**
-     * Gets a collection of column placements for a given column.
-     *
-     * @param columnId The id of the column of requested column placements
-     * @return The collection of placements sorted
-     */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
-
-    /**
-     * Gets all column placements of a table structured by the id of the adapters.
-     *
-     * @param tableId The id of the table for the requested column placements
-     * @return The requested collection
-     */
-    public abstract ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
-
-    /**
-     * Gets a map partition placements sorted by adapter.
-     *
-     * @param tableId The id of the table for which the partitions are returned
-     * @return The sorted partitions placements
-     */
-    public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId );
-
-    /**
-     * Gets the partitions groups for a given table grouped by adapters.
-     *
-     * @param tableId The table on which the partitions groups are placed
-     * @return The map sorting the partitions groups by adapter
-     */
-    public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId );
-
-    /**
-     * Gets the partition group sorted by partition.
-     *
-     * @param partitionId The id of the partitions group
-     */
-    public abstract long getPartitionGroupByPartition( long partitionId );
-
-    /**
-     * Gets a collection of all keys.
-     *
-     * @return The keys
-     */
-    public abstract List<CatalogKey> getKeys();
-
-
-    /**
-     * Get all keys for a given table.
-     *
-     * @param tableId The id of the table for which the keys are returned
-     * @return The collection of keys
-     */
-    public abstract List<CatalogKey> getTableKeys( long tableId );
-
-    /**
-     * Get column placements in a specific schema on a specific adapter
-     *
-     * @param adapterId The id of the adapter
-     * @param schemaId The id of the schema
-     * @return List of column placements on this adapter and schema
-     */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
-
-    /**
-     * Update the type of a placement.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param placementType The new type of placement
-     */
-    public abstract void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType );
-
-    /**
-     * Update physical position of a column placement on a specified adapter.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param position The physical position to set
-     */
-    public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position );
-
-    /**
-     * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     */
-    public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
-
-    /**
-     * Change physical names of all column placements.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param physicalSchemaName The physical schema name
-     * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (the highest number in the table; represents that the column is now at the last position)
-     */
-    public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
-
-    /**
-     * Get all columns of the specified table.
-     *
-     * @param tableId The id of the table
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
-     */
-    public abstract List<LogicalColumn> getColumns( long tableId );
-
-    /**
-     * Get all columns of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
-     *
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @param columnNamePattern Pattern for the column name. null returns all.
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
-     */
-    public abstract List<LogicalColumn> getColumns( Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern );
-
-    /**
-     * Returns the column with the specified id.
-     *
-     * @param columnId The id of the column
-     * @return A CatalogColumn
-     */
-    public abstract LogicalColumn getColumn( long columnId );
-
-    /**
-     * Returns the column with the specified name in the specified table of the specified database and schema.
-     *
-     * @param tableId The id of the table
-     * @param columnName The name of the column
-     * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
-     */
-    public abstract LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException;
-
-    /**
-     * Returns the column with the specified name in the specified table of the specified database and schema.
-     *
-     * @param schemaName The name of the schema
-     * @param tableName The name of the table
-     * @param columnName The name of the column
-     * @return A CatalogColumn
-     */
-    public abstract LogicalColumn getColumn( String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException;
-
-    /**
-     * Adds a column.
-     *
-     * @param name The name of the column
-     * @param tableId The id of the corresponding table
-     * @param position The ordinal position of the column (starting with 1)
-     * @param type The type of the column
-     * @param length The length of the field (if applicable, else null)
-     * @param scale The number of digits after the decimal point (if applicable, else null)
-     * @param nullable Weather the column can contain null values
-     * @param collation The collation of the field (if applicable, else null)
-     * @return The id of the inserted column
-     */
-    public abstract long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation );
-
-    /**
-     * Renames a column
-     *
-     * @param columnId The if of the column to rename
-     * @param name New name of the column
-     */
-    public abstract void renameColumn( long columnId, String name );
-
-    /**
-     * Change the position of the column.
-     *
-     * @param columnId The id of the column for which to change the position
-     * @param position The new position of the column
-     */
-    public abstract void setColumnPosition( long columnId, int position );
-
-    /**
-     * Change the data type of a column.
-     *
-     * @param columnId The id of the column
-     * @param type The new type of the column
-     */
-    public abstract void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality ) throws GenericCatalogException;
-
-    /**
-     * Change nullability of the column (weather the column allows null values).
-     *
-     * @param columnId The id of the column
-     * @param nullable True if the column should allow null values, false if not.
-     */
-    public abstract void setNullable( long columnId, boolean nullable ) throws GenericCatalogException;
-
-    /**
-     * Set the collation of a column.
-     * If the column already has the specified collation set, this method is a NoOp.
-     *
-     * @param columnId The id of the column
-     * @param collation The collation to set
-     */
-    public abstract void setCollation( long columnId, Collation collation );
-
-    /**
-     * Checks if there is a column with the specified name in the specified table.
-     *
-     * @param tableId The id of the table
-     * @param columnName The name to check for
-     * @return true if there is a column with this name, false if not.
-     */
-    public abstract boolean checkIfExistsColumn( long tableId, String columnName );
-
-    /**
-     * Delete the specified column. This also deletes a default value in case there is one defined for this column.
-     *
-     * @param columnId The id of the column to delete
-     */
-    public abstract void deleteColumn( long columnId );
-
-    /**
-     * Adds a default value for a column. If there already is a default values, it being replaced.
-     *
-     * @param columnId The id of the column
-     * @param type The type of the default value
-     * @param defaultValue True if the column should allow null values, false if not.
-     */
-    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue );
-
-    /**
-     * Deletes an existing default value of a column. NoOp if there is no default value defined.
-     *
-     * @param columnId The id of the column
-     */
-    public abstract void deleteDefaultValue( long columnId );
-
-    /**
-     * Returns a specified primary key
-     *
-     * @param key The id of the primary key
-     * @return The primary key
-     */
-    public abstract CatalogPrimaryKey getPrimaryKey( long key );
-
-    /**
-     * Check whether a key is a primary key
-     *
-     * @param keyId The id of the key
-     * @return Whether the key is a primary key
-     */
-    public abstract boolean isPrimaryKey( long keyId );
-
-    /**
-     * Check whether a key is a foreign key
-     *
-     * @param keyId The id of the key
-     * @return Whether the key is a foreign key
-     */
-    public abstract boolean isForeignKey( long keyId );
-
-    /**
-     * Check whether a key is an index
-     *
-     * @param keyId The id of the key
-     * @return Whether the key is an index
-     */
-    public abstract boolean isIndex( long keyId );
-
-    /**
-     * Check whether a key is a constraint
-     *
-     * @param keyId The id of the key
-     * @return Whether the key is a constraint
-     */
-    public abstract boolean isConstraint( long keyId );
-
-    /**
-     * Adds a primary key
-     *
-     * @param tableId The id of the table
-     * @param columnIds The id of key which will be part of the primary keys
-     */
-    public abstract void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException;
-
-    /**
-     * Returns all (imported) foreign keys of a specified table
-     *
-     * @param tableId The id of the table
-     * @return List of foreign keys
-     */
-    public abstract List<CatalogForeignKey> getForeignKeys( long tableId );
-
-    /**
-     * Returns all foreign keys that reference the specified table (exported keys).
-     *
-     * @param tableId The id of the table
-     * @return List of foreign keys
-     */
-    public abstract List<CatalogForeignKey> getExportedKeys( long tableId );
-
-    /**
-     * Get all constraints of the specified table
-     *
-     * @param tableId The id of the table
-     * @return List of constraints
-     */
-    public abstract List<CatalogConstraint> getConstraints( long tableId );
-
-    /**
-     * Gets a collection of index for the given key.
-     *
-     * @param key The key for which the collection is returned
-     * @return The collection of indexes
-     */
-    public abstract List<CatalogIndex> getIndexes( CatalogKey key );
-
-    /**
-     * Gets a collection of foreign keys for a given {@link Catalog Key}.
-     *
-     * @param key The key for which the collection is returned
-     * @return The collection foreign keys
-     */
-    public abstract List<CatalogIndex> getForeignKeys( CatalogKey key );
-
-    /**
-     * Gets a collection of constraints for a given key.
-     *
-     * @param key The key for which the collection is returned
-     * @return The collection of constraints
-     */
-    public abstract List<CatalogConstraint> getConstraints( CatalogKey key );
-
-    /**
-     * Returns the constraint with the specified name in the specified table.
-     *
-     * @param tableId The id of the table
-     * @param constraintName The name of the constraint
-     * @return The constraint
-     */
-    public abstract CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException;
-
-    /**
-     * Return the foreign key with the specified name from the specified table
-     *
-     * @param tableId The id of the table
-     * @param foreignKeyName The name of the foreign key
-     * @return The foreign key
-     */
-    public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException;
-
-    /**
-     * Adds a unique foreign key constraint.
-     *
-     * @param tableId The id of the table
-     * @param columnIds The id of the columns which are part of the foreign key
-     * @param referencesTableId The if of the referenced table
-     * @param referencesIds The id of columns forming the key referenced by this key
-     * @param constraintName The name of the constraint
-     * @param onUpdate The option for updates
-     * @param onDelete The option for deletes
-     */
-    public abstract void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException;
-
-    /**
-     * Adds a unique constraint.
-     *
-     * @param tableId The id of the table
-     * @param constraintName The name of the constraint
-     * @param columnIds A list of column ids
-     */
-    public abstract void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException;
-
-    /**
-     * Returns all indexes of a table
-     *
-     * @param tableId The id of the table
-     * @param onlyUnique true if only indexes for unique values are returned. false if all indexes are returned.
-     * @return List of indexes
-     */
-    public abstract List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique );
-
-    /**
-     * Returns the index with the specified name in the specified table
-     *
-     * @param tableId The id of the table
-     * @param indexName The name of the index
-     * @return The Index
-     */
-    public abstract CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException;
-
-    /**
-     * Checks if there is an index with the specified name in the specified table.
-     *
-     * @param tableId The id of the table
-     * @param indexName The name to check for
-     * @return true if there is an index with this name, false if not.
-     */
-    public abstract boolean checkIfExistsIndex( long tableId, String indexName );
-
-    /**
-     * Returns the index with the specified id
-     *
-     * @param indexId The id of the index
-     * @return The Index
-     */
-    public abstract CatalogIndex getIndex( long indexId );
-
-    /**
-     * Returns list of all indexes
-     *
-     * @return List of indexes
-     */
-    public abstract List<CatalogIndex> getIndexes();
-
-    /**
-     * Adds an index over the specified columns
-     *
-     * @param tableId The id of the table
-     * @param columnIds A list of column ids
-     * @param unique Weather the index is unique
-     * @param method Name of the index method (e.g. btree_unique)
-     * @param methodDisplayName Display name of the index method (e.g. BTREE)
-     * @param location ID of the data store where the index is located (0 for Polypheny-DB itself)
-     * @param type The type of index (manual, automatic)
-     * @param indexName The name of the index
-     * @return The id of the created index
-     */
-    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException;
-
-    /**
-     * Set physical index name.
-     *
-     * @param indexId The id of the index
-     * @param physicalName The physical name to be set
-     */
-    public abstract void setIndexPhysicalName( long indexId, String physicalName );
-
-    /**
-     * Delete the specified index
-     *
-     * @param indexId The id of the index to drop
-     */
-    public abstract void deleteIndex( long indexId );
-
-    /**
-     * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
-     *
-     * @param tableId The id of the key to drop
-     */
-    public abstract void deletePrimaryKey( long tableId ) throws GenericCatalogException;
-
-    /**
-     * Delete the specified foreign key (does not delete the referenced key).
-     *
-     * @param foreignKeyId The id of the foreign key to delete
-     */
-    public abstract void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException;
-
-    /**
-     * Delete the specified constraint.
-     * For deleting foreign keys, use {@link #deleteForeignKey(long)}.
-     *
-     * @param constraintId The id of the constraint to delete
-     */
-    public abstract void deleteConstraint( long constraintId ) throws GenericCatalogException;
 
     /**
      * Get the user with the specified name
      *
-     * @param userName The name of the user
+     * @param name The name of the user
      * @return The user
      * @throws UnknownUserException If there is no user with the specified name
      */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException;
+    public abstract CatalogUser getUser( String name ) throws UnknownUserException;
 
     /**
      * Get the user with the specified id.
      *
-     * @param userId The id of the user
+     * @param id The id of the user
      * @return The user
      */
-    public abstract CatalogUser getUser( int userId );
+    public abstract CatalogUser getUser( long id );
 
     /**
      * Get list of all adapters
@@ -1047,15 +239,15 @@ public abstract class Catalog implements ExtensionPoint {
      *
      * @return The adapter
      */
-    public abstract CatalogAdapter getAdapter( int adapterId );
+    public abstract CatalogAdapter getAdapter( long id );
 
     /**
      * Check if an adapter with the given id exists
      *
-     * @param adapterId the id of the adapter
+     * @param id the id of the adapter
      * @return if the adapter exists
      */
-    public abstract boolean checkIfExistsAdapter( int adapterId );
+    public abstract boolean checkIfExistsAdapter( long id );
 
     /**
      * Add an adapter
@@ -1066,7 +258,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param settings The configuration of the adapter
      * @return The id of the newly added adapter
      */
-    public abstract int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings );
+    public abstract long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings );
 
     /**
      * Update settings of an adapter
@@ -1074,14 +266,14 @@ public abstract class Catalog implements ExtensionPoint {
      * @param adapterId The id of the adapter
      * @param newSettings The new settings for the adapter
      */
-    public abstract void updateAdapterSettings( int adapterId, Map<String, String> newSettings );
+    public abstract void updateAdapterSettings( long adapterId, Map<String, String> newSettings );
 
     /**
      * Delete an adapter
      *
-     * @param adapterId The id of the adapter to delete
+     * @param id The id of the adapter to delete
      */
-    public abstract void deleteAdapter( int adapterId );
+    public abstract void deleteAdapter( long id );
 
     /*
      * Get list of all query interfaces
@@ -1101,10 +293,10 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Get a query interface by its id
      *
-     * @param ifaceId The id of the query interface
+     * @param id The id of the query interface
      * @return The CatalogQueryInterface
      */
-    public abstract CatalogQueryInterface getQueryInterface( int ifaceId );
+    public abstract CatalogQueryInterface getQueryInterface( long id );
 
     /**
      * Add a query interface
@@ -1114,697 +306,14 @@ public abstract class Catalog implements ExtensionPoint {
      * @param settings The configuration of the query interface
      * @return The id of the newly added query interface
      */
-    public abstract int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings );
+    public abstract long addQueryInterface( String uniqueName, String clazz, Map<String, String> settings );
 
     /**
      * Delete a query interface
      *
-     * @param ifaceId The id of the query interface to delete
+     * @param id The id of the query interface to delete
      */
-    public abstract void deleteQueryInterface( int ifaceId );
-
-    /**
-     * Adds a partition to the catalog
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionType partition Type of the added partition
-     * @return The id of the created partitionGroup
-     */
-    public abstract long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
-
-    /**
-     * Should only be called from mergePartitions(). Deletes a single partition and all references.
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionGroupId The partitionId to be deleted
-     */
-    public abstract void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
-
-    /**
-     * Get a partition object by its unique id
-     *
-     * @param partitionGroupId The unique id of the partition
-     * @return A catalog partitionGroup
-     */
-    public abstract CatalogPartitionGroup getPartitionGroup( long partitionGroupId );
-
-    /**
-     * Adds a partition to the catalog
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionGroupId partitionGroupId where the partition should be initially added to
-     * @return The id of the created partition
-     */
-    public abstract long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
-
-    /**
-     * Deletes a single partition and all references.
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionId The partitionId to be deleted
-     */
-    public abstract void deletePartition( long tableId, long schemaId, long partitionId );
-
-    /**
-     * Get a partition object by its unique id
-     *
-     * @param partitionId The unique id of the partition
-     * @return A catalog partition
-     */
-    public abstract CatalogPartition getPartition( long partitionId );
-
-    /**
-     * Retrieves a list of partitions which are associated with a specific table
-     *
-     * @param tableId Table for which partitions shall be gathered
-     * @return List of all partitions associated with that table
-     */
-    public abstract List<CatalogPartition> getPartitionsByTable( long tableId );
-
-    /**
-     * Effectively partitions a table with the specified partitionType
-     *
-     * @param tableId Table to be partitioned
-     * @param partitionType Partition function to apply on the table
-     * @param partitionColumnId Column used to apply the partition function on
-     * @param numPartitionGroups Explicit number of partitions
-     * @param partitionGroupIds List of ids of the catalog partitions
-     */
-    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty );
-
-    /**
-     * Merges a  partitioned table.
-     * Resets all objects and structures which were introduced by partitionTable.
-     *
-     * @param tableId Table to be merged
-     */
-    public abstract void mergeTable( long tableId );
-
-    /**
-     * Updates partitionProperties on table
-     *
-     * @param tableId Table to be partitioned
-     * @param partitionProperty Partition properties
-     */
-    public abstract void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty );
-
-    /**
-     * Get a List of all partitions belonging to a specific table
-     *
-     * @param tableId Table to be queried
-     * @return list of all partitions on this table
-     */
-    public abstract List<CatalogPartitionGroup> getPartitionGroups( long tableId );
-
-    /**
-     * Get all partitions of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
-     *
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
-     */
-    public abstract List<CatalogPartitionGroup> getPartitionGroups( Pattern schemaNamePattern, Pattern tableNamePattern );
-
-    /**
-     * Updates the specified partition group with the attached partitionIds
-     *
-     * @param partitionGroupId Partition Group to be updated
-     * @param partitionIds List of new partitionIds
-     */
-    public abstract void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
-
-    /**
-     * Adds a partition to an already existing partition Group
-     *
-     * @param partitionGroupId Group to add to
-     * @param partitionId Partition to add
-     */
-    public abstract void addPartitionToGroup( long partitionGroupId, Long partitionId );
-
-    /**
-     * Removes a partition from an already existing partition Group
-     *
-     * @param partitionGroupId Group to remove the partition from
-     * @param partitionId Partition to remove
-     */
-    public abstract void removePartitionFromGroup( long partitionGroupId, Long partitionId );
-
-    /**
-     * Assign the partition to a new partitionGroup
-     *
-     * @param partitionId Partition to move
-     * @param partitionGroupId New target group to move the partition to
-     */
-    public abstract void updatePartition( long partitionId, Long partitionGroupId );
-
-    /**
-     * Get a List of all partitions belonging to a specific table
-     *
-     * @param partitionGroupId Table to be queried
-     * @return list of all partitions on this table
-     */
-    public abstract List<CatalogPartition> getPartitions( long partitionGroupId );
-
-    /**
-     * Get all partitions of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
-     *
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
-     */
-    public abstract List<CatalogPartition> getPartitions( Pattern schemaNamePattern, Pattern tableNamePattern );
-
-    /**
-     * Get a list of all partition name belonging to a specific table
-     *
-     * @param tableId Table to be queried
-     * @return list of all partition names on this table
-     */
-    public abstract List<String> getPartitionGroupNames( long tableId );
-
-    /**
-     * Get placements by partition. Identify the location of partitions.
-     * Essentially returns all ColumnPlacements which hold the specified partitionID.
-     *
-     * @param tableId The id of the table
-     * @param partitionGroupId The id of the partition
-     * @param columnId The id of tje column
-     * @return List of CatalogColumnPlacements
-     */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId );
-
-    /**
-     * Get adapters by partition. Identify the location of partitions/replicas
-     * Essentially returns all adapters which hold the specified partitionID
-     *
-     * @param tableId The unique id of the table
-     * @param partitionGroupId The unique id of the partition
-     * @return List of CatalogAdapters
-     */
-    public abstract List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
-
-    /**
-     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionIds
-     */
-    public abstract List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId );
-
-    /**
-     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionIds
-     */
-    public abstract List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId );
-
-    /**
-     * Returns list with the index of the partitions on this store from  0..numPartitions
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionId Indices
-     */
-    public abstract List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
-
-    /**
-     * Returns a specific DataPlacement of a given table.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
-     */
-    public abstract CatalogDataPlacement getDataPlacement( int adapterId, long tableId );
-
-    /**
-     * Returns all DataPlacements of a given table.
-     *
-     * @param tableId table to retrieve the placements from
-     * @return List of all DataPlacements for the table
-     */
-    public abstract List<CatalogDataPlacement> getDataPlacements( long tableId );
-
-    /**
-     * Returns a list of all DataPlacements that contain all columns as well as all partitions
-     *
-     * @param tableId table to retrieve the list from
-     * @return list of all full DataPlacements
-     */
-    public abstract List<CatalogDataPlacement> getAllFullDataPlacements( long tableId );
-
-    /**
-     * Returns a list of all DataPlacements that contain all columns
-     *
-     * @param tableId table to retrieve the list from
-     * @return list of all full DataPlacements
-     */
-    public abstract List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId );
-
-    /**
-     * Returns a list of all DataPlacements that contain all partitions
-     *
-     * @param tableId table to retrieve the list from
-     * @return list of all full DataPlacements
-     */
-    public abstract List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId );
-
-    /**
-     * Returns all DataPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all DataPlacements for the table that are associated with a specific role
-     */
-    public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
-
-    /**
-     * Returns all PartitionPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role
-     */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role );
-
-    /**
-     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @param partitionId filter by ID
-     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
-     */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
-
-    /**
-     * Checks if the planned changes are allowed in terms of placements that need to be present.
-     * Each column must be present for all partitions somewhere.
-     *
-     * @param tableId Table to be checked
-     * @param adapterId Adapter where Ids will be removed from
-     * @param columnIdsToBeRemoved columns that shall be removed
-     * @param partitionsIdsToBeRemoved partitions that shall be removed
-     * @return true if these changes can be made to the data placement, false if not
-     */
-    public abstract boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved );
-
-    /**
-     * Flags the table for deletion.
-     * This method should be executed on a partitioned table before we run a DROP TABLE statement.
-     *
-     * @param tableId table to be flagged for deletion
-     * @param flag true if it should be flagged, false if flag should be removed
-     */
-    public abstract void flagTableForDeletion( long tableId, boolean flag );
-
-    /**
-     * Is used to detect if a table is flagged for deletion.
-     * Effectively checks if a drop of this table is currently in progress.
-     * This is needed to ensure that there aren't any constraints when recursively removing a table and all placements and partitions.
-     *
-     * @param tableId table to be checked
-     * @return If table is flagged for deletion or not
-     */
-    public abstract boolean isTableFlaggedForDeletion( long tableId );
-
-    /**
-     * Adds a placement for a partition.
-     *
-     * @param namespaceId
-     * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
-     * @param partitionId The id of a specific partition that shall create a new placement
-     * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
-     */
-    public abstract void addPartitionPlacement( long namespaceId, int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
-
-    /**
-     * Adds a new DataPlacement for a given table on a specific store
-     *
-     * @param adapterId adapter where placement should be located
-     * @param tableId table to retrieve the placement from
-     */
-    public abstract void addDataPlacement( int adapterId, long tableId );
-
-    /**
-     * Adds a new DataPlacement for a given table on a specific store.
-     * If it already exists it simply returns the existing placement.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
-     */
-    public abstract CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId );
-
-    /**
-     * Modifies a specific DataPlacement of a given table.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @param catalogDataPlacement new dataPlacement to be written
-     */
-    protected abstract void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
-
-    /**
-     * Adds a new placement on a given adapter for an existing graph.
-     *
-     * @param adapterId The id of the adapter on which the graph is added
-     * @param graphId The id of the graph for which a new placement is added
-     * @return The id of the new placement
-     */
-    public abstract long addGraphPlacement( int adapterId, long graphId );
-
-    /**
-     * Gets a collection of graph placements for a given adapter.
-     *
-     * @param adapterId The id of the adapter on which the placements are placed
-     * @return The collection of graph placements
-     */
-    public abstract List<CatalogGraphPlacement> getGraphPlacements( int adapterId );
-
-    /**
-     * Deletes a specific graph placement for a given graph and adapter.
-     *
-     * @param adapterId The id of the adapter on which the placement is removed
-     * @param graphId The id of the graph for which the placement is removed
-     */
-    public abstract void deleteGraphPlacement( int adapterId, long graphId );
-
-    /**
-     * Updates the physical names for a given graph.
-     *
-     * @param graphId The id of the graph to update
-     * @param adapterId The id of the adapter on which the graph to update is placed
-     * @param physicalGraphName The new physical name of the graph
-     */
-    public abstract void updateGraphPlacementPhysicalNames( long graphId, int adapterId, String physicalGraphName );
-
-    /**
-     * Gets a specific placement for a graph on a given adapter.
-     *
-     * @param graphId The id of the graph
-     * @param adapterId The id of the adapter on which the placement is placed
-     * @return The placement matching the conditions
-     */
-    public abstract CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId );
-
-    /**
-     * Removes a DataPlacement for a given table on a specific store
-     *
-     * @param adapterId adapter where placement should be removed from
-     * @param tableId table to retrieve the placement from
-     */
-    public abstract void removeDataPlacement( int adapterId, long tableId );
-
-    /**
-     * Adds a single dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     */
-    protected abstract void addSingleDataPlacementToTable( Integer adapterId, long tableId );
-
-    /**
-     * Removes a single dataPlacement from a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     */
-    protected abstract void removeSingleDataPlacementFromTable( Integer adapterId, long tableId );
-
-    /**
-     * Updates the list of data placements on a table
-     *
-     * @param tableId table to be updated
-     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
-     */
-    public abstract void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements );
-
-    /**
-     * Adds columns to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param columnIds List of columnIds to add to a specific store for the table
-     */
-    protected abstract void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds );
-
-    /**
-     * Remove columns to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param columnIds List of columnIds to remove from a specific store for the table
-     */
-    protected abstract void removeColumnsFromDataPlacement( int adapterId, long tableId, List<Long> columnIds );
-
-    /**
-     * Adds partitions to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param partitionIds List of partitionIds to add to a specific store for the table
-     */
-    protected abstract void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
-
-    /**
-     * Remove partitions to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param partitionIds List of partitionIds to remove from a specific store for the table
-     */
-    protected abstract void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
-
-    /**
-     * Updates and overrides list of associated columnPlacements {@code &} partitionPlacements for a given data placement
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @param columnIds List of columnIds to be located on a specific store for the table
-     * @param partitionIds List of partitionIds to be located on a specific store for the table
-     */
-    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
-
-    /**
-     * Change physical names of a partition placement.
-     *
-     * @param adapterId The id of the adapter
-     * @param partitionId The id of the partition
-     * @param physicalSchemaName The physical schema name
-     * @param physicalTableName The physical table name
-     */
-    public abstract void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName );
-
-    /**
-     * Deletes a placement for a partition.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param partitionId The id of a partition which shall be removed from that store.
-     */
-    public abstract void deletePartitionPlacement( int adapterId, long partitionId );
-
-    /**
-     * Returns a specific partition entity which is placed on a store.
-     *
-     * @param adapterId The adapter on which the requested partition placements reside
-     * @param partitionId The id of the requested partition
-     * @return The requested PartitionPlacement on that store for a given is
-     */
-    public abstract CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId );
-
-    /**
-     * Returns a list of all Partition Placements which currently reside on an adapter, disregarded of the table.
-     *
-     * @param adapterId The adapter on which the requested partition placements reside
-     * @return A list of all Partition Placements, that are currently located  on that specific store
-     */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
-
-    /**
-     * Returns a list of all Partition Placements which currently reside on an adapter, for a specific table.
-     *
-     * @param adapterId The adapter on which the requested partition placements reside
-     * @param tableId The table for which all partition placements on an adapter should be considered
-     * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
-     */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( int adapterId, long tableId );
-
-    /**
-     * Returns a list of all Partition Placements which are currently associated with a table.
-     *
-     * @param tableId The table on which the requested partition placements are currently associated with.
-     * @return A list of all Partition Placements, that belong to the desired table
-     */
-    public abstract List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
-
-    /**
-     * Get all Partition Placements which are associated with an individual partition ID.
-     * Identifies on which locations and how often the individual partition is placed.
-     *
-     * @param partitionId The requested partition ID
-     * @return A list of Partition Placements which are physically responsible for that partition
-     */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
-
-    /**
-     * Returns all tables which are in need of special periodic treatment.
-     *
-     * @return List of tables which need to be periodically processed
-     */
-    public abstract List<LogicalTable> getTablesForPeriodicProcessing();
-
-    /**
-     * Registers a table to be considered for periodic processing
-     *
-     * @param tableId ID of table to be considered for periodic processing
-     */
-    public abstract void addTableToPeriodicProcessing( long tableId );
-
-    /**
-     * Remove a table from periodic background processing
-     *
-     * @param tableId ID of table to be removed for periodic processing
-     */
-    public abstract void removeTableFromPeriodicProcessing( long tableId );
-
-    /**
-     * Probes if a Partition Placement on an adapter for a specific partition already exists.
-     *
-     * @param adapterId Adapter on which to check
-     * @param partitionId Partition which to check
-     * @return teh response of the probe
-     */
-    public abstract boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId );
-
-    /**
-     * Deletes all the dependencies of a view. This is used when deleting a view.
-     *
-     * @param catalogView view for which to delete its dependencies
-     */
-    public abstract void deleteViewDependencies( CatalogView catalogView );
-
-    /**
-     * Updates the last time a materialized view has been refreshed.
-     *
-     * @param materializedViewId id of the materialized view
-     */
-    public abstract void updateMaterializedViewRefreshTime( long materializedViewId );
-
-    /**
-     * Get the graph with the given id.
-     *
-     * @param collectionId The id of the graph
-     * @return The requested collection
-     */
-    public abstract LogicalCollection getCollection( long collectionId );
-
-    /**
-     * Get a collection of collections which match the given naming pattern.
-     *
-     * @param namespaceId The id of the namespace to which the collection belongs
-     * @param namePattern The naming pattern of the collection itself, null if all are matched
-     * @return collection of collections matching conditions
-     */
-    public abstract List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
-
-    /**
-     * Add a new collection with the given parameters.
-     *
-     * @param id ID of the collection to add, null if a new one needs to be generated
-     * @param name The name of the collection
-     * @param schemaId The id of the namespace to which the collection is added
-     * @param currentUserId The user, which adds the collection
-     * @param entity The type of entity of the collection
-     * @param modifiable If the collection is modifiable
-     * @return The id of the added collection
-     */
-    public abstract long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable );
-
-    /**
-     * Adds a new placement for a given collection.
-     *
-     * @param namespaceId
-     * @param adapterId The id of the adapter on which the placement is added
-     * @param collectionId The id of the collection for which the placement is added
-     * @param placementType The type of placement
-     * @return The id of the newly added placement
-     */
-    public abstract long addCollectionPlacement( long namespaceId, int adapterId, long collectionId, PlacementType placementType );
-
-    /**
-     * Get the mapping for the collection, which points to the substitution entities in other data models.
-     *
-     * @param id The id of the collection
-     * @return The mapping for the specific collection
-     */
-    public abstract CatalogCollectionMapping getCollectionMapping( long id );
-
-    /**
-     * Added the required additional entities for the substitutions entities on different data models.
-     *
-     * @param schemaId The id of the namespace to which the collection belongs
-     * @param name The name of the collection
-     * @param stores The stores on which the collection was added
-     * @param onlyPlacement If the substitution entities should be created fully or only the placements
-     * @return The id of the mapping
-     */
-    public abstract long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException;
-
-    /**
-     * Gets a collection containing all placements for a given adapter.
-     *
-     * @param adapterId The id of the adapter for which the collection is provided
-     * @return The collection of placements
-     */
-    public abstract List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId );
-
-    /**
-     * Gets a specific placement for a given collection and adapter.
-     *
-     * @param collectionId The id of the collection for the placement
-     * @param adapterId The adapter on which the collection is placed
-     * @return The placement of the collection on the specified adapter
-     */
-    public abstract CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId );
-
-    /**
-     * Updates the physical name of the given collection.
-     *
-     * @param namespaceId
-     * @param collectionId The id of the collection to change
-     * @param adapterId The id of the adapter on which the physical names of the collection are updated
-     * @param physicalNamespaceName The new namespace name
-     * @param namespaceName The namespace name
-     * @param physicalCollectionName The new physical collection name
-     */
-    public abstract void updateCollectionPartitionPhysicalNames( long namespaceId, long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName );
-
-    /**
-     * Delete a specific collection.
-     *
-     * @param id The id of the collection to delete
-     */
-    public abstract void deleteCollection( long id );
-
-    /**
-     * Drop a placement of a specific collection.
-     *
-     * @param id The id of the collection to drop
-     * @param adapterId The id of the adapter on which the collection is placed
-     */
-    public abstract void dropCollectionPlacement( long id, int adapterId );
+    public abstract void deleteQueryInterface( long id );
 
 
     public abstract void close();

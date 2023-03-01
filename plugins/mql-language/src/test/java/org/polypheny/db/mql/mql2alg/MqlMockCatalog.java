@@ -17,21 +17,21 @@
 package org.polypheny.db.mql.mql2alg;
 
 import org.polypheny.db.catalog.MockCatalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 public class MqlMockCatalog extends MockCatalog {
 
     @Override
-    public CatalogSchema getSchema( long schemaId ) {
-        return new CatalogSchema( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT, true );
+    public LogicalNamespace getNamespace( long id ) {
+        return new LogicalNamespace( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT, true );
     }
 
 
     @Override
-    public CatalogUser getUser( int userId ) {
+    public CatalogUser getUser( long id ) {
         return new CatalogUser( 0, "name", "name" );
     }
 

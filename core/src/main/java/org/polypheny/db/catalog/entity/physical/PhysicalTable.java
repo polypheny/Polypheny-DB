@@ -49,9 +49,12 @@ public class PhysicalTable extends CatalogEntity implements Physical {
     public ImmutableList<String> columnNames;
     public String namespaceName;
 
+    public AllocationTable allocation;
 
-    public PhysicalTable( long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
+
+    public PhysicalTable( AllocationTable allocation, long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
         super( id, name, type, namespaceType );
+        this.allocation = allocation;
         this.namespaceName = namespaceName;
         this.placements = ImmutableList.copyOf( placements );
         this.columnIds = ImmutableList.copyOf( placements.stream().map( p -> p.columnId ).collect( Collectors.toList() ) );
@@ -60,7 +63,7 @@ public class PhysicalTable extends CatalogEntity implements Physical {
 
 
     public PhysicalTable( AllocationTable table, String name, String namespaceName, List<String> columnNames ) {
-        this( table.id, name, namespaceName, table.entityType, table.namespaceType, table.placements, columnNames );
+        this( table, table.id, name, namespaceName, table.entityType, table.namespaceType, table.placements, columnNames );
     }
 
 
@@ -75,7 +78,7 @@ public class PhysicalTable extends CatalogEntity implements Physical {
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( CatalogColumnPlacement placement : placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( placement.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot( 0 ).getLogicalColumn( placement.columnId );
             AlgDataType sqlType = logicalColumn.getAlgDataType( typeFactory );
             fieldInfo.add( logicalColumn.name, placement.physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
         }

@@ -53,7 +53,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
+        return Catalog.getInstance().getNamespace( schemaId ).name;
     }
 
 

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import lombok.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
@@ -43,9 +44,9 @@ import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -234,59 +235,53 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogSchema> getSchemas( Pattern schemaNamePattern ) {
+    public @NonNull List<LogicalNamespace> getNamespaces( Pattern name ) {
         throw new NotImplementedException();
     }
 
 
-    private List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogSchema getSchema( long schemaId ) {
+    private List<LogicalNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogSchema getSchema( String schemaName ) throws UnknownSchemaException {
-        throw new NotImplementedException();
-    }
-
-
-    private CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
+    public LogicalNamespace getNamespace( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addNamespace( String name, int ownerId, NamespaceType namespaceType ) {
+    public LogicalNamespace getNamespace( String name ) throws UnknownSchemaException {
+        throw new NotImplementedException();
+    }
+
+
+    private LogicalNamespace getNamespace( long databaseId, String schemaName ) throws UnknownSchemaException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean checkIfExistsSchema( String schemaName ) {
+    public long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void renameSchema( long schemaId, String name ) {
+    public boolean checkIfExistsNamespace( String name ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void setSchemaOwner( long schemaId, long ownerId ) {
+    public void renameNamespace( long schemaId, String name ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deleteSchema( long schemaId ) {
+    public void deleteNamespace( long id ) {
         throw new NotImplementedException();
     }
 
@@ -431,12 +426,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -802,13 +791,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogUser getUser( String userName ) throws UnknownUserException {
+    public CatalogUser getUser( String name ) throws UnknownUserException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogUser getUser( int userId ) {
+    public CatalogUser getUser( long id ) {
         throw new NotImplementedException();
     }
 
@@ -826,31 +815,31 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogAdapter getAdapter( int adapterId ) {
+    public CatalogAdapter getAdapter( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean checkIfExistsAdapter( int adapterId ) {
+    public boolean checkIfExistsAdapter( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
+    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void updateAdapterSettings( int adapterId, Map<String, String> newSettings ) {
+    public void updateAdapterSettings( long adapterId, Map<String, String> newSettings ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deleteAdapter( int adapterId ) {
+    public void deleteAdapter( long id ) {
         throw new NotImplementedException();
     }
 
@@ -868,19 +857,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogQueryInterface getQueryInterface( int ifaceId ) {
+    public CatalogQueryInterface getQueryInterface( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deleteQueryInterface( int ifaceId ) {
+    public void deleteQueryInterface( long id ) {
         throw new NotImplementedException();
     }
 
@@ -1082,20 +1071,6 @@ public abstract class MockCatalog extends Catalog {
      */
     @Override
     public void addPartitionPlacement( long namespaceId, int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
-        throw new NotImplementedException();
-    }
-
-
-    /**
-     * Change physical names of a partition placement.
-     *
-     * @param adapterId The id of the adapter
-     * @param partitionId The id of the partition
-     * @param physicalSchemaName The physical schema name
-     * @param physicalTableName The physical table name
-     */
-    @Override
-    public void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName ) {
         throw new NotImplementedException();
     }
 
@@ -1312,12 +1287,6 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId ) {
-        return null;
-    }
-
-
-    @Override
     public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
         throw new NotImplementedException();
     }
@@ -1348,19 +1317,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateGraphPlacementPhysicalNames( long id, int adapterId, String physicalGraphName ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void updateCollectionPartitionPhysicalNames( long namespaceId, long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
         throw new NotImplementedException();
     }
 

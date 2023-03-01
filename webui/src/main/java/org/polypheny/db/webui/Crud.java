@@ -107,8 +107,8 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -376,10 +376,10 @@ public class Crud implements InformationObserver {
             ctx.json( new ArrayList<>() );
         }
 
-        List<CatalogSchema> schemas = catalog.getSchemas( databaseId, null );
+        List<LogicalNamespace> schemas = catalog.getNamespaces( databaseId, null );
         // remove unwanted namespaces
         schemas = schemas.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
-        for ( CatalogSchema schema : schemas ) {
+        for ( LogicalNamespace schema : schemas ) {
             SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
 
             if ( request.depth > 1 && schema.namespaceType != NamespaceType.GRAPH ) {
@@ -460,7 +460,7 @@ public class Crud implements InformationObserver {
         if ( request.schema != null ) {
             requestedSchema = request.schema;
         } else {
-            requestedSchema = catalog.getSchema( schemaId ).name;
+            requestedSchema = catalog.getNamespace( schemaId ).name;
         }
 
         try {
@@ -2896,7 +2896,7 @@ public class Crud implements InformationObserver {
         // drop schema
         else if ( !schema.isCreate() && schema.isDrop() ) {
             if ( type == null ) {
-                List<CatalogSchema> namespaces = catalog.getSchemas( Catalog.defaultDatabaseId, new org.polypheny.db.catalog.logistic.Pattern( schema.getName() ) );
+                List<LogicalNamespace> namespaces = catalog.getNamespaces( Catalog.defaultDatabaseId, new org.polypheny.db.catalog.logistic.Pattern( schema.getName() ) );
                 assert namespaces.size() == 1;
                 type = namespaces.get( 0 ).namespaceType;
 
@@ -3619,9 +3619,9 @@ public class Crud implements InformationObserver {
 
     void getTypeSchemas( final Context ctx ) {
         ctx.json( catalog
-                .getSchemas( 1, null )
+                .getNamespaces( 1, null )
                 .stream()
-                .collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getNamespaceType ) ) );
+                .collect( Collectors.toMap( LogicalNamespace::getName, LogicalNamespace::getNamespaceType ) ) );
     }
 
 

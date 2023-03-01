@@ -38,8 +38,8 @@ public class CatalogPlugin extends Plugin {
     public void start() {
         PolyCatalog catalog = new PolyCatalog();
 
-        catalog.addNamespace( "test", NamespaceType.RELATIONAL );
-        long namespaceId = catalog.addNamespace( "test2", NamespaceType.RELATIONAL );
+        catalog.addNamespace( "test", NamespaceType.RELATIONAL, false );
+        long namespaceId = catalog.addNamespace( "test2", NamespaceType.RELATIONAL, false );
 
         long tableId = catalog.addTable( "testTable", namespaceId );
         catalog.addColumn( "testColumn", namespaceId, tableId, null );

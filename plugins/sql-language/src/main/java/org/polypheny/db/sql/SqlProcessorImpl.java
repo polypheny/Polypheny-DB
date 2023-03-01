@@ -37,13 +37,13 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -251,7 +251,7 @@ public class SqlProcessorImpl extends Processor {
 
         if ( oldColumnList != null ) {
             LogicalTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            NamespaceType namespaceType = Catalog.getInstance().getSchema( catalogTable.namespaceId ).namespaceType;
+            NamespaceType namespaceType = Catalog.getInstance().getNamespace( catalogTable.namespaceId ).namespaceType;
 
             catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
@@ -366,7 +366,7 @@ public class SqlProcessorImpl extends Processor {
             long schemaId;
             String tableOldName;
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = Catalog.getInstance().getSchema( tableName.names.get( 1 ) ).id;
+                schemaId = Catalog.getInstance().getNamespace( tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
                 schemaId = Catalog.getInstance().getSchema( transaction.getDefaultSchema().databaseId, tableName.names.get( 0 ) ).id;

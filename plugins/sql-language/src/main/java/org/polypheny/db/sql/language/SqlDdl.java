@@ -72,7 +72,7 @@ public abstract class SqlDdl extends SqlCall {
             String tableOldName;
             Catalog catalog = Catalog.getInstance();
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( tableName.names.get( 1 ) ).id;
+                schemaId = catalog.getNamespace( tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
                 schemaId = catalog.getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;

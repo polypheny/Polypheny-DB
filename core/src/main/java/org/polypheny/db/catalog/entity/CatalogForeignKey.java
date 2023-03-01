@@ -66,7 +66,7 @@ public final class CatalogForeignKey extends CatalogKey {
 
     @SneakyThrows
     public String getReferencedKeySchemaName() {
-        return Catalog.getInstance().getSchema( referencedKeySchemaId ).name;
+        return Catalog.getInstance().getNamespace( referencedKeySchemaId ).name;
     }
 
 

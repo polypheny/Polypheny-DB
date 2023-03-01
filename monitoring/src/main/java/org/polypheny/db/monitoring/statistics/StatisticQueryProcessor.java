@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -90,8 +90,8 @@ public class StatisticQueryProcessor {
         Catalog catalog = Catalog.getInstance();
         List<List<String>> result = new ArrayList<>();
         List<String> schemaTree = new ArrayList<>();
-        List<CatalogSchema> schemas = catalog.getSchemas( databaseId, null );
-        for ( CatalogSchema schema : schemas ) {
+        List<LogicalNamespace> schemas = catalog.getNamespaces( databaseId, null );
+        for ( LogicalNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
             List<LogicalTable> childTables = catalog.getTables( schema.id, null );
             for ( LogicalTable childTable : childTables ) {

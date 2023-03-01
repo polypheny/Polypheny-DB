@@ -126,13 +126,13 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
 
     @SneakyThrows
     public String getNamespaceName() {
-        return Catalog.getInstance().getSchema( namespaceId ).name;
+        return Catalog.getInstance().getNamespace( namespaceId ).name;
     }
 
 
     @SneakyThrows
     public NamespaceType getNamespaceType() {
-        return Catalog.getInstance().getSchema( namespaceId ).namespaceType;
+        return Catalog.getInstance().getNamespace( namespaceId ).namespaceType;
     }
 
 

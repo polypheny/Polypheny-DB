@@ -14,16 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical.relational;
+package org.polypheny.db.catalog.catalogs;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
-
-@AllArgsConstructor
-@Value
-public class CatalogSchema {
-
-    public long id;
-    public String name;
+public interface PhysicalCatalog {
 
 }
