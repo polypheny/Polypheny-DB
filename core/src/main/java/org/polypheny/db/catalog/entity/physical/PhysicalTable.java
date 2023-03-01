@@ -32,9 +32,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -42,7 +42,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public class PhysicalTable extends CatalogEntity implements Physical {
+public class PhysicalTable extends PhysicalEntity<LogicalTable> {
 
     public ImmutableList<CatalogColumnPlacement> placements;
     public ImmutableList<Long> columnIds;
@@ -53,7 +53,7 @@ public class PhysicalTable extends CatalogEntity implements Physical {
 
 
     public PhysicalTable( AllocationTable allocation, long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
-        super( id, name, type, namespaceType );
+        super( allocation.logical, id, name, namespaceName, type, namespaceType, allocation.adapterId );
         this.allocation = allocation;
         this.namespaceName = namespaceName;
         this.placements = ImmutableList.copyOf( placements );

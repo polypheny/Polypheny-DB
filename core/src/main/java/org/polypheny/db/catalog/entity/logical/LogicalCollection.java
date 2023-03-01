@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class LogicalCollection extends CatalogEntity implements CatalogObject, Logical {
+public class LogicalCollection extends CatalogEntity implements CatalogObject, LogicalEntity {
 
     private static final long serialVersionUID = -6490762948368178584L;
 

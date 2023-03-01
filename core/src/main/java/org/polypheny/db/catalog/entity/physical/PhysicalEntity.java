@@ -16,10 +16,20 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
-import org.polypheny.db.catalog.refactor.CatalogType;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
-public interface Physical extends CatalogType {
-    default State getCatalogType() {
+public abstract class PhysicalEntity<L extends LogicalEntity> extends AllocationEntity<L> {
+
+    protected PhysicalEntity( L logical, long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
+        super( logical, id, name, namespaceName, type, namespaceType, adapterId );
+    }
+
+
+    @Override
+    public State getCatalogType() {
         return State.PHYSICAL;
     }
 

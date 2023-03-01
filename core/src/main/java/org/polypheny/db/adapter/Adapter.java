@@ -48,10 +48,10 @@ import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -279,7 +279,7 @@ public abstract class Adapter {
 
 
     @Getter
-    private final int adapterId;
+    private final long adapterId;
     @Getter
     private final String uniqueName;
 
@@ -486,15 +486,22 @@ public abstract class Adapter {
         Catalog catalog = Catalog.getInstance();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<CatalogPartitionPlacement> cpps = catalog.getPartitionPlacementsByAdapter( adapterId );
-            cpps.forEach( cpp ->
-                    catalog.getColumnPlacementsOnAdapterPerTable( adapterId, cpp.tableId ).forEach( placement -> {
-                        physicalColumnNames.addRow(
-                                placement.columnId,
-                                catalog.getColumn( placement.columnId ).name,
-                                cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName );
-                    } )
-            );
+            List<PhysicalEntity<?>> physicalsOnAdapter = catalog.getPhysicalsOnAdapter( adapterId );
+
+            for ( PhysicalEntity<?> entity : physicalsOnAdapter ) {
+                if ( entity.namespaceType != NamespaceType.RELATIONAL ) {
+                    continue;
+                }
+                PhysicalTable physicalTable = (PhysicalTable) entity;
+                int i = 0;
+                for ( long columnId : physicalTable.columnIds ) {
+                    physicalColumnNames.addRow(
+                            columnId,
+                            physicalTable.logical.getColumnNames().get( i ),
+                            physicalTable.namespaceName + "." + physicalTable.name + "." + physicalTable.getColumnNames().get( i ) );
+                    i++;
+                }
+            }
         } );
 
         informationGroups.add( group );

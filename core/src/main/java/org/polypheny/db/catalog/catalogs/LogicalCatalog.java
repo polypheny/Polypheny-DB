@@ -23,11 +23,10 @@ public interface LogicalCatalog {
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
-     * @param namespaceId The id of the schema
      * @param entityName The name to check for
      * @return true if there is a table with this name, false if not.
      */
-    public abstract boolean checkIfExistsEntity( long namespaceId, String entityName );
+    public abstract boolean checkIfExistsEntity( String entityName );
 
     /**
      * Checks if there is a table with the specified id.

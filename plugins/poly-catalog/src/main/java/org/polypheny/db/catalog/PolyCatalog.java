@@ -30,12 +30,23 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.catalogs.AllocationCatalog;
+import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
+import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
+import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
+import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -64,7 +75,13 @@ public class PolyCatalog extends Catalog implements Serializable {
     public final BinarySerializer<PolyCatalog> serializer = Serializable.builder.get().build( PolyCatalog.class );
 
     @Serialize
-    public final Map<Long, LogicalCatalog> catalogs;
+    public final Map<Long, LogicalCatalog> logicalCatalogs;
+
+    @Serialize
+    public final Map<Long, AllocationCatalog> allocationCatalogs;
+
+    @Serialize
+    public final Map<Long, PhysicalCatalog> physicalCatalogs;
 
     @Serialize
     public final Map<Long, CatalogUser> users;
@@ -82,18 +99,28 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     public PolyCatalog() {
-        this( new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
+        this(
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>(),
+                new ConcurrentHashMap<>() );
     }
 
 
     public PolyCatalog(
             @Deserialize("users") Map<Long, CatalogUser> users,
-            @Deserialize("catalogs") Map<Long, LogicalCatalog> catalogs,
+            @Deserialize("logicalCatalogs") Map<Long, LogicalCatalog> logicalCatalogs,
+            @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
+            @Deserialize("physicalCatalogs") Map<Long, PhysicalCatalog> physicalCatalogs,
             @Deserialize("adapters") Map<Long, CatalogAdapter> adapters,
             @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
 
         this.users = users;
-        this.catalogs = catalogs;
+        this.logicalCatalogs = logicalCatalogs;
+        this.allocationCatalogs = allocationCatalogs;
+        this.physicalCatalogs = physicalCatalogs;
         this.adapters = adapters;
         this.interfaces = interfaces;
         updateSnapshot();
@@ -101,7 +128,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     private void updateSnapshot() {
-        this.fullSnapshot = new FullSnapshot( idBuilder.getNewSnapshotId(), catalogs );
+        this.fullSnapshot = new FullSnapshot( idBuilder.getNewSnapshotId(), logicalCatalogs );
     }
 
 
@@ -118,6 +145,55 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     public void rollback() {
         log.debug( "rollback" );
+    }
+
+
+    private void validateNamespaceType( long id, NamespaceType type ) {
+        if ( logicalCatalogs.get( id ).getLogicalNamespace().namespaceType != type ) {
+            throw new RuntimeException( "error while retrieving catalog" );
+        }
+    }
+
+
+    @Override
+    public LogicalRelationalCatalog getLogicalRel( long id ) {
+        validateNamespaceType( id, NamespaceType.RELATIONAL );
+        return (LogicalRelationalCatalog) logicalCatalogs.get( id );
+    }
+
+
+    @Override
+    public LogicalDocumentCatalog getLogicalDoc( long id ) {
+        validateNamespaceType( id, NamespaceType.DOCUMENT );
+        return (LogicalDocumentCatalog) logicalCatalogs.get( id );
+    }
+
+
+    @Override
+    public LogicalGraphCatalog getLogicalGraph( long id ) {
+        validateNamespaceType( id, NamespaceType.GRAPH );
+        return (LogicalGraphCatalog) logicalCatalogs.get( id );
+    }
+
+
+    @Override
+    public AllocationRelationalCatalog getAllocRel( long id ) {
+        validateNamespaceType( id, NamespaceType.RELATIONAL );
+        return (AllocationRelationalCatalog) allocationCatalogs.get( id );
+    }
+
+
+    @Override
+    public AllocationDocumentCatalog getAllocDoc( long id ) {
+        validateNamespaceType( id, NamespaceType.DOCUMENT );
+        return (AllocationDocumentCatalog) allocationCatalogs.get( id );
+    }
+
+
+    @Override
+    public AllocationGraphCatalog getAllocGraph( long id ) {
+        validateNamespaceType( id, NamespaceType.GRAPH );
+        return (AllocationGraphCatalog) allocationCatalogs.get( id );
     }
 
 
@@ -168,13 +244,13 @@ public class PolyCatalog extends Catalog implements Serializable {
 
         switch ( namespaceType ) {
             case RELATIONAL:
-                catalogs.put( id, new RelationalCatalog( namespace, idBuilder ) );
+                logicalCatalogs.put( id, new RelationalCatalog( namespace, idBuilder ) );
                 break;
             case DOCUMENT:
-                catalogs.put( id, new DocumentCatalog( namespace, idBuilder ) );
+                logicalCatalogs.put( id, new DocumentCatalog( namespace, idBuilder ) );
                 break;
             case GRAPH:
-                catalogs.put( id, new GraphCatalog( namespace, idBuilder ) );
+                logicalCatalogs.put( id, new GraphCatalog( namespace, idBuilder ) );
                 break;
         }
         change();
@@ -184,7 +260,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public @NonNull List<LogicalNamespace> getNamespaces( Pattern name ) {
-        return catalogs.values().stream().filter( c ->
+        return logicalCatalogs.values().stream().filter( c ->
                         c.getLogicalNamespace().caseSensitive
                                 ? c.getLogicalNamespace().name.toLowerCase( Locale.ROOT ).matches( name.pattern )
                                 : c.getLogicalNamespace().name.matches( name.pattern ) )
@@ -194,7 +270,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public LogicalNamespace getNamespace( long id ) {
-        return catalogs.get( id ).getLogicalNamespace();
+        return logicalCatalogs.get( id ).getLogicalNamespace();
     }
 
 
@@ -219,10 +295,10 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public void renameNamespace( long id, String name ) {
-        if ( catalogs.get( id ) == null ) {
+        if ( logicalCatalogs.get( id ) == null ) {
             return;
         }
-        catalogs.get( id ).withLogicalNamespace( catalogs.get( id ).getLogicalNamespace().withName( name ) );
+        logicalCatalogs.get( id ).withLogicalNamespace( logicalCatalogs.get( id ).getLogicalNamespace().withName( name ) );
 
         change();
     }
@@ -230,7 +306,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public void deleteNamespace( long id ) {
-        catalogs.remove( id );
+        logicalCatalogs.remove( id );
 
         change();
     }
@@ -343,6 +419,24 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public Snapshot getSnapshot( long id ) {
+        return null;
+    }
+
+
+    @Override
+    public List<AllocationEntity<?>> getAllocationsOnAdapter( long id ) {
+        return allocationCatalogs.values().stream().flatMap( c -> c.getAllocationsOnAdapter( id ).stream() ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<PhysicalEntity<?>> getPhysicalsOnAdapter( long id ) {
+        return physicalCatalogs.values().stream().flatMap( c -> c.getPhysicalsOnAdapter( id ).stream() ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<CatalogIndex> getIndexes() {
         return null;
     }
 

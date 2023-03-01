@@ -89,7 +89,7 @@ public class GraphCatalog implements NCatalog, Serializable, LogicalGraphCatalog
 
 
     @Override
-    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
+    public boolean checkIfExistsEntity( String entityName ) {
         return false;
     }
 

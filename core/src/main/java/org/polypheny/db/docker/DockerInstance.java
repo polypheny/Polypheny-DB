@@ -523,7 +523,7 @@ public class DockerInstance extends DockerManager {
 
 
     @Override
-    public void destroyAll( int adapterId ) {
+    public void destroyAll( long adapterId ) {
         if ( containersOnAdapter.containsKey( adapterId ) ) {
             containersOnAdapter.get( adapterId ).forEach( containerName -> availableContainers.get( containerName ).destroy() );
         }

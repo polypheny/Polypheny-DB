@@ -16,41 +16,31 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
-import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public class AllocationGraph extends AllocationEntity {
+public abstract class AllocationEntity<L extends LogicalEntity> extends LogicalEntity {
+
+    public long adapterId;
+    public L logical;
 
 
-    public LogicalGraph logical;
-    public long id;
-
-
-    public AllocationGraph( long id, LogicalGraph graph, long adapterId ) {
-        super( id, graph.name, graph.entityType, graph.namespaceType, adapterId );
-        this.id = id;
-        this.logical = graph;
+    protected AllocationEntity( L logical, long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
+        super( id, name, namespaceName, type, namespaceType );
+        this.adapterId = adapterId;
+        this.logical = logical;
     }
 
 
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
-    }
-
-
-    @Override
-    public Expression asExpression() {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAllocGraph", Expressions.constant( id ) );
+    public State getCatalogType() {
+        return State.ALLOCATION;
     }
 
 

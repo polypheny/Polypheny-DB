@@ -26,11 +26,20 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
+import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
+import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -79,6 +88,18 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void rollback();
 
+    public abstract LogicalRelationalCatalog getLogicalRel( long id );
+
+    public abstract LogicalDocumentCatalog getLogicalDoc( long id );
+
+    public abstract LogicalGraphCatalog getLogicalGraph( long id );
+
+
+    public abstract AllocationRelationalCatalog getAllocRel( long id );
+
+    public abstract AllocationDocumentCatalog getAllocDoc( long id );
+
+    public abstract AllocationGraphCatalog getAllocGraph( long id );
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
@@ -322,5 +343,16 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract Snapshot getSnapshot( long id );
+
+    //// todo move into snapshot
+
+
+    public abstract List<AllocationEntity<?>> getAllocationsOnAdapter( long id );
+
+
+    public abstract List<PhysicalEntity<?>> getPhysicalsOnAdapter( long adapterId );
+
+
+    public abstract List<CatalogIndex> getIndexes();
 
 }

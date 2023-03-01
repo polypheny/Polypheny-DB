@@ -96,7 +96,7 @@ public abstract class DockerManager {
      *
      * @param adapterId the id of the adapter
      */
-    public abstract void destroyAll( int adapterId );
+    public abstract void destroyAll( long adapterId );
 
     public abstract List<String> getUsedNames();
 

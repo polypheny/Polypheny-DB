@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGraph>, Logical {
+public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGraph>, LogicalEntity {
 
     private static final long serialVersionUID = 7343856827901459672L;
 

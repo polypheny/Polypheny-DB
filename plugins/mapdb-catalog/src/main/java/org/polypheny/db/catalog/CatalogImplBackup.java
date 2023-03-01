@@ -90,6 +90,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.GraphAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
@@ -2450,7 +2451,7 @@ public class CatalogImplBackup extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId ) {
+    public List<PhysicalEntity> getPhysicalsOnAdapter( long tableId ) {
         LogicalTable table = getTable( tableId );
         Map<Integer, ImmutableList<Long>> partitionPlacementsByAdapter = new HashMap<>();
 

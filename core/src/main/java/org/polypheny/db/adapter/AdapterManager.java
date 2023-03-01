@@ -40,13 +40,13 @@ import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
 public class AdapterManager {
 
-    private final Map<Integer, Adapter> adapterById = new HashMap<>();
+    private final Map<Long, Adapter> adapterById = new HashMap<>();
     private final Map<String, Adapter> adapterByName = new HashMap<>();
 
 
@@ -69,7 +69,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter getAdapter( int id ) {
+    public Adapter getAdapter( long id ) {
         return adapterById.get( id );
     }
 
@@ -88,7 +88,7 @@ public class AdapterManager {
     }
 
 
-    public DataStore getStore( int id ) {
+    public DataStore getStore( long id ) {
         Adapter adapter = getAdapter( id );
         if ( adapter instanceof DataStore ) {
             return (DataStore) adapter;
@@ -236,7 +236,7 @@ public class AdapterManager {
     }
 
 
-    public void removeAdapter( int adapterId ) {
+    public void removeAdapter( long adapterId ) {
         Adapter adapterInstance = getAdapter( adapterId );
         if ( adapterInstance == null ) {
             throw new RuntimeException( "Unknown adapter instance with id: " + adapterId );
@@ -244,7 +244,7 @@ public class AdapterManager {
         CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( adapterId );
 
         // Check if the store has any placements
-        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( catalogAdapter.id );
+        List<AllocationEntity<?>> placements = Catalog.getInstance().getAllocationsOnAdapter( catalogAdapter.id );
         if ( placements.size() != 0 ) {
             throw new RuntimeException( "There is still data placed on this data store" );
         }

@@ -121,7 +121,7 @@ public class DockerManagerImpl extends DockerManager {
 
 
     @Override
-    public void destroyAll( int adapterId ) {
+    public void destroyAll( long adapterId ) {
         dockerInstances.values().forEach( dockerInstance -> dockerInstance.destroyAll( adapterId ) );
     }
 

@@ -108,13 +108,12 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * Adds a table to a specified schema.
      *
      * @param name The name of the table to add
-     * @param namespaceId The id of the schema
      * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
+    public abstract long addTable( String name, int ownerId, EntityType entityType, boolean modifiable );
 
 
     /**
@@ -588,12 +587,12 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param unique Weather the index is unique
      * @param method Name of the index method (e.g. btree_unique)
      * @param methodDisplayName Display name of the index method (e.g. BTREE)
-     * @param location ID of the data store where the index is located (0 for Polypheny-DB itself)
+     * @param adapterId ID of the data store where the index is located (0 for Polypheny-DB itself)
      * @param type The type of index (manual, automatic)
      * @param indexName The name of the index
      * @return The id of the created index
      */
-    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException;
+    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) throws GenericCatalogException;
 
     /**
      * Set physical index name.

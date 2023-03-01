@@ -16,11 +16,28 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
-import org.polypheny.db.catalog.refactor.CatalogType;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
-public interface Logical extends CatalogType {
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
+public abstract class LogicalEntity extends CatalogEntity {
 
-    default State getCatalogType() {
+    public String namespaceName;
+
+
+    protected LogicalEntity( long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType ) {
+        super( id, name, type, namespaceType );
+        this.namespaceName = namespaceName;
+    }
+
+
+    public State getCatalogType() {
         return State.LOGICAL;
     }
 

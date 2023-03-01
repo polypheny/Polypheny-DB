@@ -156,7 +156,7 @@ public class RelationalCatalog implements NCatalog, Serializable, LogicalRelatio
 
 
     @Override
-    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
+    public boolean checkIfExistsEntity( String entityName ) {
         return false;
     }
 
@@ -204,7 +204,7 @@ public class RelationalCatalog implements NCatalog, Serializable, LogicalRelatio
 
 
     @Override
-    public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
+    public long addTable( String name, int ownerId, EntityType entityType, boolean modifiable ) {
         return 0;
     }
 
@@ -308,7 +308,7 @@ public class RelationalCatalog implements NCatalog, Serializable, LogicalRelatio
 
 
     @Override
-    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException {
+    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) throws GenericCatalogException {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         if ( unique ) {
             // TODO: Check if the current values are unique
@@ -322,7 +322,7 @@ public class RelationalCatalog implements NCatalog, Serializable, LogicalRelatio
                     method,
                     methodDisplayName,
                     type,
-                    location,
+                    adapterId,
                     keyId,
                     Objects.requireNonNull( keys.get( keyId ) ),
                     null ) );

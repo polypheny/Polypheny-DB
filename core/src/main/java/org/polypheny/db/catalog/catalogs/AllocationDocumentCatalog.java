@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 
 public interface AllocationDocumentCatalog extends AllocationCatalog {
@@ -32,5 +33,7 @@ public interface AllocationDocumentCatalog extends AllocationCatalog {
      * @return The id of the mapping
      */
     public abstract long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException;
+
+    List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( long id );
 
 }

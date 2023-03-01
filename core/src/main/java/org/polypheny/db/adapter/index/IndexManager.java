@@ -36,7 +36,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -149,7 +148,7 @@ public class IndexManager {
     }
 
 
-    public void restoreIndexes() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
+    public void restoreIndexes() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, TransactionException {
         for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
             if ( index.location == 0 ) {
                 addIndex( index );
@@ -158,24 +157,24 @@ public class IndexManager {
     }
 
 
-    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
+    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, TransactionException {
         addIndex( index, null );
     }
 
 
-    public void addIndex( final CatalogIndex index, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
+    public void addIndex( final CatalogIndex index, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, TransactionException {
         // TODO(s3lph): persistent
         addIndex( index.id, index.name, index.key, index.method, index.unique, null, statement );
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownDatabaseException, UnknownUserException, TransactionException {
+    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownUserException, TransactionException {
         final IndexFactory factory = INDEX_FACTORIES.stream()
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final LogicalTable table = Catalog.getInstance().getTable( key.tableId );
-        final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        final LogicalTable table = Catalog.getInstance().getLogicalRel( key.schemaId ).getTable( key.tableId );
+        final CatalogPrimaryKey pk = Catalog.getInstance().getLogicalRel( key.schemaId ).getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
                 name,

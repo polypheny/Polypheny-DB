@@ -21,10 +21,9 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.catalog.Catalog;
+import lombok.Value;
 import org.polypheny.db.catalog.logistic.IndexType;
 
 
@@ -75,7 +74,7 @@ public final class CatalogIndex implements Serializable {
         int i = 1;
         List<CatalogIndexColumn> list = new LinkedList<>();
         for ( String columnName : key.getColumnNames() ) {
-            list.add( new CatalogIndexColumn( id, i++, columnName ) );
+            list.add( new CatalogIndexColumn( id, i++, columnName, this ) );
         }
         return list;
     }
@@ -83,7 +82,6 @@ public final class CatalogIndex implements Serializable {
 
     public Serializable[] getParameterArray( int ordinalPosition, String columnName ) {
         return new Serializable[]{
-                key.getDatabaseName(),
                 key.getSchemaName(),
                 key.getTableName(),
                 !unique,
@@ -103,19 +101,22 @@ public final class CatalogIndex implements Serializable {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
+    @Value
     public static class CatalogIndexColumn implements CatalogObject {
 
         private static final long serialVersionUID = -5596459769680478780L;
 
-        private final long indexId;
-        private final int ordinalPosition;
-        @Getter
-        private final String columnName;
+        public long indexId;
+        public int ordinalPosition;
+
+        public String columnName;
+
+        public CatalogIndex index;
 
 
         @Override
         public Serializable[] getParameterArray() {
-            return Catalog.getInstance().getIndex( indexId ).getParameterArray( ordinalPosition, columnName );
+            return index.getParameterArray( ordinalPosition, columnName );
         }
 
 

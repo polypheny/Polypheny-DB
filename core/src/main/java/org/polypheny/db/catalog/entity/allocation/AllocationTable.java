@@ -27,7 +27,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -35,7 +34,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class AllocationTable extends CatalogEntity implements Allocation {
+public class AllocationTable extends AllocationEntity<LogicalTable> {
 
     public List<CatalogColumnPlacement> placements;
     public long adapterId;
@@ -43,8 +42,8 @@ public class AllocationTable extends CatalogEntity implements Allocation {
     public LogicalTable logicalTable;
 
 
-    public AllocationTable( LogicalTable logicalTable, long id, long logicalId, String name, long adapterId, List<CatalogColumnPlacement> placements ) {
-        super( id, name, EntityType.ENTITY, NamespaceType.RELATIONAL );
+    public AllocationTable( LogicalTable logicalTable, long id, long logicalId, String name, String namespaceName, long adapterId, List<CatalogColumnPlacement> placements ) {
+        super( logicalTable, id, name, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.logicalTable = logicalTable;
         this.logicalId = logicalId;
         this.adapterId = adapterId;

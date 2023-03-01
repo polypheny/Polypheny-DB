@@ -17,13 +17,8 @@
 package org.polypheny.db.sql.language.ddl.alterschema;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -33,7 +28,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterSchema;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -81,13 +75,8 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        try {
-            DdlManager.getInstance().alterSchemaOwner( schema.getSimple(), owner.getSimple(), context.getDatabaseId() );
-        } catch ( UnknownSchemaException e ) {
-            throw CoreUtil.newContextException( schema.getPos(), RESOURCE.schemaNotFound( schema.getSimple() ) );
-        } catch ( UnknownUserException e ) {
-            throw CoreUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
-        }
+        // DdlManager.getInstance().alterSchemaOwner( schema.getSimple(), owner.getSimple(), context.getDatabaseId() );
+        throw new UnsupportedOperationException( "This functionality is at the moment not supported" );
     }
 
 }

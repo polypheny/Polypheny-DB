@@ -41,9 +41,9 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.information.InformationGroup;
@@ -159,12 +159,12 @@ public class CsvSource extends DataSource {
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
-            List<CatalogColumnPlacement> placements = Catalog
+            List<PhysicalEntity<?>> placements = Catalog
                     .getInstance()
-                    .getColumnPlacementsOnAdapter( getAdapterId() );
+                    .getPhysicalsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
-            for ( CatalogColumnPlacement ccp : placements ) {
-                fileNames.add( ccp.physicalSchemaName );
+            for ( PhysicalEntity<?> ccp : placements ) {
+                fileNames.add( ccp.namespaceName );
             }
         } else if ( Sources.of( csvDir ).file().isFile() ) {
             // single files

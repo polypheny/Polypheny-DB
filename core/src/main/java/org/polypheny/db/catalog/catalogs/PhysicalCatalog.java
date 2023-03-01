@@ -16,6 +16,11 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import java.util.List;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+
 public interface PhysicalCatalog {
+
+    List<PhysicalEntity<?>> getPhysicalsOnAdapter( long id );
 
 }
