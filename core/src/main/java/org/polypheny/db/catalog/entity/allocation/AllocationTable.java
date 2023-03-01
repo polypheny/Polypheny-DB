@@ -21,27 +21,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.type.PolyType;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class AllocationTable extends CatalogEntity implements Allocation {
 
-    public final List<CatalogColumnPlacement> placements;
-    public final long adapterId;
+    public List<CatalogColumnPlacement> placements;
+    public long adapterId;
+    public long logicalId;
 
 
-    protected AllocationTable( long id, String name, long adapterId, List<CatalogColumnPlacement> placements ) {
+    public AllocationTable( long id, long logicalId, String name, long adapterId, List<CatalogColumnPlacement> placements ) {
         super( id, name, EntityType.ENTITY, NamespaceType.RELATIONAL );
+        this.logicalId = logicalId;
         this.adapterId = adapterId;
         this.placements = placements;
     }
@@ -64,13 +66,18 @@ public class AllocationTable extends CatalogEntity implements Allocation {
     }
 
 
-    public Map<Long, CatalogColumn> getColumns() {
+    public Map<Long, LogicalColumn> getColumns() {
         return null;
     }
 
 
     public Map<String, Long> getColumnNamesIds() {
         return getColumnNames().entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
+    }
+
+
+    public String getNamespaceName() {
+        return null;
     }
 
 }

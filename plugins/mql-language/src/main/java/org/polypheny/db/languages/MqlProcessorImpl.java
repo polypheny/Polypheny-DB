@@ -104,7 +104,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
     public boolean needsDdlGeneration( Node query, QueryParameters parameters ) {
         if ( query instanceof MqlCollectionStatement ) {
             return Catalog.getInstance()
-                    .getTables( Catalog.defaultDatabaseId, new Pattern( ((MqlQueryParameters) parameters).getDatabase() ), null )
+                    .getTables( new Pattern( ((MqlQueryParameters) parameters).getDatabase() ), null )
                     .stream()
                     .noneMatch( t -> t.name.equals( ((MqlCollectionStatement) query).getCollection() ) );
         }
@@ -145,7 +145,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
         stopWatch.start();
 
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.createDocument( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.createDocument( statement.getQueryProcessor().getPlanner(), rexBuilder, statement.getTransaction().getSnapshot() );
 
         final MqlToAlgConverter mqlToAlgConverter = new MqlToAlgConverter( this, statement.getTransaction().getSnapshot(), cluster );
         AlgRoot logicalRoot = mqlToAlgConverter.convert( mql, parameters );

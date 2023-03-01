@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -63,9 +63,9 @@ public class BatchUpdateRequest {
                 String value = entry.getValue().value;
                 Catalog catalog = Catalog.getInstance();
                 String[] split = tableId.split( "\\." );
-                CatalogColumn catalogColumn;
+                LogicalColumn logicalColumn;
                 try {
-                    catalogColumn = catalog.getColumn( catalog.getTable( "APP", split[0], split[1] ).id, entry.getKey() );
+                    logicalColumn = catalog.getColumn( catalog.getTable( split[0], split[1] ).id, entry.getKey() );
                 } catch ( UnknownColumnException | UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Could not determine column type", e );
                     return null;
@@ -73,14 +73,14 @@ public class BatchUpdateRequest {
                 if ( fileName == null && value == null ) {
                     setClauses.add( String.format( "\"%s\"=NULL", entry.getKey() ) );
                 } else if ( value != null && fileName == null ) {
-                    setClauses.add( String.format( "\"%s\"=%s", entry.getKey(), Crud.uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) ) );
+                    setClauses.add( String.format( "\"%s\"=%s", entry.getKey(), Crud.uiValueToSql( value, logicalColumn.type, logicalColumn.collectionsType ) ) );
                 } else if ( value == null ) {// && fileName != null
-                    if ( catalogColumn.type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                    if ( logicalColumn.type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                         setClauses.add( String.format( "\"%s\"=?", entry.getKey() ) );
                         statement.getDataContext().addParameterValues( counter++, null, ImmutableList.of( httpRequest.getPart( fileName ).getInputStream() ) );
                     } else {
                         String data = IOUtils.toString( httpRequest.getPart( fileName ).getInputStream(), StandardCharsets.UTF_8 );
-                        setClauses.add( String.format( "\"%s\"=%s", entry.getKey(), Crud.uiValueToSql( data, catalogColumn.type, catalogColumn.collectionsType ) ) );
+                        setClauses.add( String.format( "\"%s\"=%s", entry.getKey(), Crud.uiValueToSql( data, logicalColumn.type, logicalColumn.collectionsType ) ) );
                     }
                 } else {
                     log.warn( "This should not happen" );

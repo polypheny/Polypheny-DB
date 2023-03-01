@@ -30,13 +30,13 @@ import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -71,7 +71,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
 
     public abstract void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
 
-    public abstract void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn );
+    public abstract void addColumn( Context context, LogicalTable catalogTable, LogicalColumn logicalColumn );
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
@@ -79,7 +79,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
 
     public abstract void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds );
 
-    public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType );
+    public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, LogicalColumn logicalColumn, PolyType oldType );
 
     public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
 

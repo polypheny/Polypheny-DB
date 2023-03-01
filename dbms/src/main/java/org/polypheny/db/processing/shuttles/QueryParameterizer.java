@@ -420,7 +420,6 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         return new LogicalDocumentModify(
                 modify.getTraitSet(),
                 modify.getEntity(),
-                modify.getCatalogReader(),
                 input,
                 modify.operation,
                 modify.getKeys(),

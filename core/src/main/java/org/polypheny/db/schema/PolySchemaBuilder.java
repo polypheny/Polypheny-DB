@@ -36,7 +36,6 @@ import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
@@ -84,25 +83,24 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     private synchronized Snapshot buildSchema() {
 
         Catalog catalog = Catalog.getInstance();
-        CatalogDatabase catalogDatabase = catalog.getDatabase( Catalog.defaultDatabaseId );
 
         // Build logical namespaces
-        Map<Pair<Long, Long>, CatalogEntity> logicalRelational = buildRelationalLogical( catalog, catalogDatabase );
+        Map<Pair<Long, Long>, CatalogEntity> logicalRelational = buildRelationalLogical( catalog );
 
-        Map<Pair<Long, Long>, CatalogEntity> logicalDocument = buildDocumentLogical( catalog, catalogDatabase );
+        Map<Pair<Long, Long>, CatalogEntity> logicalDocument = buildDocumentLogical( catalog );
 
-        Map<Pair<Long, Long>, CatalogEntity> logicalGraph = buildGraphLogical( catalog, catalogDatabase );
+        Map<Pair<Long, Long>, CatalogEntity> logicalGraph = buildGraphLogical( catalog );
 
         // Build mapping structures
 
         // Build physical namespaces
         List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
 
-        Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalRelational = buildPhysicalTables( catalog, catalogDatabase, adapters );
+        Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalRelational = buildPhysicalTables( catalog, adapters );
 
-        Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalDocument = buildPhysicalDocuments( catalog, catalogDatabase, adapters );
+        Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalDocument = buildPhysicalDocuments( catalog, adapters );
 
-        Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalGraph = buildPhysicalGraphs( catalog, catalogDatabase );
+        Map<Triple<Long, Long, Long>, CatalogEntityPlacement> physicalGraph = buildPhysicalGraphs( catalog );
 
         isOutdated = false;
         return null;
@@ -110,14 +108,14 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private Map<Pair<Long, Long>, CatalogEntity> buildGraphLogical( Catalog catalog, CatalogDatabase catalogDatabase ) {
-        return catalog.getGraphs( catalogDatabase.id, null ).stream().collect( Collectors.toMap( e -> Pair.of( e.id, e.id ), e -> e ) );
+    private Map<Pair<Long, Long>, CatalogEntity> buildGraphLogical( Catalog catalog ) {
+        return catalog.getGraphs( null ).stream().collect( Collectors.toMap( e -> Pair.of( e.id, e.id ), e -> e ) );
     }
 
 
-    private Map<Pair<Long, Long>, CatalogEntity> buildRelationalLogical( Catalog catalog, CatalogDatabase catalogDatabase ) {
+    private Map<Pair<Long, Long>, CatalogEntity> buildRelationalLogical( Catalog catalog ) {
         Map<Pair<Long, Long>, CatalogEntity> entities = new HashMap<>();
-        for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
+        for ( CatalogSchema catalogSchema : catalog.getSchemas( null ) ) {
             if ( catalogSchema.namespaceType != NamespaceType.RELATIONAL ) {
                 continue;
             }
@@ -130,9 +128,9 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private Map<Pair<Long, Long>, CatalogEntity> buildDocumentLogical( Catalog catalog, CatalogDatabase catalogDatabase ) {
+    private Map<Pair<Long, Long>, CatalogEntity> buildDocumentLogical( Catalog catalog ) {
         Map<Pair<Long, Long>, CatalogEntity> entities = new HashMap<>();
-        for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
+        for ( CatalogSchema catalogSchema : catalog.getSchemas( null ) ) {
             if ( catalogSchema.namespaceType != NamespaceType.DOCUMENT ) {
                 continue;
             }
@@ -146,10 +144,10 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private Map<Triple<Long, Long, Long>, CatalogEntityPlacement> buildPhysicalGraphs( Catalog catalog, CatalogDatabase catalogDatabase ) {
+    private Map<Triple<Long, Long, Long>, CatalogEntityPlacement> buildPhysicalGraphs( Catalog catalog ) {
         Map<Triple<Long, Long, Long>, CatalogEntityPlacement> placements = new HashMap<>();
         // Build adapter schema (physical schema) GRAPH
-        for ( LogicalGraph graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
+        for ( LogicalGraph graph : catalog.getGraphs( null ) ) {
             for ( int adapterId : graph.placements ) {
 
                 CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
@@ -168,10 +166,10 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private Map<Triple<Long, Long, Long>, CatalogEntityPlacement> buildPhysicalDocuments( Catalog catalog, CatalogDatabase catalogDatabase, List<CatalogAdapter> adapters ) {
+    private Map<Triple<Long, Long, Long>, CatalogEntityPlacement> buildPhysicalDocuments( Catalog catalog, List<CatalogAdapter> adapters ) {
         Map<Triple<Long, Long, Long>, CatalogEntityPlacement> placements = new HashMap<>();
         // Build adapter schema (physical schema) DOCUMENT
-        for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ).stream().filter( s -> s.namespaceType == NamespaceType.DOCUMENT ).collect( Collectors.toList() ) ) {
+        for ( CatalogSchema catalogSchema : catalog.getSchemas( null ).stream().filter( s -> s.namespaceType == NamespaceType.DOCUMENT ).collect( Collectors.toList() ) ) {
             for ( CatalogAdapter catalogAdapter : adapters ) {
 
                 Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
@@ -211,10 +209,10 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private Map<Triple<Long, Long, Long>, CatalogEntityPlacement> buildPhysicalTables( Catalog catalog, CatalogDatabase catalogDatabase, List<CatalogAdapter> adapters ) {
+    private Map<Triple<Long, Long, Long>, CatalogEntityPlacement> buildPhysicalTables( Catalog catalog, List<CatalogAdapter> adapters ) {
         Map<Triple<Long, Long, Long>, CatalogEntityPlacement> placements = new HashMap<>();
         // Build adapter schema (physical schema) RELATIONAL
-        for ( CatalogSchema catalogSchema : new ArrayList<>( catalog.getSchemas( catalogDatabase.id, null ) ) ) {
+        for ( CatalogSchema catalogSchema : new ArrayList<>( catalog.getSchemas( null ) ) ) {
             for ( CatalogAdapter catalogAdapter : adapters ) {
                 // Get list of tables on this adapter
                 Map<Long, Set<Long>> tableIdsPerSchema = new HashMap<>();

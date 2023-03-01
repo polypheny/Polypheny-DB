@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.transaction.Statement;
@@ -33,7 +33,7 @@ public interface DataMigrator {
     void copyData(
             Transaction transaction,
             CatalogAdapter store,
-            List<CatalogColumn> columns,
+            List<LogicalColumn> columns,
             List<Long> partitionIds );
 
     /**
@@ -51,7 +51,7 @@ public interface DataMigrator {
     void copySelectiveData(
             Transaction transaction,
             CatalogAdapter store,
-            LogicalTable sourceTable, LogicalTable targetTable, List<CatalogColumn> columns,
+            LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns,
             Map<Long, List<CatalogColumnPlacement>> placementDistribution,
             List<Long> targetPartitionIds );
 
@@ -72,14 +72,14 @@ public interface DataMigrator {
             CatalogAdapter store,
             LogicalTable sourceTable,
             LogicalTable targetTable,
-            List<CatalogColumn> columns,
+            List<LogicalColumn> columns,
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
     AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
     //is used within copyData
-    void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+    void executeQuery( List<LogicalColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 

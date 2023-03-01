@@ -18,10 +18,9 @@ package org.polypheny.db.mql.mql2alg;
 
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDocument;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
 import org.polypheny.db.mql.mql.MqlTest;
@@ -29,7 +28,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.test.MockRelOptPlanner;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 public abstract class Mql2AlgTest extends MqlTest {
@@ -42,8 +40,8 @@ public abstract class Mql2AlgTest extends MqlTest {
 
 
     static {
-        factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        cluster = AlgOptCluster.create( new MockRelOptPlanner( Contexts.empty() ), new RexBuilder( factory ), traitSet, rootSchema );
+        factory = AlgDataTypeFactory.DEFAULT;
+        cluster = AlgOptCluster.create( new MockRelOptPlanner( Contexts.empty() ), new RexBuilder( factory ), null, null );
         reader = new MockCatalogReaderDocument( factory, false );
         reader.init();
         MQL_TO_ALG_CONVERTER = new MqlToAlgConverter( null, reader, cluster );

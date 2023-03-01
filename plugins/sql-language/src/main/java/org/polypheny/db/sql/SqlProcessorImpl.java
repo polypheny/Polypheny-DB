@@ -38,10 +38,9 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -56,7 +55,6 @@ import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -266,8 +264,8 @@ public class SqlProcessorImpl extends Processor {
 
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
             int pos = 0;
-            List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
-            for ( CatalogColumn column : columns ) {
+            List<LogicalColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
+            for ( LogicalColumn column : columns ) {
 
                 // Add column
                 newColumnList.add( new SqlIdentifier( column.name, ParserPos.ZERO ) );
@@ -368,7 +366,7 @@ public class SqlProcessorImpl extends Processor {
             long schemaId;
             String tableOldName;
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = Catalog.getInstance().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
                 schemaId = Catalog.getInstance().getSchema( transaction.getDefaultSchema().databaseId, tableName.names.get( 0 ) ).id;
@@ -378,8 +376,6 @@ public class SqlProcessorImpl extends Processor {
                 tableOldName = tableName.names.get( 0 );
             }
             catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );
-        } catch ( UnknownDatabaseException e ) {
-            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {

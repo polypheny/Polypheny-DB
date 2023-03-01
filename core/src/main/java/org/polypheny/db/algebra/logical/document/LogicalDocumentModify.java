@@ -24,7 +24,6 @@ import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -33,19 +32,19 @@ public class LogicalDocumentModify extends DocumentModify<CatalogEntity> impleme
     /**
      * Subclass of {@link DocumentModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentModify( AlgTraitSet traits, CatalogEntity entity, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
-        super( traits, entity, catalogReader, input, operation, keys, updates );
+    public LogicalDocumentModify( AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+        super( traits, entity, input, operation, keys, updates );
     }
 
 
-    public static LogicalDocumentModify create( CatalogEntity entity, AlgNode input, CatalogReader catalogReader, Operation operation, List<String> keys, List<RexNode> updates ) {
-        return new LogicalDocumentModify( input.getTraitSet(), entity, catalogReader, input, operation, keys, updates );
+    public static LogicalDocumentModify create( CatalogEntity entity, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+        return new LogicalDocumentModify( input.getTraitSet(), entity, input, operation, keys, updates );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentModify( traitSet, entity, getCatalogReader(), inputs.get( 0 ), operation, getKeys(), getUpdates() );
+        return new LogicalDocumentModify( traitSet, entity, inputs.get( 0 ), operation, getKeys(), getUpdates() );
     }
 
 

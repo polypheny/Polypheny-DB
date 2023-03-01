@@ -19,12 +19,12 @@ package org.polypheny.db.restapi;
 
 import java.util.Objects;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 public class RequestColumn {
 
-    private final CatalogColumn column;
+    private final LogicalColumn column;
     private final int tableScanIndex;
     private int logicalIndex;
     private final String fullyQualifiedName;
@@ -33,7 +33,7 @@ public class RequestColumn {
     private final boolean explicit;
 
 
-    RequestColumn( CatalogColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate, boolean explicit ) {
+    RequestColumn( LogicalColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate, boolean explicit ) {
         this.column = Objects.requireNonNull( column );
         this.tableScanIndex = tableScanIndex;
         this.logicalIndex = logicalIndex;
@@ -48,7 +48,7 @@ public class RequestColumn {
     }
 
 
-    RequestColumn( CatalogColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate ) {
+    RequestColumn( LogicalColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate ) {
         this( column, tableScanIndex, logicalIndex, alias, aggregate, true );
     }
 
@@ -83,7 +83,7 @@ public class RequestColumn {
     }
 
 
-    public CatalogColumn getColumn() {
+    public LogicalColumn getColumn() {
         return column;
     }
 

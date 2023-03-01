@@ -34,21 +34,21 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -194,7 +194,7 @@ public class LanguageCrud {
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogTable = catalog.getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
+                catalogTable = catalog.getTable( t[0], t[1] );
             } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                 log.error( "Caught exception", e );
             }
@@ -228,9 +228,9 @@ public class LanguageCrud {
             if ( catalogTable != null ) {
                 try {
                     if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                        if ( catalogColumn.defaultValue != null ) {
-                            dbCol.defaultValue = catalogColumn.defaultValue.value;
+                        LogicalColumn logicalColumn = catalog.getColumn( catalogTable.id, columnName );
+                        if ( logicalColumn.defaultValue != null ) {
+                            dbCol.defaultValue = logicalColumn.defaultValue.value;
                         }
                     }
                 } catch ( UnknownColumnException e ) {
@@ -324,7 +324,7 @@ public class LanguageCrud {
     private Placement getPlacements( final Index index ) {
         Catalog catalog = Catalog.getInstance();
         String graphName = index.getSchema();
-        List<LogicalGraph> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) );
+        List<LogicalGraph> graphs = catalog.getGraphs( new Pattern( graphName ) );
         if ( graphs.size() != 1 ) {
             log.error( "The requested graph does not exist." );
             return new Placement( new RuntimeException( "The requested graph does not exist." ) );

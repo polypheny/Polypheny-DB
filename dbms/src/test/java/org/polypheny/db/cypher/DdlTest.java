@@ -26,8 +26,8 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
@@ -43,17 +43,17 @@ public class DdlTest extends CypherTestTemplate {
 
         execute( "CREATE DATABASE " + graphName );
 
-        LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+        LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
 
-        assertEquals( 1, catalog.getGraphs( graph.databaseId, new Pattern( graphName ) ).size() );
+        assertEquals( 1, catalog.getGraphs( new Pattern( graphName ) ).size() );
 
         execute( "DROP DATABASE " + graphName );
 
-        assertEquals( 0, catalog.getGraphs( graph.databaseId, new Pattern( graphName ) ).size() );
+        assertEquals( 0, catalog.getGraphs( new Pattern( graphName ) ).size() );
 
         execute( "CREATE DATABASE " + graphName );
 
-        assertEquals( 1, catalog.getGraphs( graph.databaseId, new Pattern( graphName ) ).size() );
+        assertEquals( 1, catalog.getGraphs( new Pattern( graphName ) ).size() );
 
         execute( "DROP DATABASE " + graphName );
     }
@@ -65,7 +65,7 @@ public class DdlTest extends CypherTestTemplate {
         try {
             execute( "CREATE DATABASE " + graphName );
 
-            LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 1, graph.placements.size() );
 
@@ -73,7 +73,7 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
-            graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 2, graph.placements.size() );
 
@@ -95,13 +95,13 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( String.format( "CREATE DATABASE %s ON STORE %s", graphName, "store1" ) );
 
-            LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 1, graph.placements.size() );
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
 
-            graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 2, graph.placements.size() );
 
@@ -122,7 +122,7 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( "CREATE DATABASE " + graphName );
 
-            LogicalGraph graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 1, graph.placements.size() );
 
@@ -130,7 +130,7 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
-            graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 2, graph.placements.size() );
 

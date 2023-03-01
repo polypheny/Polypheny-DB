@@ -51,11 +51,11 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -486,7 +486,7 @@ public class ConstraintEnforceAttacher {
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
-                    final CatalogColumn foreignColumn;
+                    final LogicalColumn foreignColumn;
                     try {
                         foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
                     } catch ( UnknownColumnException e ) {
@@ -561,7 +561,7 @@ public class ConstraintEnforceAttacher {
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
-                    final CatalogColumn column, foreignColumn;
+                    final LogicalColumn column, foreignColumn;
                     try {
                         column = Catalog.getInstance().getColumn( table.id, columnName );
                         foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
@@ -654,7 +654,7 @@ public class ConstraintEnforceAttacher {
                 try {
                     List<LogicalTable> tables = Catalog
                             .getInstance()
-                            .getTables( null, null, null )
+                            .getTables( null, null )
                             .stream()
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getNamespaceType() == NamespaceType.RELATIONAL )
                             .collect( Collectors.toList() );

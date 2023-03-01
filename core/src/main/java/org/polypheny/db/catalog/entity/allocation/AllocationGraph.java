@@ -17,17 +17,23 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import java.io.Serializable;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public class AllocationGraph extends CatalogEntity implements Allocation {
 
 
-    public final LogicalGraph logical;
-    public final long id;
+    public LogicalGraph logical;
+    public long id;
 
 
     public AllocationGraph( long id, LogicalGraph graph ) {

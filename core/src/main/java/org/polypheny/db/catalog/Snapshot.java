@@ -67,6 +67,9 @@ public interface Snapshot extends OperatorTable {
 
     CatalogEntity getEntity( long namespaceId, Pattern name );
 
+    @Deprecated
+    CatalogEntity getEntity( List<String> names );
+
     //// LOGICAL ENTITIES
     @Deprecated
     LogicalTable getLogicalTable( List<String> names );

@@ -65,7 +65,7 @@ public class RequestParserTest {
     @Test
     public void testParseCatalogTableName() throws UnknownTableException, UnknownSchemaException, UnknownDatabaseException {
         Catalog mockedCatalog = mock( Catalog.class );
-        when( mockedCatalog.getTable( "testdb", "schema1", "table1" ) ).thenReturn( null );
+        when( mockedCatalog.getTable( "schema1", "table1" ) ).thenReturn( null );
         RequestParser requestParser = new RequestParser(
                 mockedCatalog,
                 null,
@@ -73,7 +73,7 @@ public class RequestParserTest {
                 "username",
                 "testdb" );
         LogicalTable table = requestParser.parseCatalogTableName( "schema1.table1." );
-        verify( mockedCatalog ).getTable( "testdb", "schema1", "table1" );
+        verify( mockedCatalog ).getTable( "schema1", "table1" );
     }
 
 

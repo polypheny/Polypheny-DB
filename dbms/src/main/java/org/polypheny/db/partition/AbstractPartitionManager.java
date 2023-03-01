@@ -23,9 +23,9 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
@@ -93,7 +93,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
             List<List<String>> partitionGroupQualifiers,
             long numPartitionGroups,
             List<String> partitionGroupNames,
-            CatalogColumn partitionColumn ) {
+            LogicalColumn partitionColumn ) {
 
         if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
             throw new RuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );

@@ -25,15 +25,10 @@ public class UnknownSchemaException extends CatalogException {
     private final String schemaName;
 
 
-    public UnknownSchemaException( String databaseName, String schemaName ) {
-        super( "There is no schema with name '" + schemaName + "' in the database '" + databaseName + "'" );
+    public UnknownSchemaException( String schemaName ) {
+        super( "There is no schema with name '" + schemaName + "'" );
         this.schemaName = schemaName;
     }
 
-
-    public UnknownSchemaException( long databaseId, String schemaName ) {
-        super( "There is no schema with name '" + schemaName + "' in the database with the id '" + databaseId + "'" );
-        this.schemaName = schemaName;
-    }
 
 }

@@ -19,8 +19,8 @@ package org.polypheny.db.monitoring.statistics;
 import lombok.Data;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 /**
@@ -32,16 +32,16 @@ class QueryResult {
     @Getter
     private final CatalogEntity entity;
     @Getter
-    private final CatalogColumn column;
+    private final LogicalColumn column;
 
 
-    QueryResult( CatalogEntity entity, CatalogColumn column ) {
+    QueryResult( CatalogEntity entity, LogicalColumn column ) {
         this.entity = entity;
         this.column = column;
     }
 
 
-    public static QueryResult fromCatalogColumn( CatalogColumn column ) {
+    public static QueryResult fromCatalogColumn( LogicalColumn column ) {
         return new QueryResult( Catalog.getInstance().getTable( column.tableId ), column );
     }
 

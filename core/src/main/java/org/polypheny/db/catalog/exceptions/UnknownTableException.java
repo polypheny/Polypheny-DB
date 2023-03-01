@@ -25,14 +25,8 @@ public class UnknownTableException extends CatalogException {
     private final String tableName;
 
 
-    public UnknownTableException( String databaseName, String schemaName, String tableName ) {
-        super( "There is no table with name '" + tableName + "' in schema '" + schemaName + "' of database '" + databaseName + "'." );
-        this.tableName = tableName;
-    }
-
-
-    public UnknownTableException( long databaseId, String schemaName, String tableName ) {
-        super( "There is no table with name '" + tableName + "' in schema '" + schemaName + "' of database with the id '" + databaseId + "'." );
+    public UnknownTableException( String schemaName, String tableName ) {
+        super( "There is no table with name '" + tableName + "' in schema '" + schemaName + "'." );
         this.tableName = tableName;
     }
 

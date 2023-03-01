@@ -298,7 +298,7 @@ public class Projections {
 
 
         public long getColumnId() {
-            return columnIndex.catalogColumn.id;
+            return columnIndex.logicalColumn.id;
         }
 
 

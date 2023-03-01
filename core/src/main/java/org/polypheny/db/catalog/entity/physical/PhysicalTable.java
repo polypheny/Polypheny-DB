@@ -20,6 +20,9 @@ import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -28,23 +31,26 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public class PhysicalTable extends CatalogEntity implements Physical {
 
-    public final ImmutableList<CatalogColumnPlacement> placements;
-    public final ImmutableList<Long> columnIds;
-    public final ImmutableList<String> columnNames;
-    public final String namespaceName;
+    public ImmutableList<CatalogColumnPlacement> placements;
+    public ImmutableList<Long> columnIds;
+    public ImmutableList<String> columnNames;
+    public String namespaceName;
 
 
-    protected PhysicalTable( long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
+    public PhysicalTable( long id, String name, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
         super( id, name, type, namespaceType );
         this.namespaceName = namespaceName;
         this.placements = ImmutableList.copyOf( placements );
@@ -55,11 +61,6 @@ public class PhysicalTable extends CatalogEntity implements Physical {
 
     public PhysicalTable( AllocationTable table, String name, String namespaceName, List<String> columnNames ) {
         this( table.id, name, namespaceName, table.entityType, table.namespaceType, table.placements, columnNames );
-    }
-
-
-    public PhysicalTable( PhysicalTable physicalTable ) {
-        this( physicalTable.id, physicalTable.name, physicalTable.namespaceName, physicalTable.entityType, physicalTable.namespaceType, physicalTable.placements, physicalTable.columnNames );
     }
 
 
@@ -74,9 +75,9 @@ public class PhysicalTable extends CatalogEntity implements Physical {
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( CatalogColumnPlacement placement : placements ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
+            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( placement.columnId );
+            AlgDataType sqlType = logicalColumn.getAlgDataType( typeFactory );
+            fieldInfo.add( logicalColumn.name, placement.physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() );

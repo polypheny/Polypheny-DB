@@ -29,12 +29,11 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -106,7 +105,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                schemaId = catalog.getSchema( name.names.get( 1 ) ).id;
                 viewName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
                 schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
@@ -115,8 +114,6 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                 schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 viewName = name.names.get( 0 );
             }
-        } catch ( UnknownDatabaseException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }

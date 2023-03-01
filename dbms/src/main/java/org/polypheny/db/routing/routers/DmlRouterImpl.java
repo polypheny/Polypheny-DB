@@ -82,13 +82,13 @@ import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
@@ -101,8 +101,6 @@ import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -154,7 +152,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         long pkid = catalogTable.primaryKey;
         List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
-        CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
+        LogicalColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
 
         // Essentially gets a list of all stores where this table resides
         List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
@@ -203,8 +201,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
                         try {
-                            CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                            if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, catalogColumn.id ) ) {
+                            LogicalColumn logicalColumn = catalog.getColumn( catalogTable.id, columnName );
+                            if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, logicalColumn.id ) ) {
                                 updateColumnListIterator.remove();
                                 sourceExpressionListIterator.remove();
                             }
@@ -1341,7 +1339,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         long pkid = fromTable.primaryKey;
         List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
-        CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
+        LogicalColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
         List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
 
         List<AlgNode> nodes = new ArrayList<>();
@@ -1377,7 +1375,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( operand instanceof RexInputRef ) {
             int index = ((RexInputRef) operand).getIndex();
             AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
-            CatalogColumn column;
+            LogicalColumn column;
             try {
                 String columnName;
                 String[] columnNames = field.getName().split( "\\." );

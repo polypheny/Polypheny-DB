@@ -20,24 +20,27 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class IdBuilder {
 
+    private final AtomicLong snapshotId;
     private final AtomicLong databaseId;
-    public final AtomicLong namespaceId;
-    public final AtomicLong entityId;
-    public final AtomicLong fieldId;
+    private final AtomicLong namespaceId;
+    private final AtomicLong entityId;
+    private final AtomicLong fieldId;
 
-    public final AtomicLong userId;
+    private final AtomicLong userId;
 
-    public final AtomicLong verticalId;
+    private final AtomicLong verticalId;
 
-    public final AtomicLong horizontalId;
+    private final AtomicLong horizontalId;
 
 
     public IdBuilder() {
-        this( new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ) );
+        this( new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ), new AtomicLong( 0 ) );
     }
 
 
-    public IdBuilder( AtomicLong databaseId, AtomicLong namespaceId, AtomicLong entityId, AtomicLong fieldId, AtomicLong userId, AtomicLong verticalId, AtomicLong horizontalId ) {
+    public IdBuilder( AtomicLong snapshotId, AtomicLong databaseId, AtomicLong namespaceId, AtomicLong entityId, AtomicLong fieldId, AtomicLong userId, AtomicLong verticalId, AtomicLong horizontalId ) {
+        this.snapshotId = snapshotId;
+
         this.databaseId = databaseId;
         this.namespaceId = namespaceId;
         this.entityId = entityId;
@@ -46,6 +49,11 @@ public class IdBuilder {
         this.userId = userId;
         this.verticalId = verticalId;
         this.horizontalId = horizontalId;
+    }
+
+
+    public long getNewSnapshotId() {
+        return snapshotId.getAndIncrement();
     }
 
 

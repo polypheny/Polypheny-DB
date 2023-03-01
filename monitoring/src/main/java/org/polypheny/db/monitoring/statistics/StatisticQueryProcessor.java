@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -96,9 +96,9 @@ public class StatisticQueryProcessor {
             List<LogicalTable> childTables = catalog.getTables( schema.id, null );
             for ( LogicalTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
-                List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
-                for ( CatalogColumn catalogColumn : childColumns ) {
-                    table.add( schema.name + "." + childTable.name + "." + catalogColumn.name );
+                List<LogicalColumn> childColumns = catalog.getColumns( childTable.id );
+                for ( LogicalColumn logicalColumn : childColumns ) {
+                    table.add( schema.name + "." + childTable.name + "." + logicalColumn.name );
                 }
                 if ( childTable.entityType == EntityType.ENTITY ) {
                     tables.addAll( table );
@@ -118,8 +118,7 @@ public class StatisticQueryProcessor {
      */
     public List<QueryResult> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogColumn> catalogColumns = catalog.getColumns(
-                        null,
+        List<LogicalColumn> logicalColumns = catalog.getColumns(
                         null,
                         null,
                         null )
@@ -128,9 +127,9 @@ public class StatisticQueryProcessor {
                 .collect( Collectors.toList() );
         List<QueryResult> allColumns = new ArrayList<>();
 
-        for ( CatalogColumn catalogColumn : catalogColumns ) {
-            if ( catalog.getTable( catalogColumn.tableId ).entityType != EntityType.VIEW ) {
-                allColumns.add( QueryResult.fromCatalogColumn( catalogColumn ) );
+        for ( LogicalColumn logicalColumn : logicalColumns ) {
+            if ( catalog.getTable( logicalColumn.tableId ).entityType != EntityType.VIEW ) {
+                allColumns.add( QueryResult.fromCatalogColumn( logicalColumn ) );
             }
         }
         return allColumns;
@@ -145,7 +144,6 @@ public class StatisticQueryProcessor {
     public List<LogicalTable> getAllTable() {
         Catalog catalog = Catalog.getInstance();
         List<LogicalTable> catalogEntities = catalog.getTables(
-                null,
                 null,
                 null );
         List<LogicalTable> allTables = new ArrayList<>();

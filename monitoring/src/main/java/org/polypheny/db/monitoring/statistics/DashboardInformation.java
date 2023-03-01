@@ -21,8 +21,8 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
@@ -83,7 +83,7 @@ public class DashboardInformation {
         catalog.getAdapters().forEach( v -> {
             this.availableAdapter.put( v.uniqueName, Pair.of( v.getAdapterTypeName(), v.type ) );
         } );
-        catalog.getSchemas( null, null ).forEach( v -> {
+        catalog.getSchemas( null ).forEach( v -> {
             availableSchemas.put( v.id, Pair.of( v.name, v.namespaceType ) );
         } );
     }

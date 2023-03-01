@@ -35,21 +35,15 @@ package org.polypheny.db.adapter.csv;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Entity.Table;
-import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.util.Source;
 
 
 /**
  * Base class for table that reads CSV files.
  */
-public abstract class CsvTable extends PhysicalTable implements Table {
+public abstract class CsvTable extends PhysicalTable {
 
     protected final Source source;
     protected List<CsvFieldType> fieldTypes;
@@ -60,8 +54,8 @@ public abstract class CsvTable extends PhysicalTable implements Table {
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( table );
+    CsvTable( Source source, AllocationTable allocationTable, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( allocationTable, allocationTable.name, allocationTable.getNamespaceName(), new ArrayList<>( allocationTable.getColumnNames().values() ) );
         this.source = source;
         this.fieldTypes = fieldTypes;
         this.fields = fields;

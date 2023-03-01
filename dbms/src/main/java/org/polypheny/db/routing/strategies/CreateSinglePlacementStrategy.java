@@ -22,14 +22,14 @@ import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
-    public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
+    public List<DataStore> getDataStoresForNewColumn( LogicalColumn addedColumn ) {
         LogicalTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
         return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.dataPlacements.get( 0 ) ) );
     }

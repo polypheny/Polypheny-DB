@@ -25,8 +25,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
@@ -41,21 +41,21 @@ public class SchemaToJsonMapper {
 
     public static String exportTableDefinitionAsJson( @NonNull LogicalTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
         List<JsonColumn> columns = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : Catalog.getInstance().getColumns( catalogTable.id ) ) {
+        for ( LogicalColumn logicalColumn : Catalog.getInstance().getColumns( catalogTable.id ) ) {
             String defaultValue = null;
             String defaultFunctionName = null;
             if ( exportDefaultValues ) {
-                if ( catalogColumn.defaultValue != null ) {
-                    defaultValue = catalogColumn.defaultValue.value;
-                    defaultFunctionName = catalogColumn.defaultValue.functionName;
+                if ( logicalColumn.defaultValue != null ) {
+                    defaultValue = logicalColumn.defaultValue.value;
+                    defaultFunctionName = logicalColumn.defaultValue.functionName;
                 }
             }
             columns.add( new JsonColumn(
-                    catalogColumn.name,
-                    catalogColumn.type.name(),
-                    catalogColumn.length,
-                    catalogColumn.scale,
-                    catalogColumn.nullable,
+                    logicalColumn.name,
+                    logicalColumn.type.name(),
+                    logicalColumn.length,
+                    logicalColumn.scale,
+                    logicalColumn.nullable,
                     defaultValue,
                     defaultFunctionName ) );
         }

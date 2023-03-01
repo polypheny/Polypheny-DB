@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.Value;
+import lombok.With;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -36,25 +38,27 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 /**
  * Serves as a container, which holds all information related to a table entity placed on physical store.
  */
+@With
+@Value
 public class CatalogDataPlacement implements CatalogObject {
 
     private static final long serialVersionUID = 5192378654968316873L;
-    public final long tableId;
-    public final int adapterId;
+    public long tableId;
+    public int adapterId;
 
-    public final PlacementType placementType;
+    public PlacementType placementType;
 
     // Is present at the DataPlacement && the PartitionPlacement
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
-    public final DataPlacementRole dataPlacementRole;
+    public DataPlacementRole dataPlacementRole;
 
-    public final ImmutableList<Long> columnPlacementsOnAdapter;
+    public ImmutableList<Long> columnPlacementsOnAdapter;
 
     // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important
     // and frequent than writes
-    public final ImmutableMap<DataPlacementRole, ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
+    public ImmutableMap<DataPlacementRole, ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
 
 
     // The newest commit timestamp when any partitions inside this placement has been updated or refreshed
@@ -62,7 +66,7 @@ public class CatalogDataPlacement implements CatalogObject {
     // Technically other  linked attachments could still have older update timestamps.
     // This should help to quickly identify placements that can fulfil certain conditions.
     // Without having to traverse all partition placements one-by-one
-    @Setter
+    @NonFinal
     public Timestamp updateTimestamp;
 
 
@@ -71,14 +75,14 @@ public class CatalogDataPlacement implements CatalogObject {
             int adapterId,
             PlacementType placementType,
             DataPlacementRole dataPlacementRole,
-            @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
-            @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
+            @NonNull final List<Long> columnPlacementsOnAdapter,
+            @NonNull final List<Long> partitionPlacementsOnAdapter ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
         this.dataPlacementRole = dataPlacementRole;
-        this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
-        this.partitionPlacementsOnAdapterByRole = structurizeDataPlacements( partitionPlacementsOnAdapter );
+        this.columnPlacementsOnAdapter = ImmutableList.copyOf( columnPlacementsOnAdapter );
+        this.partitionPlacementsOnAdapterByRole = ImmutableMap.copyOf( structurizeDataPlacements( partitionPlacementsOnAdapter ) );
 
     }
 
@@ -124,7 +128,7 @@ public class CatalogDataPlacement implements CatalogObject {
     }
 
 
-    private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<Long> unsortedPartitionIds ) {
+    private Map<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final List<Long> unsortedPartitionIds ) {
         // Since this shall only be called after initialization of dataPlacement object,
         // we need to clear the contents of partitionPlacementsOnAdapterByRole
         Map<DataPlacementRole, ImmutableList<Long>> partitionsPerRole = new HashMap<>();
@@ -156,7 +160,7 @@ public class CatalogDataPlacement implements CatalogObject {
         }
 
         // Finally, overwrite entire partitionPlacementsOnAdapterByRole at Once
-        return ImmutableMap.copyOf( partitionsPerRole );
+        return partitionsPerRole;
     }
 
 }

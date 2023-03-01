@@ -16,54 +16,52 @@
 
 package org.polypheny.db.catalog.entity;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import lombok.Getter;
+import java.util.List;
+import java.util.Map;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Value;
+import lombok.With;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
-
+@EqualsAndHashCode(callSuper = true)
+@With
+@Value
 public class CatalogMaterializedView extends CatalogView {
 
     private static final long serialVersionUID = 4728996184367206274L;
 
-    private final String language;
+    public String language;
 
-    @Getter
-    private final AlgCollation algCollation;
+    public AlgCollation algCollation;
 
-    @Getter
-    private final String query;
+    public String query;
 
-    @Getter
-    private final MaterializedCriteria materializedCriteria;
+    public MaterializedCriteria materializedCriteria;
 
-    @Getter
-    private final boolean ordered;
+    public boolean ordered;
 
 
     public CatalogMaterializedView(
             long id,
             String name,
-            ImmutableList<Long> columnIds,
+            List<Long> columnIds,
             long schemaId,
-            long databaseId,
             int ownerId,
             EntityType entityType,
             String query,
             Long primaryKey,
-            @NonNull ImmutableList<Integer> dataPlacements,
+            @NonNull List<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
             AlgCollation algCollation,
-            ImmutableList<Long> connectedViews,
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
+            List<Long> connectedViews,
+            Map<Long, List<Long>> underlyingTables,
             String language,
             MaterializedCriteria materializedCriteria,
             boolean ordered
@@ -73,7 +71,6 @@ public class CatalogMaterializedView extends CatalogView {
                 name,
                 columnIds,
                 schemaId,
-                databaseId,
                 ownerId,
                 entityType,
                 query,
@@ -93,76 +90,6 @@ public class CatalogMaterializedView extends CatalogView {
     }
 
 
-    @Override
-    public LogicalTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
-        return new CatalogMaterializedView(
-                id,
-                name,
-                newColumnIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                query,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                algCollation,
-                connectedViews,
-                underlyingTables,
-                language,
-                materializedCriteria,
-                ordered );
-    }
-
-
-    @Override
-    public LogicalTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
-        return new CatalogMaterializedView(
-                id,
-                name,
-                fieldIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                query,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                algCollation,
-                newConnectedViews,
-                underlyingTables,
-                language,
-                materializedCriteria,
-                ordered );
-    }
-
-
-    @Override
-    public LogicalTable getRenamed( String newName ) {
-        return new CatalogMaterializedView(
-                id,
-                newName,
-                fieldIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                query,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                algCollation,
-                connectedViews,
-                underlyingTables,
-                language,
-                materializedCriteria,
-                ordered );
-    }
 
 
     @Override

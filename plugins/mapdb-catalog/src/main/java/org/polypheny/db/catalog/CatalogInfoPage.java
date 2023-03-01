@@ -162,23 +162,23 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultNamespaceId );
             } );
-            catalog.getSchemas( null, null ).forEach( s -> {
+            catalog.getSchemas( null ).forEach( s -> {
                 namespaceInformation.addRow( s.id, s.name, s.databaseId, s.namespaceType, s.caseSensitive );
             } );
-            catalog.getTables( null, null, null ).forEach( t -> {
+            catalog.getTables( null, null ).forEach( t -> {
                 tableInformation.addRow( t.id, t.name, t.databaseId, t.namespaceId, t.entityType, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );
             } );
-            catalog.getColumns( null, null, null, null ).forEach( c -> {
+            catalog.getColumns( null, null, null ).forEach( c -> {
                 String placements = catalog.getColumnPlacement( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId, placements );
             } );
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
             } );
-            catalog.getPartitionGroups( null, null, null ).forEach( pg -> {
+            catalog.getPartitionGroups( null, null ).forEach( pg -> {
                 partitionGroupInformation.addRow( pg.id, pg.partitionGroupName, pg.tableId, pg.partitionIds.size() );
             } );
-            catalog.getPartitions( null, null, null ).forEach( p -> {
+            catalog.getPartitions( null, null ).forEach( p -> {
                 partitionInformation.addRow( p.id, p.partitionGroupId, p.tableId, p.partitionQualifiers );
             } );
         } catch ( Exception e ) {

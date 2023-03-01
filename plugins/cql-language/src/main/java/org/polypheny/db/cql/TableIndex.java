@@ -49,7 +49,7 @@ public class TableIndex {
         try {
             log.debug( "Creating TableIndex." );
             Catalog catalog = Catalog.getInstance();
-            LogicalTable table = catalog.getTable( inDatabase, schemaName, tableName );
+            LogicalTable table = catalog.getTable( schemaName, tableName );
             return new TableIndex( table, schemaName, tableName );
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new UnknownIndexException( "Cannot find a underlying table for the specified table name: " + schemaName + "." + tableName + "." );

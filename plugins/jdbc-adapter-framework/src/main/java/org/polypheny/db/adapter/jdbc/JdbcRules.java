@@ -59,12 +59,12 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -73,14 +73,12 @@ import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -1019,7 +1017,7 @@ public class JdbcRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final RelModify modify = (RelModify) alg;
+            final RelModify<?> modify = (RelModify<?>) alg;
             final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -1028,8 +1026,7 @@ public class JdbcRules {
             return new JdbcTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getEntity(),
-                    modify.getCatalogReader(),
+                    modify.getEntity().unwrap( JdbcEntity.class ),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),
@@ -1043,7 +1040,7 @@ public class JdbcRules {
     /**
      * Table-modification operator implemented in JDBC convention.
      */
-    public static class JdbcTableModify extends RelModify implements JdbcAlg {
+    public static class JdbcTableModify extends RelModify<JdbcEntity> implements JdbcAlg {
 
         private final Expression expression;
 
@@ -1051,21 +1048,20 @@ public class JdbcRules {
         public JdbcTableModify(
                 AlgOptCluster cluster,
                 AlgTraitSet traitSet,
-                AlgOptEntity table,
-                Prepare.CatalogReader catalogReader,
+                JdbcEntity table,
                 AlgNode input,
                 Operation operation,
                 List<String> updateColumnList,
-                List<RexNode> sourceExpressionList,
+                List<? extends RexNode> sourceExpressionList,
                 boolean flattened ) {
-            super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+            super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
             assert input.getConvention() instanceof JdbcConvention;
             assert getConvention() instanceof JdbcConvention;
             final ModifiableEntity modifiableTable = table.unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 throw new AssertionError(); // TODO: user error in validator
             }
-            this.expression = table.getExpression( Queryable.class );
+            this.expression = table.asExpression( Queryable.class );
             if ( expression == null ) {
                 throw new AssertionError(); // TODO: user error in validator
             }
@@ -1084,8 +1080,7 @@ public class JdbcRules {
             return new JdbcTableModify(
                     getCluster(),
                     traitSet,
-                    getEntity(),
-                    getCatalogReader(),
+                    entity,
                     AbstractAlgNode.sole( inputs ),
                     getOperation(),
                     getUpdateColumnList(),

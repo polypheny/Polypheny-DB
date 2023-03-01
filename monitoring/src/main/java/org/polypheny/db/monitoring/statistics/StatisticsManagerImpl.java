@@ -54,8 +54,8 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -73,8 +73,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.impl.AbstractEntity;
@@ -147,13 +145,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     @Override
-    public void updateColumnName( CatalogColumn catalogColumn, String newName ) {
-        if ( statisticSchemaMap.containsKey( catalogColumn.schemaId )
-                && statisticSchemaMap.get( catalogColumn.schemaId ).containsKey( catalogColumn.tableId )
-                && statisticSchemaMap.get( catalogColumn.schemaId ).get( catalogColumn.tableId ).containsKey( catalogColumn.id ) ) {
-            StatisticColumn<?> statisticColumn = statisticSchemaMap.get( catalogColumn.schemaId ).get( catalogColumn.tableId ).get( catalogColumn.id );
+    public void updateColumnName( LogicalColumn logicalColumn, String newName ) {
+        if ( statisticSchemaMap.containsKey( logicalColumn.schemaId )
+                && statisticSchemaMap.get( logicalColumn.schemaId ).containsKey( logicalColumn.tableId )
+                && statisticSchemaMap.get( logicalColumn.schemaId ).get( logicalColumn.tableId ).containsKey( logicalColumn.id ) ) {
+            StatisticColumn<?> statisticColumn = statisticSchemaMap.get( logicalColumn.schemaId ).get( logicalColumn.tableId ).get( logicalColumn.id );
             statisticColumn.updateColumnName( newName );
-            statisticSchemaMap.get( catalogColumn.schemaId ).get( catalogColumn.tableId ).put( catalogColumn.id, statisticColumn );
+            statisticSchemaMap.get( logicalColumn.schemaId ).get( logicalColumn.tableId ).put( logicalColumn.id, statisticColumn );
         }
     }
 

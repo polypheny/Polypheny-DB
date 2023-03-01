@@ -45,12 +45,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
@@ -90,10 +89,10 @@ public class CsvSchema extends AbstractNamespace implements Schema {
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( allocationTable.placements.size() );
         for ( CatalogColumnPlacement placement : allocationTable.placements ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-            fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
+            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( placement.columnId );
+            AlgDataType sqlType = sqlType( typeFactory, logicalColumn.type, logicalColumn.length, logicalColumn.scale, null );
+            fieldInfo.add( logicalColumn.name, placement.physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
+            fieldTypes.add( CsvFieldType.getCsvFieldType( logicalColumn.type ) );
             fieldIds.add( (int) placement.physicalPosition );
         }
 

@@ -19,28 +19,18 @@ package org.polypheny.db.catalog;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entities.CatalogUser;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logical.document.DocumentCatalog;
 import org.polypheny.db.catalog.logical.graph.GraphCatalog;
 import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.FullSnapshot;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.util.Moniker;
 
 
 /**
@@ -51,7 +41,7 @@ import org.polypheny.db.util.Moniker;
  * Field -> Column (Relational), does not exist (Graph), Field (Document)
  */
 @Slf4j
-public class PolyCatalog implements Serializable, CatalogReader {
+public class PolyCatalog implements Serializable {
 
     @Getter
     public final BinarySerializer<PolyCatalog> serializer = Serializable.builder.get().build( PolyCatalog.class );
@@ -82,7 +72,7 @@ public class PolyCatalog implements Serializable, CatalogReader {
 
 
     private void updateSnapshot() {
-        this.fullSnapshot = new FullSnapshot( catalogs );
+        this.fullSnapshot = new FullSnapshot( idBuilder.getNewSnapshotId(), catalogs );
     }
 
 
@@ -137,69 +127,9 @@ public class PolyCatalog implements Serializable, CatalogReader {
     public long addColumn( String name, long namespaceId, long entityId, AlgDataType type ) {
         long id = idBuilder.getNewFieldId();
 
-        catalogs.get( namespaceId ).asRelational().addColumn( id, name, entityId );
+        catalogs.get( namespaceId ).asRelational().addColumn( id, name, entityId, type );
 
         return id;
-    }
-
-
-    @Override
-    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
-
-    }
-
-
-    @Override
-    public List<Operator> getOperatorList() {
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType getNamedType( Identifier typeName ) {
-        return null;
-    }
-
-
-    @Override
-    public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList ) {
-        return null;
-    }
-
-
-    @Override
-    public Snapshot getSnapshot() {
-        return null;
-    }
-
-
-    @Override
-    public LogicalTable getTableForMember( List<String> names ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalTable getTable( List<String> names ) {
-        return null;
-    }
-
-
-    @Override
-    public AlgOptEntity getCollection( List<String> names ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalGraph getGraph( String name ) {
-        return null;
     }
 
 

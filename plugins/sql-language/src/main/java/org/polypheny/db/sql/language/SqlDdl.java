@@ -26,10 +26,9 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.languages.ParserPos;
@@ -73,7 +72,7 @@ public abstract class SqlDdl extends SqlCall {
             String tableOldName;
             Catalog catalog = Catalog.getInstance();
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                schemaId = catalog.getSchema( tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
                 schemaId = catalog.getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
@@ -83,8 +82,6 @@ public abstract class SqlDdl extends SqlCall {
                 tableOldName = tableName.names.get( 0 );
             }
             catalogTable = catalog.getTable( schemaId, tableOldName );
-        } catch ( UnknownDatabaseException e ) {
-            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
@@ -94,14 +91,14 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected CatalogColumn getCatalogColumn( long tableId, SqlIdentifier columnName ) {
-        CatalogColumn catalogColumn;
+    protected LogicalColumn getCatalogColumn( long tableId, SqlIdentifier columnName ) {
+        LogicalColumn logicalColumn;
         try {
-            catalogColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
+            logicalColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnName.getPos(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
         }
-        return catalogColumn;
+        return logicalColumn;
     }
 
 

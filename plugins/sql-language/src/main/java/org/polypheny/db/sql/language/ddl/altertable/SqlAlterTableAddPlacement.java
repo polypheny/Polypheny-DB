@@ -25,9 +25,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.languages.ParserPos;
@@ -131,8 +131,8 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
         List<Long> columnIds = new LinkedList<>();
         for ( SqlNode node : columnList.getSqlList() ) {
-            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
-            columnIds.add( catalogColumn.id );
+            LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
+            columnIds.add( logicalColumn.id );
         }
 
         try {

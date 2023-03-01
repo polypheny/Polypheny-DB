@@ -18,50 +18,60 @@ package org.polypheny.db.catalog.entity.logical;
 
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.Value;
+import lombok.With;
+import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.schema.ColumnStrategy;
 
-
+@Value
+@With
 @EqualsAndHashCode(callSuper = false)
+@NonFinal
 public class LogicalTable extends CatalogEntity implements Comparable<LogicalTable>, Logical {
 
     private static final long serialVersionUID = 4653390333258552102L;
 
-    @Getter
-    public final long id;
-    public final String name;
-    public final ImmutableList<Long> fieldIds;
-    public final long namespaceId;
-    public final long databaseId;
-    public final int ownerId;
-    public final EntityType entityType;
-    public final Long primaryKey;
-    public final boolean modifiable;
-
-    public final PartitionProperty partitionProperty;
-
-    public final ImmutableList<Integer> dataPlacements;
-
-    @Getter
-    public final ImmutableList<Long> connectedViews;
+    @Serialize
+    public long id;
+    @Serialize
+    public String name;
+    @Serialize
+    public ImmutableList<Long> fieldIds;
+    @Serialize
+    public long namespaceId;
+    @Serialize
+    public int ownerId;
+    @Serialize
+    public EntityType entityType;
+    @Serialize
+    public Long primaryKey;
+    @Serialize
+    public boolean modifiable;
+    @Serialize
+    public PartitionProperty partitionProperty;
+    @Serialize
+    public ImmutableList<Integer> dataPlacements;
+    @Serialize
+    public ImmutableList<Long> connectedViews;
 
 
     public LogicalTable(
@@ -69,54 +79,33 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
             @NonNull final String name,
             final ImmutableList<Long> fieldIds,
             final long namespaceId,
-            final long databaseId,
             final int ownerId,
             @NonNull final EntityType type,
             final Long primaryKey,
-            @NonNull final ImmutableList<Integer> dataPlacements,
+            @NonNull final List<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
-        super( id, name, type, NamespaceType.RELATIONAL );
-        this.id = id;
-        this.name = name;
-        this.fieldIds = fieldIds;
-        this.namespaceId = namespaceId;
-        this.databaseId = databaseId;
-        this.ownerId = ownerId;
-        this.entityType = type;
-        this.primaryKey = primaryKey;
-        this.modifiable = modifiable;
-
-        this.partitionProperty = partitionProperty;
-        this.connectedViews = ImmutableList.of();
-
-        this.dataPlacements = ImmutableList.copyOf( dataPlacements );
-
-        if ( type == EntityType.ENTITY && !modifiable ) {
-            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
-        }
+        this( id, name, fieldIds, namespaceId, ownerId, type, primaryKey, dataPlacements, modifiable, partitionProperty, ImmutableList.of() );
     }
 
 
     public LogicalTable(
-            final long id,
-            @NonNull final String name,
-            final ImmutableList<Long> fieldIds,
-            final long namespaceId,
-            final long databaseId,
-            final int ownerId,
-            @NonNull final EntityType type,
-            final Long primaryKey,
-            @NonNull final ImmutableList<Integer> dataPlacements,
-            boolean modifiable,
-            PartitionProperty partitionProperty,
-            ImmutableList<Long> connectedViews ) {
+            @Deserialize("id") final long id,
+            @Deserialize("name") @NonNull final String name,
+            @Deserialize("fieldIds") final List<Long> fieldIds,
+            @Deserialize("namespaceId") final long namespaceId,
+            @Deserialize("ownerId") final int ownerId,
+            @Deserialize("type") @NonNull final EntityType type,
+            @Deserialize("primaryKey") final Long primaryKey,
+            @Deserialize("dataPlacements") @NonNull final List<Integer> dataPlacements,
+            @Deserialize("modifiable") boolean modifiable,
+            @Deserialize("partitionProperty") PartitionProperty partitionProperty,
+            @Deserialize("connectedViews") List<Long> connectedViews ) {
         super( id, name, type, NamespaceType.RELATIONAL );
         this.id = id;
         this.name = name;
-        this.fieldIds = fieldIds;
+        this.fieldIds = ImmutableList.copyOf( fieldIds );
         this.namespaceId = namespaceId;
-        this.databaseId = databaseId;
         this.ownerId = ownerId;
         this.entityType = type;
         this.primaryKey = primaryKey;
@@ -124,7 +113,7 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
 
         this.partitionProperty = partitionProperty;
 
-        this.connectedViews = connectedViews;
+        this.connectedViews = ImmutableList.copyOf( connectedViews );
 
         this.dataPlacements = ImmutableList.copyOf( dataPlacements );
 
@@ -133,11 +122,6 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
         }
     }
 
-
-    @SneakyThrows
-    public String getDatabaseName() {
-        return Catalog.getInstance().getDatabase( databaseId ).name;
-    }
 
 
     @SneakyThrows
@@ -173,7 +157,6 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
-                getDatabaseName(),
                 getNamespaceName(),
                 name,
                 entityType.name(),
@@ -192,15 +175,9 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
     @Override
     public int compareTo( LogicalTable o ) {
         if ( o != null ) {
-            int comp = (int) (this.databaseId - o.databaseId);
+            int comp = (int) (this.namespaceId - o.namespaceId);
             if ( comp == 0 ) {
-                comp = (int) (this.namespaceId - o.namespaceId);
-                if ( comp == 0 ) {
-                    return (int) (this.id - o.id);
-                } else {
-                    return comp;
-                }
-
+                return (int) (this.id - o.id);
             } else {
                 return comp;
             }
@@ -209,77 +186,17 @@ public class LogicalTable extends CatalogEntity implements Comparable<LogicalTab
     }
 
 
-    static String getEnumNameOrNull( Enum<?> theEnum ) {
-        if ( theEnum == null ) {
-            return null;
-        } else {
-            return theEnum.name();
-        }
-    }
-
-
-    public LogicalTable getRenamed( String newName ) {
-        return new LogicalTable(
-                id,
-                newName,
-                fieldIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                connectedViews );
-    }
-
-
     @Override
     public AlgDataType getRowType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
         for ( Long id : fieldIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( id );
-            AlgDataType sqlType = catalogColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT );
-            fieldInfo.add( catalogColumn.name, null, sqlType ).nullable( catalogColumn.nullable );
+            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( id );
+            AlgDataType sqlType = logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            fieldInfo.add( logicalColumn.name, null, sqlType ).nullable( logicalColumn.nullable );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() ).apply( AlgDataTypeFactory.DEFAULT );
-    }
-
-
-    public LogicalTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
-        return new LogicalTable(
-                id,
-                name,
-                fieldIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                newConnectedViews );
-    }
-
-
-    public LogicalTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
-        return new LogicalTable(
-                id,
-                name,
-                newColumnIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                connectedViews );
     }
 
 

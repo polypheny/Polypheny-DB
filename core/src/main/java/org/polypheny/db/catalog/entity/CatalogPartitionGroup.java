@@ -33,7 +33,6 @@ public final class CatalogPartitionGroup implements CatalogObject {
     public final String partitionGroupName;
     public final long tableId;
     public final long schemaId;
-    public final long databaseId;
     public final ImmutableList<String> partitionQualifiers;
     public final ImmutableList<Long> partitionIds;
     public final boolean isUnbound;
@@ -46,7 +45,6 @@ public final class CatalogPartitionGroup implements CatalogObject {
             final String partitionGroupName,
             final long tableId,
             final long schemaId,
-            final long databaseId,
             final long partitionKey,
             final List<String> partitionQualifiers,
             final List<Long> partitionIds,
@@ -55,7 +53,6 @@ public final class CatalogPartitionGroup implements CatalogObject {
         this.partitionGroupName = partitionGroupName;
         this.tableId = tableId;
         this.schemaId = schemaId;
-        this.databaseId = databaseId;
         this.partitionKey = partitionKey;
         // TODO @HENNLO Although the qualifiers are now part of CatalogPartitions, it might be a good improvement to
         //  accumulate all qualifiers of all internal partitions here to speed up query time.
@@ -74,11 +71,6 @@ public final class CatalogPartitionGroup implements CatalogObject {
         return Catalog.getInstance().getTable( tableId ).name;
     }
 
-
-    @SneakyThrows
-    public String getDatabaseName() {
-        return Catalog.getInstance().getDatabase( databaseId ).name;
-    }
 
 
     @SneakyThrows

@@ -38,7 +38,6 @@ public class CatalogPartition implements CatalogObject {
     public final long partitionGroupId;
     public final long tableId;
     public final long schemaId;
-    public final long databaseId;
     public final boolean isUnbound;
 
 
@@ -46,14 +45,12 @@ public class CatalogPartition implements CatalogObject {
             final long id,
             final long tableId,
             final long schemaId,
-            final long databaseId,
             final List<String> partitionQualifiers,
             final boolean isUnbound,
             final long partitionGroupId ) {
         this.id = id;
         this.tableId = tableId;
         this.schemaId = schemaId;
-        this.databaseId = databaseId;
         this.partitionQualifiers = ImmutableList.copyOf( partitionQualifiers );
         this.isUnbound = isUnbound;
         this.partitionGroupId = partitionGroupId;

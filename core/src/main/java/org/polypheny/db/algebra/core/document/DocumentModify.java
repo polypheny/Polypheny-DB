@@ -19,16 +19,12 @@ package org.polypheny.db.algebra.core.document;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -39,20 +35,17 @@ public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> 
     private final List<String> keys;
     @Getter
     private final List<RexNode> updates;
-    @Getter
-    private final CatalogReader catalogReader;
 
 
     /**
      * Creates a {@link DocumentModify}.
      * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which modifies a collection.
      */
-    protected DocumentModify( AlgTraitSet traits, E collection, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+    protected DocumentModify( AlgTraitSet traits, E collection, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
         super( input.getCluster(), input.getTraitSet(), collection, input );
         this.operation = operation;
         this.keys = keys;
         this.updates = updates;
-        this.catalogReader = catalogReader;
         this.traitSet = traits;
     }
 

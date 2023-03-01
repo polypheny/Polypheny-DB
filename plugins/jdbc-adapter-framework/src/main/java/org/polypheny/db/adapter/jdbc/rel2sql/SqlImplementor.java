@@ -77,7 +77,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -194,13 +193,13 @@ public abstract class SqlImplementor {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = result.asSelect( ((JdbcEntity) ((AlgOptEntityImpl) input.getValue().getEntity()).getEntity()).getNodeList() );
+                    node = result.asSelect( input.getValue().getEntity().unwrap( JdbcEntity.class ).getNodeList() );
                 } else {
                     node = result.asSelect();
                 }
             } else {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( ((JdbcEntity) ((AlgOptEntityImpl) input.getValue().getEntity()).getEntity()).getNodeList() ) );
+                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().getEntity().unwrap( JdbcEntity.class ).getNodeList() ) );
                 } else {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
                 }
@@ -1176,7 +1175,7 @@ public abstract class SqlImplementor {
                 select = subSelect();
             } else {
                 if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ) instanceof JdbcScan ) {
-                    select = asSelect( ((JdbcEntity) ((AlgOptEntityImpl) alg.getInput( 0 ).getEntity()).getEntity()).getNodeList() );
+                    select = asSelect( alg.getInput( 0 ).getEntity().unwrap( JdbcEntity.class ).getNodeList() );
                 } else {
                     select = asSelect();
                 }

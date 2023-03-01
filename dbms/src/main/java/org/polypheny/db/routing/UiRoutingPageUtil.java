@@ -23,11 +23,11 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -97,10 +97,10 @@ public class UiRoutingPageUtil {
                 v.forEach( p -> {
                     CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getColumnPlacement( p.left, p.right );
                     CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getPartitionPlacement( p.left, k );
-                    CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogColumnPlacement.columnId );
+                    LogicalColumn logicalColumn = Catalog.getInstance().getColumn( catalogColumnPlacement.columnId );
                     table.addRow(
                             catalogTable.getNamespaceName() + "." + catalogTable.name,
-                            catalogColumn.name,
+                            logicalColumn.name,
                             catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
                             catalogPartitionPlacement.adapterUniqueName,
                             catalogColumnPlacement.physicalSchemaName + "." + catalogPartitionPlacement.physicalTableName + "." + catalogColumnPlacement.physicalColumnName );

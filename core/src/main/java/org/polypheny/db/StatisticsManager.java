@@ -19,8 +19,8 @@ package org.polypheny.db;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
@@ -84,7 +84,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract void initializeStatisticSettings();
 
-    public abstract void updateColumnName( CatalogColumn catalogColumn, String newName );
+    public abstract void updateColumnName( LogicalColumn logicalColumn, String newName );
 
     public abstract void updateTableName( LogicalTable catalogTable, String newName );
 

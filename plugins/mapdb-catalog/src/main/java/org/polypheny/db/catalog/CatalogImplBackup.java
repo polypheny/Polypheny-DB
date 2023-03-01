@@ -147,7 +147,7 @@ import org.polypheny.db.view.MaterializedViewManager;
 
 @Extension
 @Slf4j
-public class CatalogImpl extends Catalog {
+public class CatalogImplBackup extends Catalog {
 
     private static final String FILE_PATH = "mapDB";
     private static DB db;
@@ -241,7 +241,7 @@ public class CatalogImpl extends Catalog {
     private final Map<Long, AlgNode> nodeInfo = new HashMap<>();
 
 
-    public CatalogImpl() {
+    public CatalogImplBackup() {
         this( FILE_PATH, true, true, false );
     }
 
@@ -254,7 +254,7 @@ public class CatalogImpl extends Catalog {
      * @param doInitInformationPage if a new informationPage should be created
      * @param deleteAfter if the file is deleted when the catalog is closed
      */
-    public CatalogImpl( String fileName, boolean doInitSchema, boolean doInitInformationPage, boolean deleteAfter ) {
+    public CatalogImplBackup( String fileName, boolean doInitSchema, boolean doInitInformationPage, boolean deleteAfter ) {
         super();
 
         if ( db != null ) {

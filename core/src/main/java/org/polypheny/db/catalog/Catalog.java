@@ -34,11 +34,9 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
@@ -52,8 +50,9 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -61,7 +60,6 @@ import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -91,7 +89,7 @@ public abstract class Catalog implements ExtensionPoint {
     public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
-    public static Catalog INSTANCE = null;
+    private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
     public static boolean testMode;
@@ -120,7 +118,6 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void rollback();
 
-    public abstract Map<Long, AlgDataType> getAlgTypeInfo();
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
@@ -185,68 +182,13 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     /**
-     * Adds a database
-     *
-     * @param name The name of the database
-     * @param ownerId The owner of this database
-     * @param ownerName The name of the owner
-     * @param defaultSchemaId The id of the default schema of this database
-     * @param defaultSchemaName The name of the default schema of this database
-     * @return the id of the newly inserted database
-     */
-    public abstract long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName );
-
-    /**
-     * Delete a database from the catalog
-     *
-     * @param databaseId The id of the database to delete
-     */
-    public abstract void deleteDatabase( long databaseId );
-
-    /**
-     * Get all databases
-     *
-     * @param pattern A pattern for the database name
-     * @return List of databases
-     */
-    public abstract List<CatalogDatabase> getDatabases( Pattern pattern );
-
-    /**
-     * Returns the database with the given name.
-     *
-     * @param databaseName The name of the database
-     * @return The database
-     * @throws UnknownDatabaseException If there is no database with this name.
-     */
-    public abstract CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException;
-
-    /**
-     * Returns the database with the given name.
-     *
-     * @param databaseId The id of the database
-     * @return The database
-     */
-    public abstract CatalogDatabase getDatabase( long databaseId );
-
-    /**
      * Get all schemas which fit to the specified filter pattern.
      * <code>getSchemas(xid, null, null)</code> returns all schemas of all databases.
      *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern );
-
-    /**
-     * Get all schemas of the specified database which fit to the specified filter pattern.
-     * <code>getSchemas(xid, databaseName, null)</code> returns all schemas of the database.
-     *
-     * @param databaseId The id of the database
-     * @param schemaNamePattern Pattern for the schema name. null returns all
-     * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
-     */
-    public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern );
+    public abstract List<CatalogSchema> getSchemas( Pattern schemaNamePattern );
 
     /**
      * Returns the schema with the specified id.
@@ -259,42 +201,29 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Returns the schema with the given name in the specified database.
      *
-     * @param databaseName The name of the database
      * @param schemaName The name of the schema
      * @return The schema
      * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException;
-
-    /**
-     * Returns the schema with the given name in the specified database.
-     *
-     * @param databaseId The id of the database
-     * @param schemaName The name of the schema
-     * @return The schema
-     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
-     */
-    public abstract CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException;
+    public abstract CatalogSchema getSchema( String schemaName ) throws UnknownSchemaException;
 
     /**
      * Adds a schema in a specified database
      *
      * @param name The name of the schema
-     * @param databaseId The id of the associated database
      * @param ownerId The owner of this schema
      * @param namespaceType The type of this schema
      * @return The id of the inserted schema
      */
-    public abstract long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType );
+    public abstract long addNamespace( String name, int ownerId, NamespaceType namespaceType );
 
     /**
      * Checks weather a schema with the specified name exists in a database.
      *
-     * @param databaseId The if of the database
      * @param schemaName The name of the schema to check
      * @return True if there is a schema with this name. False if not.
      */
-    public abstract boolean checkIfExistsSchema( long databaseId, String schemaName );
+    public abstract boolean checkIfExistsSchema( String schemaName );
 
     /**
      * Renames a schema
@@ -315,7 +244,6 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Adds a new graph to the catalog, on the same layer as schema in relational.
      *
-     * @param databaseId ID of the graph, which is also the id of the database
      * @param name The name of the graph
      * @param stores The datastores on which the graph is placed
      * @param modifiable If the graph is modifiable
@@ -323,7 +251,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param replace If the graph should replace an existing one
      * @return The id of the newly added graph
      */
-    public abstract long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
+    public abstract long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
 
     /**
      * Additional operations for the creation of a graph entity.
@@ -352,11 +280,10 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Get a collection of all graphs, which match the given conditions.
      *
-     * @param databaseId The id of the database to which the graph has to belong
      * @param graphName The pattern to which the name has to match, null if every name is matched
      * @return A collection of all graphs matching
      */
-    public abstract List<LogicalGraph> getGraphs( long databaseId, Pattern graphName );
+    public abstract List<LogicalGraph> getGraphs( Pattern graphName );
 
     /**
      * Add a new alias for a given graph.
@@ -405,33 +332,21 @@ public abstract class Catalog implements ExtensionPoint {
      * Get all tables of the specified database which fit to the specified filters.
      * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
      *
-     * @param databaseId The id of the database
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<LogicalTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<LogicalTable> getTables( Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given name in the specified database and schema.
      *
-     * @param databaseName The name of the database
      * @param schemaName The name of the schema
      * @param tableName The name of the table
      * @return The table
      */
-    public abstract LogicalTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException;
+    public abstract LogicalTable getTable( String schemaName, String tableName ) throws UnknownTableException, UnknownSchemaException;
 
-    /**
-     * Get all tables of the specified database which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
-     *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
-     */
-    public abstract List<LogicalTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given id
@@ -450,17 +365,6 @@ public abstract class Catalog implements ExtensionPoint {
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
     public abstract LogicalTable getTable( long schemaId, String tableName ) throws UnknownTableException;
-
-    /**
-     * Returns the table with the given name in the specified database and schema.
-     *
-     * @param databaseId The id of the database
-     * @param schemaName The name of the schema
-     * @param tableName The name of the table
-     * @return The table
-     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
-     */
-    public abstract LogicalTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table which is associated with a given partitionId
@@ -748,19 +652,18 @@ public abstract class Catalog implements ExtensionPoint {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( long tableId );
+    public abstract List<LogicalColumn> getColumns( long tableId );
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
      * <code>getColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
      *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @param columnNamePattern Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern );
+    public abstract List<LogicalColumn> getColumns( Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern );
 
     /**
      * Returns the column with the specified id.
@@ -768,7 +671,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param columnId The id of the column
      * @return A CatalogColumn
      */
-    public abstract CatalogColumn getColumn( long columnId );
+    public abstract LogicalColumn getColumn( long columnId );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -778,18 +681,17 @@ public abstract class Catalog implements ExtensionPoint {
      * @return A CatalogColumn
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
-    public abstract CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException;
+    public abstract LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException;
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
      *
-     * @param databaseName The name of the database
      * @param schemaName The name of the schema
      * @param tableName The name of the table
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
+    public abstract LogicalColumn getColumn( String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException;
 
     /**
      * Adds a column.
@@ -1322,12 +1224,11 @@ public abstract class Catalog implements ExtensionPoint {
      * Get all partitions of the specified database which fit to the specified filter patterns.
      * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
      *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<CatalogPartitionGroup> getPartitionGroups( Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Updates the specified partition group with the attached partitionIds
@@ -1373,12 +1274,11 @@ public abstract class Catalog implements ExtensionPoint {
      * Get all partitions of the specified database which fit to the specified filter patterns.
      * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
      *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<CatalogPartition> getPartitions( Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Get a list of all partition name belonging to a specific table

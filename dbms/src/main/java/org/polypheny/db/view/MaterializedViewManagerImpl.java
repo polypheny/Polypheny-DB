@@ -41,11 +41,11 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -178,13 +178,15 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public void addTables( Transaction transaction, List<String> tableNames ) {
         if ( tableNames.size() > 1 ) {
             try {
-                LogicalTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
+                LogicalTable catalogTable = Catalog.getInstance().getTable( tableNames.get( 0 ), tableNames.get( 1 ) );
                 long id = catalogTable.id;
                 if ( !catalogTable.getConnectedViews().isEmpty() ) {
                     updateCandidates.put( transaction.getXid(), id );
                 }
             } catch ( UnknownTableException e ) {
                 throw new RuntimeException( "Not possible to getLogicalTable to update which Tables were changed.", e );
+            } catch ( UnknownSchemaException e ) {
+                throw new RuntimeException( e );
             }
         }
     }
@@ -306,7 +308,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * Is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
      */
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, AlgRoot algRoot, CatalogMaterializedView materializedView ) {
+    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<LogicalColumn>> columns, AlgRoot algRoot, CatalogMaterializedView materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
@@ -340,21 +342,21 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
-        Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
+        Map<Integer, List<LogicalColumn>> columns = new HashMap<>();
 
         List<Integer> ids = new ArrayList<>();
         if ( catalog.checkIfExistsEntity( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
             CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( materializedId );
             for ( int id : catalogMaterializedView.dataPlacements ) {
                 ids.add( id );
-                List<CatalogColumn> catalogColumns = new ArrayList<>();
+                List<LogicalColumn> logicalColumns = new ArrayList<>();
 
                 int localAdapterIndex = catalogMaterializedView.dataPlacements.indexOf( id );
                 catalog.getDataPlacement( catalogMaterializedView.dataPlacements.get( localAdapterIndex ), catalogMaterializedView.id )
                         .columnPlacementsOnAdapter.forEach( col ->
-                                catalogColumns.add( catalog.getColumn( col ) )
+                                logicalColumns.add( catalog.getColumn( col ) )
                         );
-                columns.put( id, catalogColumns );
+                columns.put( id, logicalColumns );
             }
 
             AlgRoot targetRel;

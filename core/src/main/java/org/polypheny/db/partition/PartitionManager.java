@@ -18,8 +18,8 @@ package org.polypheny.db.partition;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.PolyType;
 
@@ -35,7 +35,7 @@ public interface PartitionManager {
 
     Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( LogicalTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters );
 
-    boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
+    boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn );
 
     /**
      * Returns all placements of catalogEntity and partitionIds

@@ -42,9 +42,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -259,7 +259,7 @@ public class RequestParser {
         }
 
         try {
-            LogicalTable table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
+            LogicalTable table = this.catalog.getTable( tableElements[0], tableElements[1] );
             if ( log.isDebugEnabled() ) {
                 log.debug( "Finished parsing table \"{}\".", tableName );
             }
@@ -309,7 +309,7 @@ public class RequestParser {
         long internalPosition = 0L;
         for ( LogicalTable table : tables ) {
             for ( long columnId : table.fieldIds ) {
-                CatalogColumn column = this.catalog.getColumn( columnId );
+                LogicalColumn column = this.catalog.getColumn( columnId );
                 int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
                 RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );
                 columns.add( requestColumn );
@@ -332,24 +332,24 @@ public class RequestParser {
             Matcher matcher = PROJECTION_ENTRY_PATTERN.matcher( projectionToParse );
             if ( matcher.find() ) {
                 String columnName = matcher.group( "column" );
-                CatalogColumn catalogColumn;
+                LogicalColumn logicalColumn;
 
                 try {
-                    catalogColumn = this.getCatalogColumnFromString( columnName );
+                    logicalColumn = this.getCatalogColumnFromString( columnName );
                     log.debug( "Fetched catalog column for projection key: {}.", columnName );
                 } catch ( UnknownColumnException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
                     log.warn( "Unable to fetch column: {}.", columnName, e );
                     throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, columnName );
                 }
 
-                if ( !validColumns.contains( catalogColumn.id ) ) {
+                if ( !validColumns.contains( logicalColumn.id ) ) {
                     log.warn( "Column isn't valid. Column: {}.", columnName );
                     throw new ParserException( ParserErrorCode.PROJECTION_INVALID_COLUMN, columnName );
                 }
 
-                projectedColumns.add( catalogColumn.id );
-                int calculatedPosition = tableOffsets.get( catalogColumn.tableId ) + catalogColumn.position - 1;
-                RequestColumn requestColumn = new RequestColumn( catalogColumn, calculatedPosition, internalPosition, matcher.group( "alias" ), this.decodeAggregateFunction( matcher.group( "agg" ) ) );
+                projectedColumns.add( logicalColumn.id );
+                int calculatedPosition = tableOffsets.get( logicalColumn.tableId ) + logicalColumn.position - 1;
+                RequestColumn requestColumn = new RequestColumn( logicalColumn, calculatedPosition, internalPosition, matcher.group( "alias" ), this.decodeAggregateFunction( matcher.group( "agg" ) ) );
                 internalPosition++;
 
                 columns.add( requestColumn );
@@ -362,7 +362,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            CatalogColumn column = this.catalog.getColumn( columnId );
+            LogicalColumn column = this.catalog.getColumn( columnId );
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -412,14 +412,14 @@ public class RequestParser {
     }
 
 
-    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownSchemaException, UnknownTableException {
+    private LogicalColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownSchemaException, UnknownTableException {
         String[] splitString = name.split( "\\." );
         if ( splitString.length != 3 ) {
             log.warn( "Column name is not 3 fields long. Got: {}", name );
             throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, name );
         }
 
-        return this.catalog.getColumn( this.databaseName, splitString[0], splitString[1], splitString[2] );
+        return this.catalog.getColumn( splitString[0], splitString[1], splitString[2] );
 
     }
 
@@ -744,10 +744,10 @@ public class RequestParser {
     }
 
 
-    public Map<String, CatalogColumn> generateNameMapping( List<LogicalTable> tables ) {
-        Map<String, CatalogColumn> nameMapping = new HashMap<>();
+    public Map<String, LogicalColumn> generateNameMapping( List<LogicalTable> tables ) {
+        Map<String, LogicalColumn> nameMapping = new HashMap<>();
         for ( LogicalTable table : tables ) {
-            for ( CatalogColumn column : this.catalog.getColumns( table.id ) ) {
+            for ( LogicalColumn column : this.catalog.getColumns( table.id ) ) {
                 nameMapping.put( column.getSchemaName() + "." + column.getTableName() + "." + column.name, column );
             }
         }

@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
@@ -38,11 +38,11 @@ public interface PolyphenyDbSchema {
     default LogicalTable getTable( List<String> names ) {
         switch ( names.size() ) {
             case 3:
-                return Catalog.getInstance().getTables( Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ), Pattern.of( names.get( 2 ) ) ).get( 0 );
+                return Catalog.getInstance().getTables( Pattern.of( names.get( 1 ) ), Pattern.of( names.get( 2 ) ) ).get( 0 );
             case 2:
-                return Catalog.getInstance().getTables( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ) ).get( 0 );
+                return Catalog.getInstance().getTables( Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ) ).get( 0 );
             case 1:
-                return Catalog.getInstance().getTables( Catalog.defaultDatabaseId, null, Pattern.of( names.get( 0 ) ) ).get( 0 );
+                return Catalog.getInstance().getTables( null, Pattern.of( names.get( 0 ) ) ).get( 0 );
             default:
                 return null;
         }
@@ -65,7 +65,7 @@ public interface PolyphenyDbSchema {
         CatalogNamespace namespace;
         switch ( names.size() ) {
             case 3:
-                namespace = Catalog.getInstance().getSchemas( Pattern.of( names.get( 0 ) ), Pattern.of( names.get( 1 ) ) ).get( 0 );
+                namespace = Catalog.getInstance().getSchemas( Pattern.of( names.get( 1 ) ) ).get( 0 );
                 return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 2 ) ) ).get( 0 );
             case 2:
                 namespace = Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );
@@ -93,7 +93,7 @@ public interface PolyphenyDbSchema {
 
     default LogicalGraph getGraph( List<String> names ) {
         if ( names.size() == 1 ) {// TODO add methods
-            return Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, Pattern.of( names.get( 0 ) ) ).get( 0 );
+            return Catalog.getInstance().getGraphs( Pattern.of( names.get( 0 ) ) ).get( 0 );
         }
         return null;
     }

@@ -47,10 +47,10 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.document.DocumentProject;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -61,13 +61,10 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
@@ -84,10 +81,6 @@ import org.polypheny.db.languages.mql.MqlUpdate;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -96,7 +89,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -108,7 +100,7 @@ import org.polypheny.db.util.TimestampString;
  */
 public class MqlToAlgConverter {
 
-    private final PolyphenyDbCatalogReader catalogReader;
+    private final Snapshot snapshot;
     private final AlgOptCluster cluster;
     private RexBuilder builder;
     private final static Map<String, Operator> mappings;
@@ -222,12 +214,12 @@ public class MqlToAlgConverter {
     private String defaultDatabase;
     private boolean notActive = false;
     private boolean usesDocumentModel;
-    private AlgOptEntity entity;
+    private CatalogEntity entity;
     private MqlQueryParameters parameters;
 
 
-    public MqlToAlgConverter( Processor mqlProcessor, PolyphenyDbCatalogReader catalogReader, AlgOptCluster cluster ) {
-        this.catalogReader = catalogReader;
+    public MqlToAlgConverter( Processor mqlProcessor, Snapshot snapshot, AlgOptCluster cluster ) {
+        this.snapshot = snapshot;
         this.cluster = Objects.requireNonNull( cluster );
         this.any = this.cluster.getTypeFactory().createPolyType( PolyType.ANY );
         this.nullableAny = this.cluster.getTypeFactory().createTypeWithNullability( any, true );
@@ -277,7 +269,7 @@ public class MqlToAlgConverter {
 
         AlgNode node;
 
-        if ( entity.getCatalogEntity().namespaceType == NamespaceType.RELATIONAL ) {
+        if ( entity.namespaceType == NamespaceType.RELATIONAL ) {
             _dataExists = false;
         }
 
@@ -324,14 +316,15 @@ public class MqlToAlgConverter {
     }
 
 
-    private AlgOptEntity getEntity( MqlCollectionStatement query, String dbSchemaName ) {
+    private CatalogEntity getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         List<String> names = ImmutableList.of( dbSchemaName, query.getCollection() );
 
-        PreparingEntity table = catalogReader.getTable( names );
+        return snapshot.getEntity( names );
 
+        /*
         if ( table == null || table.getEntity() == null ) {
-            return catalogReader.getCollection( names );
-        } else if ( table.getCatalogEntity().namespaceType == NamespaceType.GRAPH ) {
+            return snapshot.getCollection( names );
+        } else if ( table.namespaceType == NamespaceType.GRAPH ) {
 
             final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
@@ -347,24 +340,24 @@ public class MqlToAlgConverter {
                     1.0 );
         }
 
-        return table;
+        return table;*/
     }
 
 
     /**
      * Starts converting a db.collection.update();
      */
-    private AlgNode convertUpdate( MqlUpdate query, AlgOptEntity table, AlgNode node ) {
+    private AlgNode convertUpdate( MqlUpdate query, CatalogEntity entity, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
-            node = convertQuery( query, table.getRowType(), node );
+            node = convertQuery( query, entity.getRowType(), node );
             if ( query.isOnlyOne() ) {
                 node = wrapLimit( node, 1 );
             }
         }
         if ( query.isUsesPipeline() ) {
-            node = convertReducedPipeline( query, table.getRowType(), node, table );
+            node = convertReducedPipeline( query, entity.getRowType(), node, entity );
         } else {
-            node = translateUpdate( query, table.getRowType(), node, table );
+            node = translateUpdate( query, entity.getRowType(), node, entity );
         }
 
         return node;
@@ -377,7 +370,7 @@ public class MqlToAlgConverter {
      * this method is implemented like the reduced update pipeline,
      * but in fact could be combined and therefore optimized a lot more
      */
-    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, AlgOptEntity table ) {
+    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, CatalogEntity entity ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
         mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
@@ -449,7 +442,7 @@ public class MqlToAlgConverter {
             updates.clear();
         }
 
-        return finalizeUpdates( "d", mergedUpdates, rowType, node, table );
+        return finalizeUpdates( "d", mergedUpdates, rowType, node, entity );
 
 
     }
@@ -528,10 +521,10 @@ public class MqlToAlgConverter {
      * @param mergedUpdates collection, which combines all performed update steps according to the operation
      * @param rowType the default rowtype at this point
      * @param node the transformed operation up to this step e.g. {@link RelScan} or {@link LogicalDocumentAggregate}
-     * @param table the active table
+     * @param entity the active entity
      * @return the unified UPDATE AlgNode
      */
-    private AlgNode finalizeUpdates( String key, Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, AlgDataType rowType, AlgNode node, AlgOptEntity table ) {
+    private AlgNode finalizeUpdates( String key, Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, AlgDataType rowType, AlgNode node, CatalogEntity entity ) {
         RexNode updateChain = getIdentifier( key, rowType );
         // replace
         List<Pair<String, RexNode>> replaceNodes = mergedUpdates.get( UpdateOperation.REPLACE );
@@ -583,9 +576,8 @@ public class MqlToAlgConverter {
         }
 
         return LogicalDocumentModify.create(
-                table,
+                entity,
                 node,
-                catalogReader,
                 Modify.Operation.UPDATE,
                 Collections.singletonList( key ),
                 Collections.singletonList( createJsonify( updateChain ) ) );
@@ -712,7 +704,7 @@ public class MqlToAlgConverter {
     /**
      * Starts translating an update pipeline
      */
-    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, AlgOptEntity table ) {
+    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, CatalogEntity entity ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
         mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
@@ -748,7 +740,7 @@ public class MqlToAlgConverter {
             updates.clear();
 
         }
-        return finalizeUpdates( "_data", mergedUpdates, rowType, node, table );
+        return finalizeUpdates( "_data", mergedUpdates, rowType, node, entity );
 
     }
 
@@ -756,7 +748,7 @@ public class MqlToAlgConverter {
     /**
      * Translates a delete operation from its MqlNode format to the {@link AlgNode} form
      */
-    private AlgNode convertDelete( MqlDelete query, AlgOptEntity table, AlgNode node ) {
+    private AlgNode convertDelete( MqlDelete query, CatalogEntity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
         }
@@ -767,7 +759,7 @@ public class MqlToAlgConverter {
         return LogicalDocumentModify.create(
                 table,
                 node,
-                catalogReader, Modify.Operation.DELETE,
+                Modify.Operation.DELETE,
                 null,
                 null );
     }
@@ -777,14 +769,14 @@ public class MqlToAlgConverter {
      * Method transforms an insert into the appropriate {@link LogicalDocumentValues}
      *
      * @param query the insert statement as Mql object
-     * @param table the table/collection into which the values are inserted
+     * @param entity the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private AlgNode convertInsert( MqlInsert query, AlgOptEntity table ) {
+    private AlgNode convertInsert( MqlInsert query, CatalogEntity entity ) {
         return LogicalDocumentModify.create(
-                table,
-                convertMultipleValues( query.getValues(), table.getRowType() ),
-                catalogReader, Modify.Operation.INSERT,
+                entity,
+                convertMultipleValues( query.getValues(), entity.getRowType() ),
+                Modify.Operation.INSERT,
                 null,
                 null );
     }

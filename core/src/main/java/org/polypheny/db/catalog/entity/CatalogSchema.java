@@ -22,8 +22,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
@@ -35,7 +33,6 @@ public final class CatalogSchema extends CatalogNamespace implements CatalogObje
     public final long id;
     @Getter
     public final String name;
-    public final long databaseId;
     public final int ownerId;
     public final String ownerName;
     @Getter
@@ -48,7 +45,6 @@ public final class CatalogSchema extends CatalogNamespace implements CatalogObje
     public CatalogSchema(
             final long id,
             @NonNull final String name,
-            final long databaseId,
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final NamespaceType namespaceType,
@@ -56,7 +52,6 @@ public final class CatalogSchema extends CatalogNamespace implements CatalogObje
         super( id, name, namespaceType );
         this.id = id;
         this.name = name;
-        this.databaseId = databaseId;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.namespaceType = namespaceType;
@@ -64,30 +59,19 @@ public final class CatalogSchema extends CatalogNamespace implements CatalogObje
     }
 
 
-    @SneakyThrows
-    public String getDatabaseName() {
-        return Catalog.getInstance().getDatabase( databaseId ).name;
-    }
-
-
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, getDatabaseName(), ownerName, CatalogObject.getEnumNameOrNull( namespaceType ) };
+        return new Serializable[]{ name, ownerName, CatalogObject.getEnumNameOrNull( namespaceType ) };
     }
 
 
     @Override
     public int compareTo( CatalogSchema o ) {
         if ( o != null ) {
-            int comp = (int) (this.databaseId - o.databaseId);
-            if ( comp == 0 ) {
-                return (int) (this.id - o.id);
-            } else {
-                return comp;
-            }
-
+            return (int) (this.id - o.id);
         }
+
         return -1;
     }
 

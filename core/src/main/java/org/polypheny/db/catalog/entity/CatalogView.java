@@ -19,7 +19,14 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import lombok.Getter;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.With;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -27,117 +34,50 @@ import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
-
+@EqualsAndHashCode(callSuper = true)
+@With
+@Value
+@NonFinal
 public class CatalogView extends LogicalTable {
 
     private static final long serialVersionUID = -4771308114962700515L;
 
-    @Getter
-    protected final ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
-    private final String language;
-    @Getter
-    private final AlgCollation algCollation;
-    @Getter
-    private final String query;
+    public ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
+    public String language;
+    public AlgCollation algCollation;
+    public String query;
 
 
     public CatalogView(
             long id,
             String name,
-            ImmutableList<Long> columnIds,
+            List<Long> columnIds,
             long schemaId,
-            long databaseId,
             int ownerId,
             EntityType entityType,
             String query,
             Long primaryKey,
-            ImmutableList<Integer> dataPlacements,
+            List<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
             AlgCollation algCollation,
-            ImmutableList<Long> connectedViews,
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
+            List<Long> connectedViews,
+            Map<Long, List<Long>> underlyingTables,
             String language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, entityType, primaryKey, dataPlacements,
+        super( id, name, columnIds, schemaId, ownerId, entityType, primaryKey, dataPlacements,
                 modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
-        this.underlyingTables = underlyingTables;
+        this.underlyingTables = ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap( Entry::getKey, t -> ImmutableList.copyOf( t.getValue() ) ) ) );
         // mapdb cannot handle the class QueryLanguage, therefore we use the String here
         this.language = language;
-    }
-
-
-    @Override
-    public LogicalTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
-        return new CatalogView(
-                id,
-                name,
-                fieldIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                query,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                algCollation,
-                newConnectedViews,
-                underlyingTables,
-                language );
-    }
-
-
-    @Override
-    public LogicalTable getRenamed( String newName ) {
-        return new CatalogView(
-                id,
-                newName,
-                fieldIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                query,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                algCollation,
-                connectedViews,
-                underlyingTables,
-                language );
-    }
-
-
-    @Override
-    public LogicalTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
-        return new CatalogView(
-                id,
-                name,
-                newColumnIds,
-                namespaceId,
-                databaseId,
-                ownerId,
-                entityType,
-                query,
-                primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                algCollation,
-                connectedViews,
-                underlyingTables,
-                language );
     }
 
 

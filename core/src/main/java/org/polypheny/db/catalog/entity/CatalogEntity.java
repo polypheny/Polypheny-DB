@@ -18,6 +18,8 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import java.util.List;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -30,17 +32,18 @@ import org.polypheny.db.catalog.refactor.CatalogType;
 import org.polypheny.db.catalog.refactor.Expressible;
 import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
 
 @SuperBuilder(toBuilder = true)
+@Value
+@NonFinal
 public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible {
 
-    public final long id;
-    public final EntityType entityType;
-    public final NamespaceType namespaceType;
-    public final String name;
+    public long id;
+    public EntityType entityType;
+    public NamespaceType namespaceType;
+    public String name;
 
 
     protected CatalogEntity( long id, String name, EntityType type, NamespaceType namespaceType ) {

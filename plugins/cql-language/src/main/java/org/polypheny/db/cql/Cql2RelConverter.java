@@ -32,7 +32,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
@@ -199,7 +199,7 @@ public class Cql2RelConverter {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );
-                        CatalogColumn column = catalog.getColumn( columnId );
+                        LogicalColumn column = catalog.getColumn( columnId );
                         columnNames.add( columnNamePrefix + column.name );
                         tableScanColumnOrdinalities.put( columnId, ordinal );
                     }
@@ -310,7 +310,7 @@ public class Cql2RelConverter {
         AlgNode baseNode = algBuilder.peek();
         for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
             ColumnIndex columnIndex = sortSpecification.left;
-            int ordinality = projectionColumnOrdinalities.get( columnIndex.catalogColumn.id );
+            int ordinality = projectionColumnOrdinalities.get( columnIndex.logicalColumn.id );
             RexNode sortingNode = rexBuilder.makeInputRef( baseNode, ordinality );
 
             // TODO: Handle Modifiers

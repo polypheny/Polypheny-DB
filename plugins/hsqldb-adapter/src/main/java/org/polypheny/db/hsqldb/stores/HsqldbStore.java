@@ -253,7 +253,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    protected String getDefaultPhysicalSchemaName() {
+    public String getDefaultPhysicalSchemaName() {
         return "PUBLIC";
     }
 

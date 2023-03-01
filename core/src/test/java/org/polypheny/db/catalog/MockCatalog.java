@@ -27,16 +27,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -47,10 +44,13 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -135,12 +135,6 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public Map<Long, AlgNode> getNodeInfo() {
         throw new NotImplementedException();
     }
@@ -158,26 +152,18 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-    @Override
-    public void deleteDatabase( long databaseId ) {
+    private List<CatalogDatabase> getDatabases( Pattern pattern ) {
+        throw new NotImplementedException();
+    }
+
+
+    private CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogDatabase> getDatabases( Pattern pattern ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
+    public long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
         throw new NotImplementedException();
     }
 
@@ -237,25 +223,23 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<LogicalGraph> getGraphs( long databaseId, Pattern graphName ) {
+    public List<LogicalGraph> getGraphs( Pattern graphName ) {
+        throw new NotImplementedException();
+    }
+
+
+    private CatalogDatabase getDatabase( long databaseId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogDatabase getDatabase( long databaseId ) {
+    public List<CatalogSchema> getSchemas( Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
 
-    @Override
-    public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
+    private List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
@@ -267,25 +251,24 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException {
+    public CatalogSchema getSchema( String schemaName ) throws UnknownSchemaException {
+        throw new NotImplementedException();
+    }
+
+
+    private CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
+    public long addNamespace( String name, int ownerId, NamespaceType namespaceType ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
+    public boolean checkIfExistsSchema( String schemaName ) {
         throw new NotImplementedException();
     }
 
@@ -315,13 +298,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<LogicalTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<LogicalTable> getTables( Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public LogicalTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
+    public LogicalTable getTable( String schemaName, String tableName ) throws UnknownTableException, UnknownSchemaException {
         throw new NotImplementedException();
     }
 
@@ -333,7 +316,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<LogicalTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<LogicalTable> getTables( Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
@@ -351,7 +334,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public LogicalTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
+    public LogicalTable getTable( String schemaName, String tableName ) throws UnknownTableException {
         throw new NotImplementedException();
     }
 
@@ -567,31 +550,31 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogColumn> getColumns( long tableId ) {
+    public List<LogicalColumn> getColumns( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) {
+    public List<LogicalColumn> getColumns( Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogColumn getColumn( long columnId ) {
+    public LogicalColumn getColumn( long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
+    public LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException {
+    public LogicalColumn getColumn( String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException {
         throw new NotImplementedException();
     }
 
@@ -939,7 +922,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogPartitionGroup> getPartitionGroups( Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
@@ -1065,13 +1048,12 @@ public abstract class MockCatalog extends Catalog {
      * Get all partitions of the specified database which fit to the specified filter patterns.
      * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
      *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogPartition> getPartitions( Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 

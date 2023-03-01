@@ -31,17 +31,17 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.DataPlacementRole;
-import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
@@ -304,15 +304,15 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     DataPlacementRole.UPTODATE );
                         }
 
-                        store.createPhysicalTable( statement.getPrepareContext(), table, , hotPartitionsToCreate );
+                        store.createPhysicalTable( statement.getPrepareContext(), table, null );
 
-                        List<CatalogColumn> catalogColumns = new ArrayList<>();
-                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
+                        List<LogicalColumn> logicalColumns = new ArrayList<>();
+                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getColumn( cp.columnId ) ) );
 
                         dataMigrator.copyData(
                                 statement.getTransaction(),
                                 catalog.getAdapter( store.getAdapterId() ),
-                                catalogColumns,
+                                logicalColumns,
                                 hotPartitionsToCreate );
 
                         if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
@@ -352,12 +352,12 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     null,
                                     null, DataPlacementRole.UPTODATE );
                         }
-                        store.createPhysicalTable( statement.getPrepareContext(), table, , coldPartitionsToCreate );
+                        store.createPhysicalTable( statement.getPrepareContext(), table, null );
 
-                        List<CatalogColumn> catalogColumns = new ArrayList<>();
-                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
+                        List<LogicalColumn> logicalColumns = new ArrayList<>();
+                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getColumn( cp.columnId ) ) );
 
-                        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), catalogColumns, coldPartitionsToCreate );
+                        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), logicalColumns, coldPartitionsToCreate );
 
                         if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
                             partitionsToRemoveFromStore.put( store, partitionsFromColdToHot );

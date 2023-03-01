@@ -24,9 +24,10 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @Value
 public class RelationalCatalog implements NCatalog, Serializable {
@@ -35,7 +36,7 @@ public class RelationalCatalog implements NCatalog, Serializable {
     public BinarySerializer<RelationalCatalog> serializer = Serializable.builder.get().build( RelationalCatalog.class );
 
     @Serialize
-    public Map<Long, CatalogTable> tables;
+    public Map<Long, LogicalTable> tables;
 
     @Serialize
     public long id;
@@ -50,7 +51,7 @@ public class RelationalCatalog implements NCatalog, Serializable {
     public RelationalCatalog(
             @Deserialize("id") long id,
             @Deserialize("name") String name,
-            @Deserialize("tables") Map<Long, CatalogTable> tables ) {
+            @Deserialize("tables") Map<Long, LogicalTable> tables ) {
         this.id = id;
         this.name = name;
 
@@ -91,24 +92,6 @@ public class RelationalCatalog implements NCatalog, Serializable {
     @Override
     public NamespaceType getType() {
         return NamespaceType.RELATIONAL;
-    }
-
-
-    public void addTable( long id, String name ) {
-        tables.put( id, new CatalogTable( id, name, this.id ) );
-        change();
-    }
-
-
-    public void addColumn( long id, String name, long entityId ) {
-        tables.put( entityId, tables.get( entityId ).withAddedColumn( id, name ) );
-        change();
-    }
-
-
-    public void deleteColumn( long id, long entityId ) {
-        tables.put( entityId, tables.get( id ).withDeletedColumn( id ) );
-        change();
     }
 
 

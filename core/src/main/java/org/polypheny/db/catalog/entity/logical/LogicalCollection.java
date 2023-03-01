@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
@@ -33,22 +35,30 @@ import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class LogicalCollection extends CatalogEntity implements CatalogObject, Logical {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
     @Getter
-    public final long id;
-    public final ImmutableList<Integer> placements;
-    public final String name;
-    public final long databaseId;
-    public final long namespaceId;
-    public final EntityType entityType;
-    public final String physicalName;
+    public long id;
+    public ImmutableList<Integer> placements;
+    public String name;
+    public long databaseId;
+    public long namespaceId;
+    public EntityType entityType;
+    public String physicalName;
 
 
-    public LogicalCollection( long databaseId, long namespaceId, long id, String name, @NonNull Collection<Integer> placements, EntityType type, String physicalName ) {
+    public LogicalCollection(
+            long databaseId,
+            long namespaceId,
+            long id,
+            String name,
+            @NonNull Collection<Integer> placements,
+            EntityType type,
+            String physicalName ) {
         super( id, name, EntityType.ENTITY, NamespaceType.DOCUMENT );
         this.id = id;
         this.databaseId = databaseId;

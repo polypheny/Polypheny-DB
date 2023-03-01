@@ -29,7 +29,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -39,6 +38,7 @@ import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
@@ -211,7 +211,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         try {
             // Cannot use getLogicalTable() here since table does not yet exist
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                schemaId = catalog.getSchema( name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
                 schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
@@ -220,8 +220,6 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                 schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
-        } catch ( UnknownDatabaseException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }

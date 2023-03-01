@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -34,23 +35,22 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @SuperBuilder(toBuilder = true)
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGraph>, Logical {
 
     private static final long serialVersionUID = 7343856827901459672L;
 
-    public final long databaseId;
-    public final ImmutableList<Integer> placements;
-    public final int ownerId;
-    public final boolean modifiable;
+    public ImmutableList<Integer> placements;
+    public int ownerId;
+    public boolean modifiable;
 
-    public final boolean caseSensitive;
+    public boolean caseSensitive;
 
 
-    public LogicalGraph( long databaseId, long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements, boolean caseSensitive ) {
+    public LogicalGraph( long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements, boolean caseSensitive ) {
         super( id, name, EntityType.ENTITY, NamespaceType.GRAPH );
         this.ownerId = ownerId;
-        this.databaseId = databaseId;
         this.modifiable = modifiable;
         this.placements = ImmutableList.copyOf( placements );
         this.caseSensitive = caseSensitive;
@@ -58,7 +58,7 @@ public class LogicalGraph extends CatalogEntity implements Comparable<LogicalGra
 
 
     public LogicalGraph( LogicalGraph graph ) {
-        this( graph.databaseId, graph.id, graph.name, graph.ownerId, graph.modifiable, graph.placements, graph.caseSensitive );
+        this( graph.id, graph.name, graph.ownerId, graph.modifiable, graph.placements, graph.caseSensitive );
     }
 
 

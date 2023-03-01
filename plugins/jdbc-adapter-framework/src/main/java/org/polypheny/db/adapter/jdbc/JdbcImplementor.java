@@ -38,9 +38,6 @@ import java.util.Arrays;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -76,17 +73,15 @@ public class JdbcImplementor extends AlgToSqlConverter {
 
 
     @Override
-    public SqlIdentifier getPhysicalTableName( CatalogPartitionPlacement placement ) {
-        return new SqlIdentifier( Arrays.asList( placement.physicalSchemaName, placement.physicalTableName ), ParserPos.ZERO );
+    public SqlIdentifier getPhysicalTableName( JdbcEntity physical ) {
+        return new SqlIdentifier( Arrays.asList( physical.namespaceName, physical.name ), ParserPos.ZERO );
     }
 
 
     @Override
-    public SqlIdentifier getPhysicalColumnName( CatalogPartitionPlacement placement, String columnName ) {
-        LogicalTable catalogTable = Catalog.getInstance().getTable( placement.tableId );
-        JdbcEntity table = schema.getTableMap().get( catalogTable.name + "_" + placement.partitionId );
-        if ( table.hasPhysicalColumnName( columnName ) ) {
-            return table.physicalColumnName( columnName );
+    public SqlIdentifier getPhysicalColumnName( JdbcEntity physical, String columnName ) {
+        if ( physical.hasPhysicalColumnName( columnName ) ) {
+            return physical.physicalColumnName( columnName );
         } else {
             return new SqlIdentifier( "_" + columnName, ParserPos.ZERO );
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,68 +14,102 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.logical;
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyType;
 
 
-@EqualsAndHashCode
-public final class CatalogColumn implements CatalogObject, Comparable<CatalogColumn> {
+@EqualsAndHashCode()
+@Value
+@NonFinal
+public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
     private static final long serialVersionUID = -4792846455300897399L;
 
-    public final long id;
-    public final String name;
-    public final long tableId;
-    public final long schemaId;
-    public final long databaseId;
-    public final int position;
-    public final PolyType type;
-    public final PolyType collectionsType;
-    public final Integer length; // JDBC length or precision depending on type
-    public final Integer scale; // decimal digits
-    public final Integer dimension;
-    public final Integer cardinality;
-    public final boolean nullable;
-    public final Collation collation;
-    public final CatalogDefaultValue defaultValue;
+    @Serialize
+    public long id;
+
+    @Serialize
+    public String name;
+
+    @Serialize
+    public long tableId;
+
+    @Serialize
+    public long schemaId;
+
+    @Serialize
+    public int position;
+
+    @Serialize
+    public PolyType type;
+
+    @Serialize
+    public PolyType collectionsType;
+
+    @Serialize
+    public Integer length; // JDBC length or precision depending on type
+
+    @Serialize
+    public Integer scale; // decimal digits
+
+    @Serialize
+    public Integer dimension;
+
+    @Serialize
+    public Integer cardinality;
+
+    @Serialize
+    public boolean nullable;
+
+    @Serialize
+    public Collation collation;
+
+    @Serialize
+    public CatalogDefaultValue defaultValue;
+
+    @Serialize
     @EqualsAndHashCode.Exclude
     // lombok uses getter methods to compare objects
     // and this method depends on the catalog, which can lead to nullpointers -> doNotUseGetters
-    public NamespaceType namespaceType;
+    public NamespaceType namespaceType = NamespaceType.RELATIONAL;
 
 
-    public CatalogColumn(
-            final long id,
-            @NonNull final String name,
-            final long tableId,
-            final long schemaId,
-            final long databaseId,
-            final int position,
-            @NonNull final PolyType type,
-            final PolyType collectionsType,
-            final Integer length,
-            final Integer scale,
-            final Integer dimension,
-            final Integer cardinality,
-            final boolean nullable,
-            final Collation collation,
-            CatalogDefaultValue defaultValue ) {
+    public LogicalColumn(
+            @Deserialize("id") final long id,
+            @Deserialize("name") @NonNull final String name,
+            @Deserialize("tableId") final long tableId,
+            @Deserialize("schemaId") final long schemaId,
+            @Deserialize("position") final int position,
+            @Deserialize("type") @NonNull final PolyType type,
+            @Deserialize("collectionsType") final PolyType collectionsType,
+            @Deserialize("length") final Integer length,
+            @Deserialize("scale") final Integer scale,
+            @Deserialize("dimension") final Integer dimension,
+            @Deserialize("cardinality") final Integer cardinality,
+            @Deserialize("nullable") final boolean nullable,
+            @Deserialize("collation") final Collation collation,
+            @Deserialize("defaultValue") CatalogDefaultValue defaultValue ) {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
         this.schemaId = schemaId;
-        this.databaseId = databaseId;
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -109,20 +143,6 @@ public final class CatalogColumn implements CatalogObject, Comparable<CatalogCol
     }
 
 
-    public NamespaceType getNamespaceType() {
-        if ( namespaceType == null ) {
-            namespaceType = Catalog.getInstance().getSchema( schemaId ).namespaceType;
-        }
-        return namespaceType;
-    }
-
-
-    @SneakyThrows
-    public String getDatabaseName() {
-        return Catalog.getInstance().getDatabase( databaseId ).name;
-    }
-
-
     @SneakyThrows
     public String getSchemaName() {
         return Catalog.getInstance().getSchema( schemaId ).name;
@@ -138,7 +158,6 @@ public final class CatalogColumn implements CatalogObject, Comparable<CatalogCol
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
-                getDatabaseName(),
                 getSchemaName(),
                 getTableName(),
                 name,
@@ -161,28 +180,20 @@ public final class CatalogColumn implements CatalogObject, Comparable<CatalogCol
 
 
     @Override
-    public int compareTo( CatalogColumn o ) {
-        if ( o != null ) {
-            int comp = (int) (this.databaseId - o.databaseId);
+    public int compareTo( LogicalColumn o ) {
+        int comp = (int) (this.schemaId - o.schemaId);
+        if ( comp == 0 ) {
+            comp = (int) (this.tableId - o.tableId);
             if ( comp == 0 ) {
-                comp = (int) (this.schemaId - o.schemaId);
-                if ( comp == 0 ) {
-                    comp = (int) (this.tableId - o.tableId);
-                    if ( comp == 0 ) {
-                        return (int) (this.id - o.id);
-                    } else {
-                        return comp;
-                    }
-
-                } else {
-                    return comp;
-                }
-
+                return (int) (this.id - o.id);
             } else {
                 return comp;
             }
+
+        } else {
+            return comp;
         }
-        return -1;
+
     }
 
 

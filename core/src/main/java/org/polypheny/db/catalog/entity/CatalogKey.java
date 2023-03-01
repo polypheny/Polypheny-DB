@@ -33,7 +33,6 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
     public final long id;
     public final long tableId;
     public final long schemaId;
-    public final long databaseId;
     public final ImmutableList<Long> columnIds;
     public final EnforcementTime enforcementTime;
 
@@ -42,21 +41,13 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
             final long id,
             final long tableId,
             final long schemaId,
-            final long databaseId,
             final List<Long> columnIds,
             EnforcementTime enforcementTime ) {
         this.id = id;
         this.tableId = tableId;
         this.schemaId = schemaId;
-        this.databaseId = databaseId;
         this.columnIds = ImmutableList.copyOf( columnIds );
         this.enforcementTime = enforcementTime;
-    }
-
-
-    @SneakyThrows
-    public String getDatabaseName() {
-        return Catalog.getInstance().getDatabase( databaseId ).name;
     }
 
 
@@ -85,7 +76,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ id, tableId, getTableName(), schemaId, getSchemaName(), databaseId, getDatabaseName(), null, null };
+        return new Serializable[]{ id, tableId, getTableName(), schemaId, getSchemaName(), null, null };
     }
 
 

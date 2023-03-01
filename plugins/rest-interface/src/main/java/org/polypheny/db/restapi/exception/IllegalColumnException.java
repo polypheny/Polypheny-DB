@@ -18,18 +18,18 @@ package org.polypheny.db.restapi.exception;
 
 
 import lombok.Getter;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 public class IllegalColumnException extends RuntimeException {
 
     @Getter
-    private final CatalogColumn catalogColumn;
+    private final LogicalColumn logicalColumn;
 
 
-    public IllegalColumnException( CatalogColumn catalogColumn ) {
-        super( "Column ID '" + catalogColumn.id + "' cannot be used as it is not part of any of the queried tables." );
-        this.catalogColumn = catalogColumn;
+    public IllegalColumnException( LogicalColumn logicalColumn ) {
+        super( "Column ID '" + logicalColumn.id + "' cannot be used as it is not part of any of the queried tables." );
+        this.logicalColumn = logicalColumn;
     }
 
 }

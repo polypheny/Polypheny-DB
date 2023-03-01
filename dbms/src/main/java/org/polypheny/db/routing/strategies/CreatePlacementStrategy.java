@@ -18,7 +18,7 @@ package org.polypheny.db.routing.strategies;
 
 import java.util.List;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 /**
@@ -26,7 +26,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
  */
 public interface CreatePlacementStrategy {
 
-    List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
+    List<DataStore> getDataStoresForNewColumn( LogicalColumn addedColumn );
 
     List<DataStore> getDataStoresForNewTable();
 

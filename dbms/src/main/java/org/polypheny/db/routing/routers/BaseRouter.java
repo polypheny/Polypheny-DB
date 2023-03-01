@@ -57,7 +57,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
@@ -65,6 +64,7 @@ import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
@@ -307,14 +307,14 @@ public abstract class BaseRouter implements Router {
                 // Get primary key
                 long pkid = catalog.getTable( currentPlacements.get( 0 ).tableId ).primaryKey;
                 List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
-                List<CatalogColumn> pkColumns = new LinkedList<>();
+                List<LogicalColumn> pkColumns = new LinkedList<>();
                 for ( long pkColumnId : pkColumnIds ) {
                     pkColumns.add( catalog.getColumn( pkColumnId ) );
                 }
 
                 // Add primary key
                 for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
-                    for ( CatalogColumn pkColumn : pkColumns ) {
+                    for ( LogicalColumn pkColumn : pkColumns ) {
                         CatalogColumnPlacement pkPlacement = catalog.getColumnPlacement( entry.getKey(), pkColumn.id );
                         if ( !entry.getValue().contains( pkPlacement ) ) {
                             entry.getValue().add( pkPlacement );
@@ -400,12 +400,12 @@ public abstract class BaseRouter implements Router {
 
     private void buildFinalProject( RoutedAlgBuilder builder, List<CatalogColumnPlacement> currentPlacements ) {
         List<RexNode> rexNodes = new ArrayList<>();
-        List<CatalogColumn> placementList = currentPlacements.stream()
+        List<LogicalColumn> placementList = currentPlacements.stream()
                 .map( col -> catalog.getColumn( col.columnId ) )
                 .sorted( Comparator.comparingInt( col -> col.position ) )
                 .collect( Collectors.toList() );
-        for ( CatalogColumn catalogColumn : placementList ) {
-            rexNodes.add( builder.field( catalogColumn.name ) );
+        for ( LogicalColumn logicalColumn : placementList ) {
+            rexNodes.add( builder.field( logicalColumn.name ) );
         }
         builder.project( rexNodes );
     }
@@ -459,7 +459,7 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        List<LogicalTable> tables = catalog.getTables( Catalog.defaultDatabaseId, new Pattern( namespace.name ), null );
+        List<LogicalTable> tables = catalog.getTables( new Pattern( namespace.name ), null );
         List<Pair<String, AlgNode>> scans = tables.stream()
                 .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, selectPlacement( t ) ) ) )
                 .collect( Collectors.toList() );
@@ -597,7 +597,7 @@ public abstract class BaseRouter implements Router {
 
     @NotNull
     private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan<?> node, Integer adapterId, Statement statement, RoutedAlgBuilder builder ) {
-        List<CatalogColumn> columns = catalog.getColumns( node.entity.id );
+        List<LogicalColumn> columns = catalog.getColumns( node.entity.id );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
         CatalogEntity subTable = getSubstitutionTable( statement, node.entity.id, columns.get( 0 ).id, adapterId );
         builder.scan( subTable );

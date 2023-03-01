@@ -34,7 +34,6 @@ public final class CatalogForeignKey extends CatalogKey {
 
     public final String name;
     public final long referencedKeyId;
-    public final long referencedKeyDatabaseId;
     public final long referencedKeySchemaId;
     public final long referencedKeyTableId;
     public final ForeignKeyOption updateRule;
@@ -47,30 +46,21 @@ public final class CatalogForeignKey extends CatalogKey {
             @NonNull final String name,
             final long tableId,
             final long schemaId,
-            final long databaseId,
             final long referencedKeyId,
             final long referencedKeyTableId,
             final long referencedKeySchemaId,
-            final long referencedKeyDatabaseId,
             final List<Long> columnIds,
             final List<Long> referencedKeyColumnIds,
             final ForeignKeyOption updateRule,
             final ForeignKeyOption deleteRule ) {
-        super( id, tableId, schemaId, databaseId, columnIds, EnforcementTime.ON_COMMIT );
+        super( id, tableId, schemaId, columnIds, EnforcementTime.ON_COMMIT );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
         this.referencedKeyTableId = referencedKeyTableId;
         this.referencedKeySchemaId = referencedKeySchemaId;
-        this.referencedKeyDatabaseId = referencedKeyDatabaseId;
         this.referencedKeyColumnIds = ImmutableList.copyOf( referencedKeyColumnIds );
         this.updateRule = updateRule;
         this.deleteRule = deleteRule;
-    }
-
-
-    @SneakyThrows
-    public String getReferencedKeyDatabaseName() {
-        return Catalog.getInstance().getDatabase( referencedKeyDatabaseId ).name;
     }
 
 
@@ -112,11 +102,9 @@ public final class CatalogForeignKey extends CatalogKey {
 
     public Serializable[] getParameterArray( String referencedKeyColumnName, String foreignKeyColumnName, int keySeq ) {
         return new Serializable[]{
-                getReferencedKeyDatabaseName(),
                 getReferencedKeySchemaName(),
                 getReferencedKeyTableName(),
                 referencedKeyColumnName,
-                getDatabaseName(),
                 getSchemaName(),
                 getTableName(),
                 foreignKeyColumnName,

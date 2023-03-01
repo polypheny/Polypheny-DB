@@ -25,8 +25,8 @@ public class UnknownColumnException extends CatalogException {
     private final String columnName;
 
 
-    public UnknownColumnException( String databaseName, String schemaName, String tableName, String columnName ) {
-        super( "There is no column with name '" + columnName + "' in table '" + tableName + "' of schema '" + schemaName + "' in database '" + databaseName + "'" );
+    public UnknownColumnException( String schemaName, String tableName, String columnName ) {
+        super( "There is no column with name '" + columnName + "' in table '" + tableName + "' of schema '" + schemaName + "'" );
         this.columnName = columnName;
     }
 

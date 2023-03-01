@@ -31,10 +31,10 @@ import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.config.RuntimeConfig;
@@ -150,13 +150,13 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
                 .append( " ( " );
         boolean first = true;
         for ( CatalogColumnPlacement placement : allocationTable.placements ) {
-            CatalogColumn catalogColumn = allocationTable.getColumns().get( placement.columnId );
+            LogicalColumn logicalColumn = allocationTable.getColumns().get( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
             }
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( placement.columnId ) ) ).append( " " );
-            createColumnDefinition( catalogColumn, builder );
+            createColumnDefinition( logicalColumn, builder );
             builder.append( " NULL" );
         }
         builder.append( " )" );
@@ -165,22 +165,22 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
-        String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
+    public void addColumn( Context context, LogicalTable catalogTable, LogicalColumn logicalColumn ) {
+        String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
             String physicalTableName = partitionPlacement.physicalTableName;
             String physicalSchemaName = partitionPlacement.physicalSchemaName;
-            StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );
+            StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, logicalColumn );
             executeUpdate( query, context );
             // Insert default value
-            if ( catalogColumn.defaultValue != null ) {
-                query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogColumn );
+            if ( logicalColumn.defaultValue != null ) {
+                query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, logicalColumn );
                 executeUpdate( query, context );
             }
             // Add physical name to placement
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
-                    catalogColumn.id,
+                    logicalColumn.id,
                     physicalSchemaName,
                     physicalColumnName,
                     false );
@@ -188,42 +188,42 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     }
 
 
-    protected StringBuilder buildAddColumnQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
+    protected StringBuilder buildAddColumnQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, LogicalTable catalogTable, LogicalColumn logicalColumn ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ADD " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " " );
-        createColumnDefinition( catalogColumn, builder );
+        createColumnDefinition( logicalColumn, builder );
         builder.append( " NULL" );
         return builder;
     }
 
 
-    protected void createColumnDefinition( CatalogColumn catalogColumn, StringBuilder builder ) {
-        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType == PolyType.ARRAY ) {
+    protected void createColumnDefinition( LogicalColumn logicalColumn, StringBuilder builder ) {
+        if ( !this.dialect.supportsNestedArrays() && logicalColumn.collectionsType == PolyType.ARRAY ) {
             // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( PolyType.ARRAY ) );
-        } else if ( catalogColumn.collectionsType == PolyType.MAP ) {
+        } else if ( logicalColumn.collectionsType == PolyType.MAP ) {
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
-            builder.append( " " ).append( getTypeString( catalogColumn.type ) );
-            if ( catalogColumn.length != null ) {
-                builder.append( "(" ).append( catalogColumn.length );
-                if ( catalogColumn.scale != null ) {
-                    builder.append( "," ).append( catalogColumn.scale );
+            builder.append( " " ).append( getTypeString( logicalColumn.type ) );
+            if ( logicalColumn.length != null ) {
+                builder.append( "(" ).append( logicalColumn.length );
+                if ( logicalColumn.scale != null ) {
+                    builder.append( "," ).append( logicalColumn.scale );
                 }
                 builder.append( ")" );
             }
-            if ( catalogColumn.collectionsType != null ) {
-                builder.append( " " ).append( getTypeString( catalogColumn.collectionsType ) );
+            if ( logicalColumn.collectionsType != null ) {
+                builder.append( " " ).append( getTypeString( logicalColumn.collectionsType ) );
             }
         }
     }
 
 
-    protected StringBuilder buildInsertDefaultValueQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, CatalogColumn catalogColumn ) {
+    protected StringBuilder buildInsertDefaultValueQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, LogicalColumn logicalColumn ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "UPDATE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
@@ -231,29 +231,29 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
                 .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " SET " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " = " );
 
-        if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
+        if ( logicalColumn.collectionsType == PolyType.ARRAY ) {
             throw new RuntimeException( "Default values are not supported for array types" );
         }
 
         SqlLiteral literal;
-        switch ( catalogColumn.defaultValue.type ) {
+        switch ( logicalColumn.defaultValue.type ) {
             case BOOLEAN:
-                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( catalogColumn.defaultValue.value ), ParserPos.ZERO );
+                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( logicalColumn.defaultValue.value ), ParserPos.ZERO );
                 break;
             case INTEGER:
             case DECIMAL:
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( catalogColumn.defaultValue.value, ParserPos.ZERO );
+                literal = SqlLiteral.createExactNumeric( logicalColumn.defaultValue.value, ParserPos.ZERO );
                 break;
             case REAL:
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( catalogColumn.defaultValue.value, ParserPos.ZERO );
+                literal = SqlLiteral.createApproxNumeric( logicalColumn.defaultValue.value, ParserPos.ZERO );
                 break;
             case VARCHAR:
-                literal = SqlLiteral.createCharString( catalogColumn.defaultValue.value, ParserPos.ZERO );
+                literal = SqlLiteral.createCharString( logicalColumn.defaultValue.value, ParserPos.ZERO );
                 break;
             default:
-                throw new PolyphenyDbException( "Not yet supported default value type: " + catalogColumn.defaultValue.type );
+                throw new PolyphenyDbException( "Not yet supported default value type: " + logicalColumn.defaultValue.type );
         }
         builder.append( literal.toSqlString( dialect ) );
         return builder;
@@ -262,8 +262,8 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
     // Make sure to update overridden methods as well
     @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
-        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, LogicalColumn logicalColumn, PolyType oldType ) {
+        if ( !this.dialect.supportsNestedArrays() && logicalColumn.collectionsType != null ) {
             return;
         }
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
@@ -273,12 +273,12 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
                     .append( "." )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
             builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-            builder.append( " " ).append( getTypeString( catalogColumn.type ) );
-            if ( catalogColumn.length != null ) {
+            builder.append( " " ).append( getTypeString( logicalColumn.type ) );
+            if ( logicalColumn.length != null ) {
                 builder.append( "(" );
-                builder.append( catalogColumn.length );
-                if ( catalogColumn.scale != null ) {
-                    builder.append( "," ).append( catalogColumn.scale );
+                builder.append( logicalColumn.length );
+                if ( logicalColumn.scale != null ) {
+                    builder.append( "," ).append( logicalColumn.scale );
                 }
                 builder.append( ")" );
             }

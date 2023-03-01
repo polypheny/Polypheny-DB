@@ -67,12 +67,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -87,11 +81,17 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -270,7 +270,6 @@ public class DbmsMeta implements ProtobufMeta {
             }
 
             final List<LogicalTable> tables = catalog.getTables(
-                    database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
             );
@@ -305,8 +304,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
             }
-            final List<CatalogColumn> columns = catalog.getColumns(
-                    database == null ? null : new Pattern( database ),
+            final List<LogicalColumn> columns = catalog.getColumns(
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
@@ -351,7 +349,6 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
             }
             final List<CatalogSchema> schemas = catalog.getSchemas(
-                    database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
             );
             StatementHandle statementHandle = createStatement( ch );
@@ -517,7 +514,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
@@ -554,7 +551,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
@@ -597,7 +594,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
@@ -714,7 +711,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
