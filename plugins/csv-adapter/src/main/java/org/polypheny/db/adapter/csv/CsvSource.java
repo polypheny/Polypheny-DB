@@ -36,6 +36,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
@@ -69,6 +70,7 @@ import org.slf4j.LoggerFactory;
 public class CsvSource extends DataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
+    private final ConnectionMethod connectionMethod;
 
     private URL csvDir;
     private CsvSchema currentSchema;
@@ -76,10 +78,13 @@ public class CsvSource extends DataSource {
     private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
+
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 
         setCsvDir( settings );
+
+        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.valueOf( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
 
         // Validate maxStringLength setting
         {
@@ -96,7 +101,7 @@ public class CsvSource extends DataSource {
 
     private void setCsvDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
-        if ( settings.containsKey( "method" ) && settings.get( "method" ).equalsIgnoreCase( "link" ) ) {
+        if ( connectionMethod == ConnectionMethod.LINK ) {
             dir = settings.get( "directoryName" );
         }
 
@@ -148,8 +153,8 @@ public class CsvSource extends DataSource {
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        if ( settings.get( "method" ).equalsIgnoreCase( "upload" ) && exportedColumnCache != null ) {
-            // if we upload, file will not be changed and we can cache the columns information, if "link" is used this is not advised
+        if ( connectionMethod == ConnectionMethod.UPLOAD && exportedColumnCache != null ) {
+            // if we upload, file will not be changed, and we can cache the columns information, if "link" is used this is not advised
             return exportedColumnCache;
         }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
