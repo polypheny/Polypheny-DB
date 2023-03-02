@@ -67,7 +67,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -431,7 +430,7 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        List<LogicalTable> tables = catalog.getLogicalRel( namespace.id ).getTables( new Pattern( namespace.name ), null );
+        List<LogicalTable> tables = catalog.getLogicalRel( namespace.id ).getTables( null );
         List<Pair<String, AlgNode>> scans = tables.stream()
                 .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, selectPlacement( t ) ) ) )
                 .collect( Collectors.toList() );

@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
@@ -102,6 +103,9 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract AllocationDocumentCatalog getAllocDoc( long namespaceId );
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
+
+    // move to Snapshot
+    public abstract LogicalEntity getLogicalEntity( String entityName );
 
     public abstract PhysicalCatalog getPhysical( long namespaceId );
 
@@ -193,7 +197,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @return The schema
      * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
-    public abstract LogicalNamespace getNamespace( String name ) throws UnknownSchemaException;
+    public abstract LogicalNamespace getNamespace( String name );
 
     /**
      * Adds a schema in a specified database
@@ -363,5 +367,6 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract List<LogicalTable> getTablesForPeriodicProcessing();
+
 
 }

@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -49,7 +50,6 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
 
     public GraphCatalog( LogicalNamespace logicalNamespace, IdBuilder idBuilder ) {
-
         this.logicalNamespace = logicalNamespace;
         this.idBuilder = idBuilder;
     }
@@ -70,6 +70,12 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
     @Override
     public boolean checkIfExistsEntity( long tableId ) {
         return false;
+    }
+
+
+    @Override
+    public LogicalEntity getEntity( String name ) {
+        return null;
     }
 
 

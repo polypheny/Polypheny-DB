@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -661,5 +662,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      */
     boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId );
 
+
+    List<AllocationTable> getAllocationsFromLogical( long logicalId );
 
 }

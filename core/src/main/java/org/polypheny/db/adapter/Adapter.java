@@ -413,7 +413,7 @@ public abstract class Adapter {
         if ( deployMode == DeployMode.DOCKER ) {
             Map<String, String> dockerSettings = RuntimeConfig.DOCKER_INSTANCES
                     .getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ).getSettings();
-            settings.forEach( dockerSettings::put );
+            dockerSettings.putAll( settings );
             return dockerSettings;
         }
         return settings;

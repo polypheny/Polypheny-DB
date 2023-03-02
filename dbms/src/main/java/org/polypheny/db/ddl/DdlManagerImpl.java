@@ -69,6 +69,7 @@ import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -209,11 +210,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsNamespace( name ) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
-                try {
-                    return catalog.getNamespace( name ).id;
-                } catch ( UnknownSchemaException e ) {
-                    throw new RuntimeException( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
-                }
+                return catalog.getNamespace( name ).id;
             } else if ( replace ) {
                 throw new RuntimeException( "Replacing namespace is not yet supported." );
             } else {
@@ -443,7 +440,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new RuntimeException( "The table has an unexpected number of placements!" );
         }
 
-        int adapterId = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( catalogTable.columns.get( 0 ).id ).get( 0 ).adapterId;
+        long adapterId = catalog.getAllocRel( catalogTable.namespaceId ).getAllocationsFromLogical( catalogTable.id ).get( 0 ).adapterId;
         DataSource dataSource = (DataSource) AdapterManager.getInstance().getAdapter( adapterId );
 
         String physicalTableName = catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( adapterId, catalogTable.partitionProperty.partitionIds.get( 0 ) ).physicalTableName;
@@ -1007,11 +1004,19 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Delete column from underlying data stores
-        for ( CatalogColumnPlacement dp : catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsByColumn( column.id ) ) {
+        /*for ( CatalogColumnPlacement dp : catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsByColumn( column.id ) ) {
             if ( catalogTable.entityType == EntityType.ENTITY ) {
                 AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
             }
             catalog.getAllocRel( catalogTable.namespaceId ).deleteColumnPlacement( dp.adapterId, dp.columnId, true );
+        }*/
+        for ( AllocationTable table : catalog.getAllocRel( catalogTable.namespaceId ).getAllocationsFromLogical( catalogTable.id ) ) {
+            for ( CatalogColumnPlacement placement : table.placements ) {
+                if ( catalogTable.entityType == EntityType.ENTITY ) {
+                    AdapterManager.getInstance().getStore( table.adapterId ).dropColumn( statement.getPrepareContext(), placement );
+                }
+                catalog.getAllocRel( catalogTable.namespaceId ).deleteColumnPlacement( placement.adapterId, placement.columnId, true );
+            }
         }
 
         // Delete from catalog
@@ -1345,7 +1350,7 @@ public class DdlManagerImpl extends DdlManager {
         // Remove columns physically
         for ( long columnId : columnsToRemove ) {
             // Drop Column on store
-            storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( columnId ) );
+            storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), columnId ) );
             // Drop column placement
             catalog.getAllocRel( catalogTable.namespaceId ).deleteColumnPlacement( storeInstance.getAdapterId(), columnId, true );
         }
@@ -1407,7 +1412,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( long cid : columnIds ) {
             if ( catalog.getAllocRel( catalogTable.namespaceId ).checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
-                CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( cid );
+                CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), cid );
                 if ( placement.placementType == PlacementType.AUTOMATIC ) {
                     // Make placement manual
                     catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
@@ -1560,7 +1565,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that this store does not contain a placement of this column
         if ( catalog.getAllocRel( catalogTable.namespaceId ).checkIfExistsColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id ) ) {
-            CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( logicalColumn.id );
+            CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id );
             if ( placement.placementType == PlacementType.AUTOMATIC ) {
                 // Make placement manual
                 catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementType(
@@ -1625,7 +1630,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new PlacementIsPrimaryException();
         }
         // Drop Column on store
-        storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( logicalColumn.id ) );
+        storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id ) );
         // Drop column placement
         catalog.getAllocRel( catalogTable.namespaceId ).deleteColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id, false );
 
@@ -1690,7 +1695,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.getLogicalRel( namespaceId ).checkIfExistsEntity( viewName ) ) {
             if ( replace ) {
                 try {
-                    dropView( catalog.getLogicalRel( namespaceId ).getTable( namespaceId, viewName ), statement );
+                    dropView( catalog.getLogicalRel( namespaceId ).getTable( viewName ), statement );
                 } catch ( UnknownTableException | DdlOnSourceException e ) {
                     throw new RuntimeException( "Unable tp drop the existing View with this name." );
                 }
@@ -2897,36 +2902,32 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropNamespace( String schemaName, boolean ifExists, Statement statement ) throws SchemaNotExistException, DdlOnSourceException {
-        try {
-            schemaName = schemaName.toLowerCase();
-            // Check if there is a schema with this name
-            if ( catalog.checkIfExistsNamespace( schemaName ) ) {
-                LogicalNamespace logicalNamespace = catalog.getNamespace( schemaName );
+        schemaName = schemaName.toLowerCase();
+        // Check if there is a schema with this name
+        if ( catalog.checkIfExistsNamespace( schemaName ) ) {
+            LogicalNamespace logicalNamespace = catalog.getNamespace( schemaName );
 
-                // Drop all collections in this namespace
-                List<LogicalCollection> collections = catalog.getLogicalDoc( logicalNamespace.id ).getCollections( null );
-                for ( LogicalCollection collection : collections ) {
-                    dropCollection( collection, statement );
-                }
-
-                // Drop all tables in this schema
-                List<LogicalTable> catalogEntities = catalog.getLogicalRel( logicalNamespace.id ).getTables( logicalNamespace.id, null );
-                for ( LogicalTable catalogTable : catalogEntities ) {
-                    dropTable( catalogTable, statement );
-                }
-
-                // Drop schema
-                catalog.deleteNamespace( logicalNamespace.id );
-            } else {
-                if ( ifExists ) {
-                    // This is ok because "IF EXISTS" was specified
-                    return;
-                } else {
-                    throw new SchemaNotExistException();
-                }
+            // Drop all collections in this namespace
+            List<LogicalCollection> collections = catalog.getLogicalDoc( logicalNamespace.id ).getCollections( null );
+            for ( LogicalCollection collection : collections ) {
+                dropCollection( collection, statement );
             }
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( e );
+
+            // Drop all tables in this schema
+            List<LogicalTable> catalogEntities = catalog.getLogicalRel( logicalNamespace.id ).getTables( null );
+            for ( LogicalTable catalogTable : catalogEntities ) {
+                dropTable( catalogTable, statement );
+            }
+
+            // Drop schema
+            catalog.deleteNamespace( logicalNamespace.id );
+        } else {
+            if ( ifExists ) {
+                // This is ok because "IF EXISTS" was specified
+                return;
+            } else {
+                throw new SchemaNotExistException();
+            }
         }
     }
 

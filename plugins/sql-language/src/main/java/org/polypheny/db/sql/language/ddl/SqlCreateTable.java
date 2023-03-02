@@ -208,20 +208,16 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         String tableName;
         long schemaId;
 
-        try {
-            // Cannot use getLogicalTable() here since table does not yet exist
-            if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getNamespace( name.names.get( 1 ) ).id;
-                tableName = name.names.get( 2 );
-            } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
-                tableName = name.names.get( 1 );
-            } else { // TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
-                tableName = name.names.get( 0 );
-            }
-        } catch ( UnknownSchemaException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
+        // Cannot use getLogicalTable() here since table does not yet exist
+        if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+            schemaId = catalog.getNamespace( name.names.get( 1 ) ).id;
+            tableName = name.names.get( 2 );
+        } else if ( name.names.size() == 2 ) { // SchemaName.TableName
+            schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+            tableName = name.names.get( 1 );
+        } else { // TableName
+            schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+            tableName = name.names.get( 0 );
         }
 
         List<DataStore> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;

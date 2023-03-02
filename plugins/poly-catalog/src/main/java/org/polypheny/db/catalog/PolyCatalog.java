@@ -46,11 +46,11 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
@@ -199,6 +199,18 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
+    public LogicalEntity getLogicalEntity( String entityName ) {
+        for ( LogicalCatalog catalog : logicalCatalogs.values() ) {
+            LogicalEntity entity = catalog.getEntity( entityName );
+            if ( entity != null ) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
+
+    @Override
     public PhysicalCatalog getPhysical( long namespaceId ) {
         return physicalCatalogs.get( namespaceId );
     }
@@ -280,6 +292,10 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public @NonNull List<LogicalNamespace> getNamespaces( Pattern name ) {
+        if ( name == null ) {
+            return logicalCatalogs.values().stream().map( LogicalCatalog::getLogicalNamespace ).collect( Collectors.toList() );
+        }
+
         return logicalCatalogs.values().stream().filter( c ->
                         c.getLogicalNamespace().caseSensitive
                                 ? c.getLogicalNamespace().name.toLowerCase( Locale.ROOT ).matches( name.pattern )
@@ -295,7 +311,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
-    public LogicalNamespace getNamespace( String name ) throws UnknownSchemaException {
+    public LogicalNamespace getNamespace( String name ) {
         List<LogicalNamespace> namespaces = getNamespaces( Pattern.of( name ) );
         if ( namespaces.isEmpty() ) {
             return null;

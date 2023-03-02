@@ -122,7 +122,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public LogicalNamespace getNamespace( String name ) throws UnknownSchemaException {
+    public LogicalNamespace getNamespace( String name ) {
         throw new NotImplementedException();
     }
 

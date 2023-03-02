@@ -23,7 +23,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -47,11 +46,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
         AdapterManager adapterManager = AdapterManager.getInstance();
 
         long namespaceId;
-        try {
-            namespaceId = catalog.getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
-        }
+        namespaceId = catalog.getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
         List<LogicalCollection> collections = catalog.getLogicalDoc( namespaceId ).getCollections( new Pattern( getCollection() ) );
 

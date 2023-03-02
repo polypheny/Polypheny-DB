@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.catalogs;
 
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 
 public interface LogicalCatalog {
 
@@ -40,5 +41,7 @@ public interface LogicalCatalog {
 
 
     LogicalCatalog withLogicalNamespace( LogicalNamespace logicalNamespace );
+
+    LogicalEntity getEntity( String name );
 
 }

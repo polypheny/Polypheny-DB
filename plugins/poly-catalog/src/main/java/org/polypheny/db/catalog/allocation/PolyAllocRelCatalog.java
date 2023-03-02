@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -52,6 +53,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     private final IdBuilder idBuilder = IdBuilder.getInstance();
+
     @Getter
     public BinarySerializer<PolyAllocRelCatalog> serializer = Serializable.builder.get().build( PolyAllocRelCatalog.class );
 
@@ -59,9 +61,13 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     public final ConnectedMap<Long, AllocationTable> allocations;
 
     private final ConcurrentHashMap<Pair<Long, Long>, Long> adapterLogicalToAllocId;
-    private final ConcurrentHashMap<Pair<Long, Long>, AllocationTable> adapterLogicalToAlloc;
+    private final ConcurrentHashMap<Pair<Long, Long>, AllocationTable> adapterLogicalColumnToAlloc;
+    private final ConcurrentHashMap<Long, List<CatalogColumnPlacement>> logicalColumnToPlacements;
+    private final ConcurrentHashMap<Pair<Long, Long>, List<AllocationTable>> adapterLogicalTableToAllocs;
 
-    private final ConcurrentHashMap<Long, List<CatalogColumnPlacement>> logicalIdToPlacements;
+    private final ConcurrentHashMap<Long, List<AllocationTable>> adapterToAllocs;
+
+    private final ConcurrentHashMap<Long, List<AllocationTable>> logicalTableToAllocs;
 
 
     public PolyAllocRelCatalog(
@@ -69,20 +75,55 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
         this.allocations = new ConnectedMap<>( allocations );
         this.adapterLogicalToAllocId = new ConcurrentHashMap<>();
         this.allocations.addRowConnection( this.adapterLogicalToAllocId, ( k, v ) -> Pair.of( v.adapterId, v.logical.id ), ( k, v ) -> k );
-        this.adapterLogicalToAlloc = new ConcurrentHashMap<>();
-        this.allocations.addRowConnection( this.adapterLogicalToAlloc, ( k, v ) -> Pair.of( v.adapterId, v.logical.id ), ( k, v ) -> v );
-        this.logicalIdToPlacements = new ConcurrentHashMap<>();
+        this.adapterLogicalColumnToAlloc = new ConcurrentHashMap<>();
+        this.allocations.addRowConnection( this.adapterLogicalColumnToAlloc, ( k, v ) -> Pair.of( v.adapterId, v.logical.id ), ( k, v ) -> v );
+        ////
+        this.logicalColumnToPlacements = new ConcurrentHashMap<>();
         this.allocations.addConnection( a -> {
-            logicalIdToPlacements.clear();
-            a.forEach( ( k, v ) -> {
-                v.placements.forEach( p -> {
-                    if ( logicalIdToPlacements.containsKey( p.columnId ) ) {
-                        logicalIdToPlacements.get( p.columnId ).add( p );
-                    } else {
-                        logicalIdToPlacements.put( p.columnId, new ArrayList<>( List.of( p ) ) );
-                    }
-                } );
-            } );
+            logicalColumnToPlacements.clear();
+            a.forEach( ( k, v ) -> v.placements.forEach( p -> {
+                if ( logicalColumnToPlacements.containsKey( p.columnId ) ) {
+                    logicalColumnToPlacements.get( p.columnId ).add( p );
+                } else {
+                    logicalColumnToPlacements.put( p.columnId, new ArrayList<>( List.of( p ) ) );
+                }
+            } ) );
+        } );
+
+        ////
+        this.adapterLogicalTableToAllocs = new ConcurrentHashMap<>();
+        this.allocations.addConnection( a -> a.forEach( ( k, v ) -> {
+            if ( adapterLogicalTableToAllocs.containsKey( Pair.of( v.adapterId, v.logical.id ) ) ) {
+                adapterLogicalTableToAllocs.get( Pair.of( v.adapterId, v.logical.id ) ).add( v );
+            } else {
+                adapterLogicalTableToAllocs.put( Pair.of( v.adapterId, v.logical.id ), new ArrayList<>( List.of( v ) ) );
+            }
+        } ) );
+
+        ////
+        this.adapterToAllocs = new ConcurrentHashMap<>();
+        this.allocations.addConnection( a -> {
+            adapterToAllocs.clear();
+            for ( AllocationTable value : a.values() ) {
+                if ( adapterToAllocs.containsKey( value.adapterId ) ) {
+                    adapterToAllocs.get( value.adapterId ).add( value );
+                } else {
+                    adapterToAllocs.put( value.adapterId, new ArrayList<>( List.of( value ) ) );
+                }
+            }
+        } );
+
+        ////
+        this.logicalTableToAllocs = new ConcurrentHashMap<>();
+        this.allocations.addConnection( a -> {
+            logicalTableToAllocs.clear();
+            for ( AllocationTable table : a.values() ) {
+                if ( logicalTableToAllocs.containsKey( table.logical.id ) ) {
+                    logicalTableToAllocs.get( table.logical.id ).add( table );
+                } else {
+                    logicalTableToAllocs.put( table.logical.id, new ArrayList<>( List.of( table ) ) );
+                }
+            }
         } );
     }
 
@@ -113,7 +154,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Override
     public void addColumnPlacement( long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
-        allocations.put( adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) ), adapterLogicalToAlloc.get( Pair.of( adapterId, columnId ) ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+        allocations.put( adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) ), adapterLogicalColumnToAlloc.get( Pair.of( adapterId, columnId ) ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
     }
 
 
@@ -125,7 +166,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Override
     public void deleteColumnPlacement( long adapterId, long columnId, boolean columnOnly ) {
-        allocations.put( adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) ), adapterLogicalToAlloc.get( Pair.of( adapterId, columnId ) ).withRemovedColumn( columnId ) );
+        allocations.put( adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) ), adapterLogicalColumnToAlloc.get( Pair.of( adapterId, columnId ) ).withRemovedColumn( columnId ) );
     }
 
 
@@ -149,19 +190,19 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
-        return logicalIdToPlacements.get( columnId );
+        return logicalColumnToPlacements.get( columnId );
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId ) {
-        return null;
+        return adapterLogicalTableToAllocs.get( Pair.of( adapterId, tableId ) ).stream().flatMap( a -> a.placements.stream() ).collect( Collectors.toList() );
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( long adapterId ) {
-        return null;
+        return adapterToAllocs.get( adapterId ).stream().flatMap( a -> a.placements.stream() ).collect( Collectors.toList() );
     }
 
 
@@ -541,5 +582,12 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     public boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId ) {
         return false;
     }
+
+
+    @Override
+    public List<AllocationTable> getAllocationsFromLogical( long logicalId ) {
+        return logicalTableToAllocs.get( logicalId );
+    }
+
 
 }

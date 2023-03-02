@@ -29,8 +29,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
@@ -67,26 +65,20 @@ public abstract class SqlDdl extends SqlCall {
 
     protected LogicalTable getCatalogTable( Context context, SqlIdentifier tableName ) {
         LogicalTable catalogTable;
-        try {
-            long schemaId;
-            String tableOldName;
-            Catalog catalog = Catalog.getInstance();
-            if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getNamespace( tableName.names.get( 1 ) ).id;
-                tableOldName = tableName.names.get( 2 );
-            } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
-                tableOldName = tableName.names.get( 1 );
-            } else { // TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
-                tableOldName = tableName.names.get( 0 );
-            }
-            catalogTable = catalog.getTable( schemaId, tableOldName );
-        } catch ( UnknownSchemaException e ) {
-            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
-        } catch ( UnknownTableException e ) {
-            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
+        long schemaId;
+        String tableOldName;
+        Catalog catalog = Catalog.getInstance();
+        if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+            schemaId = catalog.getNamespace( tableName.names.get( 1 ) ).id;
+            tableOldName = tableName.names.get( 2 );
+        } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
+            schemaId = catalog.getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+            tableOldName = tableName.names.get( 1 );
+        } else { // TableName
+            schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+            tableOldName = tableName.names.get( 0 );
         }
+        catalogTable = catalog.getTable( schemaId, tableOldName );
         return catalogTable;
     }
 

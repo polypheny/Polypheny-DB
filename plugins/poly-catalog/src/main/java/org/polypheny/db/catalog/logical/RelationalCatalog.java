@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Value;
 import lombok.With;
@@ -33,6 +35,7 @@ import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.ConnectedMap;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
@@ -46,6 +49,7 @@ import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -71,7 +75,10 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     public BinarySerializer<RelationalCatalog> serializer = Serializable.builder.get().build( RelationalCatalog.class );
 
     @Serialize
-    public Map<Long, LogicalTable> tables;
+    public ConnectedMap<Long, LogicalTable> tables;
+
+    @Serialize
+    public ConnectedMap<Long, LogicalColumn> columns;
 
     @Getter
     public LogicalNamespace logicalNamespace;
@@ -86,6 +93,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Serialize
     public IdBuilder idBuilder;
+    ConcurrentHashMap<String, LogicalTable> names;
 
     @NonFinal
     boolean openChanges = false;
@@ -97,22 +105,27 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             @Deserialize("logicalNamespace") LogicalNamespace logicalNamespace,
             @Deserialize("idBuilder") IdBuilder idBuilder,
             @Deserialize("tables") Map<Long, LogicalTable> tables,
+            @Deserialize("columns") Map<Long, LogicalColumn> columns,
             @Deserialize("indexes") Map<Long, CatalogIndex> indexes,
             @Deserialize("keys") Map<Long, CatalogKey> keys,
             @Deserialize("keyColumns") Map<long[], Long> keyColumns ) {
         this.logicalNamespace = logicalNamespace;
 
-        this.tables = new HashMap<>( tables );
+        this.tables = new ConnectedMap<>( tables );
+        this.columns = new ConnectedMap<>( columns );
         this.indexes = indexes;
         this.keys = keys;
         this.keyColumns = keyColumns;
+
+        this.names = new ConcurrentHashMap<>();
+        this.tables.addRowConnection( this.names, ( k, v ) -> logicalNamespace.caseSensitive ? v.name : v.name.toLowerCase(), ( k, v ) -> v );
 
         this.idBuilder = idBuilder;
     }
 
 
     public RelationalCatalog( LogicalNamespace namespace, IdBuilder idBuilder ) {
-        this( namespace, idBuilder, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( namespace, idBuilder, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
@@ -140,20 +153,22 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public List<LogicalTable> getTables( long schemaId, Pattern tableNamePattern ) {
-        return null;
+    public LogicalEntity getEntity( String name ) {
+        return names.get( name );
     }
 
 
     @Override
-    public List<LogicalTable> getTables( Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalTable getTable( String schemaName, String tableName ) throws UnknownTableException, UnknownSchemaException {
-        return null;
+    public List<LogicalTable> getTables( @Nullable Pattern name ) {
+        if ( name == null ) {
+            return List.copyOf( tables.values() );
+        }
+        return tables
+                .values()
+                .stream()
+                .filter( t -> logicalNamespace.caseSensitive ?
+                        t.name.toLowerCase().matches( name.toRegex() ) :
+                        t.name.matches( name.toRegex() ) ).collect( Collectors.toList() );
     }
 
 
@@ -164,7 +179,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public LogicalTable getTable( long schemaId, String tableName ) throws UnknownTableException {
+    public LogicalTable getTable( String tableName ) throws UnknownTableException {
         return null;
     }
 
@@ -365,14 +380,18 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public List<LogicalColumn> getColumns( Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) {
-        return null;
+    public List<LogicalColumn> getColumns( @Nullable Pattern tableNamePattern, @Nullable Pattern columnNamePattern ) {
+        List<LogicalTable> tables = getTables( tableNamePattern );
+        if ( columnNamePattern == null ) {
+            return tables.stream().flatMap( t -> t.columns.stream() ).collect( Collectors.toList() );
+        }
+        return tables.stream().flatMap( t -> t.columns.stream() ).filter( c -> c.name.matches( columnNamePattern.toRegex() ) ).collect( Collectors.toList() );
     }
 
 
     @Override
     public LogicalColumn getColumn( long columnId ) {
-        return null;
+        return columns.get( columnId );
     }
 
 

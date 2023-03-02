@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -52,31 +53,10 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * Get all tables of the specified schema which fit to the specified filters.
      * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
      *
-     * @param schemaId The id of the schema
-     * @param tableNamePattern Pattern for the table name. null returns all.
+     * @param name Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<LogicalTable> getTables( long schemaId, Pattern tableNamePattern );
-
-    /**
-     * Get all tables of the specified database which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
-     *
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
-     */
-    public abstract List<LogicalTable> getTables( Pattern schemaNamePattern, Pattern tableNamePattern );
-
-    /**
-     * Returns the table with the given name in the specified database and schema.
-     *
-     * @param schemaName The name of the schema
-     * @param tableName The name of the table
-     * @return The table
-     */
-    public abstract LogicalTable getTable( String schemaName, String tableName ) throws UnknownTableException, UnknownSchemaException;
-
+    public abstract List<LogicalTable> getTables( @Nullable Pattern name );
 
     /**
      * Returns the table with the given id
@@ -89,12 +69,11 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     /**
      * Returns the table with the given name in the specified schema.
      *
-     * @param schemaId The id of the schema
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract LogicalTable getTable( long schemaId, String tableName ) throws UnknownTableException;
+    public abstract LogicalTable getTable( String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table which is associated with a given partitionId
@@ -212,12 +191,11 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * Get all columns of the specified database which fit to the specified filter patterns.
      * <code>getColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
      *
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @param columnNamePattern Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<LogicalColumn> getColumns( Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern );
+    public abstract List<LogicalColumn> getColumns( @Nullable Pattern tableNamePattern, @Nullable Pattern columnNamePattern );
 
     /**
      * Returns the column with the specified id.

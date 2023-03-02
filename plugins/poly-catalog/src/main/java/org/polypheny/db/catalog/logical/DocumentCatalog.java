@@ -27,11 +27,13 @@ import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.ConnectedMap;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 
@@ -45,7 +47,9 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
     @Serialize
     public IdBuilder idBuilder;
     @Serialize
-    public Map<Long, LogicalCollection> collections;
+    public ConnectedMap<Long, LogicalCollection> collections;
+
+    private ConcurrentHashMap<String, LogicalCollection> names;
     @Getter
     @Serialize
     public LogicalNamespace logicalNamespace;
@@ -61,15 +65,17 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
             @Deserialize("idBuilder") IdBuilder idBuilder,
             @Deserialize("collections") Map<Long, LogicalCollection> collections ) {
         this.logicalNamespace = logicalNamespace;
-        this.collections = collections;
+        this.collections = new ConnectedMap<>( collections );
 
         this.idBuilder = idBuilder;
+
+        this.names = new ConcurrentHashMap<>();
+        this.collections.addRowConnection( this.names, ( k, v ) -> logicalNamespace.caseSensitive ? v.name : v.name.toLowerCase(), ( k, v ) -> v );
     }
 
 
     @NonFinal
     boolean openChanges = false;
-
 
 
     @Override
@@ -87,6 +93,12 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
     @Override
     public boolean checkIfExistsEntity( long tableId ) {
         return false;
+    }
+
+
+    @Override
+    public LogicalEntity getEntity( String name ) {
+        return names.get( name );
     }
 
 
