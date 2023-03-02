@@ -84,7 +84,7 @@ public class CsvSource extends DataSource {
 
         setCsvDir( settings );
 
-        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.valueOf( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
+        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
 
         // Validate maxStringLength setting
         {

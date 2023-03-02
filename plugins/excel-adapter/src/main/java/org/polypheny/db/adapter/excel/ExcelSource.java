@@ -84,7 +84,7 @@ public class ExcelSource extends DataSource {
     public ExcelSource( int storeId, String uniqueName, Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 
-        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.valueOf( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
+        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
         // Validate maxStringLength setting
         maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
 
