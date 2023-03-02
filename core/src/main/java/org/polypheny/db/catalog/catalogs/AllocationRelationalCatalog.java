@@ -45,7 +45,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param physicalTableName The table name on the adapter
      * @param physicalColumnName The column name on the adapter
      */
-    public abstract void addColumnPlacement( long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName );
+    void addColumnPlacement( long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName );
 
     /**
      * Deletes all dependent column placements
@@ -54,7 +54,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the column
      * @param columnOnly columnOnly If delete originates from a dropColumn
      */
-    public abstract void deleteColumnPlacement( long adapterId, long columnId, boolean columnOnly );
+    void deleteColumnPlacement( long adapterId, long columnId, boolean columnOnly );
 
     /**
      * Gets a collective list of column placements per column on an adapter.
@@ -64,7 +64,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the column
      * @return The specific column placement
      */
-    public abstract CatalogColumnPlacement getColumnPlacement( long adapterId, long columnId );
+    CatalogColumnPlacement getColumnPlacement( long adapterId, long columnId );
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -73,7 +73,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the column
      * @return true if there is a column placement, false if not.
      */
-    public abstract boolean checkIfExistsColumnPlacement( long adapterId, long columnId );
+    boolean checkIfExistsColumnPlacement( long adapterId, long columnId );
 
     /**
      * Get all column placements of a column
@@ -81,7 +81,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacement( long columnId );
+    List<CatalogColumnPlacement> getColumnPlacements( long columnId );
 
     /**
      * Get column placements of a specific table on a specific adapter on column detail level.
@@ -90,7 +90,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
+    List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
 
     /**
      * Get column placements on a adapter. On column detail level
@@ -99,7 +99,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId The id of the adapter
      * @return List of column placements on the specified adapter
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( long adapterId );
+    List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( long adapterId );
 
     /**
      * Gets a collection of column placements for a given column.
@@ -107,7 +107,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the column of requested column placements
      * @return The collection of placements sorted
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
+    List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
 
     /**
      * Gets all column placements of a table structured by the id of the adapters.
@@ -115,14 +115,14 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The id of the table for the requested column placements
      * @return The requested collection
      */
-    public abstract ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
+    ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
 
     /**
      * Gets the partition group sorted by partition.
      *
      * @param partitionId The id of the partitions group
      */
-    public abstract long getPartitionGroupByPartition( long partitionId );
+    long getPartitionGroupByPartition( long partitionId );
 
 
     /**
@@ -132,7 +132,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param schemaId The id of the schema
      * @return List of column placements on this adapter and schema
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId );
+    List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId );
 
     /**
      * Update the type of a placement.
@@ -141,7 +141,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the column
      * @param placementType The new type of placement
      */
-    public abstract void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType );
+    void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType );
 
     /**
      * Update physical position of a column placement on a specified adapter.
@@ -150,7 +150,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the column
      * @param position The physical position to set
      */
-    public abstract void updateColumnPlacementPhysicalPosition( long adapterId, long columnId, long position );
+    void updateColumnPlacementPhysicalPosition( long adapterId, long columnId, long position );
 
     /**
      * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
@@ -158,7 +158,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
      */
-    public abstract void updateColumnPlacementPhysicalPosition( long adapterId, long columnId );
+    void updateColumnPlacementPhysicalPosition( long adapterId, long columnId );
 
     /**
      * Change physical names of all column placements.
@@ -169,7 +169,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param physicalColumnName The physical column name
      * @param updatePhysicalColumnPosition Whether to reset the column position (the highest number in the table; represents that the column is now at the last position)
      */
-    public abstract void updateColumnPlacementPhysicalNames( long adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
+    void updateColumnPlacementPhysicalNames( long adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
 
 
     /**
@@ -180,7 +180,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionType partition Type of the added partition
      * @return The id of the created partitionGroup
      */
-    public abstract long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
+    long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
      * Should only be called from mergePartitions(). Deletes a single partition and all references.
@@ -189,7 +189,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param schemaId The unique id of the table
      * @param partitionGroupId The partitionId to be deleted
      */
-    public abstract void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
+    void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
 
     /**
      * Get a partition object by its unique id
@@ -197,7 +197,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId The unique id of the partition
      * @return A catalog partitionGroup
      */
-    public abstract CatalogPartitionGroup getPartitionGroup( long partitionGroupId );
+    CatalogPartitionGroup getPartitionGroup( long partitionGroupId );
 
     /**
      * Adds a partition to the catalog
@@ -207,7 +207,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId partitionGroupId where the partition should be initially added to
      * @return The id of the created partition
      */
-    public abstract long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
+    long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
      * Deletes a single partition and all references.
@@ -216,7 +216,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param schemaId The unique id of the table
      * @param partitionId The partitionId to be deleted
      */
-    public abstract void deletePartition( long tableId, long schemaId, long partitionId );
+    void deletePartition( long tableId, long schemaId, long partitionId );
 
     /**
      * Get a partition object by its unique id
@@ -224,7 +224,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionId The unique id of the partition
      * @return A catalog partition
      */
-    public abstract CatalogPartition getPartition( long partitionId );
+    CatalogPartition getPartition( long partitionId );
 
     /**
      * Retrieves a list of partitions which are associated with a specific table
@@ -232,7 +232,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId Table for which partitions shall be gathered
      * @return List of all partitions associated with that table
      */
-    public abstract List<CatalogPartition> getPartitionsByTable( long tableId );
+    List<CatalogPartition> getPartitionsByTable( long tableId );
 
     /**
      * Effectively partitions a table with the specified partitionType
@@ -243,7 +243,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param numPartitionGroups Explicit number of partitions
      * @param partitionGroupIds List of ids of the catalog partitions
      */
-    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty );
+    void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty );
 
     /**
      * Merges a  partitioned table.
@@ -251,7 +251,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      *
      * @param tableId Table to be merged
      */
-    public abstract void mergeTable( long tableId );
+    void mergeTable( long tableId );
 
     /**
      * Updates partitionProperties on table
@@ -259,7 +259,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId Table to be partitioned
      * @param partitionProperty Partition properties
      */
-    public abstract void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty );
+    void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty );
 
     /**
      * Get a List of all partitions belonging to a specific table
@@ -267,7 +267,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId Table to be queried
      * @return list of all partitions on this table
      */
-    public abstract List<CatalogPartitionGroup> getPartitionGroups( long tableId );
+    List<CatalogPartitionGroup> getPartitionGroups( long tableId );
 
     /**
      * Get all partitions of the specified database which fit to the specified filter patterns.
@@ -277,7 +277,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogPartitionGroup> getPartitionGroups( Pattern schemaNamePattern, Pattern tableNamePattern );
+    List<CatalogPartitionGroup> getPartitionGroups( Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Updates the specified partition group with the attached partitionIds
@@ -285,7 +285,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId Partition Group to be updated
      * @param partitionIds List of new partitionIds
      */
-    public abstract void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
+    void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
 
     /**
      * Adds a partition to an already existing partition Group
@@ -293,7 +293,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId Group to add to
      * @param partitionId Partition to add
      */
-    public abstract void addPartitionToGroup( long partitionGroupId, Long partitionId );
+    void addPartitionToGroup( long partitionGroupId, Long partitionId );
 
     /**
      * Removes a partition from an already existing partition Group
@@ -301,7 +301,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId Group to remove the partition from
      * @param partitionId Partition to remove
      */
-    public abstract void removePartitionFromGroup( long partitionGroupId, Long partitionId );
+    void removePartitionFromGroup( long partitionGroupId, Long partitionId );
 
     /**
      * Assign the partition to a new partitionGroup
@@ -309,7 +309,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionId Partition to move
      * @param partitionGroupId New target group to move the partition to
      */
-    public abstract void updatePartition( long partitionId, Long partitionGroupId );
+    void updatePartition( long partitionId, Long partitionGroupId );
 
     /**
      * Get a List of all partitions belonging to a specific table
@@ -317,7 +317,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId Table to be queried
      * @return list of all partitions on this table
      */
-    public abstract List<CatalogPartition> getPartitions( long partitionGroupId );
+    List<CatalogPartition> getPartitions( long partitionGroupId );
 
     /**
      * Get all partitions of the specified database which fit to the specified filter patterns.
@@ -327,7 +327,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogPartition> getPartitions( Pattern schemaNamePattern, Pattern tableNamePattern );
+    List<CatalogPartition> getPartitions( Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Get a list of all partition name belonging to a specific table
@@ -335,7 +335,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId Table to be queried
      * @return list of all partition names on this table
      */
-    public abstract List<String> getPartitionGroupNames( long tableId );
+    List<String> getPartitionGroupNames( long tableId );
 
     /**
      * Get placements by partition. Identify the location of partitions.
@@ -346,7 +346,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of tje column
      * @return List of CatalogColumnPlacements
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId );
+    List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId );
 
     /**
      * Get adapters by partition. Identify the location of partitions/replicas
@@ -356,7 +356,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId The unique id of the partition
      * @return List of CatalogAdapters
      */
-    public abstract List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
+    List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
 
     /**
      * Get all partitions of a DataPlacement (identified by adapterId and tableId)
@@ -365,7 +365,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The unique id of the table
      * @return List of partitionIds
      */
-    public abstract List<Long> getPartitionGroupsOnDataPlacement( long adapterId, long tableId );
+    List<Long> getPartitionGroupsOnDataPlacement( long adapterId, long tableId );
 
     /**
      * Get all partitions of a DataPlacement (identified by adapterId and tableId)
@@ -374,7 +374,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The unique id of the table
      * @return List of partitionIds
      */
-    public abstract List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId );
+    List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId );
 
     /**
      * Returns list with the index of the partitions on this store from  0..numPartitions
@@ -383,7 +383,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The unique id of the table
      * @return List of partitionId Indices
      */
-    public abstract List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
+    List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
 
     /**
      * Returns a specific DataPlacement of a given table.
@@ -392,7 +392,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the placement from
      * @return DataPlacement of a table placed on a specific store
      */
-    public abstract CatalogDataPlacement getDataPlacement( long adapterId, long tableId );
+    CatalogDataPlacement getDataPlacement( long adapterId, long tableId );
 
     /**
      * Returns all DataPlacements of a given table.
@@ -400,7 +400,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the placements from
      * @return List of all DataPlacements for the table
      */
-    public abstract List<CatalogDataPlacement> getDataPlacements( long tableId );
+    List<CatalogDataPlacement> getDataPlacements( long tableId );
 
     /**
      * Returns a list of all DataPlacements that contain all columns as well as all partitions
@@ -408,7 +408,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the list from
      * @return list of all full DataPlacements
      */
-    public abstract List<CatalogDataPlacement> getAllFullDataPlacements( long tableId );
+    List<CatalogDataPlacement> getAllFullDataPlacements( long tableId );
 
     /**
      * Returns a list of all DataPlacements that contain all columns
@@ -416,7 +416,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the list from
      * @return list of all full DataPlacements
      */
-    public abstract List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId );
+    List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId );
 
     /**
      * Returns a list of all DataPlacements that contain all partitions
@@ -424,7 +424,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the list from
      * @return list of all full DataPlacements
      */
-    public abstract List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId );
+    List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId );
 
     /**
      * Returns all DataPlacements of a given table that are associated with a given role.
@@ -433,7 +433,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param role role to specifically filter
      * @return List of all DataPlacements for the table that are associated with a specific role
      */
-    public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
+    List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
 
     /**
      * Returns all PartitionPlacements of a given table that are associated with a given role.
@@ -442,7 +442,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param role role to specifically filter
      * @return List of all PartitionPlacements for the table that are associated with a specific role
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role );
+    List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role );
 
     /**
      * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
@@ -452,7 +452,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionId filter by ID
      * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
+    List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
 
     /**
      * Checks if the planned changes are allowed in terms of placements that need to be present.
@@ -464,7 +464,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionsIdsToBeRemoved partitions that shall be removed
      * @return true if these changes can be made to the data placement, false if not
      */
-    public abstract boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved );
+    boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved );
 
 
     /**
@@ -478,7 +478,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      */
-    public abstract void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
+    void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store
@@ -486,7 +486,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId adapter where placement should be located
      * @param tableId table to retrieve the placement from
      */
-    public abstract void addDataPlacement( long adapterId, long tableId );
+    void addDataPlacement( long adapterId, long tableId );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store.
@@ -496,7 +496,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the placement from
      * @return DataPlacement of a table placed on a specific store
      */
-    public abstract CatalogDataPlacement addDataPlacementIfNotExists( long adapterId, long tableId );
+    CatalogDataPlacement addDataPlacementIfNotExists( long adapterId, long tableId );
 
     /**
      * Modifies a specific DataPlacement of a given table.
@@ -505,7 +505,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the placement from
      * @param catalogDataPlacement new dataPlacement to be written
      */
-    abstract void modifyDataPlacement( long adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
+    void modifyDataPlacement( long adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
 
 
     /**
@@ -514,7 +514,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId adapter where placement should be removed from
      * @param tableId table to retrieve the placement from
      */
-    public abstract void removeDataPlacement( long adapterId, long tableId );
+    void removeDataPlacement( long adapterId, long tableId );
 
     /**
      * Adds a single dataPlacement on a store for a specific table
@@ -522,7 +522,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
      */
-    abstract void addSingleDataPlacementToTable( long adapterId, long tableId );
+    void addSingleDataPlacementToTable( long adapterId, long tableId );
 
     /**
      * Removes a single dataPlacement from a store for a specific table
@@ -530,7 +530,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
      */
-    abstract void removeSingleDataPlacementFromTable( long adapterId, long tableId );
+    void removeSingleDataPlacementFromTable( long adapterId, long tableId );
 
     /**
      * Updates the list of data placements on a table
@@ -538,7 +538,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to be updated
      * @param newDataPlacements list of new DataPlacements that shall replace the old ones
      */
-    public abstract void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements );
+    void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements );
 
     /**
      * Adds columns to dataPlacement on a store for a specific table
@@ -547,7 +547,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to be updated
      * @param columnIds List of columnIds to add to a specific store for the table
      */
-    abstract void addColumnsToDataPlacement( long adapterId, long tableId, List<Long> columnIds );
+    void addColumnsToDataPlacement( long adapterId, long tableId, List<Long> columnIds );
 
     /**
      * Remove columns to dataPlacement on a store for a specific table
@@ -556,7 +556,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to be updated
      * @param columnIds List of columnIds to remove from a specific store for the table
      */
-    abstract void removeColumnsFromDataPlacement( long adapterId, long tableId, List<Long> columnIds );
+    void removeColumnsFromDataPlacement( long adapterId, long tableId, List<Long> columnIds );
 
     /**
      * Adds partitions to dataPlacement on a store for a specific table
@@ -565,7 +565,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to be updated
      * @param partitionIds List of partitionIds to add to a specific store for the table
      */
-    abstract void addPartitionsToDataPlacement( long adapterId, long tableId, List<Long> partitionIds );
+    void addPartitionsToDataPlacement( long adapterId, long tableId, List<Long> partitionIds );
 
     /**
      * Remove partitions to dataPlacement on a store for a specific table
@@ -574,7 +574,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to be updated
      * @param partitionIds List of partitionIds to remove from a specific store for the table
      */
-    abstract void removePartitionsFromDataPlacement( long adapterId, long tableId, List<Long> partitionIds );
+    void removePartitionsFromDataPlacement( long adapterId, long tableId, List<Long> partitionIds );
 
     /**
      * Updates and overrides list of associated columnPlacements {@code &} partitionPlacements for a given data placement
@@ -584,7 +584,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnIds List of columnIds to be located on a specific store for the table
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
-    public abstract void updateDataPlacement( long adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
+    void updateDataPlacement( long adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
 
 
     /**
@@ -593,7 +593,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId The adapter on which the table should be placed on
      * @param partitionId The id of a partition which shall be removed from that store.
      */
-    public abstract void deletePartitionPlacement( long adapterId, long partitionId );
+    void deletePartitionPlacement( long adapterId, long partitionId );
 
     /**
      * Returns a specific partition entity which is placed on a store.
@@ -602,7 +602,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionId The id of the requested partition
      * @return The requested PartitionPlacement on that store for a given is
      */
-    public abstract CatalogPartitionPlacement getPartitionPlacement( long adapterId, long partitionId );
+    CatalogPartitionPlacement getPartitionPlacement( long adapterId, long partitionId );
 
     /**
      * Returns a list of all Partition Placements which currently reside on an adapter, disregarded of the table.
@@ -610,7 +610,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId The adapter on which the requested partition placements reside
      * @return A list of all Partition Placements, that are currently located  on that specific store
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( long adapterId );
+    List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( long adapterId );
 
     /**
      * Returns a list of all Partition Placements which currently reside on an adapter, for a specific table.
@@ -619,7 +619,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The table for which all partition placements on an adapter should be considered
      * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
+    List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
 
     /**
      * Returns a list of all Partition Placements which are currently associated with a table.
@@ -627,7 +627,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The table on which the requested partition placements are currently associated with.
      * @return A list of all Partition Placements, that belong to the desired table
      */
-    public abstract List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
+    List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
 
     /**
      * Get all Partition Placements which are associated with an individual partition ID.
@@ -636,21 +636,21 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionId The requested partition ID
      * @return A list of Partition Placements which are physically responsible for that partition
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
+    List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
 
     /**
      * Registers a table to be considered for periodic processing
      *
      * @param tableId ID of table to be considered for periodic processing
      */
-    public abstract void addTableToPeriodicProcessing( long tableId );
+    void addTableToPeriodicProcessing( long tableId );
 
     /**
      * Remove a table from periodic background processing
      *
      * @param tableId ID of table to be removed for periodic processing
      */
-    public abstract void removeTableFromPeriodicProcessing( long tableId );
+    void removeTableFromPeriodicProcessing( long tableId );
 
     /**
      * Probes if a Partition Placement on an adapter for a specific partition already exists.
@@ -659,7 +659,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionId Partition which to check
      * @return teh response of the probe
      */
-    public abstract boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId );
+    boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId );
 
 
 }

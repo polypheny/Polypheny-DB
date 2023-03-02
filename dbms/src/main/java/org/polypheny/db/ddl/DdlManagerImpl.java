@@ -280,8 +280,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.STATIC,
                         exportedColumn.physicalSchemaName,
                         exportedColumn.physicalTableName,
-                        exportedColumn.physicalColumnName
-                ); // Not a valid partitionGroupID --> placeholder
+                        exportedColumn.physicalColumnName ); // Not a valid partitionGroupID --> placeholder
                 catalog.getAllocRel( defaultNamespaceId ).updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
                 if ( exportedColumn.primary ) {
                     primaryKeyColIds.add( columnId );
@@ -440,11 +439,11 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Make sure there is only one adapter
-        if ( catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( catalogTable.columns.get( 0 ).id ).size() != 1 ) {
+        if ( catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( catalogTable.columns.get( 0 ).id ).size() != 1 ) {
             throw new RuntimeException( "The table has an unexpected number of placements!" );
         }
 
-        int adapterId = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( catalogTable.columns.get( 0 ).id ).get( 0 ).adapterId;
+        int adapterId = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( catalogTable.columns.get( 0 ).id ).get( 0 ).adapterId;
         DataSource dataSource = (DataSource) AdapterManager.getInstance().getAdapter( adapterId );
 
         String physicalTableName = catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( adapterId, catalogTable.partitionProperty.partitionIds.get( 0 ) ).physicalTableName;
@@ -495,8 +494,7 @@ public class DdlManagerImpl extends DdlManager {
                 PlacementType.STATIC,
                 exportedColumn.physicalSchemaName,
                 exportedColumn.physicalTableName,
-                exportedColumn.physicalColumnName
-        );//Not a valid partitionID --> placeholder
+                exportedColumn.physicalColumnName );//Not a valid partitionID --> placeholder
 
         // Set column position
         catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementPhysicalPosition( adapterId, columnId, exportedColumn.physicalPosition );
@@ -567,11 +565,10 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getAllocRel( catalogTable.namespaceId ).addColumnPlacement(
                     store.getAdapterId(),
                     addedColumn.id,
-                    PlacementType.AUTOMATIC,
-                    null, // Will be set later
-                    null, // Will be set later
-                    null // Will be set later
-            );//Not a valid partitionID --> placeholder
+                    PlacementType.AUTOMATIC,  // Will be set later
+                    null,  // Will be set later
+                    null,  // Will be set later
+                    null );//Not a valid partitionID --> placeholder
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
         }
 
@@ -872,8 +869,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    null
-            );
+                    null );
             addedColumns.add( catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( cid ) );
         }
         // Check if placement includes primary key columns
@@ -886,8 +882,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        null
-                );
+                        null );
                 addedColumns.add( catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( cid ) );
             }
         }
@@ -937,18 +932,17 @@ public class DdlManagerImpl extends DdlManager {
 
             // Add new column placements
             long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficient to check for one because all get replicated on all stores
-            List<CatalogColumnPlacement> oldPkPlacements = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( pkColumnId );
+            List<CatalogColumnPlacement> oldPkPlacements = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( pkColumnId );
             for ( CatalogColumnPlacement ccp : oldPkPlacements ) {
                 for ( long columnId : columnIds ) {
                     if ( !catalog.getAllocRel( catalogTable.namespaceId ).checkIfExistsColumnPlacement( ccp.adapterId, columnId ) ) {
                         catalog.getAllocRel( catalogTable.namespaceId ).addColumnPlacement(
                                 ccp.adapterId,
                                 columnId,
-                                PlacementType.AUTOMATIC,
-                                null, // Will be set later
-                                null, // Will be set later
-                                null // Will be set later
-                        );
+                                PlacementType.AUTOMATIC,  // Will be set later
+                                null,  // Will be set later
+                                null,  // Will be set later
+                                null );
                         AdapterManager.getInstance().getStore( ccp.adapterId ).addColumn(
                                 statement.getPrepareContext(),
                                 catalog.getLogicalRel( catalogTable.namespaceId ).getTable( ccp.tableId ),
@@ -1175,7 +1169,7 @@ public class DdlManagerImpl extends DdlManager {
                 type.scale,
                 type.dimension,
                 type.cardinality );
-        for ( CatalogColumnPlacement placement : catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( logicalColumn.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( logicalColumn.id ) ) {
             AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                     statement.getPrepareContext(),
                     placement,
@@ -1351,7 +1345,7 @@ public class DdlManagerImpl extends DdlManager {
         // Remove columns physically
         for ( long columnId : columnsToRemove ) {
             // Drop Column on store
-            storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), columnId ) );
+            storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( columnId ) );
             // Drop column placement
             catalog.getAllocRel( catalogTable.namespaceId ).deleteColumnPlacement( storeInstance.getAdapterId(), columnId, true );
         }
@@ -1413,7 +1407,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( long cid : columnIds ) {
             if ( catalog.getAllocRel( catalogTable.namespaceId ).checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
-                CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), cid );
+                CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( cid );
                 if ( placement.placementType == PlacementType.AUTOMATIC ) {
                     // Make placement manual
                     catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
@@ -1426,8 +1420,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.MANUAL,
                         null,
                         null,
-                        null
-                );
+                        null );
                 // Add column on store
                 storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( cid ) );
                 // Add to list of columns for which we need to copy data
@@ -1567,7 +1560,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that this store does not contain a placement of this column
         if ( catalog.getAllocRel( catalogTable.namespaceId ).checkIfExistsColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id ) ) {
-            CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id );
+            CatalogColumnPlacement placement = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( logicalColumn.id );
             if ( placement.placementType == PlacementType.AUTOMATIC ) {
                 // Make placement manual
                 catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementType(
@@ -1585,8 +1578,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    null
-            );
+                    null );
             // Add column on store
             storeInstance.addColumn( statement.getPrepareContext(), catalogTable, logicalColumn );
             // Copy the data to the newly added column placements
@@ -1633,7 +1625,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new PlacementIsPrimaryException();
         }
         // Drop Column on store
-        storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id ) );
+        storeInstance.dropColumn( statement.getPrepareContext(), catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( logicalColumn.id ) );
         // Drop column placement
         catalog.getAllocRel( catalogTable.namespaceId ).deleteColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id, false );
 
@@ -1835,8 +1827,7 @@ public class DdlManagerImpl extends DdlManager {
                         placementType,
                         null,
                         null,
-                        null
-                );
+                        null );
 
                 List<LogicalColumn> logicalColumns;
                 if ( addedColumns.containsKey( adapterId ) ) {
@@ -2645,7 +2636,7 @@ public class DdlManagerImpl extends DdlManager {
             stores = new ArrayList<>();
             fillStores = true;
         }
-        List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getAllocRel( partitionInfo.table.namespaceId ).getColumnPlacement( pkColumn.id );
+        List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getAllocRel( partitionInfo.table.namespaceId ).getColumnPlacements( pkColumn.id );
         for ( CatalogColumnPlacement ccp : catalogColumnPlacements ) {
             if ( fillStores ) {
                 // Ask router on which store(s) the table should be placed
@@ -2758,7 +2749,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalColumn pkColumn = catalog.getLogicalRel( partitionedTable.namespaceId ).getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
 
-        List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getAllocRel( partitionedTable.namespaceId ).getColumnPlacement( pkColumn.id );
+        List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getAllocRel( partitionedTable.namespaceId ).getColumnPlacements( pkColumn.id );
         for ( CatalogColumnPlacement ccp : catalogColumnPlacements ) {
             // Ask router on which store(s) the table should be placed
             Adapter adapter = AdapterManager.getInstance().getAdapter( ccp.adapterId );
@@ -2881,8 +2872,7 @@ public class DdlManagerImpl extends DdlManager {
                     placementType,
                     null,
                     null,
-                    null
-            );
+                    null );
         }
     }
 

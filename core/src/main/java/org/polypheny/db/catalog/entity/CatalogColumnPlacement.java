@@ -32,7 +32,7 @@ public class CatalogColumnPlacement implements CatalogObject {
     public final long namespaceId;
     public final long tableId;
     public final long columnId;
-    public final int adapterId;
+    public final long adapterId;
     public final String adapterUniqueName;
     public final PlacementType placementType;
 
@@ -46,7 +46,7 @@ public class CatalogColumnPlacement implements CatalogObject {
             final long namespaceId,
             final long tableId,
             final long columnId,
-            final int adapterId,
+            final long adapterId,
             @NonNull final String adapterUniqueName,
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,

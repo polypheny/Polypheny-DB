@@ -124,9 +124,9 @@ public abstract class BaseRouter implements Router {
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( LogicalColumn column : table.columns ) {
             if ( catalog.getAllocRel( table.namespaceId ).getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
-                placementList.add( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacement( adapterIdWithMostPlacements, column.id ) );
+                placementList.add( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacements( column.id ) );
             } else {
-                placementList.add( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacement( column.id ).get( 0 ) );
+                placementList.add( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacements( column.id ).get( 0 ) );
             }
         }
 
@@ -297,7 +297,7 @@ public abstract class BaseRouter implements Router {
                 // Add primary key
                 for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
                     for ( LogicalColumn pkColumn : pkColumns ) {
-                        CatalogColumnPlacement pkPlacement = catalog.getAllocRel( currentPlacements.get( 0 ).namespaceId ).getColumnPlacement( entry.getKey(), pkColumn.id );
+                        CatalogColumnPlacement pkPlacement = catalog.getAllocRel( currentPlacements.get( 0 ).namespaceId ).getColumnPlacements( pkColumn.id );
                         if ( !entry.getValue().contains( pkPlacement ) ) {
                             entry.getValue().add( pkPlacement );
                         }
@@ -482,7 +482,7 @@ public abstract class BaseRouter implements Router {
 
     protected CatalogEntity getSubstitutionTable( Statement statement, long tableId, long columnId, int adapterId ) {
         /*LogicalTable nodes = Catalog.getInstance().getTable( tableId );
-        CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( adapterId, columnId );
+        CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacements( adapterId, columnId );
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
                         placement.adapterUniqueName,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical.document;
+package org.polypheny.db.catalog.logical;
 
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -26,19 +26,18 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
 @With
-public class DocumentCatalog implements NCatalog, Serializable, LogicalDocumentCatalog {
+public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
     @Getter
     public BinarySerializer<DocumentCatalog> serializer = Serializable.builder.get().build( DocumentCatalog.class );
@@ -71,35 +70,6 @@ public class DocumentCatalog implements NCatalog, Serializable, LogicalDocumentC
     @NonFinal
     boolean openChanges = false;
 
-
-    @Override
-    public void commit() {
-        openChanges = false;
-    }
-
-
-    @Override
-    public void rollback() {
-
-        openChanges = false;
-    }
-
-
-    @Override
-    public boolean hasUncommittedChanges() {
-        return false;
-    }
-
-
-    @Override
-    public NamespaceType getType() {
-        return NamespaceType.DOCUMENT;
-    }
-
-
-    public void addCollection( long id, String name, long namespaceId ) {
-
-    }
 
 
     @Override
@@ -141,6 +111,12 @@ public class DocumentCatalog implements NCatalog, Serializable, LogicalDocumentC
     @Override
     public void deleteCollection( long id ) {
 
+    }
+
+
+    @Override
+    public long addCollectionLogistics( String name, List<DataStore> stores, boolean placementOnly ) {
+        return 0;
     }
 
 }

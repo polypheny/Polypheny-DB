@@ -52,9 +52,9 @@ import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.catalog.logical.document.DocumentCatalog;
-import org.polypheny.db.catalog.logical.graph.GraphCatalog;
-import org.polypheny.db.catalog.logical.relational.RelationalCatalog;
+import org.polypheny.db.catalog.logical.DocumentCatalog;
+import org.polypheny.db.catalog.logical.GraphCatalog;
+import org.polypheny.db.catalog.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.FullSnapshot;
@@ -93,7 +93,7 @@ public class PolyCatalog extends Catalog implements Serializable {
     @Serialize
     public final Map<Long, CatalogQueryInterface> interfaces;
 
-    private final IdBuilder idBuilder = new IdBuilder();
+    private final IdBuilder idBuilder = IdBuilder.getInstance();
     private FullSnapshot fullSnapshot;
 
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -157,44 +157,63 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
-    public LogicalRelationalCatalog getLogicalRel( long id ) {
-        validateNamespaceType( id, NamespaceType.RELATIONAL );
-        return (LogicalRelationalCatalog) logicalCatalogs.get( id );
+    public LogicalRelationalCatalog getLogicalRel( long namespaceId ) {
+        validateNamespaceType( namespaceId, NamespaceType.RELATIONAL );
+        return (LogicalRelationalCatalog) logicalCatalogs.get( namespaceId );
     }
 
 
     @Override
-    public LogicalDocumentCatalog getLogicalDoc( long id ) {
-        validateNamespaceType( id, NamespaceType.DOCUMENT );
-        return (LogicalDocumentCatalog) logicalCatalogs.get( id );
+    public LogicalDocumentCatalog getLogicalDoc( long namespaceId ) {
+        validateNamespaceType( namespaceId, NamespaceType.DOCUMENT );
+        return (LogicalDocumentCatalog) logicalCatalogs.get( namespaceId );
     }
 
 
     @Override
-    public LogicalGraphCatalog getLogicalGraph( long id ) {
-        validateNamespaceType( id, NamespaceType.GRAPH );
-        return (LogicalGraphCatalog) logicalCatalogs.get( id );
+    public LogicalGraphCatalog getLogicalGraph( long namespaceId ) {
+        validateNamespaceType( namespaceId, NamespaceType.GRAPH );
+        return (LogicalGraphCatalog) logicalCatalogs.get( namespaceId );
     }
 
 
     @Override
-    public AllocationRelationalCatalog getAllocRel( long id ) {
-        validateNamespaceType( id, NamespaceType.RELATIONAL );
-        return (AllocationRelationalCatalog) allocationCatalogs.get( id );
+    public AllocationRelationalCatalog getAllocRel( long namespaceId ) {
+        validateNamespaceType( namespaceId, NamespaceType.RELATIONAL );
+        return (AllocationRelationalCatalog) allocationCatalogs.get( namespaceId );
     }
 
 
     @Override
-    public AllocationDocumentCatalog getAllocDoc( long id ) {
-        validateNamespaceType( id, NamespaceType.DOCUMENT );
-        return (AllocationDocumentCatalog) allocationCatalogs.get( id );
+    public AllocationDocumentCatalog getAllocDoc( long namespaceId ) {
+        validateNamespaceType( namespaceId, NamespaceType.DOCUMENT );
+        return (AllocationDocumentCatalog) allocationCatalogs.get( namespaceId );
     }
 
 
     @Override
-    public AllocationGraphCatalog getAllocGraph( long id ) {
-        validateNamespaceType( id, NamespaceType.GRAPH );
-        return (AllocationGraphCatalog) allocationCatalogs.get( id );
+    public AllocationGraphCatalog getAllocGraph( long namespaceId ) {
+        validateNamespaceType( namespaceId, NamespaceType.GRAPH );
+        return (AllocationGraphCatalog) allocationCatalogs.get( namespaceId );
+    }
+
+
+    @Override
+    public PhysicalCatalog getPhysical( long namespaceId ) {
+        return physicalCatalogs.get( namespaceId );
+    }
+
+
+    // move to Snapshot
+    @Override
+    public PhysicalEntity<?> getPhysicalEntity( long id ) {
+        for ( PhysicalCatalog catalog : physicalCatalogs.values() ) {
+            PhysicalEntity<?> entity = catalog.getPhysicalEntity( id );
+            if ( entity != null ) {
+                return entity;
+            }
+        }
+        return null;
     }
 
 

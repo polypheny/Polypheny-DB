@@ -24,13 +24,12 @@ public class IdBuilder {
     private final AtomicLong databaseId;
     private final AtomicLong namespaceId;
     private final AtomicLong entityId;
+
+    private final AtomicLong allocId;
     private final AtomicLong fieldId;
 
     private final AtomicLong userId;
 
-    private final AtomicLong verticalId;
-
-    private final AtomicLong horizontalId;
     private final AtomicLong indexId;
 
     private final AtomicLong keyId;
@@ -39,10 +38,19 @@ public class IdBuilder {
 
     private final AtomicLong interfaceId;
 
+    private static IdBuilder INSTANCE;
 
-    public IdBuilder() {
+
+    public static IdBuilder getInstance() {
+        if ( INSTANCE == null ) {
+            INSTANCE = new IdBuilder();
+        }
+        return new IdBuilder();
+    }
+
+
+    private IdBuilder() {
         this(
-                new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
@@ -64,8 +72,7 @@ public class IdBuilder {
             AtomicLong entityId,
             AtomicLong fieldId,
             AtomicLong userId,
-            AtomicLong verticalId,
-            AtomicLong horizontalId,
+            AtomicLong allocId,
             AtomicLong indexId,
             AtomicLong keyId,
             AtomicLong adapterId,
@@ -80,8 +87,7 @@ public class IdBuilder {
         this.indexId = indexId;
         this.keyId = keyId;
         this.userId = userId;
-        this.verticalId = verticalId;
-        this.horizontalId = horizontalId;
+        this.allocId = allocId;
 
         this.adapterId = adapterId;
         this.interfaceId = interfaceId;
@@ -118,13 +124,8 @@ public class IdBuilder {
     }
 
 
-    public long getNewVerticalId() {
-        return verticalId.getAndIncrement();
-    }
-
-
-    public long getNewHorizontalId() {
-        return horizontalId.getAndIncrement();
+    public long getNewAllocId() {
+        return allocId.getAndIncrement();
     }
 
 

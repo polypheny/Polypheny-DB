@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical.relational;
+package org.polypheny.db.catalog.logical;
 
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -34,7 +34,6 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -60,14 +59,13 @@ import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.PolyType;
 
 @Value
 @With
-public class RelationalCatalog implements NCatalog, Serializable, LogicalRelationalCatalog {
+public class RelationalCatalog implements Serializable, LogicalRelationalCatalog {
 
     @Getter
     public BinarySerializer<RelationalCatalog> serializer = Serializable.builder.get().build( RelationalCatalog.class );
@@ -118,34 +116,8 @@ public class RelationalCatalog implements NCatalog, Serializable, LogicalRelatio
     }
 
 
-    @Override
-    public void commit() {
-
-        openChanges = false;
-    }
-
-
-    @Override
-    public void rollback() {
-
-        openChanges = false;
-    }
-
-
     public void change() {
         openChanges = true;
-    }
-
-
-    @Override
-    public boolean hasUncommittedChanges() {
-        return openChanges;
-    }
-
-
-    @Override
-    public NamespaceType getType() {
-        return NamespaceType.RELATIONAL;
     }
 
 

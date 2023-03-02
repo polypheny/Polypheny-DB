@@ -21,6 +21,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 
 public interface AllocationCatalog {
 
-    List<AllocationEntity<?>> getAllocationsOnAdapter( long id );
+    List<? extends AllocationEntity<?>> getAllocationsOnAdapter( long id );
 
 }

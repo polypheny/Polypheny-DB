@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
+import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -89,18 +90,20 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void rollback();
 
-    public abstract LogicalRelationalCatalog getLogicalRel( long id );
+    public abstract LogicalRelationalCatalog getLogicalRel( long namespaceId );
 
-    public abstract LogicalDocumentCatalog getLogicalDoc( long id );
+    public abstract LogicalDocumentCatalog getLogicalDoc( long namespaceId );
 
-    public abstract LogicalGraphCatalog getLogicalGraph( long id );
+    public abstract LogicalGraphCatalog getLogicalGraph( long namespaceId );
 
 
-    public abstract AllocationRelationalCatalog getAllocRel( long id );
+    public abstract AllocationRelationalCatalog getAllocRel( long namespaceId );
 
-    public abstract AllocationDocumentCatalog getAllocDoc( long id );
+    public abstract AllocationDocumentCatalog getAllocDoc( long namespaceId );
 
-    public abstract AllocationGraphCatalog getAllocGraph( long id );
+    public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
+
+    public abstract PhysicalCatalog getPhysical( long namespaceId );
 
     public abstract PhysicalEntity<?> getPhysicalEntity( long id );
 

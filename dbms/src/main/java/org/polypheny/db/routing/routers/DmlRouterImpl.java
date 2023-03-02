@@ -149,7 +149,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalColumn pkColumn = catalog.getLogicalRel( modify.entity.namespaceId ).getColumn( pkColumnIds.get( 0 ) );
 
         // Essentially gets a list of all stores where this table resides
-        List<CatalogColumnPlacement> pkPlacements = catalog.getAllocRel( modify.entity.namespaceId ).getColumnPlacement( pkColumn.id );
+        List<CatalogColumnPlacement> pkPlacements = catalog.getAllocRel( modify.entity.namespaceId ).getColumnPlacements( pkColumn.id );
 
         if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
             log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
@@ -1297,7 +1297,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         long pkid = fromTable.primaryKey;
         List<Long> pkColumnIds = catalog.getLogicalRel( catalogTable.namespaceId ).getPrimaryKey( pkid ).columnIds;
         LogicalColumn pkColumn = catalog.getLogicalRel( catalogTable.namespaceId ).getColumn( pkColumnIds.get( 0 ) );
-        List<CatalogColumnPlacement> pkPlacements = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( pkColumn.id );
+        List<CatalogColumnPlacement> pkPlacements = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacements( pkColumn.id );
 
         List<AlgNode> nodes = new ArrayList<>();
         for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {

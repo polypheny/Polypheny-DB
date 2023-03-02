@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical.graph;
+package org.polypheny.db.catalog.logical;
 
 import io.activej.serializer.BinarySerializer;
 import java.util.List;
@@ -24,7 +24,6 @@ import lombok.With;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.NCatalog;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
@@ -32,12 +31,11 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
 @With
-public class GraphCatalog implements NCatalog, Serializable, LogicalGraphCatalog {
+public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
     @Getter
     public BinarySerializer<GraphCatalog> serializer = Serializable.builder.get().build( GraphCatalog.class );
@@ -54,31 +52,6 @@ public class GraphCatalog implements NCatalog, Serializable, LogicalGraphCatalog
 
         this.logicalNamespace = logicalNamespace;
         this.idBuilder = idBuilder;
-    }
-
-
-    @Override
-    public void commit() {
-        openChanges = false;
-    }
-
-
-    @Override
-    public void rollback() {
-
-        openChanges = false;
-    }
-
-
-    @Override
-    public boolean hasUncommittedChanges() {
-        return openChanges;
-    }
-
-
-    @Override
-    public NamespaceType getType() {
-        return NamespaceType.GRAPH;
     }
 
 

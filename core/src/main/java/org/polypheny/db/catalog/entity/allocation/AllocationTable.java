@@ -17,12 +17,14 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.With;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
@@ -31,23 +33,25 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PlacementType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@With
 public class AllocationTable extends AllocationEntity<LogicalTable> {
 
     public List<CatalogColumnPlacement> placements;
     public long adapterId;
-    public long logicalId;
     public LogicalTable logicalTable;
+    public String adapterName;
 
 
-    public AllocationTable( LogicalTable logicalTable, long id, long logicalId, String name, long namespaceId, String namespaceName, long adapterId, List<CatalogColumnPlacement> placements ) {
-        super( logicalTable, id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
+    public AllocationTable( LogicalTable logicalTable, long id, String name, long adapterId, String adapterName, List<CatalogColumnPlacement> placements ) {
+        super( logicalTable, id, name, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.logicalTable = logicalTable;
-        this.logicalId = logicalId;
         this.adapterId = adapterId;
         this.placements = placements;
+        this.adapterName = adapterName;
     }
 
 
@@ -82,5 +86,18 @@ public class AllocationTable extends AllocationEntity<LogicalTable> {
         return null;
     }
 
+
+    public AllocationTable withAddedColumn( long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
+        List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
+        placements.add( new CatalogColumnPlacement( logical.namespaceId, id, columnId, adapterId, adapterName, placementType, physicalSchemaName, physicalColumnName, 0 ) );
+
+        return withPlacements( placements );
+    }
+
+
+    public AllocationTable withRemovedColumn( long columnId ) {
+        List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
+        return withPlacements( placements.stream().filter( p -> p.columnId != columnId ).collect( Collectors.toList() ) );
+    }
 
 }

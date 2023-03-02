@@ -23,4 +23,6 @@ public interface PhysicalCatalog {
 
     List<PhysicalEntity<?>> getPhysicalsOnAdapter( long id );
 
+    PhysicalEntity<?> getPhysicalEntity( long id );
+
 }

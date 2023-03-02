@@ -37,7 +37,7 @@ public final class CatalogIndex implements Serializable {
     public final String physicalName;
     public final boolean unique;
     public final IndexType type;
-    public final Integer location;
+    public final long location;
     public final String method;
     public final String methodDisplayName;
 
@@ -52,7 +52,7 @@ public final class CatalogIndex implements Serializable {
             final String method,
             final String methodDisplayName,
             final IndexType type,
-            final Integer location,
+            final Long location,
             final long keyId,
             final CatalogKey key,
             final String physicalName ) {
