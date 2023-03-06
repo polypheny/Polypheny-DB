@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.BsonValue;
@@ -43,7 +44,7 @@ import org.polypheny.db.util.Pair;
 public class RoutedAlgBuilder extends AlgBuilder {
 
     @Getter
-    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
 
     public RoutedAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
@@ -98,13 +99,13 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     public void addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) {
-        final Map<Long, List<Pair<Integer, Long>>> map = physicalPlacements.entrySet().stream()
-                .collect( Collectors.toMap( Map.Entry::getKey, entry -> map( entry.getValue() ) ) );
+        final Map<Long, List<Pair<Long, Long>>> map = physicalPlacements.entrySet().stream()
+                .collect( Collectors.toMap( Entry::getKey, entry -> map( entry.getValue() ) ) );
         physicalPlacementsOfPartitions.putAll( map );
     }
 
 
-    private List<Pair<Integer, Long>> map( List<CatalogColumnPlacement> catalogCols ) {
+    private List<Pair<Long, Long>> map( List<CatalogColumnPlacement> catalogCols ) {
         return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
     }
 

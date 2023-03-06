@@ -64,7 +64,7 @@ public class AlgCollationImpl implements AlgCollation {
 
 
     @Override
-    public AlgTraitDef getTraitDef() {
+    public AlgTraitDef<?> getTraitDef() {
         return AlgCollationTraitDef.INSTANCE;
     }
 

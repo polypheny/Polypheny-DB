@@ -23,9 +23,9 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.jetbrains.annotations.NotNull;
 
-public class ConnectedMap<K, V> extends ConcurrentHashMap<K, V> {
+public class PusherMap<K, V> extends ConcurrentHashMap<K, V> {
 
-    ConcurrentLinkedQueue<Consumer<ConnectedMap<K, V>>> onChange = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<Consumer<PusherMap<K, V>>> onChange = new ConcurrentLinkedQueue<>();
 
 
     public void change() {
@@ -33,7 +33,7 @@ public class ConnectedMap<K, V> extends ConcurrentHashMap<K, V> {
     }
 
 
-    public ConnectedMap( Map<K, V> allocations ) {
+    public PusherMap( Map<K, V> allocations ) {
         super( allocations );
         change();
     }
@@ -100,7 +100,7 @@ public class ConnectedMap<K, V> extends ConcurrentHashMap<K, V> {
     }
 
 
-    public void addConnection( Consumer<ConnectedMap<K, V>> onChange ) {
+    public void addConnection( Consumer<PusherMap<K, V>> onChange ) {
         this.onChange.add( onChange );
     }
 

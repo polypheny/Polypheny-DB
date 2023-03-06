@@ -27,10 +27,11 @@ public class LogicalRelView extends LogicalEntity {
             long tableId,
             String logicalSchemaName,
             String logicalTableName,
+            long namespaceId,
             List<Long> columnIds,
             List<String> logicalColumnNames,
             AlgProtoDataType protoRowType ) {
-        super( tableId, logicalSchemaName, logicalTableName, columnIds, logicalColumnNames, protoRowType, NamespaceType.RELATIONAL );
+        super( tableId, logicalSchemaName, logicalTableName, columnIds, logicalColumnNames, namespaceId, protoRowType, NamespaceType.RELATIONAL );
     }
 
 }

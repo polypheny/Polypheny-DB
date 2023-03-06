@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,14 +41,23 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 @Value
 @With
 public class AllocationTable extends AllocationEntity<LogicalTable> {
-
+    @Serialize
     public List<CatalogColumnPlacement> placements;
+    @Serialize
     public long adapterId;
+    @Serialize
     public LogicalTable logicalTable;
+    @Serialize
     public String adapterName;
 
 
-    public AllocationTable( LogicalTable logicalTable, long id, String name, long adapterId, String adapterName, List<CatalogColumnPlacement> placements ) {
+    public AllocationTable(
+            @Deserialize("logicalTable") LogicalTable logicalTable,
+            @Deserialize( "id" ) long id,
+            @Deserialize( "name" ) String name,
+            @Deserialize( "adapterId" ) long adapterId,
+            @Deserialize( "adapterName" ) String adapterName,
+            @Deserialize( "placements" ) List<CatalogColumnPlacement> placements ) {
         super( logicalTable, id, name, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.logicalTable = logicalTable;
         this.adapterId = adapterId;

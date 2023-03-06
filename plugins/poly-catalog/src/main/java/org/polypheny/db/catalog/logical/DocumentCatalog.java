@@ -27,7 +27,7 @@ import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.ConnectedMap;
+import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
@@ -47,7 +47,7 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
     @Serialize
     public IdBuilder idBuilder;
     @Serialize
-    public ConnectedMap<Long, LogicalCollection> collections;
+    public PusherMap<Long, LogicalCollection> collections;
 
     private ConcurrentHashMap<String, LogicalCollection> names;
     @Getter
@@ -65,7 +65,7 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
             @Deserialize("idBuilder") IdBuilder idBuilder,
             @Deserialize("collections") Map<Long, LogicalCollection> collections ) {
         this.logicalNamespace = logicalNamespace;
-        this.collections = new ConnectedMap<>( collections );
+        this.collections = new PusherMap<>( collections );
 
         this.idBuilder = idBuilder;
 
@@ -99,6 +99,12 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
     @Override
     public LogicalEntity getEntity( String name ) {
         return names.get( name );
+    }
+
+
+    @Override
+    public LogicalEntity getEntity( long id ) {
+        return collections.get( id );
     }
 
 

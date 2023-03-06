@@ -23,16 +23,17 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public class AllocationCollection extends AllocationEntity {
+public class AllocationCollection extends AllocationEntity<LogicalCollection> {
 
-    public AllocationCollection( long id, String name, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( id, name, type, namespaceType, adapterId );
+    public AllocationCollection( LogicalCollection collection, long id, String name, EntityType type, NamespaceType namespaceType, long adapterId ) {
+        super( collection, id, name, type, namespaceType, adapterId );
     }
 
 

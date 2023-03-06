@@ -94,23 +94,25 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();
 
         EnforcementTime enforcementTime = EnforcementTime.ON_QUERY;
-        final List<CatalogConstraint> constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) )
+        final List<CatalogConstraint> constraints = new ArrayList<>( Catalog.getInstance().getLogicalRel( table.namespaceId ).getConstraints( table.id ) )
                 .stream()
                 .filter( f -> f.key.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
         final List<CatalogForeignKey> foreignKeys = Catalog.getInstance()
+                .getLogicalRel( table.namespaceId )
                 .getForeignKeys( table.id )
                 .stream()
                 .filter( f -> f.enforcementTime == enforcementTime )
                 .collect( Collectors.toList() );
         final List<CatalogForeignKey> exportedKeys = Catalog.getInstance()
+                .getLogicalRel( table.namespaceId )
                 .getExportedKeys( table.id )
                 .stream()
                 .filter( f -> f.enforcementTime == enforcementTime )
                 .collect( Collectors.toList() );
 
         // Turn primary key into an artificial unique constraint
-        CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        CatalogPrimaryKey pk = Catalog.getInstance().getLogicalRel( table.namespaceId ).getPrimaryKey( table.primaryKey );
         if ( pk.enforcementTime == enforcementTime ) {
             final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
@@ -222,21 +224,22 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         final RexBuilder rexBuilder = builder.getRexBuilder();
 
         final List<CatalogConstraint> constraints = Catalog.getInstance()
+                .getLogicalRel( table.namespaceId )
                 .getConstraints( table.id )
                 .stream()
                 .filter( c -> c.key.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
-        final List<CatalogForeignKey> foreignKeys = Catalog.getInstance().getForeignKeys( table.id )
+        final List<CatalogForeignKey> foreignKeys = Catalog.getInstance().getLogicalRel( table.namespaceId ).getForeignKeys( table.id )
                 .stream()
                 .filter( c -> c.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
-        final List<CatalogForeignKey> exportedKeys = Catalog.getInstance().getExportedKeys( table.id )
+        final List<CatalogForeignKey> exportedKeys = Catalog.getInstance().getLogicalRel( table.namespaceId ).getExportedKeys( table.id )
                 .stream()
                 .filter( c -> c.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
 
         // Turn primary key into an artificial unique constraint
-        CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        CatalogPrimaryKey pk = Catalog.getInstance().getLogicalRel( table.namespaceId ).getPrimaryKey( table.primaryKey );
         if ( pk.enforcementTime == enforcementTime ) {
             final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );

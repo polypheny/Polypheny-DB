@@ -23,8 +23,8 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 public class LogicalCollection extends LogicalEntity {
 
-    protected LogicalCollection( long tableId, String logicalSchemaName, String logicalTableName, AlgProtoDataType protoRowType ) {
-        super( tableId, logicalSchemaName, logicalTableName, List.of( 0L ), List.of( "d" ), protoRowType, NamespaceType.DOCUMENT );
+    protected LogicalCollection( long tableId, String logicalSchemaName, long collectionId, String logicalTableName, AlgProtoDataType protoRowType ) {
+        super( tableId, logicalSchemaName, logicalTableName, List.of( 0L ), List.of( "d" ), collectionId, protoRowType, NamespaceType.DOCUMENT );
     }
 
 }

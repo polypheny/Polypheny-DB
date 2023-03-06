@@ -75,7 +75,7 @@ public class Adapter {
 
 
     public static void removeAdapter( Class<?> clazz, String adapterName ) {
-        if ( Catalog.getInstance().getAdapters().stream().anyMatch( a -> a.getAdapterTypeName().equals( adapterName ) ) ) {
+        if ( Catalog.getInstance().getAdapters().stream().anyMatch( a -> a.adapterName.equals( adapterName ) ) ) {
             throw new RuntimeException( "Adapter is still deployed!" );
         }
         REGISTER.remove( getKey( clazz, adapterName ) );

@@ -16,23 +16,36 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
+@SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
+@SerializeClass(subclasses = { LogicalTable.class })
 public abstract class LogicalEntity extends CatalogEntity {
-
+    @Serialize
     public String namespaceName;
+    @Serialize
     public long namespaceId;
 
 
-    protected LogicalEntity( long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType ) {
+    protected LogicalEntity(
+            @Deserialize( "id" ) long id,
+            @Deserialize( "name" ) String name,
+            @Deserialize( "namespaceId" ) long namespaceId,
+            @Deserialize( "namespaceName" ) String namespaceName,
+            @Deserialize( "type" ) EntityType type,
+            @Deserialize( "namespaceType" ) NamespaceType namespaceType ) {
         super( id, name, namespaceId, type, namespaceType );
         this.namespaceName = namespaceName;
         this.namespaceId = namespaceId;

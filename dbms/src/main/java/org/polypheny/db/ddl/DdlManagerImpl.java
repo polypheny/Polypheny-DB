@@ -299,8 +299,6 @@ public class DdlManagerImpl extends DdlManager {
                                 catalogTable.id,
                                 catalogTable.partitionProperty.partitionIds.get( 0 ),
                                 PlacementType.AUTOMATIC,
-                                physicalSchemaName,
-                                physicalTableName,
                                 DataPlacementRole.UPTODATE );
             } catch ( GenericCatalogException e ) {
                 throw new RuntimeException( "Exception while adding primary key" );
@@ -891,8 +889,6 @@ public class DdlManagerImpl extends DdlManager {
                     catalogTable.id,
                     partitionId,
                     PlacementType.AUTOMATIC,
-                    null,
-                    null,
                     DataPlacementRole.UPTODATE );
         }
 
@@ -1460,8 +1456,6 @@ public class DdlManagerImpl extends DdlManager {
                     catalogTable.id,
                     partitionId,
                     PlacementType.MANUAL,
-                    null,
-                    null,
                     DataPlacementRole.UPTODATE )
             );
             storeInstance.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
@@ -1514,8 +1508,6 @@ public class DdlManagerImpl extends DdlManager {
                         catalogTable.id,
                         partitionId,
                         PlacementType.AUTOMATIC,
-                        null,
-                        null,
                         DataPlacementRole.UPTODATE );
             }
 
@@ -1764,7 +1756,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
-            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
         AlgDataType fieldList = algRoot.alg.getRowType();
@@ -1858,8 +1850,6 @@ public class DdlManagerImpl extends DdlManager {
                     tableId,
                     catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
-                    null,
-                    null,
                     DataPlacementRole.UPTODATE );
 
             store.createPhysicalTable( statement.getPrepareContext(), catalogMaterializedView, null );
@@ -1898,7 +1888,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the graph should be placed
-            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
         // add general graph
@@ -2198,7 +2188,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
-                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
             }
 
             long tableId = catalog.getLogicalRel( namespaceId ).addTable(
@@ -2218,7 +2208,6 @@ public class DdlManagerImpl extends DdlManager {
                 addConstraint( namespaceId, constraint.name, constraint.type, constraint.columnNames, tableId );
             }
 
-            //catalog.getLogicalRel( catalogTable.namespaceId ).updateTablePartitionProperties(tableId, partitionProperty);
             LogicalTable catalogTable = catalog.getLogicalRel( namespaceId ).getTable( tableId );
 
             // Trigger rebuild of schema; triggers schema creation on adapters
@@ -2226,15 +2215,15 @@ public class DdlManagerImpl extends DdlManager {
 
             for ( DataStore store : stores ) {
                 catalog.getAllocRel( catalogTable.namespaceId ).addPartitionPlacement(
-                        catalogTable.namespaceId, store.getAdapterId(),
+                        catalogTable.namespaceId,
+                        store.getAdapterId(),
                         catalogTable.id,
                         catalogTable.partitionProperty.partitionIds.get( 0 ),
                         PlacementType.AUTOMATIC,
-                        null,
-                        null,
                         DataPlacementRole.UPTODATE );
 
-                store.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
+                catalog.getPhysical( catalogTable.namespaceId ).addPhysicalEntity(
+                        store.createPhysicalTable( statement.getPrepareContext(), catalogTable, null ) );
             }
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
@@ -2253,7 +2242,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
-            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
         long collectionId;
@@ -2663,8 +2652,6 @@ public class DdlManagerImpl extends DdlManager {
                         partitionedTable.id,
                         partitionId,
                         PlacementType.AUTOMATIC,
-                        null,
-                        null,
                         DataPlacementRole.UPTODATE );
             }
 
@@ -2774,8 +2761,6 @@ public class DdlManagerImpl extends DdlManager {
                     mergedTable.id,
                     mergedTable.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
-                    null,
-                    null,
                     DataPlacementRole.UPTODATE );
 
             // First create new tables

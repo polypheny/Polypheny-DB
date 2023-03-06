@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.ConnectedMap;
+import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
@@ -58,7 +58,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     public BinarySerializer<PolyAllocRelCatalog> serializer = Serializable.builder.get().build( PolyAllocRelCatalog.class );
 
     @Serialize
-    public final ConnectedMap<Long, AllocationTable> allocations;
+    public final PusherMap<Long, AllocationTable> allocations;
 
     private final ConcurrentHashMap<Pair<Long, Long>, Long> adapterLogicalToAllocId;
     private final ConcurrentHashMap<Pair<Long, Long>, AllocationTable> adapterLogicalColumnToAlloc;
@@ -69,10 +69,13 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     private final ConcurrentHashMap<Long, List<AllocationTable>> logicalTableToAllocs;
 
+    public PolyAllocRelCatalog(){
+        this( new ConcurrentHashMap<>() );
+    }
 
     public PolyAllocRelCatalog(
             @Deserialize("allocations") Map<Long, AllocationTable> allocations ) {
-        this.allocations = new ConnectedMap<>( allocations );
+        this.allocations = new PusherMap<>( allocations );
         this.adapterLogicalToAllocId = new ConcurrentHashMap<>();
         this.allocations.addRowConnection( this.adapterLogicalToAllocId, ( k, v ) -> Pair.of( v.adapterId, v.logical.id ), ( k, v ) -> k );
         this.adapterLogicalColumnToAlloc = new ConcurrentHashMap<>();
@@ -453,7 +456,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
+    public void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, DataPlacementRole role ) {
 
     }
 

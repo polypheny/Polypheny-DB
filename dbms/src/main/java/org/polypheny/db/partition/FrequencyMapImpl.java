@@ -339,8 +339,6 @@ public class FrequencyMapImpl extends FrequencyMap {
                             table.id,
                             partitionId,
                             PlacementType.AUTOMATIC,
-                            null,
-                            null,
                             DataPlacementRole.UPTODATE );
                 }
 

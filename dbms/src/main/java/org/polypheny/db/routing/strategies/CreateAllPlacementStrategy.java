@@ -40,7 +40,7 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
 
     @Override
-    public List<DataStore> getDataStoresForNewTable() {
+    public List<DataStore> getDataStoresForNewEntity() {
         return AdapterManager.getInstance().getStores().values().asList();
     }
 

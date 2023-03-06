@@ -35,7 +35,7 @@ import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.ConnectedMap;
+import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
@@ -75,10 +75,10 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     public BinarySerializer<RelationalCatalog> serializer = Serializable.builder.get().build( RelationalCatalog.class );
 
     @Serialize
-    public ConnectedMap<Long, LogicalTable> tables;
+    public PusherMap<Long, LogicalTable> tables;
 
     @Serialize
-    public ConnectedMap<Long, LogicalColumn> columns;
+    public PusherMap<Long, LogicalColumn> columns;
 
     @Getter
     public LogicalNamespace logicalNamespace;
@@ -111,8 +111,8 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             @Deserialize("keyColumns") Map<long[], Long> keyColumns ) {
         this.logicalNamespace = logicalNamespace;
 
-        this.tables = new ConnectedMap<>( tables );
-        this.columns = new ConnectedMap<>( columns );
+        this.tables = new PusherMap<>( tables );
+        this.columns = new PusherMap<>( columns );
         this.indexes = indexes;
         this.keys = keys;
         this.keyColumns = keyColumns;
@@ -155,6 +155,12 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public LogicalEntity getEntity( String name ) {
         return names.get( name );
+    }
+
+
+    @Override
+    public LogicalEntity getEntity( long id ) {
+        return tables.get( id );
     }
 
 

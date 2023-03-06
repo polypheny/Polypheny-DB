@@ -25,6 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 
@@ -72,18 +73,19 @@ public final class CatalogForeignKey extends CatalogKey {
 
     @SneakyThrows
     public String getReferencedKeyTableName() {
-        return Catalog.getInstance().getTable( referencedKeyTableId ).name;
+        return Catalog.getInstance().getLogicalRel( referencedKeySchemaId ).getTable( referencedKeyTableId ).name;
     }
 
 
     @SneakyThrows
     public List<String> getReferencedKeyColumnNames() {
-        Catalog catalog = Catalog.getInstance();
+        /*Catalog catalog = Catalog.getInstance();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : referencedKeyColumnIds ) {
             columnNames.add( catalog.getColumn( columnId ).name );
         }
-        return columnNames;
+        return columnNames;*/
+        throw new NotImplementedException();
     }
 
 
@@ -134,9 +136,11 @@ public final class CatalogForeignKey extends CatalogKey {
         @SneakyThrows
         @Override
         public Serializable[] getParameterArray() {
-            return Catalog.getInstance()
+            /*return Catalog.getInstance()
+                    .getLogicalRel(  )
                     .getForeignKey( tableId, foreignKeyName )
-                    .getParameterArray( referencedKeyColumnName, foreignKeyColumnName, keySeq );
+                    .getParameterArray( referencedKeyColumnName, foreignKeyColumnName, keySeq );*/
+            throw new NotImplementedException();
         }
 
 

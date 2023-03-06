@@ -51,6 +51,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -247,9 +248,10 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
         ReflectiveEntity( Type elementType, Enumerable<?> enumerable, Long id, Long partitionId, Long adapterId ) {
             //super( elementType, id, partitionId, adapterId );
-            super( id, "test", null, -1, -1, -1, EntityType.ENTITY, null, ImmutableList.of(), false, null );
+            super( id, "test", List.of(), -1,  "", EntityType.ENTITY, null,  ImmutableList.of(), false, null );
             this.elementType = elementType;
             this.enumerable = enumerable;
+            throw new NotImplementedException();
         }
 
 

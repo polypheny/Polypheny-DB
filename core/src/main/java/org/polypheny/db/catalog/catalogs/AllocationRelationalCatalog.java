@@ -476,10 +476,8 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
      * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
      */
-    void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
+    void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store

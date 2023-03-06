@@ -16,10 +16,12 @@
 
 package org.polypheny.db.catalog.entity;
 
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
@@ -29,16 +31,23 @@ public class CatalogColumnPlacement implements CatalogObject {
 
     private static final long serialVersionUID = -1909757888176291095L;
 
+    @Serialize
     public final long namespaceId;
+    @Serialize
     public final long tableId;
+    @Serialize
     public final long columnId;
+    @Serialize
     public final long adapterId;
+    @Serialize
     public final String adapterUniqueName;
+    @Serialize
     public final PlacementType placementType;
-
+    @Serialize
     public final long physicalPosition;
-
+    @Serialize
     public final String physicalSchemaName;
+    @Serialize
     public final String physicalColumnName;
 
 
@@ -66,19 +75,19 @@ public class CatalogColumnPlacement implements CatalogObject {
 
     @SneakyThrows
     public String getLogicalSchemaName() {
-        return Catalog.getInstance().getTable( tableId ).getNamespaceName();
+        throw new NotImplementedException();
     }
 
 
     @SneakyThrows
     public String getLogicalTableName() {
-        return Catalog.getInstance().getTable( tableId ).name;
+        return Catalog.getInstance().getLogicalRel( namespaceId ).getTable( tableId ).name;
     }
 
 
     @SneakyThrows
     public String getLogicalColumnName() {
-        return Catalog.getInstance().getColumn( columnId ).name;
+        return Catalog.getInstance().getLogicalRel( namespaceId ).getColumn( columnId ).name;
     }
 
 

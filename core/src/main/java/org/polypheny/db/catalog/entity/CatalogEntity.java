@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity;
 
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
 import lombok.Value;
@@ -39,11 +40,15 @@ import org.polypheny.db.util.ImmutableBitSet;
 @Value
 @NonFinal
 public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible {
-
+    @Serialize
     public long id;
+    @Serialize
     public EntityType entityType;
+    @Serialize
     public NamespaceType namespaceType;
+    @Serialize
     public String name;
+    @Serialize
     public long namespaceId;
 
 

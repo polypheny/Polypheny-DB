@@ -25,6 +25,7 @@ import lombok.With;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -50,13 +51,13 @@ public class CatalogMaterializedView extends CatalogView {
     public CatalogMaterializedView(
             long id,
             String name,
-            List<Long> columnIds,
-            long schemaId,
-            int ownerId,
+            List<LogicalColumn> columns,
+            long namespaceId,
+            String namespaceName,
             EntityType entityType,
             String query,
             Long primaryKey,
-            @NonNull List<Integer> dataPlacements,
+            @NonNull List<Long> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
             AlgCollation algCollation,
@@ -69,9 +70,9 @@ public class CatalogMaterializedView extends CatalogView {
         super(
                 id,
                 name,
-                columnIds,
-                schemaId,
-                ownerId,
+                namespaceName,
+                columns,
+                namespaceId,
                 entityType,
                 query,
                 primaryKey,

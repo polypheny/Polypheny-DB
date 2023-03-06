@@ -60,6 +60,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.transaction.Statement;
@@ -393,13 +394,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         this.entityId.add( scan.getEntity().id );
         final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class );
         if ( table != null ) {
-            final List<Long> ids = table.fieldIds;
+            final List<LogicalColumn> columns = table.columns;
             final List<String> names = table.getColumnNames();
             final String baseName = table.getNamespaceName() + "." + table.name + ".";
 
-            for ( int i = 0; i < ids.size(); i++ ) {
-                this.availableColumns.putIfAbsent( ids.get( i ), baseName + names.get( i ) );
-                this.availableColumnsWithTable.putIfAbsent( ids.get( i ), table.id );
+            for ( int i = 0; i < columns.size(); i++ ) {
+                this.availableColumns.putIfAbsent( columns.get( i ).id, baseName + names.get( i ) );
+                this.availableColumnsWithTable.putIfAbsent( columns.get( i ).id, table.id );
             }
         }
     }
@@ -420,7 +421,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         if ( catalogTable.partitionProperty.isPartitioned ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
-                    catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                    catalogTable.columns.stream().map( c -> c.id ).collect( Collectors.toList()).indexOf( catalogTable.partitionProperty.partitionColumnId ) );
             node.accept( whereClauseVisitor );
 
             int scanId = node.getInput( 0 ).getId();

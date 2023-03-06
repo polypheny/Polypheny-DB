@@ -164,7 +164,7 @@ public class QueryInterfaceManager {
             throw new RuntimeException( "There is already a query interface with this unique name" );
         }
         QueryInterface instance;
-        int ifaceId = -1;
+        long ifaceId = -1;
         try {
             String[] split = clazzName.split( "\\$" );
             split = split[split.length - 1].split( "\\." );

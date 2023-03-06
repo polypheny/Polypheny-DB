@@ -107,6 +107,8 @@ public abstract class Catalog implements ExtensionPoint {
     // move to Snapshot
     public abstract LogicalEntity getLogicalEntity( String entityName );
 
+    public abstract LogicalEntity getLogicalEntity( long id );
+
     public abstract PhysicalCatalog getPhysical( long namespaceId );
 
     public abstract PhysicalEntity<?> getPhysicalEntity( long id );

@@ -20,6 +20,7 @@ package org.polypheny.db.catalog.entity.logical;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,49 +41,41 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.schema.ColumnStrategy;
 
-@Value
+//@Value
 @With
 @EqualsAndHashCode(callSuper = false)
 @NonFinal
 public class LogicalTable extends LogicalEntity implements Comparable<LogicalTable> {
 
     private static final long serialVersionUID = 4653390333258552102L;
-
     @Serialize
     public long id;
     @Serialize
-    public String name;
-    @Serialize
-    public ImmutableList<LogicalColumn> columns;
-    @Serialize
-    public long namespaceId;
-    @Serialize
     public EntityType entityType;
     @Serialize
+    public String name;
+
+    @Serialize
+    public ImmutableList<LogicalColumn> columns;
+
+    @Serialize
+    public long namespaceId;
+
+    @Serialize
     public Long primaryKey;
+
     @Serialize
     public boolean modifiable;
+
     @Serialize
     public PartitionProperty partitionProperty;
+
     @Serialize
     public ImmutableList<Long> dataPlacements;
+
     @Serialize
     public ImmutableList<Long> connectedViews;
 
-
-    public LogicalTable(
-            final long id,
-            @NonNull final String name,
-            final ImmutableList<LogicalColumn> fieldIds,
-            final long namespaceId,
-            final String namespaceName,
-            @NonNull final EntityType type,
-            final Long primaryKey,
-            @NonNull final List<Long> dataPlacements,
-            boolean modifiable,
-            PartitionProperty partitionProperty ) {
-        this( id, name, fieldIds, namespaceId, namespaceName, type, primaryKey, dataPlacements, modifiable, partitionProperty, ImmutableList.of() );
-    }
 
 
     public LogicalTable(
@@ -117,6 +110,19 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
         }
     }
 
+    public LogicalTable(
+            final long id,
+            @NonNull final String name,
+            final List<LogicalColumn> fieldIds,
+            final long namespaceId,
+            final String namespaceName,
+            @NonNull final EntityType type,
+            final Long primaryKey,
+            @NonNull final List<Long> dataPlacements,
+            boolean modifiable,
+            PartitionProperty partitionProperty ) {
+        this( id, name, fieldIds, namespaceId, namespaceName, type, primaryKey, dataPlacements, modifiable, partitionProperty, ImmutableList.of() );
+    }
 
     public List<String> getColumnNames() {
         return columns.stream().map( c -> c.name ).collect( Collectors.toList() );

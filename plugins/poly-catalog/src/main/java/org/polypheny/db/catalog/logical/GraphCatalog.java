@@ -80,6 +80,12 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
 
     @Override
+    public LogicalEntity getEntity( long id ) {
+        return null;
+    }
+
+
+    @Override
     public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
 
     }

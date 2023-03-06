@@ -34,6 +34,8 @@ import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
@@ -58,21 +60,31 @@ public class CatalogView extends LogicalTable {
     public CatalogView(
             long id,
             String name,
-            List<Long> columnIds,
-            long schemaId,
-            int ownerId,
+            String namespaceName,
+            List<LogicalColumn> columns,
+            long namespaceId,
             EntityType entityType,
             String query,
             Long primaryKey,
-            List<Integer> dataPlacements,
+            List<Long> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
             AlgCollation algCollation,
             List<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
             String language ) {
-        super( id, name, columnIds, schemaId, ownerId, entityType, primaryKey, dataPlacements,
-                modifiable, partitionProperty, connectedViews );
+        super(
+                id,
+                name,
+                columns,
+                namespaceId,
+                namespaceName,
+                entityType,
+                primaryKey,
+                dataPlacements,
+                modifiable,
+                partitionProperty,
+                connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap( Entry::getKey, t -> ImmutableList.copyOf( t.getValue() ) ) ) );

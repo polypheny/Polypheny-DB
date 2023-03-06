@@ -18,7 +18,7 @@ package org.polypheny.db.catalog;
 
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.plugins.PolyPluginManager;
 
 public class CatalogPlugin extends Plugin {
 
@@ -36,22 +36,8 @@ public class CatalogPlugin extends Plugin {
 
     @Override
     public void start() {
-        PolyCatalog catalog = new PolyCatalog();
-
-        catalog.addNamespace( "test", NamespaceType.RELATIONAL, false );
-        long namespaceId = catalog.addNamespace( "test2", NamespaceType.RELATIONAL, false );
-
-        long tableId = catalog.addTable( "testTable", namespaceId );
-        catalog.addColumn( "testColumn", namespaceId, tableId, null );
-        catalog.commit();
-
-        byte[] buffer = catalog.serialize();
-
-        PolyCatalog catalog1 = catalog.deserialize( buffer, PolyCatalog.class );
-
-        catalog1.addColumn( "testColumn2", namespaceId, tableId, null );
-        catalog1.rollback();
-
+        log.info( "PolyCatalog catalog was loaded" );
+        PolyPluginManager.setCatalogsSupplier( () -> Catalog.setAndGetInstance( new PolyCatalog() ) );
     }
 
 }

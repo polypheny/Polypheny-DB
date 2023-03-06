@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public class AllocationGraph extends AllocationEntity {
+public class AllocationGraph extends AllocationEntity<LogicalGraph> {
 
 
     public LogicalGraph logical;
@@ -36,7 +36,7 @@ public class AllocationGraph extends AllocationEntity {
 
 
     public AllocationGraph( long id, LogicalGraph graph, long adapterId ) {
-        super( id, graph.name, graph.entityType, graph.namespaceType, adapterId );
+        super( graph, id, graph.name, graph.entityType, graph.namespaceType, adapterId );
         this.id = id;
         this.logical = graph;
     }

@@ -69,9 +69,10 @@ public class LogicalEntity extends CatalogEntity implements TranslatableEntity, 
             String logicalTableName,
             List<Long> columnIds,
             List<String> logicalColumnNames,
+            long namespaceId,
             AlgProtoDataType protoRowType,
             NamespaceType namespaceType ) {
-        super(  tableId, logicalTableName, EntityType.ENTITY, NamespaceType.RELATIONAL );
+        super(  tableId, logicalTableName,namespaceId, EntityType.ENTITY, NamespaceType.RELATIONAL );
         this.logicalSchemaName = logicalSchemaName;
         this.logicalTableName = logicalTableName;
         this.columnIds = columnIds;

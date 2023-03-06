@@ -16,6 +16,7 @@
 
 package org.polypheny.db.ddl.exception;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 
 public class ColumnNotExistsException extends Exception {
@@ -31,8 +32,9 @@ public class ColumnNotExistsException extends Exception {
 
 
     public ColumnNotExistsException( long tableId, String columnName ) {
-        this.tableName = Catalog.getInstance().getTable( tableId ).name;
+        //this.tableName = Catalog.getInstance().getTable( tableId ).name;
         this.columnName = columnName;
+        throw new NotImplementedException();
     }
 
 }

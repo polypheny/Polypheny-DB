@@ -23,6 +23,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 
 
@@ -35,7 +36,6 @@ public final class CatalogPrimaryKey extends CatalogKey {
                 catalogKey.id,
                 catalogKey.tableId,
                 catalogKey.schemaId,
-                catalogKey.databaseId,
                 catalogKey.columnIds,
                 EnforcementTime.ON_QUERY );
     }
@@ -53,7 +53,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
 
     public Serializable[] getParameterArray( String columnName, int keySeq ) {
-        return new Serializable[]{ getDatabaseName(), getSchemaName(), getTableName(), columnName, keySeq, null };
+        return new Serializable[]{ getSchemaName(), getTableName(), columnName, keySeq, null };
     }
 
 
@@ -71,7 +71,8 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return Catalog.getInstance().getPrimaryKey( pkId ).getParameterArray( columnName, keySeq );
+            throw new NotImplementedException();
+            //return Catalog.getInstance().getPrimaryKey( pkId ).getParameterArray( columnName, keySeq );
         }
 
 

@@ -30,6 +30,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.allocation.PolyAllocDocCatalog;
+import org.polypheny.db.catalog.allocation.PolyAllocGraphCatalog;
+import org.polypheny.db.catalog.allocation.PolyAllocRelCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -57,6 +60,7 @@ import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.physical.PolyPhysicalCatalog;
 import org.polypheny.db.catalog.snapshot.FullSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
@@ -211,6 +215,18 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
+    public LogicalEntity getLogicalEntity( long id ) {
+        for ( LogicalCatalog catalog : logicalCatalogs.values() ) {
+            LogicalEntity entity = catalog.getEntity( id );
+            if( entity != null ) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
+
+    @Override
     public PhysicalCatalog getPhysical( long namespaceId ) {
         return physicalCatalogs.get( namespaceId );
     }
@@ -277,14 +293,18 @@ public class PolyCatalog extends Catalog implements Serializable {
         switch ( namespaceType ) {
             case RELATIONAL:
                 logicalCatalogs.put( id, new RelationalCatalog( namespace, idBuilder ) );
+                allocationCatalogs.put( id, new PolyAllocRelCatalog() );
                 break;
             case DOCUMENT:
                 logicalCatalogs.put( id, new DocumentCatalog( namespace, idBuilder ) );
+                allocationCatalogs.put( id, new PolyAllocDocCatalog() );
                 break;
             case GRAPH:
                 logicalCatalogs.put( id, new GraphCatalog( namespace, idBuilder ) );
+                allocationCatalogs.put( id, new PolyAllocGraphCatalog() );
                 break;
         }
+        physicalCatalogs.put( id, new PolyPhysicalCatalog() );
         change();
         return id;
     }
@@ -473,13 +493,13 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public List<CatalogIndex> getIndexes() {
-        return null;
+        return List.of();
     }
 
 
     @Override
     public List<LogicalTable> getTablesForPeriodicProcessing() {
-        return null;
+        return List.of();
     }
 
 

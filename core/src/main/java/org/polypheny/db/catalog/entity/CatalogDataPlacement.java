@@ -30,6 +30,7 @@ import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -89,7 +90,7 @@ public class CatalogDataPlacement implements CatalogObject {
 
     @SneakyThrows
     public String getTableName() {
-        return Catalog.getInstance().getTable( tableId ).name;
+        throw new RuntimeException( "" );
     }
 
 
@@ -105,12 +106,14 @@ public class CatalogDataPlacement implements CatalogObject {
 
 
     public boolean hasColumnFullPlacement() {
-        return Catalog.getInstance().getTable( this.tableId ).fieldIds.size() == columnPlacementsOnAdapter.size();
+        throw new NotImplementedException();
+        // return Catalog.getInstance().getTable( this.tableId ).fieldIds.size() == columnPlacementsOnAdapter.size();
     }
 
 
     public boolean hasPartitionFullPlacement() {
-        return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
+        throw new NotImplementedException();
+        //return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
     }
 
 
@@ -131,7 +134,7 @@ public class CatalogDataPlacement implements CatalogObject {
     private Map<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final List<Long> unsortedPartitionIds ) {
         // Since this shall only be called after initialization of dataPlacement object,
         // we need to clear the contents of partitionPlacementsOnAdapterByRole
-        Map<DataPlacementRole, ImmutableList<Long>> partitionsPerRole = new HashMap<>();
+        /*Map<DataPlacementRole, ImmutableList<Long>> partitionsPerRole = new HashMap<>();
 
         try {
             Catalog catalog = Catalog.getInstance();
@@ -160,7 +163,8 @@ public class CatalogDataPlacement implements CatalogObject {
         }
 
         // Finally, overwrite entire partitionPlacementsOnAdapterByRole at Once
-        return partitionsPerRole;
+        return partitionsPerRole;*/
+        throw new NotImplementedException();
     }
 
 }

@@ -33,18 +33,6 @@ public interface NCatalog {
 
     NamespaceType getType();
 
-    default RelationalCatalog asRelational() {
-        return unwrap( RelationalCatalog.class );
-    }
-
-    default DocumentCatalog asDocument() {
-        return unwrap( DocumentCatalog.class );
-    }
-
-    default GraphCatalog asGraph() {
-        return unwrap( GraphCatalog.class );
-    }
-
     default <T extends NCatalog> T unwrap( Class<T> clazz ) {
         if ( !this.getClass().isAssignableFrom( clazz ) ) {
             throw new RuntimeException( String.format( "Error on retrieval the %s catalog.", clazz.getSimpleName() ) );

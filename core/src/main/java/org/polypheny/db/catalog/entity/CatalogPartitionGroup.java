@@ -68,7 +68,7 @@ public final class CatalogPartitionGroup implements CatalogObject {
 
     @SneakyThrows
     public String getTableName() {
-        return Catalog.getInstance().getTable( tableId ).name;
+        return Catalog.getInstance().getLogicalRel( schemaId ).getTable( tableId ).name;
     }
 
 

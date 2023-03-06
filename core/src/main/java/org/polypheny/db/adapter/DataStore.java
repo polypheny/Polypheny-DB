@@ -222,7 +222,8 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                columnNames.add( Catalog.getInstance().getLogicalRel( names ).getColumn( columnId ).name );
+                // columnNames.add( Catalog.getInstance().getLogicalRel( columnNames ).getColumn( columnId ).name );
+                // todo dl
             }
             return columnNames;
         }

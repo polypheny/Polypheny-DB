@@ -28,6 +28,6 @@ public interface CreatePlacementStrategy {
 
     List<DataStore> getDataStoresForNewColumn( LogicalColumn addedColumn );
 
-    List<DataStore> getDataStoresForNewTable();
+    List<DataStore> getDataStoresForNewEntity();
 
 }

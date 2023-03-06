@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 
 
@@ -59,18 +60,20 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     @SneakyThrows
     public String getTableName() {
-        return Catalog.getInstance().getTable( tableId ).name;
+        // return Catalog.getInstance().getTable( tableId ).name;
+        throw new NotImplementedException();
     }
 
 
     @SneakyThrows
     public List<String> getColumnNames() {
-        Catalog catalog = Catalog.getInstance();
+        /*Catalog catalog = Catalog.getInstance();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : columnIds ) {
             columnNames.add( catalog.getColumn( columnId ).name );
         }
-        return columnNames;
+        return columnNames;*/
+        throw new NotImplementedException();
     }
 
 

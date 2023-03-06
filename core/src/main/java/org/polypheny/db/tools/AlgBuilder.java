@@ -1375,7 +1375,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder lpgScan( long id ) {
-        LogicalGraph graph = Catalog.getInstance().getGraph( id );
+        LogicalGraph graph = Catalog.getInstance().getLogicalEntity( id ).unwrap( LogicalGraph.class );
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
         return this;
     }

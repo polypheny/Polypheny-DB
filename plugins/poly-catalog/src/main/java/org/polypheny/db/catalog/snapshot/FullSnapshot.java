@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
@@ -120,6 +121,12 @@ public class FullSnapshot implements Snapshot {
 
     @Override
     public List<LogicalTable> getLogicalTables( long namespaceId, Pattern name ) {
+        return null;
+    }
+
+
+    @Override
+    public LogicalColumn getLogicalColumn( long id ) {
         return null;
     }
 

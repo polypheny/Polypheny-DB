@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -209,14 +208,11 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         long schemaId;
 
         // Cannot use getLogicalTable() here since table does not yet exist
-        if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            schemaId = catalog.getNamespace( name.names.get( 1 ) ).id;
-            tableName = name.names.get( 2 );
-        } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+        if ( name.names.size() == 2 ) { // SchemaName.TableName
+            schemaId = catalog.getNamespace( name.names.get( 0 ) ).id;
             tableName = name.names.get( 1 );
         } else { // TableName
-            schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+            schemaId = catalog.getNamespace( context.getDefaultSchemaName() ).id;
             tableName = name.names.get( 0 );
         }
 
@@ -270,7 +266,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // We just added the table/column so it has to exist or we have an internal problem
             throw new RuntimeException( e );
-        } catch ( UnknownDatabaseException | UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         }
     }

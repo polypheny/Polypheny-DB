@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 
 public interface PhysicalCatalog {
@@ -24,5 +25,9 @@ public interface PhysicalCatalog {
     List<PhysicalEntity<?>> getPhysicalsOnAdapter( long id );
 
     PhysicalEntity<?> getPhysicalEntity( long id );
+
+    void addPhysicalEntity( PhysicalEntity<?> physicalEntity );
+
+    <P extends LogicalEntity> PhysicalEntity<?> getFromLogical( long id );
 
 }

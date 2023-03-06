@@ -44,4 +44,6 @@ public interface LogicalCatalog {
 
     LogicalEntity getEntity( String name );
 
+    LogicalEntity getEntity( long id );
+
 }

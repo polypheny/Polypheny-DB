@@ -18,6 +18,7 @@ package org.polypheny.db.schema;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -36,7 +37,8 @@ public interface PolyphenyDbSchema {
 
 
     default LogicalTable getTable( List<String> names ) {
-        switch ( names.size() ) {
+        throw new NotImplementedException();
+        /*switch ( names.size() ) {
             case 3:
                 return Catalog.getInstance().getTables( Pattern.of( names.get( 1 ) ), Pattern.of( names.get( 2 ) ) ).get( 0 );
             case 2:
@@ -45,11 +47,12 @@ public interface PolyphenyDbSchema {
                 return Catalog.getInstance().getTables( null, Pattern.of( names.get( 0 ) ) ).get( 0 );
             default:
                 return null;
-        }
+        }*/
     }
 
     default LogicalTable getTable( long id ) {
-        return Catalog.getInstance().getTable( id );
+        throw new NotImplementedException();
+        //return Catalog.getInstance().getTable( id );
     }
 
     default AllocationTable getAllocTable( long id ){
@@ -62,7 +65,7 @@ public interface PolyphenyDbSchema {
 
 
     default LogicalCollection getCollection( List<String> names ) {
-        CatalogNamespace namespace;
+        /*CatalogNamespace namespace;
         switch ( names.size() ) {
             case 3:
                 namespace = Catalog.getInstance().getNamespaces( Pattern.of( names.get( 1 ) ) ).get( 0 );
@@ -76,11 +79,13 @@ public interface PolyphenyDbSchema {
                 return Catalog.getInstance().getCollections( namespace.id, Pattern.of( names.get( 0 ) ) ).get( 0 );
             default:
                 return null;
-        }
+        }*/
+        throw new NotImplementedException();
     }
 
     default LogicalCollection getCollection( long id ) {
-        return Catalog.getInstance().getCollection( id );
+        //return Catalog.getInstance().getCollection( id );
+        throw new NotImplementedException();
     }
 
     default AllocationCollection getAllocCollection( long id ){
@@ -92,14 +97,16 @@ public interface PolyphenyDbSchema {
     }
 
     default LogicalGraph getGraph( List<String> names ) {
-        if ( names.size() == 1 ) {// TODO add methods
+        /*if ( names.size() == 1 ) {// TODO add methods
             return Catalog.getInstance().getGraphs( Pattern.of( names.get( 0 ) ) ).get( 0 );
         }
-        return null;
+        return null;*/
+        throw new NotImplementedException();
     }
 
     default LogicalGraph getGraph( long id ) {
-        return Catalog.getInstance().getGraph( id );
+        // return Catalog.getInstance().getGraph( id );
+        throw new NotImplementedException();
     }
 
     default AllocationGraph getAllocGraph( long id ){
@@ -111,7 +118,8 @@ public interface PolyphenyDbSchema {
     }
 
     default List<String> getNamespaceNames() {
-        return Catalog.getInstance().getNamespaces( Catalog.defaultDatabaseId, null ).stream().map( t -> t.name ).collect( Collectors.toList() );
+        // return Catalog.getInstance().getNamespaces( Catalog.defaultDatabaseId, null ).stream().map( t -> t.name ).collect( Collectors.toList() );
+        throw new NotImplementedException();
     }
 
     default boolean isPartitioned( long id ){
