@@ -59,6 +59,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -389,7 +390,7 @@ public abstract class BaseRouter implements Router {
     public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Long placementId ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        CatalogNamespace namespace = snapshot.getNamespace( alg.entity.id );
+        LogicalNamespace namespace = snapshot.getNamespace( alg.entity.id );
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
             return handleGraphOnRelational( alg, namespace, statement, placementId );

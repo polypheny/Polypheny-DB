@@ -16,12 +16,18 @@
 
 package org.polypheny.db.catalog.snapshot;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Value;
+import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
+import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -32,35 +38,70 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
+@Value
 public class FullSnapshot implements Snapshot {
 
     @Getter
-    private final long id;
+    long id;
+    Map<Long, PhysicalCatalog> physicalCatalogs;
+    Map<Long, LogicalCatalog> logicalCatalogs;
+    Map<Long, AllocationCatalog> allocationCatalogs;
+
+    ImmutableMap<Long, LogicalNamespace> namespaceIds;
+
+    ImmutableMap<String, LogicalNamespace> namespaceNames;
+
+    ImmutableMap<Long, LogicalTable> tableIds;
+
+    ImmutableMap<Pair<Long, String>, LogicalTable> tableNames;
 
 
-    public FullSnapshot( long id, Map<Long, LogicalCatalog> catalogs ) {
+    ImmutableMap<Long, LogicalColumn> columnIds;
+
+    ImmutableMap<Triple<Long, Long, String>, LogicalColumn> columnNames;
+
+    ImmutableMap<Long, LogicalCollection> collectionIds;
+    ImmutableMap<Pair<Long, String>, LogicalCollection> collectionNames;
+
+    ImmutableMap<Long, LogicalGraph> graphId;
+
+    ImmutableMap<String, LogicalGraph> graphName;
+
+
+    public FullSnapshot( long id, Map<Long, LogicalCatalog> logicalCatalogs, Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, PhysicalCatalog> physicalCatalogs ) {
         this.id = id;
+        this.logicalCatalogs = logicalCatalogs;
+        this.allocationCatalogs = allocationCatalogs;
+        this.physicalCatalogs = physicalCatalogs;
 
+        namespaceIds = ImmutableMap.copyOf( logicalCatalogs.values().stream().map( LogicalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n ) ) );
+        namespaceNames = ImmutableMap.copyOf( namespaceIds.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
 
+        tableIds = ImmutableMap.copyOf( logicalCatalogs.values().stream()
+                .filter( c -> c.getLogicalNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .map( c -> (LogicalRelationalCatalog) c ).flatMap( c -> c. ) )
     }
 
 
     @Override
-    public CatalogNamespace getNamespace( long id ) {
+    public LogicalNamespace getNamespace( long id ) {
         return null;
     }
 
 
     @Override
-    public CatalogNamespace getNamespace( String name ) {
+    public LogicalNamespace getNamespace( String name ) {
         return null;
     }
 
 
     @Override
-    public List<CatalogNamespace> getNamespaces( Pattern name ) {
+    public List<LogicalNamespace> getNamespaces( Pattern name ) {
         return null;
     }
 

@@ -108,6 +108,8 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
@@ -128,7 +130,6 @@ import org.polypheny.db.runtime.functions.MqlFunctions;
 import org.polypheny.db.schema.FilterableEntity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.ProjectableFilterableEntity;
-import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
@@ -154,7 +155,7 @@ public enum BuiltInMethod {
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
-    QUERYABLE_TABLE_AS_QUERYABLE( QueryableEntity.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),
+    QUERYABLE_TABLE_AS_QUERYABLE( QueryableEntity.class, "asQueryable", DataContext.class, Snapshot.class, long.class ),
     AS_QUERYABLE( Enumerable.class, "asQueryable" ),
     ABSTRACT_ENUMERABLE_CTOR( AbstractEnumerable.class ),
     BATCH_ITERATOR_CTOR( BatchIteratorEnumerable.class ),
@@ -162,16 +163,16 @@ public enum BuiltInMethod {
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
     SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
-    SCHEMA_GET_TABLE( Namespace.class, "getLogicalTable", String.class ),
+    SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrap", Class.class ),
     SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),
     SCHEMAS_ENUMERABLE_FILTERABLE( Schemas.class, "enumerable", FilterableEntity.class, DataContext.class ),
     SCHEMAS_ENUMERABLE_PROJECTABLE_FILTERABLE( Schemas.class, "enumerable", ProjectableFilterableEntity.class, DataContext.class ),
-    SCHEMAS_QUERYABLE( Schemas.class, "queryable", DataContext.class, SchemaPlus.class, Class.class, String.class ),
+    SCHEMAS_QUERYABLE( Schemas.class, "queryable", DataContext.class, Snapshot.class, Class.class, String.class ),
     REFLECTIVE_SCHEMA_GET_TARGET( ReflectiveSchema.class, "getTarget" ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
     DATA_CONTEXT_GET_PARAMETER_VALUE( DataContext.class, "getParameterValue", long.class ),
-    DATA_CONTEXT_GET_ROOT_SCHEMA( DataContext.class, "getRootSchema" ),
+    DATA_CONTEXT_GET_ROOT_SCHEMA( DataContext.class, "getSnapshot" ),
     //JDBC_SCHEMA_DATA_SOURCE( JdbcSchema.class, "getDataSource" ),
     ROW_VALUE( Row.class, "getObject", int.class ),
     ROW_AS_COPY( Row.class, "asCopy", Object[].class ),

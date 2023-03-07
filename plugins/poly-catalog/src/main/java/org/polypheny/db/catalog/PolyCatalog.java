@@ -292,7 +292,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     private void updateSnapshot() {
-        this.fullSnapshot = new FullSnapshot( idBuilder.getNewSnapshotId(), logicalCatalogs );
+        this.fullSnapshot = new FullSnapshot( idBuilder.getNewSnapshotId(), logicalCatalogs, allocationCatalogs, physicalCatalogs );
     }
 
 
@@ -637,7 +637,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public Snapshot getSnapshot( long id ) {
-        return null;
+        return new FullSnapshot( id, logicalCatalogs, allocationCatalogs, physicalCatalogs );
     }
 
 
