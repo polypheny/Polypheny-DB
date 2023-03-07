@@ -35,7 +35,7 @@ public abstract class DataSource extends Adapter implements ExtensionPoint {
     private final boolean dataReadOnly;
 
 
-    protected DataSource( final int adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly ) {
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly ) {
         super( adapterId, uniqueName, settings );
         this.dataReadOnly = dataReadOnly;
 

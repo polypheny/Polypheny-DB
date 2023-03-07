@@ -30,6 +30,7 @@ import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
@@ -39,7 +40,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 /**
  * Serves as a container, which holds all information related to a table entity placed on physical store.
  */
-@With
+@SuperBuilder(toBuilder = true)
 @Value
 public class CatalogDataPlacement implements CatalogObject {
 

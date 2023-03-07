@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -39,14 +40,16 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     /**
      * Adds a placement for a column.
      *
+     * @param table
      * @param adapterId The adapter on which the table should be placed on
      * @param columnId The id of the column to be placed
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      * @param physicalColumnName The column name on the adapter
+     * @param position
      */
-    void addColumnPlacement( long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName );
+    void addColumnPlacement( LogicalTable table, long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position );
 
     /**
      * Deletes all dependent column placements
@@ -116,7 +119,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The id of the table for the requested column placements
      * @return The requested collection
      */
-    ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
+    ImmutableMap<Long, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
 
     /**
      * Gets the partition group sorted by partition.
@@ -384,7 +387,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The unique id of the table
      * @return List of partitionId Indices
      */
-    List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
+    List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long tableId );
 
     /**
      * Returns a specific DataPlacement of a given table.

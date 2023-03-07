@@ -44,6 +44,6 @@ public interface AllocationDocumentCatalog extends AllocationCatalog {
 
     void dropCollectionPlacement( long id, long adapterId );
 
-    CatalogCollectionPlacement getCollectionPlacement( long id, int placementId );
+    CatalogCollectionPlacement getCollectionPlacement( long id, long placementId );
 
 }

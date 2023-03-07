@@ -40,14 +40,14 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
 
     private static final long serialVersionUID = 7343856827901459672L;
 
-    public ImmutableList<Integer> placements;
+    public ImmutableList<Long> placements;
     public int ownerId;
     public boolean modifiable;
 
     public boolean caseSensitive;
 
 
-    public LogicalGraph( long id, String name, long namespaceId, String namespaceName, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements, boolean caseSensitive ) {
+    public LogicalGraph( long id, String name, long namespaceId, String namespaceName, int ownerId, boolean modifiable, @NonNull Collection<Long> placements, boolean caseSensitive ) {
         super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.GRAPH );
         this.ownerId = ownerId;
         this.modifiable = modifiable;
@@ -76,8 +76,8 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
     }
 
 
-    public LogicalGraph addPlacement( int adapterId ) {
-        List<Integer> placements = new ArrayList<>( this.placements );
+    public LogicalGraph addPlacement( long adapterId ) {
+        List<Long> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
         return toBuilder().placements( ImmutableList.copyOf( placements ) ).build();
     }

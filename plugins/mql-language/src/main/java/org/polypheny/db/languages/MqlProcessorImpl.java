@@ -104,8 +104,8 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
     public boolean needsDdlGeneration( Node query, QueryParameters parameters ) {
         if ( query instanceof MqlCollectionStatement ) {
             return Catalog.getInstance()
-                    .getTables( new Pattern( ((MqlQueryParameters) parameters).getDatabase() ), null )
-                    .stream()
+                    .getNamespaces( Pattern.of( ((MqlQueryParameters) parameters).getDatabase() ) )
+                    .stream().flatMap( n -> Catalog.getInstance().getLogicalDoc( n.id ).getCollections( null ).stream() )
                     .noneMatch( t -> t.name.equals( ((MqlCollectionStatement) query).getCollection() ) );
         }
         return false;

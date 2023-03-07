@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -28,17 +30,21 @@ public class CatalogDefaultValue implements Serializable {
 
     private static final long serialVersionUID = 6085682952587659184L;
 
+    @Serialize
     public final long columnId;
+    @Serialize
     public final PolyType type;
+    @Serialize
     public final String value;
+    @Serialize
     public final String functionName;
 
 
     public CatalogDefaultValue(
-            final long columnId,
-            @NonNull final PolyType type,
-            final String value,
-            final String functionName ) {
+            @Deserialize("columnId") final long columnId,
+            @Deserialize("type") @NonNull final PolyType type,
+            @Deserialize("value") final String value,
+            @Deserialize("functionName") final String functionName ) {
         this.columnId = columnId;
         this.type = type;
         this.value = value;

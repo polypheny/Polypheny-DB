@@ -41,14 +41,14 @@ public class IndexTest extends CqlTestHelper {
 
     @Test
     public void testCreateTableIndex() throws UnknownIndexException {
-        TableIndex index = TableIndex.createIndex( "APP", "test", "testtable" );
+        TableIndex index = TableIndex.createIndex( "test", "testtable" );
         Assert.assertEquals( index.fullyQualifiedName, "test.testtable" );
     }
 
 
     @Test(expected = UnknownIndexException.class)
     public void testCreateTableIndexThrowsUnknownIndexException() throws UnknownIndexException {
-        TableIndex.createIndex( "APP", "hello", "world" );
+        TableIndex.createIndex( "hello", "world" );
     }
 
 }

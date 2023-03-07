@@ -65,7 +65,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -79,7 +78,7 @@ import org.polypheny.db.util.LimitIterator;
 public class DataMigratorImpl implements DataMigrator {
 
     @Override
-    public void copyGraphData( LogicalGraph target, Transaction transaction, Integer existingAdapterId, CatalogAdapter to ) {
+    public void copyGraphData( LogicalGraph target, Transaction transaction, Long existingAdapterId, CatalogAdapter to ) {
         Statement statement = transaction.createStatement();
 
         AlgBuilder builder = AlgBuilder.create( statement );
@@ -164,20 +163,20 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<LogicalColumn> columns, List<Long> partitionIds ) {
-        LogicalTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        LogicalTable table = Catalog.getInstance().getLogicalRel( columns.get( 0 ).namespaceId ).getTable( columns.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getLogicalRel( table.namespaceId ).getPrimaryKey( table.primaryKey );
 
         // Check Lists
         List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( Catalog.getInstance().getAllocRel( logicalColumn.namespaceId ).getColumnPlacement( store.id, logicalColumn.id ) );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( cid );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( table.namespaceId ).getColumn( cid );
             if ( !selectColumnList.contains( logicalColumn ) ) {
                 selectColumnList.add( logicalColumn );
             }
@@ -203,7 +202,7 @@ public class DataMigratorImpl implements DataMigrator {
             subDistribution.keySet().retainAll( List.of( partitionId ) );
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
             AlgRoot targetAlg;
-            if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
+            if ( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
                 targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, partitionId );
             } else {
@@ -315,12 +314,6 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
-        List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        to.get( 0 ).adapterUniqueName,
-                        to.get( 0 ).getLogicalSchemaName(),
-                        to.get( 0 ).physicalSchemaName ),
-                to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         PhysicalTable physical = statement.getTransaction().getSnapshot().getPhysicalTable( partitionId );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
@@ -332,7 +325,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : to ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( ccp.namespaceId ).getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -356,12 +349,6 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
-        List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        to.get( 0 ).adapterUniqueName,
-                        to.get( 0 ).getLogicalSchemaName(),
-                        to.get( 0 ).physicalSchemaName ),
-                to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         PhysicalTable physical = statement.getTransaction().getSnapshot().getPhysicalTable( partitionId );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
@@ -377,7 +364,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( ccp.namespaceId ).getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -399,12 +386,6 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     private AlgRoot buildUpdateStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
-        List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        to.get( 0 ).adapterUniqueName,
-                        to.get( 0 ).getLogicalSchemaName(),
-                        to.get( 0 ).physicalSchemaName ),
-                to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         PhysicalTable physical = statement.getTransaction().getSnapshot().getPhysicalTable( partitionId );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
@@ -414,15 +395,15 @@ public class DataMigratorImpl implements DataMigrator {
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.scan( qualifiedTableName );
+        builder.scan( physical );
 
         // build condition
         RexNode condition = null;
-        LogicalTable catalogTable = Catalog.getInstance().getTable( to.get( 0 ).tableId );
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        LogicalTable catalogTable = Catalog.getInstance().getLogicalRel( to.get( 0 ).namespaceId ).getTable( to.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getLogicalRel( to.get( 0 ).namespaceId ).getPrimaryKey( catalogTable.primaryKey );
         for ( long cid : primaryKey.columnIds ) {
-            CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( to.get( 0 ).adapterId, cid );
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( cid );
+            CatalogColumnPlacement ccp = Catalog.getInstance().getAllocRel( to.get( 0 ).namespaceId ).getColumnPlacement( to.get( 0 ).adapterId, cid );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( to.get( 0 ).namespaceId ).getColumn( cid );
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
                     new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id )
@@ -438,7 +419,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : to ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( ccp.namespaceId ).getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -477,12 +458,12 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    public static List<CatalogColumnPlacement> selectSourcePlacements( LogicalTable table, List<LogicalColumn> columns, int excludingAdapterId ) {
+    public static List<CatalogColumnPlacement> selectSourcePlacements( LogicalTable table, List<LogicalColumn> columns, long excludingAdapterId ) {
         // Find the adapter with the most column placements
         Catalog catalog = Catalog.getInstance();
-        int adapterIdWithMostPlacements = -1;
+        long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, ImmutableList<Long>> entry : catalog.getAllocRel( table.namespaceId ).getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -496,12 +477,12 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( long cid : table.fieldIds ) {
-            if ( columnIds.contains( cid ) ) {
-                if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
-                    placementList.add( catalog.getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+        for ( LogicalColumn column : table.columns ) {
+            if ( columnIds.contains( column.id ) ) {
+                if ( catalog.getAllocRel( column.namespaceId ).getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
+                    placementList.add( catalog.getAllocRel( column.namespaceId ).getColumnPlacement( adapterIdWithMostPlacements, column.id ) );
                 } else {
-                    for ( CatalogColumnPlacement placement : catalog.getColumnPlacement( cid ) ) {
+                    for ( CatalogColumnPlacement placement : catalog.getAllocRel( column.namespaceId ).getColumnPlacements( column.id ) ) {
                         if ( placement.adapterId != excludingAdapterId ) {
                             placementList.add( placement );
                             break;
@@ -529,19 +510,19 @@ public class DataMigratorImpl implements DataMigrator {
      */
     @Override
     public void copySelectiveData( Transaction transaction, CatalogAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, Map<Long, List<CatalogColumnPlacement>> placementDistribution, List<Long> targetPartitionIds ) {
-        CatalogPrimaryKey sourcePrimaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
+        CatalogPrimaryKey sourcePrimaryKey = Catalog.getInstance().getLogicalRel( sourceTable.namespaceId ).getPrimaryKey( sourceTable.primaryKey );
 
         // Check Lists
         List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( Catalog.getInstance().getAllocRel( sourceTable.namespaceId ).getColumnPlacement( store.id, logicalColumn.id ) );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
 
         // Add primary keys to select column list
         for ( long cid : sourcePrimaryKey.columnIds ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( cid );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( sourceTable.namespaceId ).getColumn( cid );
             if ( !selectColumnList.contains( logicalColumn ) ) {
                 selectColumnList.add( logicalColumn );
             }
@@ -552,7 +533,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
         AlgRoot targetAlg;
-        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, targetTable.id ).size() == columns.size() ) {
+        if ( Catalog.getInstance().getAllocRel( targetTable.namespaceId ).getColumnPlacementsOnAdapterPerTable( store.id, targetTable.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
             targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
         } else {
@@ -631,19 +612,19 @@ public class DataMigratorImpl implements DataMigrator {
             throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
 
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getLogicalRel( sourceTable.namespaceId ).getPrimaryKey( sourceTable.primaryKey );
 
         // Check Lists
         List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( Catalog.getInstance().getAllocRel( sourceTable.namespaceId ).getColumnPlacement( store.id, logicalColumn.id ) );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getColumn( cid );
+            LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( sourceTable.namespaceId ).getColumn( cid );
             if ( !selectColumnList.contains( logicalColumn ) ) {
                 selectColumnList.add( logicalColumn );
             }
@@ -651,7 +632,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add partition columns to select column list
         long partitionColumnId = targetTable.partitionProperty.partitionColumnId;
-        LogicalColumn partitionColumn = Catalog.getInstance().getColumn( partitionColumnId );
+        LogicalColumn partitionColumn = Catalog.getInstance().getLogicalRel( sourceTable.namespaceId ).getColumn( partitionColumnId );
         if ( !selectColumnList.contains( partitionColumn ) ) {
             selectColumnList.add( partitionColumn );
         }
@@ -675,7 +656,7 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
-        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, sourceTable.id ).size() == columns.size() ) {
+        if ( Catalog.getInstance().getAllocRel( sourceTable.namespaceId ).getColumnPlacementsOnAdapterPerTable( store.id, sourceTable.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
             targetPartitionIds.forEach( id -> targetAlgs.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );
         } else {

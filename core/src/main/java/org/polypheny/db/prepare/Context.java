@@ -55,8 +55,6 @@ public interface Context {
 
     Statement getStatement();
 
-    long getDatabaseId();
-
-    int getCurrentUserId();
+    long getCurrentUserId();
 
 }

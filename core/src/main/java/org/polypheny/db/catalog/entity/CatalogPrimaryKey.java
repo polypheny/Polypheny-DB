@@ -24,7 +24,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -35,7 +34,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
         super(
                 catalogKey.id,
                 catalogKey.tableId,
-                catalogKey.schemaId,
+                catalogKey.namespaceId,
                 catalogKey.columnIds,
                 EnforcementTime.ON_QUERY );
     }

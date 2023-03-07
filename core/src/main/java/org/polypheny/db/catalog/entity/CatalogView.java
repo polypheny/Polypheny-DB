@@ -27,6 +27,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -44,7 +45,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 @EqualsAndHashCode(callSuper = true)
-@With
+@SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
 public class CatalogView extends LogicalTable {

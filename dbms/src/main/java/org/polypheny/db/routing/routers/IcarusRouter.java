@@ -91,17 +91,17 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
 
                 // AdapterId for all col placements same
-                final int adapterId = currentPlacement.get( 0 ).adapterId;
+                final long adapterId = currentPlacement.get( 0 ).adapterId;
 
                 // Find corresponding builder:
                 final RoutedAlgBuilder builder = builders.stream().filter( b -> {
-                            final List<Pair<Integer, Long>> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
-                                    .flatMap( Collection::stream )
-                                    .collect( Collectors.toList() );
-                            final Optional<Integer> found = listPairs.stream()
-                                    .map( elem -> elem.left )
-                                    .filter( elem -> elem == adapterId )
-                                    .findFirst();
+                    final List<Pair<Long, Long>> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
+                            .flatMap( Collection::stream )
+                            .collect( Collectors.toList() );
+                    final Optional<Long> found = listPairs.stream()
+                            .map( elem -> elem.left )
+                            .filter( elem -> elem == adapterId )
+                            .findFirst();
                             return found.isPresent();
                         }
                 ).findAny().orElse( null );

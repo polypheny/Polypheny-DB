@@ -32,7 +32,7 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewColumn( LogicalColumn addedColumn ) {
-        LogicalTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
+        LogicalTable catalogTable = Catalog.getInstance().getLogicalRel( addedColumn.namespaceId ).getTable( addedColumn.tableId );
         return catalogTable.dataPlacements.stream()
                 .map( elem -> AdapterManager.getInstance().getStore( elem ) )
                 .collect( Collectors.toList() );

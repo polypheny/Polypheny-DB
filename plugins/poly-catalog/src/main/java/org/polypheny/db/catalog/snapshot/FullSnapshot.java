@@ -226,4 +226,10 @@ public class FullSnapshot implements Snapshot {
         return false;
     }
 
+
+    @Override
+    public LogicalColumn getColumn( long columnId ) {
+        return null;
+    }
+
 }

@@ -82,11 +82,6 @@ class EntityNamespace extends AbstractNamespace {
     }
 
 
-    @Override
-    public CatalogEntity getTable() {
-        return table;
-    }
-
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {

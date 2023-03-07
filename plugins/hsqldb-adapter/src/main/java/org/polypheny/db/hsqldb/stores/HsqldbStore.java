@@ -69,7 +69,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 public class HsqldbStore extends AbstractJdbcStore {
 
 
-    public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
@@ -119,9 +119,9 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getAllocRel( catalogIndex.key.namespaceId ).getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getAllocRel( catalogIndex.key.namespaceId ).getPartitionPlacement( getAdapterId(), id ) ) );
 
         String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
@@ -152,14 +152,14 @@ public class HsqldbStore extends AbstractJdbcStore {
             builder.append( ")" );
             executeUpdate( builder, context );
         }
-        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+        Catalog.getInstance().getLogicalRel( catalogIndex.key.namespaceId ).setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getAllocRel( catalogIndex.key.namespaceId ).getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             StringBuilder builder = new StringBuilder();

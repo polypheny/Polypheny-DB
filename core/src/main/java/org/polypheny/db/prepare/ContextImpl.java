@@ -42,19 +42,16 @@ public class ContextImpl implements Context {
     @Getter
     private final String defaultSchemaName;
     @Getter
-    private final long databaseId;
-    @Getter
-    private final int currentUserId;
+    private final long currentUserId;
 
 
-    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, Statement statement ) {
+    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultSchemaName, long currentUserId, Statement statement ) {
         this.snapshot = snapshot;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
         this.defaultSchemaName = defaultSchemaName;
         this.statement = statement;
         this.currentUserId = currentUserId;
-        this.databaseId = databaseId;
     }
 
 

@@ -326,13 +326,7 @@ public final class Schemas {
 
 
             @Override
-            public long getDatabaseId() {
-                return 0;
-            }
-
-
-            @Override
-            public int getCurrentUserId() {
+            public long getCurrentUserId() {
                 return 0;
             }
 

@@ -17,26 +17,28 @@
 package org.polypheny.db.catalog;
 
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Value;
 
+@Value
 public class IdBuilder {
 
-    private final AtomicLong snapshotId;
-    private final AtomicLong databaseId;
-    private final AtomicLong namespaceId;
-    private final AtomicLong entityId;
+    AtomicLong snapshotId;
+    AtomicLong databaseId;
+    AtomicLong namespaceId;
+    AtomicLong entityId;
 
-    private final AtomicLong allocId;
-    private final AtomicLong fieldId;
+    AtomicLong allocId;
+    AtomicLong fieldId;
 
-    private final AtomicLong userId;
+    AtomicLong userId;
 
-    private final AtomicLong indexId;
+    AtomicLong indexId;
 
-    private final AtomicLong keyId;
+    AtomicLong keyId;
 
-    private final AtomicLong adapterId;
+    AtomicLong adapterId;
 
-    private final AtomicLong interfaceId;
+    AtomicLong interfaceId;
 
     private static IdBuilder INSTANCE;
 

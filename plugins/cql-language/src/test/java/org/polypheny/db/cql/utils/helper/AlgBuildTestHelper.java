@@ -73,8 +73,8 @@ public class AlgBuildTestHelper extends CqlTestHelper {
                     List<RexNode> inputRefs = new ArrayList<>();
                     List<String> columnNames = new ArrayList<>();
                     List<TableIndex> tableIndices = new ArrayList<>();
-                    tableIndices.add( TableIndex.createIndex( "APP", "test", "employee" ) );
-                    tableIndices.add( TableIndex.createIndex( "APP", "test", "dept" ) );
+                    tableIndices.add( TableIndex.createIndex( "test", "employee" ) );
+                    tableIndices.add( TableIndex.createIndex( "test", "dept" ) );
                     Catalog catalog = Catalog.getInstance();
 
                     for ( TableIndex tableIndex : tableIndices ) {

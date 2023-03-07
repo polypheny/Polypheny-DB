@@ -43,7 +43,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -193,9 +192,10 @@ public class LanguageCrud {
         LogicalTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
+            LogicalNamespace namespace = catalog.getNamespace( t[0] );
             try {
-                catalogTable = catalog.getTable( t[0], t[1] );
-            } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                catalogTable = catalog.getLogicalRel( namespace.id ).getTable( t[1] );
+            } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
             }
         }
@@ -226,15 +226,11 @@ public class LanguageCrud {
 
             // Get column default values
             if ( catalogTable != null ) {
-                try {
-                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        LogicalColumn logicalColumn = catalog.getColumn( catalogTable.id, columnName );
-                        if ( logicalColumn.defaultValue != null ) {
-                            dbCol.defaultValue = logicalColumn.defaultValue.value;
-                        }
+                LogicalColumn logicalColumn = catalogTable.columns.stream().filter( c -> c.name.equals( columnName ) ).findFirst().orElse( null );
+                if ( logicalColumn != null ) {
+                    if ( logicalColumn.defaultValue != null ) {
+                        dbCol.defaultValue = logicalColumn.defaultValue.value;
                     }
-                } catch ( UnknownColumnException e ) {
-                    log.error( "Caught exception", e );
                 }
             }
             header.add( dbCol );
@@ -306,7 +302,7 @@ public class LanguageCrud {
      */
     public void getDocumentDatabases( final Context ctx ) {
         Map<String, String> names = Catalog.getInstance()
-                .getNamespaces( Catalog.defaultDatabaseId, null )
+                .getNamespaces( null )
                 .stream()
                 .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.namespaceType.name() ) );
 
@@ -324,7 +320,11 @@ public class LanguageCrud {
     private Placement getPlacements( final Index index ) {
         Catalog catalog = Catalog.getInstance();
         String graphName = index.getSchema();
-        List<LogicalGraph> graphs = catalog.getGraphs( new Pattern( graphName ) );
+        List<LogicalNamespace> namespaces = catalog.getNamespaces( new Pattern( graphName ) );
+        if ( namespaces.size() != 1 ) {
+            throw new RuntimeException();
+        }
+        List<LogicalGraph> graphs = catalog.getLogicalGraph( namespaces.get( 0 ).id ).getGraphs( new Pattern( graphName ) );
         if ( graphs.size() != 1 ) {
             log.error( "The requested graph does not exist." );
             return new Placement( new RuntimeException( "The requested graph does not exist." ) );
@@ -336,13 +336,13 @@ public class LanguageCrud {
 
             return p;
         } else {
-            for ( int adapterId : graph.placements ) {
-                CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
+            for ( long adapterId : graph.placements ) {
+                CatalogGraphPlacement placement = catalog.getAllocGraph( graph.id ).getGraphPlacement( graph.id, adapterId );
                 Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 p.addAdapter( new Placement.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
-                        catalog.getGraphPlacements( adapterId ),
+                        catalog.getAllocGraph( graph.id ).getGraphPlacements( adapterId ),
                         adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) );
             }
             return p;
@@ -369,26 +369,21 @@ public class LanguageCrud {
         String collectionName = index.getTable();
         Catalog catalog = Catalog.getInstance();
         long namespaceId;
-        try {
-            namespaceId = catalog.getSchema( Catalog.defaultDatabaseId, namespace ).id;
-        } catch ( UnknownSchemaException e ) {
-            context.json( new Placement( e ) );
-            return;
-        }
-        List<LogicalCollection> collections = catalog.getCollections( namespaceId, new Pattern( collectionName ) );
+        namespaceId = catalog.getNamespace( namespace ).id;
+        List<LogicalCollection> collections = catalog.getLogicalDoc( namespaceId ).getCollections( new Pattern( collectionName ) );
 
         if ( collections.size() != 1 ) {
             context.json( new Placement( new UnknownCollectionException( 0 ) ) );
             return;
         }
 
-        LogicalCollection collection = catalog.getCollection( collections.get( 0 ).id );
+        LogicalCollection collection = collections.get( 0 );
 
         Placement placement = new Placement( false, List.of(), EntityType.ENTITY );
 
-        for ( Integer adapterId : collection.placements ) {
+        for ( long adapterId : collection.placements ) {
             Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
-            List<CatalogCollectionPlacement> placements = catalog.getCollectionPlacementsByAdapter( adapterId );
+            List<CatalogCollectionPlacement> placements = catalog.getAllocDoc( collection.namespaceId ).getCollectionPlacementsByAdapter( adapterId );
             placement.addAdapter( new DocumentStore( adapter.getUniqueName(), adapter.getUniqueName(), placements, adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
         }
 

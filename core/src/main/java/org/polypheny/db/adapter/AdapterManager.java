@@ -117,7 +117,7 @@ public class AdapterManager {
     }
 
 
-    public DataSource getSource( int id ) {
+    public DataSource getSource( long id ) {
         Adapter adapter = getAdapter( id );
         if ( adapter instanceof DataSource ) {
             return (DataSource) adapter;

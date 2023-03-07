@@ -30,9 +30,10 @@ import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.transaction.Statement;
@@ -65,8 +66,10 @@ public class BatchUpdateRequest {
                 String[] split = tableId.split( "\\." );
                 LogicalColumn logicalColumn;
                 try {
-                    logicalColumn = catalog.getColumn( catalog.getTable( split[0], split[1] ).id, entry.getKey() );
-                } catch ( UnknownColumnException | UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                    LogicalNamespace namespace = catalog.getNamespace( split[0] );
+                    LogicalTable table = catalog.getLogicalRel( namespace.id ).getTable( split[1] );
+                    logicalColumn = catalog.getLogicalRel( table.namespaceId ).getColumn( table.id, entry.getKey() );
+                } catch ( UnknownColumnException | UnknownTableException e ) {
                     log.error( "Could not determine column type", e );
                     return null;
                 }

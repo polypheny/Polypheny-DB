@@ -89,11 +89,11 @@ public class StatisticCrud {
         long tableId;
         long schemaId;
         try {
-            schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
-            tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
+            schemaId = Catalog.getInstance().getNamespace( request.tableId.split( "\\." )[0] ).id;
+            tableId = Catalog.getInstance().getLogicalRel( schemaId ).getTable( request.tableId.split( "\\." )[1] ).id;
 
             ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
-        } catch ( UnknownTableException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
                     + request.tableId.split( "\\." )[1] + "is unknown." );
         }

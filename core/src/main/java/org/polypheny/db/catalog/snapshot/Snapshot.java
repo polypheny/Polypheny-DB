@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -140,5 +141,8 @@ public interface Snapshot extends OperatorTable {
     default List<? extends Operator> getOperatorList() {
         return null;
     }
+
+    LogicalColumn getColumn( long columnId );
+
 
 }

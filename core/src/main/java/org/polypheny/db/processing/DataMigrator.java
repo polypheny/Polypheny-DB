@@ -86,6 +86,6 @@ public interface DataMigrator {
     AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
 
 
-    void copyGraphData( LogicalGraph graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
+    void copyGraphData( LogicalGraph graph, Transaction transaction, Long existingAdapterId, CatalogAdapter adapter );
 
 }

@@ -103,7 +103,7 @@ public class PolyphenyDbConnectionHandle {
     public Transaction getCurrentOrCreateNewTransaction() {
         synchronized ( this ) {
             if ( currentTransaction == null || !currentTransaction.isActive() ) {
-                currentTransaction = transactionManager.startTransaction( user, schema, database, false, "AVATICA Interface" );
+                currentTransaction = transactionManager.startTransaction( user, schema, false, "AVATICA Interface" );
             }
             return currentTransaction;
         }

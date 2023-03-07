@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -90,14 +89,13 @@ public class StatisticQueryProcessor {
         Catalog catalog = Catalog.getInstance();
         List<List<String>> result = new ArrayList<>();
         List<String> schemaTree = new ArrayList<>();
-        List<LogicalNamespace> schemas = catalog.getNamespaces( databaseId, null );
+        List<LogicalNamespace> schemas = catalog.getNamespaces( null );
         for ( LogicalNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<LogicalTable> childTables = catalog.getTables( schema.id, null );
+            List<LogicalTable> childTables = catalog.getLogicalRel( schema.id ).getTables( null );
             for ( LogicalTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
-                List<LogicalColumn> childColumns = catalog.getColumns( childTable.id );
-                for ( LogicalColumn logicalColumn : childColumns ) {
+                for ( LogicalColumn logicalColumn : childTable.columns ) {
                     table.add( schema.name + "." + childTable.name + "." + logicalColumn.name );
                 }
                 if ( childTable.entityType == EntityType.ENTITY ) {
@@ -118,21 +116,12 @@ public class StatisticQueryProcessor {
      */
     public List<QueryResult> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
-        List<LogicalColumn> logicalColumns = catalog.getColumns(
-                        null,
-                        null,
-                        null )
+        return catalog.getNamespaces( null )
                 .stream()
-                .filter( c -> c.getNamespaceType() == NamespaceType.RELATIONAL )
+                .filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
+                .flatMap( n -> catalog.getLogicalRel( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> t.columns.stream() ) )
+                .map( QueryResult::fromCatalogColumn )
                 .collect( Collectors.toList() );
-        List<QueryResult> allColumns = new ArrayList<>();
-
-        for ( LogicalColumn logicalColumn : logicalColumns ) {
-            if ( catalog.getTable( logicalColumn.tableId ).entityType != EntityType.VIEW ) {
-                allColumns.add( QueryResult.fromCatalogColumn( logicalColumn ) );
-            }
-        }
-        return allColumns;
     }
 
 
@@ -143,17 +132,8 @@ public class StatisticQueryProcessor {
      */
     public List<LogicalTable> getAllTable() {
         Catalog catalog = Catalog.getInstance();
-        List<LogicalTable> catalogEntities = catalog.getTables(
-                null,
-                null );
-        List<LogicalTable> allTables = new ArrayList<>();
-
-        for ( LogicalTable catalogTable : catalogEntities ) {
-            if ( catalogTable.entityType != EntityType.VIEW ) {
-                allTables.add( catalogTable );
-            }
-        }
-        return allTables;
+        return catalog.getNamespaces( null ).stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
+                .flatMap( n -> catalog.getLogicalRel( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
     }
 
 
@@ -164,9 +144,7 @@ public class StatisticQueryProcessor {
      */
     public List<QueryResult> getAllColumns( Long tableId ) {
         Catalog catalog = Catalog.getInstance();
-        List<QueryResult> columns = new ArrayList<>();
-        catalog.getColumns( tableId ).forEach( c -> columns.add( QueryResult.fromCatalogColumn( c ) ) );
-        return columns;
+        return catalog.getNamespaces( null ).stream().flatMap( n -> catalog.getLogicalRel( n.id ).getTable( tableId ).columns.stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
     }
 
 
@@ -203,7 +181,7 @@ public class StatisticQueryProcessor {
     private Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( userId, false, "Statistics", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

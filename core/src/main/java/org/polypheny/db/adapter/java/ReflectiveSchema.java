@@ -248,7 +248,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
         ReflectiveEntity( Type elementType, Enumerable<?> enumerable, Long id, Long partitionId, Long adapterId ) {
             //super( elementType, id, partitionId, adapterId );
-            super( id, "test", List.of(), -1,  "", EntityType.ENTITY, null,  ImmutableList.of(), false, null );
+            super( id, "test", List.of(), -1, "", EntityType.ENTITY, null, ImmutableList.of(), false, null, List.of() );
             this.elementType = elementType;
             this.enumerable = enumerable;
             throw new NotImplementedException();

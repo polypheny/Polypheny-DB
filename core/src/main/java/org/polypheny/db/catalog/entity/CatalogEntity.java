@@ -19,6 +19,8 @@ package org.polypheny.db.catalog.entity;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -52,7 +54,7 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
     public long namespaceId;
 
 
-    protected CatalogEntity( long id, String name, long namespaceId, EntityType type, NamespaceType namespaceType ) {
+    public CatalogEntity( long id, String name, long namespaceId, EntityType type, NamespaceType namespaceType ) {
         this.id = id;
         this.namespaceId = namespaceId;
         this.name = name;

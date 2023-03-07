@@ -63,7 +63,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
      * @return The physical placements of the necessary partitions: {@code PartitionId  -> List<AdapterId, CatalogColumnPlacementId>}
      */
     @Override
-    Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    Map<Long, List<Pair<Long, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
     /**
      * @return Optional pre costs.

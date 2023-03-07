@@ -59,7 +59,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -203,12 +202,12 @@ public class ConstraintEnforceAttacher {
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
         table = root.getEntity().unwrap( LogicalTable.class );
-        primaryKey = catalog.getPrimaryKey( table.primaryKey );
-        constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
-        foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
-        exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
+        primaryKey = catalog.getLogicalRel( table.namespaceId ).getPrimaryKey( table.primaryKey );
+        constraints = new ArrayList<>( Catalog.getInstance().getLogicalRel( table.namespaceId ).getConstraints( table.id ) );
+        foreignKeys = Catalog.getInstance().getLogicalRel( table.namespaceId ).getForeignKeys( table.id );
+        exportedKeys = Catalog.getInstance().getLogicalRel( table.namespaceId ).getExportedKeys( table.id );
         // Turn primary key into an artificial unique constraint
-        CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        CatalogPrimaryKey pk = Catalog.getInstance().getLogicalRel( table.namespaceId ).getPrimaryKey( table.primaryKey );
         final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
         constraints.add( pkc );
 
@@ -481,14 +480,14 @@ public class ConstraintEnforceAttacher {
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final LogicalTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable foreignTable = Catalog.getInstance().getLogicalRel( table.namespaceId ).getTable( foreignKey.referencedKeyTableId );
                 builder.push( input );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final LogicalColumn foreignColumn;
                     try {
-                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
+                        foreignColumn = Catalog.getInstance().getLogicalRel( table.namespaceId ).getColumn( foreignTable.id, foreignColumnName );
                     } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
@@ -557,14 +556,14 @@ public class ConstraintEnforceAttacher {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final LogicalTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
+                final LogicalTable foreignTable = Catalog.getInstance().getLogicalRel( table.namespaceId ).getTable( foreignKey.tableId );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
                     final LogicalColumn column, foreignColumn;
                     try {
-                        column = Catalog.getInstance().getColumn( table.id, columnName );
-                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
+                        column = Catalog.getInstance().getLogicalRel( table.namespaceId ).getColumn( table.id, columnName );
+                        foreignColumn = Catalog.getInstance().getLogicalRel( table.namespaceId ).getColumn( foreignTable.id, foreignColumnName );
                     } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
@@ -654,8 +653,9 @@ public class ConstraintEnforceAttacher {
                 try {
                     List<LogicalTable> tables = Catalog
                             .getInstance()
-                            .getTables( null, null )
+                            .getNamespaces( null )
                             .stream()
+                            .flatMap( n -> Catalog.getInstance().getLogicalRel( n.id ).getTables( null ).stream() )
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getNamespaceType() == NamespaceType.RELATIONAL )
                             .collect( Collectors.toList() );
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );
@@ -683,7 +683,7 @@ public class ConstraintEnforceAttacher {
                     }
 
 
-                } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownUserException | TransactionException | GenericCatalogException e ) {
+                } catch ( UnknownSchemaException | UnknownUserException | TransactionException | GenericCatalogException e ) {
                     return false;
                 }
             }

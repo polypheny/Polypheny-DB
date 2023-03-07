@@ -86,10 +86,10 @@ public abstract class StatisticColumn<T> {
         this.columnType = columnType;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsEntity( tableId ) ) {
+        if ( catalog.getLogicalEntity( tableId ) != null ) {
             this.schema = catalog.getNamespace( schemaId ).name;
-            this.table = catalog.getTable( tableId ).name;
-            this.column = catalog.getColumn( columnId ).name;
+            this.table = catalog.getLogicalRel( schemaId ).getTable( tableId ).name;
+            this.column = catalog.getLogicalRel( schemaId ).getColumn( columnId ).name;
         }
         this.qualifiedColumnName = String.format( "%s.%s.%s", this.schema, this.table, this.column );
     }

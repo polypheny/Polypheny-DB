@@ -22,6 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
@@ -31,7 +32,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 @EqualsAndHashCode(callSuper = true)
-@With
+@SuperBuilder(toBuilder = true)
 @Value
 public class CatalogMaterializedView extends CatalogView {
 

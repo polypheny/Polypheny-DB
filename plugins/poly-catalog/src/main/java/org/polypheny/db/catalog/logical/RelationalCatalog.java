@@ -28,16 +28,18 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
+import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -68,7 +70,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.PolyType;
 
 @Value
-@With
+@SuperBuilder(toBuilder = true)
 public class RelationalCatalog implements Serializable, LogicalRelationalCatalog {
 
     @Getter
@@ -80,6 +82,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Serialize
     public PusherMap<Long, LogicalColumn> columns;
 
+    @Serialize
     @Getter
     public LogicalNamespace logicalNamespace;
 
@@ -89,13 +92,15 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Serialize
     public Map<Long, CatalogKey> keys;
 
+    @Serialize
     public Map<long[], Long> keyColumns;
 
-    @Serialize
-    public IdBuilder idBuilder;
+
+    public IdBuilder idBuilder = IdBuilder.getInstance();
     ConcurrentHashMap<String, LogicalTable> names;
 
     @NonFinal
+    @Builder.Default
     boolean openChanges = false;
 
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -103,7 +108,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     public RelationalCatalog(
             @Deserialize("logicalNamespace") LogicalNamespace logicalNamespace,
-            @Deserialize("idBuilder") IdBuilder idBuilder,
             @Deserialize("tables") Map<Long, LogicalTable> tables,
             @Deserialize("columns") Map<Long, LogicalColumn> columns,
             @Deserialize("indexes") Map<Long, CatalogIndex> indexes,
@@ -120,12 +124,11 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         this.names = new ConcurrentHashMap<>();
         this.tables.addRowConnection( this.names, ( k, v ) -> logicalNamespace.caseSensitive ? v.name : v.name.toLowerCase(), ( k, v ) -> v );
 
-        this.idBuilder = idBuilder;
     }
 
 
-    public RelationalCatalog( LogicalNamespace namespace, IdBuilder idBuilder ) {
-        this( namespace, idBuilder, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+    public RelationalCatalog( LogicalNamespace namespace ) {
+        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
@@ -165,6 +168,12 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
+    public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
+        return toBuilder().logicalNamespace( namespace ).build();
+    }
+
+
+    @Override
     public List<LogicalTable> getTables( @Nullable Pattern name ) {
         if ( name == null ) {
             return List.copyOf( tables.values() );
@@ -180,13 +189,13 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Override
     public LogicalTable getTable( long tableId ) {
-        return null;
+        return tables.get( tableId );
     }
 
 
     @Override
     public LogicalTable getTable( String tableName ) throws UnknownTableException {
-        return null;
+        return names.get( tableName );
     }
 
 
@@ -197,19 +206,22 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public long addTable( String name, int ownerId, EntityType entityType, boolean modifiable ) {
+    public long addTable( String name, EntityType entityType, boolean modifiable ) {
+        long id = idBuilder.getNewEntityId();
+        LogicalTable table = new LogicalTable( id, name, List.of(), logicalNamespace.id, logicalNamespace.name, entityType, null, List.of(), modifiable, null, List.of() );
+        tables.put( id, table );
+        return id;
+    }
+
+
+    @Override
+    public long addView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         return 0;
     }
 
 
     @Override
-    public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
-        return 0;
-    }
-
-
-    @Override
-    public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
+    public long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         return 0;
     }
 
@@ -227,7 +239,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void setTableOwner( long tableId, int ownerId ) {
+    public void setTableOwner( long tableId, long ownerId ) {
 
     }
 
@@ -403,19 +415,23 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Override
     public LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
-        return null;
+        return tables.get( tableId ).columns.stream().filter( c -> logicalNamespace.isCaseSensitive() ? c.name.equals( columnName ) : c.name.equalsIgnoreCase( columnName ) ).findFirst().orElse( null );
     }
 
 
     @Override
-    public LogicalColumn getColumn( String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException {
+    public LogicalColumn getColumn( String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException {
         return null;
     }
 
 
     @Override
     public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
-        return 0;
+        long id = idBuilder.getNewFieldId();
+        LogicalColumn column = new LogicalColumn( id, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
+        columns.put( id, column );
+        tables.put( tableId, tables.get( tableId ).withAddedColumn( column ) );
+        return id;
     }
 
 

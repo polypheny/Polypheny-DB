@@ -36,7 +36,6 @@ import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -346,22 +345,20 @@ public class PolyphenyDb {
                 throw new RuntimeException( "There was no catalog submitted, aborting." );
             }
 
-            trx = transactionManager.startTransaction( Catalog.defaultUserId, false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.getInstance().getUser( Catalog.defaultUserId ), Catalog.getInstance().getNamespace( 0 ), false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
             loadDefaults();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
-            trx = transactionManager.startTransaction( Catalog.defaultUserId, false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.getInstance().getUser( Catalog.defaultUserId ), Catalog.getInstance().getNamespace( 0 ), false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
             trx.commit();
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
-            if ( trx != null ) {
-                try {
-                    trx.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Error while rolling back the transaction", e );
-                }
+        } catch ( TransactionException e ) {
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
             }
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
@@ -399,7 +396,7 @@ public class PolyphenyDb {
         try {
             IndexManager.getInstance().initialize( transactionManager );
             IndexManager.getInstance().restoreIndexes();
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
+        } catch ( UnknownUserException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 

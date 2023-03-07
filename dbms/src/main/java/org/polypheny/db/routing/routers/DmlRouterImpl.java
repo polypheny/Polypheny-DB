@@ -156,7 +156,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
                 log.debug(
                         "\t\t -> '{}' {}\t{}",
-                        dataPlacement.adapterUniqueName,
+                        dataPlacement.adapterId,
                         catalog.getAllocRel( modify.entity.namespaceId ).getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
                         catalog.getAllocRel( modify.entity.namespaceId ).getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
             }
@@ -684,19 +684,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId ) {
+    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Long adapterId ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
 
         List<AlgNode> modifies = new ArrayList<>();
 
-        List<Integer> placements = collection.placements;
+        List<Long> placements = collection.placements;
         if ( adapterId != null ) {
             placements = List.of( adapterId );
         }
 
-        for ( int placementId : placements ) {
+        for ( long placementId : placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( placementId );
             CatalogCollectionPlacement placement = Catalog.getInstance().getAllocDoc( alg.entity.namespaceId ).getCollectionPlacement( collection.id, placementId );
 
@@ -733,14 +733,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Integer> placements ) {
+    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Long> placements ) {
 
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         List<AlgNode> modifies = new ArrayList<>();
         boolean usedSubstitution = false;
 
-        for ( int adapterId : placements ) {
+        for ( long adapterId : placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
             CatalogGraphPlacement graphPlacement = Catalog.getInstance().getAllocGraph( alg.entity.namespaceId ).getGraphPlacement( catalogGraph.id, adapterId );
 
@@ -800,7 +800,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode buildGraphDml( AlgNode node, Statement statement, int adapterId ) {
+    private AlgNode buildGraphDml( AlgNode node, Statement statement, long adapterId ) {
         if ( node instanceof LpgScan ) {
             return super.handleGraphScan( (LogicalLpgScan) node, statement, adapterId );
         }
@@ -814,7 +814,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement, int adapterId, LogicalQueryInformation queryInformation ) {
+    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement, long adapterId, LogicalQueryInformation queryInformation ) {
 
         switch ( alg.operation ) {
             case INSERT:
@@ -831,7 +831,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, int adapterId ) {
+    private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, long adapterId ) {
         RoutedAlgBuilder builder = attachDocUpdate( alg.getInput(), statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation, adapterId );
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         AlgBuilder algBuilder = AlgBuilder.create( statement );
@@ -875,7 +875,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private RoutedAlgBuilder attachDocUpdate( AlgNode alg, Statement statement, CatalogEntity collectionTable, RoutedAlgBuilder builder, LogicalQueryInformation information, int adapterId ) {
+    private RoutedAlgBuilder attachDocUpdate( AlgNode alg, Statement statement, CatalogEntity collectionTable, RoutedAlgBuilder builder, LogicalQueryInformation information, long adapterId ) {
         switch ( ((DocumentAlg) alg).getDocType() ) {
 
             case SCAN:
@@ -912,7 +912,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private List<AlgNode> attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, int adapterId ) {
+    private List<AlgNode> attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, long adapterId ) {
         if ( alg.getInput() instanceof DocumentValues ) {
             // simple value insert
             AlgNode values = ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getSnapshot() ).get( 0 );
@@ -923,7 +923,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalLpgModify alg, int adapterId, Statement statement ) {
+    private AlgNode attachRelationalModify( LogicalLpgModify alg, long adapterId, Statement statement ) {
         /*CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
 
         PhysicalTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId ).unwrap( PhysicalTable.class );
@@ -1191,7 +1191,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( log.isDebugEnabled() ) {
             log.debug( "List of Store specific ColumnPlacements: " );
             for ( CatalogColumnPlacement ccp : placements ) {
-                log.debug( "{}.{}", ccp.adapterUniqueName, ccp.getLogicalColumnName() );
+                log.debug( "{}.{}", ccp.adapterId, ccp.getLogicalColumnName() );
             }
         }
 

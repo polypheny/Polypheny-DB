@@ -156,7 +156,7 @@ public class CqlQueryBuilder {
         String fullyQualifiedTableName = schemaName + "." + tableName;
 
         if ( !this.tableIndexMapping.containsKey( fullyQualifiedTableName ) ) {
-            TableIndex tableIndex = TableIndex.createIndex( databaseName, schemaName, tableName );
+            TableIndex tableIndex = TableIndex.createIndex( schemaName, tableName );
             this.tableIndexMapping.put( tableIndex.fullyQualifiedName, tableIndex );
         }
         return this.tableIndexMapping.get( fullyQualifiedTableName );

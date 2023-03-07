@@ -17,36 +17,47 @@
 package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
-import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
+@Value
+@NonFinal
 public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     private static final long serialVersionUID = -5803762884192662540L;
 
-    public final long id;
-    public final long tableId;
-    public final long schemaId;
-    public final ImmutableList<Long> columnIds;
-    public final EnforcementTime enforcementTime;
+    @Serialize
+    public long id;
+    @Serialize
+    public long tableId;
+    @Serialize
+    public long namespaceId;
+    @Serialize
+    public ImmutableList<Long> columnIds;
+    @Serialize
+    public EnforcementTime enforcementTime;
 
 
     public CatalogKey(
-            final long id,
-            final long tableId,
-            final long schemaId,
-            final List<Long> columnIds,
-            EnforcementTime enforcementTime ) {
+            @Deserialize("id") final long id,
+            @Deserialize("tableId") final long tableId,
+            @Deserialize("namespaceId") final long namespaceId,
+            @Deserialize("columnIds") final List<Long> columnIds,
+            @Deserialize("enforcementTime") EnforcementTime enforcementTime ) {
         this.id = id;
         this.tableId = tableId;
-        this.schemaId = schemaId;
+        this.namespaceId = namespaceId;
         this.columnIds = ImmutableList.copyOf( columnIds );
         this.enforcementTime = enforcementTime;
     }
@@ -54,7 +65,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getNamespace( schemaId ).name;
+        return Catalog.getInstance().getNamespace( namespaceId ).name;
     }
 
 
@@ -79,7 +90,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ id, tableId, getTableName(), schemaId, getSchemaName(), null, null };
+        return new Serializable[]{ id, tableId, getTableName(), namespaceId, getSchemaName(), null, null };
     }
 
 

@@ -324,7 +324,7 @@ public class EntityAccessMap {
 
             for ( long constraintTable : logicalTable.getConstraintIds() ) {
                 for ( long constraintPartitionIds
-                        : Catalog.getInstance().getTable( constraintTable ).partitionProperty.partitionIds ) {
+                        : Catalog.getInstance().getLogicalRel( logicalTable.namespaceId ).getTable( constraintTable ).partitionProperty.partitionIds ) {
 
                     EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds, NamespaceLevel.ENTITY_LEVEL );
                     if ( !accessMap.containsKey( id ) ) {

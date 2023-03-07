@@ -78,7 +78,7 @@ public class CsvSource extends DataSource {
     private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
-    public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public CsvSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 
         setCsvDir( settings );

@@ -109,7 +109,7 @@ public class CypherToAlgConverter {
             databaseId = parameters.getDatabaseId();
         }
 
-        LogicalGraph graph = Catalog.getInstance().getGraph( databaseId );
+        LogicalGraph graph = Catalog.getInstance().getLogicalGraph( databaseId ).getGraph( databaseId );
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan
@@ -138,13 +138,7 @@ public class CypherToAlgConverter {
 
 
     private long getDatabaseId( ExtendedQueryParameters parameters ) {
-        long databaseId;
-        try {
-            databaseId = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, parameters.getDatabaseName() ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "Error on retrieving the used namespace" );
-        }
-        return databaseId;
+        return Catalog.getInstance().getNamespace( parameters.getDatabaseName() ).id;
     }
 
 

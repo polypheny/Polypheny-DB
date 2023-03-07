@@ -91,13 +91,14 @@ public class UiRoutingPageUtil {
                 ImmutableList.of( "Entity", "Field", "Partition (Group --> ID)", "Adapter", "Physical Name" ) );
         if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
             proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
-                CatalogPartition catalogPartition = Catalog.getInstance().getPartition( k );
-                CatalogPartitionGroup catalogPartitionGroup = Catalog.getInstance().getPartitionGroup( catalogPartition.partitionGroupId );
-                LogicalTable catalogTable = Catalog.getInstance().getTable( catalogPartition.tableId );
+                CatalogPartition catalogPartition = Catalog.getInstance().getAllocRel( k ).getPartition( k );
+                LogicalTable catalogTable = Catalog.getInstance().getLogicalEntity( catalogPartition.tableId ).unwrap( LogicalTable.class );
+                CatalogPartitionGroup catalogPartitionGroup = Catalog.getInstance().getAllocRel( catalogTable.namespaceId ).getPartitionGroup( catalogPartition.partitionGroupId );
+
                 v.forEach( p -> {
-                    CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getColumnPlacement( p.left, p.right );
-                    CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getPartitionPlacement( p.left, k );
-                    LogicalColumn logicalColumn = Catalog.getInstance().getColumn( catalogColumnPlacement.columnId );
+                    CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getAllocRel( catalogTable.namespaceId ).getColumnPlacement( p.left, p.right );
+                    CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( p.left, k );
+                    LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( catalogTable.namespaceId ).getColumn( catalogColumnPlacement.columnId );
                     table.addRow(
                             catalogTable.getNamespaceName() + "." + catalogTable.name,
                             logicalColumn.name,

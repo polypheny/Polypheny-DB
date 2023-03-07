@@ -17,6 +17,7 @@
 package org.polypheny.db.routing.dto;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -42,7 +43,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     protected String queryClass;
     protected String physicalQueryClass;
     protected Class<? extends Router> router;
-    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     protected AlgOptCost preCosts;
 
 
@@ -113,14 +114,14 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
             return true;
         }
 
-        for ( Map.Entry<Long, List<Pair<Integer, Long>>> entry : this.physicalPlacementsOfPartitions.entrySet() ) {
+        for ( Map.Entry<Long, List<Pair<Long, Long>>> entry : this.physicalPlacementsOfPartitions.entrySet() ) {
             final Long id = entry.getKey();
-            List<Pair<Integer, Long>> values = entry.getValue();
+            List<Pair<Long, Long>> values = entry.getValue();
 
             if ( !other.physicalPlacementsOfPartitions.containsKey( id ) ) {
                 return false;
             } else {
-                if ( !values.containsAll( other.physicalPlacementsOfPartitions.get( id ) ) ) {
+                if ( !new HashSet<>( values ).containsAll( other.physicalPlacementsOfPartitions.get( id ) ) ) {
                     return false;
                 }
             }

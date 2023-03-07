@@ -110,9 +110,9 @@ public abstract class BaseRouter implements Router {
      */
     protected static Map<Long, List<CatalogColumnPlacement>> selectPlacement( LogicalTable table ) {
         // Find the adapter with the most column placements
-        int adapterIdWithMostPlacements = -1;
+        long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getAllocRel( table.namespaceId ).getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, ImmutableList<Long>> entry : catalog.getAllocRel( table.namespaceId ).getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -123,7 +123,7 @@ public abstract class BaseRouter implements Router {
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( LogicalColumn column : table.columns ) {
             if ( catalog.getAllocRel( table.namespaceId ).getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
-                placementList.add( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacements( column.id ) );
+                placementList.add( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacements( column.id ).get( 0 ) );
             } else {
                 placementList.add( Catalog.getInstance().getAllocRel( table.namespaceId ).getColumnPlacements( column.id ).get( 0 ) );
             }
@@ -262,7 +262,7 @@ public abstract class BaseRouter implements Router {
             long partitionId = partitionToPlacement.getKey();
             List<CatalogColumnPlacement> currentPlacements = partitionToPlacement.getValue();
             // Sort by adapter
-            Map<Integer, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
+            Map<Long, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
             for ( CatalogColumnPlacement placement : currentPlacements ) {
                 if ( !placementsByAdapter.containsKey( placement.adapterId ) ) {
                     placementsByAdapter.put( placement.adapterId, new LinkedList<>() );
@@ -294,9 +294,9 @@ public abstract class BaseRouter implements Router {
                 }
 
                 // Add primary key
-                for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
+                for ( Entry<Long, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
                     for ( LogicalColumn pkColumn : pkColumns ) {
-                        CatalogColumnPlacement pkPlacement = catalog.getAllocRel( currentPlacements.get( 0 ).namespaceId ).getColumnPlacements( pkColumn.id );
+                        CatalogColumnPlacement pkPlacement = catalog.getAllocRel( currentPlacements.get( 0 ).namespaceId ).getColumnPlacements( pkColumn.id ).get( 0 );
                         if ( !entry.getValue().contains( pkPlacement ) ) {
                             entry.getValue().add( pkPlacement );
                         }
@@ -320,7 +320,7 @@ public abstract class BaseRouter implements Router {
                         ArrayList<RexNode> rexNodes = new ArrayList<>();
                         for ( CatalogColumnPlacement p : ccps ) {
                             if ( pkColumnIds.contains( p.columnId ) ) {
-                                String alias = ccps.get( 0 ).adapterUniqueName + "_" + p.getLogicalColumnName();
+                                String alias = ccps.get( 0 ).adapterId + "_" + p.getLogicalColumnName();
                                 rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
                                 queue.addFirst( alias );
                                 queue.addFirst( p.getLogicalColumnName() );
@@ -386,7 +386,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Integer placementId ) {
+    public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Long placementId ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         CatalogNamespace namespace = snapshot.getNamespace( alg.entity.id );
@@ -402,7 +402,7 @@ public abstract class BaseRouter implements Router {
 
         List<AlgNode> scans = new ArrayList<>();
 
-        List<Integer> placements = catalogGraph.placements;
+        List<Long> placements = catalogGraph.placements;
         if ( placementId != null ) {
             placements = List.of( placementId );
         }
@@ -428,7 +428,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
+    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Long placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalTable> tables = catalog.getLogicalRel( namespace.id ).getTables( null );
         List<Pair<String, AlgNode>> scans = tables.stream()
@@ -442,7 +442,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
+    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Long placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalCollection> collections = catalog.getLogicalDoc( namespace.id ).getCollections( null );
         List<Pair<String, AlgNode>> scans = collections.stream()
@@ -479,7 +479,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    protected CatalogEntity getSubstitutionTable( Statement statement, long tableId, long columnId, int adapterId ) {
+    protected CatalogEntity getSubstitutionTable( Statement statement, long tableId, long columnId, long adapterId ) {
         /*LogicalTable nodes = Catalog.getInstance().getTable( tableId );
         CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacements( adapterId, columnId );
         List<String> qualifiedTableName = ImmutableList.of(
@@ -512,7 +512,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    protected RoutedAlgBuilder handleDocumentScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder, Integer adapterId ) {
+    protected RoutedAlgBuilder handleDocumentScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder, Long adapterId ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         if ( alg.entity.namespaceType != NamespaceType.DOCUMENT ) {
@@ -527,12 +527,12 @@ public abstract class BaseRouter implements Router {
 
         List<RoutedAlgBuilder> scans = new ArrayList<>();
 
-        List<Integer> placements = collection.placements;
+        List<Long> placements = collection.placements;
         if ( adapterId != null ) {
             placements = List.of( adapterId );
         }
 
-        for ( Integer placementId : placements ) {
+        for ( Long placementId : placements ) {
             CatalogAdapter adapter = catalog.getAdapter( placementId );
             NamespaceType sourceModel = collection.namespaceType;
 
@@ -573,7 +573,7 @@ public abstract class BaseRouter implements Router {
 
 
     @NotNull
-    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan<LogicalTable> node, Integer adapterId, Statement statement, RoutedAlgBuilder builder ) {
+    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan<LogicalTable> node, Long adapterId, Statement statement, RoutedAlgBuilder builder ) {
         List<LogicalColumn> columns = node.entity.columns;
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
         CatalogEntity subTable = getSubstitutionTable( statement, node.entity.id, columns.get( 0 ).id, adapterId );

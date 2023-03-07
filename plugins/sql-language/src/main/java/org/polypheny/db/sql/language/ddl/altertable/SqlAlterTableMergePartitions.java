@@ -24,7 +24,6 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -97,7 +96,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
             try {
                 DdlManager.getInstance().removePartitioning( catalogTable, statement );
-            } catch ( UnknownDatabaseException | GenericCatalogException | UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
+            } catch ( GenericCatalogException | UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
                 throw new RuntimeException( "Error while merging partitions", e );
             }
 

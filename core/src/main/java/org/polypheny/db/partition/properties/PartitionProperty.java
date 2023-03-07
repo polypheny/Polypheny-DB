@@ -17,25 +17,62 @@
 package org.polypheny.db.partition.properties;
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
+import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.logistic.PartitionType;
 
 
 @SuperBuilder
 @Getter
+@Value
+@NonFinal
 public class PartitionProperty implements Serializable {
 
-    public final PartitionType partitionType;
-    public final boolean isPartitioned;
-    public final ImmutableList<Long> partitionGroupIds;
-    public final ImmutableList<Long> partitionIds;
-    public final long partitionColumnId;
+    @Serialize
+    public PartitionType partitionType;
+    @Serialize
+    public boolean isPartitioned;
 
-    public final long numPartitionGroups;
-    public final long numPartitions;
+    @Serialize
+    public ImmutableList<Long> partitionGroupIds;
+    @Serialize
+    public ImmutableList<Long> partitionIds;
+    @Serialize
+    public long partitionColumnId;
 
-    public final boolean reliesOnPeriodicChecks;
+    @Serialize
+    public long numPartitionGroups;
+    @Serialize
+    public long numPartitions;
+
+    @Serialize
+    public boolean reliesOnPeriodicChecks;
+
+
+    public PartitionProperty(
+            @Deserialize("partitionType") PartitionType partitionType,
+            @Deserialize("isPartitioned") boolean isPartitioned,
+            @Deserialize("partitionGroupIds") List<Long> partitionGroupIds,
+            @Deserialize("partitionIds") List<Long> partitionIds,
+            @Deserialize("partitionColumnId") long partitionColumnId,
+            @Deserialize("numPartitionGroups") long numPartitionGroups,
+            @Deserialize("numPartitions") long numPartitions,
+            @Deserialize("reliesOnPeriodicChecks") boolean reliesOnPeriodicChecks ) {
+        this.partitionType = partitionType;
+        this.isPartitioned = isPartitioned;
+        this.partitionGroupIds = ImmutableList.copyOf( partitionGroupIds );
+        this.partitionIds = ImmutableList.copyOf( partitionIds );
+        this.partitionColumnId = partitionColumnId;
+        this.numPartitionGroups = numPartitionGroups;
+        this.numPartitions = numPartitions;
+        this.reliesOnPeriodicChecks = reliesOnPeriodicChecks;
+    }
 
 }

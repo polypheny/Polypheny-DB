@@ -57,7 +57,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;
-    public static int defaultUserId = 0;
+    public static long defaultUserId = 0;
     public static long defaultDatabaseId = 0;
     public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -172,7 +172,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param password of the user
      * @return the id of the created user
      */
-    public abstract int addUser( String name, String password );
+    public abstract long addUser( String name, String password );
 
 
     /**

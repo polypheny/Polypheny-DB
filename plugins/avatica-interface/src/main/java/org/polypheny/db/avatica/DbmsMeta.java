@@ -41,6 +41,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -59,6 +60,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
@@ -86,8 +88,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -269,10 +269,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
             }
 
-            final List<LogicalTable> tables = catalog.getTables(
-                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
-                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
-            );
+            final List<LogicalTable> tables = getLogicalTables( schemaPattern, tablePattern );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -297,6 +294,24 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
+    @NotNull
+    private List<LogicalTable> getLogicalTables( Pat schemaPattern, Pat tablePattern ) {
+        return getLogicalTables( (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ) );
+    }
+
+
+    @NotNull
+    private List<LogicalTable> getLogicalTables( Pattern schemaPattern, Pattern tablePattern ) {
+        List<LogicalNamespace> namespaces = catalog.getNamespaces( schemaPattern );
+
+        return namespaces
+                .stream()
+                .flatMap(
+                        n -> catalog.getLogicalRel( n.id ).getTables( tablePattern ).stream() ).collect( Collectors.toList() );
+    }
+
+
     @Override
     public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -304,11 +319,10 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
             }
-            final List<LogicalColumn> columns = catalog.getColumns(
-                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+            final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getLogicalRel( t.namespaceId ).getColumns(
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            );
+            ).stream() ).collect( Collectors.toList() );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -375,7 +389,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
             }
-            final List<CatalogDatabase> databases = catalog.getDatabases( null );
+            final List<CatalogDatabase> databases = List.of();
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -514,11 +528,11 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
+            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                    final CatalogPrimaryKey primaryKey = catalog.getLogicalRel( catalogTable.namespaceId ).getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -551,10 +565,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
+            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
+                List<CatalogForeignKey> importedKeys = catalog.getLogicalRel( catalogTable.namespaceId ).getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -593,11 +607,11 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
+
+            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
+                List<CatalogForeignKey> exportedKeys = catalog.getLogicalRel( catalogTable.namespaceId ).getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -710,11 +724,10 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = catalog.getTables( schemaPattern, tablePattern );
+            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
+                List<CatalogIndex> catalogIndexInfos = catalog.getLogicalRel( catalogTable.namespaceId ).getIndexes( catalogTable.id, unique );
                 catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -1401,26 +1414,14 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         // Create transaction
-        Transaction transaction = transactionManager.startTransaction( user, null, null, false, "AVATICA Interface" );
+        Transaction transaction = transactionManager.startTransaction( user, null, false, "AVATICA Interface" );
 
-        // Check database access
-        final CatalogDatabase database;
-        try {
-            database = catalog.getDatabase( databaseName );
-        } catch ( UnknownDatabaseException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-        assert database != null;
 
 //            Authorizer.hasAccess( user, database );
 
         // Check schema access
         final LogicalNamespace schema;
-        try {
-            schema = catalog.getSchema( database.id, defaultSchemaName );
-        } catch ( UnknownSchemaException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
+        schema = catalog.getNamespace( defaultSchemaName );
         assert schema != null;
 
 //            Authorizer.hasAccess( user, schema );
@@ -1432,7 +1433,7 @@ public class DbmsMeta implements ProtobufMeta {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
-        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, database, schema, transactionManager ) );
+        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, null, schema, transactionManager ) );
     }
 
 

@@ -132,7 +132,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
-        Map<Integer, Map<Long, List<CatalogColumnPlacement>>> allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
+        Map<Long, Map<Long, List<CatalogColumnPlacement>>> allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
 
         return allPlacements.values();
     }
@@ -143,16 +143,16 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
         // Filter for placements by adapters
-        List<Integer> adapters = catalog.getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
+        List<Long> adapters = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
                 .stream()
                 .filter( elem -> elem.getValue().containsAll( usedColumns ) )
                 .map( Entry::getKey )
                 .collect( Collectors.toList() );
 
         final Set<List<CatalogColumnPlacement>> result = new HashSet<>();
-        for ( int adapterId : adapters ) {
+        for ( long adapterId : adapters ) {
             List<CatalogColumnPlacement> placements = usedColumns.stream()
-                    .map( colId -> catalog.getColumnPlacement( adapterId, colId ) )
+                    .map( colId -> catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacement( adapterId, colId ) )
                     .collect( Collectors.toList() );
 
             if ( !placements.isEmpty() ) {

@@ -173,15 +173,15 @@ public class IndexManager {
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final LogicalTable table = Catalog.getInstance().getLogicalRel( key.schemaId ).getTable( key.tableId );
-        final CatalogPrimaryKey pk = Catalog.getInstance().getLogicalRel( key.schemaId ).getPrimaryKey( table.primaryKey );
+        final LogicalTable table = Catalog.getInstance().getLogicalRel( key.namespaceId ).getTable( key.tableId );
+        final CatalogPrimaryKey pk = Catalog.getInstance().getLogicalRel( key.namespaceId ).getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
                 name,
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getNamespace( key.schemaId ),
+                Catalog.getInstance().getNamespace( key.namespaceId ),
                 table,
                 key.getColumnNames(),
                 pk.getColumnNames() );

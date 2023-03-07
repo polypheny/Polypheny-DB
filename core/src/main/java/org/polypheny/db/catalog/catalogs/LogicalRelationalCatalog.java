@@ -87,12 +87,11 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * Adds a table to a specified schema.
      *
      * @param name The name of the table to add
-     * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, int ownerId, EntityType entityType, boolean modifiable );
+    public abstract long addTable( String name, EntityType entityType, boolean modifiable );
 
 
     /**
@@ -100,7 +99,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param name The name of the view to add
      * @param namespaceId The id of the schema
-     * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
@@ -108,14 +106,13 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
+    public abstract long addView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
     /**
      * Adds a materialized view to a specified schema.
      *
      * @param name of the view to add
      * @param namespaceId id of the schema
-     * @param ownerId id of the owner
      * @param entityType type of table
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
@@ -128,7 +125,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    public abstract long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+    public abstract long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
     /**
      * Renames a table
@@ -151,7 +148,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The if of the table
      * @param ownerId ID of the new owner
      */
-    public abstract void setTableOwner( long tableId, int ownerId );
+    public abstract void setTableOwner( long tableId, long ownerId );
 
     /**
      * Set the primary key of a table
@@ -218,12 +215,11 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
      *
-     * @param schemaName The name of the schema
      * @param tableName The name of the table
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    public abstract LogicalColumn getColumn( String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException;
+    public abstract LogicalColumn getColumn( String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException;
 
     /**
      * Adds a column.

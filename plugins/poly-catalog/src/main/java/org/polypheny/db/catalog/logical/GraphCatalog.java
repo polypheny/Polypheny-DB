@@ -18,13 +18,16 @@ package org.polypheny.db.catalog.logical;
 
 import io.activej.serializer.BinarySerializer;
 import java.util.List;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
+import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -35,23 +38,23 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
-@With
+@SuperBuilder(toBuilder = true)
 public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
     @Getter
     public BinarySerializer<GraphCatalog> serializer = Serializable.builder.get().build( GraphCatalog.class );
     @Getter
     public LogicalNamespace logicalNamespace;
-    public IdBuilder idBuilder;
+    public IdBuilder idBuilder = IdBuilder.getInstance();
 
 
     @NonFinal
+    @Builder.Default
     boolean openChanges = false;
 
 
-    public GraphCatalog( LogicalNamespace logicalNamespace, IdBuilder idBuilder ) {
+    public GraphCatalog( LogicalNamespace logicalNamespace ) {
         this.logicalNamespace = logicalNamespace;
-        this.idBuilder = idBuilder;
     }
 
 
@@ -82,6 +85,12 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
     @Override
     public LogicalEntity getEntity( long id ) {
         return null;
+    }
+
+
+    @Override
+    public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
+        return toBuilder().logicalNamespace( namespace ).build();
     }
 
 

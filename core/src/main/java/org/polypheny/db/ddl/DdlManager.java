@@ -111,13 +111,11 @@ public abstract class DdlManager {
      * Creates a schema with the provided options.
      *
      * @param name name of the new schema
-     * @param databaseId id of the database, to which the schema belongs
      * @param type the schema type, RELATIONAL, DOCUMENT, etc.
-     * @param userId the owner of the new schema
      * @param ifNotExists whether to silently ignore if the schema does already exist
      * @param replace whether the replace a existing schema
      */
-    public abstract long createNamespace( String name, long databaseId, NamespaceType type, int userId, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException;
+    public abstract long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException;
 
     /**
      * Adds a new adapter (data store or data source)

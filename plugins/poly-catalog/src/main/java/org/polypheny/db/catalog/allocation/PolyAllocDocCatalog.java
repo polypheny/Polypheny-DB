@@ -77,7 +77,7 @@ public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCata
 
 
     @Override
-    public CatalogCollectionPlacement getCollectionPlacement( long id, int placementId ) {
+    public CatalogCollectionPlacement getCollectionPlacement( long id, long placementId ) {
         return null;
     }
 

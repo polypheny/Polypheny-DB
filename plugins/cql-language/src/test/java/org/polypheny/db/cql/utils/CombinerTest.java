@@ -43,8 +43,8 @@ public class CombinerTest extends AlgBuildTestHelper {
 
     public CombinerTest() throws UnknownIndexException {
         super( AlgBuildLevel.TABLE_SCAN );
-        employee = TableIndex.createIndex( "APP", "test", "employee" );
-        dept = TableIndex.createIndex( "APP", "test", "dept" );
+        employee = TableIndex.createIndex( "test", "employee" );
+        dept = TableIndex.createIndex( "test", "dept" );
     }
 
 

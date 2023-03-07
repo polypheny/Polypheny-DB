@@ -291,7 +291,7 @@ public abstract class Adapter {
     private ConfigListener listener;
 
 
-    public Adapter( int adapterId, String uniqueName, Map<String, String> settings ) {
+    public Adapter( long adapterId, String uniqueName, Map<String, String> settings ) {
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new RuntimeException( "The used adapter does not annotate its properties correctly." );

@@ -23,6 +23,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
@@ -64,7 +65,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<LogicalGraph> graphs = catalog.getGraphs( new Pattern( this.database ) );
+        List<LogicalGraph> graphs = catalog.getNamespaces( new Pattern( this.database ) ).stream().map( g -> catalog.getLogicalGraph( g.id ).getGraph( g.id ) ).collect( Collectors.toList() );
 
         List<DataStore> dataStores = Stream.of( store )
                 .map( store -> (DataStore) adapterManager.getAdapter( store ) )

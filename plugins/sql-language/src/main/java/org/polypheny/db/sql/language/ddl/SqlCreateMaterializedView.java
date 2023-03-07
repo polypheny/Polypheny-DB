@@ -123,10 +123,10 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
             schemaId = catalog.getNamespace( name.names.get( 1 ) ).id;
             viewName = name.names.get( 2 );
         } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+            schemaId = catalog.getNamespace( name.names.get( 0 ) ).id;
             viewName = name.names.get( 1 );
         } else { // TableName
-            schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+            schemaId = catalog.getNamespace( context.getDefaultSchemaName() ).id;
             viewName = name.names.get( 0 );
         }
 

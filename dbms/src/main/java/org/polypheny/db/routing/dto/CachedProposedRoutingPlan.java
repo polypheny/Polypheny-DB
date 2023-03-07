@@ -35,7 +35,8 @@ import org.polypheny.db.util.Pair;
 @Setter
 public class CachedProposedRoutingPlan implements RoutingPlan {
 
-    public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    @Getter
+    public Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     protected String queryClass;
     protected String physicalQueryClass;
     protected AlgOptCost preCosts;
@@ -50,10 +51,5 @@ public class CachedProposedRoutingPlan implements RoutingPlan {
         this.physicalQueryClass = routingPlan.getPhysicalQueryClass();
     }
 
-
-    @Override
-    public Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions() {
-        return this.physicalPlacementsOfPartitions;
-    }
 
 }

@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -69,9 +70,11 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     private final ConcurrentHashMap<Long, List<AllocationTable>> logicalTableToAllocs;
 
-    public PolyAllocRelCatalog(){
+
+    public PolyAllocRelCatalog() {
         this( new ConcurrentHashMap<>() );
     }
+
 
     public PolyAllocRelCatalog(
             @Deserialize("allocations") Map<Long, AllocationTable> allocations ) {
@@ -156,8 +159,20 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void addColumnPlacement( long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
-        allocations.put( adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) ), adapterLogicalColumnToAlloc.get( Pair.of( adapterId, columnId ) ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+    public void addColumnPlacement( LogicalTable table, long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position ) {
+        Long allocationId = adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) );
+
+        AllocationTable allocationTable;
+
+        if ( allocationId == null ) {
+            allocationId = idBuilder.getNewAllocId();
+            allocationTable = new AllocationTable( table, allocationId, physicalTableName, adapterId, List.of(
+                    new CatalogColumnPlacement( table.namespaceId, table.id, columnId, adapterId, placementType, physicalSchemaName, physicalColumnName, position ) ) );
+        } else {
+            allocationTable = adapterLogicalColumnToAlloc.get( Pair.of( adapterId, columnId ) ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName );
+        }
+
+        allocations.put( allocationId, allocationTable );
     }
 
 
@@ -216,7 +231,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId ) {
+    public ImmutableMap<Long, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId ) {
         return null;
     }
 
@@ -396,7 +411,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId ) {
+    public List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long tableId ) {
         return null;
     }
 

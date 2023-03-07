@@ -17,21 +17,28 @@
 package org.polypheny.db.catalog.entity;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 
 @EqualsAndHashCode
-public final class CatalogUser implements CatalogObject, Comparable<CatalogUser> {
+@Value
+public class CatalogUser implements CatalogObject, Comparable<CatalogUser> {
 
     private static final long serialVersionUID = 5022567585804699491L;
 
-    public final int id;
-    public final String name;
-    public final String password;
+    @Serialize
+    public long id;
+    @Serialize
+    public String name;
+    @Serialize
+    public String password;
 
 
-    public CatalogUser( final int id, final String name, final String password ) {
+    public CatalogUser( @Deserialize("id") final long id, @Deserialize("name") final String name, @Deserialize("password") final String password ) {
         this.id = id;
         this.name = name;
         this.password = password;
@@ -48,7 +55,7 @@ public final class CatalogUser implements CatalogObject, Comparable<CatalogUser>
     @Override
     public int compareTo( CatalogUser o ) {
         if ( o != null ) {
-            return this.id - o.id;
+            return Math.toIntExact( this.id - o.id );
         }
         return -1;
     }

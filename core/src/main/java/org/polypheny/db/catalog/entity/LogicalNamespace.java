@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -34,21 +36,24 @@ public class LogicalNamespace extends CatalogNamespace implements CatalogObject,
 
     private static final long serialVersionUID = 3090632164988970558L;
 
+    @Serialize
     public long id;
+    @Serialize
     @Getter
     public String name;
+    @Serialize
     @Getter
     @EqualsAndHashCode.Exclude
     public NamespaceType namespaceType;
-
+    @Serialize
     public boolean caseSensitive;
 
 
     public LogicalNamespace(
-            final long id,
-            @NonNull final String name,
-            @NonNull final NamespaceType namespaceType,
-            boolean caseSensitive ) {
+            @Deserialize("id") final long id,
+            @Deserialize("name") @NonNull final String name,
+            @Deserialize("namespaceType") @NonNull final NamespaceType namespaceType,
+            @Deserialize("caseSensitive") boolean caseSensitive ) {
         super( id, name, namespaceType );
         this.id = id;
         this.name = name;

@@ -29,7 +29,9 @@ public class PusherMap<K, V> extends ConcurrentHashMap<K, V> {
 
 
     public void change() {
-        onChange.forEach( p -> p.accept( this ) );
+        if ( onChange != null ) {
+            onChange.forEach( p -> p.accept( this ) );
+        }
     }
 
 

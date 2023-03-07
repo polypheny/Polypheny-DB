@@ -16,9 +16,12 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.With;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -26,6 +29,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
+@SuperBuilder(toBuilder = true)
 public abstract class AllocationEntity<L extends LogicalEntity> extends LogicalEntity {
 
     public long adapterId;

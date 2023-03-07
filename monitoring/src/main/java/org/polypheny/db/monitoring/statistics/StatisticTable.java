@@ -47,7 +47,7 @@ public class StatisticTable<T extends Comparable<T>> {
     private NamespaceType namespaceType;
 
     @Getter
-    private ImmutableList<Integer> dataPlacements;
+    private ImmutableList<Long> dataPlacements;
 
     @Getter
     private final List<Integer> availableAdapters = new ArrayList<>();
@@ -75,8 +75,8 @@ public class StatisticTable<T extends Comparable<T>> {
         this.tableId = tableId;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsEntity( tableId ) ) {
-            LogicalTable catalogTable = catalog.getTable( tableId );
+        if ( catalog.getLogicalEntity( tableId ) != null ) {
+            LogicalTable catalogTable = catalog.getLogicalEntity( tableId ).unwrap( LogicalTable.class );
             this.table = catalogTable.name;
             this.namespaceType = catalogTable.getNamespaceType();
             this.dataPlacements = catalogTable.dataPlacements;

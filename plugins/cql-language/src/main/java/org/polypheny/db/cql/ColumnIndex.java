@@ -18,9 +18,9 @@ package org.polypheny.db.cql;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
@@ -56,9 +56,10 @@ public class ColumnIndex {
         try {
             log.debug( "Creating ColumnIndex." );
             Catalog catalog = Catalog.getInstance();
-            LogicalColumn column = catalog.getColumn( schemaName, tableName, columnName );
+            LogicalNamespace namespace = catalog.getNamespace( schemaName );
+            LogicalColumn column = catalog.getLogicalRel( namespace.id ).getColumn( tableName, columnName );
             return new ColumnIndex( column, schemaName, tableName, columnName );
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | UnknownColumnException e ) {
+        } catch ( UnknownTableException | UnknownSchemaException | UnknownColumnException e ) {
             log.error( "Cannot find a underlying column for the specified column name: {}.{}.{}.", schemaName, tableName, columnName, e );
             throw new UnknownIndexException( "Cannot find a underlying column for the specified column name: " + schemaName + "." + tableName + "." + columnName + "." );
         }

@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,34 +30,44 @@ import org.polypheny.db.catalog.logistic.IndexType;
 
 
 @EqualsAndHashCode(callSuper = false)
-public final class CatalogIndex implements Serializable {
+@Value
+public class CatalogIndex implements Serializable {
 
     private static final long serialVersionUID = -318228681682792406L;
 
-    public final long id;
-    public final String name;
-    public final String physicalName;
-    public final boolean unique;
-    public final IndexType type;
-    public final long location;
-    public final String method;
-    public final String methodDisplayName;
-
-    public final CatalogKey key;
-    public final long keyId;
+    @Serialize
+    public long id;
+    @Serialize
+    public String name;
+    @Serialize
+    public String physicalName;
+    @Serialize
+    public boolean unique;
+    @Serialize
+    public IndexType type;
+    @Serialize
+    public long location;
+    @Serialize
+    public String method;
+    @Serialize
+    public String methodDisplayName;
+    @Serialize
+    public CatalogKey key;
+    @Serialize
+    public long keyId;
 
 
     public CatalogIndex(
-            final long id,
-            @NonNull final String name,
-            final boolean unique,
-            final String method,
-            final String methodDisplayName,
-            final IndexType type,
-            final Long location,
-            final long keyId,
-            final CatalogKey key,
-            final String physicalName ) {
+            @Deserialize("id") final long id,
+            @Deserialize("name") @NonNull final String name,
+            @Deserialize("unique") final boolean unique,
+            @Deserialize("method") final String method,
+            @Deserialize("methodDisplayName") final String methodDisplayName,
+            @Deserialize("type") final IndexType type,
+            @Deserialize("location") final Long location,
+            @Deserialize("keyId") final long keyId,
+            @Deserialize("key") final CatalogKey key,
+            @Deserialize("physicalName") final String physicalName ) {
         this.id = id;
         this.name = name;
         this.unique = unique;

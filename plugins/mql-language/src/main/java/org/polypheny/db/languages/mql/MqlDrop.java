@@ -49,13 +49,13 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
         Catalog catalog = Catalog.getInstance();
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        if ( catalog.getNamespaces( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {
+        if ( catalog.getNamespaces( new Pattern( database ) ).size() != 1 ) {
             // dropping a document database( Polyschema ), which does not exist, which is a no-op
             return;
         }
 
-        LogicalNamespace namespace = catalog.getNamespaces( Catalog.defaultDatabaseId, new Pattern( database ) ).get( 0 );
-        List<LogicalCollection> collections = catalog.getCollections( namespace.id, new Pattern( getCollection() ) );
+        LogicalNamespace namespace = catalog.getNamespaces( new Pattern( database ) ).get( 0 );
+        List<LogicalCollection> collections = catalog.getLogicalDoc( namespace.id ).getCollections( new Pattern( getCollection() ) );
         if ( collections.size() != 1 ) {
             // dropping a collection, which does not exist, which is a no-op
             return;

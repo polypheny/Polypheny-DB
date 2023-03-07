@@ -16,56 +16,55 @@
 
 package org.polypheny.db.catalog.entity;
 
+import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.Value;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 
 @EqualsAndHashCode
+@Value
 public class CatalogColumnPlacement implements CatalogObject {
 
     private static final long serialVersionUID = -1909757888176291095L;
 
     @Serialize
-    public final long namespaceId;
+    public long namespaceId;
     @Serialize
-    public final long tableId;
+    public long tableId;
     @Serialize
-    public final long columnId;
+    public long columnId;
     @Serialize
-    public final long adapterId;
+    public long adapterId;
     @Serialize
-    public final String adapterUniqueName;
+    public PlacementType placementType;
     @Serialize
-    public final PlacementType placementType;
+    public long physicalPosition;
     @Serialize
-    public final long physicalPosition;
+    public String physicalSchemaName;
     @Serialize
-    public final String physicalSchemaName;
-    @Serialize
-    public final String physicalColumnName;
+    public String physicalColumnName;
 
 
     public CatalogColumnPlacement(
-            final long namespaceId,
-            final long tableId,
-            final long columnId,
-            final long adapterId,
-            @NonNull final String adapterUniqueName,
-            @NonNull final PlacementType placementType,
-            final String physicalSchemaName,
-            final String physicalColumnName,
-            final long physicalPosition ) {
+            @Deserialize("namespaceId") final long namespaceId,
+            @Deserialize("tableId") final long tableId,
+            @Deserialize("columnId") final long columnId,
+            @Deserialize("adapterId") final long adapterId,
+            @Deserialize("placementType") @NonNull final PlacementType placementType,
+            @Deserialize("physicalSchemaName") final String physicalSchemaName,
+            @Deserialize("physicalColumnName") final String physicalColumnName,
+            @Deserialize("physicalPosition") final long physicalPosition ) {
         this.namespaceId = namespaceId;
         this.tableId = tableId;
         this.columnId = columnId;
         this.adapterId = adapterId;
-        this.adapterUniqueName = adapterUniqueName;
         this.placementType = placementType;
         this.physicalSchemaName = physicalSchemaName;
         this.physicalColumnName = physicalColumnName;
@@ -102,7 +101,6 @@ public class CatalogColumnPlacement implements CatalogObject {
     public Serializable[] getParameterArray() {
         return new Serializable[]{
                 getLogicalTableName(),
-                adapterUniqueName,
                 placementType.name(),
                 physicalSchemaName,
                 physicalColumnName };

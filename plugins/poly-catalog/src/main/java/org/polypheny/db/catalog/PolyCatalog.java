@@ -16,11 +16,13 @@
 
 package org.polypheny.db.catalog;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,18 +54,26 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
+import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.physical.PolyPhysicalCatalog;
 import org.polypheny.db.catalog.snapshot.FullSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -111,6 +121,12 @@ public class PolyCatalog extends Catalog implements Serializable {
                 new ConcurrentHashMap<>(),
                 new ConcurrentHashMap<>(),
                 new ConcurrentHashMap<>() );
+
+        try {
+            insertDefaultData();
+        } catch ( UnknownAdapterException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -129,6 +145,149 @@ public class PolyCatalog extends Catalog implements Serializable {
         this.adapters = adapters;
         this.interfaces = interfaces;
         updateSnapshot();
+    }
+
+
+    /**
+     * Fills the catalog database with default data, skips if data is already inserted
+     */
+    private void insertDefaultData() throws UnknownAdapterException {
+
+        //////////////
+        // init users
+        long systemId = addUser( "system", "" );
+
+        addUser( "pa", "" );
+
+        Catalog.defaultUserId = systemId;
+
+        //////////////
+        // init schema
+
+        long namespaceId = addNamespace( "public", NamespaceType.getDefault(), false );
+
+        //////////////
+        // init adapters
+        if ( adapters.size() == 0 ) {
+            // Deploy default store
+            addAdapter( "hsqldb", defaultStore.getAdapterName(), AdapterType.STORE, defaultStore.getDefaultSettings() );
+
+            // Deploy default CSV view
+            long adapter = addAdapter( "hr", defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource.getDefaultSettings() );
+
+            // init schema
+            CatalogAdapter csv = getAdapter( "hr" );
+
+            long id = getLogicalRel( namespaceId ).addTable( "depts", EntityType.SOURCE, false );
+
+            id = getLogicalRel( namespaceId ).addTable( "emps", EntityType.SOURCE, false );
+
+            id = getLogicalRel( namespaceId ).addTable( "emp", EntityType.SOURCE, false );
+
+            id = getLogicalRel( namespaceId ).addTable( "work", EntityType.SOURCE, false );
+            try {
+                addDefaultCsvColumns( csv );
+            } catch ( UnknownTableException | GenericCatalogException | UnknownColumnException e ) {
+                throw new RuntimeException( e );
+            }
+
+
+        }
+
+        commit();
+
+    }
+
+
+    /**
+     * Initiates default columns for csv files
+     */
+    private void addDefaultCsvColumns( CatalogAdapter csv ) throws UnknownTableException, GenericCatalogException, UnknownColumnException, UnknownTableException, UnknownColumnException, GenericCatalogException {
+        LogicalNamespace schema = getNamespace( "public" );
+        LogicalTable depts = getLogicalRel( schema.id ).getTable( "depts" );
+
+        addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+
+        LogicalTable emps = getLogicalRel( schema.id ).getTable( "emps" );
+        addDefaultCsvColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
+        addDefaultCsvColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
+        addDefaultCsvColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
+
+        LogicalTable emp = getLogicalRel( schema.id ).getTable( "emp" );
+        addDefaultCsvColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
+        addDefaultCsvColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, emp, "maritalstatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
+        addDefaultCsvColumn( csv, emp, "worklifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
+        addDefaultCsvColumn( csv, emp, "education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultCsvColumn( csv, emp, "monthlyincome", PolyType.INTEGER, null, 7, null );
+        addDefaultCsvColumn( csv, emp, "relationshipjoy", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultCsvColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
+        addDefaultCsvColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
+
+        LogicalTable work = getLogicalRel( schema.id ).getTable( "work" );
+        addDefaultCsvColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+        addDefaultCsvColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, work, "joblevel", PolyType.INTEGER, null, 4, null );
+        addDefaultCsvColumn( csv, work, "jobrole", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 30 );
+        addDefaultCsvColumn( csv, work, "businesstravel", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultCsvColumn( csv, work, "department", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 7, 25 );
+        addDefaultCsvColumn( csv, work, "attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultCsvColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
+
+        // set all needed primary keys
+        getLogicalRel( schema.id ).addPrimaryKey( depts.id, Collections.singletonList( getLogicalRel( schema.id ).getColumn( depts.id, "deptno" ).id ) );
+        getLogicalRel( schema.id ).addPrimaryKey( emps.id, Collections.singletonList( getLogicalRel( schema.id ).getColumn( emps.id, "empid" ).id ) );
+        getLogicalRel( schema.id ).addPrimaryKey( emp.id, Collections.singletonList( getLogicalRel( schema.id ).getColumn( emp.id, "employeeno" ).id ) );
+        getLogicalRel( schema.id ).addPrimaryKey( work.id, Collections.singletonList( getLogicalRel( schema.id ).getColumn( work.id, "employeeno" ).id ) );
+
+        // set foreign keys
+        getLogicalRel( schema.id ).addForeignKey(
+                emps.id,
+                ImmutableList.of( getLogicalRel( schema.id ).getColumn( emps.id, "deptno" ).id ),
+                depts.id,
+                ImmutableList.of( getLogicalRel( schema.id ).getColumn( depts.id, "deptno" ).id ),
+                "fk_emps_depts",
+                ForeignKeyOption.NONE,
+                ForeignKeyOption.NONE );
+        getLogicalRel( schema.id ).addForeignKey(
+                work.id,
+                ImmutableList.of( getLogicalRel( schema.id ).getColumn( work.id, "employeeno" ).id ),
+                emp.id,
+                ImmutableList.of( getLogicalRel( schema.id ).getColumn( emp.id, "employeeno" ).id ),
+                "fk_work_emp",
+                ForeignKeyOption.NONE,
+                ForeignKeyOption.NONE );
+    }
+
+
+    private void addDefaultCsvColumn( CatalogAdapter csv, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
+        if ( !getLogicalRel( table.namespaceId ).checkIfExistsColumn( table.id, name ) ) {
+            long colId = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
+            String filename = table.name + ".csv";
+            if ( table.name.equals( "emp" ) || table.name.equals( "work" ) ) {
+                filename += ".gz";
+            }
+
+            getAllocRel( table.namespaceId ).addColumnPlacement( table, csv.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
+            getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( csv.id, colId, position );
+
+            // long partitionId = table.partitionProperty.partitionIds.get( 0 );
+            // getAllocRel( table.namespaceId ).addPartitionPlacement( table.namespaceId, csv.id, table.id, partitionId, PlacementType.AUTOMATIC, DataPlacementRole.UPTODATE );
+        }
+    }
+
+
+    private void addDefaultColumn( CatalogAdapter adapter, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
+        if ( !getLogicalRel( table.namespaceId ).checkIfExistsColumn( table.id, name ) ) {
+            long colId = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
+            getAllocRel( table.namespaceId ).addColumnPlacement( table, adapter.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
+            getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( adapter.id, colId, position );
+        }
     }
 
 
@@ -218,7 +377,7 @@ public class PolyCatalog extends Catalog implements Serializable {
     public LogicalEntity getLogicalEntity( long id ) {
         for ( LogicalCatalog catalog : logicalCatalogs.values() ) {
             LogicalEntity entity = catalog.getEntity( id );
-            if( entity != null ) {
+            if ( entity != null ) {
                 return entity;
             }
         }
@@ -281,8 +440,10 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
-    public int addUser( String name, String password ) {
-        return 0;
+    public long addUser( String name, String password ) {
+        long id = idBuilder.getNewUserId();
+        users.put( id, new CatalogUser( id, name, password ) );
+        return id;
     }
 
 
@@ -292,15 +453,15 @@ public class PolyCatalog extends Catalog implements Serializable {
 
         switch ( namespaceType ) {
             case RELATIONAL:
-                logicalCatalogs.put( id, new RelationalCatalog( namespace, idBuilder ) );
+                logicalCatalogs.put( id, new RelationalCatalog( namespace ) );
                 allocationCatalogs.put( id, new PolyAllocRelCatalog() );
                 break;
             case DOCUMENT:
-                logicalCatalogs.put( id, new DocumentCatalog( namespace, idBuilder ) );
+                logicalCatalogs.put( id, new DocumentCatalog( namespace ) );
                 allocationCatalogs.put( id, new PolyAllocDocCatalog() );
                 break;
             case GRAPH:
-                logicalCatalogs.put( id, new GraphCatalog( namespace, idBuilder ) );
+                logicalCatalogs.put( id, new GraphCatalog( namespace ) );
                 allocationCatalogs.put( id, new PolyAllocGraphCatalog() );
                 break;
         }
@@ -354,7 +515,8 @@ public class PolyCatalog extends Catalog implements Serializable {
         if ( logicalCatalogs.get( id ) == null ) {
             return;
         }
-        logicalCatalogs.get( id ).withLogicalNamespace( logicalCatalogs.get( id ).getLogicalNamespace().withName( name ) );
+
+        logicalCatalogs.put( id, logicalCatalogs.get( id ).withLogicalNamespace( logicalCatalogs.get( id ).getLogicalNamespace().withName( name ) ) );
 
         change();
     }
@@ -417,7 +579,7 @@ public class PolyCatalog extends Catalog implements Serializable {
         if ( !adapters.containsKey( adapterId ) ) {
             return;
         }
-        adapters.put( adapterId, adapters.get( adapterId ).withSettings( ImmutableMap.copyOf( newSettings ) ) );
+        adapters.put( adapterId, adapters.get( adapterId ).toBuilder().settings( ImmutableMap.copyOf( newSettings ) ).build() );
     }
 
 

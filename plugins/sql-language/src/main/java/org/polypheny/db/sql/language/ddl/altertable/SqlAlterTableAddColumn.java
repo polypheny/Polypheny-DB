@@ -131,7 +131,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( int storeId : catalogTable.dataPlacements ) {
+        for ( long storeId : catalogTable.dataPlacements ) {
             getDataStoreInstance( storeId );
         }
 

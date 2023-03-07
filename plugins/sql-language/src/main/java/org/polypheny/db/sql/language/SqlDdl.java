@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
@@ -72,21 +73,25 @@ public abstract class SqlDdl extends SqlCall {
             schemaId = catalog.getNamespace( tableName.names.get( 1 ) ).id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = catalog.getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+            schemaId = catalog.getNamespace( tableName.names.get( 0 ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+            schemaId = catalog.getNamespace( context.getDefaultSchemaName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        catalogTable = catalog.getTable( schemaId, tableOldName );
+        try {
+            catalogTable = catalog.getLogicalRel( schemaId ).getTable( tableOldName );
+        } catch ( UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
         return catalogTable;
     }
 
 
-    protected LogicalColumn getCatalogColumn( long tableId, SqlIdentifier columnName ) {
+    protected LogicalColumn getCatalogColumn( long namespaceId, long tableId, SqlIdentifier columnName ) {
         LogicalColumn logicalColumn;
         try {
-            logicalColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
+            logicalColumn = Catalog.getInstance().getLogicalRel( namespaceId ).getColumn( tableId, columnName.getSimple() );
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnName.getPos(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
         }
@@ -110,7 +115,7 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected DataStore getDataStoreInstance( int storeId ) {
+    protected DataStore getDataStoreInstance( long storeId ) {
         Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
         if ( adapterInstance == null ) {
             throw new RuntimeException( "Unknown store id: " + storeId );

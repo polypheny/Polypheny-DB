@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import io.javalin.http.Context;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -47,16 +46,17 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
@@ -156,8 +156,14 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getSnapshot();
-        PreparingEntity table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getNamespaceName(), resourcePatchRequest.tables.get( 0 ).name ) );
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        LogicalNamespace namespace = Catalog.getInstance().getNamespace( resourcePatchRequest.tables.get( 0 ).getNamespaceName() );
+        LogicalTable table = null;
+        try {
+            table = Catalog.getInstance().getLogicalRel( namespace.id ).getTable( resourcePatchRequest.tables.get( 0 ).name );
+        } catch ( UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -173,7 +179,7 @@ public class Rest {
         // Table Modify
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot( 0 ) );
 
         // Values
         AlgDataType tableRowType = table.getRowType();
@@ -182,11 +188,10 @@ public class Rest {
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
         AlgNode algNode = algBuilder.build();
-        RelModify modify = new LogicalRelModify(
+        RelModify<?> modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
-                catalogReader,
                 algNode,
                 Modify.Operation.UPDATE,
                 valueColumnNames,
@@ -215,8 +220,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getSnapshot();
-        PreparingEntity table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).name ) );
+        LogicalTable table = getLogicalTable( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).getName() );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourceDeleteRequest.tables );
@@ -232,14 +236,13 @@ public class Rest {
         // Table Modify
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot( 0 ) );
 
         AlgNode algNode = algBuilder.build();
-        RelModify modify = new LogicalRelModify(
+        RelModify<?> modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
-                catalogReader,
                 algNode,
                 Modify.Operation.DELETE,
                 null,
@@ -261,6 +264,19 @@ public class Rest {
     }
 
 
+    private static LogicalTable getLogicalTable( String namespaceName, String tableName ) {
+        Catalog catalog = Catalog.getInstance();
+        LogicalNamespace namespace = catalog.getNamespace( namespaceName );
+        LogicalTable table;
+        try {
+            table = catalog.getLogicalRel( namespace.id ).getTable( tableName );
+        } catch ( UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
+        return table;
+    }
+
+
     String processPostResource( final ResourcePostRequest insertValueRequest, final Context ctx, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -268,8 +284,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getSnapshot();
-        PreparingEntity table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).name ) );
+        LogicalTable table = getLogicalTable( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).getName() );
 
         // Values
         AlgDataType tableRowType = table.getRowType();
@@ -278,7 +293,7 @@ public class Rest {
 //        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot( 0 ) );
 
         List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
@@ -287,11 +302,10 @@ public class Rest {
 
         // Table Modify
         AlgNode algNode = algBuilder.build();
-        RelModify modify = new LogicalRelModify(
+        RelModify<?> modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
-                catalogReader,
                 algNode,
                 Modify.Operation.INSERT,
                 null,
@@ -551,7 +565,7 @@ public class Rest {
     private Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( userId, false, "REST Interface", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

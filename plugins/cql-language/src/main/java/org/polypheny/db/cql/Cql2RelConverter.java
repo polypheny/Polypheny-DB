@@ -119,8 +119,8 @@ public class Cql2RelConverter {
         cqlQuery.queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 TableIndex tableIndex = treeNode.getExternalNode();
-                for ( Long columnId : tableIndex.catalogTable.fieldIds ) {
-                    tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
+                for ( LogicalColumn column : tableIndex.catalogTable.columns ) {
+                    tableScanColumnOrdinalities.put( column.id, tableScanColumnOrdinalities.size() );
                 }
             }
             return true;
@@ -195,13 +195,12 @@ public class Cql2RelConverter {
                     TableIndex tableIndex = treeNode.getExternalNode();
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
                     LogicalTable catalogTable = tableIndex.catalogTable;
-                    for ( Long columnId : catalogTable.fieldIds ) {
+                    for ( LogicalColumn column : catalogTable.columns ) {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );
-                        LogicalColumn column = catalog.getColumn( columnId );
                         columnNames.add( columnNamePrefix + column.name );
-                        tableScanColumnOrdinalities.put( columnId, ordinal );
+                        tableScanColumnOrdinalities.put( column.id, ordinal );
                     }
                 } catch ( UnexpectedTypeException e ) {
                     throw new RuntimeException( "This exception will never be thrown since checks have been"

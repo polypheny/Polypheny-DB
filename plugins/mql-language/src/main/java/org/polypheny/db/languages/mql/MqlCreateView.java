@@ -58,12 +58,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
         Catalog catalog = Catalog.getInstance();
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        long schemaId;
-        try {
-            schemaId = catalog.getSchema( context.getDatabaseId(), database ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "Poly schema was not found." );
-        }
+        long schemaId = catalog.getNamespace( database ).id;
 
         Node mqlNode = statement.getTransaction()
                 .getProcessor( QueryLanguage.from( "mongo" ) )

@@ -26,7 +26,6 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -172,7 +171,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.missingColumnPlacement( e.getColumnName() ) );
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | TransactionException e ) {
             throw new RuntimeException( e );
         }
     }

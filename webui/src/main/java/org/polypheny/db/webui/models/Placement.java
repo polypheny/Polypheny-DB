@@ -184,7 +184,6 @@ public class Placement {
         private final long columnId;
         private final String columnName;
         private final int storeId;
-        private final String storeUniqueName;
         private final PlacementType placementType;
         private final String physicalSchemaName;
         private final String physicalColumnName;
@@ -195,8 +194,7 @@ public class Placement {
             this.tableName = catalogColumnPlacement.getLogicalTableName();
             this.columnId = catalogColumnPlacement.columnId;
             this.columnName = catalogColumnPlacement.getLogicalColumnName();
-            this.storeId = catalogColumnPlacement.adapterId;
-            this.storeUniqueName = catalogColumnPlacement.adapterUniqueName;
+            this.storeId = (int) catalogColumnPlacement.adapterId;
             this.placementType = catalogColumnPlacement.placementType;
             this.physicalSchemaName = catalogColumnPlacement.physicalSchemaName;
             this.physicalColumnName = catalogColumnPlacement.physicalColumnName;

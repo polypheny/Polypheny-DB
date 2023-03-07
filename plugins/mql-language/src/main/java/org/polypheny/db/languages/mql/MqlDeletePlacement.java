@@ -46,14 +46,9 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
         final Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long namespaceId;
-        try {
-            namespaceId = catalog.getSchema( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
-        }
+        long namespaceId = catalog.getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
-        List<LogicalCollection> collections = catalog.getCollections( namespaceId, new Pattern( getCollection() ) );
+        List<LogicalCollection> collections = catalog.getLogicalDoc( namespaceId ).getCollections( new Pattern( getCollection() ) );
 
         if ( collections.size() != 1 ) {
             throw new RuntimeException( "Error while adding new collection placement, collection not found." );

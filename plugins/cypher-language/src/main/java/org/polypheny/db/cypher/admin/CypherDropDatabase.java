@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.admin;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
@@ -64,7 +65,7 @@ public class CypherDropDatabase extends CypherAdminCommand implements Executable
             }
         }
 
-        List<LogicalGraph> databases = Catalog.getInstance().getGraphs( new Pattern( databaseName ) );
+        List<LogicalNamespace> databases = Catalog.getInstance().getNamespaces( new Pattern( databaseName ) );
 
         if ( databases.size() != 1 ) {
             if ( !ifExists ) {

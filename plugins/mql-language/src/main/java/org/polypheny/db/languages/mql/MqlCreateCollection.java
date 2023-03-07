@@ -66,12 +66,7 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long schemaId;
-        try {
-            schemaId = catalog.getSchema( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
-        }
+        long schemaId = catalog.getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 

@@ -54,7 +54,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public int addUser( String name, String password ) {
+    public long addUser( String name, String password ) {
         throw new NotImplementedException();
     }
 

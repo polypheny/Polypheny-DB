@@ -121,7 +121,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                     storeName.getPos(),
                     RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
-        int storeId = storeInstance.getAdapterId();
+        long storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
         if ( !catalogTable.dataPlacements.contains( storeId ) ) {
             throw CoreUtil.newContextException(
@@ -146,7 +146,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         // If name partitions are specified
         else if ( !partitionGroupNamesList.isEmpty() && partitionGroupList.isEmpty() ) {
-            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getPartitionGroups( tableId );
+            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getAllocRel( catalogTable.namespaceId ).getPartitionGroups( tableId );
             for ( String partitionName : partitionGroupNamesList.stream().map( Object::toString )
                     .collect( Collectors.toList() ) ) {
                 boolean isPartOfTable = false;
@@ -159,14 +159,14 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 }
                 if ( !isPartOfTable ) {
                     throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalog.getPartitionGroupNames( tableId ) + " partitions" );
+                            + catalogTable.name + "', has only " + catalog.getAllocRel( catalogTable.namespaceId ).getPartitionGroupNames( tableId ) + " partitions" );
                 }
             }
         }
 
         // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
         // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        if ( tempPartitionList.equals( catalog.getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
+        if ( tempPartitionList.equals( catalog.getAllocRel( catalogTable.namespaceId ).getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
             log.info( "The data placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}",
                     catalogTable.name, storeName, partitionGroupList );
             return;

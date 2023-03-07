@@ -19,6 +19,8 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -26,24 +28,32 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode
 @Value
-@With
+@SuperBuilder(toBuilder = true)
 public class CatalogAdapter implements CatalogObject {
 
     private static final long serialVersionUID = -6140489767408917639L;
 
+    @Serialize
     public long id;
+    @Serialize
     public String uniqueName;
+    @Serialize
     public String adapterName;
+    @Serialize
     public AdapterType type;
+    @Serialize
     public ImmutableMap<String, String> settings;
+    @Serialize
     public ImmutableList<NamespaceType> supportedNamespaces;
 
+    @Serialize
     public String adapterTypeName;
 
 
@@ -51,11 +61,11 @@ public class CatalogAdapter implements CatalogObject {
 
 
     public CatalogAdapter(
-            final long id,
-            @NonNull final String uniqueName,
-            @NonNull final String adapterName,
-            @NonNull final AdapterType adapterType,
-            @NonNull final Map<String, String> settings ) {
+            @Deserialize("id") final long id,
+            @Deserialize("uniqueName") @NonNull final String uniqueName,
+            @Deserialize("adapterName") @NonNull final String adapterName,
+            @Deserialize("type") @NonNull final AdapterType adapterType,
+            @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.uniqueName = uniqueName;
         this.adapterName = adapterName;

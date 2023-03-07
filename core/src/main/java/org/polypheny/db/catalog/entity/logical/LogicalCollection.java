@@ -36,14 +36,14 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-@With
+//@With
 public class LogicalCollection extends LogicalEntity implements CatalogObject {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
     @Getter
     public long id;
-    public ImmutableList<Integer> placements;
+    public ImmutableList<Long> placements;
     public String name;
     public long namespaceId;
     public EntityType entityType;
@@ -55,7 +55,7 @@ public class LogicalCollection extends LogicalEntity implements CatalogObject {
             String namespaceName,
             long id,
             String name,
-            @NonNull Collection<Integer> placements,
+            @NonNull Collection<Long> placements,
             EntityType type,
             String physicalName ) {
         super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.DOCUMENT );
@@ -74,20 +74,17 @@ public class LogicalCollection extends LogicalEntity implements CatalogObject {
     }
 
 
-    public LogicalCollection addPlacement( int adapterId ) {
-        List<Integer> placements = new ArrayList<>( this.placements );
+    public LogicalCollection addPlacement( Long adapterId ) {
+        List<Long> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
         return new LogicalCollection( id, name, namespaceId, namespaceName, placements, EntityType.ENTITY, physicalName );
     }
 
 
-    public LogicalCollection removePlacement( int adapterId ) {
-        List<Integer> placements = this.placements.stream().filter( id -> id != adapterId ).collect( Collectors.toList() );
+    public LogicalCollection removePlacement( long adapterId ) {
+        List<Long> placements = this.placements.stream().filter( id -> id != adapterId ).collect( Collectors.toList() );
         return new LogicalCollection( id, name, namespaceId, namespaceName, placements, EntityType.ENTITY, physicalName );
     }
-
-
-
 
 
     @Override

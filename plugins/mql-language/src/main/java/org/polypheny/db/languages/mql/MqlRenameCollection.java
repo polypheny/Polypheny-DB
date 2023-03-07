@@ -58,8 +58,8 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
-            LogicalNamespace schema = catalog.getSchema( Catalog.defaultDatabaseId, database );
-            List<LogicalTable> tables = catalog.getTables( schema.id, null );
+            LogicalNamespace schema = catalog.getNamespace( database );
+            List<LogicalTable> tables = catalog.getLogicalRel( schema.id ).getTables( null );
 
             if ( dropTarget ) {
                 Optional<LogicalTable> newTable = tables.stream()
@@ -80,7 +80,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
             }
 
             DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException | EntityAlreadyExistsException | UnknownSchemaException e ) {
+        } catch ( DdlOnSourceException | EntityAlreadyExistsException e ) {
             throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
         }
     }

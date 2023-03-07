@@ -1328,7 +1328,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         "TableID: {} is partitioned on column: {} - {}",
                                         catalogTable.id,
                                         catalogTable.partitionProperty.partitionColumnId,
-                                        Catalog.getInstance().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
+                                        Catalog.getInstance().getLogicalRel( catalogTable.namespaceId ).getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
                             }
                             List<Long> identifiedPartitions = new ArrayList<>();
                             for ( String partitionValue : partitionValues ) {

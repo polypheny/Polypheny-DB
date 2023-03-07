@@ -22,14 +22,16 @@ import io.activej.serializer.annotations.Serialize;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
+import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -38,36 +40,32 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
-@With
+@SuperBuilder(toBuilder = true)
 public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
     @Getter
     public BinarySerializer<DocumentCatalog> serializer = Serializable.builder.get().build( DocumentCatalog.class );
 
-    @Serialize
-    public IdBuilder idBuilder;
+    IdBuilder idBuilder = IdBuilder.getInstance();
     @Serialize
     public PusherMap<Long, LogicalCollection> collections;
 
-    private ConcurrentHashMap<String, LogicalCollection> names;
+    ConcurrentHashMap<String, LogicalCollection> names;
     @Getter
     @Serialize
     public LogicalNamespace logicalNamespace;
 
 
-    public DocumentCatalog( LogicalNamespace logicalNamespace, IdBuilder idBuilder ) {
-        this( logicalNamespace, idBuilder, new ConcurrentHashMap<>() );
+    public DocumentCatalog( LogicalNamespace logicalNamespace ) {
+        this( logicalNamespace, new ConcurrentHashMap<>() );
     }
 
 
     public DocumentCatalog(
             @Deserialize("logicalNamespace") LogicalNamespace logicalNamespace,
-            @Deserialize("idBuilder") IdBuilder idBuilder,
             @Deserialize("collections") Map<Long, LogicalCollection> collections ) {
         this.logicalNamespace = logicalNamespace;
         this.collections = new PusherMap<>( collections );
-
-        this.idBuilder = idBuilder;
 
         this.names = new ConcurrentHashMap<>();
         this.collections.addRowConnection( this.names, ( k, v ) -> logicalNamespace.caseSensitive ? v.name : v.name.toLowerCase(), ( k, v ) -> v );
@@ -75,6 +73,7 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
 
     @NonFinal
+    @Builder.Default
     boolean openChanges = false;
 
 
@@ -121,7 +120,7 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
 
     @Override
-    public long addCollection( Long id, String name, int currentUserId, EntityType entity, boolean modifiable ) {
+    public long addCollection( Long id, String name, EntityType entity, boolean modifiable ) {
         return 0;
     }
 
@@ -135,6 +134,12 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
     @Override
     public long addCollectionLogistics( String name, List<DataStore> stores, boolean placementOnly ) {
         return 0;
+    }
+
+
+    @Override
+    public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
+        return toBuilder().logicalNamespace( namespace ).build();
     }
 
 }

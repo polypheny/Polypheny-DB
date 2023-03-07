@@ -52,7 +52,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
     public long tableId;
 
     @Serialize
-    public long schemaId;
+    public long namespaceId;
 
     @Serialize
     public int position;
@@ -95,7 +95,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String name,
             @Deserialize("tableId") final long tableId,
-            @Deserialize("schemaId") final long schemaId,
+            @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("position") final int position,
             @Deserialize("type") @NonNull final PolyType type,
             @Deserialize("collectionsType") final PolyType collectionsType,
@@ -109,7 +109,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
-        this.schemaId = schemaId;
+        this.namespaceId = namespaceId;
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -145,7 +145,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getNamespace( schemaId ).name;
+        return Catalog.getInstance().getNamespace( namespaceId ).name;
     }
 
 
@@ -181,7 +181,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
     @Override
     public int compareTo( LogicalColumn o ) {
-        int comp = (int) (this.schemaId - o.schemaId);
+        int comp = (int) (this.namespaceId - o.namespaceId);
         if ( comp == 0 ) {
             comp = (int) (this.tableId - o.tableId);
             if ( comp == 0 ) {

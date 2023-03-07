@@ -129,7 +129,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
         // Check if all columns exist
         for ( SqlNode node : columnList.getSqlList() ) {
-            getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
+            getCatalogColumn( catalogTable.namespaceId, catalogTable.id, (SqlIdentifier) node );
         }
 
         DataStore storeInstance = getDataStoreInstance( storeName );
@@ -137,7 +137,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             DdlManager.getInstance().modifyDataPlacement(
                     catalogTable,
                     columnList.getList().stream()
-                            .map( c -> getCatalogColumn( catalogTable.id, (SqlIdentifier) c ).id )
+                            .map( c -> getCatalogColumn( catalogTable.namespaceId, catalogTable.id, (SqlIdentifier) c ).id )
                             .collect( Collectors.toList() ),
                     partitionGroupList,
                     partitionGroupNamesList.stream()

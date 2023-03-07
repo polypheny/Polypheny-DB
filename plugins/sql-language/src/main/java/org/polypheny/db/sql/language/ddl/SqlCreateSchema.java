@@ -92,7 +92,7 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
-            DdlManager.getInstance().createNamespace( name.getSimple(), context.getDatabaseId(), type, context.getCurrentUserId(), ifNotExists, replace );
+            DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace );
         } catch ( NamespaceAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaExists( name.getSimple() ) );
         }

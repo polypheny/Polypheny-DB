@@ -18,28 +18,39 @@ package org.polypheny.db.catalog.entity;
 
 
 import com.google.common.collect.ImmutableMap;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
+import lombok.experimental.SuperBuilder;
 
 
 @EqualsAndHashCode
 @Value
-@With
+@SuperBuilder(toBuilder = true)
 public class CatalogQueryInterface implements CatalogObject {
 
     private static final long serialVersionUID = 7212289724539530050L;
 
+    @Serialize
     public long id;
+    @Serialize
     public String name;
+    @Serialize
     public String clazz;
+    @Serialize
     public ImmutableMap<String, String> settings;
 
 
-    public CatalogQueryInterface( final long id, @NonNull final String uniqueName, @NonNull final String clazz, @NonNull final Map<String, String> settings ) {
+    public CatalogQueryInterface(
+            @Deserialize("id") final long id,
+            @Deserialize("name") @NonNull final String uniqueName,
+            @Deserialize("clazz") @NonNull final String clazz,
+            @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.name = uniqueName;
         this.clazz = clazz;
