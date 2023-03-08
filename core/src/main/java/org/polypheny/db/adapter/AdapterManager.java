@@ -241,10 +241,10 @@ public class AdapterManager {
         if ( adapterInstance == null ) {
             throw new RuntimeException( "Unknown adapter instance with id: " + adapterId );
         }
-        CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( adapterId );
+        CatalogAdapter catalogAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId );
 
         // Check if the store has any placements
-        List<AllocationEntity<?>> placements = Catalog.getInstance().getAllocationsOnAdapter( catalogAdapter.id );
+        List<AllocationEntity<?>> placements = Catalog.getInstance().getAllocSnapshot().getAllocationsOnAdapter( catalogAdapter.id );
         if ( placements.size() != 0 ) {
             throw new RuntimeException( "There is still data placed on this data store" );
         }
@@ -266,7 +266,7 @@ public class AdapterManager {
      */
     public void restoreAdapters() {
         try {
-            List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
+            List<CatalogAdapter> adapters = Catalog.getInstance().getSnapshot().getAdapters();
             for ( CatalogAdapter adapter : adapters ) {
                 Adapter instance = instantiate( adapter.id, adapter.adapterName, adapter.uniqueName, adapter.type, adapter.settings );
                 adapterByName.put( instance.getUniqueName(), instance );

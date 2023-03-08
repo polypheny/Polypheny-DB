@@ -25,9 +25,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.Collation;
@@ -145,13 +145,13 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getNamespace( namespaceId ).name;
+        throw new NotImplementedException();
     }
 
 
     @SneakyThrows
     public String getTableName() {
-        return Catalog.getInstance().getSnapshot( 0 ).getLogicalTable( tableId ).name;
+        throw new NotImplementedException();
     }
 
 

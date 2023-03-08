@@ -59,9 +59,6 @@ import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
@@ -194,7 +191,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private Transaction getTransaction() {
         Transaction transaction;
-        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.getInstance().getUser( Catalog.defaultUserId ), Catalog.getInstance().getNamespace( 0 ), false, "Statistic Manager" );
+        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Statistic Manager" );
         return transaction;
     }
 
@@ -238,7 +235,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private void resetAllIsFull() {
         this.statisticSchemaMap.values().forEach( s -> s.values().forEach( t -> t.values().forEach( c -> {
-            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.getInstance().getSnapshot( 0 ).getColumn( c.getColumnId() ) ), NodeType.UNIQUE_VALUE ) );
+            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.getInstance().getSnapshot().getRelSnapshot( c.getSchemaId() ).getColumn( c.getColumnId() ) ), NodeType.UNIQUE_VALUE ) );
         } ) ) );
     }
 
@@ -554,7 +551,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Gets a tableScan for a given table.
      */
     private LogicalRelScan getLogicalScan( long tableId, Snapshot snapshot, AlgOptCluster cluster ) {
-        return LogicalRelScan.create( cluster, snapshot.getLogicalTable( tableId ) );
+        return LogicalRelScan.create( cluster, snapshot.getEntity( tableId ) );
     }
 
 
@@ -1189,7 +1186,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             } else if ( v.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
                 alphabeticInfo.add( (AlphabeticStatisticColumn<T>) v );
                 statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot( 0 ).getColumn( k ).type ) ) {
+            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId ).getColumn( k ).type ) ) {
                 temporalInfo.add( (TemporalStatisticColumn<T>) v );
                 statisticTable.setTemporalColumn( temporalInfo );
             }

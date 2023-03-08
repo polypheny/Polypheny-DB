@@ -127,7 +127,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public Snapshot getSnapshot( long namespaceId ) {
+    public Snapshot getSnapshot() {
         throw new NotImplementedException();
     }
 

@@ -78,7 +78,7 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public RoutedAlgBuilder scan( Iterable<String> tableNames ) {
+    public RoutedAlgBuilder scan( List<String> tableNames ) {
         super.scan( tableNames );
         return this;
     }

@@ -362,7 +362,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = this.catalog.getSnapshot( 0 ).getColumn( columnId );
+            LogicalColumn column = this.catalog.getSnapshot().getColumn( columnId );
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );

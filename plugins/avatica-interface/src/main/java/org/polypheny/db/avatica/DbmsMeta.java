@@ -303,12 +303,12 @@ public class DbmsMeta implements ProtobufMeta {
 
     @NotNull
     private List<LogicalTable> getLogicalTables( Pattern schemaPattern, Pattern tablePattern ) {
-        List<LogicalNamespace> namespaces = catalog.getNamespaces( schemaPattern );
+        List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( schemaPattern );
 
         return namespaces
                 .stream()
                 .flatMap(
-                        n -> catalog.getLogicalRel( n.id ).getTables( tablePattern ).stream() ).collect( Collectors.toList() );
+                        n -> catalog.getRelSnapshot( n.id ).getTables( tablePattern ).stream() ).collect( Collectors.toList() );
     }
 
 
@@ -319,7 +319,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
             }
-            final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getLogicalRel( t.namespaceId ).getColumns(
+            final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getRelSnapshot( t.namespaceId ).getColumns(
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
             ).stream() ).collect( Collectors.toList() );
@@ -362,7 +362,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getNamespaces( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
             }
-            final List<LogicalNamespace> schemas = catalog.getNamespaces(
+            final List<LogicalNamespace> schemas = catalog.getSnapshot().getNamespaces(
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
             );
             StatementHandle statementHandle = createStatement( ch );
@@ -532,7 +532,7 @@ public class DbmsMeta implements ProtobufMeta {
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = catalog.getLogicalRel( catalogTable.namespaceId ).getPrimaryKey( catalogTable.primaryKey );
+                    final CatalogPrimaryKey primaryKey = catalog.getRelSnapshot( catalogTable.namespaceId ).getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -568,7 +568,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> importedKeys = catalog.getLogicalRel( catalogTable.namespaceId ).getForeignKeys( catalogTable.id );
+                List<CatalogForeignKey> importedKeys = catalog.getRelSnapshot( catalogTable.namespaceId ).getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -611,7 +611,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> exportedKeys = catalog.getLogicalRel( catalogTable.namespaceId ).getExportedKeys( catalogTable.id );
+                List<CatalogForeignKey> exportedKeys = catalog.getRelSnapshot( catalogTable.namespaceId ).getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -727,7 +727,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogIndex> catalogIndexInfos = catalog.getLogicalRel( catalogTable.namespaceId ).getIndexes( catalogTable.id, unique );
+                List<CatalogIndex> catalogIndexInfos = catalog.getRelSnapshot( catalogTable.namespaceId ).getIndexes( catalogTable.id, unique );
                 catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -1420,8 +1420,7 @@ public class DbmsMeta implements ProtobufMeta {
 //            Authorizer.hasAccess( user, database );
 
         // Check schema access
-        final LogicalNamespace schema;
-        schema = catalog.getNamespace( defaultSchemaName );
+        final LogicalNamespace schema = catalog.getSnapshot().getNamespace( defaultSchemaName );
         assert schema != null;
 
 //            Authorizer.hasAccess( user, schema );

@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -292,10 +293,12 @@ public interface LogicalRelSnapshot {
 
     LogicalTable getLogicalTable( long id );
 
-    LogicalTable getLogicalTable( long namespaceId, String name );
+    LogicalTable getLogicalTable( String name );
 
     List<LogicalTable> getLogicalTables( long namespaceId, Pattern name );
 
     LogicalColumn getLogicalColumn( long id );
+
+    LogicalNamespace getNamespace( long id );
 
 }

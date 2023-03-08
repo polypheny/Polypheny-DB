@@ -60,6 +60,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.exceptions.NameExistsRuntimeException;
@@ -127,7 +128,7 @@ public class DockerInstance extends DockerManager {
         } );
 
         Map<String, Boolean> idsToRemove = new HashMap<>();
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
         outer:
         for ( com.github.dockerjava.api.model.Container container : client.listContainersCmd().withShowAll( true ).exec() ) {// Docker returns the names with a prefixed "/", so we remove it
@@ -150,7 +151,7 @@ public class DockerInstance extends DockerManager {
                     }
 
                     int adapterId = Integer.parseInt( unparsedAdapterId );
-                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer || Catalog.resetDocker ) {
+                    if ( !snapshot.checkIfExistsAdapter( adapterId ) || !snapshot.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer || Catalog.resetDocker ) {
                         idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
                         // As we remove this container later we skip the name and port adding
                         continue outer;

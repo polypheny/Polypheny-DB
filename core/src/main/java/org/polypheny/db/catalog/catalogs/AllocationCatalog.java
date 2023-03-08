@@ -16,11 +16,7 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import java.util.List;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-
 public interface AllocationCatalog {
 
-    List<? extends AllocationEntity<?>> getAllocationsOnAdapter( long id );
 
 }

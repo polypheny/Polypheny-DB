@@ -34,7 +34,6 @@ import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -66,9 +65,9 @@ public class BatchUpdateRequest {
                 String[] split = tableId.split( "\\." );
                 LogicalColumn logicalColumn;
                 try {
-                    LogicalNamespace namespace = catalog.getNamespace( split[0] );
-                    LogicalTable table = catalog.getLogicalRel( namespace.id ).getTable( split[1] );
-                    logicalColumn = catalog.getLogicalRel( table.namespaceId ).getColumn( table.id, entry.getKey() );
+                    LogicalNamespace namespace = catalog.getSnapshot().getNamespace( split[0] );
+                    LogicalTable table = catalog.getRelSnapshot( namespace.id ).getTable( split[1] );
+                    logicalColumn = catalog.getRelSnapshot( table.namespaceId ).getColumn( table.id, entry.getKey() );
                 } catch ( UnknownColumnException | UnknownTableException e ) {
                     log.error( "Could not determine column type", e );
                     return null;

@@ -149,7 +149,7 @@ public class IndexManager {
 
 
     public void restoreIndexes() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, TransactionException {
-        for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
+        for ( final CatalogIndex index : Catalog.getInstance().getSnapshot().getIndexes() ) {
             if ( index.location == 0 ) {
                 addIndex( index );
             }
@@ -173,15 +173,15 @@ public class IndexManager {
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final LogicalTable table = Catalog.getInstance().getLogicalRel( key.namespaceId ).getTable( key.tableId );
-        final CatalogPrimaryKey pk = Catalog.getInstance().getLogicalRel( key.namespaceId ).getPrimaryKey( table.primaryKey );
+        final LogicalTable table = statement.getTransaction().getSnapshot().getRelSnapshot( key.namespaceId ).getTable( key.tableId );
+        final CatalogPrimaryKey pk = statement.getTransaction().getSnapshot().getRelSnapshot( key.namespaceId ).getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
                 name,
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getNamespace( key.namespaceId ),
+                Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ),
                 table,
                 key.getColumnNames(),
                 pk.getColumnNames() );

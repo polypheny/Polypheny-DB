@@ -24,6 +24,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.type.PolyType;
 
 
@@ -85,11 +86,11 @@ public abstract class StatisticColumn<T> {
         this.type = type;
         this.columnType = columnType;
 
-        Catalog catalog = Catalog.getInstance();
-        if ( catalog.getLogicalEntity( tableId ) != null ) {
-            this.schema = catalog.getNamespace( schemaId ).name;
-            this.table = catalog.getLogicalRel( schemaId ).getTable( tableId ).name;
-            this.column = catalog.getLogicalRel( schemaId ).getColumn( columnId ).name;
+        LogicalRelSnapshot snapshot = Catalog.getInstance().getRelSnapshot( schemaId );
+        if ( snapshot.getLogicalTable( tableId ) != null ) {
+            this.schema = snapshot.getNamespace( schemaId ).name;
+            this.table = snapshot.getTable( tableId ).name;
+            this.column = snapshot.getColumn( columnId ).name;
         }
         this.qualifiedColumnName = String.format( "%s.%s.%s", this.schema, this.table, this.column );
     }

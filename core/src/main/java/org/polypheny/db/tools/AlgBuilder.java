@@ -102,8 +102,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -1327,9 +1327,10 @@ public class AlgBuilder {
      *
      * @param tableNames Name of table (can optionally be qualified)
      */
-    public AlgBuilder scan( Iterable<String> tableNames ) {
+    public AlgBuilder scan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final LogicalTable entity = snapshot.getLogicalTable( names );
+        LogicalNamespace namespace = snapshot.getNamespace( tableNames.get( 0 ) );
+        final LogicalTable entity = snapshot.getRelSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) );
         if ( entity == null ) {
             throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
         }
@@ -1375,7 +1376,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder lpgScan( long id ) {
-        LogicalGraph graph = Catalog.getInstance().getLogicalEntity( id ).unwrap( LogicalGraph.class );
+        LogicalGraph graph = snapshot.getGraphSnapshot( id ).getGraph( id );
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
         return this;
     }

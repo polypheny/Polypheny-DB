@@ -22,12 +22,10 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
@@ -65,7 +63,8 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getNamespace( namespaceId ).name;
+        // return Catalog.getInstance().getNamespace( namespaceId ).name;
+        throw new NotImplementedException();
     }
 
 

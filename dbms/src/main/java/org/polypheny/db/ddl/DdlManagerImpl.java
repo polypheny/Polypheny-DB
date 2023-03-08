@@ -888,7 +888,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Make sure that the stores have created the schema
-        Catalog.getInstance().getSnapshot( 0 );
+        Catalog.getInstance().getSnapshot();
 
         // Create table on store
         dataStore.createPhysicalTable( statement.getPrepareContext(), catalogTable, null );
@@ -1830,7 +1830,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.getLogicalRel( namespaceId ).addPrimaryKey( tableId, columnIds );
 
         CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getLogicalRel( namespaceId ).getTable( tableId );
-        Catalog.getInstance().getSnapshot( 0 );
+        Catalog.getInstance().getSnapshot();
 
         for ( DataStore store : stores ) {
             catalog.getAllocRel( namespaceId ).addPartitionPlacement(
@@ -1899,7 +1899,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         LogicalGraph graph = catalog.getLogicalGraph( graphId ).getGraph( graphId );
-        Catalog.getInstance().getSnapshot( 0 );
+        Catalog.getInstance().getSnapshot();
 
         List<Long> preExistingPlacements = graph.placements
                 .stream()
@@ -1937,7 +1937,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.getAllocGraph( graphId ).deleteGraphPlacement( store.getAdapterId(), graphId );
 
-        Catalog.getInstance().getSnapshot( 0 );
+        Catalog.getInstance().getSnapshot();
 
     }
 
@@ -2199,7 +2199,7 @@ public class DdlManagerImpl extends DdlManager {
             LogicalTable catalogTable = catalog.getLogicalRel( namespaceId ).getTable( tableId );
 
             // Trigger rebuild of schema; triggers schema creation on adapters
-            Catalog.getInstance().getSnapshot( 0 );
+            Catalog.getInstance().getSnapshot();
 
             for ( DataStore store : stores ) {
                 catalog.getAllocRel( catalogTable.namespaceId ).addPartitionPlacement(
@@ -2250,7 +2250,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalCollection catalogCollection = catalog.getLogicalDoc( namespaceId ).getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
-        Catalog.getInstance().getSnapshot( 0 );
+        Catalog.getInstance().getSnapshot();
 
         for ( DataStore store : stores ) {
             catalog.getAllocDoc( namespaceId ).addCollectionPlacement(
@@ -2311,7 +2311,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalCollection catalogCollection = catalog.getLogicalDoc( namespaceId ).getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
-        Catalog.getInstance().getSnapshot( 0 );
+        Catalog.getInstance().getSnapshot();
 
         for ( DataStore store : stores ) {
             catalog.getAllocDoc( namespaceId ).addCollectionPlacement(

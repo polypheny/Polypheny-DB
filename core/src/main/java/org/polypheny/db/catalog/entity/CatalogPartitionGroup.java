@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
-import org.polypheny.db.catalog.Catalog;
+import org.apache.commons.lang.NotImplementedException;
 
 
 @EqualsAndHashCode
@@ -68,14 +68,16 @@ public final class CatalogPartitionGroup implements CatalogObject {
 
     @SneakyThrows
     public String getTableName() {
-        return Catalog.getInstance().getLogicalRel( schemaId ).getTable( tableId ).name;
+        // return Catalog.getInstance().getLogicalRel( schemaId ).getTable( tableId ).name;
+        throw new NotImplementedException();
     }
 
 
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getNamespace( schemaId ).name;
+        // return Catalog.getInstance().getNamespace( schemaId ).name;
+        throw new NotImplementedException();
     }
 
 

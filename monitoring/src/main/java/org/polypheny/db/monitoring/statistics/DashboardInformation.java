@@ -23,6 +23,7 @@ import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
@@ -73,17 +74,17 @@ public class DashboardInformation {
 
 
     public void updatePolyphenyStatistic() {
-        Catalog catalog = Catalog.getInstance();
-        this.catalogPersistent = catalog.isPersistent;
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        this.catalogPersistent = Catalog.getInstance().isPersistent;
 
         this.numberOfQueries = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class ).size();
         this.numberOfWorkloads = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size();
         this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
 
-        catalog.getAdapters().forEach( v -> {
+        snapshot.getAdapters().forEach( v -> {
             this.availableAdapter.put( v.uniqueName, Pair.of( v.adapterTypeName, v.type ) );
         } );
-        catalog.getNamespaces( null ).forEach( v -> {
+        snapshot.getNamespaces( null ).forEach( v -> {
             availableSchemas.put( v.id, Pair.of( v.name, v.namespaceType ) );
         } );
     }

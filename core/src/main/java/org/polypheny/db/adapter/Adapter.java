@@ -483,10 +483,10 @@ public abstract class Adapter {
         );
         informationElements.add( physicalColumnNames );
 
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity<?>> physicalsOnAdapter = catalog.getPhysicalsOnAdapter( adapterId );
+            List<PhysicalEntity<?>> physicalsOnAdapter = snapshot.getPhysicalsOnAdapter( adapterId );
 
             for ( PhysicalEntity<?> entity : physicalsOnAdapter ) {
                 if ( entity.namespaceType != NamespaceType.RELATIONAL ) {

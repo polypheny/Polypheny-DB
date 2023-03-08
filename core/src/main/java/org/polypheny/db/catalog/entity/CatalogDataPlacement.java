@@ -20,19 +20,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
@@ -97,7 +93,8 @@ public class CatalogDataPlacement implements CatalogObject {
 
     @SneakyThrows
     public String getAdapterName() {
-        return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
+        // return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
+        throw new NotImplementedException();
     }
 
 

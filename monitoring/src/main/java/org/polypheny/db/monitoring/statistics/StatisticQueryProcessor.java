@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.Statement;
@@ -86,13 +87,13 @@ public class StatisticQueryProcessor {
      * Method to get all schemas, tables, and their columns in a database
      */
     public List<List<String>> getSchemaTree() {
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
         List<List<String>> result = new ArrayList<>();
         List<String> schemaTree = new ArrayList<>();
-        List<LogicalNamespace> schemas = catalog.getNamespaces( null );
+        List<LogicalNamespace> schemas = snapshot.getNamespaces( null );
         for ( LogicalNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<LogicalTable> childTables = catalog.getLogicalRel( schema.id ).getTables( null );
+            List<LogicalTable> childTables = snapshot.getRelSnapshot( schema.id ).getTables( null );
             for ( LogicalTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
                 for ( LogicalColumn logicalColumn : childTable.columns ) {
@@ -115,11 +116,11 @@ public class StatisticQueryProcessor {
      * @return all the columns
      */
     public List<QueryResult> getAllColumns() {
-        Catalog catalog = Catalog.getInstance();
-        return catalog.getNamespaces( null )
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        return snapshot.getNamespaces( null )
                 .stream()
                 .filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( n -> catalog.getLogicalRel( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> t.columns.stream() ) )
+                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> t.columns.stream() ) )
                 .map( QueryResult::fromCatalogColumn )
                 .collect( Collectors.toList() );
     }
@@ -131,9 +132,9 @@ public class StatisticQueryProcessor {
      * @return all the tables ids
      */
     public List<LogicalTable> getAllTable() {
-        Catalog catalog = Catalog.getInstance();
-        return catalog.getNamespaces( null ).stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( n -> catalog.getLogicalRel( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        return snapshot.getNamespaces( null ).stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
+                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
     }
 
 
@@ -143,8 +144,8 @@ public class StatisticQueryProcessor {
      * @return all columns
      */
     public List<QueryResult> getAllColumns( Long tableId ) {
-        Catalog catalog = Catalog.getInstance();
-        return catalog.getNamespaces( null ).stream().flatMap( n -> catalog.getLogicalRel( n.id ).getTable( tableId ).columns.stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        return snapshot.getNamespaces( null ).stream().flatMap( n -> snapshot.getRelSnapshot( n.id ).getTable( tableId ).columns.stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
     }
 
 

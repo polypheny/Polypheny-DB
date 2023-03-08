@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -88,7 +89,7 @@ public class QueryInterfaceManager {
 
 
     public static void removeInterfaceType( Class<? extends QueryInterface> clazz ) {
-        for ( CatalogQueryInterface queryInterface : Catalog.getInstance().getQueryInterfaces() ) {
+        for ( CatalogQueryInterface queryInterface : Catalog.getInstance().getSnapshot().getQueryInterfaces() ) {
             if ( queryInterface.clazz.equals( clazz.getName() ) ) {
                 throw new RuntimeException( "Cannot remove the interface type, there is still a interface active." );
             }
@@ -129,9 +130,9 @@ public class QueryInterfaceManager {
     /**
      * Restores query interfaces from catalog
      */
-    public void restoreInterfaces( Catalog catalog ) {
+    public void restoreInterfaces( Snapshot snapshot ) {
         try {
-            List<CatalogQueryInterface> interfaces = catalog.getQueryInterfaces();
+            List<CatalogQueryInterface> interfaces = snapshot.getQueryInterfaces();
             for ( CatalogQueryInterface iface : interfaces ) {
                 String[] split = iface.clazz.split( "\\$" );
                 split = split[split.length - 1].split( "\\." );
@@ -205,7 +206,7 @@ public class QueryInterfaceManager {
         if ( !interfaceByName.containsKey( uniqueName ) ) {
             throw new RuntimeException( "Unknown query interface: " + uniqueName );
         }
-        CatalogQueryInterface catalogQueryInterface = catalog.getQueryInterface( uniqueName );
+        CatalogQueryInterface catalogQueryInterface = catalog.getSnapshot().getQueryInterface( uniqueName );
 
         // Shutdown interface
         interfaceByName.get( uniqueName ).shutdown();

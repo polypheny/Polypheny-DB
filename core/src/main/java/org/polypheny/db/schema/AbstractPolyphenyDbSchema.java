@@ -83,7 +83,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Creates a root schema.
      */
     public static Snapshot createSnapshot() {
-        return Catalog.getInstance().getSnapshot( 0 );
+        return Catalog.getInstance().getSnapshot();
     }
 
 

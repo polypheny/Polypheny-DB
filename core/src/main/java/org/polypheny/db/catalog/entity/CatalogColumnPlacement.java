@@ -23,8 +23,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Value;
-import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 
@@ -72,27 +70,24 @@ public class CatalogColumnPlacement implements CatalogObject {
     }
 
 
-    @SneakyThrows
-    public String getLogicalSchemaName() {
-        throw new NotImplementedException();
-    }
-
 
     @SneakyThrows
     public String getLogicalTableName() {
-        return Catalog.getInstance().getLogicalRel( namespaceId ).getTable( tableId ).name;
+        throw new org.apache.commons.lang3.NotImplementedException();
     }
 
 
     @SneakyThrows
     public String getLogicalColumnName() {
-        return Catalog.getInstance().getLogicalRel( namespaceId ).getColumn( columnId ).name;
+        //return Catalog.getInstance().getLogicalRel( namespaceId ).getColumn( columnId ).name;
+        throw new org.apache.commons.lang3.NotImplementedException();
     }
 
 
     @SneakyThrows
     public String getAdapterUniqueName() {
-        return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
+        // return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
+        throw new org.apache.commons.lang3.NotImplementedException();
     }
 
 

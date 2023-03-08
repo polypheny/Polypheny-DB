@@ -26,7 +26,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 
 
@@ -67,13 +66,15 @@ public final class CatalogForeignKey extends CatalogKey {
 
     @SneakyThrows
     public String getReferencedKeySchemaName() {
-        return Catalog.getInstance().getNamespace( referencedKeySchemaId ).name;
+        // return Catalog.getInstance().getNamespace( referencedKeySchemaId ).name;
+        throw new NotImplementedException();
     }
 
 
     @SneakyThrows
     public String getReferencedKeyTableName() {
-        return Catalog.getInstance().getLogicalRel( referencedKeySchemaId ).getTable( referencedKeyTableId ).name;
+        // return Catalog.getInstance().getLogicalRel( referencedKeySchemaId ).getTable( referencedKeyTableId ).name;
+        throw new NotImplementedException();
     }
 
 

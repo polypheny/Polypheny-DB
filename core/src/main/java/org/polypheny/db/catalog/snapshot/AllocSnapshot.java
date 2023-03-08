@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.snapshot;
 
+import java.util.List;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 
 public interface AllocSnapshot {
@@ -27,6 +28,8 @@ public interface AllocSnapshot {
     // AllocationCollection getAllocCollection( long id );
 
     // AllocationGraph getAllocGraph( long id );
+
+    List<AllocationEntity<?>> getAllocationsOnAdapter( long id );
 
     AllocationEntity<?> getAllocEntity( long id );
 

@@ -345,12 +345,12 @@ public class PolyphenyDb {
                 throw new RuntimeException( "There was no catalog submitted, aborting." );
             }
 
-            trx = transactionManager.startTransaction( Catalog.getInstance().getUser( Catalog.defaultUserId ), Catalog.getInstance().getNamespace( 0 ), false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
             loadDefaults();
-            QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
+            QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
             trx.commit();
-            trx = transactionManager.startTransaction( Catalog.getInstance().getUser( Catalog.defaultUserId ), Catalog.getInstance().getNamespace( 0 ), false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
             trx.commit();

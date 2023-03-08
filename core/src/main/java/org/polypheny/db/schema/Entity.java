@@ -35,9 +35,6 @@ package org.polypheny.db.schema;
 
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
@@ -88,33 +85,9 @@ public interface Entity {
      */
     Long getId();
 
-    @Deprecated // whole entity might get replaced
-    default CatalogEntity getCatalogEntity() {
-        if ( getId() == null ) {
-            return null;
-        }
-        switch ( getNamespaceType() ) {
-            case RELATIONAL:
-                return Catalog.getInstance().getLogicalRel( -1 ).getTable( getId() );
-            case DOCUMENT:
-                return Catalog.getInstance().getLogicalDoc( -1 ).getCollection( getId() );
-            case GRAPH:
-                return Catalog.getInstance().getLogicalGraph( -1 ).getGraph( getId() );
-        }
-        return null;
-    }
-
     Long getPartitionId();
 
     Long getAdapterId();
-
-    @Deprecated // whole entity might get replaced
-    default CatalogPartitionPlacement getPartitionPlacement() {
-        if ( getAdapterId() == null || getPartitionId() == null ) {
-            return null;
-        }
-        return Catalog.getInstance().getAllocRel( -1 ).getPartitionPlacement( Math.toIntExact( getAdapterId() ), getPartitionId() );
-    }
 
     /**
      * Type of table.

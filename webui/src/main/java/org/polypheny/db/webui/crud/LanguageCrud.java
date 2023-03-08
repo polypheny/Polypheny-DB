@@ -42,8 +42,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -192,9 +190,9 @@ public class LanguageCrud {
         LogicalTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
-            LogicalNamespace namespace = catalog.getNamespace( t[0] );
+            LogicalNamespace namespace = catalog.getSnapshot().getNamespace( t[0] );
             try {
-                catalogTable = catalog.getLogicalRel( namespace.id ).getTable( t[1] );
+                catalogTable = catalog.getRelSnapshot( namespace.id ).getTable( t[1] );
             } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
             }
@@ -301,7 +299,7 @@ public class LanguageCrud {
      * as a query result
      */
     public void getDocumentDatabases( final Context ctx ) {
-        Map<String, String> names = Catalog.getInstance()
+        Map<String, String> names = Catalog.getInstance().getSnapshot()
                 .getNamespaces( null )
                 .stream()
                 .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.namespaceType.name() ) );
@@ -320,11 +318,11 @@ public class LanguageCrud {
     private Placement getPlacements( final Index index ) {
         Catalog catalog = Catalog.getInstance();
         String graphName = index.getSchema();
-        List<LogicalNamespace> namespaces = catalog.getNamespaces( new Pattern( graphName ) );
+        List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( new Pattern( graphName ) );
         if ( namespaces.size() != 1 ) {
             throw new RuntimeException();
         }
-        List<LogicalGraph> graphs = catalog.getLogicalGraph( namespaces.get( 0 ).id ).getGraphs( new Pattern( graphName ) );
+        List<LogicalGraph> graphs = catalog.getGraphSnapshot( namespaces.get( 0 ).id ).getGraphs( new Pattern( graphName ) );
         if ( graphs.size() != 1 ) {
             log.error( "The requested graph does not exist." );
             return new Placement( new RuntimeException( "The requested graph does not exist." ) );
@@ -369,8 +367,8 @@ public class LanguageCrud {
         String collectionName = index.getTable();
         Catalog catalog = Catalog.getInstance();
         long namespaceId;
-        namespaceId = catalog.getNamespace( namespace ).id;
-        List<LogicalCollection> collections = catalog.getLogicalDoc( namespaceId ).getCollections( new Pattern( collectionName ) );
+        namespaceId = catalog.getSnapshot().getNamespace( namespace ).id;
+        List<LogicalCollection> collections = catalog.getDocSnapshot( namespaceId ).getCollections( new Pattern( collectionName ) );
 
         if ( collections.size() != 1 ) {
             context.json( new Placement( new UnknownCollectionException( 0 ) ) );

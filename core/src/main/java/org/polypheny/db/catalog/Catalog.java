@@ -243,7 +243,7 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract void clear();
 
 
-    public abstract Snapshot getSnapshot( long namespaceId );
+    public abstract Snapshot getSnapshot();
 
     public abstract LogicalDocSnapshot getDocSnapshot( long namespaceId );
 
@@ -251,7 +251,6 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract LogicalRelSnapshot getRelSnapshot( long namespaceId );
-
 
     public abstract PhysicalSnapshot getPhysicalSnapshot();
 
