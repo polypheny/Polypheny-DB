@@ -183,4 +183,17 @@ public interface Snapshot extends OperatorTable {
 
     AllocSnapshot alloc();
 
+    public abstract LogicalDocSnapshot getDocSnapshot( long namespaceId );
+
+    public abstract LogicalGraphSnapshot getGraphSnapshot( long namespaceId );
+
+
+    public abstract LogicalRelSnapshot getRelSnapshot( long namespaceId );
+
+
+    public abstract PhysicalSnapshot getPhysicalSnapshot();
+
+    public abstract AllocSnapshot getAllocSnapshot();
+
+
 }
