@@ -20,14 +20,11 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -41,31 +38,19 @@ import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.PolyType;
 
@@ -144,64 +129,8 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public boolean checkIfExistsEntity( String entityName ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean checkIfExistsEntity( long tableId ) {
-        return false;
-    }
-
-
-    @Override
-    public LogicalEntity getEntity( String name ) {
-        return names.get( name );
-    }
-
-
-    @Override
-    public LogicalEntity getEntity( long id ) {
-        return tables.get( id );
-    }
-
-
-    @Override
     public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
         return toBuilder().logicalNamespace( namespace ).build();
-    }
-
-
-    @Override
-    public List<LogicalTable> getTables( @Nullable Pattern name ) {
-        if ( name == null ) {
-            return List.copyOf( tables.values() );
-        }
-        return tables
-                .values()
-                .stream()
-                .filter( t -> logicalNamespace.caseSensitive ?
-                        t.name.toLowerCase().matches( name.toRegex() ) :
-                        t.name.matches( name.toRegex() ) ).collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public LogicalTable getTable( long tableId ) {
-        return tables.get( tableId );
-    }
-
-
-    @Override
-    public LogicalTable getTable( String tableName ) throws UnknownTableException {
-        return names.get( tableName );
-    }
-
-
-    @Override
-    public LogicalTable getTableFromPartition( long partitionId ) {
-        return null;
     }
 
 
@@ -247,68 +176,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) {
 
-    }
-
-
-    @Override
-    public List<CatalogIndex> getIndexes( CatalogKey key ) {
-        return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
-        return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique ) {
-        if ( !onlyUnique ) {
-            return indexes.values().stream().filter( i -> i.key.tableId == tableId ).collect( Collectors.toList() );
-        } else {
-            return indexes.values().stream().filter( i -> i.key.tableId == tableId && i.unique ).collect( Collectors.toList() );
-        }
-    }
-
-
-    @Override
-    public CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException {
-        try {
-            return indexes.values().stream()
-                    .filter( i -> i.key.tableId == tableId && i.name.equals( indexName ) )
-                    .findFirst()
-                    .orElseThrow( NullPointerException::new );
-        } catch ( NullPointerException e ) {
-            throw new UnknownIndexException( tableId, indexName );
-        }
-    }
-
-
-    @Override
-    public boolean checkIfExistsIndex( long tableId, String indexName ) {
-        try {
-            getIndex( tableId, indexName );
-            return true;
-        } catch ( UnknownIndexException e ) {
-            return false;
-        }
-    }
-
-
-    @Override
-    public CatalogIndex getIndex( long indexId ) {
-        try {
-            return Objects.requireNonNull( indexes.get( indexId ) );
-        } catch ( NullPointerException e ) {
-            throw new UnknownIndexIdRuntimeException( indexId );
-        }
-    }
-
-
-    @Override
-    public List<CatalogIndex> getIndexes() {
-        return new ArrayList<>( indexes.values() );
     }
 
 
@@ -380,52 +247,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public List<CatalogKey> getKeys() {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogKey> getTableKeys( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<LogicalColumn> getColumns( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<LogicalColumn> getColumns( @Nullable Pattern tableNamePattern, @Nullable Pattern columnNamePattern ) {
-        List<LogicalTable> tables = getTables( tableNamePattern );
-        if ( columnNamePattern == null ) {
-            return tables.stream().flatMap( t -> t.columns.stream() ).collect( Collectors.toList() );
-        }
-        return tables.stream().flatMap( t -> t.columns.stream() ).filter( c -> c.name.matches( columnNamePattern.toRegex() ) ).collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public LogicalColumn getColumn( long columnId ) {
-        return columns.get( columnId );
-    }
-
-
-    @Override
-    public LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
-        return tables.get( tableId ).columns.stream().filter( c -> logicalNamespace.isCaseSensitive() ? c.name.equals( columnName ) : c.name.equalsIgnoreCase( columnName ) ).findFirst().orElse( null );
-    }
-
-
-    @Override
-    public LogicalColumn getColumn( String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException {
-        return null;
-    }
-
-
-    @Override
     public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
         long id = idBuilder.getNewFieldId();
         LogicalColumn column = new LogicalColumn( id, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
@@ -466,12 +287,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public boolean checkIfExistsColumn( long tableId, String columnName ) {
-        return false;
-    }
-
-
-    @Override
     public void deleteColumn( long columnId ) {
 
     }
@@ -490,74 +305,8 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public CatalogPrimaryKey getPrimaryKey( long key ) {
-        return null;
-    }
-
-
-    @Override
-    public boolean isPrimaryKey( long keyId ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean isForeignKey( long keyId ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean isIndex( long keyId ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean isConstraint( long keyId ) {
-        return false;
-    }
-
-
-    @Override
     public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
 
-    }
-
-
-    @Override
-    public List<CatalogForeignKey> getForeignKeys( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogForeignKey> getExportedKeys( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogConstraint> getConstraints( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogConstraint> getConstraints( CatalogKey key ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException {
-        return null;
-    }
-
-
-    @Override
-    public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException {
-        return null;
     }
 
 
@@ -600,12 +349,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public void updateMaterializedViewRefreshTime( long materializedViewId ) {
 
-    }
-
-
-    @Override
-    public List<LogicalTable> getTablesForPeriodicProcessing() {
-        return null;
     }
 
 
