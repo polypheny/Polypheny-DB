@@ -326,6 +326,7 @@ public class ExcelSource extends DataSource {
             }
             exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
         }
+        this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
     }
 
