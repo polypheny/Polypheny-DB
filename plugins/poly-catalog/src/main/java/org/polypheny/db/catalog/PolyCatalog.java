@@ -636,8 +636,8 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
-    public Snapshot getSnapshot( long id ) {
-        return new FullSnapshot( id, logicalCatalogs, allocationCatalogs, physicalCatalogs );
+    public Snapshot getSnapshot( long namespaceId ) {
+        return new FullSnapshot( idBuilder.getNewSnapshotId(), logicalCatalogs.get( namespaceId ), allocationCatalogs, physicalCatalogs.get( namespaceId ) );
     }
 
 

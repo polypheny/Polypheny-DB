@@ -48,8 +48,8 @@ public class FullSnapshot implements Snapshot {
 
     @Getter
     long id;
-    Map<Long, PhysicalCatalog> physicalCatalogs;
-    Map<Long, LogicalCatalog> logicalCatalogs;
+    PhysicalCatalog physicalCatalog;
+    LogicalCatalog logicalCatalog;
     Map<Long, AllocationCatalog> allocationCatalogs;
 
     ImmutableMap<Long, LogicalNamespace> namespaceIds;
@@ -73,18 +73,18 @@ public class FullSnapshot implements Snapshot {
     ImmutableMap<String, LogicalGraph> graphName;
 
 
-    public FullSnapshot( long id, Map<Long, LogicalCatalog> logicalCatalogs, Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, PhysicalCatalog> physicalCatalogs ) {
+    public FullSnapshot( long id, LogicalCatalog logicalCatalog, Map<Long, AllocationCatalog> allocationCatalogs, PhysicalCatalog physicalCatalog ) {
         this.id = id;
-        this.logicalCatalogs = logicalCatalogs;
+        this.logicalCatalog = logicalCatalog;
         this.allocationCatalogs = allocationCatalogs;
-        this.physicalCatalogs = physicalCatalogs;
+        this.physicalCatalog = physicalCatalog;
 
         namespaceIds = ImmutableMap.copyOf( logicalCatalogs.values().stream().map( LogicalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n ) ) );
         namespaceNames = ImmutableMap.copyOf( namespaceIds.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
 
-        tableIds = ImmutableMap.copyOf( logicalCatalogs.values().stream()
+        tableIds = logicalCatalogs.values().stream()
                 .filter( c -> c.getLogicalNamespace().namespaceType == NamespaceType.RELATIONAL )
-                .map( c -> (LogicalRelationalCatalog) c ).flatMap( c -> c. ) )
+                .map( c -> (LogicalRelationalCatalog) c ).flatMap( c -> c. )
     }
 
 

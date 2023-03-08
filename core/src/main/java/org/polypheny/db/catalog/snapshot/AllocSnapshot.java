@@ -14,13 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.catalogs;
+package org.polypheny.db.catalog.snapshot;
 
-import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+
+public interface AllocSnapshot {
+
+    //// ALLOCATION ENTITIES
+
+    // AllocationTable getAllocTable( long id );
+
+    // AllocationCollection getAllocCollection( long id );
+
+    // AllocationGraph getAllocGraph( long id );
+
+    AllocationEntity<?> getAllocEntity( long id );
+
+    //// LOGISTICS
+
+    boolean isHorizontalPartitioned( long id );
 
 
-public interface LogicalCatalog {
-
-    LogicalCatalog withLogicalNamespace( LogicalNamespace namespace );
+    boolean isVerticalPartitioned( long id );
 
 }

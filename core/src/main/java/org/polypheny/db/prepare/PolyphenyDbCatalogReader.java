@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.constant.Syntax;
@@ -73,30 +74,25 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public LogicalTable getTable( final List<String> names ) {
-        return snapshot.getLogicalTable( names );
+        throw new NotImplementedException();
     }
 
 
     @Override
     public LogicalCollection getCollection( final List<String> names ) {
-        return snapshot.getLogicalCollection( names );
+        throw new NotImplementedException();
     }
 
 
     @Override
     public LogicalGraph getGraph( final String name ) {
-        return snapshot.getLogicalGraph( List.of( name ) );
+        throw new NotImplementedException();
     }
 
 
     @Override
     public AlgDataType getNamedType( Identifier typeName ) {
-        LogicalTable table = snapshot.getLogicalTable( typeName.getNames() );
-        if ( table != null ) {
-            return table.getRowType();
-        } else {
-            return null;
-        }
+        throw new NotImplementedException();
     }
 
 

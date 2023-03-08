@@ -16,25 +16,33 @@
 
 package org.polypheny.db.catalog;
 
+import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
-import lombok.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
+import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
+import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
+import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.AllocSnapshot;
+import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
+import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
 
 
@@ -45,6 +53,113 @@ import org.polypheny.db.transaction.Transaction;
  * provide a clean testing setup
  */
 public abstract class MockCatalog extends Catalog {
+
+    @Override
+    public LogicalRelationalCatalog getLogicalRel( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public LogicalDocumentCatalog getLogicalDoc( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public LogicalGraphCatalog getLogicalGraph( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public AllocationRelationalCatalog getAllocRel( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public AllocationDocumentCatalog getAllocDoc( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public AllocationGraphCatalog getAllocGraph( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public LogicalEntity getLogicalEntity( String entityName ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public LogicalEntity getLogicalEntity( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public PhysicalCatalog getPhysical( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public PhysicalEntity<?> getPhysicalEntity( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addObserver( PropertyChangeListener listener ) {
+        super.addObserver( listener );
+    }
+
+
+    @Override
+    public void removeObserver( PropertyChangeListener listener ) {
+        super.removeObserver( listener );
+    }
+
+
+    @Override
+    public Snapshot getSnapshot( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public LogicalDocSnapshot getDocSnapshot( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public LogicalGraphSnapshot getGraphSnapshot( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public LogicalRelSnapshot getRelSnapshot( long namespaceId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public PhysicalSnapshot getPhysicalSnapshot() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public AllocSnapshot getAllocSnapshot() {
+        throw new NotImplementedException();
+    }
 
 
     @Override
@@ -104,25 +219,8 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-    @Override
-    public @NonNull List<LogicalNamespace> getNamespaces( Pattern name ) {
-        throw new NotImplementedException();
-    }
-
 
     private List<LogicalNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public LogicalNamespace getNamespace( long id ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public LogicalNamespace getNamespace( String name ) {
         throw new NotImplementedException();
     }
 
@@ -138,11 +236,6 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-    @Override
-    public boolean checkIfExistsNamespace( String name ) {
-        throw new NotImplementedException();
-    }
-
 
     @Override
     public void renameNamespace( long schemaId, String name ) {
@@ -152,42 +245,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void deleteNamespace( long id ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogUser getUser( String name ) throws UnknownUserException {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogUser getUser( long id ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public List<CatalogAdapter> getAdapters() {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogAdapter getAdapter( long id ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public boolean checkIfExistsAdapter( long id ) {
         throw new NotImplementedException();
     }
 
@@ -206,24 +263,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void deleteAdapter( long id ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public List<CatalogQueryInterface> getQueryInterfaces() {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public CatalogQueryInterface getQueryInterface( long id ) {
         throw new NotImplementedException();
     }
 
@@ -248,12 +287,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void clear() {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public List<PhysicalEntity<?>> getPhysicalsOnAdapter( long tableId ) {
         throw new NotImplementedException();
     }
 

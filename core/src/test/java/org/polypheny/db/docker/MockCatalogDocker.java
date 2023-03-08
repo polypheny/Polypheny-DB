@@ -43,7 +43,7 @@ public class MockCatalogDocker extends MockCatalog {
 
 
     @Override
-    public Snapshot getSnapshot( long id ) {
+    public Snapshot getSnapshot( long namespaceId ) {
         return null;
     }
 

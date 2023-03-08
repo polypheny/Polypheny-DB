@@ -35,9 +35,7 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
 @SuperBuilder(toBuilder = true)
@@ -49,8 +47,6 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
     IdBuilder idBuilder = IdBuilder.getInstance();
     @Serialize
     public PusherMap<Long, LogicalCollection> collections;
-
-    ConcurrentHashMap<String, LogicalCollection> names;
     @Getter
     @Serialize
     public LogicalNamespace logicalNamespace;
@@ -67,8 +63,6 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
         this.logicalNamespace = logicalNamespace;
         this.collections = new PusherMap<>( collections );
 
-        this.names = new ConcurrentHashMap<>();
-        this.collections.addRowConnection( this.names, ( k, v ) -> logicalNamespace.caseSensitive ? v.name : v.name.toLowerCase(), ( k, v ) -> v );
     }
 
 
@@ -80,42 +74,6 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
     @Override
     public DocumentCatalog copy() {
         return deserialize( serialize(), DocumentCatalog.class );
-    }
-
-
-    @Override
-    public boolean checkIfExistsEntity( String entityName ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean checkIfExistsEntity( long tableId ) {
-        return false;
-    }
-
-
-    @Override
-    public LogicalEntity getEntity( String name ) {
-        return names.get( name );
-    }
-
-
-    @Override
-    public LogicalEntity getEntity( long id ) {
-        return collections.get( id );
-    }
-
-
-    @Override
-    public LogicalCollection getCollection( long collectionId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<LogicalCollection> getCollections( Pattern namePattern ) {
-        return null;
     }
 
 

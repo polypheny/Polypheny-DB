@@ -18,11 +18,9 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.logistic.Pattern;
 
 public interface LogicalGraphCatalog extends LogicalCatalog {
 
@@ -63,21 +61,6 @@ public interface LogicalGraphCatalog extends LogicalCatalog {
      */
     public abstract void deleteGraph( long id );
 
-    /**
-     * Returns an existing graph.
-     *
-     * @param id The id of the graph to return
-     * @return The graph entity with the provided id
-     */
-    public abstract LogicalGraph getGraph( long id );
-
-    /**
-     * Get a collection of all graphs, which match the given conditions.
-     *
-     * @param graphName The pattern to which the name has to match, null if every name is matched
-     * @return A collection of all graphs matching
-     */
-    public abstract List<LogicalGraph> getGraphs( Pattern graphName );
 
 
     /**

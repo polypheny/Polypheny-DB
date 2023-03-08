@@ -18,27 +18,9 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.Pattern;
 
 public interface LogicalDocumentCatalog extends LogicalCatalog {
-
-    /**
-     * Get the collection with the given id.
-     *
-     * @param collectionId The id of the collection
-     * @return The requested collection
-     */
-    public abstract LogicalCollection getCollection( long collectionId );
-
-    /**
-     * Get a collection of collections which match the given naming pattern.
-     *
-     * @param namePattern The naming pattern of the collection itself, null if all are matched
-     * @return collection of collections matching conditions
-     */
-    public abstract List<LogicalCollection> getCollections( Pattern namePattern );
 
     /**
      * Add a new collection with the given parameters.
