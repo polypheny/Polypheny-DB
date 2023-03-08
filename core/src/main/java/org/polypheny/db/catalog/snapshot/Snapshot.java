@@ -17,24 +17,26 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
-import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.nodes.Identifier;
@@ -52,16 +54,125 @@ public interface Snapshot extends OperatorTable {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getSnapshot", Expressions.constant( id ) );
     }
 
-    //// NAMESPACES
 
-    LogicalNamespace getNamespace( long id );
+    /**
+     * Get all schemas which fit to the specified filter pattern.
+     * <code>getNamespaces(xid, null, null)</code> returns all schemas of all databases.
+     *
+     * @param name Pattern for the schema name. null returns all.
+     * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
+     */
+    public abstract @NonNull List<LogicalNamespace> getNamespaces( Pattern name );
 
-    LogicalNamespace getNamespace( String name );
+    /**
+     * Returns the schema with the specified id.
+     *
+     * @param id The id of the schema
+     * @return The schema
+     */
+    public abstract LogicalNamespace getNamespace( long id );
 
-    List<LogicalNamespace> getNamespaces( Pattern name );
+    /**
+     * Returns the schema with the given name in the specified database.
+     *
+     * @param name The name of the schema
+     * @return The schema
+     */
+    public abstract LogicalNamespace getNamespace( String name );
+
+
+    /**
+     * Checks weather a schema with the specified name exists in a database.
+     *
+     * @param name The name of the schema to check
+     * @return True if there is a schema with this name. False if not.
+     */
+    public abstract boolean checkIfExistsNamespace( String name );
+
+
+    /**
+     * Get the user with the specified name
+     *
+     * @param name The name of the user
+     * @return The user
+     * @throws UnknownUserException If there is no user with the specified name
+     */
+    public abstract CatalogUser getUser( String name ) throws UnknownUserException;
+
+    /**
+     * Get the user with the specified id.
+     *
+     * @param id The id of the user
+     * @return The user
+     */
+    public abstract CatalogUser getUser( long id );
+
+    /**
+     * Get list of all adapters
+     *
+     * @return List of adapters
+     */
+    public abstract List<CatalogAdapter> getAdapters();
+
+    /**
+     * Get an adapter by its unique name
+     *
+     * @return The adapter
+     */
+    public abstract CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException;
+
+    /**
+     * Get an adapter by its id
+     *
+     * @return The adapter
+     */
+    public abstract CatalogAdapter getAdapter( long id );
+
+    /**
+     * Check if an adapter with the given id exists
+     *
+     * @param id the id of the adapter
+     * @return if the adapter exists
+     */
+    public abstract boolean checkIfExistsAdapter( long id );
+
+
+    /*
+     * Get list of all query interfaces
+     *
+     * @return List of query interfaces
+     */
+    public abstract List<CatalogQueryInterface> getQueryInterfaces();
+
+    /**
+     * Get a query interface by its unique name
+     *
+     * @param uniqueName The unique name of the query interface
+     * @return The CatalogQueryInterface
+     */
+    public abstract CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException;
+
+    /**
+     * Get a query interface by its id
+     *
+     * @param id The id of the query interface
+     * @return The CatalogQueryInterface
+     */
+    public abstract CatalogQueryInterface getQueryInterface( long id );
+
+
+    public abstract List<AllocationEntity<?>> getAllocationsOnAdapter( long id );
+
+
+    public abstract List<PhysicalEntity<?>> getPhysicalsOnAdapter( long adapterId );
+
+
+    public abstract List<CatalogIndex> getIndexes();
+
+
+    public abstract List<LogicalTable> getTablesForPeriodicProcessing();
 
     //// ENTITIES
-
 
     CatalogEntity getEntity( long id );
 
@@ -72,62 +183,6 @@ public interface Snapshot extends OperatorTable {
     @Deprecated
     CatalogEntity getEntity( List<String> names );
 
-    //// LOGICAL ENTITIES
-    @Deprecated
-    LogicalTable getLogicalTable( List<String> names );
-
-    @Deprecated
-    LogicalCollection getLogicalCollection( List<String> names );
-
-    @Deprecated
-    LogicalGraph getLogicalGraph( List<String> names );
-
-    LogicalTable getLogicalTable( long id );
-
-    LogicalTable getLogicalTable( long namespaceId, String name );
-
-    List<LogicalTable> getLogicalTables( long namespaceId, Pattern name );
-
-    LogicalColumn getLogicalColumn( long id );
-
-    LogicalCollection getLogicalCollection( long id );
-
-    LogicalCollection getLogicalCollection( long namespaceId, String name );
-
-    List<LogicalCollection> getLogicalCollections( long namespaceId, Pattern name );
-
-    LogicalGraph getLogicalGraph( long id );
-
-    LogicalGraph getLogicalGraph( long namespaceId, String name );
-
-    List<LogicalGraph> getLogicalGraphs( long namespaceId, Pattern name );
-
-    //// ALLOCATION ENTITIES
-
-    AllocationTable getAllocTable( long id );
-
-    AllocationCollection getAllocCollection( long id );
-
-    AllocationGraph getAllocGraph( long id );
-
-    //// PHYSICAL ENTITIES
-
-    PhysicalTable getPhysicalTable( long id );
-
-    PhysicalTable getPhysicalTable( long logicalId, long adapterId );
-
-    PhysicalCollection getPhysicalCollection( long id );
-
-    PhysicalCollection getPhysicalCollection( long logicalId, long adapterId );
-
-
-    PhysicalGraph getPhysicalGraph( long id );
-
-    PhysicalGraph getPhysicalGraph( long logicalId, long adapterId );
-
-    //// LOGISTICS
-
-    boolean isPartitioned( long id );
 
     //// OTHERS
 
@@ -138,10 +193,30 @@ public interface Snapshot extends OperatorTable {
 
     @Override
     default List<? extends Operator> getOperatorList() {
-        return null;
+        return List.of();
     }
 
-    LogicalColumn getColumn( long columnId );
+
+    /**
+     * Checks if there is a table with the specified name in the specified schema.
+     *
+     * @param entityName The name to check for
+     * @return true if there is a table with this name, false if not.
+     */
+    public abstract boolean checkIfExistsEntity( String entityName );
+
+    /**
+     * Checks if there is a table with the specified id.
+     *
+     * @param tableId id of the table
+     * @return true if there is a table with this id, false if not.
+     */
+    public abstract boolean checkIfExistsEntity( long tableId );
+
+    LogicalNamespace getLogicalNamespace();
+
+
+    LogicalEntity getEntity( String name );
 
 
 }
