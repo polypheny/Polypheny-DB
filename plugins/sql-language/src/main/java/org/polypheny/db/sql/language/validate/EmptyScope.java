@@ -25,6 +25,7 @@ import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.language.SqlCall;
@@ -81,7 +82,8 @@ class EmptyScope implements SqlValidatorScope {
 
     @Override
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
-        CatalogEntity table = validator.snapshot.getLogicalTable( names );
+        LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
+        CatalogEntity table = validator.snapshot.getRelSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) );
         return table != null
                 ? new EntityNamespace( validator, table )
                 : null;
@@ -93,9 +95,10 @@ class EmptyScope implements SqlValidatorScope {
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
         // Look in the default schema, then default catalog, then root schema.
-        LogicalTable table = validator.snapshot.getLogicalTable( names );
+        LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
+        LogicalTable table = validator.snapshot.getRelSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) );
         if ( table != null ) {
-            resolves.add( new Resolve( validator.snapshot.getLogicalTable( names ) ) );
+            resolves.add( new Resolve( validator.snapshot.getRelSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) ) ) );
         }
     }
 

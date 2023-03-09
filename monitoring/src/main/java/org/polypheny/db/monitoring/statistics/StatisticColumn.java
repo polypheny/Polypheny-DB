@@ -86,7 +86,7 @@ public abstract class StatisticColumn<T> {
         this.type = type;
         this.columnType = columnType;
 
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getRelSnapshot( schemaId );
+        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId );
         if ( snapshot.getLogicalTable( tableId ) != null ) {
             this.schema = snapshot.getNamespace( schemaId ).name;
             this.table = snapshot.getTable( tableId ).name;

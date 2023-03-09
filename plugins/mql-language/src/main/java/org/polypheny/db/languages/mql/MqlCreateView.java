@@ -21,12 +21,10 @@ import org.bson.BsonDocument;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -55,10 +53,9 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        long schemaId = catalog.getNamespace( database ).id;
+        long schemaId = context.getSnapshot().getNamespace( database ).id;
 
         Node mqlNode = statement.getTransaction()
                 .getProcessor( QueryLanguage.from( "mongo" ) )

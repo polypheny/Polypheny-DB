@@ -18,11 +18,9 @@ package org.polypheny.db.languages.mql;
 
 import java.util.List;
 import java.util.Optional;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -54,12 +52,11 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
-            LogicalNamespace schema = catalog.getNamespace( database );
-            List<LogicalTable> tables = catalog.getLogicalRel( schema.id ).getTables( null );
+            LogicalNamespace schema = context.getSnapshot().getNamespace( database );
+            List<LogicalTable> tables = context.getSnapshot().getRelSnapshot( schema.id ).getTables( null );
 
             if ( dropTarget ) {
                 Optional<LogicalTable> newTable = tables.stream()

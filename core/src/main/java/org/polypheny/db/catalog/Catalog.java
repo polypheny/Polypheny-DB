@@ -36,11 +36,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.snapshot.AllocSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
-import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
 
@@ -244,17 +239,6 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract Snapshot getSnapshot();
-
-    public abstract LogicalDocSnapshot getDocSnapshot( long namespaceId );
-
-    public abstract LogicalGraphSnapshot getGraphSnapshot( long namespaceId );
-
-
-    public abstract LogicalRelSnapshot getRelSnapshot( long namespaceId );
-
-    public abstract PhysicalSnapshot getPhysicalSnapshot();
-
-    public abstract AllocSnapshot getAllocSnapshot();
 
 
 }

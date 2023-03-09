@@ -43,11 +43,6 @@ import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.snapshot.AllocSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
-import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -137,31 +132,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public Snapshot getSnapshot() {
         return Catalog.getInstance().getSnapshot();
-    }
-
-
-    public LogicalRelSnapshot getRelSnapshot() {
-        return Catalog.getInstance().getRelSnapshot();
-    }
-
-
-    public LogicalGraphSnapshot getGraphSnapshot() {
-        return Catalog.getInstance().getGraphSnapshot();
-    }
-
-
-    public LogicalDocSnapshot getDocSnapshot() {
-        return Catalog.getInstance().getDocSnapshot();
-    }
-
-
-    public PhysicalSnapshot getPhysicalSnapshot() {
-        return Catalog.getInstance().getPhysicalSnapshot();
-    }
-
-
-    public AllocSnapshot getAllocSnapshot() {
-        return Catalog.getInstance().getAllocSnapshot();
     }
 
 

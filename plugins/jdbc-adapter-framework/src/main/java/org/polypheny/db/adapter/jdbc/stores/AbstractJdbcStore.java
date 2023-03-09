@@ -167,7 +167,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     @Override
     public void addColumn( Context context, LogicalTable catalogTable, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacementsByTableOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
             String physicalTableName = partitionPlacement.physicalTableName;
             String physicalSchemaName = partitionPlacement.physicalSchemaName;
             StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, logicalColumn );
@@ -266,7 +266,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         if ( !this.dialect.supportsNestedArrays() && logicalColumn.collectionsType != null ) {
             return;
         }
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getAllocRel( logicalColumn.namespaceId ).getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
             StringBuilder builder = new StringBuilder();
             builder.append( "ALTER TABLE " )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
@@ -296,7 +296,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         String physicalSchemaName;
 
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( getAdapterId(), id ) ) );
+        partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().getAllocSnapshot().getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
@@ -320,7 +320,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getAllocRel( columnPlacement.namespaceId ).getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
             StringBuilder builder = new StringBuilder();
             builder.append( "ALTER TABLE " )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
@@ -337,7 +337,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getAllocRel( catalogTable.namespaceId ).getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ) ) {
             String physicalTableName = partitionPlacement.physicalTableName;
             String physicalSchemaName = partitionPlacement.physicalSchemaName;
             StringBuilder builder = new StringBuilder();

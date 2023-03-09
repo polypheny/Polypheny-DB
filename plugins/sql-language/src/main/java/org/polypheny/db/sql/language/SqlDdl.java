@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
@@ -47,6 +48,7 @@ public abstract class SqlDdl extends SqlCall {
     protected static final SqlOperator DDL_OPERATOR = new SqlSpecialOperator( "DDL", Kind.OTHER_DDL );
 
     private final SqlOperator operator;
+    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     /**
@@ -68,19 +70,18 @@ public abstract class SqlDdl extends SqlCall {
         LogicalTable catalogTable;
         long schemaId;
         String tableOldName;
-        Catalog catalog = Catalog.getInstance();
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            schemaId = catalog.getNamespace( tableName.names.get( 1 ) ).id;
+            schemaId = snapshot.getNamespace( tableName.names.get( 1 ) ).id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = catalog.getNamespace( tableName.names.get( 0 ) ).id;
+            schemaId = snapshot.getNamespace( tableName.names.get( 0 ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            schemaId = catalog.getNamespace( context.getDefaultSchemaName() ).id;
+            schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
         try {
-            catalogTable = catalog.getLogicalRel( schemaId ).getTable( tableOldName );
+            catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
         } catch ( UnknownTableException e ) {
             throw new RuntimeException( e );
         }
@@ -91,7 +92,7 @@ public abstract class SqlDdl extends SqlCall {
     protected LogicalColumn getCatalogColumn( long namespaceId, long tableId, SqlIdentifier columnName ) {
         LogicalColumn logicalColumn;
         try {
-            logicalColumn = Catalog.getInstance().getLogicalRel( namespaceId ).getColumn( tableId, columnName.getSimple() );
+            logicalColumn = snapshot.getRelSnapshot( namespaceId ).getColumn( tableId, columnName.getSimple() );
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnName.getPos(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
         }

@@ -64,14 +64,6 @@ public interface LogicalRelSnapshot {
      */
     public abstract LogicalTable getTable( String tableName ) throws UnknownTableException;
 
-    /**
-     * Returns the table which is associated with a given partitionId
-     *
-     * @param partitionId to use for lookup
-     * @return CatalogEntity that contains partitionId
-     */
-    public abstract LogicalTable getTableFromPartition( long partitionId );
-
 
     /**
      * Gets a collection of all keys.
@@ -102,11 +94,11 @@ public interface LogicalRelSnapshot {
      * Get all columns of the specified database which fit to the specified filter patterns.
      * <code>getColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
      *
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @param columnNamePattern Pattern for the column name. null returns all.
+     * @param tableName Pattern for the table name. null returns all.
+     * @param columnName Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<LogicalColumn> getColumns( @Nullable Pattern tableNamePattern, @Nullable Pattern columnNamePattern );
+    public abstract List<LogicalColumn> getColumns( @Nullable Pattern tableName, @Nullable Pattern columnName );
 
     /**
      * Returns the column with the specified id.
@@ -300,5 +292,7 @@ public interface LogicalRelSnapshot {
     LogicalColumn getLogicalColumn( long id );
 
     LogicalNamespace getNamespace( long id );
+
+    boolean checkIfExistsEntity( String newName );
 
 }

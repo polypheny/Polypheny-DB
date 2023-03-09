@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -89,8 +88,8 @@ public class StatisticCrud {
         long tableId;
         long schemaId;
         try {
-            schemaId = Catalog.getInstance().getNamespace( request.tableId.split( "\\." )[0] ).id;
-            tableId = Catalog.getInstance().getLogicalRel( schemaId ).getTable( request.tableId.split( "\\." )[1] ).id;
+            schemaId = Catalog.getInstance().getSnapshot().getNamespace( request.tableId.split( "\\." )[0] ).id;
+            tableId = Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId ).getTable( request.tableId.split( "\\." )[1] ).id;
 
             ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
         } catch ( UnknownTableException e ) {

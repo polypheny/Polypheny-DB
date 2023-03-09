@@ -66,8 +66,8 @@ public class BatchUpdateRequest {
                 LogicalColumn logicalColumn;
                 try {
                     LogicalNamespace namespace = catalog.getSnapshot().getNamespace( split[0] );
-                    LogicalTable table = catalog.getRelSnapshot( namespace.id ).getTable( split[1] );
-                    logicalColumn = catalog.getRelSnapshot( table.namespaceId ).getColumn( table.id, entry.getKey() );
+                    LogicalTable table = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( split[1] );
+                    logicalColumn = catalog.getSnapshot().getRelSnapshot( table.namespaceId ).getColumn( table.id, entry.getKey() );
                 } catch ( UnknownColumnException | UnknownTableException e ) {
                     log.error( "Could not determine column type", e );
                     return null;

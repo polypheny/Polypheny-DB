@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -72,6 +73,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
     private final SqlIdentifier freshnessId;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE MATERIALIZED VIEW", Kind.CREATE_MATERIALIZED_VIEW );
+    private Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     /**
@@ -113,20 +115,19 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
         long schemaId;
         String viewName;
 
         MaterializedViewManager.getInstance().isCreatingMaterialized = true;
 
         if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            schemaId = catalog.getNamespace( name.names.get( 1 ) ).id;
+            schemaId = snapshot.getNamespace( name.names.get( 1 ) ).id;
             viewName = name.names.get( 2 );
         } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = catalog.getNamespace( name.names.get( 0 ) ).id;
+            schemaId = snapshot.getNamespace( name.names.get( 0 ) ).id;
             viewName = name.names.get( 1 );
         } else { // TableName
-            schemaId = catalog.getNamespace( context.getDefaultSchemaName() ).id;
+            schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
             viewName = name.names.get( 0 );
         }
 

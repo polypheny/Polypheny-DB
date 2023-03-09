@@ -32,7 +32,7 @@ public class AuthenticatorImpl implements Authenticator {
     @Override
     public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
         try {
-            CatalogUser catalogUser = Catalog.getInstance().getUser( username );
+            CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
             if ( catalogUser.password.equals( password ) ) {
                 return catalogUser;
             } else {

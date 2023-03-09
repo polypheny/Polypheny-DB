@@ -45,8 +45,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : Catalog.getInstance().getAllocRel( catalogTable.namespaceId ).getPartitionsByTable( catalogTable.id ) ) {
-            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
+        for ( CatalogPartition catalogPartition : Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionsByTable( catalogTable.id ) ) {
+            if ( catalogPartition.isUnbound ) {
                 unboundPartitionId = catalogPartition.id;
                 break;
             }

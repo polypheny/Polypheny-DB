@@ -39,9 +39,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -620,7 +619,8 @@ public class SqlValidatorUtil {
             return false;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
-        LogicalGraph graph = validator.getSnapshot().getLogicalGraph( id.names );
+        return validator.snapshot.getNamespace( id.names.get( 0 ) ).namespaceType == NamespaceType.RELATIONAL;
+        /*LogicalGraph graph = validator.snapshot.getGraphSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) );
         if ( graph != null ) {
             return false;
         }
@@ -628,7 +628,7 @@ public class SqlValidatorUtil {
         if ( collection != null ) {
             return false;
         }
-        return true;
+        return true;*/
     }
 
 

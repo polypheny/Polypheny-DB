@@ -41,7 +41,6 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -249,7 +248,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
-        algBuilder.lpgScan( catalog.getNamespaces( new Pattern( logicalTable.getLogicalSchemaName() ) ).get( 0 ).id );
+        algBuilder.lpgScan( catalog.getSnapshot().getNamespaces( new Pattern( logicalTable.getLogicalSchemaName() ) ).get( 0 ).id );
         algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( logicalTable.getLogicalTableName() ) ) ), List.of( "n" ) );
         algBuilder.lpgProject(
                 List.of( rexBuilder.makeLpgGetId(), rexBuilder.makeLpgPropertiesExtract(), rexBuilder.makeLpgLabels() ),

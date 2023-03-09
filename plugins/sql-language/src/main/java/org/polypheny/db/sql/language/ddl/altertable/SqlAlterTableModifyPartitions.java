@@ -27,9 +27,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.languages.ParserPos;
@@ -146,7 +146,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         // If name partitions are specified
         else if ( !partitionGroupNamesList.isEmpty() && partitionGroupList.isEmpty() ) {
-            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getAllocRel( catalogTable.namespaceId ).getPartitionGroups( tableId );
+            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getSnapshot().getAllocSnapshot().getPartitionGroups( tableId );
             for ( String partitionName : partitionGroupNamesList.stream().map( Object::toString )
                     .collect( Collectors.toList() ) ) {
                 boolean isPartOfTable = false;
@@ -159,14 +159,14 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 }
                 if ( !isPartOfTable ) {
                     throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalog.getAllocRel( catalogTable.namespaceId ).getPartitionGroupNames( tableId ) + " partitions" );
+                            + catalogTable.name + "', has only " + catalog.getSnapshot().getAllocSnapshot().getPartitionGroupNames( tableId ) + " partitions" );
                 }
             }
         }
 
         // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
         // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        if ( tempPartitionList.equals( catalog.getAllocRel( catalogTable.namespaceId ).getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
+        if ( tempPartitionList.equals( catalog.getSnapshot().getAllocSnapshot().getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
             log.info( "The data placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}",
                     catalogTable.name, storeName, partitionGroupList );
             return;

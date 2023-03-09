@@ -27,7 +27,6 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.models.SortDirection;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.UIAlgNode;
@@ -85,7 +84,7 @@ public class QueryPlanBuilder {
         }
         switch ( node.type ) {
             case "Scan":
-                return builder.scan( Util.tokenize( node.tableName, "." ) ).as( node.tableName );
+                return builder.scan( node.tableName ).as( node.tableName );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":

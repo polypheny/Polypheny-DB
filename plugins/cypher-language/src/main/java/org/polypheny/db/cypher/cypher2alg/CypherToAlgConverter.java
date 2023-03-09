@@ -48,9 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
@@ -109,7 +107,7 @@ public class CypherToAlgConverter {
             databaseId = parameters.getDatabaseId();
         }
 
-        LogicalGraph graph = Catalog.getInstance().getLogicalGraph( databaseId ).getGraph( databaseId );
+        LogicalGraph graph = this.snapshot.getGraphSnapshot( databaseId ).getGraph( databaseId );
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan
@@ -138,7 +136,7 @@ public class CypherToAlgConverter {
 
 
     private long getDatabaseId( ExtendedQueryParameters parameters ) {
-        return Catalog.getInstance().getNamespace( parameters.getDatabaseName() ).id;
+        return snapshot.getNamespace( parameters.getDatabaseName() ).id;
     }
 
 

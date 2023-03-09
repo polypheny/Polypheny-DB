@@ -48,15 +48,4 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
 
-    @Override
-    public boolean checkIfExistsAdapter( long id ) {
-        return adapters.containsKey( id );
-    }
-
-
-    @Override
-    public CatalogAdapter getAdapter( long id ) {
-        return adapters.get( id );
-    }
-
 }

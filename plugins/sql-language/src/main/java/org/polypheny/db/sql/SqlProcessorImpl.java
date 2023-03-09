@@ -87,6 +87,8 @@ public class SqlProcessorImpl extends Processor {
     @Setter
     private PolyphenyDbSqlValidator validator;
 
+    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
+
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
@@ -247,7 +249,7 @@ public class SqlProcessorImpl extends Processor {
 
         if ( oldColumnList != null ) {
             LogicalTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            NamespaceType namespaceType = Catalog.getInstance().getNamespace( catalogTable.namespaceId ).namespaceType;
+            NamespaceType namespaceType = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).namespaceType;
 
             catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
@@ -360,17 +362,17 @@ public class SqlProcessorImpl extends Processor {
         long schemaId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            schemaId = Catalog.getInstance().getNamespace( tableName.names.get( 1 ) ).id;
+            schemaId = snapshot.getNamespace( tableName.names.get( 1 ) ).id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = Catalog.getInstance().getNamespace( tableName.names.get( 0 ) ).id;
+            schemaId = snapshot.getNamespace( tableName.names.get( 0 ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            schemaId = Catalog.getInstance().getNamespace( transaction.getDefaultSchema().name ).id;
+            schemaId = snapshot.getNamespace( transaction.getDefaultSchema().name ).id;
             tableOldName = tableName.names.get( 0 );
         }
         try {
-            catalogTable = Catalog.getInstance().getLogicalRel( schemaId ).getTable( tableOldName );
+            catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
         } catch ( UnknownTableException e ) {
             throw new RuntimeException( e );
         }

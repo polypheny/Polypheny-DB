@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -606,7 +607,8 @@ public abstract class SqlUtil {
 
 
     public static AlgDataType getNamedType( Identifier node, Snapshot snapshot ) {
-        LogicalTable table = snapshot.getLogicalTable( node.getNames() );
+        LogicalNamespace namespace = snapshot.getNamespace( node.getNames().get( 0 ) );
+        LogicalTable table = snapshot.getRelSnapshot( namespace.id ).getLogicalTable( node.getNames() );
         if ( table != null ) {
             return table.getRowType();
         } else {

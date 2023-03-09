@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -34,7 +33,6 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
@@ -62,27 +60,31 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     public BinarySerializer<RelationalCatalog> serializer = Serializable.builder.get().build( RelationalCatalog.class );
 
     @Serialize
-    public PusherMap<Long, LogicalTable> tables;
+    @Getter
+    public Map<Long, LogicalTable> tables;
 
     @Serialize
-    public PusherMap<Long, LogicalColumn> columns;
+    @Getter
+    public Map<Long, LogicalColumn> columns;
 
     @Serialize
     @Getter
     public LogicalNamespace logicalNamespace;
 
     @Serialize
+    @Getter
     public Map<Long, CatalogIndex> indexes;
 
     @Serialize
+    @Getter
     public Map<Long, CatalogKey> keys;
 
     @Serialize
+    @Getter
     public Map<long[], Long> keyColumns;
 
 
     public IdBuilder idBuilder = IdBuilder.getInstance();
-    ConcurrentHashMap<String, LogicalTable> names;
 
     @NonFinal
     @Builder.Default
@@ -100,14 +102,12 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             @Deserialize("keyColumns") Map<long[], Long> keyColumns ) {
         this.logicalNamespace = logicalNamespace;
 
-        this.tables = new PusherMap<>( tables );
-        this.columns = new PusherMap<>( columns );
+        this.tables = tables;
+        this.columns = columns;
         this.indexes = indexes;
         this.keys = keys;
         this.keyColumns = keyColumns;
 
-        this.names = new ConcurrentHashMap<>();
-        this.tables.addRowConnection( this.names, ( k, v ) -> logicalNamespace.caseSensitive ? v.name : v.name.toLowerCase(), ( k, v ) -> v );
 
     }
 

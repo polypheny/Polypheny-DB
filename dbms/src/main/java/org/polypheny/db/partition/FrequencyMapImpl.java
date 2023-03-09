@@ -122,7 +122,7 @@ public class FrequencyMapImpl extends FrequencyMap {
         Catalog catalog = Catalog.getInstance();
 
         long invocationTimestamp = System.currentTimeMillis();
-        List<LogicalTable> periodicTables = catalog.getTablesForPeriodicProcessing();
+        List<LogicalTable> periodicTables = catalog.getSnapshot().getTablesForPeriodicProcessing();
         // Retrieve all Tables which rely on periodic processing
         for ( LogicalTable table : periodicTables ) {
             if ( table.partitionProperty.partitionType == PartitionType.TEMPERATURE ) {
@@ -216,7 +216,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             // Which of those are currently in cold --> action needed
 
-            List<CatalogPartition> currentHotPartitions = Catalog.getInstance().getAllocRel( table.namespaceId ).getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
+            List<CatalogPartition> currentHotPartitions = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
             for ( CatalogPartition catalogPartition : currentHotPartitions ) {
 
                 // Remove partitions from List if they are already in HOT (not necessary to send to DataMigrator)
@@ -265,8 +265,8 @@ public class FrequencyMapImpl extends FrequencyMap {
             Statement statement = transaction.createStatement();
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
 
-            List<CatalogAdapter> adaptersWithHot = Catalog.getInstance().getAllocRel( table.namespaceId ).getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
-            List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getAllocRel( table.namespaceId ).getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId() );
+            List<CatalogAdapter> adaptersWithHot = Catalog.getInstance().getSnapshot().getAllocSnapshot().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
+            List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getSnapshot().getAllocSnapshot().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId() );
 
             log.debug( "Get adapters to create physical tables" );
             // Validate that partition does not already exist on store
@@ -330,7 +330,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             // If this store contains both Groups HOT {@literal &}  COLD do nothing
             if ( hotPartitionsToCreate.size() != 0 ) {
-                Catalog.getInstance().getAllocRel( table.namespaceId ).getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
+                Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
                 for ( long partitionId : hotPartitionsToCreate ) {
                     catalog.getAllocRel( table.namespaceId ).addPartitionPlacement(
@@ -345,11 +345,11 @@ public class FrequencyMapImpl extends FrequencyMap {
                 store.createPhysicalTable( statement.getPrepareContext(), table, null );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
-                catalog.getAllocRel( table.namespaceId ).getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getLogicalRel( table.namespaceId ).getColumn( cp.columnId ) ) );
+                catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().getRelSnapshot( table.namespaceId ).getColumn( cp.columnId ) ) );
 
                 dataMigrator.copyData(
                         statement.getTransaction(),
-                        catalog.getAdapter( store.getAdapterId() ),
+                        catalog.getSnapshot().getAdapter( store.getAdapterId() ),
                         logicalColumns,
                         hotPartitionsToCreate );
 
@@ -380,10 +380,8 @@ public class FrequencyMapImpl extends FrequencyMap {
      */
     private List<Long> filterList( long namespaceId, long adapterId, long tableId, List<Long> partitionsToFilter ) {
         // Remove partition from list if it's already contained on the store
-        for ( long partitionId : Catalog.getInstance().getAllocRel( namespaceId ).getPartitionsOnDataPlacement( adapterId, tableId ) ) {
-            if ( partitionsToFilter.contains( partitionId ) ) {
-                partitionsToFilter.remove( partitionId );
-            }
+        for ( long partitionId : Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionsOnDataPlacement( adapterId, tableId ) ) {
+            partitionsToFilter.remove( partitionId );
         }
         return partitionsToFilter;
     }

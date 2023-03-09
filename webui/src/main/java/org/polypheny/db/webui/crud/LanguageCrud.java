@@ -192,7 +192,7 @@ public class LanguageCrud {
             String[] t = request.tableId.split( "\\." );
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( t[0] );
             try {
-                catalogTable = catalog.getRelSnapshot( namespace.id ).getTable( t[1] );
+                catalogTable = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
             } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
             }
@@ -322,7 +322,7 @@ public class LanguageCrud {
         if ( namespaces.size() != 1 ) {
             throw new RuntimeException();
         }
-        List<LogicalGraph> graphs = catalog.getGraphSnapshot( namespaces.get( 0 ).id ).getGraphs( new Pattern( graphName ) );
+        List<LogicalGraph> graphs = catalog.getSnapshot().getGraphSnapshot( namespaces.get( 0 ).id ).getGraphs( new Pattern( graphName ) );
         if ( graphs.size() != 1 ) {
             log.error( "The requested graph does not exist." );
             return new Placement( new RuntimeException( "The requested graph does not exist." ) );
@@ -368,7 +368,7 @@ public class LanguageCrud {
         Catalog catalog = Catalog.getInstance();
         long namespaceId;
         namespaceId = catalog.getSnapshot().getNamespace( namespace ).id;
-        List<LogicalCollection> collections = catalog.getDocSnapshot( namespaceId ).getCollections( new Pattern( collectionName ) );
+        List<LogicalCollection> collections = catalog.getSnapshot().getDocSnapshot( namespaceId ).getCollections( new Pattern( collectionName ) );
 
         if ( collections.size() != 1 ) {
             context.json( new Placement( new UnknownCollectionException( 0 ) ) );

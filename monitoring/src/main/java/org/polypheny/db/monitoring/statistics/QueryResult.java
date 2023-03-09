@@ -42,7 +42,7 @@ class QueryResult {
 
 
     public static QueryResult fromCatalogColumn( LogicalColumn column ) {
-        return new QueryResult( Catalog.getInstance().getRelSnapshot( column.namespaceId ).getTable( column.tableId ), column );
+        return new QueryResult( Catalog.getInstance().getSnapshot().getRelSnapshot( column.namespaceId ).getTable( column.tableId ), column );
     }
 
 }

@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
@@ -42,13 +41,12 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
         long namespaceId;
-        namespaceId = catalog.getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
+        namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
-        List<LogicalCollection> collections = catalog.getLogicalDoc( namespaceId ).getCollections( new Pattern( getCollection() ) );
+        List<LogicalCollection> collections = context.getSnapshot().getDocSnapshot( namespaceId ).getCollections( new Pattern( getCollection() ) );
 
         if ( collections.size() != 1 ) {
             throw new RuntimeException( "Error while adding new collection placement, collection not found." );

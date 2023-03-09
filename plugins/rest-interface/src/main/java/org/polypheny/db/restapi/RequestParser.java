@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,6 +50,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -71,7 +73,6 @@ import org.polypheny.db.util.TimestampString;
 @Slf4j
 public class RequestParser {
 
-    private final Catalog catalog;
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
     private final String databaseName;
@@ -83,6 +84,7 @@ public class RequestParser {
 
     private final static Pattern SORTING_ENTRY_PATTERN = Pattern.compile(
             "^(?<column>[a-zA-Z]\\w*(?:\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)?)(?:@(?<dir>ASC|DESC))?$" );
+    private final Snapshot snapshop;
 
 
     public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String userName, final String databaseName ) {
@@ -92,7 +94,7 @@ public class RequestParser {
 
     @VisibleForTesting
     RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String userName, String databaseName ) {
-        this.catalog = catalog;
+        this.snapshop = catalog.getSnapshot();
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
         this.userName = userName;
@@ -259,8 +261,8 @@ public class RequestParser {
         }
 
         try {
-            LogicalNamespace namespace = catalog.getNamespace( tableElements[0] );
-            LogicalTable table = this.catalog.getLogicalRel( namespace.id ).getTable( tableElements[1] );
+            LogicalNamespace namespace = snapshop.getNamespace( tableElements[0] );
+            LogicalTable table = snapshop.getRelSnapshot( namespace.id ).getTable( tableElements[1] );
             if ( log.isDebugEnabled() ) {
                 log.debug( "Finished parsing table \"{}\".", tableName );
             }
@@ -362,7 +364,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = this.catalog.getSnapshot().getColumn( columnId );
+            LogicalColumn column = snapshop.getNamespaces( null ).stream().map( n -> this.snapshop.getRelSnapshot( n.id ).getColumn( columnId ) ).filter( Objects::nonNull ).findFirst().orElse( null );
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -419,9 +421,9 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, name );
         }
 
-        LogicalNamespace namespace = this.catalog.getNamespace( splitString[0] );
+        LogicalNamespace namespace = snapshop.getNamespace( splitString[0] );
 
-        return this.catalog.getLogicalRel( namespace.id ).getColumn( splitString[1], splitString[2] );
+        return snapshop.getRelSnapshot( namespace.id ).getColumn( splitString[1], splitString[2] );
 
     }
 
@@ -749,7 +751,7 @@ public class RequestParser {
     public Map<String, LogicalColumn> generateNameMapping( List<LogicalTable> tables ) {
         Map<String, LogicalColumn> nameMapping = new HashMap<>();
         for ( LogicalTable table : tables ) {
-            for ( LogicalColumn column : this.catalog.getLogicalRel( table.namespaceId ).getColumns( table.id ) ) {
+            for ( LogicalColumn column : snapshop.getRelSnapshot( table.namespaceId ).getColumns( table.id ) ) {
                 nameMapping.put( column.getSchemaName() + "." + column.getTableName() + "." + column.name, column );
             }
         }

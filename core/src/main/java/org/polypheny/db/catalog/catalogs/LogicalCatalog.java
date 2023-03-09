@@ -23,4 +23,6 @@ public interface LogicalCatalog {
 
     LogicalCatalog withLogicalNamespace( LogicalNamespace namespace );
 
+    LogicalNamespace getLogicalNamespace();
+
 }

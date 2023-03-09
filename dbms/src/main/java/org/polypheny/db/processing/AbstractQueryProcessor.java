@@ -617,7 +617,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalRelModify ltm = (LogicalRelModify) node;
                         final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class );
-                        final LogicalNamespace schema = catalog.getNamespace( table.namespaceId );
+                        final LogicalNamespace schema = catalog.getSnapshot().getNamespace( table.namespaceId );
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
                         // Check if there are any indexes effected by this table modify
@@ -1328,7 +1328,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         "TableID: {} is partitioned on column: {} - {}",
                                         catalogTable.id,
                                         catalogTable.partitionProperty.partitionColumnId,
-                                        Catalog.getInstance().getLogicalRel( catalogTable.namespaceId ).getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
+                                        Catalog.getInstance().getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
                             }
                             List<Long> identifiedPartitions = new ArrayList<>();
                             for ( String partitionValue : partitionValues ) {

@@ -17,7 +17,9 @@
 package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
 
 public interface LogicalDocumentCatalog extends LogicalCatalog {
@@ -42,5 +44,7 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
     public abstract void deleteCollection( long id );
 
     long addCollectionLogistics( String name, List<DataStore> stores, boolean placementOnly );
+
+    Map<Long, LogicalCollection> getCollections();
 
 }

@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
@@ -86,6 +87,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     private final List<List<SqlNode>> partitionQualifierList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", Kind.CREATE_TABLE );
+    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     /**
@@ -203,16 +205,16 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         if ( query != null ) {
             throw new RuntimeException( "Not supported yet" );
         }
-        Catalog catalog = Catalog.getInstance();
+
         String tableName;
         long schemaId;
 
         // Cannot use getLogicalTable() here since table does not yet exist
         if ( name.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = catalog.getNamespace( name.names.get( 0 ) ).id;
+            schemaId = snapshot.getNamespace( name.names.get( 0 ) ).id;
             tableName = name.names.get( 1 );
         } else { // TableName
-            schemaId = catalog.getNamespace( context.getDefaultSchemaName() ).id;
+            schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
             tableName = name.names.get( 0 );
         }
 

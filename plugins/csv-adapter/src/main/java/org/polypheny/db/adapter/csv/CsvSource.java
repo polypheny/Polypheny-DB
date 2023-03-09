@@ -161,6 +161,8 @@ public class CsvSource extends DataSource {
         if ( csvDir.getProtocol().equals( "jar" ) ) {
             List<PhysicalEntity<?>> placements = Catalog
                     .getInstance()
+                    .getSnapshot()
+                    .getPhysicalSnapshot()
                     .getPhysicalsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
             for ( PhysicalEntity<?> ccp : placements ) {

@@ -157,10 +157,10 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         Snapshot snapshot = statement.getTransaction().getSnapshot();
-        LogicalNamespace namespace = Catalog.getInstance().getNamespace( resourcePatchRequest.tables.get( 0 ).getNamespaceName() );
+        LogicalNamespace namespace = snapshot.getNamespace( resourcePatchRequest.tables.get( 0 ).getNamespaceName() );
         LogicalTable table = null;
         try {
-            table = Catalog.getInstance().getLogicalRel( namespace.id ).getTable( resourcePatchRequest.tables.get( 0 ).name );
+            table = snapshot.getRelSnapshot( namespace.id ).getTable( resourcePatchRequest.tables.get( 0 ).name );
         } catch ( UnknownTableException e ) {
             throw new RuntimeException( e );
         }
@@ -220,7 +220,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        LogicalTable table = getLogicalTable( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).getName() );
+        LogicalTable table = getLogicalTable( getTransaction().getSnapshot(), resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).getName() );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourceDeleteRequest.tables );
@@ -264,12 +264,11 @@ public class Rest {
     }
 
 
-    private static LogicalTable getLogicalTable( String namespaceName, String tableName ) {
-        Catalog catalog = Catalog.getInstance();
-        LogicalNamespace namespace = catalog.getNamespace( namespaceName );
+    private static LogicalTable getLogicalTable( Snapshot snapshot, String namespaceName, String tableName ) {
+        LogicalNamespace namespace = snapshot.getNamespace( namespaceName );
         LogicalTable table;
         try {
-            table = catalog.getLogicalRel( namespace.id ).getTable( tableName );
+            table = snapshot.getRelSnapshot( namespace.id ).getTable( tableName );
         } catch ( UnknownTableException e ) {
             throw new RuntimeException( e );
         }
@@ -284,7 +283,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        LogicalTable table = getLogicalTable( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).getName() );
+        LogicalTable table = getLogicalTable( transaction.getSnapshot(), insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).getName() );
 
         // Values
         AlgDataType tableRowType = table.getRowType();

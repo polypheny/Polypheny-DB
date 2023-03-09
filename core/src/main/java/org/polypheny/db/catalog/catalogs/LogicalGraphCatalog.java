@@ -17,7 +17,9 @@
 package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -62,7 +64,6 @@ public interface LogicalGraphCatalog extends LogicalCatalog {
     public abstract void deleteGraph( long id );
 
 
-
     /**
      * Additional operations for the creation of a graph entity.
      *
@@ -72,5 +73,7 @@ public interface LogicalGraphCatalog extends LogicalCatalog {
      */
     public abstract void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException;
 
+
+    Map<Long, LogicalGraph> getGraphs();
 
 }

@@ -96,7 +96,7 @@ public class PigAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public PigAlgBuilder scan( Iterable<String> tableNames ) {
+    public PigAlgBuilder scan( List<String> tableNames ) {
         lastAlias = null;
         return (PigAlgBuilder) super.scan( tableNames );
     }

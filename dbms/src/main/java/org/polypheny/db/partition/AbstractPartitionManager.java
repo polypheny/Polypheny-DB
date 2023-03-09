@@ -45,7 +45,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     public boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
         for ( Long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
-            List<CatalogColumnPlacement> ccps = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
+            List<CatalogColumnPlacement> ccps = catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
             if ( ccps.size() <= threshold ) {
                 for ( CatalogColumnPlacement placement : ccps ) {
                     if ( placement.adapterId == storeId ) {
@@ -66,11 +66,11 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-                CatalogPartition catalogPartition = catalog.getAllocRel( catalogTable.namespaceId ).getPartition( partitionId );
+                CatalogPartition catalogPartition = catalog.getSnapshot().getAllocSnapshot().getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
                 for ( LogicalColumn column : catalogTable.columns ) {
-                    List<CatalogColumnPlacement> ccps = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, column.id );
+                    List<CatalogColumnPlacement> ccps = catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, column.id );
                     ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {
                         // Get first column placement which contains partition
@@ -131,13 +131,13 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         Map<Long, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-                List<CatalogAdapter> adapters = catalog.getAllocRel( catalogTable.namespaceId ).getAdaptersByPartitionGroup( catalogTable.id, partitionId );
+                List<CatalogAdapter> adapters = catalog.getSnapshot().getAllocSnapshot().getAdaptersByPartitionGroup( catalogTable.id, partitionId );
 
                 for ( CatalogAdapter adapter : adapters ) {
                     if ( !adapterPlacements.containsKey( adapter.id ) ) {
                         adapterPlacements.put( adapter.id, new HashMap<>() );
                     }
-                    List<CatalogColumnPlacement> placements = catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
+                    List<CatalogColumnPlacement> placements = catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
                     adapterPlacements.get( adapter.id ).put( partitionId, placements );
                 }
             }

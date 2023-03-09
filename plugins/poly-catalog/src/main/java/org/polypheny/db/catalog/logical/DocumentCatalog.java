@@ -46,6 +46,7 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
     IdBuilder idBuilder = IdBuilder.getInstance();
     @Serialize
+    @Getter
     public PusherMap<Long, LogicalCollection> collections;
     @Getter
     @Serialize

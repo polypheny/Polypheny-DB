@@ -21,10 +21,8 @@ import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -63,10 +61,9 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long schemaId = catalog.getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
+        long schemaId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 

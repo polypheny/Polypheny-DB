@@ -18,10 +18,11 @@ package org.polypheny.db.catalog.logical;
 
 import io.activej.serializer.BinarySerializer;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
@@ -30,12 +31,10 @@ import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.logistic.Pattern;
 
 @Value
 @SuperBuilder(toBuilder = true)
@@ -47,6 +46,9 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
     public LogicalNamespace logicalNamespace;
     public IdBuilder idBuilder = IdBuilder.getInstance();
 
+    @Getter
+    ConcurrentHashMap<Long, LogicalGraph> graphs;
+
 
     @NonFinal
     @Builder.Default
@@ -54,37 +56,19 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
 
     public GraphCatalog( LogicalNamespace logicalNamespace ) {
+        this( logicalNamespace, new ConcurrentHashMap<>() );
+    }
+
+
+    public GraphCatalog( LogicalNamespace logicalNamespace, Map<Long, LogicalGraph> graphs ) {
         this.logicalNamespace = logicalNamespace;
+        this.graphs = new ConcurrentHashMap<>( graphs );
     }
 
 
     @Override
     public GraphCatalog copy() {
         return deserialize( serialize(), GraphCatalog.class );
-    }
-
-
-    @Override
-    public boolean checkIfExistsEntity( String entityName ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean checkIfExistsEntity( long tableId ) {
-        return false;
-    }
-
-
-    @Override
-    public LogicalEntity getEntity( String name ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalEntity getEntity( long id ) {
-        return null;
     }
 
 
@@ -115,18 +99,6 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
     @Override
     public void deleteGraph( long id ) {
 
-    }
-
-
-    @Override
-    public LogicalGraph getGraph( long id ) {
-        return null;
-    }
-
-
-    @Override
-    public List<LogicalGraph> getGraphs( Pattern graphName ) {
-        return null;
     }
 
 

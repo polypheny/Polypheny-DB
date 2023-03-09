@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -43,6 +44,10 @@ import org.polypheny.db.transaction.Statement;
  * Adds debug information from routing to the ui.
  */
 public class UiRoutingPageUtil {
+
+
+    private static Snapshot snapshot;
+
 
     public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalAlgNode, InformationManager queryAnalyzer ) {
         addPhysicalPlanPage( optimalAlgNode, queryAnalyzer );
@@ -84,6 +89,7 @@ public class UiRoutingPageUtil {
 
 
     private static void addSelectedAdapterTable( InformationManager queryAnalyzer, ProposedRoutingPlan proposedRoutingPlan, InformationPage page ) {
+        snapshot = Catalog.getInstance().getSnapshot();
         InformationGroup group = new InformationGroup( page, "Selected Placements" );
         queryAnalyzer.addGroup( group );
         InformationTable table = new InformationTable(
@@ -91,14 +97,15 @@ public class UiRoutingPageUtil {
                 ImmutableList.of( "Entity", "Field", "Partition (Group --> ID)", "Adapter", "Physical Name" ) );
         if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
             proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
-                CatalogPartition catalogPartition = Catalog.getInstance().getAllocRel( k ).getPartition( k );
+
+                CatalogPartition catalogPartition = snapshot.getAllocSnapshot().getPartition( k );
                 LogicalTable catalogTable = Catalog.getInstance().getLogicalEntity( catalogPartition.tableId ).unwrap( LogicalTable.class );
-                CatalogPartitionGroup catalogPartitionGroup = Catalog.getInstance().getAllocRel( catalogTable.namespaceId ).getPartitionGroup( catalogPartition.partitionGroupId );
+                CatalogPartitionGroup catalogPartitionGroup = snapshot.getAllocSnapshot().getPartitionGroup( catalogPartition.partitionGroupId );
 
                 v.forEach( p -> {
-                    CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getAllocRel( catalogTable.namespaceId ).getColumnPlacement( p.left, p.right );
-                    CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getAllocRel( catalogTable.namespaceId ).getPartitionPlacement( p.left, k );
-                    LogicalColumn logicalColumn = Catalog.getInstance().getLogicalRel( catalogTable.namespaceId ).getColumn( catalogColumnPlacement.columnId );
+                    CatalogColumnPlacement catalogColumnPlacement = snapshot.getAllocSnapshot().getColumnPlacement( p.left, p.right );
+                    CatalogPartitionPlacement catalogPartitionPlacement = snapshot.getAllocSnapshot().getPartitionPlacement( p.left, k );
+                    LogicalColumn logicalColumn = snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogColumnPlacement.columnId );
                     table.addRow(
                             catalogTable.getNamespaceName() + "." + catalogTable.name,
                             logicalColumn.name,

@@ -41,7 +41,7 @@ public class SchemaToJsonMapper {
 
     public static String exportTableDefinitionAsJson( @NonNull LogicalTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
         List<JsonColumn> columns = new LinkedList<>();
-        for ( LogicalColumn logicalColumn : Catalog.getInstance().getLogicalRel( catalogTable.namespaceId ).getColumns( catalogTable.id ) ) {
+        for ( LogicalColumn logicalColumn : Catalog.getInstance().getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumns( catalogTable.id ) ) {
             String defaultValue = null;
             String defaultFunctionName = null;
             if ( exportDefaultValues ) {
@@ -61,7 +61,7 @@ public class SchemaToJsonMapper {
         }
         List<String> primaryKeyColumnNames = null;
         if ( exportPrimaryKey ) {
-            for ( CatalogKey catalogKey : Catalog.getInstance().getLogicalRel( catalogTable.namespaceId ).getTableKeys( catalogTable.id ) ) {
+            for ( CatalogKey catalogKey : Catalog.getInstance().getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getTableKeys( catalogTable.id ) ) {
                 if ( catalogKey.id == catalogTable.primaryKey ) {
                     primaryKeyColumnNames = catalogKey.getColumnNames();
                     break;

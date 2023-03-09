@@ -22,7 +22,6 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 
 public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatalog {
 
@@ -60,9 +59,5 @@ public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatal
     }
 
 
-    @Override
-    public List<? extends AllocationEntity<?>> getAllocationsOnAdapter( long id ) {
-        return null;
-    }
 
 }

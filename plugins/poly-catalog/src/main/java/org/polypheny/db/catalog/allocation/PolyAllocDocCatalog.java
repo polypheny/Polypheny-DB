@@ -24,7 +24,6 @@ import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
@@ -39,11 +38,6 @@ public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCata
         return deserialize( serialize(), PolyAllocDocCatalog.class );
     }
 
-
-    @Override
-    public List<? extends AllocationEntity<?>> getAllocationsOnAdapter( long id ) {
-        return null;
-    }
 
 
     @Override

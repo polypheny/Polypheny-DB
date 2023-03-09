@@ -16,8 +16,6 @@
 
 package org.polypheny.db.catalog.allocation;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -25,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -33,18 +30,13 @@ import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
@@ -139,12 +131,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
         return deserialize( serialize(), PolyAllocRelCatalog.class );
     }
 
-
     // move to Snapshot
-    @Override
-    public List<AllocationTable> getAllocationsOnAdapter( long id ) {
-        return null;
-    }
 
 
     @Nullable
@@ -195,60 +182,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public CatalogColumnPlacement getColumnPlacement( long adapterId, long columnId ) {
-        return allocations.get( adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) ) ).placements.stream().filter( p -> p.columnId == columnId ).findFirst().orElse( null );
-    }
-
-
-    @Override
-    public boolean checkIfExistsColumnPlacement( long adapterId, long columnId ) {
-        return allocations.get( adapterLogicalToAllocId.get( Pair.of( adapterId, columnId ) ) ).placements.stream().anyMatch( p -> p.columnId == columnId );
-    }
-
-
-    @Override
-    public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
-        return logicalColumnToPlacements.get( columnId );
-    }
-
-
-    @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId ) {
-        return adapterLogicalTableToAllocs.get( Pair.of( adapterId, tableId ) ).stream().flatMap( a -> a.placements.stream() ).collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( long adapterId ) {
-        return adapterToAllocs.get( adapterId ).stream().flatMap( a -> a.placements.stream() ).collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
-        return null;
-    }
-
-
-    @Override
-    public ImmutableMap<Long, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public long getPartitionGroupByPartition( long partitionId ) {
-        return 0;
-    }
-
-
-    @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId ) {
-        return null;
-    }
-
-
-    @Override
     public void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType ) {
 
     }
@@ -285,12 +218,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public CatalogPartitionGroup getPartitionGroup( long partitionGroupId ) {
-        return null;
-    }
-
-
-    @Override
     public long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
         return 0;
     }
@@ -299,18 +226,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public void deletePartition( long tableId, long schemaId, long partitionId ) {
 
-    }
-
-
-    @Override
-    public CatalogPartition getPartition( long partitionId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartition> getPartitionsByTable( long tableId ) {
-        return null;
     }
 
 
@@ -329,18 +244,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty ) {
 
-    }
-
-
-    @Override
-    public List<CatalogPartitionGroup> getPartitionGroups( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionGroup> getPartitionGroups( Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
     }
 
 
@@ -365,102 +268,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
 
-    }
-
-
-    @Override
-    public List<CatalogPartition> getPartitions( long partitionGroupId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartition> getPartitions( Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public List<String> getPartitionGroupNames( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<Long> getPartitionGroupsOnDataPlacement( long adapterId, long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogDataPlacement getDataPlacement( long adapterId, long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getAllFullDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
-        return null;
     }
 
 
@@ -555,36 +362,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public CatalogPartitionPlacement getPartitionPlacement( long adapterId, long partitionId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( long adapterId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId ) {
-        return null;
-    }
-
-
-    @Override
     public void addTableToPeriodicProcessing( long tableId ) {
 
     }
@@ -594,18 +371,5 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     public void removeTableFromPeriodicProcessing( long tableId ) {
 
     }
-
-
-    @Override
-    public boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId ) {
-        return false;
-    }
-
-
-    @Override
-    public List<AllocationTable> getAllocationsFromLogical( long logicalId ) {
-        return logicalTableToAllocs.get( logicalId );
-    }
-
 
 }

@@ -3391,7 +3391,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     private @Nullable CatalogEntity findTable( String tableName, boolean caseSensitive ) {
-        return snapshot.getLogicalTable( List.of( tableName ) );
+        return snapshot.getNamespaces( null ).stream().map( n -> snapshot.getRelSnapshot( n.id ).getLogicalTable( tableName ) ).filter( Objects::isNull ).findFirst().orElse( null );
     }
 
 

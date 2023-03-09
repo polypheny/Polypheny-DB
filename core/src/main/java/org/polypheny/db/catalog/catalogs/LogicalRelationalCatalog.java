@@ -16,13 +16,19 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -308,5 +314,16 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param indexId The id of the index to drop
      */
     public abstract void deleteIndex( long indexId );
+
+    ImmutableMap<Long, LogicalTable> getTables();
+
+    ImmutableMap<Long, LogicalColumn> getColumns();
+
+    LogicalNamespace getLogicalNamespace();
+
+    ImmutableMap<Long, CatalogIndex> getIndexes();
+
+    ImmutableMap<Long, CatalogKey> getKeys();
+
 
 }
