@@ -63,6 +63,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -317,9 +318,8 @@ public class MqlToAlgConverter {
 
 
     private CatalogEntity getEntity( MqlCollectionStatement query, String dbSchemaName ) {
-        List<String> names = ImmutableList.of( dbSchemaName, query.getCollection() );
-
-        return snapshot.getEntity( names );
+        LogicalNamespace namespace = snapshot.getNamespace( dbSchemaName );
+        return snapshot.getDocSnapshot( namespace.id ).getCollection( query.getCollection() );
 
         /*
         if ( table == null || table.getEntity() == null ) {

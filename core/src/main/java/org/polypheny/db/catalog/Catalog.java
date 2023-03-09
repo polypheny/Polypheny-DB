@@ -241,4 +241,10 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract Snapshot getSnapshot();
 
 
+    public abstract Map<Long, org.polypheny.db.catalog.entity.CatalogUser> getUsers();
+
+    public abstract Map<Long, org.polypheny.db.catalog.entity.CatalogAdapter> getAdapters();
+
+    public abstract Map<Long, org.polypheny.db.catalog.entity.CatalogQueryInterface> getInterfaces();
+
 }

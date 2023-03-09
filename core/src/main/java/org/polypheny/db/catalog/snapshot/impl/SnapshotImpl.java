@@ -19,18 +19,19 @@ package org.polypheny.db.catalog.snapshot.impl;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -50,120 +51,123 @@ public class SnapshotImpl implements Snapshot {
     ImmutableMap<Long, LogicalGraphSnapshot> graphs;
     AllocSnapshot alloc;
     PhysicalSnapshot physical;
+    @Getter
     long id;
+    ImmutableMap<Long, CatalogUser> users;
+
+    ImmutableMap<String, CatalogUser> userNames;
+    ImmutableMap<Long, CatalogQueryInterface> interfaces;
+
+    ImmutableMap<String, CatalogQueryInterface> interfaceNames;
+    ImmutableMap<Long, CatalogAdapter> adapters;
+
+    ImmutableMap<String, CatalogAdapter> adapterNames;
+
+    ImmutableMap<Long, LogicalNamespace> namespaces;
+
+    ImmutableMap<String, LogicalNamespace> namespaceNames;
 
 
-    public SnapshotImpl( long id, Map<Long, LogicalRelSnapshot> relationals, Map<Long, LogicalDocSnapshot> documents, Map<Long, LogicalGraphSnapshot> graphs, AllocSnapshot alloc, PhysicalSnapshot physical ) {
+    public SnapshotImpl( long id, Catalog catalog, Map<Long, LogicalNamespace> namespaces, Map<Long, LogicalRelSnapshot> relationals, Map<Long, LogicalDocSnapshot> documents, Map<Long, LogicalGraphSnapshot> graphs, AllocSnapshot alloc, PhysicalSnapshot physical ) {
         this.id = id;
         this.relationals = ImmutableMap.copyOf( relationals );
         this.documents = ImmutableMap.copyOf( documents );
         this.graphs = ImmutableMap.copyOf( graphs );
 
+        this.namespaces = ImmutableMap.copyOf( namespaces );
+
+        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.caseSensitive ? n.name : n.name.toLowerCase(), n -> n ) ) );
+
         this.alloc = alloc;
 
         this.physical = physical;
+        this.users = ImmutableMap.copyOf( catalog.getUsers() );
+        this.userNames = ImmutableMap.copyOf( users.values().stream().collect( Collectors.toMap( u -> u.name, u -> u ) ) );
+        this.interfaces = ImmutableMap.copyOf( catalog.getInterfaces() );
+        this.interfaceNames = ImmutableMap.copyOf( interfaces.values().stream().collect( Collectors.toMap( i -> i.name, i -> i ) ) );
+        this.adapters = ImmutableMap.copyOf( catalog.getAdapters() );
+        this.adapterNames = ImmutableMap.copyOf( adapters.values().stream().collect( Collectors.toMap( a -> a.uniqueName, a -> a ) ) );
     }
 
 
     @Override
-    public long getId() {
-        return 0;
-    }
-
-
-    @Override
-    public @NonNull List<LogicalNamespace> getNamespaces( Pattern name ) {
-        return null;
+    public @NonNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name ) {
+        if ( name == null ) {
+            return namespaces.values().asList();
+        }
+        return namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( name.toRegex() ) : n.name.toLowerCase().matches( name.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
     }
 
 
     @Override
     public LogicalNamespace getNamespace( long id ) {
-        return null;
+        return namespaces.get( id );
     }
 
 
     @Override
     public LogicalNamespace getNamespace( String name ) {
-        return null;
+        return namespaceNames.get( name );
     }
 
 
     @Override
     public boolean checkIfExistsNamespace( String name ) {
-        return false;
+        return namespaceNames.containsKey( name );
     }
 
 
     @Override
     public CatalogUser getUser( String name ) throws UnknownUserException {
-        return null;
+        return userNames.get( name );
     }
 
 
     @Override
     public CatalogUser getUser( long id ) {
-        return null;
+        return users.get( id );
     }
 
 
     @Override
     public List<CatalogAdapter> getAdapters() {
-        return null;
+        return adapters.values().asList();
     }
 
 
     @Override
     public CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException {
-        return null;
+        return adapterNames.get( uniqueName );
     }
 
 
     @Override
     public CatalogAdapter getAdapter( long id ) {
-        return null;
+        return adapters.get( id );
     }
 
 
     @Override
     public boolean checkIfExistsAdapter( long id ) {
-        return false;
+        return adapters.containsKey( id );
     }
 
 
     @Override
     public List<CatalogQueryInterface> getQueryInterfaces() {
-        return null;
+        return interfaces.values().asList();
     }
 
 
     @Override
     public CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException {
-        return null;
+        return interfaceNames.get( uniqueName );
     }
 
 
     @Override
     public CatalogQueryInterface getQueryInterface( long id ) {
-        return null;
-    }
-
-
-    @Override
-    public List<AllocationEntity<?>> getAllocationsOnAdapter( long id ) {
-        return null;
-    }
-
-
-    @Override
-    public List<PhysicalEntity<?>> getPhysicalsOnAdapter( long adapterId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogIndex> getIndexes() {
-        return null;
+        return interfaces.get( id );
     }
 
 
@@ -175,49 +179,7 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public CatalogEntity getEntity( long id ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogEntity getEntity( long namespaceId, String name ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogEntity getEntity( long namespaceId, Pattern name ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogEntity getEntity( List<String> names ) {
-        return null;
-    }
-
-
-    @Override
-    public boolean checkIfExistsEntity( String entityName ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean checkIfExistsEntity( long tableId ) {
-        return false;
-    }
-
-
-    @Override
-    public LogicalNamespace getLogicalNamespace() {
-        return null;
-    }
-
-
-    @Override
-    public LogicalEntity getEntity( String name ) {
-        return null;
+        return relationals.values().stream().map( r -> r.getLogicalTable( id ) ).findFirst().orElse( null );
     }
 
 
@@ -248,6 +210,12 @@ public class SnapshotImpl implements Snapshot {
     @Override
     public AllocSnapshot getAllocSnapshot() {
         return alloc;
+    }
+
+
+    @Override
+    public List<CatalogIndex> getIndexes() {
+        return relationals.values().stream().flatMap( r -> r.getIndexes().stream() ).collect( Collectors.toList() );
     }
 
 }

@@ -246,9 +246,9 @@ public class DdlManagerImpl extends DdlManager {
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
             // Make sure the table name is unique
             String tableName = entry.getKey();
-            if ( catalog.getSnapshot().checkIfExistsEntity( tableName ) ) { // apparently we put them all into 1?
+            if ( catalog.getSnapshot().getRelSnapshot( defaultNamespaceId ).checkIfExistsEntity( tableName ) ) { // apparently we put them all into 1?
                 int i = 0;
-                while ( catalog.getSnapshot().checkIfExistsEntity( tableName + i ) ) {
+                while ( catalog.getSnapshot().getRelSnapshot( defaultNamespaceId ).checkIfExistsEntity( tableName + i ) ) {
                     i++;
                 }
                 tableName += i;

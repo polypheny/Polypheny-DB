@@ -486,7 +486,7 @@ public abstract class Adapter {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity<?>> physicalsOnAdapter = snapshot.getPhysicalsOnAdapter( adapterId );
+            List<PhysicalEntity<?>> physicalsOnAdapter = snapshot.getPhysicalSnapshot().getPhysicalsOnAdapter( adapterId );
 
             for ( PhysicalEntity<?> entity : physicalsOnAdapter ) {
                 if ( entity.namespaceType != NamespaceType.RELATIONAL ) {

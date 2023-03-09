@@ -24,7 +24,6 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -227,6 +226,8 @@ public interface LogicalRelSnapshot {
      */
     public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException;
 
+    public abstract List<CatalogIndex> getIndexes();
+
     /**
      * Gets a collection of index for the given key.
      *
@@ -278,20 +279,12 @@ public interface LogicalRelSnapshot {
      */
     public abstract CatalogIndex getIndex( long indexId );
 
-    //// LOGICAL ENTITIES
-    @Deprecated
-    LogicalTable getLogicalTable( List<String> names );
-
 
     LogicalTable getLogicalTable( long id );
 
     LogicalTable getLogicalTable( String name );
 
-    List<LogicalTable> getLogicalTables( long namespaceId, Pattern name );
-
     LogicalColumn getLogicalColumn( long id );
-
-    LogicalNamespace getNamespace( long id );
 
     boolean checkIfExistsEntity( String newName );
 

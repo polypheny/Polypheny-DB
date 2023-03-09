@@ -19,9 +19,14 @@ package org.polypheny.db.catalog.snapshot.impl;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
@@ -32,15 +37,16 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 
 public class SnapshotBuilder {
 
-    public static Snapshot createSnapshot( long id, Map<Long, LogicalCatalog> logicalCatalogs, Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, PhysicalCatalog> physicalCatalogs ) {
+    public static Snapshot createSnapshot( long id, Catalog catalog, Map<Long, LogicalCatalog> logicalCatalogs, Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, PhysicalCatalog> physicalCatalogs ) {
         Map<Long, LogicalRelSnapshot> rels = buildRelSnapshots( logicalCatalogs );
         Map<Long, LogicalDocSnapshot> docs = buildDocSnapshots( logicalCatalogs );
         Map<Long, LogicalGraphSnapshot> graphs = buildGraphSnapshots( logicalCatalogs );
 
         AllocSnapshot alloc = buildAlloc( allocationCatalogs );
         PhysicalSnapshot physical = buildPhysical( physicalCatalogs );
+        Map<Long, LogicalNamespace> namespaces = logicalCatalogs.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getLogicalNamespace() ) );
 
-        return new SnapshotImpl( id, rels, docs, graphs, alloc, physical );
+        return new SnapshotImpl( id, catalog, namespaces, rels, docs, graphs, alloc, physical );
     }
 
 
@@ -59,7 +65,7 @@ public class SnapshotBuilder {
                 .entrySet()
                 .stream()
                 .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.GRAPH )
-                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalGraphSnapshotImpl( e.getValue() ) ) );
+                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalGraphSnapshotImpl( (LogicalGraphCatalog) e.getValue() ) ) );
     }
 
 
@@ -68,7 +74,7 @@ public class SnapshotBuilder {
                 .entrySet()
                 .stream()
                 .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.DOCUMENT )
-                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalDocSnapshotImpl( e.getValue() ) ) );
+                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalDocSnapshotImpl( (LogicalDocumentCatalog) e.getValue() ) ) );
     }
 
 
@@ -77,7 +83,7 @@ public class SnapshotBuilder {
                 .entrySet()
                 .stream()
                 .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.RELATIONAL )
-                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalRelSnapshotImpl( e.getValue() ) ) );
+                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalRelSnapshotImpl( (LogicalRelationalCatalog) e.getValue() ) ) );
     }
 
 }

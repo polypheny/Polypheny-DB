@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -30,10 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -62,7 +60,7 @@ public interface Snapshot extends OperatorTable {
      * @param name Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract @NonNull List<LogicalNamespace> getNamespaces( Pattern name );
+    public abstract @NonNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
 
     /**
      * Returns the schema with the specified id.
@@ -161,28 +159,12 @@ public interface Snapshot extends OperatorTable {
     public abstract CatalogQueryInterface getQueryInterface( long id );
 
 
-    public abstract List<AllocationEntity<?>> getAllocationsOnAdapter( long id );
-
-
-    public abstract List<PhysicalEntity<?>> getPhysicalsOnAdapter( long adapterId );
-
-
-    public abstract List<CatalogIndex> getIndexes();
-
 
     public abstract List<LogicalTable> getTablesForPeriodicProcessing();
 
     //// ENTITIES
 
     CatalogEntity getEntity( long id );
-
-    CatalogEntity getEntity( long namespaceId, String name );
-
-    CatalogEntity getEntity( long namespaceId, Pattern name );
-
-    @Deprecated
-    CatalogEntity getEntity( List<String> names );
-
 
     //// OTHERS
 
@@ -197,28 +179,6 @@ public interface Snapshot extends OperatorTable {
     }
 
 
-    /**
-     * Checks if there is a table with the specified name in the specified schema.
-     *
-     * @param entityName The name to check for
-     * @return true if there is a table with this name, false if not.
-     */
-    public abstract boolean checkIfExistsEntity( String entityName );
-
-    /**
-     * Checks if there is a table with the specified id.
-     *
-     * @param tableId id of the table
-     * @return true if there is a table with this id, false if not.
-     */
-    public abstract boolean checkIfExistsEntity( long tableId );
-
-    LogicalNamespace getLogicalNamespace();
-
-
-    LogicalEntity getEntity( String name );
-
-
     public abstract LogicalDocSnapshot getDocSnapshot( long namespaceId );
 
     public abstract LogicalGraphSnapshot getGraphSnapshot( long namespaceId );
@@ -231,5 +191,7 @@ public interface Snapshot extends OperatorTable {
 
     public abstract AllocSnapshot getAllocSnapshot();
 
+
+    List<CatalogIndex> getIndexes();
 
 }

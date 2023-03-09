@@ -17,14 +17,14 @@
 package org.polypheny.db.catalog.snapshot.impl;
 
 import java.util.List;
-import org.polypheny.db.catalog.catalogs.LogicalCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 
 public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
-    public LogicalGraphSnapshotImpl( LogicalCatalog value ) {
+    public LogicalGraphSnapshotImpl( LogicalGraphCatalog value ) {
     }
 
 

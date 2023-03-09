@@ -87,12 +87,15 @@ public class PolyCatalog extends Catalog implements Serializable {
     public final Map<Long, PhysicalCatalog> physicalCatalogs;
 
     @Serialize
+    @Getter
     public final Map<Long, CatalogUser> users;
 
     @Serialize
+    @Getter
     public final Map<Long, CatalogAdapter> adapters;
 
     @Serialize
+    @Getter
     public final Map<Long, CatalogQueryInterface> interfaces;
 
     private final IdBuilder idBuilder = IdBuilder.getInstance();
@@ -282,7 +285,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     private void updateSnapshot() {
-        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), logicalCatalogs, allocationCatalogs, physicalCatalogs );
+        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
     }
 
 
@@ -533,7 +536,6 @@ public class PolyCatalog extends Catalog implements Serializable {
     public void clear() {
         log.error( "clearing" );
     }
-
 
 
     @Override

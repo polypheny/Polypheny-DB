@@ -50,4 +50,6 @@ public interface LogicalDocSnapshot {
     List<LogicalCollection> getLogicalCollections( long namespaceId, Pattern name );
 
 
+    LogicalCollection getCollection( String collection );
+
 }

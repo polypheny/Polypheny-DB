@@ -38,7 +38,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -63,7 +62,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Long, List<CatalogKey>> tableKeys;
 
-    ImmutableMap<Long, CatalogIndex> indexes;
+    ImmutableMap<Long, CatalogIndex> index;
+
+    ImmutableMap<Long, List<CatalogIndex>> keyToIndexes;
 
     ImmutableMap<Pair<Long, Long>, LogicalColumn> tableColumnIdColumn;
 
@@ -75,9 +76,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public LogicalRelSnapshotImpl( LogicalRelationalCatalog catalog ) {
         namespace = catalog.getLogicalNamespace();
         tables = ImmutableMap.copyOf( catalog.getTables() );
-        tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> e.getValue().name, Entry::getValue ) ) );
+        tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> namespace.caseSensitive ? e.getValue().name : e.getValue().name.toLowerCase(), Entry::getValue ) ) );
         columns = ImmutableMap.copyOf( catalog.getColumns() );
-        columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> e.getValue().name, Entry::getValue ) ) );
+        columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespace.caseSensitive ? e.getValue().name : e.getValue().name.toLowerCase(), Entry::getValue ) ) );
 
         Map<Long, List<LogicalColumn>> tableChildren = new HashMap<>();
         columns.forEach( ( k, v ) -> {
@@ -106,7 +107,17 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( tables.get( c.getValue().tableId ).name, c.getValue().name ), Entry::getValue ) ) );
         this.tableIdColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().name ), Entry::getValue ) ) );
 
-        this.indexes = catalog.getIndexes();
+        this.index = catalog.getIndexes();
+
+        Map<Long, List<CatalogIndex>> keyToIndexes = new HashMap<>();
+        this.index.forEach( ( k, v ) -> {
+            if ( keyToIndexes.containsKey( v.keyId ) ) {
+                keyToIndexes.get( v.keyId ).add( v );
+            } else {
+                keyToIndexes.put( v.keyId, new ArrayList<>( List.of( v ) ) );
+            }
+        } );
+        this.keyToIndexes = ImmutableMap.copyOf( keyToIndexes );
 
     }
 
@@ -258,80 +269,68 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
+    public List<CatalogIndex> getIndexes() {
+        return index.values().asList();
+    }
+
+
+    @Override
     public List<CatalogIndex> getIndexes( CatalogKey key ) {
-        return indexes.get( key.id );
+        return keyToIndexes.get( key.id );
     }
 
 
     @Override
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
-        return null;
+        return keyToIndexes.get( key.id );
     }
 
 
     @Override
     public List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique ) {
-        return null;
+        return tableKeys.get( tableId ).stream().flatMap( k -> getIndexes( k ).stream() ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException {
-        return null;
+    public CatalogIndex getIndex( long tableId, String indexName ) {
+        return getIndex().values().stream().filter( i -> i.getKey().tableId == tableId && i.name.equals( indexName ) ).findFirst().orElse( null );
     }
 
 
     @Override
     public boolean checkIfExistsIndex( long tableId, String indexName ) {
-        return false;
+        return getIndex( tableId, indexName ) != null;
     }
 
 
     @Override
     public CatalogIndex getIndex( long indexId ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalTable getLogicalTable( List<String> names ) {
-        return null;
+        return index.get( indexId );
     }
 
 
     @Override
     public LogicalTable getLogicalTable( long id ) {
-        return null;
+        return tables.get( id );
     }
 
 
     @Override
     public LogicalTable getLogicalTable( String name ) {
-        return null;
-    }
-
-
-    @Override
-    public List<LogicalTable> getLogicalTables( long namespaceId, Pattern name ) {
-        return null;
+        return tableNames.get( name );
     }
 
 
     @Override
     public LogicalColumn getLogicalColumn( long id ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalNamespace getNamespace( long id ) {
-        return null;
+        return columns.get( id );
     }
 
 
     @Override
     public boolean checkIfExistsEntity( String newName ) {
-        return false;
+        return tableNames.containsKey( newName );
     }
 
 }

@@ -17,14 +17,14 @@
 package org.polypheny.db.catalog.snapshot.impl;
 
 import java.util.List;
-import org.polypheny.db.catalog.catalogs.LogicalCatalog;
+import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 
 public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
-    public LogicalDocSnapshotImpl( LogicalCatalog value ) {
+    public LogicalDocSnapshotImpl( LogicalDocumentCatalog value ) {
 
     }
 
@@ -61,6 +61,12 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     @Override
     public List<LogicalCollection> getLogicalCollections( long namespaceId, Pattern name ) {
+        return null;
+    }
+
+
+    @Override
+    public LogicalCollection getCollection( String collection ) {
         return null;
     }
 
