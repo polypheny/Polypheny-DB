@@ -16,20 +16,14 @@
 
 package org.polypheny.db.catalog.entity;
 
-import java.util.List;
-import java.util.Map;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.partition.properties.PartitionProperty;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
@@ -52,18 +46,12 @@ public class CatalogMaterializedView extends CatalogView {
     public CatalogMaterializedView(
             long id,
             String name,
-            List<LogicalColumn> columns,
             long namespaceId,
-            String namespaceName,
             EntityType entityType,
             String query,
             Long primaryKey,
-            @NonNull List<Long> dataPlacements,
             boolean modifiable,
-            PartitionProperty partitionProperty,
             AlgCollation algCollation,
-            List<Long> connectedViews,
-            Map<Long, List<Long>> underlyingTables,
             String language,
             MaterializedCriteria materializedCriteria,
             boolean ordered
@@ -71,18 +59,12 @@ public class CatalogMaterializedView extends CatalogView {
         super(
                 id,
                 name,
-                namespaceName,
-                columns,
                 namespaceId,
                 entityType,
                 query,
                 primaryKey,
-                dataPlacements,
                 modifiable,
-                partitionProperty,
                 algCollation,
-                connectedViews,
-                underlyingTables,
                 language );
         this.query = query;
         this.algCollation = algCollation;

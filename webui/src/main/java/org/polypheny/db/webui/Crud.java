@@ -302,17 +302,12 @@ public class Crud implements InformationObserver {
 
         // determine if it is a view or a table
         LogicalTable catalogTable;
-        try {
-            catalogTable = catalog.getSnapshot().getRelSnapshot( catalog.getSnapshot().getNamespace( t[0] ).id ).getTable( t[1] );
-            result.setNamespaceType( catalogTable.getNamespaceType() );
-            if ( catalogTable.modifiable ) {
-                result.setType( ResultType.TABLE );
-            } else {
-                result.setType( ResultType.VIEW );
-            }
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception", e );
-            return result.setError( "Could not retrieve type of Result (table/view)." );
+        catalogTable = catalog.getSnapshot().getRelSnapshot( catalog.getSnapshot().getNamespace( t[0] ).id ).getTable( t[1] );
+        result.setNamespaceType( catalogTable.getNamespaceType() );
+        if ( catalogTable.modifiable ) {
+            result.setType( ResultType.TABLE );
+        } else {
+            result.setType( ResultType.VIEW );
         }
 
         //get headers with default values
@@ -658,7 +653,9 @@ public class Crud implements InformationObserver {
         StringJoiner columns = new StringJoiner( ",", "(", ")" );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        List<LogicalColumn> logicalColumns = catalog.getSnapshot().getRelSnapshot( catalog.getLogicalEntity( tableId ).namespaceId ).getColumns( new org.polypheny.db.catalog.logistic.Pattern( split[1] ), null );
+        String finalTableId = tableId;
+        LogicalTable table = catalog.getSnapshot().getNamespaces( null ).stream().map( n -> catalog.getSnapshot().getRelSnapshot( n.id ).getTable( finalTableId ) ).findFirst().orElse( null );
+        List<LogicalColumn> logicalColumns = catalog.getSnapshot().getRelSnapshot( table.namespaceId ).getColumns( new org.polypheny.db.catalog.logistic.Pattern( split[1] ), null );
         try {
             int i = 0;
             for ( LogicalColumn logicalColumn : logicalColumns ) {
@@ -948,8 +945,11 @@ public class Crud implements InformationObserver {
     private String computeWherePK( final String tableName, final String columnName, final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         Map<String, LogicalColumn> catalogColumns = getCatalogColumns( tableName, columnName );
-        LogicalTable catalogTable;
-        catalogTable = catalog.getLogicalEntity( tableName ).unwrap( LogicalTable.class );
+        if ( catalogColumns.isEmpty() ) {
+            throw new RuntimeException();
+        }
+
+        LogicalTable catalogTable = catalog.getSnapshot().getRelSnapshot( catalogColumns.values().iterator().next().namespaceId ).getTable( tableName );
         CatalogPrimaryKey pk = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getPrimaryKey( catalogTable.primaryKey );
         for ( long colId : pk.columnIds ) {
             String colName = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumn( colId ).name;
@@ -1120,44 +1120,38 @@ public class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         ArrayList<DbColumn> cols = new ArrayList<>();
 
-        try {
-            LogicalNamespace namespace = catalog.getSnapshot().getNamespace( t[0] );
-            LogicalTable catalogTable = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
-            ArrayList<String> primaryColumns;
-            if ( catalogTable.primaryKey != null ) {
-                CatalogPrimaryKey primaryKey = catalog.getSnapshot().getRelSnapshot( namespace.id ).getPrimaryKey( catalogTable.primaryKey );
-                primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
-            } else {
-                primaryColumns = new ArrayList<>();
-            }
-            for ( LogicalColumn logicalColumn : catalog.getSnapshot().getRelSnapshot( namespace.id ).getColumns( catalogTable.id ) ) {
-                String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
-                String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
-                cols.add(
-                        new DbColumn(
-                                logicalColumn.name,
-                                logicalColumn.type.getName(),
-                                collectionsType,
-                                logicalColumn.nullable,
-                                logicalColumn.length,
-                                logicalColumn.scale,
-                                logicalColumn.dimension,
-                                logicalColumn.cardinality,
-                                primaryColumns.contains( logicalColumn.name ),
-                                defaultValue ) );
-            }
-            result = new Result( cols.toArray( new DbColumn[0] ), null );
-            if ( catalogTable.entityType == EntityType.ENTITY ) {
-                result.setType( ResultType.TABLE );
-            } else if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
-                result.setType( ResultType.MATERIALIZED );
-            } else {
-                result.setType( ResultType.VIEW );
-            }
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception while getting a column", e );
-            ctx.status( 400 ).json( new Result( e ) );
-            return;
+        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( t[0] );
+        LogicalTable catalogTable = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
+        ArrayList<String> primaryColumns;
+        if ( catalogTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = catalog.getSnapshot().getRelSnapshot( namespace.id ).getPrimaryKey( catalogTable.primaryKey );
+            primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+        } else {
+            primaryColumns = new ArrayList<>();
+        }
+        for ( LogicalColumn logicalColumn : catalog.getSnapshot().getRelSnapshot( namespace.id ).getColumns( catalogTable.id ) ) {
+            String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
+            String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
+            cols.add(
+                    new DbColumn(
+                            logicalColumn.name,
+                            logicalColumn.type.getName(),
+                            collectionsType,
+                            logicalColumn.nullable,
+                            logicalColumn.length,
+                            logicalColumn.scale,
+                            logicalColumn.dimension,
+                            logicalColumn.cardinality,
+                            primaryColumns.contains( logicalColumn.name ),
+                            defaultValue ) );
+        }
+        result = new Result( cols.toArray( new DbColumn[0] ), null );
+        if ( catalogTable.entityType == EntityType.ENTITY ) {
+            result.setType( ResultType.TABLE );
+        } else if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
+            result.setType( ResultType.MATERIALIZED );
+        } else {
+            result.setType( ResultType.VIEW );
         }
 
         ctx.json( result );
@@ -3197,14 +3191,10 @@ public class Crud implements InformationObserver {
         LogicalTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
-            try {
-                LogicalNamespace namespace = crud.catalog.getSnapshot().getNamespace( t[0] );
+            LogicalNamespace namespace = crud.catalog.getSnapshot().getNamespace( t[0] );
 
-                catalogTable = crud.catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
-                entityType = catalogTable.entityType;
-            } catch ( UnknownTableException e ) {
-                log.error( "Caught exception", e );
-            }
+            catalogTable = crud.catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
+            entityType = catalogTable.entityType;
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();

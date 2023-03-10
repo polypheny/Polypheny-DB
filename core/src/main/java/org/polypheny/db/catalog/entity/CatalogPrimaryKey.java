@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,14 +31,19 @@ import org.apache.commons.lang.NotImplementedException;
 @EqualsAndHashCode(callSuper = true)
 public final class CatalogPrimaryKey extends CatalogKey {
 
+    @Serialize
+    private final CatalogKey key;
 
-    public CatalogPrimaryKey( @NonNull final CatalogKey catalogKey ) {
+
+    public CatalogPrimaryKey( @Deserialize("key") @NonNull final CatalogKey key ) {
         super(
-                catalogKey.id,
-                catalogKey.tableId,
-                catalogKey.namespaceId,
-                catalogKey.columnIds,
+                key.id,
+                key.tableId,
+                key.namespaceId,
+                key.columnIds,
                 EnforcementTime.ON_QUERY );
+
+        this.key = key;
     }
 
 

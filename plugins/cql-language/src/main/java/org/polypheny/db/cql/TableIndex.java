@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 
 
@@ -45,15 +44,11 @@ public class TableIndex {
 
 
     public static TableIndex createIndex( String schemaName, String tableName ) throws UnknownIndexException {
-        try {
-            log.debug( "Creating TableIndex." );
-            Catalog catalog = Catalog.getInstance();
-            LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
-            LogicalTable table = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( tableName );
-            return new TableIndex( table, schemaName, tableName );
-        } catch ( UnknownTableException e ) {
-            throw new UnknownIndexException( "Cannot find a underlying table for the specified table name: " + schemaName + "." + tableName + "." );
-        }
+        log.debug( "Creating TableIndex." );
+        Catalog catalog = Catalog.getInstance();
+        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
+        LogicalTable table = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( tableName );
+        return new TableIndex( table, schemaName, tableName );
     }
 
 

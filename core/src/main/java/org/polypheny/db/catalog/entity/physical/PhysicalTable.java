@@ -78,7 +78,7 @@ public class PhysicalTable extends PhysicalEntity<LogicalTable> {
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( CatalogColumnPlacement placement : placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getLogicalColumn( placement.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumn( placement.columnId );
             AlgDataType sqlType = logicalColumn.getAlgDataType( typeFactory );
             fieldInfo.add( logicalColumn.name, placement.physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
         }

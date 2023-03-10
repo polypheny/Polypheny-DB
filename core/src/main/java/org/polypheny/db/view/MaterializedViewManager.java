@@ -29,7 +29,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 
@@ -68,7 +67,7 @@ public abstract class MaterializedViewManager {
             AlgRoot algRoot,
             CatalogMaterializedView materializedView );
 
-    public abstract void addTables( Transaction transaction, List<String> names );
+    public abstract void addTables( Transaction transaction, List<Long> ids );
 
     public abstract void updateData( Transaction transaction, Long viewId );
 
@@ -80,21 +79,19 @@ public abstract class MaterializedViewManager {
 
 
     /**
-     * to trek updates on tables for materialized views with update freshness
+     * to track updates on tables for materialized views with update freshness
      */
     public static class TableUpdateVisitor extends AlgShuttleImpl {
 
         @Getter
-        private final List<String> names = new ArrayList<>();
+        private final List<Long> ids = new ArrayList<>();
 
 
         @Override
         public AlgNode visit( LogicalRelModify modify ) {
             if ( modify.getOperation() != Modify.Operation.MERGE ) {
                 if ( (modify.getEntity() != null) ) {
-                    LogicalTable table = modify.getEntity().unwrap( LogicalTable.class );
-                    names.add( table.getNamespaceName() );
-                    names.add( table.name );
+                    ids.add( modify.getEntity().id );
                 }
             }
             return super.visit( modify );

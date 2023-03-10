@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core.common;
 
+import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -23,6 +24,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 public abstract class Scan<E extends CatalogEntity> extends AbstractAlgNode {
 
+    @Getter
     public final E entity;
 
 
@@ -36,5 +38,6 @@ public abstract class Scan<E extends CatalogEntity> extends AbstractAlgNode {
         super( cluster, traitSet );
         this.entity = entity;
     }
+
 
 }

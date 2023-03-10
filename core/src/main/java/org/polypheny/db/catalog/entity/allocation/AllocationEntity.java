@@ -16,10 +16,8 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -37,7 +35,7 @@ public abstract class AllocationEntity<L extends LogicalEntity> extends LogicalE
 
 
     protected AllocationEntity( L logical, long id, String name, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( id, name, logical.namespaceId, logical.namespaceName, type, namespaceType );
+        super( id, name, logical.namespaceId, type, namespaceType );
         this.adapterId = adapterId;
         this.logical = logical;
     }

@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -179,7 +180,7 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public CatalogEntity getEntity( long id ) {
-        return relationals.values().stream().map( r -> r.getLogicalTable( id ) ).findFirst().orElse( null );
+        return relationals.values().stream().map( r -> r.getTable( id ) ).findFirst().orElse( null );
     }
 
 
@@ -216,6 +217,34 @@ public class SnapshotImpl implements Snapshot {
     @Override
     public List<CatalogIndex> getIndexes() {
         return relationals.values().stream().flatMap( r -> r.getIndexes().stream() ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public LogicalEntity getLogicalEntity( long id ) {
+        LogicalEntity entity = null;
+        for ( LogicalRelSnapshot value : relationals.values() ) {
+            entity = value.getTable( id );
+            if ( entity != null ) {
+                return entity;
+            }
+        }
+
+        for ( LogicalDocSnapshot value : documents.values() ) {
+            entity = value.getCollection( id );
+            if ( entity != null ) {
+                return entity;
+            }
+        }
+
+        for ( LogicalGraphSnapshot value : graphs.values() ) {
+            entity = value.getGraph( id );
+            if ( entity != null ) {
+                return entity;
+            }
+        }
+
+        return null;
     }
 
 }

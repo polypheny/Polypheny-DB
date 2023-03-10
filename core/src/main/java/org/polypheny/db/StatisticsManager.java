@@ -50,7 +50,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
     public abstract void tablesToUpdate( long tableId );
 
     // Use cache if possible
-    public abstract void tablesToUpdate( long tableId, Map<Long, List<Object>> changedValues, String type, long schemaId );
+    public abstract void tablesToUpdate( long tableId, Map<Long, List<?>> changedValues, String type, long schemaId );
 
     protected abstract void reevaluateTable( long tableId );
 

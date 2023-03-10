@@ -17,29 +17,37 @@
 package org.polypheny.db.catalog.entity;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Value;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 
 
 @EqualsAndHashCode
+@Value
 public class CatalogConstraint implements Serializable {
 
-    public final long id;
-    public final long keyId;
-    public final ConstraintType type;
-    public final String name;
-
-    public final CatalogKey key;
+    @Serialize
+    public long id;
+    @Serialize
+    public long keyId;
+    @Serialize
+    public ConstraintType type;
+    @Serialize
+    public String name;
+    @Serialize
+    public CatalogKey key;
 
 
     public CatalogConstraint(
-            final long id,
-            final long keyId,
-            @NonNull final ConstraintType constraintType,
-            final String name,
-            final CatalogKey key ) {
+            @Deserialize("id") final long id,
+            @Deserialize("keyId") final long keyId,
+            @Deserialize("type") @NonNull final ConstraintType constraintType,
+            @Deserialize("name") final String name,
+            @Deserialize("key") final CatalogKey key ) {
         this.id = id;
         this.keyId = keyId;
         this.type = constraintType;

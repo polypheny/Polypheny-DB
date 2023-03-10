@@ -47,15 +47,8 @@ import org.polypheny.db.util.ImmutableIntList;
  */
 public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
 
-    /**
-     * The entity definition.
-     */
-    public final E entity;
-
-
     protected RelScan( AlgOptCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
         super( cluster, traitSet, entity );
-        this.entity = entity;
     }
 
 

@@ -16,17 +16,11 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
-import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
-import lombok.With;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
@@ -36,14 +30,13 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-//@With
+@SuperBuilder(toBuilder = true)
 public class LogicalCollection extends LogicalEntity implements CatalogObject {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
     @Getter
     public long id;
-    public ImmutableList<Long> placements;
     public String name;
     public long namespaceId;
     public EntityType entityType;
@@ -52,17 +45,14 @@ public class LogicalCollection extends LogicalEntity implements CatalogObject {
 
     public LogicalCollection(
             long namespaceId,
-            String namespaceName,
             long id,
             String name,
-            @NonNull Collection<Long> placements,
             EntityType type,
             String physicalName ) {
-        super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.DOCUMENT );
+        super( id, name, namespaceId, EntityType.ENTITY, NamespaceType.DOCUMENT );
         this.id = id;
         this.namespaceId = namespaceId;
         this.name = name;
-        this.placements = ImmutableList.copyOf( placements );
         this.entityType = type;
         this.physicalName = physicalName;
     }
@@ -73,18 +63,6 @@ public class LogicalCollection extends LogicalEntity implements CatalogObject {
         return new Serializable[0];
     }
 
-
-    public LogicalCollection addPlacement( Long adapterId ) {
-        List<Long> placements = new ArrayList<>( this.placements );
-        placements.add( adapterId );
-        return new LogicalCollection( id, name, namespaceId, namespaceName, placements, EntityType.ENTITY, physicalName );
-    }
-
-
-    public LogicalCollection removePlacement( long adapterId ) {
-        List<Long> placements = this.placements.stream().filter( id -> id != adapterId ).collect( Collectors.toList() );
-        return new LogicalCollection( id, name, namespaceId, namespaceName, placements, EntityType.ENTITY, physicalName );
-    }
 
 
     @Override

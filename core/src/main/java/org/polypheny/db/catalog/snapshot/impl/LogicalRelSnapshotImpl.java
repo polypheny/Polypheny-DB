@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Value;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -56,13 +55,18 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, List<LogicalColumn>> tableColumns;
     ImmutableMap<Long, LogicalColumn> columns;
 
-    ImmutableMap<String, LogicalColumn> columnNames;
+    ImmutableMap<Pair<Long, String>, LogicalColumn> columnNames;
 
     ImmutableMap<Long, CatalogKey> keys;
 
     ImmutableMap<Long, List<CatalogKey>> tableKeys;
 
     ImmutableMap<Long, CatalogIndex> index;
+
+    ImmutableMap<Long, CatalogConstraint> constraints;
+
+    ImmutableMap<Long, CatalogForeignKey> foreignKeys;
+    ImmutableMap<Long, CatalogPrimaryKey> primaryKeys;
 
     ImmutableMap<Long, List<CatalogIndex>> keyToIndexes;
 
@@ -71,54 +75,84 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Pair<String, String>, LogicalColumn> tableColumnNameColumn;
 
     ImmutableMap<Pair<Long, String>, LogicalColumn> tableIdColumnNameColumn;
+    ImmutableMap<Long, List<CatalogConstraint>> tableConstraints;
+    ImmutableMap<Long, List<CatalogForeignKey>> tableForeignKeys;
 
 
     public LogicalRelSnapshotImpl( LogicalRelationalCatalog catalog ) {
         namespace = catalog.getLogicalNamespace();
+
         tables = ImmutableMap.copyOf( catalog.getTables() );
         tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> namespace.caseSensitive ? e.getValue().name : e.getValue().name.toLowerCase(), Entry::getValue ) ) );
+
         columns = ImmutableMap.copyOf( catalog.getColumns() );
-        columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespace.caseSensitive ? e.getValue().name : e.getValue().name.toLowerCase(), Entry::getValue ) ) );
+        columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespace.caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
+
+        //// tables
 
         Map<Long, List<LogicalColumn>> tableChildren = new HashMap<>();
         columns.forEach( ( k, v ) -> {
-            if ( tableChildren.containsKey( v.tableId ) ) {
-                tableChildren.get( v.tableId ).add( v );
-            } else {
-                tableChildren.put( v.tableId, new ArrayList<>( List.of( v ) ) );
+            if ( !tableChildren.containsKey( v.tableId ) ) {
+                tableChildren.put( v.tableId, new ArrayList<>() );
             }
+            tableChildren.get( v.tableId ).add( v );
         } );
         this.tableColumns = ImmutableMap.copyOf( tableChildren );
-
-        keys = catalog.getKeys();
-
-        Map<Long, List<CatalogKey>> tableKeys = new HashMap<>();
-        keys.forEach( ( k, v ) -> {
-            if ( tableKeys.containsKey( v.tableId ) ) {
-                tableKeys.get( v.tableId ).add( v );
-            } else {
-                tableKeys.put( v.tableId, new ArrayList<>( List.of( v ) ) );
-            }
-        } );
-
-        this.tableKeys = ImmutableMap.copyOf( tableKeys );
 
         this.tableColumnIdColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().id ), Entry::getValue ) ) );
         this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( tables.get( c.getValue().tableId ).name, c.getValue().name ), Entry::getValue ) ) );
         this.tableIdColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().name ), Entry::getValue ) ) );
 
-        this.index = catalog.getIndexes();
+        //// KEYS
+
+        keys = ImmutableMap.copyOf( catalog.getKeys() );
+
+        Map<Long, List<CatalogKey>> tableKeys = new HashMap<>();
+        keys.forEach( ( k, v ) -> {
+            if ( !tableKeys.containsKey( v.tableId ) ) {
+                tableKeys.put( v.tableId, new ArrayList<>() );
+            }
+            tableKeys.get( v.tableId ).add( v );
+        } );
+
+        this.tableKeys = ImmutableMap.copyOf( tableKeys );
+
+        this.index = ImmutableMap.copyOf( catalog.getIndexes() );
 
         Map<Long, List<CatalogIndex>> keyToIndexes = new HashMap<>();
         this.index.forEach( ( k, v ) -> {
-            if ( keyToIndexes.containsKey( v.keyId ) ) {
-                keyToIndexes.get( v.keyId ).add( v );
-            } else {
-                keyToIndexes.put( v.keyId, new ArrayList<>( List.of( v ) ) );
+            if ( !keyToIndexes.containsKey( v.keyId ) ) {
+                keyToIndexes.put( v.keyId, new ArrayList<>() );
             }
+            keyToIndexes.get( v.keyId ).add( v );
         } );
         this.keyToIndexes = ImmutableMap.copyOf( keyToIndexes );
 
+        this.foreignKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof CatalogForeignKey ).collect( Collectors.toMap( Entry::getKey, e -> (CatalogForeignKey) e.getValue() ) ) );
+
+        HashMap<Long, List<CatalogForeignKey>> tableForeignKeys = new HashMap<>();
+        foreignKeys.forEach( ( k, v ) -> {
+            if ( !tableForeignKeys.containsKey( v.tableId ) ) {
+                tableForeignKeys.put( v.tableId, new ArrayList<>() );
+            }
+            tableForeignKeys.get( v.tableId ).add( v );
+        } );
+        this.tableForeignKeys = ImmutableMap.copyOf( tableForeignKeys );
+
+        this.primaryKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof CatalogPrimaryKey ).collect( Collectors.toMap( Entry::getKey, e -> (CatalogPrimaryKey) e.getValue() ) ) );
+
+        //// CONSTRAINTS
+
+        this.constraints = ImmutableMap.copyOf( catalog.getConstraints() );
+
+        HashMap<Long, List<CatalogConstraint>> tableConstraints = new HashMap<>();
+        constraints.forEach( ( k, v ) -> {
+            if ( !tableConstraints.containsKey( v.key.tableId ) ) {
+                tableConstraints.put( v.key.tableId, new ArrayList<>() );
+            }
+            tableConstraints.get( v.key.tableId ).add( v );
+        } );
+        this.tableConstraints = ImmutableMap.copyOf( tableConstraints );
     }
 
 
@@ -136,11 +170,6 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         return tables.get( tableId );
     }
 
-
-    @Override
-    public LogicalTable getTable( String tableName ) throws UnknownTableException {
-        return tableNames.get( tableName );
-    }
 
 
     @Override
@@ -178,11 +207,6 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     }
 
 
-    @Override
-    public LogicalColumn getColumn( long columnId ) {
-        return columns.get( columnId );
-    }
-
 
     @Override
     public LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
@@ -204,67 +228,68 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public CatalogPrimaryKey getPrimaryKey( long key ) {
-        return (CatalogPrimaryKey) keys.get( key );
+        return primaryKeys.get( key );
     }
 
 
     @Override
     public boolean isPrimaryKey( long keyId ) {
-        throw new NotImplementedException();
+        return primaryKeys.containsKey( keyId );
     }
 
 
     @Override
     public boolean isForeignKey( long keyId ) {
-        throw new NotImplementedException();
+        return foreignKeys.containsKey( keyId );
     }
 
 
     @Override
     public boolean isIndex( long keyId ) {
-        throw new NotImplementedException();
+        return index.containsKey( keyId );
     }
 
 
     @Override
     public boolean isConstraint( long keyId ) {
-        throw new NotImplementedException();
+        return constraints.containsKey( keyId );
     }
 
 
     @Override
     public List<CatalogForeignKey> getForeignKeys( long tableId ) {
-        throw new NotImplementedException();
+        return tableKeys.get( tableId ).stream().filter( k -> isForeignKey( k.id ) ).map( f -> (CatalogForeignKey) f ).collect( Collectors.toList() );
     }
 
 
     @Override
     public List<CatalogForeignKey> getExportedKeys( long tableId ) {
-        throw new NotImplementedException();
+        return foreignKeys.values().stream().filter( k -> k.referencedKeyTableId == tableId ).collect( Collectors.toList() );
     }
 
 
     @Override
     public List<CatalogConstraint> getConstraints( long tableId ) {
-        throw new NotImplementedException();
+        List<Long> keysOfTable = getTableKeys( tableId ).stream().map( t -> t.id ).collect( Collectors.toList() );
+        return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).collect( Collectors.toList() );
     }
 
 
     @Override
     public List<CatalogConstraint> getConstraints( CatalogKey key ) {
-        throw new NotImplementedException();
+        return constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
     @Override
     public CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException {
-        throw new NotImplementedException();
+        return tableConstraints.get( tableId ).stream().filter( c -> c.name.equals( constraintName ) ).findFirst().orElse( null );
     }
 
 
     @Override
     public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException {
-        throw new NotImplementedException();
+        return tableForeignKeys.get( tableId ).stream().filter( e -> e.name.equals( foreignKeyName ) ).findFirst().orElse( null );
     }
 
 
@@ -311,19 +336,13 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public LogicalTable getLogicalTable( long id ) {
-        return tables.get( id );
-    }
-
-
-    @Override
-    public LogicalTable getLogicalTable( String name ) {
+    public LogicalTable getTable( String name ) {
         return tableNames.get( name );
     }
 
 
     @Override
-    public LogicalColumn getLogicalColumn( long id ) {
+    public LogicalColumn getColumn( long id ) {
         return columns.get( id );
     }
 

@@ -64,7 +64,6 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -272,7 +271,7 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.cardinality,
                         exportedColumn.nullable,
                         Collation.getDefaultCollation() );
-                catalog.getAllocRel( defaultNamespaceId ).addColumnPlacement( catalog.getLogicalEntity( tableId ).unwrap( LogicalTable.class ),
+                catalog.getAllocRel( defaultNamespaceId ).addColumnPlacement( catalog.getSnapshot().getRelSnapshot( defaultNamespaceId ).getTable( tableId ),
                         adapter.getAdapterId(),
                         columnId,
                         PlacementType.STATIC,
@@ -1630,8 +1629,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void alterTableOwner( LogicalTable catalogTable, String newOwnerName ) throws UnknownUserException {
-        CatalogUser catalogUser = catalog.getSnapshot().getUser( newOwnerName );
-        catalog.getLogicalRel( catalogTable.namespaceId ).setTableOwner( catalogTable.id, catalogUser.id );
+        throw new UnsupportedOperationException();
     }
 
 
@@ -1685,7 +1683,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( replace ) {
                 try {
                     dropView( catalog.getSnapshot().getRelSnapshot( namespaceId ).getTable( viewName ), statement );
-                } catch ( UnknownTableException | DdlOnSourceException e ) {
+                } catch ( DdlOnSourceException e ) {
                     throw new RuntimeException( "Unable tp drop the existing View with this name." );
                 }
             } else {
@@ -1815,7 +1813,7 @@ public class DdlManagerImpl extends DdlManager {
 
             for ( DataStore s : stores ) {
                 long adapterId = s.getAdapterId();
-                catalog.getAllocRel( namespaceId ).addColumnPlacement( catalog.getLogicalEntity( tableId ).unwrap( LogicalTable.class ),
+                catalog.getAllocRel( namespaceId ).addColumnPlacement( catalog.getSnapshot().getRelSnapshot( namespaceId ).getTable( tableId ),
                         s.getAdapterId(),
                         columnId,
                         placementType,
@@ -2853,7 +2851,7 @@ public class DdlManagerImpl extends DdlManager {
         addDefaultValue( namespaceId, defaultValue, addedColumnId );
 
         for ( DataStore s : stores ) {
-            catalog.getAllocRel( namespaceId ).addColumnPlacement( catalog.getLogicalEntity( tableId ).unwrap( LogicalTable.class ),
+            catalog.getAllocRel( namespaceId ).addColumnPlacement( catalog.getSnapshot().getRelSnapshot( namespaceId ).getTable( tableId ),
                     s.getAdapterId(),
                     addedColumnId,
                     placementType,

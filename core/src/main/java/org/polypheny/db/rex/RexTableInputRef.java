@@ -39,9 +39,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.plan.AlgOptEntity;
 
 
 /**
@@ -164,7 +163,7 @@ public class RexTableInputRef extends RexInputRef {
 
 
         public List<String> getQualifiedName() {
-            return List.of( table.unwrap( LogicalTable.class ).getNamespaceName(), table.name );
+            return List.of( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).name, table.name );
         }
 
 

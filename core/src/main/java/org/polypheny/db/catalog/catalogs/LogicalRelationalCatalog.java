@@ -16,12 +16,12 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogView;
@@ -97,14 +97,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The id of the table to delete
      */
     public abstract void deleteTable( long tableId );
-
-    /**
-     * Change owner of a table
-     *
-     * @param tableId The if of the table
-     * @param ownerId ID of the new owner
-     */
-    public abstract void setTableOwner( long tableId, long ownerId );
 
     /**
      * Set the primary key of a table
@@ -315,15 +307,16 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      */
     public abstract void deleteIndex( long indexId );
 
-    ImmutableMap<Long, LogicalTable> getTables();
+    Map<Long, LogicalTable> getTables();
 
-    ImmutableMap<Long, LogicalColumn> getColumns();
+    Map<Long, LogicalColumn> getColumns();
 
     LogicalNamespace getLogicalNamespace();
 
-    ImmutableMap<Long, CatalogIndex> getIndexes();
+    Map<Long, CatalogIndex> getIndexes();
 
-    ImmutableMap<Long, CatalogKey> getKeys();
+    Map<Long, CatalogKey> getKeys();
 
+    Map<Long, CatalogConstraint> getConstraints();
 
 }

@@ -23,9 +23,9 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
 /**
@@ -75,8 +75,8 @@ public class StatisticTable<T extends Comparable<T>> {
         this.tableId = tableId;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.getLogicalEntity( tableId ) != null ) {
-            LogicalTable catalogTable = catalog.getLogicalEntity( tableId ).unwrap( LogicalTable.class );
+        if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
+            LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).unwrap( LogicalTable.class );
             this.table = catalogTable.name;
             this.namespaceType = catalogTable.getNamespaceType();
             this.dataPlacements = catalogTable.dataPlacements;

@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -91,12 +90,6 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public LogicalEntity getLogicalEntity( String entityName ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public LogicalEntity getLogicalEntity( long id ) {
         throw new NotImplementedException();
     }
@@ -104,12 +97,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public PhysicalCatalog getPhysical( long namespaceId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public PhysicalEntity<?> getPhysicalEntity( long id ) {
         throw new NotImplementedException();
     }
 

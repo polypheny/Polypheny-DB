@@ -40,6 +40,8 @@ public class IdBuilder {
 
     AtomicLong interfaceId;
 
+    AtomicLong constraintId;
+
     private static IdBuilder INSTANCE;
 
 
@@ -53,6 +55,7 @@ public class IdBuilder {
 
     private IdBuilder() {
         this(
+                new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
@@ -78,7 +81,8 @@ public class IdBuilder {
             AtomicLong indexId,
             AtomicLong keyId,
             AtomicLong adapterId,
-            AtomicLong interfaceId ) {
+            AtomicLong interfaceId,
+            AtomicLong constraintId ) {
         this.snapshotId = snapshotId;
 
         this.databaseId = databaseId;
@@ -90,6 +94,7 @@ public class IdBuilder {
         this.keyId = keyId;
         this.userId = userId;
         this.allocId = allocId;
+        this.constraintId = constraintId;
 
         this.adapterId = adapterId;
         this.interfaceId = interfaceId;
@@ -148,6 +153,11 @@ public class IdBuilder {
 
     public long getNewInterfaceId() {
         return interfaceId.getAndIncrement();
+    }
+
+
+    public long getNewConstraintId() {
+        return constraintId.getAndIncrement();
     }
 
 }

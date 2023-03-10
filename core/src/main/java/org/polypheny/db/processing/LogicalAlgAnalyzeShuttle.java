@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.relational.RelScan;
@@ -54,15 +55,15 @@ import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -287,6 +288,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( RelScan<?> scan ) {
+        if ( scan.getEntity() == null ) {
+            throw new RuntimeException();
+        }
         hashBasis.add( "Scan#" + scan.getEntity().id );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
@@ -394,9 +398,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         this.entityId.add( scan.getEntity().id );
         final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class );
         if ( table != null ) {
-            final List<LogicalColumn> columns = table.columns;
-            final List<String> names = table.getColumnNames();
-            final String baseName = table.getNamespaceName() + "." + table.name + ".";
+            final List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().getRelSnapshot( table.namespaceId ).getColumns( table.id );
+            final List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+            final String baseName = Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ) + "." + table.name + ".";
 
             for ( int i = 0; i < columns.size(); i++ ) {
                 this.availableColumns.putIfAbsent( columns.get( i ).id, baseName + names.get( i ) );
@@ -418,10 +422,11 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     private void handleIfPartitioned( AlgNode node, LogicalTable catalogTable ) {
         // Only if table is partitioned
-        if ( catalogTable.partitionProperty.isPartitioned ) {
+        throw new NotImplementedException();
+        /*if ( Catalog.getInstance().getSnapshot().getAllocSnapshot().isPartitioned( catalogTable.id ) ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
-                    catalogTable.columns.stream().map( c -> c.id ).collect( Collectors.toList()).indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                    catalogTable.columns.stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( catalogTable.partitionProperty.partitionColumnId ) );
             node.accept( whereClauseVisitor );
 
             int scanId = node.getInput( 0 ).getId();
@@ -437,7 +442,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
                             .collect( Collectors.toSet() ) );
                 }
             }
-        }
+        }*/
     }
 
 

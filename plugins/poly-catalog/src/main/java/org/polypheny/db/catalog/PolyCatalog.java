@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.allocation.PolyAllocGraphCatalog;
@@ -46,9 +45,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -166,20 +163,23 @@ public class PolyCatalog extends Catalog implements Serializable {
             addAdapter( "hsqldb", defaultStore.getAdapterName(), AdapterType.STORE, defaultStore.getDefaultSettings() );
 
             // Deploy default CSV view
-            long adapter = addAdapter( "hr", defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource.getDefaultSettings() );
+            addAdapter( "hr", defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource.getDefaultSettings() );
 
             // init schema
-            CatalogAdapter csv = getSnapshot().getAdapter( "hr" );
 
-            long id = getLogicalRel( namespaceId ).addTable( "depts", EntityType.SOURCE, false );
+            getLogicalRel( namespaceId ).addTable( "depts", EntityType.SOURCE, false );
 
-            id = getLogicalRel( namespaceId ).addTable( "emps", EntityType.SOURCE, false );
+            getLogicalRel( namespaceId ).addTable( "emps", EntityType.SOURCE, false );
 
-            id = getLogicalRel( namespaceId ).addTable( "emp", EntityType.SOURCE, false );
+            getLogicalRel( namespaceId ).addTable( "emp", EntityType.SOURCE, false );
 
-            id = getLogicalRel( namespaceId ).addTable( "work", EntityType.SOURCE, false );
+            getLogicalRel( namespaceId ).addTable( "work", EntityType.SOURCE, false );
+
+            updateSnapshot();
+
             try {
-                addDefaultCsvColumns( csv );
+                CatalogAdapter csv = getSnapshot().getAdapter( "hr" );
+                addDefaultCsvColumns( csv, namespaceId );
             } catch ( UnknownTableException | GenericCatalogException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
@@ -195,21 +195,20 @@ public class PolyCatalog extends Catalog implements Serializable {
     /**
      * Initiates default columns for csv files
      */
-    private void addDefaultCsvColumns( CatalogAdapter csv ) throws UnknownTableException, GenericCatalogException, UnknownColumnException, UnknownTableException, UnknownColumnException, GenericCatalogException {
-        LogicalNamespace schema = getSnapshot().getNamespace( "public" );
-        LogicalTable depts = getSnapshot().getRelSnapshot( schema.id ).getTable( "depts" );
+    private void addDefaultCsvColumns( CatalogAdapter csv, long namespaceId ) throws UnknownTableException, UnknownColumnException, GenericCatalogException {
+        LogicalTable depts = getSnapshot().getRelSnapshot( namespaceId ).getTable( "depts" );
 
         addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
 
-        LogicalTable emps = getSnapshot().getRelSnapshot( schema.id ).getTable( "emps" );
+        LogicalTable emps = getSnapshot().getRelSnapshot( namespaceId ).getTable( "emps" );
         addDefaultCsvColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
         addDefaultCsvColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
         addDefaultCsvColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
         addDefaultCsvColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
 
-        LogicalTable emp = getSnapshot().getRelSnapshot( schema.id ).getTable( "emp" );
+        LogicalTable emp = getSnapshot().getRelSnapshot( namespaceId ).getTable( "emp" );
         addDefaultCsvColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
         addDefaultCsvColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
@@ -221,7 +220,7 @@ public class PolyCatalog extends Catalog implements Serializable {
         addDefaultCsvColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
         addDefaultCsvColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
 
-        LogicalTable work = getSnapshot().getRelSnapshot( schema.id ).getTable( "work" );
+        LogicalTable work = getSnapshot().getRelSnapshot( namespaceId ).getTable( "work" );
         addDefaultCsvColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
         addDefaultCsvColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
@@ -232,26 +231,28 @@ public class PolyCatalog extends Catalog implements Serializable {
         addDefaultCsvColumn( csv, work, "attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
         addDefaultCsvColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
 
+        updateSnapshot();
+
         // set all needed primary keys
-        getLogicalRel( schema.id ).addPrimaryKey( depts.id, Collections.singletonList( getSnapshot().getRelSnapshot( schema.id ).getColumn( depts.id, "deptno" ).id ) );
-        getLogicalRel( schema.id ).addPrimaryKey( emps.id, Collections.singletonList( getSnapshot().getRelSnapshot( schema.id ).getColumn( emps.id, "empid" ).id ) );
-        getLogicalRel( schema.id ).addPrimaryKey( emp.id, Collections.singletonList( getSnapshot().getRelSnapshot( schema.id ).getColumn( emp.id, "employeeno" ).id ) );
-        getLogicalRel( schema.id ).addPrimaryKey( work.id, Collections.singletonList( getSnapshot().getRelSnapshot( schema.id ).getColumn( work.id, "employeeno" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( depts.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( depts.id, "deptno" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( emps.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emps.id, "empid" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( emp.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emp.id, "employeeno" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( work.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( work.id, "employeeno" ).id ) );
 
         // set foreign keys
-        getLogicalRel( schema.id ).addForeignKey(
+        getLogicalRel( namespaceId ).addForeignKey(
                 emps.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( schema.id ).getColumn( emps.id, "deptno" ).id ),
+                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emps.id, "deptno" ).id ),
                 depts.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( schema.id ).getColumn( depts.id, "deptno" ).id ),
+                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( depts.id, "deptno" ).id ),
                 "fk_emps_depts",
                 ForeignKeyOption.NONE,
                 ForeignKeyOption.NONE );
-        getLogicalRel( schema.id ).addForeignKey(
+        getLogicalRel( namespaceId ).addForeignKey(
                 work.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( schema.id ).getColumn( work.id, "employeeno" ).id ),
+                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( work.id, "employeeno" ).id ),
                 emp.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( schema.id ).getColumn( emp.id, "employeeno" ).id ),
+                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emp.id, "employeeno" ).id ),
                 "fk_work_emp",
                 ForeignKeyOption.NONE,
                 ForeignKeyOption.NONE );
@@ -306,7 +307,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     private void validateNamespaceType( long id, NamespaceType type ) {
-        if ( getSnapshot().getNamespace( id ).namespaceType != type ) {
+        if ( logicalCatalogs.get( id ).getLogicalNamespace().namespaceType != type ) {
             throw new RuntimeException( "error while retrieving catalog" );
         }
     }
@@ -355,48 +356,8 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
-    public LogicalEntity getLogicalEntity( String entityName ) {
-        throw new NotImplementedException();
-
-        /*for ( LogicalCatalog catalog : logicalCatalogs.values() ) {
-            LogicalEntity entity = catalog.getEntity( entityName );
-            if ( entity != null ) {
-                return entity;
-            }
-        }
-        return null;*/
-    }
-
-
-    @Override
-    public LogicalEntity getLogicalEntity( long id ) {
-        throw new NotImplementedException();
-        /*for ( LogicalCatalog catalog : logicalCatalogs.values() ) {
-            LogicalEntity entity = catalog.getEntity( id );
-            if ( entity != null ) {
-                return entity;
-            }
-        }
-        return null;*/
-    }
-
-
-    @Override
     public PhysicalCatalog getPhysical( long namespaceId ) {
         return physicalCatalogs.get( namespaceId );
-    }
-
-
-    // move to Snapshot
-    @Override
-    public PhysicalEntity<?> getPhysicalEntity( long id ) {
-        for ( PhysicalCatalog catalog : physicalCatalogs.values() ) {
-            PhysicalEntity<?> entity = catalog.getPhysicalEntity( id );
-            if ( entity != null ) {
-                return entity;
-            }
-        }
-        return null;
     }
 
 

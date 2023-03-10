@@ -17,8 +17,6 @@
 package org.polypheny.db.monitoring.statistics;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeSupport;
 import java.math.BigDecimal;
@@ -276,7 +274,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         log.debug( "Reevaluate Row Count." );
 
         statisticQueryInterface.getAllTable().forEach( table -> {
-            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.getInstance().getLogicalEntity( table.id ), null ), NodeType.ROW_COUNT_TABLE ) );
+            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.getInstance().getSnapshot().getLogicalEntity( table.id ), null ), NodeType.ROW_COUNT_TABLE ) );
             updateRowCountPerTable( table.id, rowCount, "SET-ROW-COUNT" );
         } );
     }
@@ -296,7 +294,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         if ( statisticQueryInterface == null ) {
             return;
         }
-        LogicalEntity entity = Catalog.getInstance().getLogicalEntity( tableId );
+        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( tableId );
         if ( entity != null ) {
             deleteTable( entity.namespaceId, tableId );
 
@@ -347,7 +345,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Reevaluates a numerical column, with the configured statistics.
      */
-    private StatisticColumn<?> reevaluateNumericalColumn( QueryResult column ) {
+    private <T extends Comparable<T>> StatisticColumn<?> reevaluateNumericalColumn( QueryResult column ) {
         StatisticQueryResult min = this.prepareNode( column, NodeType.MIN );
         StatisticQueryResult max = this.prepareNode( column, NodeType.MAX );
         Integer count = getNumberColumnCount( this.prepareNode( column, NodeType.ROW_COUNT_COLUMN ) );
@@ -417,12 +415,12 @@ public class StatisticsManagerImpl extends StatisticsManager {
      *
      * @param column the column in which the values should be inserted
      */
-    private <T> void assignUnique( StatisticColumn<T> column, StatisticQueryResult unique ) {
+    private <T> void assignUnique( StatisticColumn<?> column, StatisticQueryResult unique ) {
         if ( unique == null || unique.getData() == null ) {
             return;
         }
         if ( unique.getData().length <= this.buffer ) {
-            column.setUniqueValues( Lists.newArrayList( (T[]) unique.getData() ) );
+            column.setUniqueValues( (List) Arrays.asList( unique.getData() ) );
         } else {
             column.setFull( true );
         }
@@ -432,7 +430,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Reevaluates an alphabetical column, with the configured statistics
      */
-    private StatisticColumn<?> reevaluateAlphabeticalColumn( QueryResult column ) {
+    private <T extends Comparable<T>> StatisticColumn<?> reevaluateAlphabeticalColumn( QueryResult column ) {
         StatisticQueryResult unique = this.prepareNode( column, NodeType.UNIQUE_VALUE );
         Integer count = getNumberColumnCount( this.prepareNode( column, NodeType.ROW_COUNT_COLUMN ) );
 
@@ -477,7 +475,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
             StatisticColumn<?> statisticColumn ) {
         put(
                 statisticSchemaMapCopy,
-                queryResult,
+                queryResult.getColumn().namespaceId,
+                queryResult.getColumn().tableId,
+                queryResult.getColumn().id,
                 statisticColumn );
     }
 
@@ -508,9 +508,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
         StatisticQueryResult statisticQueryColumn = null;
-        if ( Catalog.getInstance().getLogicalEntity( queryResult.getEntity().id ) != null ) {
+        if ( Catalog.getInstance().getSnapshot().getLogicalEntity( queryResult.getEntity().id ) != null ) {
             AlgNode queryNode = getQueryNode( queryResult, nodeType );
-            //queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
         }
         return statisticQueryColumn;
@@ -608,9 +607,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private AlgNode getUniqueValues( QueryResult queryResult, RelScan tableScan, RexBuilder rexBuilder ) {
+    private AlgNode getUniqueValues( QueryResult queryResult, RelScan<?> tableScan, RexBuilder rexBuilder ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
-            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
+            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
                         tableScan,
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
@@ -639,7 +638,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      */
     private AlgNode getColumnCount( QueryResult queryResult, RelScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
-            if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
+            if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
                         tableScan,
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
@@ -661,7 +660,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Gets the amount of entries for a table.
      */
-    private AlgNode getTableCount( RelScan tableScan, AlgOptCluster cluster ) {
+    private AlgNode getTableCount( RelScan<?> tableScan, AlgOptCluster cluster ) {
         AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
         return LogicalAggregate.create(
                 tableScan,
@@ -830,7 +829,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private void workQueue() {
         while ( !this.tablesToUpdate.isEmpty() ) {
             long tableId = this.tablesToUpdate.poll();
-            if ( Catalog.getInstance().getLogicalEntity( tableId ) != null ) {
+            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( tableId ) != null ) {
                 reevaluateTable( tableId );
             }
             tableStatistic.remove( tableId );
@@ -864,9 +863,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * @param schemaId of the table
      */
     @Override
-    public void tablesToUpdate( long tableId, Map<Long, List<Object>> changedValues, String type, long schemaId ) {
+    public void tablesToUpdate( long tableId, Map<Long, List<?>> changedValues, String type, long schemaId ) {
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.getLogicalEntity( tableId ) != null ) {
+        if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
             switch ( type ) {
                 case "INSERT":
                     handleInsert( tableId, changedValues, schemaId, catalog );
@@ -882,7 +881,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private void handleDrop( long tableId, Map<Long, List<Object>> changedValues, long schemaId ) {
+    private void handleDrop( long tableId, Map<Long, List<?>> changedValues, long schemaId ) {
         Map<Long, Map<Long, StatisticColumn<?>>> schema = this.statisticSchemaMap.get( schemaId );
         if ( schema != null ) {
             Map<Long, StatisticColumn<?>> table = this.statisticSchemaMap.get( schemaId ).get( tableId );
@@ -894,8 +893,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleTruncate( long tableId, long schemaId, Catalog catalog ) {
-        LogicalTable catalogTable = catalog.getLogicalEntity( tableId ).unwrap( LogicalTable.class );
-        for ( LogicalColumn column : catalogTable.columns ) {
+        LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).unwrap( LogicalTable.class );
+        for ( LogicalColumn column : catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumns( catalogTable.id ) ) {
             PolyType polyType = column.type;
             QueryResult queryResult = new QueryResult( catalogTable, column );
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( column.id ) != null ) {
@@ -908,37 +907,37 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private <T extends Comparable<T>> StatisticColumn<?> createNewStatisticColumns( PolyType polyType, QueryResult queryResult ) {
+    private <T extends Comparable<?>> StatisticColumn<?> createNewStatisticColumns( PolyType polyType, QueryResult queryResult ) {
         StatisticColumn<?> statisticColumn = null;
         if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
             statisticColumn = new NumericalStatisticColumn( queryResult );
         } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-            statisticColumn = new AlphabeticStatisticColumn<T>( queryResult );
+            statisticColumn = new AlphabeticStatisticColumn<>( queryResult );
         } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-            statisticColumn = new TemporalStatisticColumn<T>( queryResult );
+            statisticColumn = new TemporalStatisticColumn<>( queryResult );
         }
         return statisticColumn;
     }
 
 
-    private void handleInsert( long tableId, Map<Long, List<Object>> changedValues, long schemaId, Catalog catalog ) {
-        LogicalTable catalogTable = catalog.getLogicalEntity( tableId ).unwrap( LogicalTable.class );
+    private void handleInsert( long tableId, Map<Long, List<?>> changedValues, long schemaId, Catalog catalog ) {
+        LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).unwrap( LogicalTable.class );
         if ( this.statisticSchemaMap.get( schemaId ) != null ) {
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ) != null ) {
-                for ( LogicalColumn column : catalogTable.columns ) {
+                for ( LogicalColumn column : catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ) ) {
                     PolyType polyType = column.type;
                     QueryResult queryResult = new QueryResult( catalogTable, column );
                     if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( column.id ) != null && changedValues.get( (long) column.position ) != null ) {
-                        handleInsertColumn( tableId, changedValues, schemaId, catalogTable.columns.stream().map( c -> c.id ).collect( Collectors.toList() ), column.position, queryResult );
+                        handleInsertColumn( tableId, changedValues, schemaId, catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ).stream().map( c -> c.id ).collect( Collectors.toList() ), column.position, queryResult );
                     } else {
                         addNewColumnStatistics( changedValues, column.position, polyType, queryResult );
                     }
                 }
             } else {
-                addInserts( changedValues, catalogTable, catalogTable.columns );
+                addInserts( changedValues, catalogTable, catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ) );
             }
         } else {
-            addInserts( changedValues, catalogTable, catalogTable.columns );
+            addInserts( changedValues, catalogTable, catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ) );
         }
     }
 
@@ -946,7 +945,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Creates new StatisticColumns and inserts the values.
      */
-    private void addInserts( Map<Long, List<Object>> changedValues, LogicalTable catalogTable, ImmutableList<LogicalColumn> columns ) {
+    private void addInserts( Map<Long, List<?>> changedValues, LogicalTable catalogTable, List<LogicalColumn> columns ) {
         for ( LogicalColumn column : columns ) {
             QueryResult queryResult = new QueryResult( catalogTable, column );
             addNewColumnStatistics( changedValues, column.position, column.type, queryResult );
@@ -954,7 +953,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private void addNewColumnStatistics( Map<Long, List<Object>> changedValues, long i, PolyType polyType, QueryResult queryResult ) {
+    private void addNewColumnStatistics( Map<Long, List<?>> changedValues, long i, PolyType polyType, QueryResult queryResult ) {
         StatisticColumn<?> statisticColumn = createNewStatisticColumns( polyType, queryResult );
         if ( statisticColumn != null ) {
             statisticColumn.insert( (List) changedValues.get( i ) );
@@ -963,7 +962,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private void handleInsertColumn( long tableId, Map<Long, List<Object>> changedValues, long schemaId, List<Long> columns, int i, QueryResult queryResult ) {
+    private void handleInsertColumn( long tableId, Map<Long, List<?>> changedValues, long schemaId, List<Long> columns, int i, QueryResult queryResult ) {
         StatisticColumn<?> statisticColumn = this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) );
         statisticColumn.insert( (List) changedValues.get( (long) i ) );
         put( queryResult, statisticColumn );
@@ -975,7 +974,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      */
     @Override
     public void deleteTableToUpdate( long tableId, long schemaId ) {
-        if ( statisticSchemaMap.containsKey( schemaId ) && statisticSchemaMap.get( schemaId ).containsKey( tableId ) ) {
+        if ( statisticSchemaMap.containsKey( schemaId ) ) {
             statisticSchemaMap.get( schemaId ).remove( tableId );
         }
         tableStatistic.remove( tableId );
@@ -1093,7 +1092,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         if ( tableStatistic.containsKey( tableId ) ) {
             statisticTable = tableStatistic.remove( tableId );
         } else {
-            statisticTable = new StatisticTable( tableId );
+            statisticTable = new StatisticTable<>( tableId );
         }
 
         switch ( kind ) {
@@ -1184,11 +1183,11 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 numericInfo.add( (NumericalStatisticColumn) v );
                 statisticTable.setNumericalColumn( numericInfo );
             } else if ( v.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
-                alphabeticInfo.add( (AlphabeticStatisticColumn<T>) v );
-                statisticTable.setAlphabeticColumn( alphabeticInfo );
+                alphabeticInfo.add( (AlphabeticStatisticColumn<?>) v );
+                statisticTable.setAlphabeticColumn( (List) alphabeticInfo );
             } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId ).getColumn( k ).type ) ) {
-                temporalInfo.add( (TemporalStatisticColumn<T>) v );
-                statisticTable.setTemporalColumn( temporalInfo );
+                temporalInfo.add( (TemporalStatisticColumn<?>) v );
+                statisticTable.setTemporalColumn( (List) temporalInfo );
             }
         } );
         return statisticTable;

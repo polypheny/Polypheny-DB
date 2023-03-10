@@ -83,7 +83,7 @@ class EmptyScope implements SqlValidatorScope {
     @Override
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
         LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
-        CatalogEntity table = validator.snapshot.getRelSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) );
+        CatalogEntity table = validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 1 ) );
         return table != null
                 ? new EntityNamespace( validator, table )
                 : null;
@@ -96,9 +96,9 @@ class EmptyScope implements SqlValidatorScope {
 
         // Look in the default schema, then default catalog, then root schema.
         LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
-        LogicalTable table = validator.snapshot.getRelSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) );
+        LogicalTable table = validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 1 ) );
         if ( table != null ) {
-            resolves.add( new Resolve( validator.snapshot.getRelSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) ) ) );
+            resolves.add( new Resolve( validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 1 ) ) ) );
         }
     }
 

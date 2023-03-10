@@ -42,7 +42,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -191,11 +190,7 @@ public class LanguageCrud {
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( t[0] );
-            try {
-                catalogTable = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
-            } catch ( UnknownTableException e ) {
-                log.error( "Caught exception", e );
-            }
+            catalogTable = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();

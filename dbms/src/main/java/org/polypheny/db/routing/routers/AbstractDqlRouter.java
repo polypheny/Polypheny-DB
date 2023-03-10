@@ -248,7 +248,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
-        algBuilder.lpgScan( catalog.getSnapshot().getNamespaces( new Pattern( logicalTable.getLogicalSchemaName() ) ).get( 0 ).id );
+        algBuilder.lpgScan( statement.getTransaction().getSnapshot().getNamespaces( new Pattern( logicalTable.getLogicalSchemaName() ) ).get( 0 ).id );
         algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( logicalTable.getLogicalTableName() ) ) ), List.of( "n" ) );
         algBuilder.lpgProject(
                 List.of( rexBuilder.makeLpgGetId(), rexBuilder.makeLpgPropertiesExtract(), rexBuilder.makeLpgLabels() ),

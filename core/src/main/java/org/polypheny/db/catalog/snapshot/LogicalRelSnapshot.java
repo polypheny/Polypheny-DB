@@ -47,21 +47,13 @@ public interface LogicalRelSnapshot {
     public abstract List<LogicalTable> getTables( @Nullable Pattern name );
 
     /**
-     * Returns the table with the given id
-     *
-     * @param tableId The id of the table
-     * @return The table
-     */
-    public abstract LogicalTable getTable( long tableId );
-
-    /**
      * Returns the table with the given name in the specified schema.
      *
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract LogicalTable getTable( String tableName ) throws UnknownTableException;
+    public abstract LogicalTable getTable( String tableName );
 
 
     /**
@@ -280,11 +272,8 @@ public interface LogicalRelSnapshot {
     public abstract CatalogIndex getIndex( long indexId );
 
 
-    LogicalTable getLogicalTable( long id );
+    LogicalTable getTable( long id );
 
-    LogicalTable getLogicalTable( String name );
-
-    LogicalColumn getLogicalColumn( long id );
 
     boolean checkIfExistsEntity( String newName );
 

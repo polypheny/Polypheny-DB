@@ -17,14 +17,8 @@
 package org.polypheny.db.catalog.entity.logical;
 
 import com.drew.lang.annotations.NotNull;
-import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -39,25 +33,22 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGraph> {
 
     private static final long serialVersionUID = 7343856827901459672L;
-
-    public ImmutableList<Long> placements;
     public int ownerId;
     public boolean modifiable;
 
     public boolean caseSensitive;
 
 
-    public LogicalGraph( long id, String name, long namespaceId, String namespaceName, int ownerId, boolean modifiable, @NonNull Collection<Long> placements, boolean caseSensitive ) {
-        super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.GRAPH );
+    public LogicalGraph( long id, String name, long namespaceId, int ownerId, boolean modifiable, boolean caseSensitive ) {
+        super( id, name, namespaceId, EntityType.ENTITY, NamespaceType.GRAPH );
         this.ownerId = ownerId;
         this.modifiable = modifiable;
-        this.placements = ImmutableList.copyOf( placements );
         this.caseSensitive = caseSensitive;
     }
 
 
     public LogicalGraph( LogicalGraph graph ) {
-        this( graph.id, graph.name, graph.namespaceId, graph.namespaceName, graph.ownerId, graph.modifiable, graph.placements, graph.caseSensitive );
+        this( graph.id, graph.name, graph.namespaceId, graph.ownerId, graph.modifiable, graph.caseSensitive );
     }
 
 
@@ -75,17 +66,6 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
         return -1;
     }
 
-
-    public LogicalGraph addPlacement( long adapterId ) {
-        List<Long> placements = new ArrayList<>( this.placements );
-        placements.add( adapterId );
-        return toBuilder().placements( ImmutableList.copyOf( placements ) ).build();
-    }
-
-
-    public LogicalGraph removePlacement( int adapterId ) {
-        return toBuilder().placements( ImmutableList.copyOf( placements.stream().filter( i -> i != adapterId ).collect( Collectors.toList() ) ) ).build();
-    }
 
 
     @Override

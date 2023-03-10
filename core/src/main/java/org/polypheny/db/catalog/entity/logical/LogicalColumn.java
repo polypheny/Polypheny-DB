@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -37,6 +38,7 @@ import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode()
 @Value
+@SuperBuilder(toBuilder = true)
 @NonFinal
 public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 

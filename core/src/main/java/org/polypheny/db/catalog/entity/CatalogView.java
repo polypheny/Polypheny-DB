@@ -17,15 +17,8 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -35,12 +28,9 @@ import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
@@ -52,7 +42,6 @@ public class CatalogView extends LogicalTable {
 
     private static final long serialVersionUID = -4771308114962700515L;
 
-    public ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
     public String language;
     public AlgCollation algCollation;
     public String query;
@@ -61,34 +50,22 @@ public class CatalogView extends LogicalTable {
     public CatalogView(
             long id,
             String name,
-            String namespaceName,
-            List<LogicalColumn> columns,
             long namespaceId,
             EntityType entityType,
             String query,
             Long primaryKey,
-            List<Long> dataPlacements,
             boolean modifiable,
-            PartitionProperty partitionProperty,
             AlgCollation algCollation,
-            List<Long> connectedViews,
-            Map<Long, List<Long>> underlyingTables,
             String language ) {
         super(
                 id,
                 name,
-                columns,
                 namespaceId,
-                namespaceName,
                 entityType,
                 primaryKey,
-                dataPlacements,
-                modifiable,
-                partitionProperty,
-                connectedViews );
+                modifiable );
         this.query = query;
         this.algCollation = algCollation;
-        this.underlyingTables = ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap( Entry::getKey, t -> ImmutableList.copyOf( t.getValue() ) ) ) );
         // mapdb cannot handle the class QueryLanguage, therefore we use the String here
         this.language = language;
     }

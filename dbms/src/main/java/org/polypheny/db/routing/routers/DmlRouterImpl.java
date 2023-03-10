@@ -133,7 +133,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         LogicalTable catalogTable = modify.getEntity().unwrap( LogicalTable.class );
-        Snapshot snapshot = catalog.getSnapshot();
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         // Get placements of this table
 

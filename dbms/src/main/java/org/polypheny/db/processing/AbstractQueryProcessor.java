@@ -93,7 +93,6 @@ import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -291,7 +290,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Update which tables where changed used for Materialized Views
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.alg.accept( visitor );
-        MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
+        MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getIds() );
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Expand Views" );
@@ -768,7 +767,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                                        .collect( Collectors.toList() );
 //                            }
 //                            final {@link AlgNode} replacement = LogicalModify.create(
-//                                    ltm.getLogicalTable(),
+//                                    ltm.getTable(),
 //                                    transaction.getCatalogReader(),
 //                                    newProject,
 //                                    ltm.getOperation(),
@@ -1317,18 +1316,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
                 // Get placements of this table
                 LogicalTable catalogTable = table.unwrap( LogicalTable.class );
-
-                if ( aggregatedPartitionValues.containsKey( scanId ) ) {
+                // todo dl
+                /*if ( aggregatedPartitionValues.containsKey( scanId ) ) {
                     if ( aggregatedPartitionValues.get( scanId ) != null ) {
                         if ( !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
                             List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
 
                             if ( log.isDebugEnabled() ) {
-                                log.debug(
+                                /*log.debug(
                                         "TableID: {} is partitioned on column: {} - {}",
                                         catalogTable.id,
                                         catalogTable.partitionProperty.partitionColumnId,
                                         Catalog.getInstance().getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
+
                             }
                             List<Long> identifiedPartitions = new ArrayList<>();
                             for ( String partitionValue : partitionValues ) {
@@ -1367,7 +1367,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             catalogTable.partitionProperty.partitionIds,
                             ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
                     scanPerTable.putIfAbsent( scanId, catalogTable.id );
-                }
+                }*/
 
             }
         }

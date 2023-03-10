@@ -172,7 +172,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             }
         }
         if ( clazz == PolyphenyDbSchema.class ) {
-            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).snapshot, List.of( catalogEntity.unwrap( LogicalTable.class ).getNamespaceName(), catalogEntity.name ) ) );
+            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).snapshot, List.of( Catalog.getInstance().getSnapshot().getNamespace( catalogEntity.namespaceId ).name, catalogEntity.name ) ) );
         }
         return null;
     }
@@ -189,7 +189,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         } else if ( catalogEntity != null ) {
             return Expressions.call(
                     Expressions.call( Catalog.class, "getInstance" ),
-                    "getLogicalTable",
+                    "getTable",
                     Expressions.constant( catalogEntity.id ) );
         }
 
@@ -343,7 +343,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public List<String> getQualifiedName() {
-        return List.of( catalogEntity.unwrap( LogicalTable.class ).getNamespaceName(), catalogEntity.name );
+        return List.of( Catalog.getInstance().getSnapshot().getNamespace( catalogEntity.namespaceId ).name, catalogEntity.name );
     }
 
 

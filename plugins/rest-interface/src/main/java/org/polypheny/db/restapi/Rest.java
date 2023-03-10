@@ -50,7 +50,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -159,11 +158,7 @@ public class Rest {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         LogicalNamespace namespace = snapshot.getNamespace( resourcePatchRequest.tables.get( 0 ).getNamespaceName() );
         LogicalTable table = null;
-        try {
-            table = snapshot.getRelSnapshot( namespace.id ).getTable( resourcePatchRequest.tables.get( 0 ).name );
-        } catch ( UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+        table = snapshot.getRelSnapshot( namespace.id ).getTable( resourcePatchRequest.tables.get( 0 ).name );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -267,11 +262,7 @@ public class Rest {
     private static LogicalTable getLogicalTable( Snapshot snapshot, String namespaceName, String tableName ) {
         LogicalNamespace namespace = snapshot.getNamespace( namespaceName );
         LogicalTable table;
-        try {
-            table = snapshot.getRelSnapshot( namespace.id ).getTable( tableName );
-        } catch ( UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+        table = snapshot.getRelSnapshot( namespace.id ).getTable( tableName );
         return table;
     }
 

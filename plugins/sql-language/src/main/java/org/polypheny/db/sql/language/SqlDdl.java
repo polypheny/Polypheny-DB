@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
@@ -80,11 +79,7 @@ public abstract class SqlDdl extends SqlCall {
             schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        try {
-            catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
-        } catch ( UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+        catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
         return catalogTable;
     }
 

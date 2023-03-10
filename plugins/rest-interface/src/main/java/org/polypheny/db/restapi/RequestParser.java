@@ -260,17 +260,12 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.TABLE_LIST_MALFORMED_TABLE, tableName );
         }
 
-        try {
-            LogicalNamespace namespace = snapshop.getNamespace( tableElements[0] );
-            LogicalTable table = snapshop.getRelSnapshot( namespace.id ).getTable( tableElements[1] );
-            if ( log.isDebugEnabled() ) {
-                log.debug( "Finished parsing table \"{}\".", tableName );
-            }
-            return table;
-        } catch ( UnknownTableException e ) {
-            log.error( "Unable to fetch table: {}.", tableName, e );
-            throw new ParserException( ParserErrorCode.TABLE_LIST_UNKNOWN_TABLE, tableName );
+        LogicalNamespace namespace = snapshop.getNamespace( tableElements[0] );
+        LogicalTable table = snapshop.getRelSnapshot( namespace.id ).getTable( tableElements[1] );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Finished parsing table \"{}\".", tableName );
         }
+        return table;
     }
 
 

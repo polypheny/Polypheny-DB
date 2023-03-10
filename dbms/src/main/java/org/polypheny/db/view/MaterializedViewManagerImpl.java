@@ -51,7 +51,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -112,7 +111,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( Long id : materializedInfo.keySet() ) {
-            if ( Catalog.getInstance().getLogicalEntity( id ) == null ) {
+            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( id ) == null ) {
                 toRemove.add( id );
             }
         }
@@ -180,16 +179,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     @Override
     public void addTables( Transaction transaction, List<String> tableNames ) {
         if ( tableNames.size() > 1 ) {
-            try {
-                snapshot = Catalog.getInstance().getSnapshot();
-                LogicalNamespace namespace = snapshot.getNamespace( tableNames.get( 0 ) );
-                LogicalTable catalogTable = snapshot.getRelSnapshot( namespace.id ).getTable( tableNames.get( 1 ) );
-                long id = catalogTable.id;
-                if ( !catalogTable.getConnectedViews().isEmpty() ) {
-                    updateCandidates.put( transaction.getXid(), id );
-                }
-            } catch ( UnknownTableException e ) {
-                throw new RuntimeException( "Not possible to getLogicalTable to update which Tables were changed.", e );
+            snapshot = Catalog.getInstance().getSnapshot();
+            LogicalNamespace namespace = snapshot.getNamespace( tableNames.get( 0 ) );
+            LogicalTable catalogTable = snapshot.getRelSnapshot( namespace.id ).getTable( tableNames.get( 1 ) );
+            long id = catalogTable.id;
+            if ( !catalogTable.getConnectedViews().isEmpty() ) {
+                updateCandidates.put( transaction.getXid(), id );
             }
         }
     }
@@ -277,7 +272,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable catalogTable = catalog.getLogicalEntity( materializedId ).unwrap( LogicalTable.class );
+        LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( materializedId ).unwrap( LogicalTable.class );
 
         try {
             Transaction transaction = getTransactionManager().startTransaction(
@@ -347,8 +342,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         Map<Long, List<LogicalColumn>> columns = new HashMap<>();
 
         List<Long> ids = new ArrayList<>();
-        if ( catalog.getLogicalEntity( materializedId ) != null && materializedInfo.containsKey( materializedId ) ) {
-            CatalogMaterializedView catalogMaterializedView = catalog.getLogicalEntity( materializedId ).unwrap( CatalogMaterializedView.class );
+        if ( catalog.getSnapshot().getLogicalEntity( materializedId ) != null && materializedInfo.containsKey( materializedId ) ) {
+            CatalogMaterializedView catalogMaterializedView = catalog.getSnapshot().getLogicalEntity( materializedId ).unwrap( CatalogMaterializedView.class );
             for ( long id : catalogMaterializedView.dataPlacements ) {
                 ids.add( id );
                 List<LogicalColumn> logicalColumns = new ArrayList<>();

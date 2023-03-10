@@ -31,9 +31,10 @@ import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -90,14 +91,8 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-    // move to Snapshot
-    public abstract LogicalEntity getLogicalEntity( String entityName );
-
-    public abstract LogicalEntity getLogicalEntity( long id );
 
     public abstract PhysicalCatalog getPhysical( long namespaceId );
-
-    public abstract PhysicalEntity<?> getPhysicalEntity( long id );
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
@@ -241,10 +236,10 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract Snapshot getSnapshot();
 
 
-    public abstract Map<Long, org.polypheny.db.catalog.entity.CatalogUser> getUsers();
+    public abstract Map<Long, CatalogUser> getUsers();
 
-    public abstract Map<Long, org.polypheny.db.catalog.entity.CatalogAdapter> getAdapters();
+    public abstract Map<Long, CatalogAdapter> getAdapters();
 
-    public abstract Map<Long, org.polypheny.db.catalog.entity.CatalogQueryInterface> getInterfaces();
+    public abstract Map<Long, CatalogQueryInterface> getInterfaces();
 
 }

@@ -209,7 +209,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         String tableName;
         long schemaId;
 
-        // Cannot use getLogicalTable() here since table does not yet exist
+        // Cannot use getTable() here since table does not yet exist
         if ( name.names.size() == 2 ) { // SchemaName.TableName
             schemaId = snapshot.getNamespace( name.names.get( 0 ) ).id;
             tableName = name.names.get( 1 );

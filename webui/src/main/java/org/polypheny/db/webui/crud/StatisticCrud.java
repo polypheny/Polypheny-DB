@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -87,15 +86,10 @@ public class StatisticCrud {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         long tableId;
         long schemaId;
-        try {
-            schemaId = Catalog.getInstance().getSnapshot().getNamespace( request.tableId.split( "\\." )[0] ).id;
-            tableId = Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId ).getTable( request.tableId.split( "\\." )[1] ).id;
+        schemaId = Catalog.getInstance().getSnapshot().getNamespace( request.tableId.split( "\\." )[0] ).id;
+        tableId = Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId ).getTable( request.tableId.split( "\\." )[1] ).id;
 
-            ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
-        } catch ( UnknownTableException e ) {
-            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
-                    + request.tableId.split( "\\." )[1] + "is unknown." );
-        }
+        ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
     }
 
 

@@ -96,7 +96,7 @@ public class SqlValidatorUtil {
             final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
             if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
                 final TableNamespace tableNamespace = resolvedNamespace.unwrap( TableNamespace.class );
-                final ValidatorTable validatorTable = tableNamespace.getLogicalTable();
+                final ValidatorTable validatorTable = tableNamespace.getTable();
                 final AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
                 final List<AlgDataTypeField> extendedFields =
                         dmlNamespace.extendList == null
@@ -620,7 +620,7 @@ public class SqlValidatorUtil {
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
         return validator.snapshot.getNamespace( id.names.get( 0 ) ).namespaceType == NamespaceType.RELATIONAL;
-        /*LogicalGraph graph = validator.snapshot.getGraphSnapshot( namespace.id ).getLogicalTable( names.get( 1 ) );
+        /*LogicalGraph graph = validator.snapshot.getGraphSnapshot( namespace.id ).getTable( names.get( 1 ) );
         if ( graph != null ) {
             return false;
         }

@@ -163,8 +163,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             for ( final CatalogForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
-                final LogicalTable scanOptTable = snapshot.getLogicalTable( foreignKey.tableId );
-                final LogicalTable refOptTable = snapshot.getLogicalTable( foreignKey.referencedKeyTableId );
+                final LogicalTable scanOptTable = snapshot.getTable( foreignKey.tableId );
+                final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyTableId );
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
                 final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 
@@ -259,7 +259,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.scan( table.getSchemaName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
-                builder.scan( table.getNamespaceName(), table.name );//LogicalTableScan.create( modify.getCluster(), modify.getLogicalTable() );
+                builder.scan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexInputRef> keys = constraint.key
                         .getColumnNames()

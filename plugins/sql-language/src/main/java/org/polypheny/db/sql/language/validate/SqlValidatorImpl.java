@@ -3391,7 +3391,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     private @Nullable CatalogEntity findTable( String tableName, boolean caseSensitive ) {
-        return snapshot.getNamespaces( null ).stream().map( n -> snapshot.getRelSnapshot( n.id ).getLogicalTable( tableName ) ).filter( Objects::isNull ).findFirst().orElse( null );
+        return snapshot.getNamespaces( null ).stream().map( n -> snapshot.getRelSnapshot( n.id ).getTable( tableName ) ).filter( Objects::isNull ).findFirst().orElse( null );
     }
 
 
@@ -3656,7 +3656,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // We've found a table. But is it a sequence?
         //final SqlValidatorNamespace ns = resolved.only().namespace;
         /*if ( ns instanceof TableNamespace ) {
-            final Entity entity = ns.getLogicalTable().unwrap( Entity.class );
+            final Entity entity = ns.getTable().unwrap( Entity.class );
             switch ( entity.getJdbcTableType() ) {
                 case SEQUENCE:
                 case TEMPORARY_SEQUENCE:

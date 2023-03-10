@@ -38,7 +38,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -371,11 +370,7 @@ public class SqlProcessorImpl extends Processor {
             schemaId = snapshot.getNamespace( transaction.getDefaultSchema().name ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        try {
-            catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
-        } catch ( UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+        catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
         return catalogTable;
     }
 

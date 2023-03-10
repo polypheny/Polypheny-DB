@@ -95,14 +95,14 @@ public abstract class ListScope extends DelegatingScope {
             }
 
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
-            /*final ValidatorTable table = child.namespace.getLogicalTable();
+            /*final ValidatorTable table = child.namespace.getTable();
             if ( table != null ) {
                 final ResolvedImpl resolved = new ResolvedImpl();
                 resolveTable( names, nameMatcher, Path.EMPTY, resolved );
                 if ( resolved.count() == 1
                         && resolved.only().remainingNames.isEmpty()
                         && resolved.only().namespace instanceof TableNamespace
-                        && resolved.only().namespace.getLogicalTable().getQualifiedName().equals( table.getQualifiedName() ) ) {
+                        && resolved.only().namespace.getTable().getQualifiedName().equals( table.getQualifiedName() ) ) {
                     return child;
                 }
             }*/

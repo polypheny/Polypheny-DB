@@ -26,11 +26,13 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.logistic.IndexType;
 
 
 @EqualsAndHashCode(callSuper = false)
 @Value
+@SuperBuilder(toBuilder = true)
 public class CatalogIndex implements Serializable {
 
     private static final long serialVersionUID = -318228681682792406L;

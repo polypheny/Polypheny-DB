@@ -86,7 +86,7 @@ public class StatisticRepository implements MonitoringRepository {
 
             if ( isOneTable ) {
                 long tableId = values.stream().findFirst().get();
-                if ( catalog.getLogicalEntity( tableId ) != null ) {
+                if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
                     statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
                     // RowCount from UI is only used if there is no other possibility
@@ -100,7 +100,7 @@ public class StatisticRepository implements MonitoringRepository {
                 }
             } else {
                 for ( long id : values ) {
-                    if ( catalog.getLogicalEntity( id ) != null ) {
+                    if ( catalog.getSnapshot().getLogicalEntity( id ) != null ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
                 }
@@ -119,14 +119,14 @@ public class StatisticRepository implements MonitoringRepository {
                 long tableId = values.stream().findFirst().get();
                 statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
-                if ( catalog.getLogicalEntity( tableId ) != null ) {
+                if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
                     if ( dataPoint.getMonitoringType().equals( "INSERT" ) ) {
                         int added = dataPoint.getRowCount();
                         statisticsManager.tablesToUpdate(
                                 tableId,
                                 dataPoint.getChangedValues(),
                                 dataPoint.getMonitoringType(),
-                                catalog.getLogicalEntity( tableId ).namespaceId );
+                                catalog.getSnapshot().getLogicalEntity( tableId ).namespaceId );
                         statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
                     } else if ( dataPoint.getMonitoringType().equals( "DELETE" ) ) {
                         int deleted = dataPoint.getRowCount();
@@ -137,7 +137,7 @@ public class StatisticRepository implements MonitoringRepository {
                 }
             } else {
                 for ( long id : values ) {
-                    if ( catalog.getLogicalEntity( id ) != null ) {
+                    if ( catalog.getSnapshot().getLogicalEntity( id ) != null ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
 

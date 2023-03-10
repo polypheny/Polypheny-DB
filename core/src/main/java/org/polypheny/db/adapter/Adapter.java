@@ -55,6 +55,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -493,13 +494,13 @@ public abstract class Adapter {
                     continue;
                 }
                 PhysicalTable physicalTable = (PhysicalTable) entity;
-                int i = 0;
+                LogicalRelSnapshot relSnapshot = snapshot.getRelSnapshot( physicalTable.namespaceId );
+
                 for ( long columnId : physicalTable.columnIds ) {
                     physicalColumnNames.addRow(
                             columnId,
-                            physicalTable.logical.getColumnNames().get( i ),
-                            physicalTable.namespaceName + "." + physicalTable.name + "." + physicalTable.getColumnNames().get( i ) );
-                    i++;
+                            relSnapshot.getColumn( columnId ),
+                            physicalTable.namespaceName + "." + physicalTable.name + "." + relSnapshot.getColumn( columnId ) );
                 }
             }
         } );

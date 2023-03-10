@@ -99,7 +99,7 @@ public class UiRoutingPageUtil {
             proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
 
                 CatalogPartition catalogPartition = snapshot.getAllocSnapshot().getPartition( k );
-                LogicalTable catalogTable = Catalog.getInstance().getLogicalEntity( catalogPartition.tableId ).unwrap( LogicalTable.class );
+                LogicalTable catalogTable = Catalog.getInstance().getSnapshot().getLogicalEntity( catalogPartition.tableId ).unwrap( LogicalTable.class );
                 CatalogPartitionGroup catalogPartitionGroup = snapshot.getAllocSnapshot().getPartitionGroup( catalogPartition.partitionGroupId );
 
                 v.forEach( p -> {

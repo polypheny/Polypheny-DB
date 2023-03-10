@@ -55,7 +55,6 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -677,7 +676,7 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private static class LcsScan {
+    static class LcsScan {
 
     }
 
