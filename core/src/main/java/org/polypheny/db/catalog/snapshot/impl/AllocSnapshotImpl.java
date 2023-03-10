@@ -22,8 +22,11 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -32,6 +35,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
+import org.polypheny.db.partition.properties.PartitionProperty;
 
 public class AllocSnapshotImpl implements AllocSnapshot {
 
@@ -288,6 +292,48 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @Override
     public boolean isPartitioned( long id ) {
         return false;
+    }
+
+
+    @Override
+    public CatalogGraphPlacement getGraphPlacement( long graphId, long adapterId ) {
+        return null;
+    }
+
+
+    @Override
+    public List<CatalogGraphPlacement> getGraphPlacements( long adapterId ) {
+        return null;
+    }
+
+
+    @Override
+    public CatalogCollectionPlacement getCollectionPlacement( long id, long placementId ) {
+        return null;
+    }
+
+
+    @Override
+    public CatalogCollectionMapping getCollectionMapping( long id ) {
+        return null;
+    }
+
+
+    @Override
+    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( long id ) {
+        return null;
+    }
+
+
+    @Override
+    public List<CatalogCollectionPlacement> getCollectionPlacements( long collectionId ) {
+        return null;
+    }
+
+
+    @Override
+    public PartitionProperty getPartitionProperty( long id ) {
+        return null;
     }
 
 }

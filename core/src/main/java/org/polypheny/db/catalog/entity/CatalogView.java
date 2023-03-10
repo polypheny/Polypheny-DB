@@ -17,7 +17,10 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -42,6 +45,8 @@ public class CatalogView extends LogicalTable {
 
     private static final long serialVersionUID = -4771308114962700515L;
 
+    @Getter
+    protected ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
     public String language;
     public AlgCollation algCollation;
     public String query;
@@ -56,6 +61,8 @@ public class CatalogView extends LogicalTable {
             Long primaryKey,
             boolean modifiable,
             AlgCollation algCollation,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
+            ImmutableList<Long> connectedViews,
             String language ) {
         super(
                 id,
@@ -63,9 +70,11 @@ public class CatalogView extends LogicalTable {
                 namespaceId,
                 entityType,
                 primaryKey,
-                modifiable );
+                modifiable,
+                connectedViews );
         this.query = query;
         this.algCollation = algCollation;
+        this.underlyingTables = underlyingTables;
         // mapdb cannot handle the class QueryLanguage, therefore we use the String here
         this.language = language;
     }

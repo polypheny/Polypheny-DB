@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.entity;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -52,6 +54,8 @@ public class CatalogMaterializedView extends CatalogView {
             Long primaryKey,
             boolean modifiable,
             AlgCollation algCollation,
+            ImmutableList<Long> connectedViews,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             String language,
             MaterializedCriteria materializedCriteria,
             boolean ordered
@@ -65,6 +69,8 @@ public class CatalogMaterializedView extends CatalogView {
                 primaryKey,
                 modifiable,
                 algCollation,
+                underlyingTables,
+                connectedViews,
                 language );
         this.query = query;
         this.algCollation = algCollation;
@@ -72,8 +78,6 @@ public class CatalogMaterializedView extends CatalogView {
         this.materializedCriteria = materializedCriteria;
         this.ordered = ordered;
     }
-
-
 
 
     @Override

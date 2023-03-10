@@ -209,7 +209,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
+    public LogicalColumn getColumn( long tableId, String columnName ) {
         return tableIdColumnNameColumn.get( Pair.of( tableId, columnName ) );
     }
 

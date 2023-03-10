@@ -20,8 +20,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -29,6 +32,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.partition.properties.PartitionProperty;
 
 public interface AllocSnapshot {
 
@@ -372,5 +376,37 @@ public interface AllocSnapshot {
     List<AllocationTable> getAllocationsFromLogical( long logicalId );
 
     boolean isPartitioned( long id );
+
+
+    /**
+     * Gets a specific placement for a graph on a given adapter.
+     *
+     * @param graphId The id of the graph
+     * @param adapterId The id of the adapter on which the placement is placed
+     * @return The placement matching the conditions
+     */
+    public abstract CatalogGraphPlacement getGraphPlacement( long graphId, long adapterId );
+
+
+    /**
+     * Gets a collection of graph placements for a given adapter.
+     *
+     * @param adapterId The id of the adapter on which the placements are placed
+     * @return The collection of graph placements
+     */
+    public abstract List<CatalogGraphPlacement> getGraphPlacements( long adapterId );
+
+
+    CatalogCollectionPlacement getCollectionPlacement( long id, long placementId );
+
+    CatalogCollectionMapping getCollectionMapping( long id );
+
+    List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( long id );
+
+    List<CatalogCollectionPlacement> getCollectionPlacements( long collectionId );
+
+    PartitionProperty getPartitionProperty( long id );
+
+    boolean adapterHasPlacement( long adapterId, long id );
 
 }

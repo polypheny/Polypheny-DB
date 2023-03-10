@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -219,7 +219,7 @@ public class LanguageCrud {
 
             // Get column default values
             if ( catalogTable != null ) {
-                LogicalColumn logicalColumn = catalogTable.columns.stream().filter( c -> c.name.equals( columnName ) ).findFirst().orElse( null );
+                LogicalColumn logicalColumn = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
                 if ( logicalColumn != null ) {
                     if ( logicalColumn.defaultValue != null ) {
                         dbCol.defaultValue = logicalColumn.defaultValue.value;
@@ -329,13 +329,13 @@ public class LanguageCrud {
 
             return p;
         } else {
-            for ( long adapterId : graph.placements ) {
-                CatalogGraphPlacement placement = catalog.getAllocGraph( graph.id ).getGraphPlacement( graph.id, adapterId );
+            List<CatalogDataPlacement> placements = catalog.getSnapshot().getAllocSnapshot().getDataPlacements( graph.id );
+            for ( CatalogDataPlacement placement : placements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 p.addAdapter( new Placement.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
-                        catalog.getAllocGraph( graph.id ).getGraphPlacements( adapterId ),
+                        catalog.getSnapshot().getAllocSnapshot().getGraphPlacements( placement.adapterId ),
                         adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) );
             }
             return p;
@@ -372,15 +372,20 @@ public class LanguageCrud {
 
         LogicalCollection collection = collections.get( 0 );
 
-        Placement placement = new Placement( false, List.of(), EntityType.ENTITY );
+        Placement p = new Placement( false, List.of(), EntityType.ENTITY );
 
-        for ( long adapterId : collection.placements ) {
-            Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
-            List<CatalogCollectionPlacement> placements = catalog.getAllocDoc( collection.namespaceId ).getCollectionPlacementsByAdapter( adapterId );
-            placement.addAdapter( new DocumentStore( adapter.getUniqueName(), adapter.getUniqueName(), placements, adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
+        List<CatalogCollectionPlacement> placements = catalog.getSnapshot().getAllocSnapshot().getCollectionPlacements( collection.id );
+
+        for ( CatalogCollectionPlacement placement : placements ) {
+            Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+            p.addAdapter( new DocumentStore(
+                    adapter.getUniqueName(),
+                    adapter.getUniqueName(),
+                    catalog.getSnapshot().getAllocSnapshot().getCollectionPlacementsByAdapter( placement.adapterId ),
+                    adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
         }
 
-        context.json( placement );
+        context.json( p );
     }
 
 

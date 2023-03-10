@@ -33,7 +33,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.webui.Crud;
@@ -63,14 +62,9 @@ public class BatchUpdateRequest {
                 Catalog catalog = Catalog.getInstance();
                 String[] split = tableId.split( "\\." );
                 LogicalColumn logicalColumn;
-                try {
-                    LogicalNamespace namespace = catalog.getSnapshot().getNamespace( split[0] );
-                    LogicalTable table = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( split[1] );
-                    logicalColumn = catalog.getSnapshot().getRelSnapshot( table.namespaceId ).getColumn( table.id, entry.getKey() );
-                } catch ( UnknownColumnException e ) {
-                    log.error( "Could not determine column type", e );
-                    return null;
-                }
+                LogicalNamespace namespace = catalog.getSnapshot().getNamespace( split[0] );
+                LogicalTable table = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( split[1] );
+                logicalColumn = catalog.getSnapshot().getRelSnapshot( table.namespaceId ).getColumn( table.id, entry.getKey() );
                 if ( fileName == null && value == null ) {
                     setClauses.add( String.format( "\"%s\"=NULL", entry.getKey() ) );
                 } else if ( value != null && fileName == null ) {

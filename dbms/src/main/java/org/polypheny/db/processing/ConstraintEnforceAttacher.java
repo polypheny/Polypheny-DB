@@ -58,7 +58,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -488,11 +487,7 @@ public class ConstraintEnforceAttacher {
                     final String columnName = foreignKey.getColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final LogicalColumn foreignColumn;
-                    try {
-                        foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( UnknownColumnException e ) {
-                        throw new RuntimeException( e );
-                    }
+                    foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName );
                     RexNode newValue;
                     int targetIndex;
                     if ( root.isUpdate() ) {
@@ -563,12 +558,8 @@ public class ConstraintEnforceAttacher {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
                     final LogicalColumn column, foreignColumn;
-                    try {
-                        column = snapshot.getColumn( table.id, columnName );
-                        foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( UnknownColumnException e ) {
-                        throw new RuntimeException( e );
-                    }
+                    column = snapshot.getColumn( table.id, columnName );
+                    foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName );
                     final RexNode inputRef = new RexInputRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
                     final RexNode foreignInputRef = new RexInputRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
                     projects.add( inputRef );

@@ -96,7 +96,8 @@ public class StatisticQueryProcessor {
             List<LogicalTable> childTables = snapshot.getRelSnapshot( schema.id ).getTables( null );
             for ( LogicalTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
-                for ( LogicalColumn logicalColumn : childTable.columns ) {
+                List<LogicalColumn> columns = snapshot.getRelSnapshot( schema.id ).getColumns( childTable.id );
+                for ( LogicalColumn logicalColumn : columns ) {
                     table.add( schema.name + "." + childTable.name + "." + logicalColumn.name );
                 }
                 if ( childTable.entityType == EntityType.ENTITY ) {
@@ -120,7 +121,7 @@ public class StatisticQueryProcessor {
         return snapshot.getNamespaces( null )
                 .stream()
                 .filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> t.columns.stream() ) )
+                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.getRelSnapshot( n.id ).getColumns( t.id ).stream() ) )
                 .map( QueryResult::fromCatalogColumn )
                 .collect( Collectors.toList() );
     }
@@ -145,7 +146,7 @@ public class StatisticQueryProcessor {
      */
     public List<QueryResult> getAllColumns( Long tableId ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        return snapshot.getNamespaces( null ).stream().flatMap( n -> snapshot.getRelSnapshot( n.id ).getTable( tableId ).columns.stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
+        return snapshot.getNamespaces( null ).stream().flatMap( n -> snapshot.getRelSnapshot( n.id ).getColumns( tableId ).stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
     }
 
 

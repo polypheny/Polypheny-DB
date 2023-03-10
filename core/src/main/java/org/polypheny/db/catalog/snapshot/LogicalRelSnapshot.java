@@ -107,7 +107,7 @@ public interface LogicalRelSnapshot {
      * @return A CatalogColumn
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
-    public abstract LogicalColumn getColumn( long tableId, String columnName ) throws UnknownColumnException;
+    public abstract LogicalColumn getColumn( long tableId, String columnName );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.

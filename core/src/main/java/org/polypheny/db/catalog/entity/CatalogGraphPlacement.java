@@ -16,22 +16,36 @@
 
 package org.polypheny.db.catalog.entity;
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import javax.annotation.Nullable;
+import lombok.Value;
+import lombok.experimental.SuperBuilder;
 
 
+@Value
+@SuperBuilder(toBuilder = true)
 public class CatalogGraphPlacement extends CatalogEntityPlacement {
 
     private static final long serialVersionUID = 5889825050034392549L;
 
-    public final int adapterId;
-    public final long graphId;
-    public final String physicalName;
-    public final long partitionId;
+    @Serialize
+    public long adapterId;
+    @Serialize
+    public long graphId;
+    @Serialize
+    public String physicalName;
+    @Serialize
+    public long partitionId;
 
 
-    public CatalogGraphPlacement( int adapterId, long graphId, @Nullable String physicalName, long partitionId ) {
-        super( graphId, (long) adapterId, graphId );
+    public CatalogGraphPlacement(
+            @Deserialize("adapterId") long adapterId,
+            @Deserialize("graphId") long graphId,
+            @Deserialize("physicalName") @Nullable String physicalName,
+            @Deserialize("partitionId") long partitionId ) {
+        super( graphId, adapterId, graphId );
         this.adapterId = adapterId;
         this.graphId = graphId;
         this.physicalName = physicalName;
@@ -44,9 +58,5 @@ public class CatalogGraphPlacement extends CatalogEntityPlacement {
         return new Serializable[0];
     }
 
-
-    public CatalogGraphPlacement replacePhysicalName( String physicalName ) {
-        return new CatalogGraphPlacement( adapterId, graphId, physicalName, partitionId );
-    }
 
 }

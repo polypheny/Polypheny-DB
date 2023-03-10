@@ -28,7 +28,6 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
@@ -86,11 +85,7 @@ public abstract class SqlDdl extends SqlCall {
 
     protected LogicalColumn getCatalogColumn( long namespaceId, long tableId, SqlIdentifier columnName ) {
         LogicalColumn logicalColumn;
-        try {
-            logicalColumn = snapshot.getRelSnapshot( namespaceId ).getColumn( tableId, columnName.getSimple() );
-        } catch ( UnknownColumnException e ) {
-            throw CoreUtil.newContextException( columnName.getPos(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
-        }
+        logicalColumn = snapshot.getRelSnapshot( namespaceId ).getColumn( tableId, columnName.getSimple() );
         return logicalColumn;
     }
 

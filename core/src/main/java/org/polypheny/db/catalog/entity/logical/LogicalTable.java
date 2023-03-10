@@ -17,11 +17,13 @@
 package org.polypheny.db.catalog.entity.logical;
 
 
+import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
@@ -50,6 +52,9 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
     @Serialize
     public boolean modifiable;
 
+    @Getter
+    @Serialize
+    public final ImmutableList<Long> connectedViews;
 
 
     public LogicalTable(
@@ -58,11 +63,13 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("entityType") @NonNull final EntityType type,
             @Deserialize("primaryKey") final Long primaryKey,
-            @Deserialize("modifiable") boolean modifiable ) {
+            @Deserialize("modifiable") boolean modifiable,
+            @Deserialize("connectedViews") ImmutableList<Long> connectedViews ) {
         super( id, name, namespaceId, type, NamespaceType.RELATIONAL );
         this.primaryKey = primaryKey;
         this.modifiable = modifiable;
 
+        this.connectedViews = connectedViews;
         if ( type == EntityType.ENTITY && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
@@ -124,10 +131,6 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
         return null;
     }
 
-
-    public List<Long> getConnectedViews() {
-        return null;
-    }
 
 
 

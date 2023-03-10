@@ -88,7 +88,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
@@ -198,14 +197,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     while ( updateColumnListIterator.hasNext() ) {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
-                        try {
-                            LogicalColumn logicalColumn = snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
-                            if ( !snapshot.getAllocSnapshot().checkIfExistsColumnPlacement( pkPlacement.adapterId, logicalColumn.id ) ) {
-                                updateColumnListIterator.remove();
-                                sourceExpressionListIterator.remove();
-                            }
-                        } catch ( UnknownColumnException e ) {
-                            throw new RuntimeException( e );
+                        LogicalColumn logicalColumn = snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
+                        if ( !snapshot.getAllocSnapshot().checkIfExistsColumnPlacement( pkPlacement.adapterId, logicalColumn.id ) ) {
+                            updateColumnListIterator.remove();
+                            sourceExpressionListIterator.remove();
                         }
                     }
                     if ( updateColumnList.size() == 0 ) {
@@ -265,27 +260,23 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     int index = 0;
 
                     for ( String cn : updateColumnList ) {
-                        try {
-                            if ( snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionProperty.partitionColumnId, index );
-                                }
-                                // Routing/Locking can now be executed on certain partitions
-                                partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug(
-                                            "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
-                                            partitionValue,
-                                            partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
-                                }
-                                identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                                // Needed to verify if UPDATE shall be executed on two partitions or not
-                                identifiedPartitionForSetValue = identPart;
-                                accessedPartitionList.add( identPart );
-                                break;
+                        if ( snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
+                            if ( log.isDebugEnabled() ) {
+                                log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionProperty.partitionColumnId, index );
                             }
-                        } catch ( UnknownColumnException e ) {
-                            throw new RuntimeException( e );
+                            // Routing/Locking can now be executed on certain partitions
+                            partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
+                            if ( log.isDebugEnabled() ) {
+                                log.debug(
+                                        "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
+                                        partitionValue,
+                                        partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
+                            }
+                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                            // Needed to verify if UPDATE shall be executed on two partitions or not
+                            identifiedPartitionForSetValue = identPart;
+                            accessedPartitionList.add( identPart );
+                            break;
                         }
                         index++;
                     }
@@ -1332,31 +1323,27 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             int index = ((RexInputRef) operand).getIndex();
             AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
             LogicalColumn column;
-            try {
-                String columnName;
-                String[] columnNames = field.getName().split( "\\." );
-                if ( columnNames.length == 1 ) { // columnName
-                    columnName = columnNames[0];
-                } else if ( columnNames.length == 2 ) { // tableName.columnName
-                    if ( !catalogTable.name.equalsIgnoreCase( columnNames[0] ) ) {
-                        throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
-                    }
-                    columnName = columnNames[1];
-                } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
-                    if ( !catalogTable.getNamespaceName().equalsIgnoreCase( columnNames[0] ) ) {
-                        throw new RuntimeException( "Schema name does not match expected schema name: " + field.getName() );
-                    }
-                    if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
-                        throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
-                    }
-                    columnName = columnNames[2];
-                } else {
-                    throw new RuntimeException( "Invalid column name: " + field.getName() );
+            String columnName;
+            String[] columnNames = field.getName().split( "\\." );
+            if ( columnNames.length == 1 ) { // columnName
+                columnName = columnNames[0];
+            } else if ( columnNames.length == 2 ) { // tableName.columnName
+                if ( !catalogTable.name.equalsIgnoreCase( columnNames[0] ) ) {
+                    throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
                 }
-                column = snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
-            } catch ( UnknownColumnException e ) {
-                throw new RuntimeException( e );
+                columnName = columnNames[1];
+            } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
+                if ( !catalogTable.getNamespaceName().equalsIgnoreCase( columnNames[0] ) ) {
+                    throw new RuntimeException( "Schema name does not match expected schema name: " + field.getName() );
+                }
+                if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
+                    throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
+                }
+                columnName = columnNames[2];
+            } else {
+                throw new RuntimeException( "Invalid column name: " + field.getName() );
             }
+            column = snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
             if ( !snapshot.getAllocSnapshot().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
