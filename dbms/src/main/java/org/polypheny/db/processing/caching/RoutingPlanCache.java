@@ -38,6 +38,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.polyfier.PolyfierProcess;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.util.Pair;
 
@@ -88,7 +89,9 @@ public class RoutingPlanCache {
         // This might be only a symptom fix and needs fixing in the ProposedPlan itself
         if ( routingPlans.stream().allMatch( p -> {
             if ( !partitionIds.stream().allMatch( i -> p.physicalPlacementsOfPartitions.containsKey( i ) ) ) {
-                log.warn( "Does not contain all placement." );
+                if ( ! PolyfierProcess.testRun ) { // This warning is overpopulating stdout in the case of randomization.
+                    log.warn( "Does not contain all placement." );
+                }
                 return false;
             }
             return true;

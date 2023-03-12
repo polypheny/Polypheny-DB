@@ -137,6 +137,7 @@ licensee {
     allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
+    allowDependency('org.jgrapht', 'jgrapht-core', '1.5.1') { because 'Eclipse Public License v. 2.0' }
 
     allowDependency('org.ow2.asm', 'asm-util', '7.1') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm', '7.1') { because 'BSD 3-Clause' }

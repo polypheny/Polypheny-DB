@@ -17,21 +17,12 @@
 package org.polypheny.db.monitoring.events.metrics;
 
 
+import lombok.*;
+import org.polypheny.db.monitoring.events.QueryDataPoint;
+
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.polypheny.db.monitoring.events.QueryDataPoint;
-import org.polypheny.db.plan.PhysicalPlan;
+import java.util.*;
 
 
 @Getter
@@ -62,8 +53,6 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private Integer indexSize;
     @Builder.Default
     private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
-
-    private PhysicalPlan physicalPlan;
 
 
     @Override

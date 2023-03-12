@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.polyfier.PolyfierProcess;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
@@ -121,7 +122,9 @@ public class IcarusRouter extends FullPlacementQueryRouter {
             if ( newBuilders.isEmpty() ) {
                 // apparently we have a problem and no builder fits
                 cancelQuery = true;
-                log.error( "Icarus did not find a suitable builder!" );
+                if ( ! PolyfierProcess.testRun ) {
+                    log.error( "Icarus did not find a suitable builder!" );
+                }
                 return Collections.emptyList();
             }
 

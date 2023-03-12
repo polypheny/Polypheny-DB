@@ -18,7 +18,7 @@ package adaptimizer.polyfier;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adaptimizer.polyfierconnect.pseudo.ConstructUtil;
+import org.polypheny.db.polyfier.core.construct.ConstructUtil;
 import org.polypheny.db.type.PolyType;
 
 import java.util.List;
@@ -28,18 +28,6 @@ public class ConstructionUtilTest {
 
 
     public static void main(String[] args) {
-
-        List<PolyType> left = List.of( PolyType.DATE, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.FLOAT, PolyType.INTEGER, PolyType.DOUBLE, PolyType.DOUBLE, PolyType.DOUBLE );
-        List<PolyType> right = List.of( PolyType.INTEGER, PolyType.DOUBLE, PolyType.VARCHAR, PolyType.DOUBLE, PolyType.TIME, PolyType.TIME, PolyType.INTEGER, PolyType.FLOAT );
-
-        ConstructUtil.SetOpProblem<PolyType> setOpProblem = new ConstructUtil.SetOpProblem<>( left, right );
-
-        setOpProblem.get().ifPresentOrElse(
-                solution -> System.out.println( solution.getProjectionCodeLeft().toString()  + " : " + solution.getProjectionCodeRight().toString() ),
-                () -> System.out.println( "No Solution." )
-        );
-
-
     }
 
 

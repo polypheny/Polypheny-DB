@@ -97,7 +97,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
  * <p>
  * It is not thread-safe.
  */
-public class AlgBuilder {
+public class  AlgBuilder {
 
     @Getter
     protected final AlgOptCluster cluster;

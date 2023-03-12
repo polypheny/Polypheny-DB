@@ -17,15 +17,15 @@
 package org.polypheny.db.monitoring.events;
 
 
-import java.util.Arrays;
-import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-import org.polypheny.db.plan.PhysicalPlan;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 @Getter
@@ -34,9 +34,6 @@ import org.polypheny.db.plan.PhysicalPlan;
 public class QueryEvent extends StatementEvent {
 
     protected boolean updatePostCosts = false;
-
-    private PhysicalPlan physicalPlan;
-
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {

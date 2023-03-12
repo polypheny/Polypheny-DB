@@ -21,28 +21,17 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.OptionType;
-import java.awt.SystemTray;
-import java.io.File;
-import java.io.Serializable;
-import java.util.List;
-import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.adaptimizer.AdaptiveOptimizerImpl;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -64,22 +53,26 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.polyfier.PolyfierInformation;
+import org.polypheny.db.polyfier.PolyfierProcess;
+import org.polypheny.db.polyfier.data.DataGenerator;
+import org.polypheny.db.polyfier.schemas.DefaultTestEnvironment;
+import org.polypheny.db.polyfier.schemas.RandomSchemaGenerator;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
-import org.polypheny.db.transaction.PUID;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.*;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
-import org.polypheny.db.webui.ConfigServer;
-import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.InformationServer;
-import org.polypheny.db.webui.UiTestingConfigPage;
-import org.polypheny.db.webui.UiTestingMonitoringPage;
+import org.polypheny.db.webui.*;
+
+import javax.inject.Inject;
+import java.awt.*;
+import java.io.File;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
 
 
 @Command(name = "polypheny-db", description = "Polypheny-DB command line hook.")
@@ -122,6 +115,18 @@ public class PolyphenyDb {
 
     @Option(name = { "-v", "--version" }, description = "Current version of Polypheny-DB")
     public boolean versionOptionEnabled = false;
+
+    @Option(name = { "--polyfier" }, description = "Launches Polypheny-DB in Polyfier-Mode")
+    public boolean polyfierMode = false;
+
+    @Option(name = { "-pcid" }, description = "Launches Polypheny-DB in Polyfier-Mode")
+    public String polyfierClientId = "";
+
+    @Option(name = { "-papik" }, description = "Launches Polypheny-DB in Polyfier-Mode")
+    public String polyfierApiKey = "";
+
+    @Option(name = { "-purl" }, description = "Launches Polypheny-DB in Polyfier-Mode")
+    public String polyfierUrl = "";
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
@@ -427,7 +432,26 @@ public class PolyphenyDb {
         RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.addObserver( tracker );
 
         // Add adaptive optimizer for operator costs
-        AdaptiveOptimizerImpl.configure( transactionManager );
+//        AdaptiveOptimizerImpl.configure( transactionManager );
+
+
+        DefaultTestEnvironment.setTransactionManager( transactionManager );
+        PolyfierProcess.setTransactionManager( transactionManager );
+        DataGenerator.setTransactionManager( transactionManager );
+        RandomSchemaGenerator.setTransactionManager( transactionManager );
+        PolyfierInformation.configurePolyfierInformation();
+        // Polyfier Mode
+        if ( polyfierMode ) {
+            if (Objects.equals(polyfierApiKey, "") || Objects.equals(polyfierClientId, "") || Objects.equals(polyfierUrl, "")) {
+                log.error("No API Key or ClientID or URL for Polyfier provided.");
+                System.exit(1);
+            }
+            log.info("Launching in Polyfier-mode...");
+            PolyfierProcess.processPolyfierJob( polyfierUrl, polyfierApiKey, polyfierClientId );
+            log.info("Polyfier-Job successfully processed.");
+            System.exit( 0 );
+        }
+
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

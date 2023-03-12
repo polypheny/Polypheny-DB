@@ -16,21 +16,21 @@
 
 package org.polypheny.db.routing.strategies;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.PhysicalPlan;
 import org.polypheny.db.routing.RouterPlanSelectionStrategy;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.routing.UiRoutingPageUtil;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 /**
