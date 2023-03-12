@@ -52,6 +52,8 @@ import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
@@ -667,7 +669,7 @@ public class LoptSemiJoinOptimizer {
     private abstract static class LcsEntity extends CatalogEntity {
 
         protected LcsEntity() {
-            super( null );
+            super( -1, "lcs", -1, EntityType.ENTITY, NamespaceType.RELATIONAL );
         }
 
     }

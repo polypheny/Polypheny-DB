@@ -30,12 +30,14 @@ public abstract class PhysicalEntity extends CatalogEntity {
 
     public String namespaceName;
     public long adapterId;
+    public long logicalId;
 
 
-    protected PhysicalEntity( long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
+    protected PhysicalEntity( long id, long logicalId, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
         super( id, name, namespaceId, type, namespaceType );
         this.namespaceName = namespaceName;
         this.adapterId = adapterId;
+        this.logicalId = logicalId;
     }
 
 

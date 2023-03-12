@@ -41,4 +41,9 @@ public interface PhysicalSnapshot {
 
     List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId );
 
+
+    PhysicalEntity getPhysicalEntity( long id );
+
+    List<PhysicalEntity> fromLogical( long id );
+
 }

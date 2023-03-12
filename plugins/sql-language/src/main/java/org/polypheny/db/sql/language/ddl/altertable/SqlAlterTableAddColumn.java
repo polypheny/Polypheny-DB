@@ -22,9 +22,10 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -131,8 +132,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( long storeId : catalogTable.dataPlacements ) {
-            getDataStoreInstance( storeId );
+        for ( CatalogDataPlacement placement : statement.getTransaction().getSnapshot().getAllocSnapshot().getDataPlacements( catalogTable.id ) ) {
+            getDataStoreInstance( placement.adapterId );
         }
 
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();

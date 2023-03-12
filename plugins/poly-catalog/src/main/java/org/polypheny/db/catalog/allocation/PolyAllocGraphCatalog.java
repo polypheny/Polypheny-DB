@@ -17,10 +17,12 @@
 package org.polypheny.db.catalog.allocation;
 
 import io.activej.serializer.BinarySerializer;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 
 public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatalog {
 
@@ -28,6 +30,9 @@ public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatal
     private final LogicalNamespace namespace;
     @Getter
     public BinarySerializer<PolyAllocGraphCatalog> serializer = Serializable.builder.get().build( PolyAllocGraphCatalog.class );
+
+    @Getter
+    public ConcurrentHashMap<Long, AllocationGraph> graphs;
 
 
     public PolyAllocGraphCatalog( LogicalNamespace namespace ) {

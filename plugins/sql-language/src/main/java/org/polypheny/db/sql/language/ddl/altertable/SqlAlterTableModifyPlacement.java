@@ -24,8 +24,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
@@ -123,7 +123,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !catalogTable.partitionProperty.isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+        if ( !statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
             throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 

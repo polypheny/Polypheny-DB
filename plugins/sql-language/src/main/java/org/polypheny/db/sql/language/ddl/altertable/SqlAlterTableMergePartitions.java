@@ -20,14 +20,14 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -88,10 +88,10 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         }
 
         // Check if table is even partitioned
-        if ( catalogTable.partitionProperty.partitionType != PartitionType.NONE ) {
+        if ( statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).partitionType != PartitionType.NONE ) {
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getNamespaceName() );
+                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, statement.getTransaction().getSnapshot().getNamespace( catalogTable.namespaceId ).name );
             }
 
             try {

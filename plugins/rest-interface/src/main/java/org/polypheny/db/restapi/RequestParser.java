@@ -278,7 +278,7 @@ public class RequestParser {
         for ( LogicalTable table : tables ) {
             tableOffsets.put( table.id, columnOffset );
             validColumns.addAll( table.getColumnIds() );
-            columnOffset += table.columns.size();
+            columnOffset += table.getColumns().size();
         }
 
         List<RequestColumn> columns;
@@ -306,7 +306,7 @@ public class RequestParser {
         List<RequestColumn> columns = new ArrayList<>();
         long internalPosition = 0L;
         for ( LogicalTable table : tables ) {
-            for ( LogicalColumn column : table.columns ) {
+            for ( LogicalColumn column : table.getColumns() ) {
                 int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
                 RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );
                 columns.add( requestColumn );

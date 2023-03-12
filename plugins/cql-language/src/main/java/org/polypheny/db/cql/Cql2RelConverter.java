@@ -119,8 +119,8 @@ public class Cql2RelConverter {
         cqlQuery.queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 TableIndex tableIndex = treeNode.getExternalNode();
-                for ( LogicalColumn column : tableIndex.catalogTable.columns ) {
-                    tableScanColumnOrdinalities.put( column.id, tableScanColumnOrdinalities.size() );
+                for ( Long id : tableIndex.catalogTable.getColumnIds() ) {
+                    tableScanColumnOrdinalities.put( id, tableScanColumnOrdinalities.size() );
                 }
             }
             return true;
@@ -147,7 +147,7 @@ public class Cql2RelConverter {
                     if ( treeNode.isLeaf() ) {
                         LogicalTable catalogTable = treeNode.getExternalNode().catalogTable;
                         algBuilderAtomicReference.set(
-                                algBuilderAtomicReference.get().scan( catalogTable.getNamespaceName(), catalogTable.name )
+                                algBuilderAtomicReference.get().scan( Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).name, catalogTable.name )
                         );
                     } else {
                         Combiner combiner = treeNode.getInternalNode();
@@ -195,7 +195,7 @@ public class Cql2RelConverter {
                     TableIndex tableIndex = treeNode.getExternalNode();
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
                     LogicalTable catalogTable = tableIndex.catalogTable;
-                    for ( LogicalColumn column : catalogTable.columns ) {
+                    for ( LogicalColumn column : catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumns( catalogTable.id ) ) {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );

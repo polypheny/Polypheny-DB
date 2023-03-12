@@ -16,59 +16,122 @@
 
 package org.polypheny.db.catalog.snapshot.impl;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import lombok.Value;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
+import org.polypheny.db.util.Pair;
 
+@Value
 public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
+    ImmutableMap<Long, PhysicalEntity> entities;
+
+    ImmutableMap<Pair<Long, Long>, PhysicalEntity> adapterLogicalEntity;
+    ImmutableMap<Long, List<PhysicalEntity>> adapterPhysicals;
+
+    ImmutableMap<Long, List<PhysicalEntity>> logicalToPhysicals;
+
+
     public PhysicalSnapshotImpl( Map<Long, PhysicalCatalog> physicalCatalogs ) {
+        this.entities = ImmutableMap.copyOf( physicalCatalogs.values().stream().flatMap( c -> c.getPhysicals().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.adapterLogicalEntity = buildAdapterLogicalEntity();
+        this.adapterPhysicals = buildAdapterPhysicals();
+        this.logicalToPhysicals = buildLogicalToPhysicals();
+    }
+
+
+    private ImmutableMap<Long, List<PhysicalEntity>> buildLogicalToPhysicals() {
+        Map<Long, List<PhysicalEntity>> map = new HashMap<>();
+        this.entities.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.logicalId ) ) {
+                map.put( v.logicalId, new ArrayList<>() );
+            }
+            map.get( v.logicalId ).add( v );
+        } );
+
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, List<PhysicalEntity>> buildAdapterPhysicals() {
+        Map<Long, List<PhysicalEntity>> map = new HashMap<>();
+        this.entities.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.adapterId ) ) {
+                map.put( v.adapterId, new ArrayList<>() );
+            }
+            map.get( v.adapterId ).add( v );
+        } );
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Pair<Long, Long>, PhysicalEntity> buildAdapterLogicalEntity() {
+        Map<Pair<Long, Long>, PhysicalEntity> map = new HashMap<>();
+        this.entities.forEach( ( k, v ) -> map.put( Pair.of( v.adapterId, v.logicalId ), v ) );
+        return ImmutableMap.copyOf( map );
     }
 
 
     @Override
     public PhysicalTable getPhysicalTable( long id ) {
-        return null;
+        return entities.get( id ).unwrap( PhysicalTable.class );
     }
 
 
     @Override
     public PhysicalTable getPhysicalTable( long logicalId, long adapterId ) {
-        return null;
+        return adapterLogicalEntity.get( Pair.of( adapterId, logicalId ) ).unwrap( PhysicalTable.class );
     }
 
 
     @Override
     public PhysicalCollection getPhysicalCollection( long id ) {
-        return null;
+        return entities.get( id ).unwrap( PhysicalCollection.class );
     }
 
 
     @Override
     public PhysicalCollection getPhysicalCollection( long logicalId, long adapterId ) {
-        return null;
+        return adapterLogicalEntity.get( Pair.of( adapterId, logicalId ) ).unwrap( PhysicalCollection.class );
     }
 
 
     @Override
     public PhysicalGraph getPhysicalGraph( long id ) {
-        return null;
+        return entities.get( id ).unwrap( PhysicalGraph.class );
     }
 
 
     @Override
     public PhysicalGraph getPhysicalGraph( long logicalId, long adapterId ) {
-        return null;
+        return adapterLogicalEntity.get( Pair.of( adapterId, logicalId ) ).unwrap( PhysicalGraph.class );
     }
 
 
     @Override
     public List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId ) {
+        return adapterPhysicals.get( adapterId );
+    }
+
+
+    @Override
+    public PhysicalEntity getPhysicalEntity( long id ) {
+        return entities.get( id );
+    }
+
+
+    public List<PhysicalEntity> fromLogical( long id ) {
         return null;
     }
 

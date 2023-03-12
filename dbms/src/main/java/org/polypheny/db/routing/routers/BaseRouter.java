@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -74,7 +75,6 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
@@ -115,7 +115,7 @@ public abstract class BaseRouter implements Router {
         // Find the adapter with the most column placements
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Long, ImmutableList<Long>> entry : Catalog.getInstance().getSnapshot().getAllocSnapshot().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, List<Long>> entry : snapshot.getAllocSnapshot().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -125,16 +125,12 @@ public abstract class BaseRouter implements Router {
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( LogicalColumn column : snapshot.getRelSnapshot( table.namespaceId ).getColumns( table.id ) ) {
-            if ( snapshot.getAllocSnapshot().getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
-                placementList.add( snapshot.getAllocSnapshot().getColumnPlacements( column.id ).get( 0 ) );
-            } else {
-                placementList.add( snapshot.getAllocSnapshot().getColumnPlacements( column.id ).get( 0 ) );
-            }
+            placementList.add( snapshot.getAllocSnapshot().getColumnPlacements( column.id ).get( 0 ) );
         }
 
         return new HashMap<>() {{
-            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( table.id );
-            put( property.partitionIds.get( 0 ), placementList );
+            List<AllocationEntity> allocs = snapshot.getAllocSnapshot().getAllocationsFromLogical( table.id );
+            put( allocs.get( 0 ).id, placementList );
         }};
     }
 

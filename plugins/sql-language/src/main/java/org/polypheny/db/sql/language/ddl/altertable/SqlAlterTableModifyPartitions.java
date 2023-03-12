@@ -105,7 +105,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        if ( !catalogTable.partitionProperty.isPartitioned ) {
+        if ( !statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).isPartitioned ) {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 
@@ -123,7 +123,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         long storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
-        if ( !catalogTable.dataPlacements.contains( storeId ) ) {
+        if ( !statement.getTransaction().getSnapshot().getAllocSnapshot().getDataPlacements( catalogTable.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).contains( storeId ) ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
@@ -137,10 +137,10 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             for ( int partitionId : partitionGroupList ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( catalogTable.partitionProperty.partitionGroupIds.get( partitionId ) );
+                    tempPartitionList.add( statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalogTable.partitionProperty.numPartitionGroups + " partitions" );
+                            + catalogTable.name + "', has only " + statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).numPartitionGroups + " partitions" );
                 }
             }
         }

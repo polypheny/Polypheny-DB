@@ -27,8 +27,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
 
-@EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
+@EqualsAndHashCode(callSuper = true)
 @Value
 public class CatalogMaterializedView extends CatalogView {
 

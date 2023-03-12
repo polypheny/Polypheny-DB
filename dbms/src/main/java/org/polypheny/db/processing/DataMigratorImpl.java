@@ -472,7 +472,7 @@ public class DataMigratorImpl implements DataMigrator {
         Snapshot snapshot = catalog.getSnapshot();
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Long, ImmutableList<Long>> entry : snapshot.getAllocSnapshot().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, List<Long>> entry : snapshot.getAllocSnapshot().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();

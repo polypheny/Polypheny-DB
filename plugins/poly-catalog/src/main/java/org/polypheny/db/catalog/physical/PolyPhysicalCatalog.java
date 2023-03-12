@@ -16,20 +16,16 @@
 
 package org.polypheny.db.catalog.physical;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.polypheny.db.catalog.PusherMap;
+import lombok.Getter;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 
 public class PolyPhysicalCatalog implements PhysicalCatalog {
 
-    private final PusherMap<Long, PhysicalEntity<?>> physicals;
-
-    private final ConcurrentHashMap<Long, PhysicalEntity<?>> logicalPhysical;
-    private final ConcurrentHashMap<Long, List<PhysicalEntity<?>>> physicalsPerAdapter;
+    @Getter
+    private final ConcurrentHashMap<Long, PhysicalEntity> physicals;
 
 
     public PolyPhysicalCatalog() {
@@ -37,46 +33,21 @@ public class PolyPhysicalCatalog implements PhysicalCatalog {
     }
 
 
-    public PolyPhysicalCatalog( Map<Long, PhysicalEntity<?>> physicals ) {
-        this.physicals = new PusherMap<>( physicals );
+    public PolyPhysicalCatalog( Map<Long, PhysicalEntity> physicals ) {
+        this.physicals = new ConcurrentHashMap<>( physicals );
 
-        this.logicalPhysical = new ConcurrentHashMap<>();
-        this.physicals.addRowConnection( this.logicalPhysical, ( k, v ) -> v.logical.id, ( k, v ) -> v );
-        this.physicalsPerAdapter = new ConcurrentHashMap<>();
-        this.physicals.addConnection( m -> {
-            physicalsPerAdapter.clear();
-            m.forEach( ( k, v ) -> {
-                if ( physicalsPerAdapter.containsKey( v.adapterId ) ) {
-                    physicalsPerAdapter.get( v.adapterId ).add( v );
-                } else {
-                    physicalsPerAdapter.put( v.adapterId, new ArrayList<>( List.of( v ) ) );
-                }
-            } );
-        } );
     }
 
 
-    @Override
-    public List<PhysicalEntity<?>> getPhysicalsOnAdapter( long id ) {
-        return physicalsPerAdapter.get( id );
-    }
-
-
-    @Override
-    public PhysicalEntity<?> getPhysicalEntity( long id ) {
+    PhysicalEntity getPhysicalEntity( long id ) {
         return physicals.get( id );
     }
 
 
     @Override
-    public void addPhysicalEntity( PhysicalEntity<?> physicalEntity ) {
+    public void addPhysicalEntity( PhysicalEntity physicalEntity ) {
         physicals.put( physicalEntity.id, physicalEntity );
     }
 
-
-    @Override
-    public PhysicalEntity<?> getFromLogical( long id ) {
-        return logicalPhysical.get( id );
-    }
 
 }

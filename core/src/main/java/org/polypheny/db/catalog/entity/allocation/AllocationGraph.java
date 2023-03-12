@@ -37,7 +37,7 @@ public class AllocationGraph extends AllocationEntity {
 
 
     public AllocationGraph( long id, LogicalGraph graph, long adapterId ) {
-        super( id, graph.name, graph.id, graph.namespaceId, adapterId, NamespaceType.GRAPH );
+        super( id, graph.id, graph.namespaceId, adapterId, NamespaceType.GRAPH );
         this.id = id;
         this.logical = graph;
     }

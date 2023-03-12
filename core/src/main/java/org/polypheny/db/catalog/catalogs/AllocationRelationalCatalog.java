@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -33,8 +32,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     /**
      * Adds a placement for a column.
      *
-     * @param table
-     * @param adapterId The adapter on which the table should be placed on
+     * @param allocationId
      * @param columnId The id of the column to be placed
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
@@ -42,16 +40,16 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param physicalColumnName The column name on the adapter
      * @param position
      */
-    void addColumnPlacement( LogicalTable table, long adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position );
+    void addColumnPlacement( long allocationId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position );
 
     /**
      * Deletes all dependent column placements
      *
-     * @param adapterId The id of the adapter
+     * @param allocationId The id of the adapter
      * @param columnId The id of the column
      * @param columnOnly columnOnly If delete originates from a dropColumn
      */
-    void deleteColumnPlacement( long adapterId, long columnId, boolean columnOnly );
+    void deleteColumnPlacement( long allocationId, long columnId, boolean columnOnly );
 
 
 
@@ -223,8 +221,9 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      *
      * @param adapterId adapter where placement should be located
      * @param tableId table to retrieve the placement from
+     * @return
      */
-    void addDataPlacement( long adapterId, long tableId );
+    long addDataPlacement( long adapterId, long tableId );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store.

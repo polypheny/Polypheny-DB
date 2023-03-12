@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -268,8 +269,8 @@ public class EntityAccessMap {
                 relevantPartitions = accessedPartitions.get( p.getId() );
             } else if ( table != null ) {
                 if ( table.namespaceType == NamespaceType.RELATIONAL ) {
-                    PartitionProperty property = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionProperty( table.id );
-                    relevantPartitions = property.partitionIds;
+                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().getAllocSnapshot().getAllocationsFromLogical( table.id );
+                    relevantPartitions = allocations.stream().map( a -> a.id ).collect( Collectors.toList() );
                 } else {
                     relevantPartitions = List.of();
                 }

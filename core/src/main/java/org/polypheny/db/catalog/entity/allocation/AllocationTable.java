@@ -22,12 +22,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -36,24 +37,19 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-@SuperBuilder(toBuilder = true)
 public class AllocationTable extends AllocationEntity {
 
     @Serialize
     public List<CatalogColumnPlacement> placements;
-    @Serialize
-    public long adapterId;
 
 
     public AllocationTable(
             @Deserialize("id") long id,
-            @Deserialize("name") String name,
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId,
             @Deserialize("placements") List<CatalogColumnPlacement> placements ) {
-        super( id, name, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
-        this.adapterId = adapterId;
+        super( id, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
         this.placements = placements;
     }
 
@@ -71,18 +67,17 @@ public class AllocationTable extends AllocationEntity {
 
 
     public Map<Long, String> getColumnNames() {
-        return null;
+        return getColumns().values().stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) );
     }
 
 
-    @Deprecated
     public Map<Long, LogicalColumn> getColumns() {
-        return null;
+        return Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumns( id ).stream().collect( Collectors.toMap( c -> c.id, c -> c ) );
     }
 
 
     public String getNamespaceName() {
-        return null;
+        return Catalog.getInstance().getSnapshot().getNamespace( id ).name;
     }
 
 
@@ -90,13 +85,23 @@ public class AllocationTable extends AllocationEntity {
         List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
         placements.add( new CatalogColumnPlacement( namespaceId, id, columnId, adapterId, placementType, physicalSchemaName, physicalColumnName, 0 ) );
 
-        return toBuilder().placements( placements ).build();
+        return new AllocationTable( id, logicalId, namespaceId, adapterId, placements );
     }
 
 
     public AllocationTable withRemovedColumn( long columnId ) {
         List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
-        return toBuilder().placements( placements.stream().filter( p -> p.columnId != columnId ).collect( Collectors.toList() ) ).build();
+        return new AllocationTable( id, logicalId, namespaceId, adapterId, placements.stream().filter( p -> p.columnId != columnId ).collect( Collectors.toList() ) );
+    }
+
+
+    public Map<Long, AlgDataType> getColumnTypes() {
+        return null;
+    }
+
+
+    public Map<String, Long> getColumnNamesId() {
+        return getColumnNames().entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
     }
 
 }

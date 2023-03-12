@@ -19,9 +19,7 @@ package org.polypheny.db.catalog.entity;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Value;
+import lombok.Getter;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.StatisticsManager;
@@ -38,10 +36,11 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
 
+@Getter
 @SuperBuilder(toBuilder = true)
-@Value
 @NonFinal
 public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible {
+
     @Serialize
     public long id;
     @Serialize
@@ -54,7 +53,12 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
     public long namespaceId;
 
 
-    public CatalogEntity( long id, String name, long namespaceId, EntityType type, NamespaceType namespaceType ) {
+    public CatalogEntity(
+            long id,
+            String name,
+            long namespaceId,
+            EntityType type,
+            NamespaceType namespaceType ) {
         this.id = id;
         this.namespaceId = namespaceId;
         this.name = name;

@@ -16,10 +16,10 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import io.activej.serializer.annotations.Serialize;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -27,15 +27,21 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-@SuperBuilder(toBuilder = true)
 public abstract class AllocationEntity extends CatalogEntity {
 
+    @Serialize
     public long adapterId;
+    @Serialize
     public long logicalId;
 
 
-    protected AllocationEntity( long id, String name, long logicalId, long namespaceId, long adapterId, NamespaceType type ) {
-        super( id, name, namespaceId, EntityType.ENTITY, type );
+    protected AllocationEntity(
+            long id,
+            long logicalId,
+            long namespaceId,
+            long adapterId,
+            NamespaceType type ) {
+        super( id, null, namespaceId, EntityType.ENTITY, type );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
     }

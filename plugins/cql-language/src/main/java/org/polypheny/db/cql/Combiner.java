@@ -18,11 +18,15 @@ package org.polypheny.db.cql;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
@@ -146,7 +150,10 @@ public class Combiner {
         LogicalTable rightCatalogTable = right.catalogTable;
         List<String> columnList = Arrays.asList( columnStrs );
 
-        if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) || !rightCatalogTable.getColumnNames().containsAll( columnList ) ) {
+        LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( leftCatalogTable.namespaceId );
+        List<String> lColumnNames = relSnapshot.getColumns( leftCatalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
+        List<String> rColumnNames = relSnapshot.getColumns( rightCatalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
+        if ( !new HashSet<>( lColumnNames ).containsAll( columnList ) || !new HashSet<>( rColumnNames ).containsAll( columnList ) ) {
             log.error( "Invalid Modifier Values. Cannot join tables '{}' and '{}' on columns {}",
                     leftCatalogTable.name, rightCatalogTable.name, columnList );
             throw new InvalidModifierException( "Invalid Modifier Values. Cannot join tables '" +
@@ -163,8 +170,9 @@ public class Combiner {
         if ( log.isDebugEnabled() ) {
             log.debug( "Getting Common Columns between '{}' and '{}'.", table1.fullyQualifiedName, table2.fullyQualifiedName );
         }
-        List<String> table1Columns = table1.catalogTable.getColumnNames();
-        List<String> table2Columns = table2.catalogTable.getColumnNames();
+        LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( table1.catalogTable.namespaceId );
+        List<String> table1Columns = relSnapshot.getColumns( table1.catalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
+        List<String> table2Columns = relSnapshot.getColumns( table2.catalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
 
         return table1Columns.stream().filter( table2Columns::contains ).toArray( String[]::new );
     }

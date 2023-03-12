@@ -37,6 +37,7 @@ package org.polypheny.db.adapter.jdbc;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -110,7 +111,8 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
                 allocationTable,
                 getPhysicalTableName( jdbcSchema.adapter, logicalTable, allocationTable ),
                 getPhysicalSchemaName( jdbcSchema.adapter ),
-                getPhysicalColumnNames( jdbcSchema.adapter, allocationTable ) );
+                getPhysicalColumnNames( jdbcSchema.adapter, allocationTable ),
+                allocationTable.getColumnTypes() );
         this.logical = logicalTable;
         this.allocation = allocationTable;
         this.jdbcSchema = jdbcSchema;
@@ -118,9 +120,9 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
     }
 
 
-    private static List<String> getPhysicalColumnNames( Adapter adapter, AllocationTable allocationTable ) {
+    private static Map<Long, String> getPhysicalColumnNames( Adapter adapter, AllocationTable allocationTable ) {
         AbstractJdbcStore store = (AbstractJdbcStore) adapter;
-        return allocationTable.getColumns().values().stream().map( c -> store.getPhysicalColumnName( c.id ) ).collect( Collectors.toList() );
+        return allocationTable.getColumns().values().stream().collect( Collectors.toMap( c -> c.id, c -> store.getPhysicalColumnName( c.id ) ) );
     }
 
 
@@ -154,7 +156,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
     SqlString generateSql() {
         List<SqlNode> pcnl = Expressions.list();
-        for ( String str : columnNames ) {
+        for ( String str : allocation.getColumnNames().values() ) {
             pcnl.add( new SqlIdentifier( Arrays.asList( name, str ), ParserPos.ZERO ) );
         }
 
@@ -184,7 +186,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     public SqlIdentifier physicalColumnName( String logicalColumnName ) {
-        String physicalName = columnNames.get( List.copyOf( allocation.getColumnNames().values() ).indexOf( logicalColumnName ) );
+        String physicalName = columns.get( List.of( allocation.getColumnNamesId().values() ).indexOf( logicalColumnName ) );
         return new SqlIdentifier( Collections.singletonList( physicalName ), ParserPos.ZERO );
     }
 
@@ -197,7 +199,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
     public SqlNodeList getNodeList() {
         List<SqlNode> pcnl = Expressions.list();
         int i = 0;
-        for ( String str : columnNames ) {
+        for ( String str : columns.values() ) {
             SqlNode[] operands = new SqlNode[]{
                     new SqlIdentifier( Arrays.asList( namespaceName, name, str ), ParserPos.ZERO ),
                     new SqlIdentifier( Collections.singletonList( List.copyOf( allocation.getColumnNames().values() ).get( i++ ) ), ParserPos.ZERO )

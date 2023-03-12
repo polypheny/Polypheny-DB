@@ -45,6 +45,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -266,8 +267,8 @@ public class PolyCatalog extends Catalog implements Serializable {
             if ( table.name.equals( "emp" ) || table.name.equals( "work" ) ) {
                 filename += ".gz";
             }
-
-            getAllocRel( table.namespaceId ).addColumnPlacement( table, csv.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
+            long allocId = getAllocRel( table.namespaceId ).addDataPlacement( csv.id, table.id );
+            getAllocRel( table.namespaceId ).addColumnPlacement( allocId, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
             getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
             // long partitionId = table.partitionProperty.partitionIds.get( 0 );
@@ -279,7 +280,8 @@ public class PolyCatalog extends Catalog implements Serializable {
     private void addDefaultColumn( CatalogAdapter adapter, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !getSnapshot().getRelSnapshot( table.namespaceId ).checkIfExistsColumn( table.id, name ) ) {
             long colId = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
-            getAllocRel( table.namespaceId ).addColumnPlacement( table, adapter.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
+            AllocationEntity entity = getSnapshot().getAllocSnapshot().getAllocation( adapter.id, table.id );
+            getAllocRel( table.namespaceId ).addColumnPlacement( entity.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
             getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( adapter.id, colId, position );
         }
     }
@@ -411,15 +413,15 @@ public class PolyCatalog extends Catalog implements Serializable {
         switch ( namespaceType ) {
             case RELATIONAL:
                 logicalCatalogs.put( id, new RelationalCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocRelCatalog() );
+                allocationCatalogs.put( id, new PolyAllocRelCatalog( namespace ) );
                 break;
             case DOCUMENT:
                 logicalCatalogs.put( id, new DocumentCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocDocCatalog() );
+                allocationCatalogs.put( id, new PolyAllocDocCatalog( namespace ) );
                 break;
             case GRAPH:
                 logicalCatalogs.put( id, new GraphCatalog( namespace ) );
-                allocationCatalogs.put( id, new PolyAllocGraphCatalog() );
+                allocationCatalogs.put( id, new PolyAllocGraphCatalog( namespace ) );
                 break;
         }
         physicalCatalogs.put( id, new PolyPhysicalCatalog() );

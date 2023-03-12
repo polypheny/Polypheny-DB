@@ -22,6 +22,7 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -39,8 +40,9 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.schema.ColumnStrategy;
 
 @EqualsAndHashCode(callSuper = false)
-@NonFinal
 @SuperBuilder(toBuilder = true)
+@NonFinal
+//@Value
 public class LogicalTable extends LogicalEntity implements Comparable<LogicalTable> {
 
     private static final long serialVersionUID = 4653390333258552102L;
@@ -54,7 +56,7 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
 
     @Getter
     @Serialize
-    public final ImmutableList<Long> connectedViews;
+    public ImmutableList<Long> connectedViews;
 
 
     public LogicalTable(
@@ -74,7 +76,6 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
     }
-
 
 
     // Used for creating ResultSets
@@ -132,6 +133,24 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
     }
 
 
+    public List<LogicalColumn> getColumns() {
+        return Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumns( id );
+    }
+
+
+    public List<Long> getColumnIds() {
+        return getColumns().stream().map( c -> c.id ).collect( Collectors.toList() );
+    }
+
+
+    public List<String> getColumnNames() {
+        return getColumns().stream().map( c -> c.name ).collect( Collectors.toList() );
+    }
+
+
+    public String getNamespaceName() {
+        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).name;
+    }
 
 
     @RequiredArgsConstructor

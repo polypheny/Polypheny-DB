@@ -16,9 +16,8 @@
 
 package org.polypheny.db.catalog.snapshot;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
@@ -29,7 +28,6 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -107,7 +105,7 @@ public interface AllocSnapshot {
      * @param tableId The id of the table for the requested column placements
      * @return The requested collection
      */
-    ImmutableMap<Long, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
+    Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId );
 
     /**
      * Gets the partition group sorted by partition.
@@ -373,7 +371,7 @@ public interface AllocSnapshot {
     boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId );
 
 
-    List<AllocationTable> getAllocationsFromLogical( long logicalId );
+    List<AllocationEntity> getAllocationsFromLogical( long logicalId );
 
     boolean isPartitioned( long id );
 
@@ -408,5 +406,7 @@ public interface AllocSnapshot {
     PartitionProperty getPartitionProperty( long id );
 
     boolean adapterHasPlacement( long adapterId, long id );
+
+    AllocationEntity getAllocation( long adapterId, long entityId );
 
 }

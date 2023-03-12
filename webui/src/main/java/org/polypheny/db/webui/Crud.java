@@ -112,7 +112,7 @@ import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -305,7 +305,7 @@ public class Crud implements InformationObserver {
         // determine if it is a view or a table
         LogicalTable catalogTable;
         catalogTable = catalog.getSnapshot().getRelSnapshot( catalog.getSnapshot().getNamespace( t[0] ).id ).getTable( t[1] );
-        result.setNamespaceType( catalogTable.getNamespaceType() );
+        result.setNamespaceType( catalogTable.namespaceType );
         if ( catalogTable.modifiable ) {
             result.setType( ResultType.TABLE );
         } else {
@@ -1187,7 +1187,7 @@ public class Crud implements InformationObserver {
             }
             ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW ) );
         } else {
-            List<AllocationTable> allocs = catalog.getSnapshot().getAllocSnapshot().getAllocationsFromLogical( catalogTable.id );
+            List<AllocationEntity> allocs = catalog.getSnapshot().getAllocSnapshot().getAllocationsFromLogical( catalogTable.id );
             if ( catalog.getSnapshot().getAllocSnapshot().getAllocationsFromLogical( catalogTable.id ).size() != 1 ) {
                 throw new RuntimeException( "The table has an unexpected number of placements!" );
             }
@@ -1224,7 +1224,7 @@ public class Crud implements InformationObserver {
 
         LogicalNamespace namespace = catalog.getSnapshot().getNamespace( request.getSchemaName() );
         LogicalTable table = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( request.getTableName() );
-        ImmutableMap<Long, ImmutableList<Long>> placements = catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsByAdapter( table.id );
+        Map<Long, List<Long>> placements = catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsByAdapter( table.id );
         Set<Long> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
             log.warn( String.format( "The number of sources of an entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );

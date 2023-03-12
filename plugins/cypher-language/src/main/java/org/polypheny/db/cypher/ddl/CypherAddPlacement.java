@@ -77,7 +77,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
             throw new RuntimeException( "Error while adding graph placement." );
         }
 
-        if ( graphs.get( 0 ).placements.stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+        if ( graphs.get( 0 ).getPlacements().stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
             throw new RuntimeException( "Could not create placement of graph as it already exists." );
         }
 

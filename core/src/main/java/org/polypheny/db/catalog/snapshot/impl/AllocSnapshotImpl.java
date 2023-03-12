@@ -16,13 +16,13 @@
 
 package org.polypheny.db.catalog.snapshot.impl;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Value;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -47,18 +47,24 @@ import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
 
+@Value
 public class AllocSnapshotImpl implements AllocSnapshot {
 
-    private final ImmutableMap<Long, AllocationTable> tables;
-    private final ImmutableMap<Long, AllocationCollection> collections;
-    private final ImmutableMap<Long, AllocationGraph> graphs;
+    ImmutableMap<Long, AllocationTable> tables;
+    ImmutableMap<Long, AllocationCollection> collections;
+    ImmutableMap<Long, AllocationGraph> graphs;
 
-    private final ImmutableMap<Pair<Long, Long>, CatalogColumnPlacement> adapterColumnPlacement;
+    ImmutableMap<Pair<Long, Long>, CatalogColumnPlacement> adapterColumnPlacement;
 
-    private final ImmutableMap<Long, AllocationEntity> allocs;
-    private final ImmutableMap<Long, List<AllocationEntity>> allocsOnAdapters;
-    private final ImmutableMap<Long, List<CatalogColumnPlacement>> columPlacements;
-    private final ImmutableMap<Pair<Long, Long>, List<CatalogColumnPlacement>> adapterLogicalTablePlacements;
+    ImmutableMap<Long, AllocationEntity> allocs;
+    ImmutableMap<Long, List<AllocationEntity>> allocsOnAdapters;
+    ImmutableMap<Long, List<CatalogColumnPlacement>> columPlacements;
+
+    ImmutableMap<Long, List<CatalogColumnPlacement>> tablePlacements;
+    ImmutableMap<Pair<Long, Long>, List<CatalogColumnPlacement>> adapterLogicalTablePlacements;
+    ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
+    ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
+    ImmutableMap<Long, Map<Long, List<Long>>> tableAdapterColumns;
 
 
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs ) {
@@ -86,19 +92,69 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.adapterColumnPlacement = buildAdapterColumnPlacement();
         this.columPlacements = buildColumnPlacements();
         this.adapterLogicalTablePlacements = buildAdapterLogicalTablePlacements();
+        this.adapterLogicalTableAlloc = buildAdapterLogicalTableAlloc();
+        this.tablePlacements = buildTablePlacements();
+        this.logicalAllocs = buildLogicalAllocs();
+        this.tableAdapterColumns = buildTableAdapterColumns();
+    }
+
+
+    private ImmutableMap<Long, Map<Long, List<Long>>> buildTableAdapterColumns() {
+        Map<Long, Map<Long, List<Long>>> map = new HashMap<>();
+        this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> {
+            if ( !map.containsKey( v.logicalId ) ) {
+                map.put( v.logicalId, new HashMap<>() );
+            }
+            if ( !map.get( v.logicalId ).containsKey( v.adapterId ) ) {
+                map.get( v.logicalId ).put( v.logicalId, new ArrayList<>() );
+            }
+            map.get( v.logicalId ).get( v.logicalId ).add( p.columnId );
+        } ) );
+
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, List<AllocationEntity>> buildLogicalAllocs() {
+        Map<Long, List<AllocationEntity>> map = new HashMap<>();
+        allocs.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.logicalId ) ) {
+                map.put( v.logicalId, new ArrayList<>() );
+            }
+            map.get( v.logicalId ).add( v );
+        } );
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, List<CatalogColumnPlacement>> buildTablePlacements() {
+        Map<Long, List<CatalogColumnPlacement>> map = new HashMap<>();
+        this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> {
+            if ( !map.containsKey( v.id ) ) {
+                map.put( v.id, new ArrayList<>() );
+            }
+            map.get( v.id ).add( p );
+        } ) );
+
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Pair<Long, Long>, AllocationEntity> buildAdapterLogicalTableAlloc() {
+        Map<Pair<Long, Long>, AllocationEntity> map = new HashMap<>();
+        this.allocs.forEach( ( k, v ) -> map.put( Pair.of( v.adapterId, v.logicalId ), v ) );
+        return ImmutableMap.copyOf( map );
     }
 
 
     private ImmutableMap<Pair<Long, Long>, List<CatalogColumnPlacement>> buildAdapterLogicalTablePlacements() {
         Map<Pair<Long, Long>, List<CatalogColumnPlacement>> map = new HashMap<>();
-        this.tables.forEach( ( k, v ) -> {
-            v.placements.forEach( p -> {
-                if ( !map.containsKey( Pair.of( p.adapterId, p.tableId ) ) ) {
-                    map.put( Pair.of( p.adapterId, p.tableId ), new ArrayList<>() );
-                }
-                map.get( Pair.of( p.adapterId, p.tableId ) ).add( p );
-            } );
-        } );
+        this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> {
+            if ( !map.containsKey( Pair.of( p.adapterId, p.tableId ) ) ) {
+                map.put( Pair.of( p.adapterId, p.tableId ), new ArrayList<>() );
+            }
+            map.get( Pair.of( p.adapterId, p.tableId ) ).add( p );
+        } ) );
 
         return ImmutableMap.copyOf( map );
     }
@@ -106,14 +162,12 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     private ImmutableMap<Long, List<CatalogColumnPlacement>> buildColumnPlacements() {
         Map<Long, List<CatalogColumnPlacement>> map = new HashMap<>();
-        this.tables.forEach( ( k, v ) -> {
-            v.placements.forEach( p -> {
-                if ( !map.containsKey( p.columnId ) ) {
-                    map.put( p.columnId, new ArrayList<>() );
-                }
-                map.get( p.columnId ).add( p );
-            } );
-        } );
+        this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> {
+            if ( !map.containsKey( p.columnId ) ) {
+                map.put( p.columnId, new ArrayList<>() );
+            }
+            map.get( p.columnId ).add( p );
+        } ) );
 
         return ImmutableMap.copyOf( map );
     }
@@ -222,8 +276,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public ImmutableMap<Long, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId ) {
-        return null;
+    public Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId ) {
+        return tableAdapterColumns.get( tableId );
     }
 
 
@@ -414,8 +468,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<AllocationTable> getAllocationsFromLogical( long logicalId ) {
-        return null;
+    public List<AllocationEntity> getAllocationsFromLogical( long logicalId ) {
+        return logicalAllocs.get( logicalId );
     }
 
 
@@ -470,6 +524,12 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @Override
     public boolean adapterHasPlacement( long adapterId, long id ) {
         return false;
+    }
+
+
+    @Override
+    public AllocationEntity getAllocation( long adapterId, long entityId ) {
+        return adapterLogicalTableAlloc.get( Pair.of( adapterId, entityId ) );
     }
 
 }

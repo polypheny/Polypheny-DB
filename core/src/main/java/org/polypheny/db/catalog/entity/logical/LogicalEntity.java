@@ -24,8 +24,8 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
-@SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
+@SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
 public abstract class LogicalEntity extends CatalogEntity {

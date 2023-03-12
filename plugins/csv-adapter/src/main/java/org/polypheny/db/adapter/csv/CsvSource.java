@@ -159,13 +159,13 @@ public class CsvSource extends DataSource {
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
-            List<PhysicalEntity<?>> placements = Catalog
+            List<PhysicalEntity> placements = Catalog
                     .getInstance()
                     .getSnapshot()
                     .getPhysicalSnapshot()
                     .getPhysicalsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
-            for ( PhysicalEntity<?> ccp : placements ) {
+            for ( PhysicalEntity ccp : placements ) {
                 fileNames.add( ccp.namespaceName );
             }
         } else if ( Sources.of( csvDir ).file().isFile() ) {

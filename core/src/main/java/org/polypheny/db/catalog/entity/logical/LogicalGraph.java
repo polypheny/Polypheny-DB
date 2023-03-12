@@ -18,16 +18,16 @@ package org.polypheny.db.catalog.entity.logical;
 
 import com.drew.lang.annotations.NotNull;
 import java.io.Serializable;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
-@SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGraph> {
@@ -67,10 +67,14 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
     }
 
 
-
     @Override
     public Expression asExpression() {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getCollection", Expressions.constant( id ) );
+    }
+
+
+    public List<CatalogGraphPlacement> getPlacements() {
+        return Catalog.getInstance().getSnapshot().getAllocSnapshot().getGraphPlacements( id );
     }
 
 }

@@ -31,8 +31,8 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @NonFinal
 public class AllocationCollection extends AllocationEntity {
 
-    public AllocationCollection( LogicalCollection collection, long id, String name, long adapterId ) {
-        super( id, name, collection.id, collection.namespaceId, adapterId, NamespaceType.DOCUMENT );
+    public AllocationCollection( LogicalCollection collection, long id, long adapterId ) {
+        super( id, collection.id, collection.namespaceId, adapterId, NamespaceType.DOCUMENT );
     }
 
 

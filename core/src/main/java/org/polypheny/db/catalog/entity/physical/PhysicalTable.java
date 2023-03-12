@@ -47,8 +47,8 @@ public class PhysicalTable extends PhysicalEntity {
     public ImmutableMap<Long, AlgDataType> types;
 
 
-    public PhysicalTable( long id, String name, long namespaceId, String namespaceName, long adapterId, Map<Long, String> columns, Map<Long, AlgDataType> types ) {
-        super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
+    public PhysicalTable( long id, long logicalId, String name, long namespaceId, String namespaceName, long adapterId, Map<Long, String> columns, Map<Long, AlgDataType> types ) {
+        super( id, logicalId, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.namespaceName = namespaceName;
         this.columns = ImmutableMap.copyOf( columns );
         this.types = ImmutableMap.copyOf( types );
@@ -56,7 +56,7 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     public PhysicalTable( AllocationTable table, String name, String namespaceName, Map<Long, String> columns, Map<Long, AlgDataType> types ) {
-        this( table.id, name, table.namespaceId, namespaceName, table.adapterId, columns, types );
+        this( table.id, table.logicalId, name, table.namespaceId, namespaceName, table.adapterId, columns, types );
     }
 
 

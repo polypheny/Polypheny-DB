@@ -33,8 +33,9 @@
 
 package org.polypheny.db.adapter.csv;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.util.Source;
@@ -55,7 +56,12 @@ public abstract class CsvTable extends PhysicalTable {
      * Creates a CsvTable.
      */
     CsvTable( Source source, AllocationTable allocationTable, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( allocationTable, allocationTable.name, allocationTable.getNamespaceName(), new ArrayList<>( allocationTable.getColumnNames().values() ) );
+        super(
+                allocationTable,
+                allocationTable.name,
+                allocationTable.getNamespaceName(),
+                allocationTable.getColumnNames(),
+                allocationTable.getColumns().values().stream().collect( Collectors.toMap( c -> c.id, c -> AlgDataTypeFactory.DEFAULT.createPolyType( c.type ) ) ) );
         this.source = source;
         this.fieldTypes = fieldTypes;
         this.fields = fields;

@@ -156,7 +156,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public long addTable( String name, EntityType entityType, boolean modifiable ) {
         long id = idBuilder.getNewEntityId();
-        LogicalTable table = new LogicalTable( id, name, List.of(), logicalNamespace.id, logicalNamespace.name, entityType, null, List.of(), modifiable, null, List.of() );
+        LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, modifiable, null );
         tables.put( id, table );
         return id;
     }
@@ -267,7 +267,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         long id = idBuilder.getNewFieldId();
         LogicalColumn column = new LogicalColumn( id, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
         columns.put( id, column );
-        tables.put( tableId, tables.get( tableId ).withAddedColumn( column ) );
         return id;
     }
 
