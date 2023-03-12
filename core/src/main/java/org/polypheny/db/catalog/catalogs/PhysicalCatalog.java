@@ -22,12 +22,12 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 
 public interface PhysicalCatalog {
 
-    List<PhysicalEntity<?>> getPhysicalsOnAdapter( long id );
+    List<PhysicalEntity> getPhysicalsOnAdapter( long id );
 
-    PhysicalEntity<?> getPhysicalEntity( long id );
+    PhysicalEntity getPhysicalEntity( long id );
 
-    void addPhysicalEntity( PhysicalEntity<?> physicalEntity );
+    void addPhysicalEntity( PhysicalEntity physicalEntity );
 
-    <P extends LogicalEntity> PhysicalEntity<?> getFromLogical( long id );
+    <P extends LogicalEntity> PhysicalEntity getFromLogical( long id );
 
 }

@@ -20,7 +20,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
@@ -28,16 +28,16 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @Value
 @NonFinal
 @SuperBuilder(toBuilder = true)
-public abstract class AllocationEntity<L extends LogicalEntity> extends LogicalEntity {
+public abstract class AllocationEntity extends CatalogEntity {
 
     public long adapterId;
-    public L logical;
+    public long logicalId;
 
 
-    protected AllocationEntity( L logical, long id, String name, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( id, name, logical.namespaceId, type, namespaceType );
+    protected AllocationEntity( long id, String name, long logicalId, long namespaceId, long adapterId, NamespaceType type ) {
+        super( id, name, namespaceId, EntityType.ENTITY, type );
         this.adapterId = adapterId;
-        this.logical = logical;
+        this.logicalId = logicalId;
     }
 
 

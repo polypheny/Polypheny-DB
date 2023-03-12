@@ -16,10 +16,9 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -31,10 +30,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -42,28 +38,25 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public class PhysicalTable extends PhysicalEntity<LogicalTable> {
+public class PhysicalTable extends PhysicalEntity {
 
-    public ImmutableList<CatalogColumnPlacement> placements;
-    public ImmutableList<Long> columnIds;
-    public ImmutableList<String> columnNames;
+
+    public ImmutableMap<Long, String> columns;
+
     public String namespaceName;
+    public ImmutableMap<Long, AlgDataType> types;
 
-    public AllocationTable allocation;
 
-
-    public PhysicalTable( AllocationTable allocation, long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, List<CatalogColumnPlacement> placements, List<String> columnNames ) {
-        super( allocation.logical, id, name, namespaceId, namespaceName, type, namespaceType, allocation.adapterId );
-        this.allocation = allocation;
+    public PhysicalTable( long id, String name, long namespaceId, String namespaceName, long adapterId, Map<Long, String> columns, Map<Long, AlgDataType> types ) {
+        super( id, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.namespaceName = namespaceName;
-        this.placements = ImmutableList.copyOf( placements );
-        this.columnIds = ImmutableList.copyOf( placements.stream().map( p -> p.columnId ).collect( Collectors.toList() ) );
-        this.columnNames = ImmutableList.copyOf( columnNames );
+        this.columns = ImmutableMap.copyOf( columns );
+        this.types = ImmutableMap.copyOf( types );
     }
 
 
-    public PhysicalTable( AllocationTable table, String name, String namespaceName, List<String> columnNames ) {
-        this( table, table.id, name, table.namespaceId, namespaceName, table.entityType, table.namespaceType, table.placements, columnNames );
+    public PhysicalTable( AllocationTable table, String name, String namespaceName, Map<Long, String> columns, Map<Long, AlgDataType> types ) {
+        this( table.id, name, table.namespaceId, namespaceName, table.adapterId, columns, types );
     }
 
 
@@ -77,10 +70,8 @@ public class PhysicalTable extends PhysicalEntity<LogicalTable> {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
-        for ( CatalogColumnPlacement placement : placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumn( placement.columnId );
-            AlgDataType sqlType = logicalColumn.getAlgDataType( typeFactory );
-            fieldInfo.add( logicalColumn.name, placement.physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
+        for ( long id : columns.keySet() ) {
+            fieldInfo.add( columns.get( id ), columns.get( id ), types.get( id ) ).nullable( types.get( id ).isNullable() );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() );

@@ -20,12 +20,13 @@ package org.polypheny.db.webui.models;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.PlacementType;
+import lombok.Value;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.PlacementType;
 
 
 /**
@@ -141,20 +142,21 @@ public class Placement {
 
         public DocumentStore( String uniqueName, String adapterName, List<CatalogCollectionPlacement> collectionPlacements, boolean isNative ) {
             super( uniqueName, adapterName );
-            this.placements = collectionPlacements.stream().map( p -> new CollectionPlacement( p.collectionId, p.adapter ) ).collect( Collectors.toList() );
+            this.placements = collectionPlacements.stream().map( p -> new CollectionPlacement( p.collectionId, p.adapterId ) ).collect( Collectors.toList() );
             this.isNative = isNative;
         }
 
     }
 
 
+    @Value
     private static class CollectionPlacement {
 
-        private final long collectionId;
-        private final int adapterId;
+        long collectionId;
+        long adapterId;
 
 
-        public CollectionPlacement( long collectionId, int adapterId ) {
+        public CollectionPlacement( long collectionId, long adapterId ) {
             this.collectionId = collectionId;
             this.adapterId = adapterId;
         }
@@ -162,13 +164,14 @@ public class Placement {
     }
 
 
+    @Value
     private static class GraphPlacement {
 
-        private final long graphId;
-        private final int adapterId;
+        long graphId;
+        long adapterId;
 
 
-        public GraphPlacement( long graphId, int adapterId ) {
+        public GraphPlacement( long graphId, long adapterId ) {
             this.graphId = graphId;
             this.adapterId = adapterId;
         }

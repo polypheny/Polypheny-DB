@@ -666,8 +666,8 @@ public class LoptSemiJoinOptimizer {
      */
     private abstract static class LcsEntity extends CatalogEntity {
 
-        protected LcsEntity( CatalogEntityBuilder<?, ?> b ) {
-            super( b );
+        protected LcsEntity() {
+            super( null );
         }
 
     }

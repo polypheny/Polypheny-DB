@@ -39,6 +39,6 @@ public interface PhysicalSnapshot {
 
     PhysicalGraph getPhysicalGraph( long logicalId, long adapterId );
 
-    List<PhysicalEntity<?>> getPhysicalsOnAdapter( long adapterId );
+    List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId );
 
 }

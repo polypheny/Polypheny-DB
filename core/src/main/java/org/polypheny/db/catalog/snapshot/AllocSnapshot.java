@@ -44,9 +44,9 @@ public interface AllocSnapshot {
 
     // AllocationGraph getAllocGraph( long id );
 
-    List<AllocationEntity<?>> getAllocationsOnAdapter( long id );
+    List<AllocationEntity> getAllocationsOnAdapter( long id );
 
-    AllocationEntity<?> getAllocEntity( long id );
+    AllocationEntity getAllocEntity( long id );
 
     /**
      * Gets a collective list of column placements per column on an adapter.

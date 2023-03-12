@@ -58,9 +58,11 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -165,9 +167,10 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<LogicalColumn> columns, List<Long> partitionIds ) {
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( columns.get( 0 ).namespaceId );
-        LogicalTable table = snapshot.getTable( columns.get( 0 ).tableId );
-        CatalogPrimaryKey primaryKey = snapshot.getPrimaryKey( table.primaryKey );
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        LogicalRelSnapshot relSnapshot = snapshot.getRelSnapshot( columns.get( 0 ).namespaceId );
+        LogicalTable table = relSnapshot.getTable( columns.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = relSnapshot.getPrimaryKey( table.primaryKey );
 
         // Check Lists
         List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
@@ -179,7 +182,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            LogicalColumn logicalColumn = snapshot.getColumn( cid );
+            LogicalColumn logicalColumn = relSnapshot.getColumn( cid );
             if ( !selectColumnList.contains( logicalColumn ) ) {
                 selectColumnList.add( logicalColumn );
             }
@@ -187,13 +190,14 @@ public class DataMigratorImpl implements DataMigrator {
 
         // We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-        if ( table.partitionProperty.isPartitioned ) {
+        PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( table.id );
+        if ( property.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-            PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
+            PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
             placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, Collections.singletonList( store.id ) );
         } else {
             placementDistribution.put(
-                    table.partitionProperty.partitionIds.get( 0 ),
+                    property.partitionIds.get( 0 ),
                     selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }
 
@@ -465,9 +469,10 @@ public class DataMigratorImpl implements DataMigrator {
     public static List<CatalogColumnPlacement> selectSourcePlacements( LogicalTable table, List<LogicalColumn> columns, long excludingAdapterId ) {
         // Find the adapter with the most column placements
         Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = catalog.getSnapshot();
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Long, ImmutableList<Long>> entry : catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, ImmutableList<Long>> entry : snapshot.getAllocSnapshot().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -478,16 +483,15 @@ public class DataMigratorImpl implements DataMigrator {
         for ( LogicalColumn logicalColumn : columns ) {
             columnIds.add( logicalColumn.id );
         }
-        AllocSnapshot snapshot = catalog.getSnapshot().getAllocSnapshot();
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( LogicalColumn column : table.columns ) {
+        for ( LogicalColumn column : snapshot.getRelSnapshot( table.namespaceId ).getColumns( table.id ) ) {
             if ( columnIds.contains( column.id ) ) {
-                if ( snapshot.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
-                    placementList.add( snapshot.getColumnPlacement( adapterIdWithMostPlacements, column.id ) );
+                if ( snapshot.getAllocSnapshot().getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
+                    placementList.add( snapshot.getAllocSnapshot().getColumnPlacement( adapterIdWithMostPlacements, column.id ) );
                 } else {
-                    for ( CatalogColumnPlacement placement : snapshot.getColumnPlacements( column.id ) ) {
+                    for ( CatalogColumnPlacement placement : snapshot.getAllocSnapshot().getColumnPlacements( column.id ) ) {
                         if ( placement.adapterId != excludingAdapterId ) {
                             placementList.add( placement );
                             break;
@@ -617,39 +621,40 @@ public class DataMigratorImpl implements DataMigrator {
         if ( sourceTable.id != targetTable.id ) {
             throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
-
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getSnapshot().getRelSnapshot( sourceTable.namespaceId ).getPrimaryKey( sourceTable.primaryKey );
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        CatalogPrimaryKey primaryKey = snapshot.getRelSnapshot( sourceTable.namespaceId ).getPrimaryKey( sourceTable.primaryKey );
 
         // Check Lists
         List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().getAllocSnapshot().getColumnPlacement( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( snapshot.getAllocSnapshot().getColumnPlacement( store.id, logicalColumn.id ) );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().getRelSnapshot( sourceTable.namespaceId ).getColumn( cid );
+            LogicalColumn logicalColumn = snapshot.getRelSnapshot( sourceTable.namespaceId ).getColumn( cid );
             if ( !selectColumnList.contains( logicalColumn ) ) {
                 selectColumnList.add( logicalColumn );
             }
         }
 
+        PartitionProperty targetProperty = snapshot.getAllocSnapshot().getPartitionProperty( targetTable.id );
         // Add partition columns to select column list
-        long partitionColumnId = targetTable.partitionProperty.partitionColumnId;
-        LogicalColumn partitionColumn = Catalog.getInstance().getSnapshot().getRelSnapshot( sourceTable.namespaceId ).getColumn( partitionColumnId );
+        long partitionColumnId = targetProperty.partitionColumnId;
+        LogicalColumn partitionColumn = snapshot.getRelSnapshot( sourceTable.namespaceId ).getColumn( partitionColumnId );
         if ( !selectColumnList.contains( partitionColumn ) ) {
             selectColumnList.add( partitionColumn );
         }
 
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetTable.partitionProperty.partitionType );
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetProperty.partitionType );
 
         //We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-
-        placementDistribution.put( sourceTable.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( sourceTable, selectColumnList, -1 ) );
+        PartitionProperty sourceProperty = snapshot.getAllocSnapshot().getPartitionProperty( sourceTable.id );
+        placementDistribution.put( sourceProperty.partitionIds.get( 0 ), selectSourcePlacements( sourceTable, selectColumnList, -1 ) );
 
         Statement sourceStatement = transaction.createStatement();
 
@@ -691,9 +696,9 @@ public class DataMigratorImpl implements DataMigrator {
             int partitionColumnIndex = -1;
             String parsedValue = null;
             String nullifiedPartitionValue = partitionManager.getUnifiedNullValue();
-            if ( targetTable.partitionProperty.isPartitioned ) {
-                if ( resultColMapping.containsKey( targetTable.partitionProperty.partitionColumnId ) ) {
-                    partitionColumnIndex = resultColMapping.get( targetTable.partitionProperty.partitionColumnId );
+            if ( targetProperty.isPartitioned ) {
+                if ( resultColMapping.containsKey( targetProperty.partitionColumnId ) ) {
+                    partitionColumnIndex = resultColMapping.get( targetProperty.partitionColumnId );
                 } else {
                     parsedValue = nullifiedPartitionValue;
                 }

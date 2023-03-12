@@ -23,14 +23,15 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
-import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -66,14 +67,15 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
+        PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
                 ? partitionManager.getRelevantPlacements( catalogTable, partitionIds, Collections.emptyList() )
-                : partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds, Collections.emptyList() );
+                : partitionManager.getRelevantPlacements( catalogTable, property.partitionIds, Collections.emptyList() );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );

@@ -18,25 +18,24 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class CatalogCollectionPlacement extends CatalogEntityPlacement {
 
     private static final long serialVersionUID = 4227137255905904785L;
 
-    public final int adapter;
-    public final long collectionId;
-    public final String physicalName;
-    public final long id;
-    public final String physicalNamespaceName;
+    public long collectionId;
+    public String physicalName;
+    public long id;
 
 
-    public CatalogCollectionPlacement( long namespaceId, int adapterId, long collectionId, @Nullable String physicalName, String physicalNamespaceName, long id ) {
-        super( namespaceId, (long) adapterId, collectionId );
-        this.adapter = adapterId;
+    public CatalogCollectionPlacement( long id, long namespaceId, long adapterId, long collectionId, @Nullable String physicalName ) {
+        super( namespaceId, adapterId, collectionId );
         this.collectionId = collectionId;
         this.physicalName = physicalName;
-        this.physicalNamespaceName = physicalNamespaceName;
         this.id = id;
     }
 

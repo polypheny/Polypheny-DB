@@ -16,6 +16,9 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import java.util.Map;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+
 public interface AllocationGraphCatalog extends AllocationCatalog {
 
 
@@ -36,5 +39,7 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
      */
     public abstract void deleteGraphPlacement( long adapterId, long graphId );
 
+
+    Map<Long, ? extends AllocationGraph> getGraphs();
 
 }

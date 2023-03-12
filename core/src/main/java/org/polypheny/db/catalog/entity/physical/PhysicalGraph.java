@@ -23,17 +23,16 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public class PhysicalGraph extends PhysicalEntity<LogicalGraph> {
+public class PhysicalGraph extends PhysicalEntity {
 
-    public PhysicalGraph( LogicalGraph logical, long id, String name, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( logical, id, name, id, name, type, namespaceType, adapterId ); // for graph both name and namespaceName are the same
+    public PhysicalGraph( long id, String name, EntityType type, long adapterId ) {
+        super( id, name, id, name, type, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
 

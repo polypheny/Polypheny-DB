@@ -41,14 +41,13 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -207,7 +206,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), null ) );
+            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan<?>) node, statement, builders.get( 0 ), null ) );
         }
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
@@ -224,12 +223,13 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             LogicalTable catalogTable = logicalTable.unwrap( LogicalTable.class );
 
             // Check if table is even horizontal partitioned
-            if ( catalogTable.partitionProperty.isPartitioned ) {
+
+            if ( snapshot.getAllocSnapshot().isPartitioned( catalogTable.id ) ) {
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {
                 // At the moment multiple strategies
-                if ( catalogTable.dataPlacements.size() > 1 ) {
+                if ( snapshot.getAllocSnapshot().getDataPlacements( catalogTable.id ).size() > 1 ) {
                     return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
                 }
                 return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
@@ -248,8 +248,8 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
-        algBuilder.lpgScan( statement.getTransaction().getSnapshot().getNamespaces( new Pattern( logicalTable.getLogicalSchemaName() ) ).get( 0 ).id );
-        algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( logicalTable.getLogicalTableName() ) ) ), List.of( "n" ) );
+        algBuilder.lpgScan( logicalTable.id );
+        algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( logicalTable.name ) ) ), List.of( "n" ) );
         algBuilder.lpgProject(
                 List.of( rexBuilder.makeLpgGetId(), rexBuilder.makeLpgPropertiesExtract(), rexBuilder.makeLpgLabels() ),
                 List.of( "id", "properties", "labels" ) );

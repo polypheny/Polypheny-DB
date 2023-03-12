@@ -22,12 +22,20 @@ import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
-import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCatalog {
+
+    @Getter
+    public final LogicalNamespace namespace;
+
+
+    public PolyAllocDocCatalog( LogicalNamespace namespace ) {
+        this.namespace = namespace;
+    }
+
 
     @Getter
     public BinarySerializer<PolyAllocDocCatalog> serializer = Serializable.builder.get().build( PolyAllocDocCatalog.class );
@@ -39,16 +47,9 @@ public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCata
     }
 
 
-
     @Override
     public long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
         return 0;
-    }
-
-
-    @Override
-    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( long id ) {
-        return null;
     }
 
 
@@ -59,20 +60,9 @@ public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCata
 
 
     @Override
-    public CatalogCollectionMapping getCollectionMapping( long id ) {
-        return null;
-    }
-
-
-    @Override
     public void dropCollectionPlacement( long id, long adapterId ) {
 
     }
 
-
-    @Override
-    public CatalogCollectionPlacement getCollectionPlacement( long id, long placementId ) {
-        return null;
-    }
 
 }

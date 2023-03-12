@@ -17,7 +17,9 @@
 package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
@@ -347,5 +349,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      */
     void removeTableFromPeriodicProcessing( long tableId );
 
+
+    Map<Long, AllocationTable> getTables();
 
 }

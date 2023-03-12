@@ -487,20 +487,20 @@ public abstract class Adapter {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity<?>> physicalsOnAdapter = snapshot.getPhysicalSnapshot().getPhysicalsOnAdapter( adapterId );
+            List<PhysicalEntity> physicalsOnAdapter = snapshot.getPhysicalSnapshot().getPhysicalsOnAdapter( adapterId );
 
-            for ( PhysicalEntity<?> entity : physicalsOnAdapter ) {
+            for ( PhysicalEntity entity : physicalsOnAdapter ) {
                 if ( entity.namespaceType != NamespaceType.RELATIONAL ) {
                     continue;
                 }
                 PhysicalTable physicalTable = (PhysicalTable) entity;
                 LogicalRelSnapshot relSnapshot = snapshot.getRelSnapshot( physicalTable.namespaceId );
 
-                for ( long columnId : physicalTable.columnIds ) {
+                for ( Entry<Long, String> entry : physicalTable.columns.entrySet() ) {
                     physicalColumnNames.addRow(
-                            columnId,
-                            relSnapshot.getColumn( columnId ),
-                            physicalTable.namespaceName + "." + physicalTable.name + "." + relSnapshot.getColumn( columnId ) );
+                            entry.getKey(),
+                            relSnapshot.getColumn( entry.getKey() ),
+                            physicalTable.namespaceName + "." + physicalTable.name + "." + entry.getValue() );
                 }
             }
         } );

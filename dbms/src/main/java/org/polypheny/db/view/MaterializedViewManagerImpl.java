@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
@@ -43,6 +44,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -174,14 +176,14 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
-     * @param tableNames table that was changed
+     * @param tableIds table that was changed
      */
     @Override
-    public void addTables( Transaction transaction, List<String> tableNames ) {
-        if ( tableNames.size() > 1 ) {
+    public void addTables( Transaction transaction, List<Long> tableIds ) {
+        if ( tableIds.size() > 1 ) {
             snapshot = Catalog.getInstance().getSnapshot();
-            LogicalNamespace namespace = snapshot.getNamespace( tableNames.get( 0 ) );
-            LogicalTable catalogTable = snapshot.getRelSnapshot( namespace.id ).getTable( tableNames.get( 1 ) );
+            LogicalNamespace namespace = snapshot.getNamespace( tableIds.get( 0 ) );
+            LogicalTable catalogTable = snapshot.getRelSnapshot( namespace.id ).getTable( tableIds.get( 1 ) );
             long id = catalogTable.id;
             if ( !catalogTable.getConnectedViews().isEmpty() ) {
                 updateCandidates.put( transaction.getXid(), id );
@@ -310,18 +312,18 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
-
-        for ( long id : materializedView.dataPlacements ) {
+        List<CatalogDataPlacement> dataPlacements = transaction.getSnapshot().getAllocSnapshot().getDataPlacements( materializedView.id );
+        for ( CatalogDataPlacement placement : dataPlacements ) {
             Statement sourceStatement = transaction.createStatement();
             prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
             columnPlacements.clear();
 
-            columns.get( id ).forEach( column -> columnPlacements.add( snapshot.getAllocSnapshot().getColumnPlacement( id, column.id ) ) );
+            columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.getAllocSnapshot().getColumnPlacement( placement.adapterId, column.id ) ) );
             // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
-            AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, snapshot.getAllocSnapshot().getPartitionsOnDataPlacement( id, materializedView.id ).get( 0 ) );
+            AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, snapshot.getAllocSnapshot().getPartitionsOnDataPlacement( placement.adapterId, materializedView.id ).get( 0 ) );
 
-            dataMigrator.executeQuery( columns.get( id ), algRoot, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
+            dataMigrator.executeQuery( columns.get( placement.adapterId ), algRoot, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
         }
     }
 
@@ -334,7 +336,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void updateData( Transaction transaction, Long materializedId ) {
-        Catalog catalog = Catalog.getInstance();
 
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
@@ -342,18 +343,18 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         Map<Long, List<LogicalColumn>> columns = new HashMap<>();
 
         List<Long> ids = new ArrayList<>();
-        if ( catalog.getSnapshot().getLogicalEntity( materializedId ) != null && materializedInfo.containsKey( materializedId ) ) {
-            CatalogMaterializedView catalogMaterializedView = catalog.getSnapshot().getLogicalEntity( materializedId ).unwrap( CatalogMaterializedView.class );
-            for ( long id : catalogMaterializedView.dataPlacements ) {
-                ids.add( id );
+        if ( snapshot.getLogicalEntity( materializedId ) != null && materializedInfo.containsKey( materializedId ) ) {
+            CatalogMaterializedView catalogMaterializedView = snapshot.getLogicalEntity( materializedId ).unwrap( CatalogMaterializedView.class );
+            List<CatalogDataPlacement> dataPlacements = snapshot.getAllocSnapshot().getDataPlacements( catalogMaterializedView.id );
+            for ( CatalogDataPlacement placement : dataPlacements ) {
+                ids.add( placement.adapterId );
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
 
-                int localAdapterIndex = catalogMaterializedView.dataPlacements.indexOf( id );
-                snapshot.getAllocSnapshot().getDataPlacement( catalogMaterializedView.dataPlacements.get( localAdapterIndex ), catalogMaterializedView.id )
+                int localAdapterIndex = dataPlacements.indexOf( placement );
+                snapshot.getAllocSnapshot().getDataPlacement( dataPlacements.stream().map( p -> p.adapterId ).collect( Collectors.toList() ).get( localAdapterIndex ), catalogMaterializedView.id )
                         .columnPlacementsOnAdapter.forEach( col ->
-                                logicalColumns.add( snapshot.getRelSnapshot( catalogMaterializedView.namespaceId ).getColumn( col ) )
-                        );
-                columns.put( id, logicalColumns );
+                                logicalColumns.add( snapshot.getRelSnapshot( catalogMaterializedView.namespaceId ).getColumn( col ) ) );
+                columns.put( placement.adapterId, logicalColumns );
             }
 
             AlgRoot targetRel;

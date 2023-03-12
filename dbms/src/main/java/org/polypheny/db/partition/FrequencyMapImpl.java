@@ -41,10 +41,12 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.transaction.Statement;
@@ -125,7 +127,7 @@ public class FrequencyMapImpl extends FrequencyMap {
         List<LogicalTable> periodicTables = catalog.getSnapshot().getTablesForPeriodicProcessing();
         // Retrieve all Tables which rely on periodic processing
         for ( LogicalTable table : periodicTables ) {
-            if ( table.partitionProperty.partitionType == PartitionType.TEMPERATURE ) {
+            if ( catalog.getSnapshot().getAllocSnapshot().getPartitionProperty( table.id ).partitionType == PartitionType.TEMPERATURE ) {
                 determinePartitionFrequency( table, invocationTimestamp );
             }
         }
@@ -157,11 +159,13 @@ public class FrequencyMapImpl extends FrequencyMap {
             log.debug( "Determine access frequency of partitions of table: {}", table.name );
         }
 
+        PartitionProperty property = catalog.getSnapshot().getAllocSnapshot().getPartitionProperty( table.id );
+
         // Get percentage of tables which can remain in HOT
-        long numberOfPartitionsInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn()) / 100;
+        long numberOfPartitionsInHot = (property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageIn()) / 100;
 
         // These are the tables than can remain in HOT
-        long allowedTablesInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageOut()) / 100;
+        long allowedTablesInHot = (property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageOut()) / 100;
 
         if ( numberOfPartitionsInHot == 0 ) {
             numberOfPartitionsInHot = 1;
@@ -216,7 +220,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             // Which of those are currently in cold --> action needed
 
-            List<CatalogPartition> currentHotPartitions = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
+            List<CatalogPartition> currentHotPartitions = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitions( ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
             for ( CatalogPartition catalogPartition : currentHotPartitions ) {
 
                 // Remove partitions from List if they are already in HOT (not necessary to send to DataMigrator)
@@ -264,9 +268,12 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             Statement statement = transaction.createStatement();
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            Snapshot snapshot = transaction.getSnapshot();
 
-            List<CatalogAdapter> adaptersWithHot = Catalog.getInstance().getSnapshot().getAllocSnapshot().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
-            List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getSnapshot().getAllocSnapshot().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId() );
+            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( table.id );
+
+            List<CatalogAdapter> adaptersWithHot = snapshot.getAllocSnapshot().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
+            List<CatalogAdapter> adaptersWithCold = snapshot.getAllocSnapshot().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getColdPartitionGroupId() );
 
             log.debug( "Get adapters to create physical tables" );
             // Validate that partition does not already exist on store
@@ -293,9 +300,8 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             // DROP all partitions on each store
-
-            long hotPartitionGroupId = ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId();
-            long coldPartitionGroupId = ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId();
+            long hotPartitionGroupId = ((TemperaturePartitionProperty) property).getHotPartitionGroupId();
+            long coldPartitionGroupId = ((TemperaturePartitionProperty) property).getColdPartitionGroupId();
 
             // Update catalogInformation
             partitionsFromColdToHot.forEach( p -> Catalog.getInstance().getAllocRel( table.namespaceId ).updatePartition( p, hotPartitionGroupId ) );
@@ -396,14 +402,16 @@ public class FrequencyMapImpl extends FrequencyMap {
      */
     @Override
     public void determinePartitionFrequency( LogicalTable table, long invocationTimestamp ) {
-        Timestamp queryStart = new Timestamp( invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() * 1000 );
+        Snapshot snapshot = catalog.getSnapshot();
+        PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( table.id );
+        Timestamp queryStart = new Timestamp( invocationTimestamp - ((TemperaturePartitionProperty) property).getFrequencyInterval() * 1000 );
 
         accessCounter = new HashMap<>();
-        List<Long> tempPartitionIds = new ArrayList<>( table.partitionProperty.partitionIds );
+        List<Long> tempPartitionIds = new ArrayList<>( property.partitionIds );
 
         tempPartitionIds.forEach( p -> accessCounter.put( p, (long) 0 ) );
 
-        switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ) {
+        switch ( ((TemperaturePartitionProperty) property).getPartitionCostIndication() ) {
             case ALL:
                 for ( QueryDataPointImpl queryDataPoint : MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart ) ) {
                     queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );

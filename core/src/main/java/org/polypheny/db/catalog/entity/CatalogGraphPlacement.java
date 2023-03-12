@@ -20,10 +20,12 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 
 
+@EqualsAndHashCode(callSuper = true)
 @Value
 @SuperBuilder(toBuilder = true)
 public class CatalogGraphPlacement extends CatalogEntityPlacement {

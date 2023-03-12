@@ -16,15 +16,26 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
-public abstract class PhysicalEntity<L extends LogicalEntity> extends AllocationEntity<L> {
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
+public abstract class PhysicalEntity extends CatalogEntity {
 
-    protected PhysicalEntity( L logical, long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( logical, id, name, type, namespaceType, adapterId );
+    public String namespaceName;
+    public long adapterId;
+
+
+    protected PhysicalEntity( long id, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
+        super( id, name, namespaceId, type, namespaceType );
+        this.namespaceName = namespaceName;
+        this.adapterId = adapterId;
     }
 
 

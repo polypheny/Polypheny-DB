@@ -23,17 +23,16 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public class PhysicalCollection extends PhysicalEntity<LogicalCollection> {
+public class PhysicalCollection extends PhysicalEntity {
 
-    public PhysicalCollection( LogicalCollection logical, long id, long namespaceId, String name, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( logical, id, name, namespaceId, namespaceName, type, namespaceType, adapterId );
+    public PhysicalCollection( long id, long namespaceId, String name, String namespaceName, EntityType type, long adapterId ) {
+        super( id, name, namespaceId, namespaceName, type, NamespaceType.DOCUMENT, adapterId );
     }
 
 

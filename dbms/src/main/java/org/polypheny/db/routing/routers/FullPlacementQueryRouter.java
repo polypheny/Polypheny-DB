@@ -28,14 +28,15 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
-import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -108,7 +109,8 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         for ( List<CatalogColumnPlacement> placementCombination : placements ) {
             Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
-            currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
+            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );
+            currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
@@ -127,7 +129,8 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
     protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
+        PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );

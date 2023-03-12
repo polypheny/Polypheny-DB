@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
@@ -57,13 +58,13 @@ public class CachedPlanRouter extends BaseRouter {
         }
 
         if ( node instanceof DocumentScan ) {
-            return super.handleDocumentScan( (DocumentScan) node, statement, builder, null );
+            return super.handleDocumentScan( (DocumentScan<?>) node, statement, builder, null );
         }
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
             LogicalTable catalogTable = node.getEntity().unwrap( LogicalTable.class );
-
-            List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;
+            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );
+            List<Long> partitionIds = property.partitionIds;
             Map<Long, List<CatalogColumnPlacement>> placement = new HashMap<>();
             for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {

@@ -16,7 +16,10 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import org.polypheny.db.catalog.entity.LogicalNamespace;
+
 public interface AllocationCatalog {
 
+    LogicalNamespace getNamespace();
 
 }

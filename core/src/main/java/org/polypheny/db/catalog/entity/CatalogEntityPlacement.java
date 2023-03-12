@@ -18,9 +18,11 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import lombok.AllArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.schema.Wrapper;
 
 @AllArgsConstructor
+@SuperBuilder(toBuilder = true)
 public abstract class CatalogEntityPlacement implements CatalogObject, Serializable, Wrapper {
 
     public final Long namespaceId;

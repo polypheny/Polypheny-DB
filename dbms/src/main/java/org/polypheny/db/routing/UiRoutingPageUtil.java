@@ -107,7 +107,7 @@ public class UiRoutingPageUtil {
                     CatalogPartitionPlacement catalogPartitionPlacement = snapshot.getAllocSnapshot().getPartitionPlacement( p.left, k );
                     LogicalColumn logicalColumn = snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogColumnPlacement.columnId );
                     table.addRow(
-                            catalogTable.getNamespaceName() + "." + catalogTable.name,
+                            snapshot.getNamespace( catalogTable.namespaceId ) + "." + catalogTable.name,
                             logicalColumn.name,
                             catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
                             catalogPartitionPlacement.adapterUniqueName,

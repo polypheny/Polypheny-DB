@@ -17,27 +17,27 @@
 package org.polypheny.db.catalog.allocation;
 
 import io.activej.serializer.BinarySerializer;
-import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 
 public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatalog {
 
     @Getter
+    private final LogicalNamespace namespace;
+    @Getter
     public BinarySerializer<PolyAllocGraphCatalog> serializer = Serializable.builder.get().build( PolyAllocGraphCatalog.class );
+
+
+    public PolyAllocGraphCatalog( LogicalNamespace namespace ) {
+        this.namespace = namespace;
+    }
 
 
     @Override
     public long addGraphPlacement( long adapterId, long graphId ) {
         return 0;
-    }
-
-
-    @Override
-    public List<CatalogGraphPlacement> getGraphPlacements( long adapterId ) {
-        return null;
     }
 
 
@@ -48,16 +48,9 @@ public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatal
 
 
     @Override
-    public CatalogGraphPlacement getGraphPlacement( long graphId, long adapterId ) {
-        return null;
-    }
-
-
-    @Override
     public PolyAllocGraphCatalog copy() {
         return deserialize( serialize(), PolyAllocGraphCatalog.class );
     }
-
 
 
 }

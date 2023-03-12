@@ -20,10 +20,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.type.PolyType;
 
 
@@ -43,11 +45,13 @@ public class HashPartitionManager extends AbstractPartitionManager {
             hashValue *= -1;
         }
 
+        PartitionProperty property = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id );
+
         // Get designated HASH partition based on number of internal partitions
-        int partitionIndex = (int) (hashValue % catalogTable.partitionProperty.partitionIds.size());
+        int partitionIndex = (int) (hashValue % property.partitionIds.size());
 
         // Finally decide on which partition to put it
-        return catalogTable.partitionProperty.partitionIds.get( partitionIndex );
+        return property.partitionIds.get( partitionIndex );
     }
 
 

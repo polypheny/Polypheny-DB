@@ -40,9 +40,9 @@ import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
@@ -268,7 +268,8 @@ public class EntityAccessMap {
                 relevantPartitions = accessedPartitions.get( p.getId() );
             } else if ( table != null ) {
                 if ( table.namespaceType == NamespaceType.RELATIONAL ) {
-                    relevantPartitions = table.unwrap( LogicalTable.class ).partitionProperty.partitionIds;
+                    PartitionProperty property = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionProperty( table.id );
+                    relevantPartitions = property.partitionIds;
                 } else {
                     relevantPartitions = List.of();
                 }
@@ -323,8 +324,8 @@ public class EntityAccessMap {
         private void extractWriteConstraints( LogicalEntity logicalTable ) {
 
             for ( long constraintTable : logicalTable.getConstraintIds() ) {
-                for ( long constraintPartitionIds
-                        : Catalog.getInstance().getSnapshot().getRelSnapshot( logicalTable.namespaceId ).getTable( constraintTable ).partitionProperty.partitionIds ) {
+                PartitionProperty property = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionProperty( logicalTable.id );
+                for ( long constraintPartitionIds : property.partitionIds ) {
 
                     EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds, NamespaceLevel.ENTITY_LEVEL );
                     if ( !accessMap.containsKey( id ) ) {

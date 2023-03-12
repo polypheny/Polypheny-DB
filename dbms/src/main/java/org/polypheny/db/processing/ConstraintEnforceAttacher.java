@@ -407,21 +407,22 @@ public class ConstraintEnforceAttacher {
                 builder.scan( table.name );
                 builder.join( JoinAlgType.INNER, builder.literal( true ) );
 
+                List<LogicalColumn> columns = snapshot.getColumns( table.id );
+                List<String> columNames = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+
                 List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
                         builder.call(
                                 OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( c ) ),
-                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
-                        )
-                ).collect( Collectors.toList() );
+                                builder.field( names.size() + columNames.indexOf( c ) )
+                        ) ).collect( Collectors.toList() );
 
                 List<RexNode> conditionList2 = constraint.key.getColumnNames().stream().map( c ->
                         builder.call(
                                 OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( "$projected$." + c ) ),
-                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
-                        )
-                ).collect( Collectors.toList() );
+                                builder.field( names.size() + columNames.indexOf( c ) )
+                        ) ).collect( Collectors.toList() );
 
                 RexNode condition =
                         rexBuilder.makeCall(

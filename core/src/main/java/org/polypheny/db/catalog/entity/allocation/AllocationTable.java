@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -32,32 +31,28 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @SuperBuilder(toBuilder = true)
-public class AllocationTable extends AllocationEntity<LogicalTable> {
+public class AllocationTable extends AllocationEntity {
 
     @Serialize
     public List<CatalogColumnPlacement> placements;
     @Serialize
     public long adapterId;
-    @Serialize
-    public LogicalTable logicalTable;
 
 
     public AllocationTable(
-            @Deserialize("logicalTable") LogicalTable logicalTable,
             @Deserialize("id") long id,
             @Deserialize("name") String name,
+            @Deserialize("logicalId") long logicalId,
+            @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId,
             @Deserialize("placements") List<CatalogColumnPlacement> placements ) {
-        super( logicalTable, id, name, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
-        this.logicalTable = logicalTable;
+        super( id, name, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
         this.adapterId = adapterId;
         this.placements = placements;
     }
@@ -80,13 +75,9 @@ public class AllocationTable extends AllocationEntity<LogicalTable> {
     }
 
 
+    @Deprecated
     public Map<Long, LogicalColumn> getColumns() {
         return null;
-    }
-
-
-    public Map<String, Long> getColumnNamesIds() {
-        return getColumnNames().entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
     }
 
 
@@ -97,7 +88,7 @@ public class AllocationTable extends AllocationEntity<LogicalTable> {
 
     public AllocationTable withAddedColumn( long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
         List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
-        placements.add( new CatalogColumnPlacement( logical.namespaceId, id, columnId, adapterId, placementType, physicalSchemaName, physicalColumnName, 0 ) );
+        placements.add( new CatalogColumnPlacement( namespaceId, id, columnId, adapterId, placementType, physicalSchemaName, physicalColumnName, 0 ) );
 
         return toBuilder().placements( placements ).build();
     }

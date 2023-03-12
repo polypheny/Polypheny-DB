@@ -44,7 +44,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     @Override
     public boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
-        for ( Long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
+        for ( Long partitionGroupId : Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).partitionGroupIds ) {
             List<CatalogColumnPlacement> ccps = catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
             if ( ccps.size() <= threshold ) {
                 for ( CatalogColumnPlacement placement : ccps ) {
@@ -69,7 +69,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 CatalogPartition catalogPartition = catalog.getSnapshot().getAllocSnapshot().getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
-                for ( LogicalColumn column : catalogTable.columns ) {
+                for ( LogicalColumn column : catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumns( catalogTable.id ) ) {
                     List<CatalogColumnPlacement> ccps = catalog.getSnapshot().getAllocSnapshot().getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, column.id );
                     ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {

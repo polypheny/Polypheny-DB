@@ -68,7 +68,7 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
 
     @Override
-    public List<PhysicalEntity<?>> getPhysicalsOnAdapter( long adapterId ) {
+    public List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId ) {
         return null;
     }
 
