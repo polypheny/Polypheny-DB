@@ -198,7 +198,7 @@ public class ExcelSource extends DataSource {
         } else {
             File[] files = Sources.of( excelDir )
                     .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) || name.endsWith( ".xls" ) || name.endsWith( ".xls.gz" ) );
+                    .listFiles( ( d, name ) -> (name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) || name.endsWith( ".xls" ) || name.endsWith( ".xls.gz" )) && !name.startsWith( "~$" ) );
             fileNames = Arrays.stream( files )
                     .sequential()
                     .map( File::getName )
