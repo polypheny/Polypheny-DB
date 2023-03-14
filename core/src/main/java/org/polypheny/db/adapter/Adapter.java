@@ -141,7 +141,6 @@ public abstract class Adapter {
 
         boolean canBeNull() default false;
 
-
         boolean required() default true;
 
         boolean modifiable() default false;
@@ -264,7 +263,6 @@ public abstract class Adapter {
         DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
 
         String subOf() default "";
-
 
         @Inherited
         @Target(ElementType.TYPE)

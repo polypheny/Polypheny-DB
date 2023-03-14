@@ -621,7 +621,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         SINGLE, // specific version e.g. 0.8.1
         RANGE, // range of potential versions e.g. 0.8 - 0.9
         LIST, // different supported version e.g. 0.8.1, 0.9.*
-        NONE;
+        NONE
     }
 
 

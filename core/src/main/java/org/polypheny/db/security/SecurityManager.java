@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 
+
 public class SecurityManager {
 
     private static SecurityManager INSTANCE = null;
@@ -78,13 +79,12 @@ public class SecurityManager {
             return true;
         }
         if ( Arrays.stream( Objects.requireNonNull( status.path.toFile().listFiles() ) ).noneMatch( f -> f.getName().equals( "polypheny.access" ) && f.isFile() ) ) {
-            // todo: if more fine-grained access control is required, add as content of file
+            // TODO: if more fine-grained access control is required, add as content of file
             return false;
         }
 
         status.setStep( AuthStep.SUCCESSFUL );
         return true;
-
     }
 
 
@@ -113,6 +113,5 @@ public class SecurityManager {
         }
 
     }
-
 
 }

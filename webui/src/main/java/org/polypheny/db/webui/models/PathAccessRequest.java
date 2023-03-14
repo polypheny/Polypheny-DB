@@ -19,6 +19,7 @@ package org.polypheny.db.webui.models;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+
 @AllArgsConstructor
 @Getter
 public class PathAccessRequest {
@@ -26,6 +27,5 @@ public class PathAccessRequest {
     public String name;
 
     public String directoryName;
-
 
 }

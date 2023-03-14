@@ -78,7 +78,6 @@ public class CsvSource extends DataSource {
     private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
-
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 

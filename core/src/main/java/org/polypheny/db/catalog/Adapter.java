@@ -26,6 +26,7 @@ import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
+
 public class Adapter {
 
     private static final Map<String, Adapter> REGISTER = new ConcurrentHashMap<>();

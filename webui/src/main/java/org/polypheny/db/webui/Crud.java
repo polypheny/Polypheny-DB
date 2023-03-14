@@ -2018,7 +2018,7 @@ public class Crud implements InformationObserver {
                 String defaultValue = currentColumn.getDefaultValue();
 
                 // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
-                // enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
+                // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
                 if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
 
                     if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
@@ -2258,8 +2258,8 @@ public class Crud implements InformationObserver {
             return;
         }
 
-        // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
-        // currently seams to be the best option). When migrating this to a DDL manager, make sure to find a better approach.
+        // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this, but it
+        // currently seems to be the best option). When migrating this to a DDL manager, make sure to find a better approach.
         Transaction transaction = null;
         try {
             transaction = getTransaction();
@@ -2377,7 +2377,6 @@ public class Crud implements InformationObserver {
         } else {
             ctx.result( "" );
         }
-
     }
 
 

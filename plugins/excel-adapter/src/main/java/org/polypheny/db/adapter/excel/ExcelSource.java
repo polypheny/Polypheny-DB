@@ -179,7 +179,7 @@ public class ExcelSource extends DataSource {
         String currentSheetName;
 
         if ( connectionMethod == ConnectionMethod.UPLOAD && exportedColumnCache != null ) {
-            // if we upload, file will not be changed, and we can cache the columns information, if "link" is used this is not advised
+            // If we upload, file will not be changed, and we can cache the columns information, if "link" is used this is not advised
             return exportedColumnCache;
         }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
