@@ -178,7 +178,7 @@ public class Neo4jPlugin extends Plugin {
             DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/neo", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                     .withMappedPort( 7687, port )
                     .withEnvironmentVariable( format( "NEO4J_AUTH=%s/%s", user, pass ) )
-                    .withReadyTest( this::testConnection, 50000 )
+                    .withReadyTest( this::testConnection, 100000 )
                     .build();
             this.container = container;
             DockerManager.getInstance().initialize( container ).start();
