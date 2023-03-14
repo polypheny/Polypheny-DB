@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.StatisticsManager;
+import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -31,7 +32,6 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.CatalogType;
 import org.polypheny.db.catalog.refactor.Expressible;
-import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Wrapper;
@@ -102,8 +102,8 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
     }
 
 
-    public <T extends AlgMultipleTrait> List<T> getCollations() {
-        return (List<T>) Statistics.UNKNOWN.getCollations();
+    public List<AlgCollation> getCollations() {
+        return Statistics.UNKNOWN.getCollations();
     }
 
 

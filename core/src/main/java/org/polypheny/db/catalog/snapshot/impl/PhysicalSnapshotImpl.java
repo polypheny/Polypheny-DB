@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -139,8 +140,8 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
 
     @Override
-    public List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId ) {
-        return adapterPhysicals.get( adapterId );
+    public @NotNull List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId ) {
+        return adapterPhysicals.get( adapterId ) == null ? List.of() : adapterPhysicals.get( adapterId );
     }
 
 

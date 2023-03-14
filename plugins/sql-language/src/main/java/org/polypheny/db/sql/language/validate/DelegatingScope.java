@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
@@ -219,12 +218,12 @@ public abstract class DelegatingScope implements SqlValidatorScope {
      */
     @Override
     public SqlQualified fullyQualify( SqlIdentifier identifier ) {
-        if ( identifier.isStar() ) {
+        /*if ( identifier.isStar() ) {
             return SqlQualified.create( this, 1, null, identifier );
         }
-        /*
+
         final SqlIdentifier previous = identifier;
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher;
+        final NameMatcher nameMatcher = Snapshot.nameMatcher;
         String columnName;
         final String tableName;
         final SqlValidatorNamespace namespace;
@@ -292,7 +291,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     resolve( prefix.names, nameMatcher, false, resolved );
                     if ( resolved.count() == 1 ) {
                         final Resolve resolve = resolved.only();
-                        fromNs = resolve.getEntity().unwrap( CatalogTable.class );
+                        fromNs = resolve.getEntity().unwrap( LogicalTable.class );
                         fromRowType = resolve.rowType();
                         break;
                     }

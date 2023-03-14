@@ -2025,7 +2025,7 @@ public class Util {
             return Monotonicity.NOT_MONOTONIC;
         }
 
-        for ( AlgCollation collation : entity.getStatistic().getCollations() ) {
+        for ( AlgCollation collation : entity.getCollations() ) {
             final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();
             if ( fieldIndex < entity.getRowType().getFieldCount() && entity.getRowType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {

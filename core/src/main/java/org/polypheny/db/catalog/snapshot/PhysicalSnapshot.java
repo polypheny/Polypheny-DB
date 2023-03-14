@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import lombok.NonNull;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
@@ -39,7 +40,7 @@ public interface PhysicalSnapshot {
 
     PhysicalGraph getPhysicalGraph( long logicalId, long adapterId );
 
-    List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId );
+    @NonNull List<PhysicalEntity> getPhysicalsOnAdapter( long adapterId );
 
 
     PhysicalEntity getPhysicalEntity( long id );

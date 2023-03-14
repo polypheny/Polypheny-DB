@@ -27,7 +27,9 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -148,7 +150,9 @@ public class IdentifierNamespace extends AbstractNamespace {
                 }*/
             }
         }
-        throw validator.newValidationError( id, Static.RESOURCE.objectNotFound( id.getComponent( 0 ).toString() ) );
+        List<String> ns = id.names;
+        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( ns.get( 0 ) );
+        return new EntityNamespace( validator, Catalog.getInstance().getSnapshot().getRelSnapshot( namespace.id ).getTable( ns.get( 1 ) ) );
     }
 
 
