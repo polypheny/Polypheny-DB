@@ -41,10 +41,10 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
@@ -133,8 +133,8 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
-        return currentSchema.createCsvTable( logical, allocationTable, this );
+    public List<PhysicalEntity> createAdapterTable( IdBuilder idBuilder, LogicalTable logical, AllocationTable allocationTable ) {
+        return List.of( currentSchema.createCsvTable( idBuilder.getNewPhysicalId(), logical, allocationTable, this ) );
     }
 
 

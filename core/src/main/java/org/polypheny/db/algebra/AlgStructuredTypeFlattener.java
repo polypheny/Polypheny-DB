@@ -863,6 +863,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalRelScan alg ) {
+        if ( alg.entity.unwrap( TranslatableEntity.class ) == null ) {
+            rewriteGeneric( alg );
+            return;
+        }
+
         AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, alg.traitSet );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();

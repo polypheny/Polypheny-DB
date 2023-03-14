@@ -31,8 +31,8 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @NonFinal
 public class PhysicalGraph extends PhysicalEntity {
 
-    public PhysicalGraph( long id, long logicalId, String name, EntityType type, long adapterId ) {
-        super( id, logicalId, name, id, name, type, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
+    public PhysicalGraph( long id, long logicalId, long allocationId, String name, EntityType type, long adapterId ) {
+        super( id, logicalId, allocationId, name, id, name, type, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
 

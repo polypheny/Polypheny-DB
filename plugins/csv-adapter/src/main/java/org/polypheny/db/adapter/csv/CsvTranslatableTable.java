@@ -55,8 +55,8 @@ public class CsvTranslatableTable extends CsvTable implements TranslatableEntity
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( source, table, fieldTypes, fields, csvSource );
+    CsvTranslatableTable( long id, Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( id, source, table, fieldTypes, fields, csvSource );
     }
 
 

@@ -135,10 +135,12 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     public JdbcEntity createJdbcTable(
+            long id,
             LogicalTable logicalTable,
             AllocationTable allocationTable ) {
         return new JdbcEntity(
                 this,
+                id,
                 logicalTable,
                 allocationTable,
                 TableType.TABLE );

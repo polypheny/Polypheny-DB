@@ -55,13 +55,15 @@ public abstract class CsvTable extends PhysicalTable {
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, AllocationTable allocationTable, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    CsvTable( long id, Source source, AllocationTable allocationTable, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         super(
+                id,
                 allocationTable,
                 allocationTable.name,
                 allocationTable.getNamespaceName(),
                 allocationTable.getColumnNames(),
-                allocationTable.getColumns().values().stream().collect( Collectors.toMap( c -> c.id, c -> AlgDataTypeFactory.DEFAULT.createPolyType( c.type ) ) ) );
+                allocationTable.getColumns().values().stream().collect( Collectors.toMap( c -> c.id, c -> AlgDataTypeFactory.DEFAULT.createPolyType( c.type ) ) ),
+                allocationTable.getColumnOrder() );
         this.source = source;
         this.fieldTypes = fieldTypes;
         this.fields = fields;

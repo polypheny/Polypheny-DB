@@ -341,6 +341,7 @@ public class PolyphenyDb {
             Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
             Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
             catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
+            catalog.init();
             if ( catalog == null ) {
                 throw new RuntimeException( "There was no catalog submitted, aborting." );
             }

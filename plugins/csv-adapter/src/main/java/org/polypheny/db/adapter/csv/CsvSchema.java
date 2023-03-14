@@ -83,7 +83,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public PhysicalTable createCsvTable( LogicalTable catalogTable, AllocationTable allocationTable, CsvSource csvSource ) {
+    public PhysicalTable createCsvTable( long id, LogicalTable catalogTable, AllocationTable allocationTable, CsvSource csvSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
@@ -96,12 +96,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
             fieldIds.add( (int) placement.physicalPosition );
         }
 
-        String csvFileName = Catalog
-                .getInstance()
-                .getSnapshot()
-                .getAllocSnapshot()
-                .getColumnPlacementsOnAdapterPerTable( csvSource.getAdapterId(), catalogTable.id ).iterator().next()
-                .physicalSchemaName;
+        String csvFileName = allocationTable.placements.get( 0 ).physicalSchemaName;
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );
@@ -109,7 +104,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
             throw new RuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        CsvTable table = createTable( source, allocationTable, fieldTypes, fields, csvSource );
+        CsvTable table = createTable( id, source, allocationTable, fieldTypes, fields, csvSource );
         tableMap.put( catalogTable.name + "_" + allocationTable.id, table );
         return table;
     }
@@ -118,14 +113,14 @@ public class CsvSchema extends AbstractNamespace implements Schema {
     /**
      * Creates different subtype of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    private CsvTable createTable( long id, Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         switch ( flavor ) {
             case TRANSLATABLE:
-                return new CsvTranslatableTable( source, table, fieldTypes, fields, csvSource );
+                return new CsvTranslatableTable( id, source, table, fieldTypes, fields, csvSource );
             case SCANNABLE:
-                return new CsvScannableTable( source, table, fieldTypes, fields, csvSource );
+                return new CsvScannableTable( id, source, table, fieldTypes, fields, csvSource );
             case FILTERABLE:
-                return new CsvFilterableTable( source, table, fieldTypes, fields, csvSource );
+                return new CsvFilterableTable( id, source, table, fieldTypes, fields, csvSource );
             default:
                 throw new AssertionError( "Unknown flavor " + this.flavor );
         }

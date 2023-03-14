@@ -522,8 +522,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public boolean adapterHasPlacement( long adapterId, long id ) {
-        return false;
+    public boolean adapterHasPlacement( long adapterId, long logicalId ) {
+        return adapterLogicalTableAlloc.containsKey( Pair.of( adapterId, logicalId ) );
     }
 
 

@@ -53,14 +53,14 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.refactor.FilterableEntity;
+import org.polypheny.db.catalog.refactor.ProjectableFilterableEntity;
+import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Enumerables;
-import org.polypheny.db.schema.FilterableEntity;
-import org.polypheny.db.schema.ProjectableFilterableEntity;
-import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
@@ -73,7 +73,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class ScanNode implements Node {
 
-    private ScanNode( Compiler compiler, RelScan alg, Enumerable<Row> enumerable ) {
+    private ScanNode( Compiler compiler, RelScan<?> alg, Enumerable<Row> enumerable ) {
         compiler.enumerable( alg, enumerable );
     }
 
@@ -170,7 +170,7 @@ public class ScanNode implements Node {
     }
 
 
-    private static ScanNode createProjectableFilterable( Compiler compiler, RelScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ProjectableFilterableEntity pfTable ) {
+    private static ScanNode createProjectableFilterable( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ProjectableFilterableEntity pfTable ) {
         final DataContext root = compiler.getDataContext();
         final ImmutableIntList originalProjects = projects;
         for ( ; ; ) {
@@ -215,7 +215,7 @@ public class ScanNode implements Node {
     }
 
 
-    private static ScanNode createEnumerable( Compiler compiler, RelScan alg, Enumerable<Row> enumerable, final ImmutableIntList acceptedProjects, List<RexNode> rejectedFilters, final ImmutableIntList rejectedProjects ) {
+    private static ScanNode createEnumerable( Compiler compiler, RelScan<?> alg, Enumerable<Row> enumerable, final ImmutableIntList acceptedProjects, List<RexNode> rejectedFilters, final ImmutableIntList rejectedProjects ) {
         if ( !rejectedFilters.isEmpty() ) {
             final RexNode filter = RexUtil.composeConjunction( alg.getCluster().getRexBuilder(), rejectedFilters );
             // Re-map filter for the projects that have been applied already
@@ -244,7 +244,7 @@ public class ScanNode implements Node {
         }
         if ( rejectedProjects != null ) {
             enumerable = enumerable.select(
-                    new Function1<Row, Row>() {
+                    new Function1<>() {
                         final Object[] values = new Object[rejectedProjects.size()];
 
 

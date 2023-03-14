@@ -196,7 +196,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
         if ( containsShallow( traits, trait ) ) {
             return this;
         }
-        final AlgTraitDef traitDef = trait.getTraitDef();
+        final AlgTraitDef<?> traitDef = trait.getTraitDef();
         int index = findIndex( traitDef );
         if ( index < 0 ) {
             // Trait is not present. Ignore it.

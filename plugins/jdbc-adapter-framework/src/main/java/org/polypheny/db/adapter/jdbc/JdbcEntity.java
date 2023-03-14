@@ -104,15 +104,18 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
     public JdbcEntity(
             JdbcSchema jdbcSchema,
+            long id,
             LogicalTable logicalTable,
             AllocationTable allocationTable,
             @NonNull TableType jdbcTableType ) {
         super(
+                id,
                 allocationTable,
                 getPhysicalTableName( jdbcSchema.adapter, logicalTable, allocationTable ),
                 getPhysicalSchemaName( jdbcSchema.adapter ),
                 getPhysicalColumnNames( jdbcSchema.adapter, allocationTable ),
-                allocationTable.getColumnTypes() );
+                allocationTable.getColumnTypes(),
+                allocationTable.getColumnOrder() );
         this.logical = logicalTable;
         this.allocation = allocationTable;
         this.jdbcSchema = jdbcSchema;

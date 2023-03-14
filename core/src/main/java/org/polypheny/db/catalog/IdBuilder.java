@@ -27,6 +27,8 @@ public class IdBuilder {
     AtomicLong namespaceId;
     AtomicLong entityId;
 
+    AtomicLong physicalId;
+
     AtomicLong allocId;
     AtomicLong fieldId;
 
@@ -66,6 +68,7 @@ public class IdBuilder {
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
                 new AtomicLong( 0 ) );
     }
 
@@ -78,6 +81,7 @@ public class IdBuilder {
             AtomicLong fieldId,
             AtomicLong userId,
             AtomicLong allocId,
+            AtomicLong physicalId,
             AtomicLong indexId,
             AtomicLong keyId,
             AtomicLong adapterId,
@@ -94,6 +98,7 @@ public class IdBuilder {
         this.keyId = keyId;
         this.userId = userId;
         this.allocId = allocId;
+        this.physicalId = physicalId;
         this.constraintId = constraintId;
 
         this.adapterId = adapterId;
@@ -158,6 +163,11 @@ public class IdBuilder {
 
     public long getNewConstraintId() {
         return constraintId.getAndIncrement();
+    }
+
+
+    public long getNewPhysicalId() {
+        return physicalId.getAndIncrement();
     }
 
 }

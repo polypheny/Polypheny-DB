@@ -65,11 +65,11 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     /**
      * Update physical position of a column placement on a specified adapter.
      *
-     * @param adapterId The id of the adapter
+     * @param allocId The id of the adapter
      * @param columnId The id of the column
      * @param position The physical position to set
      */
-    void updateColumnPlacementPhysicalPosition( long adapterId, long columnId, long position );
+    void updateColumnPlacementPhysicalPosition( long allocId, long columnId, long position );
 
     /**
      * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.

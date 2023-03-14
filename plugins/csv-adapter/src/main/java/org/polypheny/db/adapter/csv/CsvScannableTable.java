@@ -39,7 +39,6 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.util.Source;
@@ -56,8 +55,8 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
     /**
      * Creates a CsvScannableTable.
      */
-    protected CsvScannableTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( source, table, fieldTypes, fields, csvSource );
+    protected CsvScannableTable( long id, Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( id, source, table, fieldTypes, fields, csvSource );
     }
 
 
@@ -70,7 +69,7 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
     public Enumerable<Object[]> scan( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object[]> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, false, null, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );

@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.refactor.CatalogType;
 import org.polypheny.db.catalog.refactor.Expressible;
 import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.schema.Statistic;
+import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -102,7 +103,7 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
 
     public <T extends AlgMultipleTrait> List<T> getCollations() {
-        return null;
+        return (List<T>) Statistics.UNKNOWN.getCollations();
     }
 
 

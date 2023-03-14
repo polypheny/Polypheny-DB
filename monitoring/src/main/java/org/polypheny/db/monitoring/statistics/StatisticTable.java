@@ -17,10 +17,8 @@
 package org.polypheny.db.monitoring.statistics;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
@@ -47,8 +45,8 @@ public class StatisticTable<T extends Comparable<T>> {
     @Getter
     private NamespaceType namespaceType;
 
-    @Getter
-    private ImmutableList<Long> dataPlacements;
+    //@Getter
+    //private ImmutableList<Long> dataPlacements;
 
     @Getter
     private final List<Integer> availableAdapters = new ArrayList<>();
@@ -80,7 +78,7 @@ public class StatisticTable<T extends Comparable<T>> {
             LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).unwrap( LogicalTable.class );
             this.table = catalogTable.name;
             this.namespaceType = catalogTable.namespaceType;
-            this.dataPlacements = ImmutableList.copyOf( catalog.getSnapshot().getAllocSnapshot().getDataPlacements( catalogTable.id ).stream().map( c -> c.adapterId ).collect( Collectors.toList() ) );
+            //this.dataPlacements = ImmutableList.copyOf( catalog.getSnapshot().getAllocSnapshot().getDataPlacements( catalogTable.id ).stream().map( c -> c.adapterId ).collect( Collectors.toList() ) );
             this.entityType = catalogTable.entityType;
         }
         calls = new TableCalls( tableId, 0, 0, 0, 0 );

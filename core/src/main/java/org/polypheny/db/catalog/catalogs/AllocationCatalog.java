@@ -22,4 +22,5 @@ public interface AllocationCatalog {
 
     LogicalNamespace getNamespace();
 
+
 }

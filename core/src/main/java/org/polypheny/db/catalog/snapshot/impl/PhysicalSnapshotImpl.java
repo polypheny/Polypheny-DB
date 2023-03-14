@@ -42,12 +42,28 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
     ImmutableMap<Long, List<PhysicalEntity>> logicalToPhysicals;
 
+    ImmutableMap<Long, List<PhysicalEntity>> allocToPhysicals;
+
 
     public PhysicalSnapshotImpl( Map<Long, PhysicalCatalog> physicalCatalogs ) {
         this.entities = ImmutableMap.copyOf( physicalCatalogs.values().stream().flatMap( c -> c.getPhysicals().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
         this.adapterLogicalEntity = buildAdapterLogicalEntity();
         this.adapterPhysicals = buildAdapterPhysicals();
         this.logicalToPhysicals = buildLogicalToPhysicals();
+        this.allocToPhysicals = buildAllocToPhysicals();
+    }
+
+
+    private ImmutableMap<Long, List<PhysicalEntity>> buildAllocToPhysicals() {
+        Map<Long, List<PhysicalEntity>> map = new HashMap<>();
+        this.entities.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.allocationId ) ) {
+                map.put( v.allocationId, new ArrayList<>() );
+            }
+            map.get( v.allocationId ).add( v );
+        } );
+
+        return ImmutableMap.copyOf( map );
     }
 
 
@@ -85,7 +101,10 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
     @Override
     public PhysicalTable getPhysicalTable( long id ) {
-        return entities.get( id ).unwrap( PhysicalTable.class );
+        if ( entities.get( id ) != null ) {
+            return entities.get( id ).unwrap( PhysicalTable.class );
+        }
+        return null;
     }
 
 
@@ -131,8 +150,16 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
     }
 
 
+    @Override
     public List<PhysicalEntity> fromLogical( long id ) {
         return null;
     }
+
+
+    @Override
+    public List<PhysicalEntity> fromAlloc( long id ) {
+        return allocToPhysicals.get( id );
+    }
+
 
 }

@@ -31,8 +31,8 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @NonFinal
 public class PhysicalCollection extends PhysicalEntity {
 
-    public PhysicalCollection( long id, long logicalId, long namespaceId, String name, String namespaceName, EntityType type, long adapterId ) {
-        super( id, logicalId, name, namespaceId, namespaceName, type, NamespaceType.DOCUMENT, adapterId );
+    public PhysicalCollection( long id, long logicalId, long allocationId, long namespaceId, String name, String namespaceName, EntityType type, long adapterId ) {
+        super( id, logicalId, allocationId, name, namespaceId, namespaceName, type, NamespaceType.DOCUMENT, adapterId );
     }
 
 

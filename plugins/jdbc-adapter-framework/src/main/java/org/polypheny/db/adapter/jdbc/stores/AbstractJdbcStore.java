@@ -30,6 +30,7 @@ import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -136,7 +137,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         }
         executeUpdate( query, context );
 
-        return this.currentJdbcSchema.createJdbcTable( logicalTable, allocationTable );
+        return this.currentJdbcSchema.createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), logicalTable, allocationTable );
         //return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
     }
 

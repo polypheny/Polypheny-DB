@@ -121,7 +121,7 @@ public interface Convention extends AlgTrait, Serializable {
 
 
         @Override
-        public AlgTraitDef getTraitDef() {
+        public AlgTraitDef<?> getTraitDef() {
             return ConventionTraitDef.INSTANCE;
         }
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.physical;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
@@ -47,6 +48,12 @@ public class PolyPhysicalCatalog implements PhysicalCatalog {
     @Override
     public void addPhysicalEntity( PhysicalEntity physicalEntity ) {
         physicals.put( physicalEntity.id, physicalEntity );
+    }
+
+
+    @Override
+    public void addEntities( List<PhysicalEntity> physicals ) {
+        physicals.forEach( p -> this.physicals.put( p.id, p ) );
     }
 
 

@@ -75,7 +75,7 @@ public class CachedPlanRouter extends BaseRouter {
                 }
             }
 
-            return builder.push( super.buildJoinedScan( statement, cluster, placement ) );
+            return builder.push( super.buildJoinedScan( statement, cluster, null ) );
         } else if ( node instanceof LogicalValues ) {
             return super.handleValues( (LogicalValues) node, builder );
         } else {

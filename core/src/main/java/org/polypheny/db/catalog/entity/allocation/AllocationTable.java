@@ -72,18 +72,18 @@ public class AllocationTable extends AllocationEntity {
 
 
     public Map<Long, LogicalColumn> getColumns() {
-        return Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumns( id ).stream().collect( Collectors.toMap( c -> c.id, c -> c ) );
+        return Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumns( logicalId ).stream().collect( Collectors.toMap( c -> c.id, c -> c ) );
     }
 
 
     public String getNamespaceName() {
-        return Catalog.getInstance().getSnapshot().getNamespace( id ).name;
+        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).name;
     }
 
 
-    public AllocationTable withAddedColumn( long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
+    public AllocationTable withAddedColumn( long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position ) {
         List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
-        placements.add( new CatalogColumnPlacement( namespaceId, id, columnId, adapterId, placementType, physicalSchemaName, physicalColumnName, 0 ) );
+        placements.add( new CatalogColumnPlacement( namespaceId, id, columnId, adapterId, placementType, physicalSchemaName, physicalColumnName, position ) );
 
         return new AllocationTable( id, logicalId, namespaceId, adapterId, placements );
     }
@@ -102,6 +102,14 @@ public class AllocationTable extends AllocationEntity {
 
     public Map<String, Long> getColumnNamesId() {
         return getColumnNames().entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
+    }
+
+
+    public List<Long> getColumnOrder() {
+        List<CatalogColumnPlacement> columns = new ArrayList<>( placements );
+        columns.sort( ( a, b ) -> Math.toIntExact( a.physicalPosition - b.physicalPosition ) );
+
+        return columns.stream().map( c -> c.columnId ).collect( Collectors.toList() );
     }
 
 }

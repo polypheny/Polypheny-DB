@@ -405,7 +405,7 @@ public interface AllocSnapshot {
 
     PartitionProperty getPartitionProperty( long id );
 
-    boolean adapterHasPlacement( long adapterId, long id );
+    boolean adapterHasPlacement( long adapterId, long logicalId );
 
     AllocationEntity getAllocation( long adapterId, long entityId );
 

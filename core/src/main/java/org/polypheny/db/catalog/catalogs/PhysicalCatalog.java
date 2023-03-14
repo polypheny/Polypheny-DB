@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 
 public interface PhysicalCatalog {
@@ -23,6 +25,8 @@ public interface PhysicalCatalog {
     void addPhysicalEntity( PhysicalEntity physicalEntity );
 
 
-    java.util.concurrent.ConcurrentHashMap<Long, PhysicalEntity> getPhysicals();
+    ConcurrentHashMap<Long, PhysicalEntity> getPhysicals();
+
+    void addEntities( List<PhysicalEntity> physicals );
 
 }

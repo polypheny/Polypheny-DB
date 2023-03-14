@@ -21,8 +21,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,9 +56,9 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -70,7 +68,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
-import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -172,9 +169,11 @@ public abstract class BaseRouter implements Router {
     public RoutedAlgBuilder handleScan(
             RoutedAlgBuilder builder,
             Statement statement,
-            long partitionId ) {
+            long allocId ) {
 
-        PhysicalEntity physical = snapshot.getPhysicalSnapshot().getPhysicalTable( partitionId );
+        List<PhysicalEntity> physicals = snapshot.getPhysicalSnapshot().fromAlloc( allocId );
+        PhysicalEntity physical = physicals.get( 0 );
+
         AlgNode node = builder.scan( physical ).build();
 
         builder.push( node );
@@ -248,21 +247,31 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
+    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, List<AllocationEntity> allocationEntities ) {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedScanCache.getIfPresent( placements.hashCode() );
+            AlgNode cachedNode = joinedScanCache.getIfPresent( allocationEntities.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
         }
+        if ( allocationEntities.size() == 1 ) {
+            builder = handleScan(
+                    builder,
+                    statement,
+                    allocationEntities.get( 0 ).id );
+            // Final project
+            buildFinalProject( builder, allocationEntities.get( 0 ).unwrap( AllocationTable.class ) );
 
-        for ( Map.Entry<Long, List<CatalogColumnPlacement>> partitionToPlacement : placements.entrySet() ) {
+        }
+
+
+        /*for ( Map.Entry<Long, List<CatalogColumnPlacement>> partitionToPlacement : allocationEntities.entrySet() ) {
             long partitionId = partitionToPlacement.getKey();
             List<CatalogColumnPlacement> currentPlacements = partitionToPlacement.getValue();
             // Sort by adapter
-            Map<Long, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
+            /*Map<Long, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
             for ( CatalogColumnPlacement placement : currentPlacements ) {
                 if ( !placementsByAdapter.containsKey( placement.adapterId ) ) {
                     placementsByAdapter.put( placement.adapterId, new LinkedList<>() );
@@ -274,6 +283,7 @@ public abstract class BaseRouter implements Router {
                 // List<CatalogColumnPlacement> ccps = placementsByAdapter.values().iterator().next();
                 // CatalogColumnPlacement ccp = ccps.get( 0 );
                 // CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
+                partitionId = snapshot.getAllocSnapshot().getAllocation( partitionId, currentPlacements.get( 0 ).tableId ).id;
 
                 builder = handleScan(
                         builder,
@@ -345,16 +355,16 @@ public abstract class BaseRouter implements Router {
             } else {
                 throw new RuntimeException( "The table '" + currentPlacements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
             }
-        }
+        }*/
 
-        builder.union( true, placements.size() );
+        builder.union( true, allocationEntities.size() );
 
         AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            joinedScanCache.put( placements.hashCode(), node );
+            joinedScanCache.put( allocationEntities.hashCode(), node );
         }
 
-        CatalogColumnPlacement placement = new ArrayList<>( placements.values() ).get( 0 ).get( 0 );
+        CatalogColumnPlacement placement = allocationEntities.get( 0 ).unwrap( AllocationTable.class ).placements.get( 0 );
         // todo dl: remove after RowType refactor
         if ( snapshot.getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
@@ -374,15 +384,19 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private void buildFinalProject( RoutedAlgBuilder builder, List<CatalogColumnPlacement> currentPlacements ) {
+    private void buildFinalProject( RoutedAlgBuilder builder, AllocationTable entity ) {
         List<RexNode> rexNodes = new ArrayList<>();
-        List<LogicalColumn> placementList = currentPlacements.stream()
+        /*List<LogicalColumn> placementList = currentPlacements.stream()
                 .map( col -> snapshot.getRelSnapshot( currentPlacements.get( 0 ).namespaceId ).getColumn( col.columnId ) )
                 .sorted( Comparator.comparingInt( col -> col.position ) )
                 .collect( Collectors.toList() );
         for ( LogicalColumn logicalColumn : placementList ) {
             rexNodes.add( builder.field( logicalColumn.name ) );
+        }*/
+        for ( String name : entity.getColumnNames().values() ) {
+            rexNodes.add( builder.field( name ) );
         }
+
         builder.project( rexNodes );
     }
 
@@ -433,7 +447,7 @@ public abstract class BaseRouter implements Router {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalTable> tables = snapshot.getRelSnapshot( namespace.id ).getTables( null );
         List<Pair<String, AlgNode>> scans = tables.stream()
-                .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, selectPlacement( t ) ) ) )
+                .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, null ) ) )
                 .collect( Collectors.toList() );
 
         Builder infoBuilder = cluster.getTypeFactory().builder();

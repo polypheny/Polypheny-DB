@@ -23,6 +23,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
@@ -54,11 +55,12 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Get placements and convert into placement distribution
-        final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
+        // final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
+        List<AllocationEntity> entities = snapshot.getAllocSnapshot().getAllocationsFromLogical( catalogTable.id );
 
         // Only one builder available
-        builders.get( 0 ).addPhysicalInfo( placements );
-        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placements ) );
+        // builders.get( 0 ).addPhysicalInfo( placements );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, entities ) );
 
         return builders;
     }
@@ -79,7 +81,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
-        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placementDistribution ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, null ) );
 
         return builders;
     }

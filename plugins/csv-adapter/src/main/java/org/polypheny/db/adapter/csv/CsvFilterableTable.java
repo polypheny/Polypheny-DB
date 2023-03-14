@@ -59,8 +59,8 @@ public class CsvFilterableTable extends CsvTable implements FilterableEntity {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( source, table, fieldTypes, fields, csvSource );
+    public CsvFilterableTable( long id, Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( id, source, table, fieldTypes, fields, csvSource );
     }
 
 

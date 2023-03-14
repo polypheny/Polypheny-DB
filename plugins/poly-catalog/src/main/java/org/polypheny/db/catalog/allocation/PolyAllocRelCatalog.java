@@ -76,14 +76,9 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Override
     public void addColumnPlacement( long allocationId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position ) {
-        tables.put( allocationId, tables.get( allocationId ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+        tables.put( allocationId, tables.get( allocationId ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName, position ) );
     }
 
-
-    // might replace above one with this
-    private void addColumnPlacementAlloc( long allocTableId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
-        tables.put( allocTableId, tables.get( allocTableId ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
-    }
 
 
     @Override
@@ -91,11 +86,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
         tables.put( allocationId, tables.get( allocationId ).withRemovedColumn( columnId ) );
     }
 
-
-    // might replace above one with this
-    private void deleteColumnPlacementAlloc( long allocTableId, long columnId, boolean columnOnly ) {
-        tables.put( allocTableId, tables.get( allocTableId ).withRemovedColumn( columnId ) );
-    }
 
 
     @Override
@@ -105,7 +95,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void updateColumnPlacementPhysicalPosition( long adapterId, long columnId, long position ) {
+    public void updateColumnPlacementPhysicalPosition( long allocId, long columnId, long position ) {
 
     }
 

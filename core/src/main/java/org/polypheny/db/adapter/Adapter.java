@@ -47,6 +47,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -325,8 +326,8 @@ public abstract class Adapter {
 
     public abstract void createNewSchema( Snapshot snapshot, String name, long id );
 
-    @Deprecated
-    public abstract PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable );
+
+    public abstract List<PhysicalEntity> createAdapterTable( IdBuilder idBuilder, LogicalTable logical, AllocationTable allocationTable );
 
     public abstract Namespace getCurrentSchema();
 

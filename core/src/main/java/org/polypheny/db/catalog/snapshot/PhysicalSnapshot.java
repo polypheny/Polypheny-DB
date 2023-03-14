@@ -46,4 +46,6 @@ public interface PhysicalSnapshot {
 
     List<PhysicalEntity> fromLogical( long id );
 
+    List<PhysicalEntity> fromAlloc( long id );
+
 }

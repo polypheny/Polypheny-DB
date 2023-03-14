@@ -23,10 +23,14 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.allocation.PolyAllocGraphCatalog;
@@ -47,6 +51,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -113,6 +118,11 @@ public class PolyCatalog extends Catalog implements Serializable {
                 new ConcurrentHashMap<>(),
                 new ConcurrentHashMap<>() );
 
+    }
+
+
+    @Override
+    public void init() {
         try {
             insertDefaultData();
         } catch ( UnknownAdapterException e ) {
@@ -161,19 +171,17 @@ public class PolyCatalog extends Catalog implements Serializable {
         // init adapters
         if ( adapters.size() == 0 ) {
             // Deploy default store
-            addAdapter( "hsqldb", defaultStore.getAdapterName(), AdapterType.STORE, defaultStore.getDefaultSettings() );
+            AdapterManager.getInstance().addAdapter( defaultStore.getAdapterName(), "hsqldb", AdapterType.STORE, defaultStore.getDefaultSettings() );
 
             // Deploy default CSV view
-            addAdapter( "hr", defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource.getDefaultSettings() );
+            Adapter adapter = AdapterManager.getInstance().addAdapter( defaultSource.getAdapterName(), "hr", AdapterType.SOURCE, defaultSource.getDefaultSettings() );
 
+            adapter.createNewSchema( getSnapshot(), "public", namespaceId );
             // init schema
 
             getLogicalRel( namespaceId ).addTable( "depts", EntityType.SOURCE, false );
-
             getLogicalRel( namespaceId ).addTable( "emps", EntityType.SOURCE, false );
-
             getLogicalRel( namespaceId ).addTable( "emp", EntityType.SOURCE, false );
-
             getLogicalRel( namespaceId ).addTable( "work", EntityType.SOURCE, false );
 
             updateSnapshot();
@@ -198,7 +206,6 @@ public class PolyCatalog extends Catalog implements Serializable {
      */
     private void addDefaultCsvColumns( CatalogAdapter csv, long namespaceId ) throws UnknownTableException, UnknownColumnException, GenericCatalogException {
         LogicalTable depts = getSnapshot().getRelSnapshot( namespaceId ).getTable( "depts" );
-
         addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
 
@@ -267,9 +274,19 @@ public class PolyCatalog extends Catalog implements Serializable {
             if ( table.name.equals( "emp" ) || table.name.equals( "work" ) ) {
                 filename += ".gz";
             }
-            long allocId = getAllocRel( table.namespaceId ).addDataPlacement( csv.id, table.id );
+
+            updateSnapshot();
+            long allocId = 0;
+            if ( !getSnapshot().getAllocSnapshot().adapterHasPlacement( csv.id, table.id ) ) {
+                allocId = getAllocRel( table.namespaceId ).addDataPlacement( csv.id, table.id );
+            } else {
+                allocId = getSnapshot().getAllocSnapshot().getAllocation( csv.id, table.id ).id;
+            }
+
             getAllocRel( table.namespaceId ).addColumnPlacement( allocId, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
-            getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( csv.id, colId, position );
+            //getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( allocId, colId, position );
+
+            updateSnapshot();
 
             // long partitionId = table.partitionProperty.partitionIds.get( 0 );
             // getAllocRel( table.namespaceId ).addPartitionPlacement( table.namespaceId, csv.id, table.id, partitionId, PlacementType.AUTOMATIC, DataPlacementRole.UPTODATE );
@@ -288,6 +305,21 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     private void updateSnapshot() {
+        // reset physical catalogs
+        Set<Long> keys = this.physicalCatalogs.keySet();
+        keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
+
+        // generate new physical entities, atm only relational
+        this.allocationCatalogs.forEach( ( k, v ) -> {
+            if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
+                ((AllocationRelationalCatalog) v).getTables().forEach( ( k2, v2 ) -> {
+                    LogicalTable table = getSnapshot().getLogicalEntity( v2.logicalId ).unwrap( LogicalTable.class );
+                    List<PhysicalEntity> physicals = AdapterManager.getInstance().getAdapter( v2.adapterId ).createAdapterTable( idBuilder, table, v2 );
+                    getPhysical( table.namespaceId ).addEntities( physicals );
+                } );
+            }
+        } );
+
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
     }
 

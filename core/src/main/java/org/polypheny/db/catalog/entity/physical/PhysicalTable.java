@@ -16,8 +16,10 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -45,18 +47,20 @@ public class PhysicalTable extends PhysicalEntity {
 
     public String namespaceName;
     public ImmutableMap<Long, AlgDataType> types;
+    public ImmutableList<Long> order;
 
 
-    public PhysicalTable( long id, long logicalId, String name, long namespaceId, String namespaceName, long adapterId, Map<Long, String> columns, Map<Long, AlgDataType> types ) {
-        super( id, logicalId, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
+    public PhysicalTable( long id, long logicalId, long allocationId, String name, long namespaceId, String namespaceName, long adapterId, Map<Long, String> columns, Map<Long, AlgDataType> types, List<Long> order ) {
+        super( id, logicalId, allocationId, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.namespaceName = namespaceName;
         this.columns = ImmutableMap.copyOf( columns );
         this.types = ImmutableMap.copyOf( types );
+        this.order = ImmutableList.copyOf( order );
     }
 
 
-    public PhysicalTable( AllocationTable table, String name, String namespaceName, Map<Long, String> columns, Map<Long, AlgDataType> types ) {
-        this( table.id, table.logicalId, name, table.namespaceId, namespaceName, table.adapterId, columns, types );
+    public PhysicalTable( long id, AllocationTable table, String name, String namespaceName, Map<Long, String> columns, Map<Long, AlgDataType> types, List<Long> order ) {
+        this( id, table.logicalId, table.id, name, table.namespaceId, namespaceName, table.adapterId, columns, types, order );
     }
 
 
@@ -70,7 +74,7 @@ public class PhysicalTable extends PhysicalEntity {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
-        for ( long id : columns.keySet() ) {
+        for ( long id : order ) {
             fieldInfo.add( columns.get( id ), columns.get( id ), types.get( id ) ).nullable( types.get( id ).isNullable() );
         }
 

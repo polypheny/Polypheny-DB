@@ -18,7 +18,6 @@ package org.polypheny.db.routing.routers;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
@@ -65,7 +65,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, placementCombination ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, null ) );
                 newBuilders.add( newBuilder );
             }
         }
@@ -107,18 +107,20 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         final Set<List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
-        for ( List<CatalogColumnPlacement> placementCombination : placements ) {
+        /*for ( List<CatalogColumnPlacement> placementCombination : placements ) {
             Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
-            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );
-            currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
+            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );*/
+        //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
-            for ( RoutedAlgBuilder builder : builders ) {
-                RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
-                newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, currentPlacementDistribution ) );
-                newBuilders.add( newBuilder );
-            }
+        List<AllocationEntity> allocationEntities = snapshot.getAllocSnapshot().getAllocationsFromLogical( catalogTable.id );
+
+        for ( RoutedAlgBuilder builder : builders ) {
+            RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
+            //newBuilder.addPhysicalInfo( currentPlacementDistribution );
+            newBuilder.push( super.buildJoinedScan( statement, cluster, allocationEntities ) );
+            newBuilders.add( newBuilder );
         }
+        //}
 
         builders.clear();
         builders.addAll( newBuilders );

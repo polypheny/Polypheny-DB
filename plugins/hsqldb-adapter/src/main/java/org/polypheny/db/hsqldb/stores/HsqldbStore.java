@@ -30,17 +30,18 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.jdbc.JdbcEntity;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -106,8 +107,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public JdbcEntity createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
-        return currentJdbcSchema.createJdbcTable( logicalTable, allocationTable );
+    public List<PhysicalEntity> createAdapterTable( IdBuilder idBuilder, LogicalTable logicalTable, AllocationTable allocationTable ) {
+        return List.of( currentJdbcSchema.createJdbcTable( idBuilder.getNewPhysicalId(), logicalTable, allocationTable ) );
     }
 
 

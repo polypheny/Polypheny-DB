@@ -74,6 +74,8 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
+    public abstract void init();
+
     public abstract void commit() throws NoTablePrimaryKeyException;
 
     public abstract void rollback();
