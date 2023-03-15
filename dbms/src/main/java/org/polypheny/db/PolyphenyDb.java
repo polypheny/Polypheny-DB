@@ -98,6 +98,9 @@ public class PolyphenyDb {
     @Option(name = { "-resetDocker" }, description = "Removes all Docker instances, which are from previous Polypheny runs.")
     public boolean resetDocker = false;
 
+    @Option(name = { "-resetPlugins" }, description = "Removes all plugins from the plugins/ folder in the Polypheny Home directory.")
+    public boolean resetPlugins = false;
+
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
 
@@ -319,7 +322,8 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        PolyPluginManager.init();
+        // Initialize plugin manager
+        PolyPluginManager.init( resetPlugins );
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );

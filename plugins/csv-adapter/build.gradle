@@ -3,7 +3,9 @@ group "org.polypheny"
 
 dependencies {
     compileOnly project(":core")
+    compileOnly project(":dbms")
     compileOnly project(":plugins:sql-language")
+
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0

@@ -29,10 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingList;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
@@ -58,12 +62,15 @@ import org.slf4j.LoggerFactory;
         name = "CSV",
         description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
-@AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
-@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
+@AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 2)
+@AdapterSettingString(subOf = "method_link", defaultValue = ".", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
+@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class CsvSource extends DataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
+    private final ConnectionMethod connectionMethod;
 
     private URL csvDir;
     private CsvSchema currentSchema;
@@ -74,13 +81,18 @@ public class CsvSource extends DataSource {
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 
+        setCsvDir( settings );
+
+        this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
+
         // Validate maxStringLength setting
-        maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+        {
+            maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+        }
         if ( maxStringLength < 1 ) {
             throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
 
-        setCsvDir( settings );
         addInformationExportedColumns();
         enableInformationPage();
     }
@@ -88,6 +100,10 @@ public class CsvSource extends DataSource {
 
     private void setCsvDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
+        if ( connectionMethod == ConnectionMethod.LINK ) {
+            dir = settings.get( "directoryName" );
+        }
+
         if ( dir.startsWith( "classpath://" ) ) {
             csvDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
         } else {
@@ -97,6 +113,16 @@ public class CsvSource extends DataSource {
                 throw new RuntimeException( e );
             }
         }
+    }
+
+
+    @Nullable
+    public <T> T parseSetting( String key, Class<T> clazz ) {
+        if ( !settings.containsKey( key ) ) {
+            return null;
+        }
+
+        return clazz.cast( settings.get( key ) );
     }
 
 
@@ -126,38 +152,38 @@ public class CsvSource extends DataSource {
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        if ( exportedColumnCache != null ) {
+        if ( connectionMethod == ConnectionMethod.UPLOAD && exportedColumnCache != null ) {
+            // if we upload, file will not be changed, and we can cache the columns information, if "link" is used this is not advised
             return exportedColumnCache;
         }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
-            List<CatalogColumnPlacement> ccps = Catalog
+            List<CatalogColumnPlacement> placements = Catalog
                     .getInstance()
                     .getColumnPlacementsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
-            for ( CatalogColumnPlacement ccp : ccps ) {
+            for ( CatalogColumnPlacement ccp : placements ) {
                 fileNames.add( ccp.physicalSchemaName );
             }
+        } else if ( Sources.of( csvDir ).file().isFile() ) {
+            // single files
+            fileNames = Set.of( csvDir.getPath() );
         } else {
+            // multiple files
             File[] files = Sources.of( csvDir )
                     .file()
                     .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) );
+            if ( files == null ) {
+                throw new RuntimeException( "No .csv files where found." );
+            }
             fileNames = Arrays.stream( files )
                     .sequential()
                     .map( File::getName )
                     .collect( Collectors.toSet() );
         }
         for ( String fileName : fileNames ) {
-            // Compute physical table name
-            String physicalTableName = fileName.toLowerCase();
-            if ( physicalTableName.endsWith( ".gz" ) ) {
-                physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
-            }
-            physicalTableName = physicalTableName
-                    .substring( 0, physicalTableName.length() - ".csv".length() )
-                    .trim()
-                    .replaceAll( "[^a-z0-9_]+", "" );
+            String physicalTableName = computePhysicalEntityName( fileName );
 
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
@@ -171,13 +197,13 @@ public class CsvSource extends DataSource {
                             .toLowerCase()
                             .trim()
                             .replaceAll( "[^a-z0-9_]+", "" );
-                    String typeStr = colSplit[1].toLowerCase().trim();
+                    String typeStr = "string";
+                    if ( colSplit.length > 1 ) {
+                        typeStr = colSplit[1].toLowerCase().trim();
+                    }
+
                     PolyType type;
-                    PolyType collectionsType = null;
                     Integer length = null;
-                    Integer scale = null;
-                    Integer dimension = null;
-                    Integer cardinality = null;
                     switch ( typeStr.toLowerCase() ) {
                         case "int":
                             type = PolyType.INTEGER;
@@ -215,17 +241,17 @@ public class CsvSource extends DataSource {
                     list.add( new ExportedColumn(
                             name,
                             type,
-                            collectionsType,
+                            null,
                             length,
-                            scale,
-                            dimension,
-                            cardinality,
+                            null,
+                            null,
+                            null,
                             false,
                             fileName,
                             physicalTableName,
                             name,
                             position,
-                            position == 1 ) ); // TODO
+                            position == 1 ) );
                     position++;
                 }
             } catch ( IOException e ) {
@@ -234,7 +260,33 @@ public class CsvSource extends DataSource {
 
             exportedColumnCache.put( physicalTableName, list );
         }
+        this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
+    }
+
+
+    private static String computePhysicalEntityName( String fileName ) {
+        // Compute physical table name
+        String physicalTableName = fileName.toLowerCase();
+        // remove gz
+        if ( physicalTableName.endsWith( ".gz" ) ) {
+            physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
+        }
+        // use only filename
+        if ( physicalTableName.contains( "/" ) ) {
+            String[] splits = physicalTableName.split( "/" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        if ( physicalTableName.contains( "\\" ) ) {
+            String[] splits = physicalTableName.split( "\\\\" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        return physicalTableName
+                .substring( 0, physicalTableName.length() - ".csv".length() )
+                .trim()
+                .replaceAll( "[^a-z0-9_]+", "" );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -518,7 +518,10 @@ public class JdbcPreparedStatementsTest {
                     preparedSelect.setInt( 2, 2 );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
-                            ImmutableList.of( new Object[]{ 1, (short) 9, "Foo" }, new Object[]{ 2, (short) 5, "Bar" } ) );
+                            ImmutableList.of(
+                                    new Object[]{ 1, (short) 9, "Foo" },
+                                    new Object[]{ 2, (short) 5, "Bar" } ),
+                            true );
 
                     connection.commit();
                 } finally {
@@ -618,7 +621,8 @@ public class JdbcPreparedStatementsTest {
                             preparedSelect.executeQuery(),
                             ImmutableList.of(
                                     new Object[]{ 1, new Object[]{ 1, 2 } },
-                                    new Object[]{ 2, new Object[]{ 4, 5 } } ) );
+                                    new Object[]{ 2, new Object[]{ 4, 5 } } ),
+                            true );
 
                     connection.commit();
                 } finally {
@@ -665,7 +669,8 @@ public class JdbcPreparedStatementsTest {
                             preparedSelect.executeQuery(),
                             ImmutableList.of(
                                     new Object[]{ 1, new Object[]{ "Hans", "Georg" } },
-                                    new Object[]{ 2, new Object[]{ "Lisa", "Livia" } } ) );
+                                    new Object[]{ 2, new Object[]{ "Lisa", "Livia" } } ),
+                            true );
 
                     connection.commit();
                 } finally {

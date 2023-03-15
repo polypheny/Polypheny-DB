@@ -154,6 +154,7 @@ import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.graph.GraphObject;
+import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -178,6 +179,7 @@ import org.polypheny.db.webui.models.MaterializedInfos;
 import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
+import org.polypheny.db.webui.models.PathAccessRequest;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
@@ -2016,7 +2018,7 @@ public class Crud implements InformationObserver {
                 String defaultValue = currentColumn.getDefaultValue();
 
                 // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
-                // enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
+                // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
                 if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
 
                     if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
@@ -2256,8 +2258,8 @@ public class Crud implements InformationObserver {
             return;
         }
 
-        // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
-        // currently seams to be the best option). When migrating this to a DDL manager, make sure to find a better approach.
+        // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this, but it
+        // currently seems to be the best option). When migrating this to a DDL manager, make sure to find a better approach.
         Transaction transaction = null;
         try {
             transaction = getTransaction();
@@ -2325,22 +2327,24 @@ public class Crud implements InformationObserver {
 
         AdapterModel a = gson.fromJson( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
+
+        String method = a.settings.get( "method" ).getValue();
+        if ( a.settings.containsKey( "method" ) ) {
+            method = a.settings.get( "method" ).getValue();
+        }
+
         for ( Entry<String, AbstractAdapterSetting> entry : a.settings.entrySet() ) {
             if ( entry.getValue() instanceof AbstractAdapterSettingDirectory ) {
                 AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) entry.getValue());
-                for ( String fileName : setting.fileNames ) {
-                    setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
-                }
-                File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
-                for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
-                    try {
-                        File file = new File( path, is.getKey() );
-                        FileUtils.copyInputStreamToFile( is.getValue(), file );
-                    } catch ( IOException e ) {
-                        throw new RuntimeException( e );
+                if ( method.equals( "link" ) ) {
+                    Exception e = handleLinkFiles( ctx, a, setting, a.settings );
+                    if ( e != null ) {
+                        ctx.json( new Result( e ) );
+                        return;
                     }
+                } else {
+                    handleUploadFiles( inputStreams, a, setting );
                 }
-                setting.setDirectory( path.getAbsolutePath() );
                 settings.put( entry.getKey(), entry.getValue().getValue() );
             } else {
                 settings.put( entry.getKey(), entry.getValue().getValue() );
@@ -2362,6 +2366,47 @@ public class Crud implements InformationObserver {
             }
             ctx.json( new Result( e ).setGeneratedQuery( query ) );
         }
+    }
+
+
+    public void startAccessRequest( Context ctx ) {
+        PathAccessRequest request = ctx.bodyAsClass( PathAccessRequest.class );
+        UUID uuid = SecurityManager.getInstance().requestPathAccess( request.getName(), ctx.req.getSession().getId(), Path.of( request.getDirectoryName() ) );
+        if ( uuid != null ) {
+            ctx.json( uuid );
+        } else {
+            ctx.result( "" );
+        }
+    }
+
+
+    private Exception handleLinkFiles( Context ctx, AdapterModel a, AbstractAdapterSettingDirectory setting, Map<String, AbstractAdapterSetting> settings ) {
+        if ( !settings.containsKey( "directoryName" ) ) {
+            return new RuntimeException( "Security check for access was not performed; id missing." );
+        }
+        Path path = Path.of( settings.get( "directoryName" ).defaultValue );
+        if ( !SecurityManager.getInstance().checkPathAccess( path ) ) {
+            return new RuntimeException( "Security check for access was not successful; not enough permissions." );
+        }
+
+        return null;
+    }
+
+
+    private static void handleUploadFiles( Map<String, InputStream> inputStreams, AdapterModel a, AbstractAdapterSettingDirectory setting ) {
+        for ( String fileName : setting.fileNames ) {
+            setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
+        }
+        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
+        for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
+            try {
+                File file = new File( path, is.getKey() );
+                FileUtils.copyInputStreamToFile( is.getValue(), file );
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+        setting.setDirectory( path.getAbsolutePath() );
     }
 
 

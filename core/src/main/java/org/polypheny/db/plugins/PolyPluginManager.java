@@ -99,10 +99,12 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static void init() {
+    public static void init( boolean resetPluginsOnStartup ) {
         attachRuntimeToPlugins();
 
-        deletePluginFolderIfNecessary();
+        if ( resetPluginsOnStartup ) {
+            deletePluginFolder();
+        }
 
         pluginManager.loadPlugins();
 
@@ -137,14 +139,11 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    private static void deletePluginFolderIfNecessary() {
-        if ( Catalog.resetCatalog ) {
-            try {
-                FileUtils.deleteDirectory( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ) );
-            } catch ( IOException e ) {
-                throw new RuntimeException( e );
-            }
-
+    private static void deletePluginFolder() {
+        try {
+            FileUtils.deleteDirectory( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ) );
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
         }
     }
 
@@ -622,7 +621,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         SINGLE, // specific version e.g. 0.8.1
         RANGE, // range of potential versions e.g. 0.8 - 0.9
         LIST, // different supported version e.g. 0.8.1, 0.9.*
-        NONE;
+        NONE
     }
 
 
