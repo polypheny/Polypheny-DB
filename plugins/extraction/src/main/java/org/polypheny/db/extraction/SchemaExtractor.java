@@ -129,7 +129,7 @@ public class SchemaExtractor {
         }
         List<List<Object>> rows = result.getRows(statement, (int) result.getMaxRowCount());
 
-        List<String> allLabels = new ArrayList<String>();
+        List<String> allLabels = new ArrayList<>();
         for (List<Object> row : rows) {
             PolyNode node = (PolyNode) row.get(0);
             PolyCollections.PolyList<String> labels = node.getLabels();
@@ -144,7 +144,7 @@ public class SchemaExtractor {
     }
 
     public List<String> executeCypher(String query, String namespaceName) {
-        List<String> labels = new ArrayList<String>();
+        List<String> labels = new ArrayList<>();
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         try {
@@ -259,12 +259,12 @@ public class SchemaExtractor {
             String singleProperties = row[1].substring(1, row[1].length() - 1);
             String[] propertyParts = singleProperties.split(",");
             for (String propertyPart : propertyParts) {
-                String[] property = propertyPart.split("=");
+                propertyPart = propertyPart.replaceAll("\"", "");
+                String[] property = propertyPart.split(":");
                 String propertyName = property[0];
                 if (!propertyNames.contains(propertyName)) {
                     propertyNames.add(propertyName);
                 }
-                //String propertyValue = property[1];
             }
         }
         return propertyNames;
@@ -296,8 +296,8 @@ public class SchemaExtractor {
     /**
      * Your central method that serves as an entry point. Start with your implementation in this method.
      *
-     * @param namespaceId   The id of the namespace to analyze
-     * @param namespaceName
+     * @param namespaceIds   The ids of the namespaces to analyze
+     * @param namespaceNames The names of the namespaces to analyze
      */
     void execute(long[] namespaceIds, String[] namespaceNames) {
 
@@ -321,7 +321,7 @@ public class SchemaExtractor {
      * from the catalog.
      *
      * @param namespaceId   The id of the namespace
-     * @param namespaceName
+     * @param namespaceName The name of the namespace
      * @return A JSON string
      */
     private JsonObjectBuilder buildInput(long namespaceId, String namespaceName) {
@@ -397,8 +397,7 @@ public class SchemaExtractor {
                 for (String graphLabel : graphLabels) {
                     // Array of column names in namespace
                     JsonArrayBuilder propertyBuilder = Json.createArrayBuilder();
-                    List<String> propertyNames = getGraphProperties(graphLabel, namespaceName);
-                    for (String propertyName : propertyNames) {
+                    for (String propertyName : getGraphProperties(graphLabel, namespaceName)) {
                         propertyBuilder.add(propertyName);
                     }
 
