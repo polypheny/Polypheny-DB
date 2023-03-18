@@ -468,8 +468,10 @@ public class Neo4jPlugin extends Plugin {
             final Expression expression = Schemas.subSchemaExpression( rootSchema, name, NeoNamespace.class );
             String namespaceName;
             String[] splits = name.split( "_" );
-            if ( splits.length >= 3 ) {
+            if ( splits.length == 3 ) {
                 namespaceName = splits[1];
+            } else if ( splits.length > 3 ) {
+                namespaceName = String.join( "_", Arrays.asList( splits ).subList( 1, splits.length - 1 ) );
             } else {
                 throw new RuntimeException( "Error while generating new namespace" );
             }
