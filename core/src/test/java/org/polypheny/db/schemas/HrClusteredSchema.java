@@ -52,7 +52,6 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.refactor.ScannableEntity;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
@@ -123,7 +122,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
 
         PkClusteredEntity( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
-            super( -1, "", null, -1, -1, -1, EntityType.ENTITY, null, ImmutableList.of(), false, null );
+            super( -1, "", -1, EntityType.ENTITY, null, false, ImmutableList.of() );
             this.data = data;
             this.typeBuilder = dataTypeBuilder;
             this.pkColumns = pkColumns;
@@ -139,10 +138,12 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
             return Statistics.of( (double) data.size(), ImmutableList.of( pkColumns ), ImmutableList.of( AlgCollations.of( collationFields ) ) );
         }
 
+
         @Override
         public Enumerable<Object[]> scan( final DataContext root ) {
             return Linq4j.asEnumerable( data );
         }
+
     }
 
 }

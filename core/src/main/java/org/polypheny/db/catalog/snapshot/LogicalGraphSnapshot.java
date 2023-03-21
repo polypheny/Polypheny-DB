@@ -32,6 +32,8 @@ public interface LogicalGraphSnapshot {
      */
     public abstract LogicalGraph getGraph( long id );
 
+
+
     /**
      * Get a collection of all graphs, which match the given conditions.
      *

@@ -44,7 +44,7 @@ public class DockerManagerTest {
 
     @BeforeClass
     public static void initClass() {
-        if ( Catalog.INSTANCE == null ) {
+        if ( Catalog.getInstance() == null ) {
             // some functionality needs to use the catalog, so we use a mock
             Catalog.setAndGetInstance( new MockCatalogDocker() );
         }

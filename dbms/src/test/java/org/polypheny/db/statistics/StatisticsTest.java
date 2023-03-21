@@ -31,11 +31,12 @@ import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -254,15 +255,17 @@ public class StatisticsTest {
                     );
                     waiter.await( 20, TimeUnit.SECONDS );
                     try {
-                        LogicalTable catalogTableNation = Catalog.getInstance().getTable( "statisticschema", "nation" );
-                        LogicalTable catalogTableRegion = Catalog.getInstance().getTable( "statisticschema", "region" );
+                        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+                        LogicalNamespace namespace = snapshot.getNamespace( "statisticschema" );
+                        LogicalTable catalogTableNation = snapshot.getRelSnapshot( namespace.id ).getTable(  "nation" );
+                        LogicalTable catalogTableRegion = snapshot.getRelSnapshot( namespace.id ).getTable(  "region" );
 
                         Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                         Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
                         Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
                         Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
-                    } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                    } catch ( UnknownTableException  | UnknownSchemaException e ) {
                         log.error( "Caught exception test", e );
                     }
                     connection.commit();
@@ -308,13 +311,15 @@ public class StatisticsTest {
             boolean inCatalog = true;
             while ( !successfull && count < maxSeconds ) {
                 waiter.await( 1, TimeUnit.SECONDS );
-                if ( Catalog.getInstance().getTables( new Pattern( "statisticschema" ), new Pattern( "nationdelete" ) ).size() != 1 ) {
+                Snapshot snapshot = Catalog.getInstance().getSnapshot();
+                LogicalNamespace namespace = snapshot.getNamespace( "statisticschema" );
+                if ( snapshot.getRelSnapshot( namespace.id ).getTable( "nationdelete"  ) == null ) {
                     count++;
                     inCatalog = false;
                     continue;
                 }
                 inCatalog = true;
-                LogicalTable catalogTableNation = Catalog.getInstance().getTable( "statisticschema", "nationdelete" );
+                LogicalTable catalogTableNation = snapshot.getRelSnapshot(namespace.id).getTable( "nationdelete" );
                 Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {
@@ -333,7 +338,7 @@ public class StatisticsTest {
                 log.warn( "Collection was already removed from the catalog, therefore the count will be null, which is correct" );
             }
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | InterruptedException e ) {
+        } catch ( UnknownTableException | UnknownSchemaException | InterruptedException e ) {
             log.error( "Caught exception test", e );
         }
     }

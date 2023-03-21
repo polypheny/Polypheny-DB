@@ -49,7 +49,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.runtime.functions.Functions;
@@ -128,7 +127,7 @@ public class TestHelper {
     public Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( Catalog.defaultUserId, true, "Test Helper" );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

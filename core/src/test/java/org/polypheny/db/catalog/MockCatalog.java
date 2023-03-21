@@ -28,8 +28,11 @@ import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
@@ -52,6 +55,29 @@ import org.polypheny.db.transaction.Transaction;
  * provide a clean testing setup
  */
 public abstract class MockCatalog extends Catalog {
+
+    @Override
+    public void init() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, CatalogUser> getUsers() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, CatalogAdapter> getAdapters() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, CatalogQueryInterface> getInterfaces() {
+        throw new NotImplementedException();
+    }
 
     @Override
     public LogicalRelationalCatalog getLogicalRel( long namespaceId ) {
@@ -89,11 +115,6 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-    @Override
-    public LogicalEntity getLogicalEntity( long id ) {
-        throw new NotImplementedException();
-    }
-
 
     @Override
     public PhysicalCatalog getPhysical( long namespaceId ) {
@@ -118,35 +139,6 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
-
-    @Override
-    public LogicalDocSnapshot getDocSnapshot( long namespaceId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public LogicalGraphSnapshot getGraphSnapshot( long namespaceId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public LogicalRelSnapshot getRelSnapshot( long namespaceId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public PhysicalSnapshot getPhysicalSnapshot() {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public AllocSnapshot getAllocSnapshot() {
-        throw new NotImplementedException();
-    }
 
 
     @Override

@@ -17,6 +17,8 @@
 package org.polypheny.db.cypher;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -26,8 +28,10 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
@@ -39,21 +43,19 @@ public class DdlTest extends CypherTestTemplate {
 
     @Test
     public void addCollectionTest() {
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
         execute( "CREATE DATABASE " + graphName );
 
-        LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
-
-        assertEquals( 1, catalog.getGraphs( new Pattern( graphName ) ).size() );
+        assertNotNull( snapshot.getNamespace( graphName ) );
 
         execute( "DROP DATABASE " + graphName );
 
-        assertEquals( 0, catalog.getGraphs( new Pattern( graphName ) ).size() );
+        assertNull( snapshot.getNamespace( graphName ) );
 
         execute( "CREATE DATABASE " + graphName );
 
-        assertEquals( 1, catalog.getGraphs( new Pattern( graphName ) ).size() );
+        assertNotNull( snapshot.getNamespace( graphName ) );
 
         execute( "DROP DATABASE " + graphName );
     }
@@ -65,17 +67,19 @@ public class DdlTest extends CypherTestTemplate {
         try {
             execute( "CREATE DATABASE " + graphName );
 
-            LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
+            LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName );
+            LogicalGraph graph = catalog.getSnapshot().getGraphSnapshot( namespace.id ).getGraph( namespace.id );
 
-            assertEquals( 1, graph.placements.size() );
+            assertEquals( 1, graph.getPlacements().size() );
 
             addStore( "store1" );
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
-            graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
+            namespace = catalog.getSnapshot().getNamespace( graphName );
+            graph = catalog.getSnapshot().getGraphSnapshot( namespace.id ).getGraph( namespace.id );
 
-            assertEquals( 2, graph.placements.size() );
+            assertEquals( 2, graph.getPlacements().size() );
 
             execute( "DROP DATABASE " + graphName );
 
@@ -94,16 +98,18 @@ public class DdlTest extends CypherTestTemplate {
             addStore( "store1" );
 
             execute( String.format( "CREATE DATABASE %s ON STORE %s", graphName, "store1" ) );
+            LogicalNamespace namespace = catalog.getSnapshot().getNamespace(graphName);
+            LogicalGraph graph = catalog.getSnapshot().getGraphSnapshot( namespace.id ).getGraph( namespace.id );
 
-            LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
-
-            assertEquals( 1, graph.placements.size() );
+            assertEquals( 1, graph.getPlacements().size() );
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
 
-            graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
+            namespace = catalog.getSnapshot().getNamespace(graphName);
+            graph = catalog.getSnapshot().getGraphSnapshot( namespace.id ).getGraph( namespace.id );
 
-            assertEquals( 2, graph.placements.size() );
+            assertEquals( 1, graph.getPlacements().size() );
+            assertEquals( 2, graph.getPlacements().size() );
 
             execute( "DROP DATABASE " + graphName );
 
@@ -122,17 +128,19 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( "CREATE DATABASE " + graphName );
 
-            LogicalGraph graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
+            LogicalNamespace namespace = catalog.getSnapshot().getNamespace(graphName);
+            LogicalGraph graph = catalog.getSnapshot().getGraphSnapshot( namespace.id ).getGraph( namespace.id );
 
-            assertEquals( 1, graph.placements.size() );
+            assertEquals( 1, graph.getPlacements().size() );
 
             addStore( "store1" );
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
-            graph = catalog.getGraphs( new Pattern( graphName ) ).get( 0 );
+            namespace = catalog.getSnapshot().getNamespace(graphName);
+            graph = catalog.getSnapshot().getGraphSnapshot( namespace.id ).getGraph( namespace.id );
 
-            assertEquals( 2, graph.placements.size() );
+            assertEquals( 2, graph.getPlacements().size() );
 
             execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 

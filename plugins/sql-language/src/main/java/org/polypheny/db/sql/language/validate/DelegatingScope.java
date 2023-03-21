@@ -17,7 +17,11 @@
 package org.polypheny.db.sql.language.validate;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.MonikerType;
@@ -27,6 +31,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
@@ -39,7 +46,10 @@ import org.polypheny.db.sql.language.SqlWindow;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Static;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -218,7 +228,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
      */
     @Override
     public SqlQualified fullyQualify( SqlIdentifier identifier ) {
-        /*if ( identifier.isStar() ) {
+        if ( identifier.isStar() ) {
             return SqlQualified.create( this, 1, null, identifier );
         }
 

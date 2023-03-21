@@ -77,7 +77,6 @@ public class RelOptUtilTest {
                         },
                         "",
                         0,
-                        0,
                         null ) );
     }
 

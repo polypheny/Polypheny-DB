@@ -165,7 +165,6 @@ public class AlgBuilderTest {
                         },
                         "",
                         0,
-                        0,
                         null ) ).build();
         return AlgBuilder.create( config );
     }
