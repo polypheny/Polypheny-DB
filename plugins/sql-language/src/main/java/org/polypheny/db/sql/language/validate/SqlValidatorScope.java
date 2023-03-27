@@ -19,12 +19,12 @@ package org.polypheny.db.sql.language.validate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -242,7 +242,7 @@ public interface SqlValidatorScope extends ValidatorScope {
          * Returns a list ["step1", "step2"].
          */
         List<String> stepNames() {
-            return Lists.transform( steps(), input -> input.name );
+            return steps().stream().map( input -> input.name ).collect( Collectors.toList() );
         }
 
 
@@ -344,6 +344,8 @@ public interface SqlValidatorScope extends ValidatorScope {
 
         @Getter
         private final CatalogEntity entity;
+        public Path path;
+        public SqlValidatorNamespace namespace;
 
 
         Resolve( CatalogEntity entity ) {

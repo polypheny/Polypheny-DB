@@ -532,9 +532,9 @@ public class HorizontalPartitioningTest {
                             + "( PARTITION parta VALUES(5,4), "
                             + "PARTITION partb VALUES(10,6))" );
 
-                    LogicalTable table = Catalog.getInstance().getTables( null, new Pattern( "rangepartitioning3" ) ).get( 0 );
+                    LogicalTable table = Catalog.snapshot().getTables( null, new Pattern( "rangepartitioning3" ) ).get( 0 );
 
-                    List<CatalogPartition> catalogPartitions = Catalog.getInstance().getPartitionsByTable( table.id );
+                    List<CatalogPartition> catalogPartitions = Catalog.snapshot().getPartitionsByTable( table.id );
 
                     Assert.assertEquals( new ArrayList<>( Arrays.asList( "4", "5" ) )
                             , catalogPartitions.get( 0 ).partitionQualifiers );

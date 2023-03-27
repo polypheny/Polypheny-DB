@@ -31,7 +31,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
@@ -289,7 +288,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             }
             // fall through
             default: {
-                CatalogEntity fromNs = null;
+                SqlValidatorNamespace fromNs = null;
                 Path fromPath = null;
                 AlgDataType fromRowType = null;
                 final ResolvedImpl resolved = new ResolvedImpl();
@@ -301,7 +300,8 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     resolve( prefix.names, nameMatcher, false, resolved );
                     if ( resolved.count() == 1 ) {
                         final Resolve resolve = resolved.only();
-                        fromNs = resolve.getEntity().unwrap( LogicalTable.class );
+                        fromNs = resolve.namespace;
+                        fromPath = resolve.path;
                         fromRowType = resolve.rowType();
                         break;
                     }
@@ -311,10 +311,9 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         resolved.clear();
                         resolve( prefix.names, liberalMatcher, false, resolved );
                         if ( resolved.count() == 1 ) {
-                            final Step lastStep = Util.last( resolved.only().path.steps() );
                             throw validator.newValidationError(
                                     prefix,
-                                    Static.RESOURCE.tableNameNotFoundDidYouMean( prefix.toString(), lastStep.name ) );
+                                    Static.RESOURCE.tableNameNotFoundDidYouMean( prefix.toString(), resolved.only().getEntity().name ) );
                         }
                     }
                 }
@@ -369,7 +368,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 //
                 // change "e.empno" to "E.empno".
                 if ( fromNs.getEnclosingNode() != null && !(this instanceof MatchRecognizeScope) ) {
-
+                    String alias = SqlValidatorUtil.getAlias( fromNs.getEnclosingNode(), -1 );
                     if ( alias != null && i > 0 && !alias.equals( identifier.names.get( i - 1 ) ) ) {
                         identifier = identifier.setName( i - 1, alias );
                     }
@@ -491,8 +490,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 }
                 return SqlQualified.create( this, i, fromNs, identifier );
             }
-        }*/
-        throw new RuntimeException();
+        }
     }
 
 

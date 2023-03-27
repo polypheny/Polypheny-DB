@@ -23,7 +23,6 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.nodes.validate.ValidatorNamespace;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Pair;

@@ -61,7 +61,7 @@ public interface Snapshot extends OperatorTable {
      * @param name Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract @NonNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
+    @NonNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
 
     /**
      * Returns the schema with the specified id.
@@ -69,7 +69,7 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the schema
      * @return The schema
      */
-    public abstract LogicalNamespace getNamespace( long id );
+    LogicalNamespace getNamespace( long id );
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -77,7 +77,7 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the schema
      * @return The schema
      */
-    public abstract LogicalNamespace getNamespace( String name );
+    LogicalNamespace getNamespace( String name );
 
 
     /**
@@ -86,7 +86,7 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the schema to check
      * @return True if there is a schema with this name. False if not.
      */
-    public abstract boolean checkIfExistsNamespace( String name );
+    boolean checkIfExistsNamespace( String name );
 
 
     /**
@@ -96,7 +96,7 @@ public interface Snapshot extends OperatorTable {
      * @return The user
      * @throws UnknownUserException If there is no user with the specified name
      */
-    public abstract CatalogUser getUser( String name ) throws UnknownUserException;
+    CatalogUser getUser( String name ) throws UnknownUserException;
 
     /**
      * Get the user with the specified id.
@@ -104,28 +104,28 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the user
      * @return The user
      */
-    public abstract CatalogUser getUser( long id );
+    CatalogUser getUser( long id );
 
     /**
      * Get list of all adapters
      *
      * @return List of adapters
      */
-    public abstract List<CatalogAdapter> getAdapters();
+    List<CatalogAdapter> getAdapters();
 
     /**
      * Get an adapter by its unique name
      *
      * @return The adapter
      */
-    public abstract CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException;
+    CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException;
 
     /**
      * Get an adapter by its id
      *
      * @return The adapter
      */
-    public abstract CatalogAdapter getAdapter( long id );
+    CatalogAdapter getAdapter( long id );
 
     /**
      * Check if an adapter with the given id exists
@@ -133,7 +133,7 @@ public interface Snapshot extends OperatorTable {
      * @param id the id of the adapter
      * @return if the adapter exists
      */
-    public abstract boolean checkIfExistsAdapter( long id );
+    boolean checkIfExistsAdapter( long id );
 
 
     /*
@@ -141,7 +141,7 @@ public interface Snapshot extends OperatorTable {
      *
      * @return List of query interfaces
      */
-    public abstract List<CatalogQueryInterface> getQueryInterfaces();
+    List<CatalogQueryInterface> getQueryInterfaces();
 
     /**
      * Get a query interface by its unique name
@@ -149,7 +149,7 @@ public interface Snapshot extends OperatorTable {
      * @param uniqueName The unique name of the query interface
      * @return The CatalogQueryInterface
      */
-    public abstract CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException;
+    CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException;
 
     /**
      * Get a query interface by its id
@@ -157,11 +157,10 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the query interface
      * @return The CatalogQueryInterface
      */
-    public abstract CatalogQueryInterface getQueryInterface( long id );
+    CatalogQueryInterface getQueryInterface( long id );
 
 
-
-    public abstract List<LogicalTable> getTablesForPeriodicProcessing();
+    List<LogicalTable> getTablesForPeriodicProcessing();
 
     //// ENTITIES
 
@@ -180,21 +179,22 @@ public interface Snapshot extends OperatorTable {
     }
 
 
-    public abstract LogicalDocSnapshot getDocSnapshot( long namespaceId );
+    LogicalDocSnapshot getDocSnapshot( long namespaceId );
 
-    public abstract LogicalGraphSnapshot getGraphSnapshot( long namespaceId );
-
-
-    public abstract LogicalRelSnapshot getRelSnapshot( long namespaceId );
+    LogicalGraphSnapshot getGraphSnapshot( long namespaceId );
 
 
-    public abstract PhysicalSnapshot getPhysicalSnapshot();
+    LogicalRelSnapshot getRelSnapshot( long namespaceId );
 
-    public abstract AllocSnapshot getAllocSnapshot();
+
+    PhysicalSnapshot getPhysicalSnapshot();
+
+    AllocSnapshot getAllocSnapshot();
 
 
     List<CatalogIndex> getIndexes();
 
     LogicalEntity getLogicalEntity( long id );
+
 
 }

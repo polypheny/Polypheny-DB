@@ -74,6 +74,7 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
+
     public abstract void init();
 
     public abstract void commit() throws NoTablePrimaryKeyException;
@@ -236,6 +237,11 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract Snapshot getSnapshot();
+
+
+    public static Snapshot snapshot() {
+        return INSTANCE.getSnapshot();
+    }
 
 
     public abstract Map<Long, CatalogUser> getUsers();

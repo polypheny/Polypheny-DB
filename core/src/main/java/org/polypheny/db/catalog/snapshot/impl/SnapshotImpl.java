@@ -222,7 +222,7 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public LogicalEntity getLogicalEntity( long id ) {
-        LogicalEntity entity = null;
+        LogicalEntity entity;
         for ( LogicalRelSnapshot value : relationals.values() ) {
             entity = value.getTable( id );
             if ( entity != null ) {
@@ -246,5 +246,6 @@ public class SnapshotImpl implements Snapshot {
 
         return null;
     }
+
 
 }
