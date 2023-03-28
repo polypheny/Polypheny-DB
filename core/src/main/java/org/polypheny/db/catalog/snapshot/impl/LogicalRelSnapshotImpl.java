@@ -157,11 +157,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalTable> getTables( @Nullable Pattern name ) {
+    public List<LogicalTable> getTables( @javax.annotation.Nullable Pattern namespace, @Nullable Pattern name ) {
         if ( name == null ) {
             return tables.values().asList();
         }
-        return tables.values().stream().filter( t -> namespace.caseSensitive ? t.name.matches( name.toRegex() ) : t.name.toLowerCase().matches( (name.toRegex().toLowerCase()) ) ).collect( Collectors.toList() );
+        return tables.values().stream().filter( t -> this.namespace.caseSensitive ? t.name.matches( name.toRegex() ) : t.name.toLowerCase().matches( (name.toRegex().toLowerCase()) ) ).collect( Collectors.toList() );
     }
 
 
@@ -192,7 +192,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public List<LogicalColumn> getColumns( @Nullable Pattern tableName, @Nullable Pattern columnName ) {
-        List<LogicalTable> tables = getTables( tableName );
+        List<LogicalTable> tables = getTables( null, tableName );
         if ( columnName == null ) {
             return tables.stream().flatMap( t -> tableColumns.get( t.id ).stream() ).collect( Collectors.toList() );
         }

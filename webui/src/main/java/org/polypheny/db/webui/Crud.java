@@ -382,7 +382,7 @@ public class Crud implements InformationObserver {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
                 ArrayList<SidebarElement> viewTree = new ArrayList<>();
                 ArrayList<SidebarElement> collectionTree = new ArrayList<>();
-                List<LogicalTable> tables = catalog.getSnapshot().getRelSnapshot( schema.id ).getTables( null );
+                List<LogicalTable> tables = catalog.getSnapshot().getRelSnapshot( schema.id ).getTables( , null );
                 for ( LogicalTable table : tables ) {
                     String icon = "fa fa-table";
                     if ( table.entityType == EntityType.SOURCE ) {
@@ -469,7 +469,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        List<LogicalTable> tables = catalog.getSnapshot().getRelSnapshot( namespaceId ).getTables( null );
+        List<LogicalTable> tables = catalog.getSnapshot().getRelSnapshot( namespaceId ).getTables( , null );
         ArrayList<DbTable> result = new ArrayList<>();
         for ( LogicalTable t : tables ) {
             result.add( new DbTable( t.name, namespaceName, t.modifiable, t.entityType ) );
@@ -2515,7 +2515,7 @@ public class Crud implements InformationObserver {
         List<LogicalTable> catalogEntities = Catalog.getInstance().getSnapshot().getNamespaces( new org.polypheny.db.catalog.logistic.Pattern( request.schema ) )
                 .stream()
                 .filter( s -> s.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( s -> catalog.getSnapshot().getRelSnapshot( s.id ).getTables( null ).stream() ).collect( Collectors.toList() );
+                .flatMap( s -> catalog.getSnapshot().getRelSnapshot( s.id ).getTables( , null ).stream() ).collect( Collectors.toList() );
 
         for ( LogicalTable catalogTable : catalogEntities ) {
             if ( catalogTable.entityType == EntityType.ENTITY || catalogTable.entityType == EntityType.SOURCE ) {

@@ -47,9 +47,9 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 @Value
 public class SnapshotImpl implements Snapshot {
 
-    ImmutableMap<Long, LogicalRelSnapshot> relationals;
-    ImmutableMap<Long, LogicalDocSnapshot> documents;
-    ImmutableMap<Long, LogicalGraphSnapshot> graphs;
+    LogicalRelSnapshot rel;
+    LogicalDocSnapshot doc;
+    LogicalGraphSnapshot graph;
     AllocSnapshot alloc;
     PhysicalSnapshot physical;
     @Getter
@@ -69,11 +69,11 @@ public class SnapshotImpl implements Snapshot {
     ImmutableMap<String, LogicalNamespace> namespaceNames;
 
 
-    public SnapshotImpl( long id, Catalog catalog, Map<Long, LogicalNamespace> namespaces, Map<Long, LogicalRelSnapshot> relationals, Map<Long, LogicalDocSnapshot> documents, Map<Long, LogicalGraphSnapshot> graphs, AllocSnapshot alloc, PhysicalSnapshot physical ) {
+    public SnapshotImpl( long id, Catalog catalog, Map<Long, LogicalNamespace> namespaces, LogicalRelSnapshot rel, LogicalDocSnapshot doc, LogicalGraphSnapshot graph, AllocSnapshot alloc, PhysicalSnapshot physical ) {
         this.id = id;
-        this.relationals = ImmutableMap.copyOf( relationals );
-        this.documents = ImmutableMap.copyOf( documents );
-        this.graphs = ImmutableMap.copyOf( graphs );
+        this.rel = rel;
+        this.doc = doc;
+        this.graph = graph;
 
         this.namespaces = ImmutableMap.copyOf( namespaces );
 
@@ -245,6 +245,30 @@ public class SnapshotImpl implements Snapshot {
         }
 
         return null;
+    }
+
+
+    @Override
+    public LogicalRelSnapshot rel() {
+        return rel;
+    }
+
+
+    @Override
+    public LogicalGraphSnapshot graph() {
+        return graph;
+    }
+
+
+    @Override
+    public LogicalDocSnapshot doc() {
+        return doc;
+    }
+
+
+    @Override
+    public AllocSnapshot alloc() {
+        return alloc;
     }
 
 

@@ -56,7 +56,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
         try {
             LogicalNamespace schema = context.getSnapshot().getNamespace( database );
-            List<LogicalTable> tables = context.getSnapshot().getRelSnapshot( schema.id ).getTables( null );
+            List<LogicalTable> tables = context.getSnapshot().getRelSnapshot( schema.id ).getTables( , null );
 
             if ( dropTarget ) {
                 Optional<LogicalTable> newTable = tables.stream()

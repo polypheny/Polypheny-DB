@@ -445,7 +445,7 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Long placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        List<LogicalTable> tables = snapshot.getRelSnapshot( namespace.id ).getTables( null );
+        List<LogicalTable> tables = snapshot.getRelSnapshot( namespace.id ).getTables( , null );
         List<Pair<String, AlgNode>> scans = tables.stream()
                 .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, null ) ) )
                 .collect( Collectors.toList() );

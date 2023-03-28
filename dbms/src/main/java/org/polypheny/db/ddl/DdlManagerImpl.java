@@ -2919,7 +2919,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
             // Drop all tables in this schema
-            List<LogicalTable> catalogEntities = catalog.getSnapshot().getRelSnapshot( logicalNamespace.id ).getTables( null );
+            List<LogicalTable> catalogEntities = catalog.getSnapshot().getRelSnapshot( logicalNamespace.id ).getTables( , null );
             for ( LogicalTable catalogTable : catalogEntities ) {
                 dropTable( catalogTable, statement );
             }

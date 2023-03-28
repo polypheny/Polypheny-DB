@@ -308,7 +308,7 @@ public class DbmsMeta implements ProtobufMeta {
         return namespaces
                 .stream()
                 .flatMap(
-                        n -> catalog.getSnapshot().getRelSnapshot( n.id ).getTables( tablePattern ).stream() ).collect( Collectors.toList() );
+                        n -> catalog.getSnapshot().getRelSnapshot( n.id ).getTables( , tablePattern ).stream() ).collect( Collectors.toList() );
     }
 
 

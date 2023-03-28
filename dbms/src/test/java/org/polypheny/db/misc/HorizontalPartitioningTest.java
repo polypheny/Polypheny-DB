@@ -532,9 +532,9 @@ public class HorizontalPartitioningTest {
                             + "( PARTITION parta VALUES(5,4), "
                             + "PARTITION partb VALUES(10,6))" );
 
-                    LogicalTable table = Catalog.snapshot().getTables( null, new Pattern( "rangepartitioning3" ) ).get( 0 );
+                    LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "rangepartitioning3" ) ).get( 0 );
 
-                    List<CatalogPartition> catalogPartitions = Catalog.snapshot().getPartitionsByTable( table.id );
+                    List<CatalogPartition> catalogPartitions = Catalog.snapshot().alloc().getPartitionsByTable( table.id );
 
                     Assert.assertEquals( new ArrayList<>( Arrays.asList( "4", "5" ) )
                             , catalogPartitions.get( 0 ).partitionQualifiers );
@@ -642,31 +642,31 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    LogicalTable table = Catalog.getInstance().getTables( null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
+                    LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many partitionPlacements are created as requested
-                    Assert.assertEquals( partitionsToCreate, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
+                    Assert.assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
-                    List<CatalogPartitionPlacement> debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+                    List<CatalogPartitionPlacement> debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
-                    Assert.assertEquals( partitionsToCreate * 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
-                    debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+                    Assert.assertEquals( partitionsToCreate * 2, Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
+                    debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
                     // Modify partitions on second store
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
-                    Assert.assertEquals( partitionsToCreate + 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
-                    debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+                    Assert.assertEquals( partitionsToCreate + 1, Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
+                    debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
                     // After MERGE should only hold one partition
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
-                    Assert.assertEquals( 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
-                    debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
+                    debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
                     // DROP STORE and verify number of partition Placements
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
-                    Assert.assertEquals( 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
+                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
 
                 } finally {
                     // Drop tables and stores
@@ -703,7 +703,7 @@ public class HorizontalPartitioningTest {
                         + " USING FREQUENCY write  INTERVAL 10 minutes WITH  20 HASH PARTITIONS" );
 
                 try {
-                    LogicalTable table = Catalog.getInstance().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Check if partition properties are correctly set and parsed
                     Assert.assertEquals( 600, ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );

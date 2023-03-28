@@ -197,4 +197,14 @@ public interface Snapshot extends OperatorTable {
     LogicalEntity getLogicalEntity( long id );
 
 
+    LogicalRelSnapshot rel();
+
+    LogicalGraphSnapshot graph();
+
+
+    LogicalDocSnapshot doc();
+
+
+    AllocSnapshot alloc();
+
 }

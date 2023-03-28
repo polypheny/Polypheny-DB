@@ -93,7 +93,7 @@ public class StatisticQueryProcessor {
         List<LogicalNamespace> schemas = snapshot.getNamespaces( null );
         for ( LogicalNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<LogicalTable> childTables = snapshot.getRelSnapshot( schema.id ).getTables( null );
+            List<LogicalTable> childTables = snapshot.getRelSnapshot( schema.id ).getTables( , null );
             for ( LogicalTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
                 List<LogicalColumn> columns = snapshot.getRelSnapshot( schema.id ).getColumns( childTable.id );
@@ -121,7 +121,7 @@ public class StatisticQueryProcessor {
         return snapshot.getNamespaces( null )
                 .stream()
                 .filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.getRelSnapshot( n.id ).getColumns( t.id ).stream() ) )
+                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( , null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.getRelSnapshot( n.id ).getColumns( t.id ).stream() ) )
                 .map( QueryResult::fromCatalogColumn )
                 .collect( Collectors.toList() );
     }
@@ -135,7 +135,7 @@ public class StatisticQueryProcessor {
     public List<LogicalTable> getAllTable() {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         return snapshot.getNamespaces( null ).stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
+                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( , null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
     }
 
 
