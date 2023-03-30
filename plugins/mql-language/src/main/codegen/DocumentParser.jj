@@ -389,7 +389,7 @@ MqlNode Input() :
 }
 {
     /** only one statement for now **/
-    n = Statement() <EOF>
+    n = Statement() [";"]<EOF>
     {return n;}
 }
 

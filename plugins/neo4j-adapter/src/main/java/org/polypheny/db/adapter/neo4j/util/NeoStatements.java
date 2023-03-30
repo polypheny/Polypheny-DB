@@ -290,7 +290,7 @@ public interface NeoStatements {
             if ( direction == EdgeDirection.LEFT_TO_RIGHT ) {
                 statement = statement + ">";
             } else if ( direction == EdgeDirection.RIGHT_TO_LEFT ) {
-                statement = statement + "<";
+                statement = "<" + statement;
             }
             return statement;
         }
