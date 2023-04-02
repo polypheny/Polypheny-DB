@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.Getter;
@@ -31,22 +32,22 @@ import org.polypheny.db.config.RuntimeConfig;
  * Responsible to validate if data should be changed
  */
 @Slf4j
-public class NumericalStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
+public class NumericalStatisticColumn extends StatisticColumn<Number> {
 
     @Expose
     @Getter
     @Setter
-    private T min;
+    private Number min;
 
     @Expose
     @Getter
     @Setter
-    private T max;
+    private Number max;
 
     @Getter
-    private final TreeSet<T> minCache = new TreeSet<>();
+    private final TreeSet<Number> minCache = new TreeSet<>( Comparator.comparingDouble( Number::doubleValue ) );
     @Getter
-    private final TreeSet<T> maxCache = new TreeSet<>();
+    private final TreeSet<Number> maxCache = new TreeSet<>( Comparator.comparingDouble( Number::doubleValue ) );
 
 
     public NumericalStatisticColumn( QueryResult column ) {
@@ -55,9 +56,9 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
 
 
     @Override
-    public void insert( List<T> values ) {
+    public void insert( List<Number> values ) {
         if ( values != null && !(values.get( 0 ) instanceof List) ) {
-            for ( T val : values ) {
+            for ( Number val : values ) {
                 if ( val != null ) {
                     insert( val );
                 }
@@ -67,7 +68,7 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
 
 
     @Override
-    public void insert( T val ) {
+    public void insert( Number val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 if ( !uniqueValues.isEmpty() ) {
@@ -86,20 +87,20 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
         if ( min == null ) {
             min = val;
             max = val;
-        } else if ( val.compareTo( min ) < 0 ) {
+        } else if ( val.doubleValue() < min.doubleValue() ) {
             this.min = val;
-        } else if ( val.compareTo( max ) > 0 ) {
+        } else if ( val.doubleValue() > min.doubleValue() ) {
             this.max = val;
         }
 
-        if ( minCache.last().compareTo( val ) > 0 ) {
+        if ( minCache.last().doubleValue() > val.doubleValue() ) {
             if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 minCache.remove( minCache.last() );
             }
             minCache.add( val );
         }
 
-        if ( maxCache.first().compareTo( val ) < 0 ) {
+        if ( maxCache.first().doubleValue() < val.doubleValue() ) {
             if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }

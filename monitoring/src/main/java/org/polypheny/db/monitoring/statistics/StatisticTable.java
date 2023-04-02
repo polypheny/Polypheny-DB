@@ -64,7 +64,7 @@ public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
     @Setter
-    private List<NumericalStatisticColumn<T>> numericalColumn;
+    private List<NumericalStatisticColumn> numericalColumn;
 
     @Getter
     @Setter

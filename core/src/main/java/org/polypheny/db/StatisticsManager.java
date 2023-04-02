@@ -74,7 +74,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract Map<?, ?> getQualifiedStatisticMap();
 
-    public abstract Object getTableStatistic( long schemaId, long tableId );
+    public abstract <T extends Comparable<T>> Object getTableStatistic( long schemaId, long tableId );
 
     public abstract Integer rowCountPerTable( long tableId );
 

@@ -30,7 +30,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Stores the available statistic data of a specific column
  */
-public abstract class StatisticColumn<T extends Comparable<T>> {
+public abstract class StatisticColumn<T> {
 
     @Expose
     @Getter
