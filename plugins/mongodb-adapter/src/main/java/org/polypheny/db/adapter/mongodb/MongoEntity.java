@@ -42,6 +42,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.model.DeleteManyModel;
 import com.mongodb.client.model.DeleteOneModel;
+import com.mongodb.client.model.Indexes;
 import com.mongodb.client.model.WriteModel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -144,6 +145,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         this.protoRowType = proto;
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
+        this.collection.createIndex( Indexes.ascending("_id") );
         this.storeId = adapter;
         this.tableId = catalogEntity.id;
     }
