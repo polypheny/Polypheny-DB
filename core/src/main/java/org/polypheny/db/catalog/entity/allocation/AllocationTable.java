@@ -72,7 +72,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public Map<Long, LogicalColumn> getColumns() {
-        return Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumns( logicalId ).stream().collect( Collectors.toMap( c -> c.id, c -> c ) );
+        return Catalog.getInstance().getSnapshot().rel().getColumns( logicalId ).stream().collect( Collectors.toMap( c -> c.id, c -> c ) );
     }
 
 

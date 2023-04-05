@@ -244,7 +244,7 @@ public class AdapterManager {
         CatalogAdapter catalogAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId );
 
         // Check if the store has any placements
-        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().getAllocSnapshot().getAllocationsOnAdapter( catalogAdapter.id );
+        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getAllocationsOnAdapter( catalogAdapter.id );
         if ( placements.size() != 0 ) {
             throw new RuntimeException( "There is still data placed on this data store" );
         }

@@ -398,7 +398,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         this.entityId.add( scan.getEntity().id );
         final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class );
         if ( table != null ) {
-            final List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().getRelSnapshot( table.namespaceId ).getColumns( table.id );
+            final List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().rel().getColumns( table.id );
             final List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
             final String baseName = Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ) + "." + table.name + ".";
 

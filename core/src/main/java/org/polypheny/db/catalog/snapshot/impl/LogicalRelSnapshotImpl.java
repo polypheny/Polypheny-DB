@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Value;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -46,7 +45,7 @@ import org.polypheny.db.util.Pair;
 @Value
 public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
-    LogicalNamespace namespace;
+    ImmutableMap<Long, LogicalNamespace> namespaces;
 
     ImmutableMap<Long, LogicalTable> tables;
 
@@ -79,14 +78,14 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, List<CatalogForeignKey>> tableForeignKeys;
 
 
-    public LogicalRelSnapshotImpl( LogicalRelationalCatalog catalog ) {
-        namespace = catalog.getLogicalNamespace();
+    public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs ) {
+        namespaces = ImmutableMap.copyOf( catalogs.values().stream().map( LogicalRelationalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n ) ) );
 
-        tables = ImmutableMap.copyOf( catalog.getTables() );
-        tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> namespace.caseSensitive ? e.getValue().name : e.getValue().name.toLowerCase(), Entry::getValue ) ) );
+        tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> namespaces.get( e.getValue().namespaceId ).caseSensitive ? e.getValue().name : e.getValue().name.toLowerCase(), Entry::getValue ) ) );
 
-        columns = ImmutableMap.copyOf( catalog.getColumns() );
-        columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespace.caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
+        columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespaces.get( e.getValue().namespaceId ).caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
 
         //// tables
 
@@ -105,7 +104,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         //// KEYS
 
-        keys = ImmutableMap.copyOf( catalog.getKeys() );
+        keys = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getKeys().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
 
         Map<Long, List<CatalogKey>> tableKeys = new HashMap<>();
         keys.forEach( ( k, v ) -> {
@@ -117,7 +116,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         this.tableKeys = ImmutableMap.copyOf( tableKeys );
 
-        this.index = ImmutableMap.copyOf( catalog.getIndexes() );
+        this.index = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getIndexes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
 
         Map<Long, List<CatalogIndex>> keyToIndexes = new HashMap<>();
         this.index.forEach( ( k, v ) -> {
@@ -143,7 +142,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         //// CONSTRAINTS
 
-        this.constraints = ImmutableMap.copyOf( catalog.getConstraints() );
+        this.constraints = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getConstraints().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
 
         HashMap<Long, List<CatalogConstraint>> tableConstraints = new HashMap<>();
         constraints.forEach( ( k, v ) -> {
@@ -157,11 +156,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalTable> getTables( @javax.annotation.Nullable Pattern namespace, @Nullable Pattern name ) {
+    public List<LogicalTable> getTables( @javax.annotation.Nullable Pattern namespace, Pattern name ) {
         if ( name == null ) {
             return tables.values().asList();
         }
-        return tables.values().stream().filter( t -> this.namespace.caseSensitive ? t.name.matches( name.toRegex() ) : t.name.toLowerCase().matches( (name.toRegex().toLowerCase()) ) ).collect( Collectors.toList() );
+        return tables.values().stream().filter( t -> namespaces.get( t.namespaceId ).caseSensitive ? t.name.matches( name.toRegex() ) : t.name.toLowerCase().matches( (name.toRegex().toLowerCase()) ) ).collect( Collectors.toList() );
     }
 
 
@@ -169,7 +168,6 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public LogicalTable getTable( long tableId ) {
         return tables.get( tableId );
     }
-
 
 
     @Override
@@ -191,7 +189,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalColumn> getColumns( @Nullable Pattern tableName, @Nullable Pattern columnName ) {
+    public List<LogicalColumn> getColumns( Pattern tableName, Pattern columnName ) {
         List<LogicalTable> tables = getTables( null, tableName );
         if ( columnName == null ) {
             return tables.stream().flatMap( t -> tableColumns.get( t.id ).stream() ).collect( Collectors.toList() );
@@ -200,12 +198,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         return tables
                 .stream()
                 .flatMap( t -> tableColumns.get( t.id ).stream().filter(
-                        c -> namespace.caseSensitive
+                        c -> namespaces.get( t.namespaceId ).caseSensitive
                                 ? c.name.matches( columnName.toRegex() )
                                 : c.name.toLowerCase().matches( columnName.toLowerCase().toRegex() ) ) ).collect( Collectors.toList() );
 
     }
-
 
 
     @Override

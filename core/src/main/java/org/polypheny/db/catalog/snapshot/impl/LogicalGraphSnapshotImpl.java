@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot.impl;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -24,7 +25,7 @@ import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 
 public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
-    public LogicalGraphSnapshotImpl( LogicalGraphCatalog value ) {
+    public LogicalGraphSnapshotImpl( Map<Long, LogicalGraphCatalog> value ) {
     }
 
 

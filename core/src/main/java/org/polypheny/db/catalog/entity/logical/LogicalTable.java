@@ -113,7 +113,7 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
     public AlgDataType getRowType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumns( id ) ) {
+        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ) ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.name, null, sqlType ).nullable( column.nullable );
         }
@@ -134,7 +134,7 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
 
 
     public List<LogicalColumn> getColumns() {
-        return Catalog.getInstance().getSnapshot().getRelSnapshot( namespaceId ).getColumns( id );
+        return Catalog.getInstance().getSnapshot().rel().getColumns( id );
     }
 
 

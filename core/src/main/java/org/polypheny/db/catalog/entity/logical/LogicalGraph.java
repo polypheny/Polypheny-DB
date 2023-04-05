@@ -74,7 +74,7 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
 
 
     public List<CatalogGraphPlacement> getPlacements() {
-        return Catalog.getInstance().getSnapshot().getAllocSnapshot().getGraphPlacements( id );
+        return Catalog.getInstance().getSnapshot().alloc().getGraphPlacements( id );
     }
 
 }

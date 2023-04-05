@@ -94,7 +94,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();
 
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( table.namespaceId );
+        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
 
         EnforcementTime enforcementTime = EnforcementTime.ON_QUERY;
         final List<CatalogConstraint> constraints = new ArrayList<>( snapshot.getConstraints( table.id ) )
@@ -223,7 +223,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = builder.getRexBuilder();
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( table.namespaceId );
+        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
 
         final List<CatalogConstraint> constraints = snapshot
                 .getConstraints( table.id )

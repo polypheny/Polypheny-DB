@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot.impl;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -24,7 +25,7 @@ import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 
 public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
-    public LogicalDocSnapshotImpl( LogicalDocumentCatalog value ) {
+    public LogicalDocSnapshotImpl( Map<Long, LogicalDocumentCatalog> value ) {
 
     }
 

@@ -488,14 +488,14 @@ public abstract class Adapter {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity> physicalsOnAdapter = snapshot.getPhysicalSnapshot().getPhysicalsOnAdapter( adapterId );
+            List<PhysicalEntity> physicalsOnAdapter = snapshot.physical().getPhysicalsOnAdapter( adapterId );
 
             for ( PhysicalEntity entity : physicalsOnAdapter ) {
                 if ( entity.namespaceType != NamespaceType.RELATIONAL ) {
                     continue;
                 }
                 PhysicalTable physicalTable = (PhysicalTable) entity;
-                LogicalRelSnapshot relSnapshot = snapshot.getRelSnapshot( physicalTable.namespaceId );
+                LogicalRelSnapshot relSnapshot = snapshot.rel();
 
                 for ( Entry<Long, String> entry : physicalTable.columns.entrySet() ) {
                     physicalColumnNames.addRow(

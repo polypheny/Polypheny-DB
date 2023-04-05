@@ -24,10 +24,10 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.experimental.Accessors;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
@@ -45,7 +45,9 @@ import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 @Value
+@Accessors(fluent = true)
 public class SnapshotImpl implements Snapshot {
+
 
     LogicalRelSnapshot rel;
     LogicalDocSnapshot doc;
@@ -180,95 +182,33 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public CatalogEntity getEntity( long id ) {
-        return relationals.values().stream().map( r -> r.getTable( id ) ).findFirst().orElse( null );
-    }
+        CatalogEntity entity = rel.getTable( id );
+        if ( entity != null ) {
+            return entity;
+        }
 
+        entity = doc.getCollection( id );
+        if ( entity != null ) {
+            return entity;
+        }
 
-    @Override
-    public LogicalDocSnapshot getDocSnapshot( long namespaceId ) {
-        return documents.get( namespaceId );
-    }
-
-
-    @Override
-    public LogicalGraphSnapshot getGraphSnapshot( long namespaceId ) {
-        return graphs.get( namespaceId );
-    }
-
-
-    @Override
-    public LogicalRelSnapshot getRelSnapshot( long namespaceId ) {
-        return relationals.get( namespaceId );
-    }
-
-
-    @Override
-    public PhysicalSnapshot getPhysicalSnapshot() {
-        return physical;
-    }
-
-
-    @Override
-    public AllocSnapshot getAllocSnapshot() {
-        return alloc;
-    }
-
-
-    @Override
-    public List<CatalogIndex> getIndexes() {
-        return relationals.values().stream().flatMap( r -> r.getIndexes().stream() ).collect( Collectors.toList() );
+        return graph.getGraph( id );
     }
 
 
     @Override
     public LogicalEntity getLogicalEntity( long id ) {
-        LogicalEntity entity;
-        for ( LogicalRelSnapshot value : relationals.values() ) {
-            entity = value.getTable( id );
-            if ( entity != null ) {
-                return entity;
-            }
+        LogicalEntity entity = rel.getTable( id );
+        if ( entity != null ) {
+            return entity;
         }
 
-        for ( LogicalDocSnapshot value : documents.values() ) {
-            entity = value.getCollection( id );
-            if ( entity != null ) {
-                return entity;
-            }
+        entity = doc.getCollection( id );
+        if ( entity != null ) {
+            return entity;
         }
 
-        for ( LogicalGraphSnapshot value : graphs.values() ) {
-            entity = value.getGraph( id );
-            if ( entity != null ) {
-                return entity;
-            }
-        }
-
-        return null;
-    }
-
-
-    @Override
-    public LogicalRelSnapshot rel() {
-        return rel;
-    }
-
-
-    @Override
-    public LogicalGraphSnapshot graph() {
-        return graph;
-    }
-
-
-    @Override
-    public LogicalDocSnapshot doc() {
-        return doc;
-    }
-
-
-    @Override
-    public AllocSnapshot alloc() {
-        return alloc;
+        return graph.getLogicalGraph( id );
     }
 
 

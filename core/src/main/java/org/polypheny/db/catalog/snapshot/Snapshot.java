@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
@@ -47,7 +46,7 @@ public interface Snapshot extends OperatorTable {
 
     NameMatcher nameMatcher = NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
 
-    long getId();
+    long id();
 
     default Expression getSnapshotExpression( long id ) {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getSnapshot", Expressions.constant( id ) );
@@ -179,21 +178,6 @@ public interface Snapshot extends OperatorTable {
     }
 
 
-    LogicalDocSnapshot getDocSnapshot( long namespaceId );
-
-    LogicalGraphSnapshot getGraphSnapshot( long namespaceId );
-
-
-    LogicalRelSnapshot getRelSnapshot( long namespaceId );
-
-
-    PhysicalSnapshot getPhysicalSnapshot();
-
-    AllocSnapshot getAllocSnapshot();
-
-
-    List<CatalogIndex> getIndexes();
-
     LogicalEntity getLogicalEntity( long id );
 
 
@@ -207,4 +191,5 @@ public interface Snapshot extends OperatorTable {
 
     AllocSnapshot alloc();
 
+    PhysicalSnapshot physical();
 }

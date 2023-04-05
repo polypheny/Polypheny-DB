@@ -38,9 +38,9 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 public class SnapshotBuilder {
 
     public static Snapshot createSnapshot( long id, Catalog catalog, Map<Long, LogicalCatalog> logicalCatalogs, Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, PhysicalCatalog> physicalCatalogs ) {
-        Map<Long, LogicalRelSnapshot> rels = buildRelSnapshots( logicalCatalogs );
-        Map<Long, LogicalDocSnapshot> docs = buildDocSnapshots( logicalCatalogs );
-        Map<Long, LogicalGraphSnapshot> graphs = buildGraphSnapshots( logicalCatalogs );
+        LogicalRelSnapshot rels = buildRelSnapshots( logicalCatalogs );
+        LogicalDocSnapshot docs = buildDocSnapshots( logicalCatalogs );
+        LogicalGraphSnapshot graphs = buildGraphSnapshots( logicalCatalogs );
 
         AllocSnapshot alloc = buildAlloc( allocationCatalogs );
         PhysicalSnapshot physical = buildPhysical( physicalCatalogs );
@@ -60,30 +60,30 @@ public class SnapshotBuilder {
     }
 
 
-    private static Map<Long, LogicalGraphSnapshot> buildGraphSnapshots( Map<Long, LogicalCatalog> logicalCatalogs ) {
-        return logicalCatalogs
+    private static LogicalGraphSnapshot buildGraphSnapshots( Map<Long, LogicalCatalog> logicalCatalogs ) {
+        return new LogicalGraphSnapshotImpl( logicalCatalogs
                 .entrySet()
                 .stream()
                 .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.GRAPH )
-                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalGraphSnapshotImpl( (LogicalGraphCatalog) e.getValue() ) ) );
+                .collect( Collectors.toMap( Entry::getKey, e -> (LogicalGraphCatalog) e.getValue() ) ) );
     }
 
 
-    private static Map<Long, LogicalDocSnapshot> buildDocSnapshots( Map<Long, LogicalCatalog> logicalCatalogs ) {
-        return logicalCatalogs
+    private static LogicalDocSnapshot buildDocSnapshots( Map<Long, LogicalCatalog> logicalCatalogs ) {
+        return new LogicalDocSnapshotImpl( logicalCatalogs
                 .entrySet()
                 .stream()
                 .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.DOCUMENT )
-                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalDocSnapshotImpl( (LogicalDocumentCatalog) e.getValue() ) ) );
+                .collect( Collectors.toMap( Entry::getKey, e -> (LogicalDocumentCatalog) e.getValue() ) ) );
     }
 
 
-    private static Map<Long, LogicalRelSnapshot> buildRelSnapshots( Map<Long, LogicalCatalog> logicalCatalogs ) {
-        return logicalCatalogs
+    private static LogicalRelSnapshot buildRelSnapshots( Map<Long, LogicalCatalog> logicalCatalogs ) {
+        return new LogicalRelSnapshotImpl( logicalCatalogs
                 .entrySet()
                 .stream()
                 .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.RELATIONAL )
-                .collect( Collectors.toMap( Entry::getKey, e -> new LogicalRelSnapshotImpl( (LogicalRelationalCatalog) e.getValue() ) ) );
+                .collect( Collectors.toMap( Entry::getKey, e -> (LogicalRelationalCatalog) e.getValue() ) ) );
     }
 
 }

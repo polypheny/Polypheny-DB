@@ -1330,7 +1330,7 @@ public class AlgBuilder {
     public AlgBuilder scan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
         LogicalNamespace namespace = snapshot.getNamespace( tableNames.get( 0 ) );
-        final LogicalTable entity = snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 1 ) );
+        final LogicalTable entity = snapshot.rel().getTable( names.get( 1 ) );
         if ( entity == null ) {
             throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
         }
@@ -1376,7 +1376,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder lpgScan( long id ) {
-        LogicalGraph graph = snapshot.getGraphSnapshot( id ).getGraph( id );
+        LogicalGraph graph = snapshot.graph().getGraph( id );
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
         return this;
     }
