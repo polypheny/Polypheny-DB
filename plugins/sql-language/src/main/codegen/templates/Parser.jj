@@ -4262,7 +4262,8 @@ SqlIdentifier CompoundIdentifier() :
 {
     List<String> list = new ArrayList<String>();
     List<ParserPos> posList = new ArrayList<ParserPos>();
-    String p;
+    String p, at = null;
+    SqlIdentifier s;
     boolean star = false;
 }
 {
@@ -4286,12 +4287,18 @@ SqlIdentifier CompoundIdentifier() :
             posList.add(getPos());
         }
     )?
+    (
+	<ATSYMBOL>
+	at = Identifier()
+    )?
     {
         ParserPos pos = ParserPos.sum(posList);
         if (star) {
             return SqlIdentifier.star(list, pos, posList);
         }
-        return new SqlIdentifier(list, null, pos, posList);
+        s = new SqlIdentifier(list, null, pos, posList);
+	s.preferredPlacement = at;
+	return s;
     }
 }
 
@@ -6057,6 +6064,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ASSIGNMENT: "ASSIGNMENT" >
 |   < ASYMMETRIC: "ASYMMETRIC" >
 |   < AT: "AT" >
+|   < ATSYMBOL: "@" >
 |   < ATOMIC: "ATOMIC" >
 |   < ATTRIBUTE: "ATTRIBUTE" >
 |   < ATTRIBUTES: "ATTRIBUTES" >

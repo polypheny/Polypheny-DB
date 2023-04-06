@@ -292,7 +292,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( Scan scan ) {
-        hashBasis.add( "Scan#" + scan.getTable().getQualifiedName() );
+        hashBasis.add( "Scan#" + scan.getTable().getQualifiedName() + "@" + scan.getTable().getPreferredPlacement() );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
 

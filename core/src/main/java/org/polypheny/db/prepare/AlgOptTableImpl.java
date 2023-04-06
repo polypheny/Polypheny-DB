@@ -100,6 +100,8 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     private final transient Function<Class, Expression> expressionFunction;
     private final ImmutableList<String> names;
 
+    String preferredPlacement;
+
     /**
      * Estimate for the row count, or null.
      * <p>
@@ -121,6 +123,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         this.table = table; // may be null
         this.expressionFunction = expressionFunction; // may be null
         this.rowCount = rowCount; // may be null
+	this.preferredPlacement = null;
     }
 
 
@@ -400,6 +403,18 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     @Override
     public AccessType getAllowedAccess() {
         return AccessType.ALL;
+    }
+
+
+    @Override
+    public void setPreferredPlacement( String placement ) {
+	preferredPlacement = placement;
+    }
+
+
+    @Override
+    public String getPreferredPlacement() {
+	return preferredPlacement;
     }
 
 
