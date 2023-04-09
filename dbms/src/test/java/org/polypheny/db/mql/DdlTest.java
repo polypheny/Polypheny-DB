@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
@@ -54,24 +55,24 @@ public class DdlTest extends MqlTestTemplate {
 
     @Test
     public void addCollectionTest() throws UnknownSchemaException {
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.snapshot();
         String name = "testCollection";
 
-        LogicalNamespace namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
+        LogicalNamespace namespace = snapshot.getNamespace( database );
 
-        int size = catalog.getCollections( namespace.id, null ).size();
+        int size = snapshot.doc().getCollections( namespace.id, null ).size();
 
         execute( "db.createCollection(\"" + name + "\")" );
 
-        assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
+        assertEquals( size + 1, snapshot.doc().getCollections( namespace.id, null ).size() );
 
         execute( String.format( "db.%s.drop()", name ) );
 
-        assertEquals( size, catalog.getCollections( namespace.id, null ).size() );
+        assertEquals( size, snapshot.doc().getCollections( namespace.id, null ).size() );
 
         execute( "db.createCollection(\"" + name + "\")" );
 
-        assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
+        assertEquals( size + 1, snapshot.doc().getCollections( namespace.id, null ).size() );
 
         execute( String.format( "db.%s.drop()", name ) );
     }
@@ -79,28 +80,28 @@ public class DdlTest extends MqlTestTemplate {
 
     @Test
     public void addPlacementTest() throws UnknownSchemaException, SQLException {
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.snapshot();
 
         String placement = "store1";
         try {
-            LogicalNamespace namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
+            LogicalNamespace namespace = snapshot.getNamespace( database );
 
-            List<String> collectionNames = catalog.getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
+            List<String> collectionNames = snapshot.doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
 
-            LogicalCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            LogicalCollection collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( collection.placements.size(), 1 );
+            assertEquals( snapshot.alloc().getDataPlacements( collection.id ).size(), 1 );
 
             addStore( placement );
 
             execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, placement ) );
 
-            collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( collection.placements.size(), 2 );
+            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 2 );
 
         } finally {
             execute( String.format( "db.%s.drop()", collectionName ) );
@@ -112,32 +113,32 @@ public class DdlTest extends MqlTestTemplate {
 
     @Test
     public void deletePlacementTest() throws UnknownSchemaException, SQLException {
-        Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.snapshot();
 
         String placement = "store1";
         try {
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
 
-            LogicalNamespace namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
+            LogicalNamespace namespace = snapshot.getNamespace( database );
 
-            LogicalCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            LogicalCollection collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( collection.placements.size(), 1 );
+            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 1 );
 
             addStore( placement );
 
             execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, placement ) );
 
-            collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( collection.placements.size(), 2 );
+            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 2 );
 
             execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, placement ) );
 
-            collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( collection.placements.size(), 1 );
+            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 1 );
 
             execute( String.format( "db.%s.drop()", collectionName ) );
 

@@ -63,6 +63,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public void updateSnapshot() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public Map<Long, CatalogUser> getUsers() {
         throw new NotImplementedException();
     }

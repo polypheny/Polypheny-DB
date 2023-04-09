@@ -319,7 +319,7 @@ public class MqlToAlgConverter {
 
     private CatalogEntity getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         LogicalNamespace namespace = snapshot.getNamespace( dbSchemaName );
-        return snapshot.getDocSnapshot( namespace.id ).getCollection( query.getCollection() );
+        return snapshot.doc().getCollection( namespace.id, query.getCollection() );
 
         /*
         if ( table == null || table.getEntity() == null ) {

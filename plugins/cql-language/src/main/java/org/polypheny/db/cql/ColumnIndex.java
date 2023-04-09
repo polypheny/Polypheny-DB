@@ -57,7 +57,7 @@ public class ColumnIndex {
             log.debug( "Creating ColumnIndex." );
             Catalog catalog = Catalog.getInstance();
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
-            LogicalColumn column = catalog.getSnapshot().getRelSnapshot( namespace.id ).getColumn( tableName, columnName );
+            LogicalColumn column = catalog.getSnapshot().rel().getColumn( tableName, columnName );
             return new ColumnIndex( column, schemaName, tableName, columnName );
         } catch ( UnknownTableException | UnknownSchemaException | UnknownColumnException e ) {
             log.error( "Cannot find a underlying column for the specified column name: {}.{}.{}.", schemaName, tableName, columnName, e );

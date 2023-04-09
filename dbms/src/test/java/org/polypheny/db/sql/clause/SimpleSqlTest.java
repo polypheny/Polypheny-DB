@@ -22,13 +22,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.util.Template;
+import org.polypheny.db.util.TestUtil;
 
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class SimpleSqlTest {
 
     @BeforeClass
@@ -46,18 +50,33 @@ public class SimpleSqlTest {
 
 
     @Test
-    public void select() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" );
-                statement.executeUpdate( "INSERT INTO TableA VALUES (12, 'Name1', 60)" );
-                statement.executeUpdate( "INSERT INTO TableA VALUES (15, 'Name2', 24)" );
-                statement.executeUpdate( "INSERT INTO TableA VALUES (99, 'Name3', 11)" );
+    @Ignore
+    public void createTable() {
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" )
+        );
+    }
 
-                connection.commit();
-            }
-        }
+
+    @Test
+    public void dropTable() {
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" ),
+                ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" )
+        );
+    }
+
+
+    @Test
+    public void insert() throws SQLException {
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (12, 'Name1', 60)" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (15, 'Name2', 24)" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (99, 'Name3', 11)" ),
+                ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
+                ( c, s ) -> c.commit()
+        );
 
     }
 

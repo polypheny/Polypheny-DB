@@ -45,7 +45,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
             hashValue *= -1;
         }
 
-        PartitionProperty property = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id );
+        PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( catalogTable.id );
 
         // Get designated HASH partition based on number of internal partitions
         int partitionIndex = (int) (hashValue % property.partitionIds.size());

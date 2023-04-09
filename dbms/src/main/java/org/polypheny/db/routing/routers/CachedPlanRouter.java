@@ -63,13 +63,13 @@ public class CachedPlanRouter extends BaseRouter {
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
             LogicalTable catalogTable = node.getEntity().unwrap( LogicalTable.class );
-            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );
+            PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
             List<Long> partitionIds = property.partitionIds;
             Map<Long, List<CatalogColumnPlacement>> placement = new HashMap<>();
             for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
                     List<CatalogColumnPlacement> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream()
-                            .map( placementInfo -> catalog.getSnapshot().getAllocSnapshot().getColumnPlacement( placementInfo.left, placementInfo.right ) )
+                            .map( placementInfo -> catalog.getSnapshot().alloc().getColumnPlacement( placementInfo.left, placementInfo.right ) )
                             .collect( Collectors.toList() );
                     placement.put( partition, colPlacements );
                 }

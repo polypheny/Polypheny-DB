@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.Pattern;
 
@@ -34,10 +35,11 @@ public interface LogicalDocSnapshot {
     /**
      * Get a collection of collections which match the given naming pattern.
      *
+     * @param namespaceId
      * @param namePattern The naming pattern of the collection itself, null if all are matched
      * @return collection of collections matching conditions
      */
-    public abstract List<LogicalCollection> getCollections( Pattern namePattern );
+    public abstract List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
 
 
     @Deprecated
@@ -51,5 +53,7 @@ public interface LogicalDocSnapshot {
 
 
     LogicalCollection getCollection( String collection );
+
+    LogicalCollection getCollection( long id, String collection );
 
 }

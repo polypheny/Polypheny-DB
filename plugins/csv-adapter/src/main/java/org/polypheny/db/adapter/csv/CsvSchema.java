@@ -41,6 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -88,15 +89,18 @@ public class CsvSchema extends AbstractNamespace implements Schema {
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( allocationTable.placements.size() );
+
+        List<ExportedColumn> columns = csvSource.getExportedColumns().get( catalogTable.name );
+
         for ( CatalogColumnPlacement placement : allocationTable.placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().getRelSnapshot( allocationTable.namespaceId ).getColumn( placement.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, logicalColumn.type, logicalColumn.length, logicalColumn.scale, null );
-            fieldInfo.add( logicalColumn.name, placement.physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
+            fieldInfo.add( logicalColumn.name, columns.get( (int) placement.position ).physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( logicalColumn.type ) );
-            fieldIds.add( (int) placement.physicalPosition );
+            fieldIds.add( (int) placement.position );
         }
 
-        String csvFileName = allocationTable.placements.get( 0 ).physicalSchemaName;
+        String csvFileName = columns.get( 0 ).physicalSchemaName;
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );

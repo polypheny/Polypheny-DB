@@ -45,7 +45,8 @@ public abstract class Catalog implements ExtensionPoint {
     public static Adapter defaultStore;
     public static Adapter defaultSource;
     public static long defaultUserId = 0;
-    public static long defaultDatabaseId = 0;
+    public static String defaultNamespaceName = "public";
+    public static long defaultNamespaceId = 0;
     public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
@@ -74,8 +75,9 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
-
     public abstract void init();
+
+    public abstract void updateSnapshot();
 
     public abstract void commit() throws NoTablePrimaryKeyException;
 
@@ -237,6 +239,11 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract Snapshot getSnapshot();
+
+
+    public Snapshot getSnapshot( long id ) {
+        return snapshot();
+    }
 
 
     public static Snapshot snapshot() {

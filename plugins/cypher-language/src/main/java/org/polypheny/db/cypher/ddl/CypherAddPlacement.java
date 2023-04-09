@@ -63,7 +63,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
 
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().getGraphSnapshot( g.id ).getGraph( g.id ) ).collect( Collectors.toList() );
+        List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().graph().getGraph( g.id ) ).collect( Collectors.toList() );
 
         List<DataStore> dataStores = Stream.of( store )
                 .map( store -> (DataStore) adapterManager.getAdapter( store ) )

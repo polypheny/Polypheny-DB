@@ -195,7 +195,7 @@ public class Cql2RelConverter {
                     TableIndex tableIndex = treeNode.getExternalNode();
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
                     LogicalTable catalogTable = tableIndex.catalogTable;
-                    for ( LogicalColumn column : catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumns( catalogTable.id ) ) {
+                    for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );

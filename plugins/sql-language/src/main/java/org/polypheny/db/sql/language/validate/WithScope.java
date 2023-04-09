@@ -71,7 +71,7 @@ class WithScope extends ListScope {
             //final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
             //final Step path2 = path.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
             LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
-            CatalogEntity entity = validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 0 ) );
+            CatalogEntity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
             resolved.found( entity );
             return;
         }
@@ -84,8 +84,7 @@ class WithScope extends ListScope {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
             final Step path = Path.EMPTY.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
-            LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
-            CatalogEntity entity = validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 0 ) );
+            CatalogEntity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
             resolved.found( entity );
             return;
         }

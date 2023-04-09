@@ -269,7 +269,7 @@ public class EntityAccessMap {
                 relevantPartitions = accessedPartitions.get( p.getId() );
             } else if ( table != null ) {
                 if ( table.namespaceType == NamespaceType.RELATIONAL ) {
-                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().getAllocSnapshot().getAllocationsFromLogical( table.id );
+                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getAllocationsFromLogical( table.id );
                     relevantPartitions = allocations.stream().map( a -> a.id ).collect( Collectors.toList() );
                 } else {
                     relevantPartitions = List.of();
@@ -325,7 +325,7 @@ public class EntityAccessMap {
         private void extractWriteConstraints( LogicalEntity logicalTable ) {
 
             for ( long constraintTable : logicalTable.getConstraintIds() ) {
-                PartitionProperty property = Catalog.getInstance().getSnapshot().getAllocSnapshot().getPartitionProperty( logicalTable.id );
+                PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( logicalTable.id );
                 for ( long constraintPartitionIds : property.partitionIds ) {
 
                     EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds, NamespaceLevel.ENTITY_LEVEL );

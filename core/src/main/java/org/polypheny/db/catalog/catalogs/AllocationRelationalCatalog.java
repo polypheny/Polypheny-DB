@@ -35,12 +35,10 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param allocationId
      * @param columnId The id of the column to be placed
      * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
-     * @param physicalColumnName The column name on the adapter
      * @param position
+     * @return
      */
-    void addColumnPlacement( long allocationId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position );
+    AllocationTable addColumnPlacement( long allocationId, long columnId, PlacementType placementType, int position );
 
     /**
      * Deletes all dependent column placements
@@ -223,7 +221,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the placement from
      * @return
      */
-    long addDataPlacement( long adapterId, long tableId );
+    AllocationTable createAlloctionTable( long adapterId, long tableId );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store.
@@ -251,7 +249,9 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param adapterId adapter where placement should be removed from
      * @param tableId table to retrieve the placement from
      */
-    void removeDataPlacement( long adapterId, long tableId );
+    void deleteAllocation( long adapterId, long tableId );
+
+    void deleteAllocation( long allocId );
 
     /**
      * Adds a single dataPlacement on a store for a specific table

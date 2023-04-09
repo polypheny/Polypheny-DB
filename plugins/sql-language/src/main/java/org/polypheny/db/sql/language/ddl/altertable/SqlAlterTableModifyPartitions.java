@@ -105,7 +105,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        if ( !statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).isPartitioned ) {
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).isPartitioned ) {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 
@@ -123,7 +123,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         long storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
-        if ( !statement.getTransaction().getSnapshot().getAllocSnapshot().getDataPlacements( catalogTable.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).contains( storeId ) ) {
+        if ( !statement.getTransaction().getSnapshot().alloc().getDataPlacements( catalogTable.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).contains( storeId ) ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
@@ -137,16 +137,16 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             for ( int partitionId : partitionGroupList ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).partitionGroupIds.get( partitionId ) );
+                    tempPartitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).numPartitionGroups + " partitions" );
+                            + catalogTable.name + "', has only " + statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).numPartitionGroups + " partitions" );
                 }
             }
         }
         // If name partitions are specified
         else if ( !partitionGroupNamesList.isEmpty() && partitionGroupList.isEmpty() ) {
-            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getSnapshot().getAllocSnapshot().getPartitionGroups( tableId );
+            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getSnapshot().alloc().getPartitionGroups( tableId );
             for ( String partitionName : partitionGroupNamesList.stream().map( Object::toString )
                     .collect( Collectors.toList() ) ) {
                 boolean isPartOfTable = false;
@@ -159,14 +159,14 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 }
                 if ( !isPartOfTable ) {
                     throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalog.getSnapshot().getAllocSnapshot().getPartitionGroupNames( tableId ) + " partitions" );
+                            + catalogTable.name + "', has only " + catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) + " partitions" );
                 }
             }
         }
 
         // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
         // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        if ( tempPartitionList.equals( catalog.getSnapshot().getAllocSnapshot().getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
+        if ( tempPartitionList.equals( catalog.getSnapshot().alloc().getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
             log.info( "The data placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}",
                     catalogTable.name, storeName, partitionGroupList );
             return;

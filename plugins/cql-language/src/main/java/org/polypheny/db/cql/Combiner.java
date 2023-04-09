@@ -150,7 +150,7 @@ public class Combiner {
         LogicalTable rightCatalogTable = right.catalogTable;
         List<String> columnList = Arrays.asList( columnStrs );
 
-        LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( leftCatalogTable.namespaceId );
+        LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().rel();
         List<String> lColumnNames = relSnapshot.getColumns( leftCatalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
         List<String> rColumnNames = relSnapshot.getColumns( rightCatalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
         if ( !new HashSet<>( lColumnNames ).containsAll( columnList ) || !new HashSet<>( rColumnNames ).containsAll( columnList ) ) {
@@ -170,7 +170,7 @@ public class Combiner {
         if ( log.isDebugEnabled() ) {
             log.debug( "Getting Common Columns between '{}' and '{}'.", table1.fullyQualifiedName, table2.fullyQualifiedName );
         }
-        LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().getRelSnapshot( table1.catalogTable.namespaceId );
+        LogicalRelSnapshot relSnapshot = Catalog.getInstance().getSnapshot().rel();
         List<String> table1Columns = relSnapshot.getColumns( table1.catalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
         List<String> table2Columns = relSnapshot.getColumns( table2.catalogTable.id ).stream().map( c -> c.name ).collect( Collectors.toList() );
 

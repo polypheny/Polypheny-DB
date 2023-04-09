@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -84,12 +85,9 @@ public class StatisticCrud {
 
     public void getTableStatistics( Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        long tableId;
-        long schemaId;
-        schemaId = Catalog.getInstance().getSnapshot().getNamespace( request.tableId.split( "\\." )[0] ).id;
-        tableId = Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId ).getTable( request.tableId.split( "\\." )[1] ).id;
+        LogicalTable table = Catalog.getInstance().getSnapshot().rel().getTable( request.tableId.split( "\\." )[0], request.tableId.split( "\\." )[1] );
 
-        ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
+        ctx.json( statisticsManager.getTableStatistic( table.namespaceId, table.id ) );
     }
 
 

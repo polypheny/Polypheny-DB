@@ -29,6 +29,7 @@ import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -81,9 +82,9 @@ public class AllocationTable extends AllocationEntity {
     }
 
 
-    public AllocationTable withAddedColumn( long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position ) {
+    public AllocationTable withAddedColumn( long columnId, PlacementType placementType, int position ) {
         List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
-        placements.add( new CatalogColumnPlacement( namespaceId, id, columnId, adapterId, placementType, physicalSchemaName, physicalColumnName, position ) );
+        placements.add( new CatalogColumnPlacement( namespaceId, id, columnId, adapterId, placementType, position ) );
 
         return new AllocationTable( id, logicalId, namespaceId, adapterId, placements );
     }
@@ -96,7 +97,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public Map<Long, AlgDataType> getColumnTypes() {
-        return null;
+        return placements.stream().collect( Collectors.toMap( p -> p.columnId, p -> Catalog.snapshot().rel().getColumn( p.columnId ).getAlgDataType( AlgDataTypeFactory.DEFAULT ) ) );
     }
 
 
@@ -107,7 +108,7 @@ public class AllocationTable extends AllocationEntity {
 
     public List<Long> getColumnOrder() {
         List<CatalogColumnPlacement> columns = new ArrayList<>( placements );
-        columns.sort( ( a, b ) -> Math.toIntExact( a.physicalPosition - b.physicalPosition ) );
+        columns.sort( ( a, b ) -> Math.toIntExact( a.position - b.position ) );
 
         return columns.stream().map( c -> c.columnId ).collect( Collectors.toList() );
     }

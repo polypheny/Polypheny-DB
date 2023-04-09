@@ -120,9 +120,9 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-        List<CatalogColumnPlacement> ccps = context.getSnapshot().getAllocSnapshot().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
+        List<CatalogColumnPlacement> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().getAllocSnapshot().getPartitionPlacement( getAdapterId(), id ) ) );
+        partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
         String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
@@ -160,7 +160,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getSnapshot().getAllocSnapshot().getPartitionPlacement( getAdapterId(), id ) ) );
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             StringBuilder builder = new StringBuilder();

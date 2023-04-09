@@ -43,11 +43,7 @@ public class CatalogColumnPlacement implements CatalogObject {
     @Serialize
     public PlacementType placementType;
     @Serialize
-    public long physicalPosition;
-    @Serialize
-    public String physicalSchemaName;
-    @Serialize
-    public String physicalColumnName;
+    public long position;
 
 
     public CatalogColumnPlacement(
@@ -56,17 +52,13 @@ public class CatalogColumnPlacement implements CatalogObject {
             @Deserialize("columnId") final long columnId,
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("physicalSchemaName") final String physicalSchemaName,
-            @Deserialize("physicalColumnName") final String physicalColumnName,
-            @Deserialize("physicalPosition") final long physicalPosition ) {
+            @Deserialize("position") final long position ) {
         this.namespaceId = namespaceId;
         this.tableId = tableId;
         this.columnId = columnId;
         this.adapterId = adapterId;
         this.placementType = placementType;
-        this.physicalSchemaName = physicalSchemaName;
-        this.physicalColumnName = physicalColumnName;
-        this.physicalPosition = physicalPosition;
+        this.position = position;
     }
 
 
@@ -96,9 +88,7 @@ public class CatalogColumnPlacement implements CatalogObject {
     public Serializable[] getParameterArray() {
         return new Serializable[]{
                 getLogicalTableName(),
-                placementType.name(),
-                physicalSchemaName,
-                physicalColumnName };
+                placementType.name() };
     }
 
 }

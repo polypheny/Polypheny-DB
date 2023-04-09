@@ -50,9 +50,9 @@ public class QueryInterfaceManager {
     @Getter
     private static final Map<String, QueryInterfaceType> REGISTER = new ConcurrentHashMap<>();
 
-    private final Map<Integer, QueryInterface> interfaceById = new HashMap<>();
+    private final Map<Long, QueryInterface> interfaceById = new HashMap<>();
     private final Map<String, QueryInterface> interfaceByName = new HashMap<>();
-    private final Map<Integer, Thread> interfaceThreadById = new HashMap<>();
+    private final Map<Long, Thread> interfaceThreadById = new HashMap<>();
 
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
@@ -137,7 +137,7 @@ public class QueryInterfaceManager {
                 String[] split = iface.clazz.split( "\\$" );
                 split = split[split.length - 1].split( "\\." );
                 Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
-                Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
+                Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, long.class, String.class, Map.class );
                 QueryInterface instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, iface.id, iface.name, iface.settings );
 
                 Thread thread = new Thread( instance );

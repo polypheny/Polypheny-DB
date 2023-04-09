@@ -183,7 +183,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         if ( tableIds.size() > 1 ) {
             snapshot = Catalog.getInstance().getSnapshot();
             LogicalNamespace namespace = snapshot.getNamespace( tableIds.get( 0 ) );
-            LogicalTable catalogTable = snapshot.getRelSnapshot( namespace.id ).getTable( tableIds.get( 1 ) );
+            LogicalTable catalogTable = snapshot.rel().getTable( tableIds.get( 1 ) );
             long id = catalogTable.id;
             if ( !catalogTable.getConnectedViews().isEmpty() ) {
                 updateCandidates.put( transaction.getXid(), id );
@@ -213,11 +213,11 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void materializedUpdate( Long potentialInteresting ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        LogicalTable catalogTable = snapshot.getNamespaces( null ).stream().map( n -> snapshot.getRelSnapshot( n.id ).getTable( potentialInteresting ) ).filter( Objects::nonNull ).findFirst().orElse( null );
+        LogicalTable catalogTable = snapshot.getNamespaces( null ).stream().map( n -> snapshot.rel().getTable( potentialInteresting ) ).filter( Objects::nonNull ).findFirst().orElse( null );
         List<Long> connectedViews = catalogTable.getConnectedViews();
 
         for ( long id : connectedViews ) {
-            LogicalTable view = snapshot.getRelSnapshot( catalogTable.namespaceId ).getTable( id );
+            LogicalTable view = snapshot.rel().getTable( id );
             if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
@@ -312,16 +312,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
-        List<CatalogDataPlacement> dataPlacements = transaction.getSnapshot().getAllocSnapshot().getDataPlacements( materializedView.id );
+        List<CatalogDataPlacement> dataPlacements = transaction.getSnapshot().alloc().getDataPlacements( materializedView.id );
         for ( CatalogDataPlacement placement : dataPlacements ) {
             Statement sourceStatement = transaction.createStatement();
             prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
             columnPlacements.clear();
 
-            columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.getAllocSnapshot().getColumnPlacement( placement.adapterId, column.id ) ) );
+            columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumnPlacement( placement.adapterId, column.id ) ) );
             // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
-            AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, snapshot.getAllocSnapshot().getPartitionsOnDataPlacement( placement.adapterId, materializedView.id ).get( 0 ) );
+            AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, snapshot.alloc().getPartitionsOnDataPlacement( placement.adapterId, materializedView.id ).get( 0 ) );
 
             dataMigrator.executeQuery( columns.get( placement.adapterId ), algRoot, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
         }
@@ -345,15 +345,15 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         List<Long> ids = new ArrayList<>();
         if ( snapshot.getLogicalEntity( materializedId ) != null && materializedInfo.containsKey( materializedId ) ) {
             CatalogMaterializedView catalogMaterializedView = snapshot.getLogicalEntity( materializedId ).unwrap( CatalogMaterializedView.class );
-            List<CatalogDataPlacement> dataPlacements = snapshot.getAllocSnapshot().getDataPlacements( catalogMaterializedView.id );
+            List<CatalogDataPlacement> dataPlacements = snapshot.alloc().getDataPlacements( catalogMaterializedView.id );
             for ( CatalogDataPlacement placement : dataPlacements ) {
                 ids.add( placement.adapterId );
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
 
                 int localAdapterIndex = dataPlacements.indexOf( placement );
-                snapshot.getAllocSnapshot().getDataPlacement( dataPlacements.stream().map( p -> p.adapterId ).collect( Collectors.toList() ).get( localAdapterIndex ), catalogMaterializedView.id )
+                snapshot.alloc().getDataPlacement( dataPlacements.stream().map( p -> p.adapterId ).collect( Collectors.toList() ).get( localAdapterIndex ), catalogMaterializedView.id )
                         .columnPlacementsOnAdapter.forEach( col ->
-                                logicalColumns.add( snapshot.getRelSnapshot( catalogMaterializedView.namespaceId ).getColumn( col ) ) );
+                                logicalColumns.add( snapshot.rel().getColumn( col ) ) );
                 columns.put( placement.adapterId, logicalColumns );
             }
 
@@ -367,7 +367,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
                 columnPlacements.clear();
 
-                columns.get( id ).forEach( column -> columnPlacements.add( snapshot.getAllocSnapshot().getColumnPlacement( id, column.id ) ) );
+                columns.get( id ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumnPlacement( id, column.id ) ) );
 
                 // Build {@link AlgNode} to build delete Statement from materialized view
                 AlgBuilder deleteAlgBuilder = AlgBuilder.create( deleteStatement );
@@ -382,7 +382,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 targetRel = dataMigrator.buildDeleteStatement(
                         targetStatementDelete,
                         columnPlacements,
-                        snapshot.getAllocSnapshot().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
+                        snapshot.alloc().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
                 dataMigrator.executeQuery(
                         columns.get( id ),
                         AlgRoot.of( deleteRel, Kind.SELECT ),
@@ -398,7 +398,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 targetRel = dataMigrator.buildInsertStatement(
                         targetStatementInsert,
                         columnPlacements,
-                        snapshot.getAllocSnapshot().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
+                        snapshot.alloc().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
                 dataMigrator.executeQuery(
                         columns.get( id ),
                         AlgRoot.of( insertRel, Kind.SELECT ),

@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -47,14 +48,22 @@ public interface LogicalRelSnapshot {
      */
     List<LogicalTable> getTables( @Nullable Pattern namespace, @Nullable Pattern name );
 
+    List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name );
+
+    List<LogicalTable> getTables( @Nullable String namespace, @Nullable String name );
+
+
     /**
      * Returns the table with the given name in the specified schema.
      *
+     * @param namespaceName
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    LogicalTable getTable( String tableName );
+    LogicalTable getTable( long namespaceId, String tableName );
+
+    LogicalTable getTable( String namespaceName, String tableName );
 
 
     /**

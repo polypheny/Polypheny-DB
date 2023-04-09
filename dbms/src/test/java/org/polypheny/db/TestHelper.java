@@ -32,12 +32,15 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
@@ -535,5 +538,39 @@ public class TestHelper {
         }
 
     }
+
+
+    @SafeVarargs
+    public static void executeSql( SqlBiConsumer<Connection, Statement>... queries ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                for ( BiConsumer<Connection, Statement> query : queries ) {
+                    query.accept( connection, statement );
+                }
+            }
+        } catch ( SQLException e ) {
+            fail( e.getMessage() );
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @FunctionalInterface
+    public interface SqlBiConsumer<C, T> extends BiConsumer<C, T> {
+
+        @Override
+        default void accept( final C elemC, final T elemT ) {
+            try {
+                acceptThrows( elemC, elemT );
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        void acceptThrows( C elemC, T elem ) throws SQLException;
+
+    }
+
 
 }

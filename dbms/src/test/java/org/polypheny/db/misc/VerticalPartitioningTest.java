@@ -167,15 +167,15 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    LogicalTable table = Catalog.getInstance().getTables( null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
+                    LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
 
                     // Check if initially as many DataPlacements are created as requested (one for each store)
-                    Assert.assertEquals( 1, table.dataPlacements.size() );
+                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getDataPlacements( table.id ).size() );
 
-                    CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
+                    CatalogDataPlacement dataPlacement = Catalog.snapshot().alloc().getDataPlacements( table.id ).get( 0 );
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    Assert.assertEquals( table.fieldIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
+                    Assert.assertEquals( table.getColumnIds().size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
                     Assert.assertEquals( 1, dataPlacement.getAllPartitionIds().size() );
@@ -188,20 +188,20 @@ public class VerticalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
 
                     // Check if we now have two  dataPlacements in table
-                    table = Catalog.getInstance().getTable( table.id );
-                    Assert.assertEquals( 2, Catalog.getInstance().getDataPlacements( table.id ).size() );
+                    table = Catalog.snapshot().rel().getTable( table.id );
+                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getDataPlacements( table.id ).size() );
 
                     // Modify columns on second store
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary) ON STORE anotherstore" );
-                    List<CatalogDataPlacement> dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    List<CatalogDataPlacement> dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
 
-                    int adapterId = -1;
-                    int initialAdapterId = -1;
+                    long adapterId = -1;
+                    long initialAdapterId = -1;
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.getAdapterName().equals( "anotherstore" ) ) {
                             Assert.assertEquals( 1, dp.columnPlacementsOnAdapter.size() );
                             adapterId = dp.adapterId;
-                            Assert.assertEquals( 1, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            Assert.assertEquals( 1, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                         } else {
                             initialAdapterId = dp.adapterId;
                         }
@@ -209,31 +209,31 @@ public class VerticalPartitioningTest {
 
                     // MODIFY by adding single column on second store
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary, tvarchar) ON STORE anotherstore" );
-                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                         }
                     }
 
                     // MODIFY by adding single column on first store
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tinteger) ON STORE hsqldb" );
-                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
-                            Assert.assertEquals( 1, Catalog.getInstance().getPhysicalsOnAdapter( table.id ).get( adapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
+                            Assert.assertEquals( 1, Catalog.snapshot().physical().getPhysicalsOnAdapter( adapterId ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
-                            Assert.assertEquals( 1, Catalog.getInstance().getPhysicalsOnAdapter( table.id ).get( initialAdapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
+                            Assert.assertEquals( 1, Catalog.snapshot().physical().getPhysicalsOnAdapter( initialAdapterId ).size() );
                         }
                     }
 
@@ -249,16 +249,16 @@ public class VerticalPartitioningTest {
 
                     // ADD single column on second store
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT ADD COLUMN tinteger ON STORE anotherstore" );
-                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
+                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
                         }
                     }
 
@@ -267,26 +267,26 @@ public class VerticalPartitioningTest {
 
                     // REMOVE single column on second store
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE anotherstore" );
-                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
+                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
                         }
                     }
 
                     Assert.assertEquals( 2, dataPlacements.size() );
                     // DROP STORE and verify number of dataPlacements
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
-                    Assert.assertEquals( 1, Catalog.getInstance().getDataPlacements( table.id ).size() );
+                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getDataPlacements( table.id ).size() );
 
                     //Check also if ColumnPlacements have been correctly removed
-                    Assert.assertEquals( 0, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                    Assert.assertEquals( 0, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS verticalDataPlacementTest" );
@@ -310,9 +310,6 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    LogicalTable table = Catalog.getInstance().getTables( null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
-
-                    CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"

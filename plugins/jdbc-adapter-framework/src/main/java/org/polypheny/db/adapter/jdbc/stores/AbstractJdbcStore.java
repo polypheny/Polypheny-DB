@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
@@ -125,7 +126,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public PhysicalTable createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable ) {
+    public List<PhysicalTable> createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable ) {
         String physicalTableName = getPhysicalTableName( logicalTable.id, allocationTable.id );
 
         if ( log.isDebugEnabled() ) {
@@ -137,7 +138,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         }
         executeUpdate( query, context );
 
-        return this.currentJdbcSchema.createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), logicalTable, allocationTable );
+        return Collections.singletonList( JdbcSchema.create( logicalTable.id, catalog.getSnapshot(), logicalTable.getNamespaceName(), connectionFactory, dialect, this ).createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), logicalTable, allocationTable ) );
         //return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
     }
 
@@ -151,7 +152,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
                 .append( " ( " );
         boolean first = true;
         for ( CatalogColumnPlacement placement : allocationTable.placements ) {
-            LogicalColumn logicalColumn = allocationTable.getColumns().get( placement.columnId );
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
             }
@@ -168,7 +169,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     @Override
     public void addColumn( Context context, LogicalTable catalogTable, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
-        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
             String physicalTableName = partitionPlacement.physicalTableName;
             String physicalSchemaName = partitionPlacement.physicalSchemaName;
             StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, logicalColumn );
@@ -267,13 +268,13 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         if ( !this.dialect.supportsNestedArrays() && logicalColumn.collectionsType != null ) {
             return;
         }
-        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
             StringBuilder builder = new StringBuilder();
             builder.append( "ALTER TABLE " )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
                     .append( "." )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+            //builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
             builder.append( " " ).append( getTypeString( logicalColumn.type ) );
             if ( logicalColumn.length != null ) {
                 builder.append( "(" );
@@ -297,7 +298,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         String physicalSchemaName;
 
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().getAllocSnapshot().getPartitionPlacement( getAdapterId(), id ) ) );
+        partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
@@ -321,13 +322,13 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
             StringBuilder builder = new StringBuilder();
             builder.append( "ALTER TABLE " )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
                     .append( "." )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " DROP " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+            //builder.append( " DROP " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
             executeUpdate( builder, context );
         }
     }
@@ -338,7 +339,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getSnapshot().getAllocSnapshot().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ) ) {
             String physicalTableName = partitionPlacement.physicalTableName;
             String physicalSchemaName = partitionPlacement.physicalSchemaName;
             StringBuilder builder = new StringBuilder();

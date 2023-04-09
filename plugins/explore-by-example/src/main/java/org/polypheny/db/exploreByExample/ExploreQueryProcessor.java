@@ -59,7 +59,7 @@ public class ExploreQueryProcessor {
 
 
     public ExploreQueryProcessor( final TransactionManager transactionManager, Authenticator authenticator ) {
-        this( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
+        this( transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
     }
 
 

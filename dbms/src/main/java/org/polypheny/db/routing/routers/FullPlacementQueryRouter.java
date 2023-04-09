@@ -109,10 +109,10 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         /*for ( List<CatalogColumnPlacement> placementCombination : placements ) {
             Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
-            PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );*/
+            PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );*/
         //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
-        List<AllocationEntity> allocationEntities = snapshot.getAllocSnapshot().getAllocationsFromLogical( catalogTable.id );
+        List<AllocationEntity> allocationEntities = snapshot.alloc().getAllocationsFromLogical( catalogTable.id );
 
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
@@ -131,7 +131,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
     protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = snapshot.getAllocSnapshot().getPartitionProperty( catalogTable.id );
+        PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
@@ -148,7 +148,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
         // Filter for placements by adapters
-        List<Long> adapters = snapshot.getAllocSnapshot().getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
+        List<Long> adapters = snapshot.alloc().getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
                 .stream()
                 .filter( elem -> elem.getValue().containsAll( usedColumns ) )
                 .map( Entry::getKey )
@@ -157,7 +157,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         final Set<List<CatalogColumnPlacement>> result = new HashSet<>();
         for ( long adapterId : adapters ) {
             List<CatalogColumnPlacement> placements = usedColumns.stream()
-                    .map( colId -> snapshot.getAllocSnapshot().getColumnPlacement( adapterId, colId ) )
+                    .map( colId -> snapshot.alloc().getColumnPlacement( adapterId, colId ) )
                     .collect( Collectors.toList() );
 
             if ( !placements.isEmpty() ) {

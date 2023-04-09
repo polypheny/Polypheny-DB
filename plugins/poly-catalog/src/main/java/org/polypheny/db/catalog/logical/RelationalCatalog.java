@@ -154,11 +154,11 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public long addTable( String name, EntityType entityType, boolean modifiable ) {
+    public LogicalTable addTable( String name, EntityType entityType, boolean modifiable ) {
         long id = idBuilder.getNewEntityId();
         LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, modifiable, null );
         tables.put( id, table );
-        return id;
+        return table;
     }
 
 
@@ -182,6 +182,9 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Override
     public void deleteTable( long tableId ) {
+        for ( Long columnId : tables.get( tableId ).getColumnIds() ) {
+            columns.remove( columnId );
+        }
         tables.remove( tableId );
     }
 

@@ -156,9 +156,8 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         Snapshot snapshot = statement.getTransaction().getSnapshot();
-        LogicalNamespace namespace = snapshot.getNamespace( resourcePatchRequest.tables.get( 0 ).getNamespaceName() );
-        LogicalTable table = null;
-        table = snapshot.getRelSnapshot( namespace.id ).getTable( resourcePatchRequest.tables.get( 0 ).name );
+
+        LogicalTable table = snapshot.rel().getTable( resourcePatchRequest.tables.get( 0 ).id );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -260,10 +259,7 @@ public class Rest {
 
 
     private static LogicalTable getLogicalTable( Snapshot snapshot, String namespaceName, String tableName ) {
-        LogicalNamespace namespace = snapshot.getNamespace( namespaceName );
-        LogicalTable table;
-        table = snapshot.getRelSnapshot( namespace.id ).getTable( tableName );
-        return table;
+        return snapshot.rel().getTable( namespaceName, tableName );
     }
 
 

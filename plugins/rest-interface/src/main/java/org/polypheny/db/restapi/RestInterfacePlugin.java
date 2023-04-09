@@ -130,7 +130,7 @@ public class RestInterfacePlugin extends Plugin {
         private Javalin restServer;
 
 
-        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
             this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
             this.uniqueName = uniqueName;
@@ -167,7 +167,7 @@ public class RestInterfacePlugin extends Plugin {
                 config.enableCorsForAllOrigins();
             } ).start( port );
 
-            Rest rest = new Rest( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
+            Rest rest = new Rest( transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
             restRoutes( restServer, rest );
 
             log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );

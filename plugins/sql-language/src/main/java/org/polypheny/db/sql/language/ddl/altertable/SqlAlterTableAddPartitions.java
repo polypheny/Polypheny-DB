@@ -153,7 +153,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
         try {
             // Check if table is already partitioned
-            if ( statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).partitionType == PartitionType.NONE ) {
+            if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).partitionType == PartitionType.NONE ) {
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromNodeLists(
                                 catalogTable,

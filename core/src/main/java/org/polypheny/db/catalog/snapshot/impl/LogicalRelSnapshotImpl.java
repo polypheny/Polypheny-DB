@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Value;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -161,6 +162,18 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
             return tables.values().asList();
         }
         return tables.values().stream().filter( t -> namespaces.get( t.namespaceId ).caseSensitive ? t.name.matches( name.toRegex() ) : t.name.toLowerCase().matches( (name.toRegex().toLowerCase()) ) ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
+        return tableNames.values().stream().filter( e -> e.name.matches( name.toRegex() ) || e.namespaceId == namespaceId ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<LogicalTable> getTables( @Nullable String namespace, @Nullable String name ) {
+        return null;
     }
 
 
@@ -333,8 +346,18 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public LogicalTable getTable( String name ) {
-        return tableNames.get( name );
+    public LogicalTable getTable( long namespaceId, String name ) {
+        String adjustedName = name;
+        if ( !namespaces.get( namespaceId ).caseSensitive ) {
+            adjustedName = name.toLowerCase();
+        }
+        return tableNames.get( adjustedName );
+    }
+
+
+    @Override
+    public LogicalTable getTable( String namespaceName, String tableName ) {
+        return null;
     }
 
 

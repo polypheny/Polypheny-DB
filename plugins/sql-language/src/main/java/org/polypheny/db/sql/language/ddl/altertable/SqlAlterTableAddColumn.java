@@ -132,7 +132,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( CatalogDataPlacement placement : statement.getTransaction().getSnapshot().getAllocSnapshot().getDataPlacements( catalogTable.id ) ) {
+        for ( CatalogDataPlacement placement : statement.getTransaction().getSnapshot().alloc().getDataPlacements( catalogTable.id ) ) {
             getDataStoreInstance( placement.adapterId );
         }
 

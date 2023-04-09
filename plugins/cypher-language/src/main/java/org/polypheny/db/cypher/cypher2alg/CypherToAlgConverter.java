@@ -107,7 +107,7 @@ public class CypherToAlgConverter {
             databaseId = parameters.getDatabaseId();
         }
 
-        LogicalGraph graph = this.snapshot.getGraphSnapshot( databaseId ).getGraph( databaseId );
+        LogicalGraph graph = this.snapshot.graph().getGraph( databaseId );
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan

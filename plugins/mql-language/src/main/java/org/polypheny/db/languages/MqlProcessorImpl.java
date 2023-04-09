@@ -106,7 +106,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
             return Catalog.getInstance()
                     .getSnapshot()
                     .getNamespaces( Pattern.of( ((MqlQueryParameters) parameters).getDatabase() ) )
-                    .stream().flatMap( n -> Catalog.getInstance().getSnapshot().getDocSnapshot( n.id ).getCollections( null ).stream() )
+                    .stream().flatMap( n -> Catalog.getInstance().getSnapshot().doc().getCollections( n.id, null ).stream() )
                     .noneMatch( t -> t.name.equals( ((MqlCollectionStatement) query).getCollection() ) );
         }
         return false;

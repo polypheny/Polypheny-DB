@@ -93,7 +93,7 @@ public class AvaticaInterfacePlugin extends Plugin {
         private final HttpServerDispatcher httpServerDispatcher;
 
 
-        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
             metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
             metricsSystem = NoopMetricsSystem.getInstance();

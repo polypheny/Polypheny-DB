@@ -233,7 +233,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private void resetAllIsFull() {
         this.statisticSchemaMap.values().forEach( s -> s.values().forEach( t -> t.values().forEach( c -> {
-            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.getInstance().getSnapshot().getRelSnapshot( c.getSchemaId() ).getColumn( c.getColumnId() ) ), NodeType.UNIQUE_VALUE ) );
+            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.getInstance().getSnapshot().rel().getColumn( c.getColumnId() ) ), NodeType.UNIQUE_VALUE ) );
         } ) ) );
     }
 
@@ -242,7 +242,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Reset all statistics and reevaluate them.
      */
     private void reevaluateAllStatistics() {
-        if ( statisticQueryInterface == null ) {
+        if ( true || statisticQueryInterface == null ) {
             return;
         }
         log.debug( "Resetting StatisticManager." );
@@ -894,7 +894,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private void handleTruncate( long tableId, long schemaId, Catalog catalog ) {
         LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).unwrap( LogicalTable.class );
-        for ( LogicalColumn column : catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumns( catalogTable.id ) ) {
+        for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
             PolyType polyType = column.type;
             QueryResult queryResult = new QueryResult( catalogTable, column );
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( column.id ) != null ) {
@@ -924,20 +924,20 @@ public class StatisticsManagerImpl extends StatisticsManager {
         LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).unwrap( LogicalTable.class );
         if ( this.statisticSchemaMap.get( schemaId ) != null ) {
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ) != null ) {
-                for ( LogicalColumn column : catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ) ) {
+                for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( tableId ) ) {
                     PolyType polyType = column.type;
                     QueryResult queryResult = new QueryResult( catalogTable, column );
                     if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( column.id ) != null && changedValues.get( (long) column.position ) != null ) {
-                        handleInsertColumn( tableId, changedValues, schemaId, catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ).stream().map( c -> c.id ).collect( Collectors.toList() ), column.position, queryResult );
+                        handleInsertColumn( tableId, changedValues, schemaId, catalog.getSnapshot().rel().getColumns( tableId ).stream().map( c -> c.id ).collect( Collectors.toList() ), column.position, queryResult );
                     } else {
                         addNewColumnStatistics( changedValues, column.position, polyType, queryResult );
                     }
                 }
             } else {
-                addInserts( changedValues, catalogTable, catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ) );
+                addInserts( changedValues, catalogTable, catalog.getSnapshot().rel().getColumns( tableId ) );
             }
         } else {
-            addInserts( changedValues, catalogTable, catalog.getSnapshot().getRelSnapshot( schemaId ).getColumns( tableId ) );
+            addInserts( changedValues, catalogTable, catalog.getSnapshot().rel().getColumns( tableId ) );
         }
     }
 
@@ -1185,7 +1185,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             } else if ( v.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
                 alphabeticInfo.add( (AlphabeticStatisticColumn<?>) v );
                 statisticTable.setAlphabeticColumn( (List) alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot().getRelSnapshot( schemaId ).getColumn( k ).type ) ) {
+            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot().rel().getColumn( k ).type ) ) {
                 temporalInfo.add( (TemporalStatisticColumn<?>) v );
                 statisticTable.setTemporalColumn( (List) temporalInfo );
             }

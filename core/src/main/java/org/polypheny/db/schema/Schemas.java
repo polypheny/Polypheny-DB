@@ -206,7 +206,7 @@ public final class Schemas {
      */
     public static <E> Queryable<E> queryable( DataContext root, Snapshot snapshot, Class<E> clazz, String tableName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
-        LogicalTable table = snapshot.rel().getTable( tableName );
+        LogicalTable table = snapshot.rel().getTable( null, tableName );
         return table.unwrap( QueryableEntity.class ).asQueryable( root, snapshot, table.id );
     }
 

@@ -47,6 +47,7 @@ import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -705,33 +706,35 @@ public class HorizontalPartitioningTest {
                 try {
                     LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
 
-                    // Check if partition properties are correctly set and parsed
-                    Assert.assertEquals( 600, ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );
-                    Assert.assertEquals( 12, ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn() );
-                    Assert.assertEquals( 14, ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageOut() );
-                    Assert.assertEquals( PartitionType.HASH, ((TemperaturePartitionProperty) table.partitionProperty).getInternalPartitionFunction() );
+                    PartitionProperty partitionProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id );
 
-                    Assert.assertEquals( 2, table.partitionProperty.getPartitionGroupIds().size() );
-                    Assert.assertEquals( 20, table.partitionProperty.getPartitionIds().size() );
+                    // Check if partition properties are correctly set and parsed
+                    Assert.assertEquals( 600, ((TemperaturePartitionProperty) partitionProperty).getFrequencyInterval() );
+                    Assert.assertEquals( 12, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageIn() );
+                    Assert.assertEquals( 14, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageOut() );
+                    Assert.assertEquals( PartitionType.HASH, ((TemperaturePartitionProperty) partitionProperty).getInternalPartitionFunction() );
+
+                    Assert.assertEquals( 2, partitionProperty.getPartitionGroupIds().size() );
+                    Assert.assertEquals( 20, partitionProperty.getPartitionIds().size() );
 
                     // Check if initially as many partitionPlacements are created as requested and stored in the partition property
-                    Assert.assertEquals( table.partitionProperty.getPartitionIds().size(), Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
+                    Assert.assertEquals( partitionProperty.getPartitionIds().size(), Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // Retrieve partition distribution
                     // Get percentage of tables which can remain in HOT
-                    long numberOfPartitionsInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn()) / 100;
+                    long numberOfPartitionsInHot = (partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageIn()) / 100;
                     //These are the tables than can remain in HOT
-                    long allowedTablesInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageOut()) / 100;
+                    long allowedTablesInHot = (partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageOut()) / 100;
                     if ( numberOfPartitionsInHot == 0 ) {
                         numberOfPartitionsInHot = 1;
                     }
                     if ( allowedTablesInHot == 0 ) {
                         allowedTablesInHot = 1;
                     }
-                    long numberOfPartitionsInCold = table.partitionProperty.partitionIds.size() - numberOfPartitionsInHot;
+                    long numberOfPartitionsInCold = partitionProperty.partitionIds.size() - numberOfPartitionsInHot;
 
-                    List<CatalogPartition> hotPartitions = Catalog.getInstance().getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
-                    List<CatalogPartition> coldPartitions = Catalog.getInstance().getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId() );
+                    List<CatalogPartition> hotPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
+                    List<CatalogPartition> coldPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
 
                     Assert.assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
 
@@ -761,15 +764,17 @@ public class HorizontalPartitioningTest {
                     // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
 
                     // Verify that the partition is now in HOT and was not before
-                    LogicalTable updatedTable = Catalog.getInstance().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    LogicalTable updatedTable = Catalog.snapshot().rel().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
+
+                    PartitionProperty updatedProperty = Catalog.snapshot().alloc().getPartitionProperty( updatedTable.id );
 
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-                    PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
+                    PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( partitionProperty.partitionType );
                     long targetId = partitionManager.getTargetPartitionId( table, partitionValue );
 
-                    List<CatalogPartition> hotPartitionsAfterChange = Catalog.getInstance().getPartitions( ((TemperaturePartitionProperty) updatedTable.partitionProperty).getHotPartitionGroupId() );
-                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.getInstance().getPartition( targetId ) ) );
+                    List<CatalogPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
+                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getPartition( targetId ) ) );
 
                     //Todo @Hennlo check number of access
                 } finally {
@@ -1176,17 +1181,18 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    LogicalTable table = Catalog.getInstance().getTables( null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
+                    LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many DataPlacements are created as requested
                     // One for each store
-                    Assert.assertEquals( 1, table.dataPlacements.size() );
 
-                    CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
+                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getDataPlacements( table.id ).size() );
+
+                    CatalogDataPlacement dataPlacement = Catalog.snapshot().alloc().getDataPlacements( table.id ).get( 0 );
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    Assert.assertEquals( table.fieldIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
+                    Assert.assertEquals( table.getColumnIds().size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
                     Assert.assertEquals( partitionsToCreate, dataPlacement.getAllPartitionIds().size() );
@@ -1199,15 +1205,15 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
 
                     // Check if we now have two  dataPlacements in table
-                    table = Catalog.getInstance().getTable( table.id );
-                    Assert.assertEquals( 2, Catalog.getInstance().getDataPlacements( table.id ).size() );
+                    table = Catalog.snapshot().rel().getTable( table.id );
+                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getDataPlacements( table.id ).size() );
 
                     // Modify partitions on second store
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
-                    List<CatalogDataPlacement> dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    List<CatalogDataPlacement> dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
 
-                    int adapterId = -1;
-                    int initialAdapterId = -1;
+                    long adapterId = -1;
+                    long initialAdapterId = -1;
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.getAdapterName().equals( "anotherstore" ) ) {
                             adapterId = dp.adapterId;
@@ -1222,24 +1228,24 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MODIFY PLACEMENT (tinteger) "
                             + "ON STORE anotherstore WITH partitions (\"bar\", \"barfoo\", \"foo\") " );
 
-                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 3, dp.getAllPartitionIds().size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
+                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 4, dp.getAllPartitionIds().size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
-                            Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
+                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            Assert.assertEquals( 4, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
                     }
 
                     // After MERGE should only hold one partition
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MERGE PARTITIONS" );
-                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    dataPlacements = Catalog.snapshot().alloc().getDataPlacements( table.id );
 
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         Assert.assertEquals( 1, dp.getAllPartitionIds().size() );
@@ -1250,7 +1256,7 @@ public class HorizontalPartitioningTest {
 
                     // DROP STORE and verify number of dataPlacements
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
-                    Assert.assertEquals( 1, Catalog.getInstance().getDataPlacements( table.id ).size() );
+                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getDataPlacements( table.id ).size() );
 
                 } finally {
                     // Drop tables and stores

@@ -423,7 +423,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     private void handleIfPartitioned( AlgNode node, LogicalTable catalogTable ) {
         // Only if table is partitioned
         throw new NotImplementedException();
-        /*if ( Catalog.getInstance().getSnapshot().getAllocSnapshot().isPartitioned( catalogTable.id ) ) {
+        /*if ( Catalog.getInstance().getSnapshot().alloc().isPartitioned( catalogTable.id ) ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
                     catalogTable.columns.stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( catalogTable.partitionProperty.partitionColumnId ) );

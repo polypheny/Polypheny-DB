@@ -53,7 +53,7 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
         }
 
         LogicalNamespace namespace = context.getSnapshot().getNamespaces( new Pattern( database ) ).get( 0 );
-        List<LogicalCollection> collections = context.getSnapshot().getDocSnapshot( namespace.id ).getCollections( new Pattern( getCollection() ) );
+        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespace.id, new Pattern( getCollection() ) );
         if ( collections.size() != 1 ) {
             // dropping a collection, which does not exist, which is a no-op
             return;

@@ -37,8 +37,6 @@ public class MockCatalogDocker extends MockCatalog {
 
 
 
-
-
     @Override
     public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
         i++;

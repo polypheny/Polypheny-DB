@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.PolyCatalog;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;

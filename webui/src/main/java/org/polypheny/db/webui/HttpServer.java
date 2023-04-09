@@ -167,7 +167,7 @@ public class HttpServer implements Runnable {
         this.crud = new Crud(
                 transactionManager,
                 Catalog.defaultUserId,
-                Catalog.defaultDatabaseId );
+                Catalog.defaultNamespaceId );
 
         WebSocket webSocketHandler = new WebSocket( crud, gson );
         webSockets( server, webSocketHandler );

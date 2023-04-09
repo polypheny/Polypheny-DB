@@ -260,8 +260,7 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.TABLE_LIST_MALFORMED_TABLE, tableName );
         }
 
-        LogicalNamespace namespace = snapshop.getNamespace( tableElements[0] );
-        LogicalTable table = snapshop.getRelSnapshot( namespace.id ).getTable( tableElements[1] );
+        LogicalTable table = snapshop.rel().getTable( tableElements[1], tableElements[1] );
         if ( log.isDebugEnabled() ) {
             log.debug( "Finished parsing table \"{}\".", tableName );
         }
@@ -359,7 +358,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = snapshop.getNamespaces( null ).stream().map( n -> this.snapshop.getRelSnapshot( n.id ).getColumn( columnId ) ).filter( Objects::nonNull ).findFirst().orElse( null );
+            LogicalColumn column = snapshop.getNamespaces( null ).stream().map( n -> this.snapshop.rel().getColumn( columnId ) ).filter( Objects::nonNull ).findFirst().orElse( null );
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -418,7 +417,7 @@ public class RequestParser {
 
         LogicalNamespace namespace = snapshop.getNamespace( splitString[0] );
 
-        return snapshop.getRelSnapshot( namespace.id ).getColumn( splitString[1], splitString[2] );
+        return snapshop.rel().getColumn( splitString[1], splitString[2] );
 
     }
 
@@ -746,7 +745,7 @@ public class RequestParser {
     public Map<String, LogicalColumn> generateNameMapping( List<LogicalTable> tables ) {
         Map<String, LogicalColumn> nameMapping = new HashMap<>();
         for ( LogicalTable table : tables ) {
-            for ( LogicalColumn column : snapshop.getRelSnapshot( table.namespaceId ).getColumns( table.id ) ) {
+            for ( LogicalColumn column : snapshop.rel().getColumns( table.id ) ) {
                 nameMapping.put( column.getSchemaName() + "." + column.getTableName() + "." + column.name, column );
             }
         }

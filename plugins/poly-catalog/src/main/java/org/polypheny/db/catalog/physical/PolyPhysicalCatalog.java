@@ -52,8 +52,14 @@ public class PolyPhysicalCatalog implements PhysicalCatalog {
 
 
     @Override
-    public void addEntities( List<PhysicalEntity> physicals ) {
+    public void addEntities( List<? extends PhysicalEntity> physicals ) {
         physicals.forEach( p -> this.physicals.put( p.id, p ) );
+    }
+
+
+    @Override
+    public void deleteEntity( long id ) {
+        physicals.remove( id );
     }
 
 

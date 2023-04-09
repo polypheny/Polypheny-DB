@@ -1329,8 +1329,7 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        LogicalNamespace namespace = snapshot.getNamespace( tableNames.get( 0 ) );
-        final LogicalTable entity = snapshot.rel().getTable( names.get( 1 ) );
+        final LogicalTable entity = snapshot.rel().getTable( tableNames.get( 0 ), names.get( 1 ) );
         if ( entity == null ) {
             throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
         }

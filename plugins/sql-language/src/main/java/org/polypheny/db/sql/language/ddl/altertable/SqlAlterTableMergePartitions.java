@@ -88,7 +88,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         }
 
         // Check if table is even partitioned
-        if ( statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).partitionType != PartitionType.NONE ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).partitionType != PartitionType.NONE ) {
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, statement.getTransaction().getSnapshot().getNamespace( catalogTable.namespaceId ).name );

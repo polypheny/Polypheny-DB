@@ -123,7 +123,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !statement.getTransaction().getSnapshot().getAllocSnapshot().getPartitionProperty( catalogTable.id ).isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
             throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 

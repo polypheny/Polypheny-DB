@@ -75,8 +75,10 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void addColumnPlacement( long allocationId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, int position ) {
-        tables.put( allocationId, tables.get( allocationId ).withAddedColumn( columnId, placementType, physicalSchemaName, physicalTableName, physicalColumnName, position ) );
+    public AllocationTable addColumnPlacement( long allocationId, long columnId, PlacementType placementType, int position ) {
+        AllocationTable alloc = tables.get( allocationId ).withAddedColumn( columnId, placementType, position );
+        tables.put( allocationId, alloc );
+        return alloc;
     }
 
 
@@ -191,10 +193,11 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public long addDataPlacement( long adapterId, long tableId ) {
+    public AllocationTable createAlloctionTable( long adapterId, long tableId ) {
         long id = idBuilder.getNewAllocId();
-        tables.put( id, new AllocationTable( id, tableId, namespace.id, adapterId, List.of() ) );
-        return id;
+        AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId, List.of() );
+        tables.put( id, table );
+        return table;
     }
 
 
@@ -211,8 +214,14 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void removeDataPlacement( long adapterId, long tableId ) {
+    public void deleteAllocation( long adapterId, long tableId ) {
 
+    }
+
+
+    @Override
+    public void deleteAllocation( long allocId ) {
+        tables.remove( allocId );
     }
 
 

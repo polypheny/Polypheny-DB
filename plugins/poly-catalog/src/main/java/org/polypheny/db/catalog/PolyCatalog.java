@@ -52,21 +52,19 @@ import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.physical.PolyPhysicalCatalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
+import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -123,10 +121,10 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     public void init() {
-        try {
-            insertDefaultData();
-        } catch ( UnknownAdapterException e ) {
-            throw new RuntimeException( e );
+        insertDefaultData();
+        if ( snapshot.getQueryInterface( "avatica" ) == null ) {
+            QueryInterfaceType avatica = QueryInterfaceManager.getREGISTER().get( "AvaticaInterface" );
+            addQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
         }
     }
 
@@ -179,20 +177,15 @@ public class PolyCatalog extends Catalog implements Serializable {
             adapter.createNewSchema( getSnapshot(), "public", namespaceId );
             // init schema
 
-            getLogicalRel( namespaceId ).addTable( "depts", EntityType.SOURCE, false );
-            getLogicalRel( namespaceId ).addTable( "emps", EntityType.SOURCE, false );
-            getLogicalRel( namespaceId ).addTable( "emp", EntityType.SOURCE, false );
-            getLogicalRel( namespaceId ).addTable( "work", EntityType.SOURCE, false );
+            // getLogicalRel( namespaceId ).addTable( "depts", EntityType.SOURCE, false );
+            // getLogicalRel( namespaceId ).addTable( "emps", EntityType.SOURCE, false );
+            // getLogicalRel( namespaceId ).addTable( "emp", EntityType.SOURCE, false );
+            // getLogicalRel( namespaceId ).addTable( "work", EntityType.SOURCE, false );
 
-            updateSnapshot();
+            // updateSnapshot();
 
-            try {
-                CatalogAdapter csv = getSnapshot().getAdapter( "hr" );
-                addDefaultCsvColumns( csv, namespaceId );
-            } catch ( UnknownTableException | GenericCatalogException | UnknownColumnException e ) {
-                throw new RuntimeException( e );
-            }
-
+            // CatalogAdapter csv = getSnapshot().getAdapter( "hr" );
+            // addDefaultCsvColumns( csv, namespaceId );
 
         }
 
@@ -204,19 +197,19 @@ public class PolyCatalog extends Catalog implements Serializable {
     /**
      * Initiates default columns for csv files
      */
-    private void addDefaultCsvColumns( CatalogAdapter csv, long namespaceId ) throws UnknownTableException, UnknownColumnException, GenericCatalogException {
-        LogicalTable depts = getSnapshot().getRelSnapshot( namespaceId ).getTable( "depts" );
+    private void addDefaultCsvColumns( CatalogAdapter csv, long namespaceId ) {
+        LogicalTable depts = getSnapshot().rel().getTable( namespaceId, "depts" );
         addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
 
-        LogicalTable emps = getSnapshot().getRelSnapshot( namespaceId ).getTable( "emps" );
+        LogicalTable emps = getSnapshot().rel().getTable( namespaceId, "emps" );
         addDefaultCsvColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
         addDefaultCsvColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
         addDefaultCsvColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
         addDefaultCsvColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
 
-        LogicalTable emp = getSnapshot().getRelSnapshot( namespaceId ).getTable( "emp" );
+        LogicalTable emp = getSnapshot().rel().getTable( namespaceId, "emp" );
         addDefaultCsvColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
         addDefaultCsvColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
@@ -228,7 +221,7 @@ public class PolyCatalog extends Catalog implements Serializable {
         addDefaultCsvColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
         addDefaultCsvColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
 
-        LogicalTable work = getSnapshot().getRelSnapshot( namespaceId ).getTable( "work" );
+        LogicalTable work = getSnapshot().rel().getTable( namespaceId, "work" );
         addDefaultCsvColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
         addDefaultCsvColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
         addDefaultCsvColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
@@ -242,25 +235,25 @@ public class PolyCatalog extends Catalog implements Serializable {
         updateSnapshot();
 
         // set all needed primary keys
-        getLogicalRel( namespaceId ).addPrimaryKey( depts.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( depts.id, "deptno" ).id ) );
-        getLogicalRel( namespaceId ).addPrimaryKey( emps.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emps.id, "empid" ).id ) );
-        getLogicalRel( namespaceId ).addPrimaryKey( emp.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emp.id, "employeeno" ).id ) );
-        getLogicalRel( namespaceId ).addPrimaryKey( work.id, Collections.singletonList( getSnapshot().getRelSnapshot( namespaceId ).getColumn( work.id, "employeeno" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( depts.id, Collections.singletonList( getSnapshot().rel().getColumn( depts.id, "deptno" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( emps.id, Collections.singletonList( getSnapshot().rel().getColumn( emps.id, "empid" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( emp.id, Collections.singletonList( getSnapshot().rel().getColumn( emp.id, "employeeno" ).id ) );
+        getLogicalRel( namespaceId ).addPrimaryKey( work.id, Collections.singletonList( getSnapshot().rel().getColumn( work.id, "employeeno" ).id ) );
 
         // set foreign keys
         getLogicalRel( namespaceId ).addForeignKey(
                 emps.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emps.id, "deptno" ).id ),
+                ImmutableList.of( getSnapshot().rel().getColumn( emps.id, "deptno" ).id ),
                 depts.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( depts.id, "deptno" ).id ),
+                ImmutableList.of( getSnapshot().rel().getColumn( depts.id, "deptno" ).id ),
                 "fk_emps_depts",
                 ForeignKeyOption.NONE,
                 ForeignKeyOption.NONE );
         getLogicalRel( namespaceId ).addForeignKey(
                 work.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( work.id, "employeeno" ).id ),
+                ImmutableList.of( getSnapshot().rel().getColumn( work.id, "employeeno" ).id ),
                 emp.id,
-                ImmutableList.of( getSnapshot().getRelSnapshot( namespaceId ).getColumn( emp.id, "employeeno" ).id ),
+                ImmutableList.of( getSnapshot().rel().getColumn( emp.id, "employeeno" ).id ),
                 "fk_work_emp",
                 ForeignKeyOption.NONE,
                 ForeignKeyOption.NONE );
@@ -268,7 +261,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     private void addDefaultCsvColumn( CatalogAdapter csv, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
-        if ( !getSnapshot().getRelSnapshot( table.namespaceId ).checkIfExistsColumn( table.id, name ) ) {
+        if ( !getSnapshot().rel().checkIfExistsColumn( table.id, name ) ) {
             long colId = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             String filename = table.name + ".csv";
             if ( table.name.equals( "emp" ) || table.name.equals( "work" ) ) {
@@ -276,14 +269,15 @@ public class PolyCatalog extends Catalog implements Serializable {
             }
 
             updateSnapshot();
-            long allocId = 0;
-            if ( !getSnapshot().getAllocSnapshot().adapterHasPlacement( csv.id, table.id ) ) {
-                allocId = getAllocRel( table.namespaceId ).addDataPlacement( csv.id, table.id );
+            AllocationEntity alloc;
+            if ( !getSnapshot().alloc().adapterHasPlacement( csv.id, table.id ) ) {
+                alloc = getAllocRel( table.namespaceId ).createAlloctionTable( csv.id, table.id );
             } else {
-                allocId = getSnapshot().getAllocSnapshot().getAllocation( csv.id, table.id ).id;
+                alloc = getSnapshot().alloc().getAllocation( csv.id, table.id );
             }
 
-            getAllocRel( table.namespaceId ).addColumnPlacement( allocId, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
+            getAllocRel( table.namespaceId ).addColumnPlacement( alloc.id, colId, PlacementType.AUTOMATIC, position );
+            //getAllocRel( table.namespaceId ).addColumnPlacement( alloc.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
             //getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( allocId, colId, position );
 
             updateSnapshot();
@@ -295,16 +289,18 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     private void addDefaultColumn( CatalogAdapter adapter, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
-        if ( !getSnapshot().getRelSnapshot( table.namespaceId ).checkIfExistsColumn( table.id, name ) ) {
+        if ( !getSnapshot().rel().checkIfExistsColumn( table.id, name ) ) {
             long colId = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
-            AllocationEntity entity = getSnapshot().getAllocSnapshot().getAllocation( adapter.id, table.id );
-            getAllocRel( table.namespaceId ).addColumnPlacement( entity.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
+            AllocationEntity entity = getSnapshot().alloc().getAllocation( adapter.id, table.id );
+            getAllocRel( table.namespaceId ).addColumnPlacement( entity.id, colId, PlacementType.AUTOMATIC, position );
+            //getAllocRel( table.namespaceId ).addColumnPlacement( entity.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
             getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( adapter.id, colId, position );
         }
     }
 
 
-    private void updateSnapshot() {
+    @Override
+    public void updateSnapshot() {
         // reset physical catalogs
         Set<Long> keys = this.physicalCatalogs.keySet();
         keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
@@ -313,6 +309,7 @@ public class PolyCatalog extends Catalog implements Serializable {
         this.allocationCatalogs.forEach( ( k, v ) -> {
             if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
                 ((AllocationRelationalCatalog) v).getTables().forEach( ( k2, v2 ) -> {
+                    AdapterManager.getInstance().getAdapter( v2.adapterId ).createNewSchema( getSnapshot(), v2.name, v2.namespaceId );
                     LogicalTable table = getSnapshot().getLogicalEntity( v2.logicalId ).unwrap( LogicalTable.class );
                     List<PhysicalEntity> physicals = AdapterManager.getInstance().getAdapter( v2.adapterId ).createAdapterTable( idBuilder, table, v2 );
                     getPhysical( table.namespaceId ).addEntities( physicals );
@@ -511,6 +508,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
         interfaces.put( id, new CatalogQueryInterface( id, uniqueName, clazz, settings ) );
 
+        updateSnapshot();
         return id;
     }
 

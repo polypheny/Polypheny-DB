@@ -46,8 +46,7 @@ public class TableIndex {
     public static TableIndex createIndex( String schemaName, String tableName ) throws UnknownIndexException {
         log.debug( "Creating TableIndex." );
         Catalog catalog = Catalog.getInstance();
-        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
-        LogicalTable table = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( tableName );
+        LogicalTable table = catalog.getSnapshot().rel().getTable( schemaName, tableName );
         return new TableIndex( table, schemaName, tableName );
     }
 

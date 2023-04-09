@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.prepare.Context;
@@ -65,7 +66,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
     }
 
 
-    public abstract PhysicalTable createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable allocationTable );
+    public abstract List<? extends PhysicalEntity> createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable allocationTable );
 
     public abstract void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
 

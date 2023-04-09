@@ -27,6 +27,8 @@ public interface PhysicalCatalog {
 
     ConcurrentHashMap<Long, PhysicalEntity> getPhysicals();
 
-    void addEntities( List<PhysicalEntity> physicals );
+    void addEntities( List<? extends PhysicalEntity> physicals );
+
+    void deleteEntity( long id );
 
 }

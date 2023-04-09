@@ -46,7 +46,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
         long namespaceId;
         namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
-        List<LogicalCollection> collections = context.getSnapshot().getDocSnapshot( namespaceId ).getCollections( new Pattern( getCollection() ) );
+        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespaceId, new Pattern( getCollection() ) );
 
         if ( collections.size() != 1 ) {
             throw new RuntimeException( "Error while adding new collection placement, collection not found." );
@@ -57,7 +57,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
                 .map( store -> (DataStore) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
 
-        if ( statement.getTransaction().getSnapshot().getAllocSnapshot().getCollectionPlacements( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getCollectionPlacements( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
             throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 

@@ -98,20 +98,20 @@ public class UiRoutingPageUtil {
         if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
             proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
 
-                CatalogPartition catalogPartition = snapshot.getAllocSnapshot().getPartition( k );
+                CatalogPartition catalogPartition = snapshot.alloc().getPartition( k );
                 LogicalTable catalogTable = Catalog.getInstance().getSnapshot().getLogicalEntity( catalogPartition.tableId ).unwrap( LogicalTable.class );
-                CatalogPartitionGroup catalogPartitionGroup = snapshot.getAllocSnapshot().getPartitionGroup( catalogPartition.partitionGroupId );
+                CatalogPartitionGroup catalogPartitionGroup = snapshot.alloc().getPartitionGroup( catalogPartition.partitionGroupId );
 
                 v.forEach( p -> {
-                    CatalogColumnPlacement catalogColumnPlacement = snapshot.getAllocSnapshot().getColumnPlacement( p.left, p.right );
-                    CatalogPartitionPlacement catalogPartitionPlacement = snapshot.getAllocSnapshot().getPartitionPlacement( p.left, k );
-                    LogicalColumn logicalColumn = snapshot.getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogColumnPlacement.columnId );
+                    CatalogColumnPlacement catalogColumnPlacement = snapshot.alloc().getColumnPlacement( p.left, p.right );
+                    CatalogPartitionPlacement catalogPartitionPlacement = snapshot.alloc().getPartitionPlacement( p.left, k );
+                    LogicalColumn logicalColumn = snapshot.rel().getColumn( catalogColumnPlacement.columnId );
                     table.addRow(
                             snapshot.getNamespace( catalogTable.namespaceId ) + "." + catalogTable.name,
                             logicalColumn.name,
                             catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
                             catalogPartitionPlacement.adapterUniqueName,
-                            catalogColumnPlacement.physicalSchemaName + "." + catalogPartitionPlacement.physicalTableName + "." + catalogColumnPlacement.physicalColumnName );
+                            /*catalogColumnPlacement.physicalSchemaName + "." +*/ catalogPartitionPlacement.physicalTableName /*+ "." + catalogColumnPlacement.physicalColumnName */ );
                 } );
             } );
         }

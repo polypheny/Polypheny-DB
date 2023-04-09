@@ -65,7 +65,6 @@ public abstract class SqlDdl extends SqlCall {
 
 
     protected LogicalTable getCatalogTable( Context context, SqlIdentifier tableName ) {
-        LogicalTable catalogTable;
         long schemaId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
@@ -78,15 +77,12 @@ public abstract class SqlDdl extends SqlCall {
             schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
-        return catalogTable;
+        return snapshot.rel().getTable( schemaId, tableOldName );
     }
 
 
     protected LogicalColumn getCatalogColumn( long namespaceId, long tableId, SqlIdentifier columnName ) {
-        LogicalColumn logicalColumn;
-        logicalColumn = snapshot.getRelSnapshot( namespaceId ).getColumn( tableId, columnName.getSimple() );
-        return logicalColumn;
+        return snapshot.rel().getColumn( tableId, columnName.getSimple() );
     }
 
 

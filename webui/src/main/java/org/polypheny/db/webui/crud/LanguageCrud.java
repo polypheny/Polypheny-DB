@@ -133,7 +133,7 @@ public class LanguageCrud {
 
     public static PolyGraph getGraph( String databaseName, TransactionManager manager ) {
 
-        Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultDatabaseId, "getGraph" );
+        Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
         Statement statement = transaction.createStatement();
 
@@ -189,8 +189,7 @@ public class LanguageCrud {
         LogicalTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
-            LogicalNamespace namespace = catalog.getSnapshot().getNamespace( t[0] );
-            catalogTable = catalog.getSnapshot().getRelSnapshot( namespace.id ).getTable( t[1] );
+            catalogTable = catalog.getSnapshot().rel().getTable( t[0], t[1] );
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();
@@ -219,7 +218,7 @@ public class LanguageCrud {
 
             // Get column default values
             if ( catalogTable != null ) {
-                LogicalColumn logicalColumn = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getColumn( catalogTable.id, columnName );
+                LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
                 if ( logicalColumn != null ) {
                     if ( logicalColumn.defaultValue != null ) {
                         dbCol.defaultValue = logicalColumn.defaultValue.value;
@@ -317,7 +316,7 @@ public class LanguageCrud {
         if ( namespaces.size() != 1 ) {
             throw new RuntimeException();
         }
-        List<LogicalGraph> graphs = catalog.getSnapshot().getGraphSnapshot( namespaces.get( 0 ).id ).getGraphs( new Pattern( graphName ) );
+        List<LogicalGraph> graphs = catalog.getSnapshot().graph().getGraphs( new Pattern( graphName ) );
         if ( graphs.size() != 1 ) {
             log.error( "The requested graph does not exist." );
             return new Placement( new RuntimeException( "The requested graph does not exist." ) );
@@ -329,13 +328,13 @@ public class LanguageCrud {
 
             return p;
         } else {
-            List<CatalogDataPlacement> placements = catalog.getSnapshot().getAllocSnapshot().getDataPlacements( graph.id );
+            List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( graph.id );
             for ( CatalogDataPlacement placement : placements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 p.addAdapter( new Placement.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
-                        catalog.getSnapshot().getAllocSnapshot().getGraphPlacements( placement.adapterId ),
+                        catalog.getSnapshot().alloc().getGraphPlacements( placement.adapterId ),
                         adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) );
             }
             return p;
@@ -363,7 +362,7 @@ public class LanguageCrud {
         Catalog catalog = Catalog.getInstance();
         long namespaceId;
         namespaceId = catalog.getSnapshot().getNamespace( namespace ).id;
-        List<LogicalCollection> collections = catalog.getSnapshot().getDocSnapshot( namespaceId ).getCollections( new Pattern( collectionName ) );
+        List<LogicalCollection> collections = catalog.getSnapshot().doc().getCollections( namespaceId, new Pattern( collectionName ) );
 
         if ( collections.size() != 1 ) {
             context.json( new Placement( new UnknownCollectionException( 0 ) ) );
@@ -374,14 +373,14 @@ public class LanguageCrud {
 
         Placement p = new Placement( false, List.of(), EntityType.ENTITY );
 
-        List<CatalogCollectionPlacement> placements = catalog.getSnapshot().getAllocSnapshot().getCollectionPlacements( collection.id );
+        List<CatalogCollectionPlacement> placements = catalog.getSnapshot().alloc().getCollectionPlacements( collection.id );
 
         for ( CatalogCollectionPlacement placement : placements ) {
             Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
             p.addAdapter( new DocumentStore(
                     adapter.getUniqueName(),
                     adapter.getUniqueName(),
-                    catalog.getSnapshot().getAllocSnapshot().getCollectionPlacementsByAdapter( placement.adapterId ),
+                    catalog.getSnapshot().alloc().getCollectionPlacementsByAdapter( placement.adapterId ),
                     adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
         }
 

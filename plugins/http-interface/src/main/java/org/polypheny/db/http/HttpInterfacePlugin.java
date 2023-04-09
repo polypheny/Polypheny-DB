@@ -111,7 +111,7 @@ public class HttpInterfacePlugin extends Plugin {
         private static Javalin server;
 
 
-        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );
@@ -181,7 +181,7 @@ public class HttpInterfacePlugin extends Plugin {
                     query,
                     transactionManager,
                     Catalog.defaultUserId,
-                    Catalog.defaultDatabaseId,
+                    Catalog.defaultNamespaceId,
                     null );
             ctx.json( results.toArray( new Result[0] ) );
 

@@ -22,8 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -82,8 +84,7 @@ class EmptyScope implements SqlValidatorScope {
 
     @Override
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
-        LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
-        CatalogEntity table = validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 1 ) );
+        CatalogEntity table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
         return table != null
                 ? new EntityNamespace( validator, table )
                 : null;
@@ -95,10 +96,17 @@ class EmptyScope implements SqlValidatorScope {
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
         // Look in the default schema, then default catalog, then root schema.
-        LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) );
-        LogicalTable table = validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 1 ) );
+        LogicalTable table;
+        if ( names.size() == 2 ) {
+            table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
+        } else if ( names.size() == 1 ) {
+            table = validator.snapshot.rel().getTable( Catalog.defaultNamespaceName, names.get( 0 ) );
+        } else {
+            throw new NotImplementedException();
+        }
+
         if ( table != null ) {
-            resolves.add( new Resolve( validator.snapshot.getRelSnapshot( namespace.id ).getTable( names.get( 1 ) ) ) );
+            resolves.add( new Resolve( table ) );
         }
     }
 

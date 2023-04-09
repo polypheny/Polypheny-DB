@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.Meta.Pat;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -34,6 +35,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -42,6 +44,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Pair;
 
 
 @Slf4j
@@ -49,7 +52,6 @@ public class StatisticQueryProcessor {
 
     @Getter
     private final TransactionManager transactionManager;
-    private final long databaseId;
     private final long userId;
 
 
@@ -57,15 +59,14 @@ public class StatisticQueryProcessor {
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results and not impact performance
      */
-    public StatisticQueryProcessor( final TransactionManager transactionManager, long userId, long databaseId ) {
+    public StatisticQueryProcessor( final TransactionManager transactionManager, long userId ) {
         this.transactionManager = transactionManager;
-        this.databaseId = databaseId;
         this.userId = userId;
     }
 
 
     public StatisticQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
-        this( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
+        this( transactionManager, Catalog.defaultUserId );
     }
 
 
@@ -93,10 +94,10 @@ public class StatisticQueryProcessor {
         List<LogicalNamespace> schemas = snapshot.getNamespaces( null );
         for ( LogicalNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<LogicalTable> childTables = snapshot.getRelSnapshot( schema.id ).getTables( , null );
+            List<LogicalTable> childTables = snapshot.rel().getTables( new Pattern( schema.name ), null );
             for ( LogicalTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
-                List<LogicalColumn> columns = snapshot.getRelSnapshot( schema.id ).getColumns( childTable.id );
+                List<LogicalColumn> columns = snapshot.rel().getColumns( childTable.id );
                 for ( LogicalColumn logicalColumn : columns ) {
                     table.add( schema.name + "." + childTable.name + "." + logicalColumn.name );
                 }
@@ -121,7 +122,7 @@ public class StatisticQueryProcessor {
         return snapshot.getNamespaces( null )
                 .stream()
                 .filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( , null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.getRelSnapshot( n.id ).getColumns( t.id ).stream() ) )
+                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.rel().getColumns( t.id ).stream() ) )
                 .map( QueryResult::fromCatalogColumn )
                 .collect( Collectors.toList() );
     }
@@ -135,7 +136,7 @@ public class StatisticQueryProcessor {
     public List<LogicalTable> getAllTable() {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         return snapshot.getNamespaces( null ).stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
-                .flatMap( n -> snapshot.getRelSnapshot( n.id ).getTables( , null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
+                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
     }
 
 
@@ -146,7 +147,7 @@ public class StatisticQueryProcessor {
      */
     public List<QueryResult> getAllColumns( Long tableId ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        return snapshot.getNamespaces( null ).stream().flatMap( n -> snapshot.getRelSnapshot( n.id ).getColumns( tableId ).stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
+        return snapshot.getNamespaces( null ).stream().flatMap( n -> snapshot.rel().getColumns( tableId ).stream() ).map( QueryResult::fromCatalogColumn ).collect( Collectors.toList() );
     }
 
 

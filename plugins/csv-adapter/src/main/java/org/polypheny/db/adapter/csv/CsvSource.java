@@ -162,7 +162,7 @@ public class CsvSource extends DataSource {
             List<PhysicalEntity> placements = Catalog
                     .getInstance()
                     .getSnapshot()
-                    .getPhysicalSnapshot()
+                    .physical()
                     .getPhysicalsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
             for ( PhysicalEntity ccp : placements ) {

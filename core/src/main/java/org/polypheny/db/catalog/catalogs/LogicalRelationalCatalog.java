@@ -47,7 +47,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, EntityType entityType, boolean modifiable );
+    public abstract LogicalTable addTable( String name, EntityType entityType, boolean modifiable );
 
 
     /**

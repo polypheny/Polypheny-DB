@@ -202,7 +202,7 @@ public class ConstraintEnforceAttacher {
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
         table = root.getEntity().unwrap( LogicalTable.class );
-        LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().getRelSnapshot( table.namespaceId );
+        LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
         primaryKey = snapshot.getPrimaryKey( table.primaryKey );
         constraints = new ArrayList<>( snapshot.getConstraints( table.id ) );
         foreignKeys = snapshot.getForeignKeys( table.id );
@@ -330,7 +330,7 @@ public class ConstraintEnforceAttacher {
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
 
-                final LogicalTable entity = statement.getDataContext().getSnapshot().getRelSnapshot( foreignKey.getNamespaceId() ).getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable entity = statement.getDataContext().getSnapshot().rel().getTable( foreignKey.referencedKeyTableId );
                 final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), entity );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
@@ -650,7 +650,7 @@ public class ConstraintEnforceAttacher {
                             .getSnapshot()
                             .getNamespaces( null )
                             .stream()
-                            .flatMap( n -> Catalog.getInstance().getSnapshot().getRelSnapshot( n.id ).getTables( , null ).stream() )
+                            .flatMap( n -> Catalog.getInstance().getSnapshot().rel().getTables( n.id, null ).stream() )
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getNamespaceType() == NamespaceType.RELATIONAL )
                             .collect( Collectors.toList() );
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );

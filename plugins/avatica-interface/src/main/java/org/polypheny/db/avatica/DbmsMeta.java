@@ -308,7 +308,7 @@ public class DbmsMeta implements ProtobufMeta {
         return namespaces
                 .stream()
                 .flatMap(
-                        n -> catalog.getSnapshot().getRelSnapshot( n.id ).getTables( , tablePattern ).stream() ).collect( Collectors.toList() );
+                        n -> catalog.getSnapshot().rel().getTables( Pattern.of( n.name ), tablePattern ).stream() ).collect( Collectors.toList() );
     }
 
 
@@ -319,7 +319,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
             }
-            final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getSnapshot().getRelSnapshot( t.namespaceId ).getColumns(
+            final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getSnapshot().rel().getColumns(
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
             ).stream() ).collect( Collectors.toList() );
@@ -532,7 +532,7 @@ public class DbmsMeta implements ProtobufMeta {
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getPrimaryKey( catalogTable.primaryKey );
+                    final CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -568,7 +568,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> importedKeys = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getForeignKeys( catalogTable.id );
+                List<CatalogForeignKey> importedKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -611,7 +611,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> exportedKeys = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getExportedKeys( catalogTable.id );
+                List<CatalogForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -727,7 +727,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogIndex> catalogIndexInfos = catalog.getSnapshot().getRelSnapshot( catalogTable.namespaceId ).getIndexes( catalogTable.id, unique );
+                List<CatalogIndex> catalogIndexInfos = catalog.getSnapshot().rel().getIndexes( catalogTable.id, unique );
                 catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );

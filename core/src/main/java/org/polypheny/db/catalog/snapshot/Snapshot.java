@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -117,7 +116,7 @@ public interface Snapshot extends OperatorTable {
      *
      * @return The adapter
      */
-    CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException;
+    CatalogAdapter getAdapter( String uniqueName );
 
     /**
      * Get an adapter by its id

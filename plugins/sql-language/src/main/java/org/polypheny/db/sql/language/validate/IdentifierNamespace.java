@@ -151,8 +151,7 @@ public class IdentifierNamespace extends AbstractNamespace {
             }
         }
         List<String> ns = id.names;
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( ns.get( 0 ) );
-        return new EntityNamespace( validator, Catalog.getInstance().getSnapshot().getRelSnapshot( namespace.id ).getTable( ns.get( 1 ) ) );
+        return new EntityNamespace( validator, Catalog.getInstance().getSnapshot().rel().getTable( ns.get( 0 ), ns.get( 1 ) ) );
     }
 
 

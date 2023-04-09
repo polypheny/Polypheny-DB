@@ -37,7 +37,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
 
     @Override
-    public List<LogicalCollection> getCollections( Pattern namePattern ) {
+    public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
         return null;
     }
 
@@ -68,6 +68,12 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     @Override
     public LogicalCollection getCollection( String collection ) {
+        return null;
+    }
+
+
+    @Override
+    public LogicalCollection getCollection( long id, String collection ) {
         return null;
     }
 

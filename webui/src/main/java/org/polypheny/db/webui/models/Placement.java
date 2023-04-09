@@ -188,8 +188,6 @@ public class Placement {
         private final String columnName;
         private final int storeId;
         private final PlacementType placementType;
-        private final String physicalSchemaName;
-        private final String physicalColumnName;
 
 
         public ColumnPlacement( CatalogColumnPlacement catalogColumnPlacement ) {
@@ -199,8 +197,6 @@ public class Placement {
             this.columnName = catalogColumnPlacement.getLogicalColumnName();
             this.storeId = (int) catalogColumnPlacement.adapterId;
             this.placementType = catalogColumnPlacement.placementType;
-            this.physicalSchemaName = catalogColumnPlacement.physicalSchemaName;
-            this.physicalColumnName = catalogColumnPlacement.physicalColumnName;
         }
 
     }

@@ -358,19 +358,19 @@ public class SqlProcessorImpl extends Processor {
 
     private LogicalTable getCatalogTable( Transaction transaction, SqlIdentifier tableName ) {
         LogicalTable catalogTable;
-        long schemaId;
+        long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            schemaId = snapshot.getNamespace( tableName.names.get( 1 ) ).id;
+            namespaceId = snapshot.getNamespace( tableName.names.get( 1 ) ).id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = snapshot.getNamespace( tableName.names.get( 0 ) ).id;
+            namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            schemaId = snapshot.getNamespace( transaction.getDefaultSchema().name ).id;
+            namespaceId = snapshot.getNamespace( transaction.getDefaultSchema().name ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        catalogTable = snapshot.getRelSnapshot( schemaId ).getTable( tableOldName );
+        catalogTable = snapshot.rel().getTable( namespaceId, tableOldName );
         return catalogTable;
     }
 

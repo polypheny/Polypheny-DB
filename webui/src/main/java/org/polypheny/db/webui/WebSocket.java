@@ -152,10 +152,10 @@ public class WebSocket implements Consumer<WsConfig> {
                                 result = crud.getTable( uiRequest );
                                 break;
                             case DOCUMENT:
-                                result = LanguageCrud.anyQuery( QueryLanguage.from( "mongo" ), ctx.session, new QueryRequest( String.format( "db.%s.find({})", uiRequest.getTableName() ), false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
+                                result = LanguageCrud.anyQuery( QueryLanguage.from( "mongo" ), ctx.session, new QueryRequest( String.format( "db.%s.find({})", uiRequest.getTableName() ), false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultNamespaceId, this.crud ).get( 0 );
                                 break;
                             case GRAPH:
-                                result = LanguageCrud.anyQuery( QueryLanguage.from( "cypher" ), ctx.session, new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
+                                result = LanguageCrud.anyQuery( QueryLanguage.from( "cypher" ), ctx.session, new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultNamespaceId, this.crud ).get( 0 );
                                 break;
                         }
                         if ( result == null ) {

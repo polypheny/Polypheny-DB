@@ -29,6 +29,7 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.PolyCatalog;
 import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
