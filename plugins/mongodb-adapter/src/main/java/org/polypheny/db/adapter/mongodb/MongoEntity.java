@@ -145,7 +145,6 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         this.protoRowType = proto;
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
-        this.collection.createIndex( Indexes.ascending("_id") );
         this.storeId = adapter;
         this.tableId = catalogEntity.id;
     }
