@@ -386,7 +386,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         Integer count = getNumberColumnCount( this.prepareNode( column, NodeType.ROW_COUNT_COLUMN ) );
 
         TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( column );
-        if ( min != null ) {
+        if ( min != null && max.getData()[0] != null ) {
             if ( max.getData()[0] instanceof Integer ) {
                 statisticColumn.setMin( (T) new Date( (Integer) min.getData()[0] ) );
             } else if ( max.getData()[0] instanceof Long ) {
@@ -396,7 +396,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             }
         }
 
-        if ( max != null ) {
+        if ( max != null && max.getData()[0] != null ) {
             if ( max.getData()[0] instanceof Integer ) {
                 statisticColumn.setMax( (T) new Date( (Integer) max.getData()[0] ) );
             } else if ( max.getData()[0] instanceof Long ) {

@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
 
 
@@ -135,6 +136,8 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
             return ((TimestampString) val).getMillisSinceEpoch();
         } else if ( val instanceof Date ) {
             return ((Date) val).getTime();
+        } else if ( val instanceof DateString ) {
+            return ((DateString) val).getMillisSinceEpoch();
         }
 
         throw new RuntimeException();
