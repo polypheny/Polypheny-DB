@@ -473,8 +473,10 @@ public class Neo4jPlugin extends Plugin {
                 namespaceName = splits[1];
             } else if ( splits.length > 3 ) {
                 namespaceName = String.join( "_", Arrays.asList( splits ).subList( 1, splits.length - 1 ) );
-                if ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( namespaceName ) ).isEmpty() ) {
-                    namespaceName = String.join( "_", Arrays.asList( splits ).subList( 2, splits.length - 1 ) );
+                int i = 1;
+                while ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( namespaceName ) ).isEmpty() || i > splits.length + 1 ) {
+                    namespaceName = String.join( "_", Arrays.asList( splits ).subList( 1, splits.length - i ) );
+                    i++;
                 }
             } else {
                 throw new RuntimeException( "Error while generating new namespace" );
