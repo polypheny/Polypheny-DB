@@ -54,6 +54,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -472,6 +473,9 @@ public class Neo4jPlugin extends Plugin {
                 namespaceName = splits[1];
             } else if ( splits.length > 3 ) {
                 namespaceName = String.join( "_", Arrays.asList( splits ).subList( 1, splits.length - 1 ) );
+                if ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( namespaceName ) ).isEmpty() ) {
+                    namespaceName = String.join( "_", Arrays.asList( splits ).subList( 2, splits.length - 1 ) );
+                }
             } else {
                 throw new RuntimeException( "Error while generating new namespace" );
             }
