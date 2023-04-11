@@ -200,6 +200,18 @@ shadowJar {
     }
 }
 
+task deletePlugins(type: Delete) {
+    delete 'src/main/resources/plugins'
+}
+task copyPlugins(type: Copy, dependsOn: deletePlugins) {
+    from('../build/plugins')
+    into('src/main/resources/plugins')
+    include('*.zip')
+}
+shadowJar.dependsOn(copyPlugins)
+copyPlugins.dependsOn(":plugins:assemblePlugins")
+
+
 // due to gradle 7.6+
 configurations {
     test {
