@@ -69,6 +69,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -3343,6 +3344,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return null;
         }
         SqlQualified qualified = scope.fullyQualify( identifier );
+
         List<String> names = qualified.identifier.names;
 
         if ( names.size() < 2 ) {
@@ -3391,7 +3393,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     private @Nullable CatalogEntity findTable( String tableName, boolean caseSensitive ) {
-        return snapshot.rel().getTable( null, tableName );
+        return snapshot.rel().getTable( Catalog.defaultNamespaceId, tableName );
     }
 
 

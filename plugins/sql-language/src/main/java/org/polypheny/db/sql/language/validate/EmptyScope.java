@@ -19,13 +19,12 @@ package org.polypheny.db.sql.language.validate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -92,20 +91,25 @@ class EmptyScope implements SqlValidatorScope {
 
     @Override
     public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
+        final List<Resolve> imperfectResolves = new ArrayList<>();
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
         // Look in the default schema, then default catalog, then root schema.
-        LogicalTable table;
-        if ( names.size() == 2 ) {
-            table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
-        } else if ( names.size() == 1 ) {
-            table = validator.snapshot.rel().getTable( Catalog.defaultNamespaceName, names.get( 0 ) );
-        } else {
-            throw new NotImplementedException();
-        }
-
-        if ( table != null ) {
-            resolves.add( new Resolve( validator, table ) );
+        /*for ( List<String> schemaPath : validator.catalogReader.getSchemaPaths() ) {
+            //resolve_( validator.catalogReader.getRootSchema(), names, schemaPath, nameMatcher, path, resolved );
+            for ( Resolve resolve : resolves ) {
+                if ( resolve.remainingNames.isEmpty() ) {
+                    // There is a full match. Return it as the only match.
+                    ((ResolvedImpl) resolved).clear();
+                    resolves.add( resolve );
+                    return;
+                }
+            }
+            imperfectResolves.addAll( resolves );
+        }*/
+        // If there were no matches in the last round, restore those found in previous rounds
+        if ( resolves.isEmpty() ) {
+            resolves.addAll( imperfectResolves );
         }
     }
 
@@ -116,7 +120,7 @@ class EmptyScope implements SqlValidatorScope {
 
         LogicalTable table = rootSchema.getTable( concat );
         if ( table != null ) {
-            resolved.found( validator, table );
+            //resolved.found( validator, table );
             return;
         }
     }

@@ -148,6 +148,7 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
     }
 
 
+    @Override
     public String getNamespaceName() {
         return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).name;
     }

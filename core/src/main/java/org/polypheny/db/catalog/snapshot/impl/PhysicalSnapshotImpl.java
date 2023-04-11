@@ -31,12 +31,15 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.Pair;
 
 @Value
 public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
     ImmutableMap<Long, PhysicalEntity> entities;
+
+    ImmutableMap<Pair<Long, Long>, Namespace> namespaces;
 
     ImmutableMap<Pair<Long, Long>, PhysicalEntity> adapterLogicalEntity;
     ImmutableMap<Long, List<PhysicalEntity>> adapterPhysicals;
@@ -48,6 +51,7 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
     public PhysicalSnapshotImpl( Map<Long, PhysicalCatalog> physicalCatalogs ) {
         this.entities = ImmutableMap.copyOf( physicalCatalogs.values().stream().flatMap( c -> c.getPhysicals().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.namespaces = ImmutableMap.copyOf( physicalCatalogs.values().stream().flatMap( n -> n.getNamespaces().values().stream() ).collect( Collectors.toMap( n -> Pair.of( n.getId(), n.getAdapterId() ), n -> n ) ) );
         this.adapterLogicalEntity = buildAdapterLogicalEntity();
         this.adapterPhysicals = buildAdapterPhysicals();
         this.logicalToPhysicals = buildLogicalToPhysicals();
@@ -160,6 +164,12 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
     @Override
     public List<PhysicalEntity> fromAlloc( long id ) {
         return allocToPhysicals.get( id );
+    }
+
+
+    @Override
+    public Namespace getNamespace( long id, long adapterId ) {
+        return namespaces.get( Pair.of( id, adapterId ) );
     }
 
 

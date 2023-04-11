@@ -194,7 +194,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         tables.put( tableId, tables.get( tableId ).toBuilder().primaryKey( keyId ).build() );
 
         keys.put( keyId, new CatalogPrimaryKey( keys.get( keyId ) ) );
-
     }
 
 

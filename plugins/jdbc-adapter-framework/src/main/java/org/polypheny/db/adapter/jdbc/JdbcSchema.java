@@ -134,6 +134,12 @@ public class JdbcSchema implements Namespace, Schema {
     }
 
 
+    @Override
+    public Long getAdapterId() {
+        return adapter.getAdapterId();
+    }
+
+
     public JdbcEntity createJdbcTable(
             long id,
             LogicalTable logicalTable,
@@ -154,7 +160,7 @@ public class JdbcSchema implements Namespace, Schema {
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
             Adapter adapter ) {
-        final Expression expression = Schemas.subSchemaExpression( snapshot, name, JdbcSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( snapshot, id, adapter.getAdapterId(), JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
         return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
     }
@@ -199,8 +205,8 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     @Override
-    public Expression getExpression( Snapshot snapshot, String name ) {
-        return Schemas.subSchemaExpression( snapshot, name, JdbcSchema.class );
+    public Expression getExpression( Snapshot snapshot, long id ) {
+        return Schemas.subSchemaExpression( snapshot, id, getAdapterId(), JdbcSchema.class );
     }
 
 

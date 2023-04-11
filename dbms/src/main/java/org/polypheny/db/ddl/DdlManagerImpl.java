@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -2207,7 +2208,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
             for ( ConstraintInformation constraint : constraints ) {
-                addConstraint( namespaceId, constraint.name, constraint.type, constraint.columnNames, table.id );
+                addConstraint( namespaceId, constraint.name, constraint.type, null, table.id );
             }
             Snapshot snapshot = statement.getTransaction().getSnapshot();
             LogicalTable catalogTable = snapshot.rel().getTable( table.id );
@@ -2251,17 +2252,21 @@ public class DdlManagerImpl extends DdlManager {
 
         // addLColumns
 
-        List<Long> ids = new ArrayList<>();
+        Map<String, Long> ids = new LinkedHashMap<>();
         for ( FieldInformation information : fields ) {
-            ids.add( addColumn( namespaceId, information.name, information.typeInformation, information.collation, information.defaultValue, logical.id, information.position, stores, placementType ) );
+            ids.put( information.name, addColumn( namespaceId, information.name, information.typeInformation, information.collation, information.defaultValue, logical.id, information.position, stores, placementType ) );
         }
+        for ( ConstraintInformation constraint : constraints ) {
+            addConstraint( namespaceId, constraint.name, constraint.type, constraint.columnNames.stream().map( ids::get ).collect( Collectors.toList() ), logical.id );
+        }
+
         catalog.updateSnapshot();
 
         // addATable
         for ( DataStore store : stores ) {
             AllocationTable alloc = catalog.getAllocRel( namespaceId ).createAlloctionTable( store.getAdapterId(), logical.id );
             int i = 0;
-            for ( Long id : ids ) {
+            for ( Long id : ids.values() ) {
                 alloc = catalog.getAllocRel( namespaceId ).addColumnPlacement( alloc.id, id, PlacementType.AUTOMATIC, i );
                 i++;
             }
@@ -2923,12 +2928,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<String> columnNames, long tableId ) throws UnknownColumnException, GenericCatalogException {
-        List<Long> columnIds = new LinkedList<>();
-        for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( tableId, columnName );
-            columnIds.add( logicalColumn.id );
-        }
+    public void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId ) throws UnknownColumnException, GenericCatalogException {
         if ( constraintType == ConstraintType.PRIMARY ) {
             catalog.getLogicalRel( namespaceId ).addPrimaryKey( tableId, columnIds );
         } else if ( constraintType == ConstraintType.UNIQUE ) {

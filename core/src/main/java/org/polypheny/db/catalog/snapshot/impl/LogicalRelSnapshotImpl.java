@@ -354,7 +354,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         if ( !namespaces.get( namespaceId ).caseSensitive ) {
             adjustedName = name.toLowerCase();
         }
-        return tableNames.get( adjustedName );
+        return tableNames.get( Pair.of( namespaceId, adjustedName ) );
     }
 
 

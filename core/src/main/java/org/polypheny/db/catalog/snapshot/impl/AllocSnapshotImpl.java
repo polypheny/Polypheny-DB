@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -42,12 +43,14 @@ import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
 
 @Value
+@Slf4j
 public class AllocSnapshotImpl implements AllocSnapshot {
 
     ImmutableMap<Long, AllocationTable> tables;
@@ -517,7 +520,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     @Override
     public PartitionProperty getPartitionProperty( long id ) {
-        return null;
+        log.warn( "replace me" );
+        return new PartitionProperty( PartitionType.NONE, false, List.of(), List.of(), -1, -1, -1, false );
     }
 
 

@@ -64,9 +64,13 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
  *
  * A schema may be nested within another schema; see {@link Namespace#getSubNamespace(String)}.
  */
-public interface Namespace {
+public interface Namespace extends Wrapper {
 
     long getId();
+
+    default Long getAdapterId() {
+        return null;
+    }
 
     /**
      * Returns a sub-schema with a given name, or null.
@@ -135,7 +139,7 @@ public interface Namespace {
      * @param name Name of this schema
      * @return Expression by which this schema can be referenced in generated code
      */
-    Expression getExpression( Snapshot snapshot, String name );
+    Expression getExpression( Snapshot snapshot, long id );
 
     /**
      * Returns whether the user is allowed to create new tables, functions and sub-schemas in this schema, in addition to

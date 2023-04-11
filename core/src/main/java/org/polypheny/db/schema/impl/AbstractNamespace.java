@@ -87,8 +87,8 @@ public class AbstractNamespace implements Namespace {
 
 
     @Override
-    public Expression getExpression( Snapshot snapshot, String name ) {
-        return Schemas.subSchemaExpression( snapshot, name, getClass() );
+    public Expression getExpression( Snapshot snapshot, long id ) {
+        return Schemas.subSchemaExpression( snapshot, id, null, getClass() );
     }
 
 

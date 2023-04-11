@@ -112,14 +112,15 @@ public final class Schemas {
     /**
      * Returns the expression for a sub-schema.
      */
-    public static Expression subSchemaExpression( Snapshot snapshot, String name, Class<?> type ) {
+    public static Expression subSchemaExpression( Snapshot snapshot, long id, Long adapterId, Class<?> type ) {
         // (Type) schemaExpression.getSubSchema("name")
-        final Expression schemaExpression = expression( snapshot );
+        final Expression schemaExpression = Expressions.call( expression( snapshot ), BuiltInMethod.SNAPSHOT_GET_PHYSICAL.method );
         Expression call =
                 Expressions.call(
                         schemaExpression,
-                        BuiltInMethod.SCHEMA_GET_SUB_SCHEMA.method,
-                        Expressions.constant( name ) );
+                        BuiltInMethod.SNAPSHOT_GET_NAMESPACE.method,
+                        Expressions.constant( id ),
+                        Expressions.constant( adapterId ) );
         //CHECKSTYLE: IGNORE 2
         //noinspection unchecked
         if ( false && type != null && !type.isAssignableFrom( Namespace.class ) ) {

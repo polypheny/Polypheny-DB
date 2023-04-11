@@ -179,11 +179,11 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Returns an expression for the object wrapped by this schema (not the schema itself).
      */
-    Expression getTargetExpression( Snapshot snapshot, String name ) {
+    Expression getTargetExpression( Snapshot snapshot, long id ) {
         return Types.castIfNecessary(
                 target.getClass(),
                 Expressions.call(
-                        Schemas.unwrap( getExpression( snapshot, name ), ReflectiveSchema.class ),
+                        Schemas.unwrap( getExpression( snapshot, id ), ReflectiveSchema.class ),
                         BuiltInMethod.REFLECTIVE_SCHEMA_GET_TARGET.method ) );
     }
 

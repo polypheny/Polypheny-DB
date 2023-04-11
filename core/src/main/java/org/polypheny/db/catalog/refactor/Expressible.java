@@ -24,7 +24,7 @@ public interface Expressible {
     Expression asExpression();
 
     default Expression asExpression( Class<?> clazz ) {
-        return Expressions.typeAs( asExpression(), clazz );
+        return Expressions.convert_( asExpression(), clazz );
     }
 
 }

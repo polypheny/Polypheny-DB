@@ -16,21 +16,12 @@
 
 package org.polypheny.db.sql.clause;
 
-import com.google.common.collect.ImmutableList;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.util.Template;
-import org.polypheny.db.util.TestUtil;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class SimpleSqlTest {
@@ -74,6 +65,26 @@ public class SimpleSqlTest {
                 ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (12, 'Name1', 60)" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (15, 'Name2', 24)" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (99, 'Name3', 11)" ),
+                ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
+                ( c, s ) -> c.commit()
+        );
+
+    }
+
+
+    @Test
+    public void select() throws SQLException {
+        List<Object[]> data = List.of(
+                new Object[]{ 12, "Name1", 60 },
+                new Object[]{ 15, "Name2", 24 },
+                new Object[]{ 99, "Name3", 11 }
+        );
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (12, 'Name1', 60)" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (15, 'Name2', 24)" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (99, 'Name3', 11)" ),
+                ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT * FROM TableA" ), data, true ),
                 ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
                 ( c, s ) -> c.commit()
         );

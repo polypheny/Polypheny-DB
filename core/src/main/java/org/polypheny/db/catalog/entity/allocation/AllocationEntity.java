@@ -20,13 +20,16 @@ import io.activej.serializer.annotations.Serialize;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
+@Slf4j
 public abstract class AllocationEntity extends CatalogEntity {
 
     @Serialize
@@ -51,5 +54,10 @@ public abstract class AllocationEntity extends CatalogEntity {
         return State.ALLOCATION;
     }
 
+
+    public PartitionType getPartitionType() {
+        log.warn( "change me" );
+        return PartitionType.NONE;
+    }
 
 }

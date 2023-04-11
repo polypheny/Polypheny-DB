@@ -18,16 +18,17 @@ package org.polypheny.db.sql.language.validate;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
@@ -66,7 +67,7 @@ public abstract class ListScope extends DelegatingScope {
      * @return list of child namespaces
      */
     public List<SqlValidatorNamespace> getChildren() {
-        return Lists.transform( children, scopeChild -> scopeChild.namespace );
+        return children.stream().map( scopeChild -> scopeChild.namespace ).collect( Collectors.toList() );
     }
 
 
@@ -76,7 +77,7 @@ public abstract class ListScope extends DelegatingScope {
      * @return list of child namespaces
      */
     List<String> getChildNames() {
-        return Lists.transform( children, scopeChild -> scopeChild.name );
+        return children.stream().map( scopeChild -> scopeChild.name ).collect( Collectors.toList() );
     }
 
 
@@ -130,8 +131,7 @@ public abstract class ListScope extends DelegatingScope {
 
 
     @Override
-    public Pair<String, SqlValidatorNamespace>
-    findQualifyingTableName( final String columnName, SqlNode ctx ) {
+    public Pair<String, SqlValidatorNamespace> findQualifyingTableName( final String columnName, SqlNode ctx ) {
         final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
         final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, ctx, nameMatcher );
         switch ( map.size() ) {
@@ -147,8 +147,7 @@ public abstract class ListScope extends DelegatingScope {
 
 
     @Override
-    public Map<String, ScopeChild>
-    findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
+    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         final Map<String, ScopeChild> map = new HashMap<>();
         for ( ScopeChild child : children ) {
             final ResolvedImpl resolved = new ResolvedImpl();
@@ -157,12 +156,10 @@ public abstract class ListScope extends DelegatingScope {
                 map.put( child.name, child );
             }
         }
-        switch ( map.size() ) {
-            case 0:
-                return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
-            default:
-                return map;
+        if ( map.size() == 0 ) {
+            return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
         }
+        return map;
     }
 
 
@@ -172,19 +169,19 @@ public abstract class ListScope extends DelegatingScope {
         final ScopeChild child0 = findChild( names, nameMatcher );
 
         if ( child0 != null ) {
-            /*final Step path =
+            final Step path =
                     Path.EMPTY.plus(
                             child0.namespace.getRowType(),
                             child0.ordinal,
                             child0.name,
                             StructKind.FULLY_QUALIFIED );
+
             resolved.found(
                     child0.namespace,
                     child0.nullable,
                     this,
                     path,
-                    null );*/
-            return;
+                    null );
         }
 
         // Recursively look deeper into the record-valued fields of the namespace, if it allows skipping fields.

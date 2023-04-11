@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -72,7 +73,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
         if ( builders.size() == 1 && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty() ) {
             for ( List<CatalogColumnPlacement> currentPlacement : placements ) {
                 final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builders.get( 0 ) );
@@ -90,7 +91,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
             for ( List<CatalogColumnPlacement> currentPlacement : placements ) {
                 final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 // AdapterId for all col placements same

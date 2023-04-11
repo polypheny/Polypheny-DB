@@ -108,8 +108,8 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
 
     @Override
-    public Expression getExpression( Snapshot snapshot, String name ) {
-        return Schemas.subSchemaExpression( snapshot, name, LogicalGraph.class );
+    public Expression getExpression( Snapshot snapshot, long id ) {
+        return Schemas.subSchemaExpression( snapshot, id, null, LogicalGraph.class );
     }
 
 

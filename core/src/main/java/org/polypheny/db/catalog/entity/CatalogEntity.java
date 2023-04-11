@@ -121,4 +121,9 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
         return null;
     }
 
+
+    public String getNamespaceName() {
+        return null;
+    }
+
 }

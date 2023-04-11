@@ -57,6 +57,9 @@ public abstract class Catalog implements ExtensionPoint {
 
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
+    public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
+    public static final Expression PHYSICAL_EXPRESSION = Expressions.call( SNAPSHOT_EXPRESSION, "physical" );
+
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
         if ( INSTANCE != null ) {

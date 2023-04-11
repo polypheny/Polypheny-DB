@@ -82,8 +82,8 @@ public class DelegatingNamespace implements Namespace {
 
 
     @Override
-    public Expression getExpression( Snapshot snapshot, String name ) {
-        return namespace.getExpression( snapshot, name );
+    public Expression getExpression( Snapshot snapshot, long id ) {
+        return namespace.getExpression( snapshot, id );
     }
 
 

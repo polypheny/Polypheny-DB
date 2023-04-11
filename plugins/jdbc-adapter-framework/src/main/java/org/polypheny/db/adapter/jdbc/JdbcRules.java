@@ -69,6 +69,7 @@ import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -88,7 +89,6 @@ import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -1004,7 +1004,7 @@ public class JdbcRules {
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final RelModify modify = call.alg( 0 );
+            final RelModify<?> modify = call.alg( 0 );
             if ( modify.getEntity().unwrap( JdbcEntity.class ) != null ) {
                 JdbcEntity table = modify.getEntity().unwrap( JdbcEntity.class );
                 if ( out.getJdbcSchema() == table.getSchema() ) {
@@ -1018,7 +1018,7 @@ public class JdbcRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final RelModify<?> modify = (RelModify<?>) alg;
-            final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
+            final org.polypheny.db.catalog.refactor.ModifiableEntity modifiableTable = modify.getEntity().unwrap( org.polypheny.db.catalog.refactor.ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
             }

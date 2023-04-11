@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.catalogs;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.schema.Namespace;
 
 public interface PhysicalCatalog {
 
@@ -30,5 +31,9 @@ public interface PhysicalCatalog {
     void addEntities( List<? extends PhysicalEntity> physicals );
 
     void deleteEntity( long id );
+
+    void addNamespace( long adapterId, Namespace currentSchema );
+
+    ConcurrentHashMap<Long, Namespace> getNamespaces();
 
 }

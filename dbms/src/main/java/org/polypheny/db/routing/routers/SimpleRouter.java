@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -56,7 +57,7 @@ public class SimpleRouter extends AbstractDqlRouter {
     protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Get placements and convert into placement distribution
         // final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
-        List<AllocationEntity> entities = snapshot.alloc().getAllocationsFromLogical( catalogTable.id );
+        List<AllocationEntity> entities = Catalog.snapshot().alloc().getAllocationsFromLogical( catalogTable.id );
 
         // Only one builder available
         // builders.get( 0 ).addPhysicalInfo( placements );
@@ -69,7 +70,7 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed

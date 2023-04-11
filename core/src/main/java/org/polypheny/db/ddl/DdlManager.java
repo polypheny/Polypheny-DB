@@ -486,10 +486,10 @@ public abstract class DdlManager {
      * @param namespaceId
      * @param constraintName the name of the constraint
      * @param constraintType the type of the constraint
-     * @param columnNames the names of the columns for which to create the constraint
+     * @param columnIds the ids of the columns for which to create the constraint
      * @param tableId the id of the table
      */
-    public abstract void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<String> columnNames, long tableId ) throws UnknownColumnException, GenericCatalogException;
+    public abstract void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId ) throws UnknownColumnException, GenericCatalogException;
 
     /**
      * Drop a schema

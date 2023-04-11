@@ -90,7 +90,7 @@ public class PhysicalTable extends PhysicalEntity {
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getPhysicalTable", Expressions.constant( id ) );
+        return Expressions.call( Catalog.PHYSICAL_EXPRESSION, "getPhysicalTable", Expressions.constant( id ) );
     }
 
 }

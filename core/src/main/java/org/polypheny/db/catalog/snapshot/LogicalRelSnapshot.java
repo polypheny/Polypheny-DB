@@ -24,7 +24,6 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -56,7 +55,6 @@ public interface LogicalRelSnapshot {
     /**
      * Returns the table with the given name in the specified schema.
      *
-     * @param namespaceName
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.

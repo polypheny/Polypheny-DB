@@ -3865,7 +3865,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
             // Found in current query's from list.  Find which from item.
             // We assume that the order of the from clause items has been preserved.
-            /*final SqlValidatorScope ancestorScope = resolve.scope;
+            final SqlValidatorScope ancestorScope = resolve.scope;
             boolean isParent = ancestorScope != scope;
             if ( (inputs != null) && !isParent ) {
                 final LookupContext algs = new LookupContext( this, inputs, systemFieldList.size() );
@@ -3881,7 +3881,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     }
                     final Map<String, Integer> map = ImmutableMap.copyOf( fieldOffsets );
                     return Pair.of( node, map );
-
+                }
             } else {
                 // We're referencing a relational expression which has not been converted yet. This occurs when from items are correlated, e.g. "select from emp as emp join emp.getDepts() as dept".
                 // Create a temporary expression.
@@ -3910,8 +3910,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     final RexNode c = rexBuilder.makeCorrel( builder.uniquify().build(), correlId );
                     return Pair.of( c, fields.build() );
                 }
-            }}*/
-            return null;
+            }
         }
 
 

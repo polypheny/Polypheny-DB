@@ -189,6 +189,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     public SqlIdentifier physicalColumnName( String logicalColumnName ) {
+
         String physicalName = columns.get( List.of( allocation.getColumnNamesId().values() ).indexOf( logicalColumnName ) );
         return new SqlIdentifier( Collections.singletonList( physicalName ), ParserPos.ZERO );
     }

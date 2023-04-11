@@ -16,27 +16,32 @@
 
 package org.polypheny.db.catalog.physical;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.schema.Namespace;
 
 public class PolyPhysicalCatalog implements PhysicalCatalog {
 
     @Getter
     private final ConcurrentHashMap<Long, PhysicalEntity> physicals;
 
+    @Getter
+    private final ConcurrentHashMap<Long, Namespace> namespaces;
+
 
     public PolyPhysicalCatalog() {
-        this( new ConcurrentHashMap<>() );
+        this( new ConcurrentHashMap<>(), new HashMap<>() );
     }
 
 
-    public PolyPhysicalCatalog( Map<Long, PhysicalEntity> physicals ) {
+    public PolyPhysicalCatalog( Map<Long, PhysicalEntity> physicals, Map<Long, Namespace> namespaces ) {
         this.physicals = new ConcurrentHashMap<>( physicals );
-
+        this.namespaces = new ConcurrentHashMap<>( namespaces );
     }
 
 
@@ -60,6 +65,12 @@ public class PolyPhysicalCatalog implements PhysicalCatalog {
     @Override
     public void deleteEntity( long id ) {
         physicals.remove( id );
+    }
+
+
+    @Override
+    public void addNamespace( long adapterId, Namespace currentSchema ) {
+        namespaces.put( adapterId, currentSchema );
     }
 
 

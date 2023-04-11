@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import lombok.NonNull;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
@@ -51,7 +50,7 @@ class EntityNamespace extends AbstractNamespace {
     /**
      * Creates a TableNamespace.
      */
-    private EntityNamespace( SqlValidatorImpl validator, @NonNull CatalogEntity entity, List<AlgDataTypeField> fields ) {
+    private EntityNamespace( SqlValidatorImpl validator, CatalogEntity entity, List<AlgDataTypeField> fields ) {
         super( validator, null );
         this.table = entity;
         this.extendedFields = ImmutableList.copyOf( fields );

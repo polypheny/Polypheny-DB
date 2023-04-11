@@ -25,7 +25,6 @@ import java.beans.PropertyChangeSupport;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -302,14 +301,20 @@ public class PolyCatalog extends Catalog implements Serializable {
     @Override
     public void updateSnapshot() {
         // reset physical catalogs
-        Set<Long> keys = this.physicalCatalogs.keySet();
-        keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
+        // Set<Long> keys = this.physicalCatalogs.keySet();
+        // keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
 
         // generate new physical entities, atm only relational
         this.allocationCatalogs.forEach( ( k, v ) -> {
             if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
                 ((AllocationRelationalCatalog) v).getTables().forEach( ( k2, v2 ) -> {
-                    AdapterManager.getInstance().getAdapter( v2.adapterId ).createNewSchema( getSnapshot(), v2.name, v2.namespaceId );
+                    Adapter adapter = AdapterManager.getInstance().getAdapter( v2.adapterId );
+
+                    if ( adapter.getCurrentSchema() == null || adapter.getCurrentSchema().getId() != v2.namespaceId ) {
+                        adapter.createNewSchema( getSnapshot(), v2.name, v2.namespaceId );
+                        getPhysical( v2.namespaceId ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
+                    }
+
                     LogicalTable table = getSnapshot().getLogicalEntity( v2.logicalId ).unwrap( LogicalTable.class );
                     List<PhysicalEntity> physicals = AdapterManager.getInstance().getAdapter( v2.adapterId ).createAdapterTable( idBuilder, table, v2 );
                     getPhysical( table.namespaceId ).addEntities( physicals );

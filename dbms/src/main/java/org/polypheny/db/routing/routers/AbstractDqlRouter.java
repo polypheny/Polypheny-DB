@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -128,13 +129,12 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             throw new IllegalStateException( "Should never happen for Iterator" );
         } else {
             RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
-            List<RoutedAlgBuilder> routedAlgBuilders = buildDql(
+            return buildDql(
                     logicalRoot.alg,
                     Lists.newArrayList( builder ),
                     statement,
                     logicalRoot.alg.getCluster(),
                     queryInformation );
-            return routedAlgBuilders;
         }
     }
 
@@ -224,12 +224,12 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             // Check if table is even horizontal partitioned
 
-            if ( snapshot.alloc().isPartitioned( catalogTable.id ) ) {
+            if ( Catalog.snapshot().alloc().isPartitioned( catalogTable.id ) ) {
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {
                 // At the moment multiple strategies
-                if ( snapshot.alloc().getAllocationsFromLogical( catalogTable.id ).size() > 1 ) {
+                if ( Catalog.snapshot().alloc().getAllocationsFromLogical( catalogTable.id ).size() > 1 ) {
                     return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
                 }
                 return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );

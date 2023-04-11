@@ -97,8 +97,8 @@ public class LogicalSchema implements Namespace, Schema {
 
 
     @Override
-    public Expression getExpression( Snapshot snapshot, String name ) {
-        return Schemas.subSchemaExpression( snapshot, name, LogicalSchema.class );
+    public Expression getExpression( Snapshot snapshot, long id ) {
+        return Schemas.subSchemaExpression( snapshot, id, null, LogicalSchema.class );
     }
 
 

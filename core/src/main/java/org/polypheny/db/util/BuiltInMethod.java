@@ -109,6 +109,7 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.catalog.refactor.QueryableEntity;
+import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
@@ -163,6 +164,10 @@ public enum BuiltInMethod {
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
     SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
+
+    SNAPSHOT_GET_NAMESPACE( PhysicalSnapshot.class, "getNamespace", long.class, long.class ),
+
+    SNAPSHOT_GET_PHYSICAL( Snapshot.class, "physical" ),
     SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrap", Class.class ),
     SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),

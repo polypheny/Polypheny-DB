@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -96,7 +97,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
      */
     void resolveInNamespace( SqlValidatorNamespace ns, boolean nullable, List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.isEmpty() ) {
-            resolved.found( validator, null );
+            resolved.found( ns, nullable, this, path, null );
             return;
         }
         final AlgDataType rowType = ns.getRowType();
@@ -311,9 +312,10 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         resolved.clear();
                         resolve( prefix.names, liberalMatcher, false, resolved );
                         if ( resolved.count() == 1 ) {
+                            final Step lastStep = Util.last( resolved.only().path.steps() );
                             throw validator.newValidationError(
                                     prefix,
-                                    Static.RESOURCE.tableNameNotFoundDidYouMean( prefix.toString(), resolved.only().getEntity().name ) );
+                                    Static.RESOURCE.tableNameNotFoundDidYouMean( prefix.toString(), lastStep.name ) );
                         }
                     }
                 }
@@ -321,44 +323,42 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     // Look for a column not qualified by a table alias.
                     columnName = identifier.names.get( 0 );
                     final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
-                    switch ( map.size() ) {
-                        default:
-                            final SqlIdentifier prefix1 = identifier.skipLast( 1 );
-                            throw validator.newValidationError( prefix1, Static.RESOURCE.tableNameNotFound( prefix1.toString() ) );
-                        case 1: {
-                            final Map.Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
-                            final String tableName2 = map.keySet().iterator().next();
+                    if ( map.size() == 1 ) {
+                        final Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
+                        final String tableName2 = map.keySet().iterator().next();
 
-                            fromPath = Path.EMPTY;
+                        fromPath = Path.EMPTY;
 
-                            // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
-                            // Access to a field in a RecordType column of other StructKind should always be qualified with table name.
-                            final AlgDataTypeField field = nameMatcher.field( fromNs.getRowType(), columnName );
-                            if ( field != null ) {
-                                switch ( field.getType().getStructKind() ) {
-                                    case PEEK_FIELDS:
-                                    case PEEK_FIELDS_DEFAULT:
-                                    case PEEK_FIELDS_NO_EXPAND:
-                                        columnName = field.getName(); // use resolved field name
-                                        resolve( ImmutableList.of( tableName2 ), nameMatcher, false, resolved );
-                                        if ( resolved.count() == 1 ) {
-                                            final Resolve resolve = resolved.only();
-                                            fromRowType = resolve.rowType();
-                                            identifier = identifier
-                                                    .setName( 0, columnName )
-                                                    .add( 0, tableName2, ParserPos.ZERO );
-                                            ++i;
-                                            ++size;
-                                        }
-                                        break;
-                                    default:
-                                        // Throw an error if the table was not found.
-                                        // If one or more of the child namespaces allows peeking (e.g. if they are Phoenix column families) then we relax the SQL standard requirement that record fields are qualified by table alias.
-                                        final SqlIdentifier prefix = identifier.skipLast( 1 );
-                                        throw validator.newValidationError( prefix, Static.RESOURCE.tableNameNotFound( prefix.toString() ) );
-                                }
+                        // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
+                        // Access to a field in a RecordType column of other StructKind should always be qualified with table name.
+                        final AlgDataTypeField field = nameMatcher.field( fromNs.getRowType(), columnName );
+                        if ( field != null ) {
+                            switch ( field.getType().getStructKind() ) {
+                                case PEEK_FIELDS:
+                                case PEEK_FIELDS_DEFAULT:
+                                case PEEK_FIELDS_NO_EXPAND:
+                                    columnName = field.getName(); // use resolved field name
+                                    resolve( ImmutableList.of( tableName2 ), nameMatcher, false, resolved );
+                                    if ( resolved.count() == 1 ) {
+                                        final Resolve resolve = resolved.only();
+                                        fromRowType = resolve.rowType();
+                                        identifier = identifier
+                                                .setName( 0, columnName )
+                                                .add( 0, tableName2, ParserPos.ZERO );
+                                        ++i;
+                                        ++size;
+                                    }
+                                    break;
+                                default:
+                                    // Throw an error if the table was not found.
+                                    // If one or more of the child namespaces allows peeking (e.g. if they are Phoenix column families) then we relax the SQL standard requirement that record fields are qualified by table alias.
+                                    final SqlIdentifier prefix = identifier.skipLast( 1 );
+                                    throw validator.newValidationError( prefix, Static.RESOURCE.tableNameNotFound( prefix.toString() ) );
                             }
                         }
+                    } else {
+                        final SqlIdentifier prefix1 = identifier.skipLast( 1 );
+                        throw validator.newValidationError( prefix1, Static.RESOURCE.tableNameNotFound( prefix1.toString() ) );
                     }
                 }
 

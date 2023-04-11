@@ -97,7 +97,7 @@ public abstract class BaseRouter implements Router {
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
-    final static Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    final static Catalog catalog = Catalog.getInstance();
 
 
     static {
@@ -112,7 +112,7 @@ public abstract class BaseRouter implements Router {
         // Find the adapter with the most column placements
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Long, List<Long>> entry : snapshot.alloc().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, List<Long>> entry : Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -121,12 +121,12 @@ public abstract class BaseRouter implements Router {
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( LogicalColumn column : snapshot.rel().getColumns( table.id ) ) {
-            placementList.add( snapshot.alloc().getColumnPlacements( column.id ).get( 0 ) );
+        for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( table.id ) ) {
+            placementList.add( Catalog.snapshot().alloc().getColumnPlacements( column.id ).get( 0 ) );
         }
 
         return new HashMap<>() {{
-            List<AllocationEntity> allocs = snapshot.alloc().getAllocationsFromLogical( table.id );
+            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getAllocationsFromLogical( table.id );
             put( allocs.get( 0 ).id, placementList );
         }};
     }
@@ -171,7 +171,7 @@ public abstract class BaseRouter implements Router {
             Statement statement,
             long allocId ) {
 
-        List<PhysicalEntity> physicals = snapshot.physical().fromAlloc( allocId );
+        List<PhysicalEntity> physicals = Catalog.snapshot().physical().fromAlloc( allocId );
         PhysicalEntity physical = physicals.get( 0 );
 
         AlgNode node = builder.scan( physical ).build();
@@ -366,7 +366,7 @@ public abstract class BaseRouter implements Router {
 
         CatalogColumnPlacement placement = allocationEntities.get( 0 ).unwrap( AllocationTable.class ).placements.get( 0 );
         // todo dl: remove after RowType refactor
-        if ( snapshot.getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
+        if ( Catalog.snapshot().getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( new LogicalTransformer(
                     node.getCluster(),
@@ -445,7 +445,7 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Long placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        List<LogicalTable> tables = snapshot.rel().getTables( namespace.id, null );
+        List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
         List<Pair<String, AlgNode>> scans = tables.stream()
                 .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, null ) ) )
                 .collect( Collectors.toList() );
@@ -459,7 +459,7 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Long placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        List<LogicalCollection> collections = snapshot.doc().getCollections( namespace.id, null );
+        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( namespace.id, null );
         List<Pair<String, AlgNode>> scans = collections.stream()
                 .map( t -> {
                     RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );

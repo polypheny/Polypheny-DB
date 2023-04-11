@@ -25,17 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.SqlWindow;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.NameMatcher;
@@ -193,7 +192,7 @@ public interface SqlValidatorScope extends ValidatorScope {
      */
     interface Resolved {
 
-        void found( SqlValidatorImpl validator, CatalogEntity entity );
+        void found( SqlValidatorNamespace namespace, boolean nullable, SqlValidatorScope scope, Path path, List<String> remainingNames );
 
         int count();
 
@@ -311,8 +310,15 @@ public interface SqlValidatorScope extends ValidatorScope {
 
 
         @Override
-        public void found( SqlValidatorImpl validator, CatalogEntity entity ) {
-            resolves.add( new Resolve( validator, entity ) );
+        public void found( SqlValidatorNamespace namespace, boolean nullable, SqlValidatorScope scope, Path path, List<String> remainingNames ) {
+            if ( scope instanceof TableScope ) {
+                scope = scope.getValidator().getSelectScope( (SqlSelect) scope.getNode() );
+            }
+            if ( scope instanceof AggregatingSelectScope ) {
+                scope = ((AggregatingSelectScope) scope).parent;
+                assert scope instanceof SelectScope;
+            }
+            resolves.add( new Resolve( namespace, nullable, scope, path, remainingNames ) );
         }
 
 
@@ -336,21 +342,34 @@ public interface SqlValidatorScope extends ValidatorScope {
 
     }
 
-
+    /**
+     * A match found when looking up a name.
+     */
     /**
      * A match found when looking up a name.
      */
     class Resolve {
 
-        @Getter
-        private final CatalogEntity entity;
-        public Path path;
-        public SqlValidatorNamespace namespace;
+        public final SqlValidatorNamespace namespace;
+        private final boolean nullable;
+        public final SqlValidatorScope scope; // may be null
+        public final Path path;
+        /**
+         * Names not matched; empty if it was a full match.
+         */
+        final List<String> remainingNames;
 
 
-        Resolve( SqlValidatorImpl validator, CatalogEntity entity ) {
-            this.entity = entity;
-            this.namespace = new EntityNamespace( validator, entity );
+        Resolve( SqlValidatorNamespace namespace, boolean nullable, SqlValidatorScope scope, Path path, List<String> remainingNames ) {
+            this.namespace = Objects.requireNonNull( namespace );
+            this.nullable = nullable;
+            this.scope = scope;
+            assert !(scope instanceof TableScope);
+            this.path = Objects.requireNonNull( path );
+            this.remainingNames =
+                    remainingNames == null
+                            ? ImmutableList.of()
+                            : ImmutableList.copyOf( remainingNames );
         }
 
 
@@ -358,7 +377,9 @@ public interface SqlValidatorScope extends ValidatorScope {
          * The row type of the found namespace, nullable if the lookup has looked into outer joins.
          */
         public AlgDataType rowType() {
-            return entity.getRowType();
+            return namespace.getValidator()
+                    .getTypeFactory()
+                    .createTypeWithNullability( namespace.getRowType(), nullable );
         }
 
     }
