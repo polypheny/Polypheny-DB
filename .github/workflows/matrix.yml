@@ -35,6 +35,12 @@ jobs:
                     max_attempts: 2
                     timeout_minutes: 60
                     command: ./gradlew assemble
+            - name: Build Plugins
+              uses: nick-invision/retry@v2
+              with:
+                  max_attempts: 1
+                  timeout_minutes: 60
+                  command: ./gradlew assemblePlugins
             -   name: Execute tests
                 uses: nick-invision/retry@v2
                 with:

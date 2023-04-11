@@ -18,7 +18,14 @@ package org.polypheny.db.cypher.expression;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherGate extends CypherExpression {
@@ -41,6 +48,38 @@ public class CypherGate extends CypherExpression {
         super( ParserPos.ZERO );
         this.gate = gate;
         this.expressions = expressions;
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+        OperatorName operatorName = null;
+        switch ( gate ) {
+            case OR:
+                operatorName = OperatorName.OR;
+                break;
+            case AND:
+                operatorName = OperatorName.AND;
+                break;
+            case XOR:
+                throw new UnsupportedOperationException();
+            case NOT:
+                return handleSingular( context, type, OperatorName.NOT );
+        }
+
+        return Pair.of( null, new RexCall(
+                context.booleanType,
+                OperatorRegistry.get( operatorName ),
+                List.of( left.getRex( context, type ).right, right.getRex( context, type ).right ) ) );
+
+    }
+
+
+    private Pair<String, RexNode> handleSingular( CypherContext context, RexType type, OperatorName operatorName ) {
+        return Pair.of( null, new RexCall(
+                context.booleanType,
+                OperatorRegistry.get( operatorName ),
+                List.of( left.getRex( context, type ).right ) ) );
     }
 
 

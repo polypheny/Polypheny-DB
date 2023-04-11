@@ -18,6 +18,8 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
@@ -25,6 +27,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimestampString;
 
 
 /**
@@ -34,15 +38,29 @@ import org.polypheny.db.config.RuntimeConfig;
 @Slf4j
 public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
 
-    @Expose
-    @Getter
-    @Setter
-    private T min;
+    public void setMin( T min ) {
+        this.min = min;
+        this.minSinceEpoch = getSinceEpoch( min );
+    }
+
+
+    public void setMax( T max ) {
+        this.max = max;
+        this.maxSinceEpoch = getSinceEpoch( max );
+    }
+
 
     @Expose
     @Getter
-    @Setter
+    private T min;
+
+    private Long minSinceEpoch;
+
+    @Expose
+    @Getter
     private T max;
+
+    private Long maxSinceEpoch;
 
     @Expose
     @Getter
@@ -62,45 +80,67 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
 
     @Override
-    public void insert( T val ) {
+    public void insert( T original ) {
+
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
-            if ( !uniqueValues.contains( val ) ) {
-                uniqueValues.add( val );
-                if ( val != null ) {
-                    minCache.add( val );
-                    maxCache.add( val );
+            if ( !uniqueValues.contains( original ) ) {
+                uniqueValues.add( original );
+                if ( original != null ) {
+                    minCache.add( original );
+                    maxCache.add( original );
                 }
             }
         } else {
             full = true;
         }
 
-        if ( val == null ) {
+        if ( original == null ) {
             return;
         }
 
+        long val = getSinceEpoch( original );
+
         if ( min == null ) {
-            min = val;
-            max = val;
-        } else if ( val.compareTo( min ) < 0 ) {
-            this.min = val;
-        } else if ( val.compareTo( max ) > 0 ) {
-            this.max = val;
+            setMin( original );
+            setMax( original );
+        } else if ( val < minSinceEpoch ) {
+            setMin( original );
+        } else if ( val > maxSinceEpoch ) {
+            setMax( original );
         }
 
-        if ( minCache.last().compareTo( val ) > 0 ) {
+        if ( getSinceEpoch( minCache.last() ) > val ) {
             if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 minCache.remove( minCache.last() );
             }
-            minCache.add( val );
+            minCache.add( original );
         }
 
-        if ( maxCache.first().compareTo( val ) < 0 ) {
+        if ( getSinceEpoch( maxCache.first() ) < val ) {
             if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }
-            maxCache.add( val );
+            maxCache.add( original );
         }
+    }
+
+
+    private long getSinceEpoch( T val ) {
+        if ( val instanceof Long ) {
+            return (Long) val;
+        } else if ( val instanceof Integer ) {
+            return (Integer) val;
+        } else if ( val instanceof Timestamp ) {
+            return ((Timestamp) val).getTime();
+        } else if ( val instanceof TimestampString ) {
+            return ((TimestampString) val).getMillisSinceEpoch();
+        } else if ( val instanceof Date ) {
+            return ((Date) val).getTime();
+        } else if ( val instanceof DateString ) {
+            return ((DateString) val).getMillisSinceEpoch();
+        }
+
+        throw new RuntimeException();
     }
 
 

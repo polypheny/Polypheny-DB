@@ -17,6 +17,8 @@
 package org.polypheny.db.webui;
 
 
+import static org.polypheny.db.adapter.ConnectionMethod.LINK;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -83,6 +85,7 @@ import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
+import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
@@ -2328,15 +2331,15 @@ public class Crud implements InformationObserver {
         AdapterModel a = gson.fromJson( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
-        String method = a.settings.get( "method" ).getValue();
+        ConnectionMethod method = ConnectionMethod.UPLOAD;
         if ( a.settings.containsKey( "method" ) ) {
-            method = a.settings.get( "method" ).getValue();
+            method = a.settings.get( "method" ).equals( "link" ) ? LINK : ConnectionMethod.UPLOAD;
         }
 
         for ( Entry<String, AbstractAdapterSetting> entry : a.settings.entrySet() ) {
             if ( entry.getValue() instanceof AbstractAdapterSettingDirectory ) {
                 AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) entry.getValue());
-                if ( method.equals( "link" ) ) {
+                if ( method == LINK ) {
                     Exception e = handleLinkFiles( ctx, a, setting, a.settings );
                     if ( e != null ) {
                         ctx.json( new Result( e ) );
