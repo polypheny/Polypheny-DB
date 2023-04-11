@@ -129,7 +129,7 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
 
 
     public List<ColumnStrategy> getColumnStrategies() {
-        return null;
+        return getColumns().stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).collect( Collectors.toList() );
     }
 
 

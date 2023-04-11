@@ -86,15 +86,12 @@ public class SqlValidatorUtil {
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      */
     public static CatalogEntity getLogicalEntity( SqlValidatorNamespace namespace, Snapshot snapshot, String datasetName, boolean[] usedDataset ) {
-        final EntityNamespace entityNamespace = namespace.unwrap( EntityNamespace.class );
-        return entityNamespace.getTable();
-        /*if ( namespace.isWrapperFor( TableNamespace.class ) ) {
-            final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
-            return getLogicalEntity( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
-        } else if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
+
+        if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = namespace.unwrap( SqlValidatorImpl.DmlNamespace.class );
             final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
-            if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
+            return resolvedNamespace.getTable();
+            /*if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
                 final TableNamespace tableNamespace = resolvedNamespace.unwrap( TableNamespace.class );
                 final ValidatorTable validatorTable = tableNamespace.getTable();
                 final AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
@@ -103,9 +100,10 @@ public class SqlValidatorUtil {
                                 ? ImmutableList.of()
                                 : getExtendedColumns( typeFactory, validatorTable, dmlNamespace.extendList );
                 return getLogicalEntity( tableNamespace, catalogReader, datasetName, usedDataset, extendedFields );
-            }
+            }*/
         }
-        return null;*/
+        final EntityNamespace entityNamespace = namespace.unwrap( EntityNamespace.class );
+        return entityNamespace.getTable();
     }
 
 

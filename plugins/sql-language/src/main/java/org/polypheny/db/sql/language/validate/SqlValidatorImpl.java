@@ -70,6 +70,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -90,7 +91,6 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
@@ -4122,7 +4122,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         throw new UnsupportedOperationException();
                     }
                 };
-        final List<ColumnStrategy> strategies = table.unwrap( AlgOptEntity.class ).getColumnStrategies();
+        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).getColumnStrategies();
         for ( final AlgDataTypeField field : table.getRowType().getFieldList() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {

@@ -96,7 +96,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
      */
     void resolveInNamespace( SqlValidatorNamespace ns, boolean nullable, List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.isEmpty() ) {
-            resolved.found( null );
+            resolved.found( validator, null );
             return;
         }
         final AlgDataType rowType = ns.getRowType();

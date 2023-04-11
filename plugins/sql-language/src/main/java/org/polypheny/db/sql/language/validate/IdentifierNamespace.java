@@ -29,7 +29,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -113,6 +112,7 @@ public class IdentifierNamespace extends AbstractNamespace {
         SqlValidatorScope.Resolve previousResolve = null;
         if ( resolved.count() == 1 ) {
             final SqlValidatorScope.Resolve resolve = previousResolve = resolved.only();
+            return resolve.namespace;
             /*if ( resolve.remainingNames.isEmpty() ) {
                 return resolve.namespace;
             }*/

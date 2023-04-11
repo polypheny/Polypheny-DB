@@ -25,6 +25,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 public abstract class Modify<E extends CatalogEntity> extends SingleAlg {
 
+    @Getter
     public final E entity;
 
 

@@ -193,7 +193,7 @@ public interface SqlValidatorScope extends ValidatorScope {
      */
     interface Resolved {
 
-        void found( CatalogEntity entity );
+        void found( SqlValidatorImpl validator, CatalogEntity entity );
 
         int count();
 
@@ -311,8 +311,8 @@ public interface SqlValidatorScope extends ValidatorScope {
 
 
         @Override
-        public void found( CatalogEntity entity ) {
-            resolves.add( new Resolve( entity ) );
+        public void found( SqlValidatorImpl validator, CatalogEntity entity ) {
+            resolves.add( new Resolve( validator, entity ) );
         }
 
 
@@ -348,8 +348,9 @@ public interface SqlValidatorScope extends ValidatorScope {
         public SqlValidatorNamespace namespace;
 
 
-        Resolve( CatalogEntity entity ) {
+        Resolve( SqlValidatorImpl validator, CatalogEntity entity ) {
             this.entity = entity;
+            this.namespace = new EntityNamespace( validator, entity );
         }
 
 

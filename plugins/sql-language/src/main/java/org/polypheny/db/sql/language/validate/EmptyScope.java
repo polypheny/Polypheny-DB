@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.language.SqlCall;
@@ -106,7 +105,7 @@ class EmptyScope implements SqlValidatorScope {
         }
 
         if ( table != null ) {
-            resolves.add( new Resolve( table ) );
+            resolves.add( new Resolve( validator, table ) );
         }
     }
 
@@ -117,7 +116,7 @@ class EmptyScope implements SqlValidatorScope {
 
         LogicalTable table = rootSchema.getTable( concat );
         if ( table != null ) {
-            resolved.found( table );
+            resolved.found( validator, table );
             return;
         }
     }
