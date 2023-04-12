@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -65,10 +65,10 @@ public class CachedPlanRouter extends BaseRouter {
             LogicalTable catalogTable = node.getEntity().unwrap( LogicalTable.class );
             PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
             List<Long> partitionIds = property.partitionIds;
-            Map<Long, List<CatalogColumnPlacement>> placement = new HashMap<>();
+            Map<Long, List<AllocationColumn>> placement = new HashMap<>();
             for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
-                    List<CatalogColumnPlacement> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream()
+                    List<AllocationColumn> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream()
                             .map( placementInfo -> catalog.getSnapshot().alloc().getColumnPlacement( placementInfo.left, placementInfo.right ) )
                             .collect( Collectors.toList() );
                     placement.put( partition, colPlacements );

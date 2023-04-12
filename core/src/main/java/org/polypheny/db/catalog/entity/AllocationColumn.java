@@ -23,12 +23,15 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Value;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 
 @EqualsAndHashCode
 @Value
-public class CatalogColumnPlacement implements CatalogObject {
+public class AllocationColumn implements CatalogObject {
 
     private static final long serialVersionUID = -1909757888176291095L;
 
@@ -39,26 +42,26 @@ public class CatalogColumnPlacement implements CatalogObject {
     @Serialize
     public long columnId;
     @Serialize
-    public long adapterId;
-    @Serialize
     public PlacementType placementType;
     @Serialize
     public long position;
+    @Serialize
+    public long adapterId;
 
 
-    public CatalogColumnPlacement(
+    public AllocationColumn(
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("tableId") final long tableId,
             @Deserialize("columnId") final long columnId,
-            @Deserialize("adapterId") final long adapterId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("position") final long position ) {
+            @Deserialize("position") final long position,
+            @Deserialize("adapterId") final long adapterId ) {
         this.namespaceId = namespaceId;
         this.tableId = tableId;
         this.columnId = columnId;
-        this.adapterId = adapterId;
         this.placementType = placementType;
         this.position = position;
+        this.adapterId = adapterId;
     }
 
 
@@ -89,6 +92,11 @@ public class CatalogColumnPlacement implements CatalogObject {
         return new Serializable[]{
                 getLogicalTableName(),
                 placementType.name() };
+    }
+
+
+    public AlgDataType getAlgDataType() {
+        return Catalog.snapshot().rel().getColumn( columnId ).getAlgDataType( AlgDataTypeFactory.DEFAULT );
     }
 
 }

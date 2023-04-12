@@ -100,8 +100,8 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -1185,7 +1185,7 @@ public class Crud implements InformationObserver {
             CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
             List<String> pkColumnNames = primaryKey.getColumnNames();
             List<DbColumn> columns = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
+            for ( AllocationColumn ccp : catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
                 LogicalColumn col = catalog.getSnapshot().rel().getColumn( ccp.columnId );
                 columns.add( new DbColumn(
                         col.name,
@@ -1905,8 +1905,8 @@ public class Crud implements InformationObserver {
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
-            List<CatalogColumnPlacement> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
-            for ( CatalogColumnPlacement placement : pkPlacements ) {
+            List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
+            for ( AllocationColumn placement : pkPlacements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
                 p.addAdapter( new RelationalStore(

@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -59,10 +59,10 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             log.debug( "{} is horizontally partitioned", catalogTable.name );
         }
 
-        Collection<Map<Long, List<CatalogColumnPlacement>>> placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
+        Collection<Map<Long, List<AllocationColumn>>> placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
-        for ( Map<Long, List<CatalogColumnPlacement>> placementCombination : placements ) {
+        for ( Map<Long, List<AllocationColumn>> placementCombination : placements ) {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
@@ -105,7 +105,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
         }
 
-        final Set<List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable, queryInformation );
+        final Set<List<AllocationColumn>> placements = selectPlacement( catalogTable, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         /*for ( List<CatalogColumnPlacement> placementCombination : placements ) {
@@ -130,7 +130,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected Collection<Map<Long, List<AllocationColumn>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
@@ -138,13 +138,13 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
-        Map<Long, Map<Long, List<CatalogColumnPlacement>>> allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
+        Map<Long, Map<Long, List<AllocationColumn>>> allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
 
         return allPlacements.values();
     }
 
 
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected Set<List<AllocationColumn>> selectPlacement( LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         // Get used columns from analyze
         List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
@@ -155,9 +155,9 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
                 .map( Entry::getKey )
                 .collect( Collectors.toList() );
 
-        final Set<List<CatalogColumnPlacement>> result = new HashSet<>();
+        final Set<List<AllocationColumn>> result = new HashSet<>();
         for ( long adapterId : adapters ) {
-            List<CatalogColumnPlacement> placements = usedColumns.stream()
+            List<AllocationColumn> placements = usedColumns.stream()
                     .map( colId -> Catalog.snapshot().alloc().getColumnPlacement( adapterId, colId ) )
                     .collect( Collectors.toList() );
 

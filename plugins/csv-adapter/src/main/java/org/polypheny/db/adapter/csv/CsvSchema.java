@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -92,7 +92,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 
         List<ExportedColumn> columns = csvSource.getExportedColumns().get( catalogTable.name );
 
-        for ( CatalogColumnPlacement placement : allocationTable.placements ) {
+        for ( AllocationColumn placement : allocationTable.placements ) {
             LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, logicalColumn.type, logicalColumn.length, logicalColumn.scale, null );
             fieldInfo.add( logicalColumn.name, columns.get( (int) placement.position ).physicalColumnName, sqlType ).nullable( logicalColumn.nullable );

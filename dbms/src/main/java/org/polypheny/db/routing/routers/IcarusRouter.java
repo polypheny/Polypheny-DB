@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -62,7 +62,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
             log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
         }
 
-        final Set<List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable, queryInformation );
+        final Set<List<AllocationColumn>> placements = selectPlacement( catalogTable, queryInformation );
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         if ( placements.isEmpty() ) {
             this.cancelQuery = true;
@@ -71,8 +71,8 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
         // Initial case with empty single builder
         if ( builders.size() == 1 && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty() ) {
-            for ( List<CatalogColumnPlacement> currentPlacement : placements ) {
-                final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
+            for ( List<AllocationColumn> currentPlacement : placements ) {
+                final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
                 PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
@@ -89,8 +89,8 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 throw new RuntimeException( "Not allowed! With Icarus, this should not happen" );
             }
 
-            for ( List<CatalogColumnPlacement> currentPlacement : placements ) {
-                final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
+            for ( List<AllocationColumn> currentPlacement : placements ) {
+                final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
                 PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 

@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
@@ -50,17 +51,23 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Getter
     public final ConcurrentHashMap<Long, AllocationTable> tables;
 
+    @Serialize
+    @Getter
+    public final ConcurrentHashMap<Long, AllocationColumn> columns;
+
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
-        this( namespace, new ConcurrentHashMap<>() );
+        this( namespace, new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
     }
 
 
     public PolyAllocRelCatalog(
             @Deserialize("namespace") LogicalNamespace namespace,
-            @Deserialize("tables") Map<Long, AllocationTable> tables ) {
+            @Deserialize("tables") Map<Long, AllocationTable> tables,
+            @Deserialize("columns") Map<Long, AllocationColumn> columns ) {
         this.tables = new ConcurrentHashMap<>( tables );
         this.namespace = namespace;
+        this.columns = new ConcurrentHashMap<>( columns );
     }
 
 
@@ -73,16 +80,16 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public AllocationTable addColumnPlacement( long allocationId, long columnId, PlacementType placementType, int position ) {
-        AllocationTable alloc = tables.get( allocationId ).withAddedColumn( columnId, placementType, position );
-        tables.put( allocationId, alloc );
-        return alloc;
+    public AllocationColumn addColumn( long allocationId, long columnId, PlacementType placementType, int position ) {
+        AllocationColumn column = new AllocationColumn( namespace.id, allocationId, columnId, placementType, position, tables.get( allocationId ).adapterId );
+        columns.put( columnId, column );
+        return column;
     }
 
 
     @Override
-    public void deleteColumnPlacement( long allocationId, long columnId, boolean columnOnly ) {
-        tables.put( allocationId, tables.get( allocationId ).withRemovedColumn( columnId ) );
+    public void deleteColumn( long allocationId, long columnId, boolean columnOnly ) {
+        columns.remove( columnId );
     }
 
 
@@ -94,19 +101,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Override
     public void updateColumnPlacementPhysicalPosition( long allocId, long columnId, long position ) {
-
-    }
-
-
-    @Override
-    public void updateColumnPlacementPhysicalPosition( long adapterId, long columnId ) {
-
-    }
-
-
-    @Override
-    public void updateColumnPlacementPhysicalNames( long adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
-
     }
 
 
@@ -173,7 +167,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public AllocationTable createAllocationTable( long adapterId, long tableId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId, List.of() );
+        AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId );
         tables.put( id, table );
         return table;
     }

@@ -22,9 +22,8 @@ import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
@@ -33,9 +32,8 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
     @Override
     public List<DataStore> getDataStoresForNewColumn( LogicalColumn addedColumn ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        LogicalTable catalogTable = snapshot.rel().getTable( addedColumn.tableId );
-        List<CatalogDataPlacement> dataPlacement = snapshot.alloc().getDataPlacements( catalogTable.id );
-        return ImmutableList.of( AdapterManager.getInstance().getStore( dataPlacement.get( 0 ).adapterId ) );
+        List<AllocationEntity> allocations = snapshot.alloc().getAllocationsFromLogical( addedColumn.tableId );
+        return ImmutableList.of( AdapterManager.getInstance().getStore( allocations.get( 0 ).adapterId ) );
     }
 
 

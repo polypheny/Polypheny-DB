@@ -23,7 +23,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -76,7 +76,7 @@ public class SimpleRouter extends AbstractDqlRouter {
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
-        Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
+        Map<Long, List<AllocationColumn>> placementDistribution = partitionIds != null
                 ? partitionManager.getRelevantPlacements( catalogTable, partitionIds, Collections.emptyList() )
                 : partitionManager.getRelevantPlacements( catalogTable, property.partitionIds, Collections.emptyList() );
 

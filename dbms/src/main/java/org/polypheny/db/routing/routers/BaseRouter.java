@@ -52,8 +52,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
@@ -108,7 +108,7 @@ public abstract class BaseRouter implements Router {
     /**
      * Execute the table scan on the first placement of a table
      */
-    protected static Map<Long, List<CatalogColumnPlacement>> selectPlacement( LogicalTable table ) {
+    protected static Map<Long, List<AllocationColumn>> selectPlacement( LogicalTable table ) {
         // Find the adapter with the most column placements
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
@@ -120,7 +120,7 @@ public abstract class BaseRouter implements Router {
         }
 
         // Take the adapter with most placements as base and add missing column placements
-        List<CatalogColumnPlacement> placementList = new LinkedList<>();
+        List<AllocationColumn> placementList = new LinkedList<>();
         for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( table.id ) ) {
             placementList.add( Catalog.snapshot().alloc().getColumnPlacements( column.id ).get( 0 ) );
         }
@@ -365,7 +365,7 @@ public abstract class BaseRouter implements Router {
             joinedScanCache.put( allocationEntities.hashCode(), node );
         }
 
-        CatalogColumnPlacement placement = allocationEntities.get( 0 ).unwrap( AllocationTable.class ).placements.get( 0 );
+        AllocationColumn placement = allocationEntities.get( 0 ).unwrap( AllocationTable.class ).placements.get( 0 );
         // todo dl: remove after RowType refactor
         if ( Catalog.snapshot().getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );

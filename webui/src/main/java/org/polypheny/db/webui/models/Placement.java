@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Value;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -101,7 +101,7 @@ public class Placement {
         public RelationalStore(
                 String uniqueName,
                 String adapterName,
-                List<CatalogColumnPlacement> columnPlacements,
+                List<AllocationColumn> columnPlacements,
                 final List<Long> partitionKeys,
                 final long numPartitions,
                 final PartitionType partitionType ) {
@@ -190,13 +190,13 @@ public class Placement {
         private final PlacementType placementType;
 
 
-        public ColumnPlacement( CatalogColumnPlacement catalogColumnPlacement ) {
-            this.tableId = catalogColumnPlacement.tableId;
-            this.tableName = catalogColumnPlacement.getLogicalTableName();
-            this.columnId = catalogColumnPlacement.columnId;
-            this.columnName = catalogColumnPlacement.getLogicalColumnName();
-            this.storeId = (int) catalogColumnPlacement.adapterId;
-            this.placementType = catalogColumnPlacement.placementType;
+        public ColumnPlacement( AllocationColumn allocationColumn ) {
+            this.tableId = allocationColumn.tableId;
+            this.tableName = allocationColumn.getLogicalTableName();
+            this.columnId = allocationColumn.columnId;
+            this.columnName = allocationColumn.getLogicalColumnName();
+            this.storeId = (int) allocationColumn.adapterId;
+            this.placementType = allocationColumn.placementType;
         }
 
     }

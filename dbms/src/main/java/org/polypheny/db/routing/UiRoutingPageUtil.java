@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -103,9 +103,9 @@ public class UiRoutingPageUtil {
                 CatalogPartitionGroup catalogPartitionGroup = snapshot.alloc().getPartitionGroup( catalogPartition.partitionGroupId );
 
                 v.forEach( p -> {
-                    CatalogColumnPlacement catalogColumnPlacement = snapshot.alloc().getColumnPlacement( p.left, p.right );
+                    AllocationColumn allocationColumn = snapshot.alloc().getColumnPlacement( p.left, p.right );
                     CatalogPartitionPlacement catalogPartitionPlacement = snapshot.alloc().getPartitionPlacement( p.left, k );
-                    LogicalColumn logicalColumn = snapshot.rel().getColumn( catalogColumnPlacement.columnId );
+                    LogicalColumn logicalColumn = snapshot.rel().getColumn( allocationColumn.columnId );
                     table.addRow(
                             snapshot.getNamespace( catalogTable.namespaceId ) + "." + catalogTable.name,
                             logicalColumn.name,

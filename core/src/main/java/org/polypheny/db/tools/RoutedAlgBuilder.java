@@ -27,7 +27,7 @@ import lombok.Getter;
 import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Context;
@@ -98,14 +98,14 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-    public void addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) {
+    public void addPhysicalInfo( Map<Long, List<AllocationColumn>> physicalPlacements ) {
         final Map<Long, List<Pair<Long, Long>>> map = physicalPlacements.entrySet().stream()
                 .collect( Collectors.toMap( Entry::getKey, entry -> map( entry.getValue() ) ) );
         physicalPlacementsOfPartitions.putAll( map );
     }
 
 
-    private List<Pair<Long, Long>> map( List<CatalogColumnPlacement> catalogCols ) {
+    private List<Pair<Long, Long>> map( List<AllocationColumn> catalogCols ) {
         return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
     }
 

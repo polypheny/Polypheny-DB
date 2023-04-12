@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
@@ -304,7 +304,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public void addData( Transaction transaction, List<DataStore> stores, Map<Long, List<LogicalColumn>> columns, AlgRoot algRoot, CatalogMaterializedView materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
-        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
+        List<AllocationColumn> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
         List<CatalogDataPlacement> dataPlacements = transaction.getSnapshot().alloc().getDataPlacements( materializedView.id );
         for ( CatalogDataPlacement placement : dataPlacements ) {
@@ -333,7 +333,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
-        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
+        List<AllocationColumn> columnPlacements = new LinkedList<>();
         Map<Long, List<LogicalColumn>> columns = new HashMap<>();
 
         List<Long> ids = new ArrayList<>();

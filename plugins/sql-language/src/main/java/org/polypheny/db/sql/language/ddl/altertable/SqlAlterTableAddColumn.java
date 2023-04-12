@@ -20,7 +20,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
@@ -126,8 +126,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( CatalogDataPlacement placement : statement.getTransaction().getSnapshot().alloc().getDataPlacements( catalogTable.id ) ) {
-            getDataStoreInstance( placement.adapterId );
+        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id ) ) {
+            getDataStoreInstance( allocation.adapterId );
         }
 
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();

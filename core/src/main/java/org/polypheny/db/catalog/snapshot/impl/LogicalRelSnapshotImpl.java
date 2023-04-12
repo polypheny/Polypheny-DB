@@ -81,7 +81,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
 
         tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-        tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, namespaces.get( e.getValue().namespaceId ).caseSensitive ? e.getValue().name : e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
+        tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
 
         columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
         columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespaces.get( e.getValue().namespaceId ).caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
@@ -151,6 +151,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
             tableConstraints.get( v.key.tableId ).add( v );
         } );
         this.tableConstraints = ImmutableMap.copyOf( tableConstraints );
+    }
+
+
+    public String getAdjustedName( long namespaceId, String entityName ) {
+        return namespaces.get( namespaceId ).caseSensitive ? entityName : entityName.toLowerCase();
     }
 
 

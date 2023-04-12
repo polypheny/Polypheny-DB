@@ -118,7 +118,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation );
+    LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation );
 
 
     /**

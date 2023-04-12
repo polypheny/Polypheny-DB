@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -36,7 +37,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param position
      * @return
      */
-    AllocationTable addColumnPlacement( long allocationId, long columnId, PlacementType placementType, int position );
+    AllocationColumn addColumn( long allocationId, long columnId, PlacementType placementType, int position );
 
     /**
      * Deletes all dependent column placements
@@ -45,7 +46,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnId The id of the column
      * @param columnOnly columnOnly If delete originates from a dropColumn
      */
-    void deleteColumnPlacement( long allocationId, long columnId, boolean columnOnly );
+    void deleteColumn( long allocationId, long columnId, boolean columnOnly );
 
 
     /**
@@ -65,26 +66,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param position The physical position to set
      */
     void updateColumnPlacementPhysicalPosition( long allocId, long columnId, long position );
-
-    /**
-     * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     */
-    void updateColumnPlacementPhysicalPosition( long adapterId, long columnId );
-
-    /**
-     * Change physical names of all column placements.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param physicalSchemaName The physical schema name
-     * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (the highest number in the table; represents that the column is now at the last position)
-     */
-    void updateColumnPlacementPhysicalNames( long adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
-
 
     /**
      * Adds a partition to the catalog
@@ -226,5 +207,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
 
     Map<Long, AllocationTable> getTables();
+
+    Map<Long, AllocationColumn> getColumns();
 
 }

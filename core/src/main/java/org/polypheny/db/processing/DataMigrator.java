@@ -19,8 +19,8 @@ package org.polypheny.db.processing;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -52,7 +52,7 @@ public interface DataMigrator {
             Transaction transaction,
             CatalogAdapter store,
             LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns,
-            Map<Long, List<CatalogColumnPlacement>> placementDistribution,
+            Map<Long, List<AllocationColumn>> placementDistribution,
             List<Long> targetPartitionIds );
 
     /**
@@ -76,14 +76,14 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
-    AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+    AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long partitionId );
 
     //is used within copyData
     void executeQuery( List<LogicalColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
-    AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+    AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, long partitionId );
 
-    AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
+    AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placementDistribution );
 
 
     void copyGraphData( LogicalGraph graph, Transaction transaction, Long existingAdapterId, CatalogAdapter adapter );

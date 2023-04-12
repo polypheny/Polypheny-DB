@@ -18,10 +18,10 @@ package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -54,7 +54,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the column
      * @return The specific column placement
      */
-    CatalogColumnPlacement getColumnPlacement( long adapterId, long columnId );
+    AllocationColumn getColumnPlacement( long adapterId, long columnId );
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -71,7 +71,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
-    List<CatalogColumnPlacement> getColumnPlacements( long columnId );
+    List<AllocationColumn> getColumnPlacements( long columnId );
 
     /**
      * Get column placements of a specific table on a specific adapter on column detail level.
@@ -80,7 +80,7 @@ public interface AllocSnapshot {
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
-    List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
+    List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
 
     /**
      * Get column placements on a adapter. On column detail level
@@ -89,7 +89,7 @@ public interface AllocSnapshot {
      * @param adapterId The id of the adapter
      * @return List of column placements on the specified adapter
      */
-    List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( long adapterId );
+    List<AllocationColumn> getColumnPlacementsOnAdapter( long adapterId );
 
     /**
      * Gets a collection of column placements for a given column.
@@ -97,7 +97,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the column of requested column placements
      * @return The collection of placements sorted
      */
-    List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
+    List<AllocationColumn> getColumnPlacementsByColumn( long columnId );
 
     /**
      * Gets all column placements of a table structured by the id of the adapters.
@@ -122,7 +122,7 @@ public interface AllocSnapshot {
      * @param schemaId The id of the schema
      * @return List of column placements on this adapter and schema
      */
-    List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId );
+    List<AllocationColumn> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId );
 
     /**
      * Get a partition object by its unique id
@@ -202,7 +202,7 @@ public interface AllocSnapshot {
      * @param columnId The id of tje column
      * @return List of CatalogColumnPlacements
      */
-    List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId );
+    List<AllocationColumn> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId );
 
     /**
      * Get adapters by partition. Identify the location of partitions/replicas
@@ -408,5 +408,7 @@ public interface AllocSnapshot {
     boolean adapterHasPlacement( long adapterId, long logicalId );
 
     AllocationEntity getAllocation( long adapterId, long entityId );
+
+    List<AllocationColumn> getColumns( long allocId );
 
 }

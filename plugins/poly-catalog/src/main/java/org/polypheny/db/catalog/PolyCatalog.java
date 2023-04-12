@@ -50,6 +50,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
@@ -261,7 +262,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     private void addDefaultCsvColumn( CatalogAdapter csv, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !getSnapshot().rel().checkIfExistsColumn( table.id, name ) ) {
-            long colId = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
+            LogicalColumn column = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             String filename = table.name + ".csv";
             if ( table.name.equals( "emp" ) || table.name.equals( "work" ) ) {
                 filename += ".gz";
@@ -275,8 +276,8 @@ public class PolyCatalog extends Catalog implements Serializable {
                 alloc = getSnapshot().alloc().getAllocation( csv.id, table.id );
             }
 
-            getAllocRel( table.namespaceId ).addColumnPlacement( alloc.id, colId, PlacementType.AUTOMATIC, position );
-            //getAllocRel( table.namespaceId ).addColumnPlacement( alloc.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
+            getAllocRel( table.namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, position );
+            //getAllocRel( table.namespaceId ).addColumn( alloc.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
             //getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( allocId, colId, position );
 
             updateSnapshot();
@@ -289,11 +290,11 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     private void addDefaultColumn( CatalogAdapter adapter, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !getSnapshot().rel().checkIfExistsColumn( table.id, name ) ) {
-            long colId = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
+            LogicalColumn column = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             AllocationEntity entity = getSnapshot().alloc().getAllocation( adapter.id, table.id );
-            getAllocRel( table.namespaceId ).addColumnPlacement( entity.id, colId, PlacementType.AUTOMATIC, position );
-            //getAllocRel( table.namespaceId ).addColumnPlacement( entity.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
-            getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( adapter.id, colId, position );
+            getAllocRel( table.namespaceId ).addColumn( entity.id, column.id, PlacementType.AUTOMATIC, position );
+            //getAllocRel( table.namespaceId ).addColumn( entity.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
+            getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( adapter.id, column.id, position );
         }
     }
 
@@ -304,6 +305,8 @@ public class PolyCatalog extends Catalog implements Serializable {
         Set<Long> keys = this.physicalCatalogs.keySet();
         keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
 
+        // update all except physicals, so information can be accessed
+        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
         // generate new physical entities, atm only relational
         this.allocationCatalogs.forEach( ( k, v ) -> {
             if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
@@ -324,6 +327,7 @@ public class PolyCatalog extends Catalog implements Serializable {
             }
         } );
 
+        // update with newly generated physical entities
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
     }
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,29 +28,21 @@ import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.PlacementType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class AllocationTable extends AllocationEntity {
-
-    @Serialize
-    public List<CatalogColumnPlacement> placements;
 
 
     public AllocationTable(
             @Deserialize("id") long id,
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
-            @Deserialize("adapterId") long adapterId,
-            @Deserialize("placements") List<CatalogColumnPlacement> placements ) {
+            @Deserialize("adapterId") long adapterId ) {
         super( id, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
-        this.placements = placements;
     }
 
 
@@ -68,12 +59,12 @@ public class AllocationTable extends AllocationEntity {
 
 
     public Map<Long, String> getColumnNames() {
-        return getColumns().values().stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) );
+        return getColumns().values().stream().collect( Collectors.toMap( c -> c.columnId, AllocationColumn::getLogicalColumnName ) );
     }
 
 
-    public Map<Long, LogicalColumn> getColumns() {
-        return Catalog.getInstance().getSnapshot().rel().getColumns( logicalId ).stream().collect( Collectors.toMap( c -> c.id, c -> c ) );
+    public Map<Long, AllocationColumn> getColumns() {
+        return Catalog.snapshot().alloc().getColumns( id ).stream().collect( Collectors.toMap( c -> c.columnId, c -> c ) );
     }
 
 
@@ -82,22 +73,8 @@ public class AllocationTable extends AllocationEntity {
     }
 
 
-    public AllocationTable withAddedColumn( long columnId, PlacementType placementType, int position ) {
-        List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
-        placements.add( new CatalogColumnPlacement( namespaceId, id, columnId, adapterId, placementType, position ) );
-
-        return new AllocationTable( id, logicalId, namespaceId, adapterId, placements );
-    }
-
-
-    public AllocationTable withRemovedColumn( long columnId ) {
-        List<CatalogColumnPlacement> placements = new ArrayList<>( this.placements );
-        return new AllocationTable( id, logicalId, namespaceId, adapterId, placements.stream().filter( p -> p.columnId != columnId ).collect( Collectors.toList() ) );
-    }
-
-
     public Map<Long, AlgDataType> getColumnTypes() {
-        return placements.stream().collect( Collectors.toMap( p -> p.columnId, p -> Catalog.snapshot().rel().getColumn( p.columnId ).getAlgDataType( AlgDataTypeFactory.DEFAULT ) ) );
+        return getColumns().values().stream().collect( Collectors.toMap( c -> c.columnId, AllocationColumn::getAlgDataType ) );
     }
 
 
@@ -107,7 +84,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public List<Long> getColumnOrder() {
-        List<CatalogColumnPlacement> columns = new ArrayList<>( placements );
+        List<AllocationColumn> columns = new ArrayList<>( getColumns().values() );
         columns.sort( ( a, b ) -> Math.toIntExact( a.position - b.position ) );
 
         return columns.stream().map( c -> c.columnId ).collect( Collectors.toList() );

@@ -28,10 +28,10 @@ import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -54,17 +54,18 @@ import org.polypheny.db.util.Pair;
 public class AllocSnapshotImpl implements AllocSnapshot {
 
     ImmutableMap<Long, AllocationTable> tables;
+    ImmutableMap<Pair<Long, Long>, AllocationColumn> columns;
     ImmutableMap<Long, AllocationCollection> collections;
     ImmutableMap<Long, AllocationGraph> graphs;
 
-    ImmutableMap<Pair<Long, Long>, CatalogColumnPlacement> adapterColumnPlacement;
+    ImmutableMap<Pair<Long, Long>, AllocationColumn> adapterColumnPlacement;
 
     ImmutableMap<Long, AllocationEntity> allocs;
     ImmutableMap<Long, List<AllocationEntity>> allocsOnAdapters;
-    ImmutableMap<Long, List<CatalogColumnPlacement>> columPlacements;
+    ImmutableMap<Long, List<AllocationColumn>> columPlacements;
 
-    ImmutableMap<Long, List<CatalogColumnPlacement>> tablePlacements;
-    ImmutableMap<Pair<Long, Long>, List<CatalogColumnPlacement>> adapterLogicalTablePlacements;
+    ImmutableMap<Long, List<AllocationColumn>> tablePlacements;
+    ImmutableMap<Pair<Long, Long>, List<AllocationColumn>> adapterLogicalTablePlacements;
     ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
     ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
     ImmutableMap<Long, Map<Long, List<Long>>> tableAdapterColumns;
@@ -90,6 +91,14 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .map( c -> (AllocationGraphCatalog) c )
                 .collect( Collectors.toList() ) );
 
+        this.columns = allocationCatalogs.values()
+                .stream()
+                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .map( c -> (AllocationRelationalCatalog) c )
+                .map( c -> c.getColumns() )
+                .collect( Collectors.toList() );
+        this.tableAdapterColumns = buildTableAdapterColumns();
+
         this.allocs = mergeAllocs();
         this.allocsOnAdapters = buildAllocsOnAdapters();
         this.adapterColumnPlacement = buildAdapterColumnPlacement();
@@ -98,7 +107,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.adapterLogicalTableAlloc = buildAdapterLogicalTableAlloc();
         this.tablePlacements = buildTablePlacements();
         this.logicalAllocs = buildLogicalAllocs();
-        this.tableAdapterColumns = buildTableAdapterColumns();
     }
 
 
@@ -130,9 +138,9 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Long, List<CatalogColumnPlacement>> buildTablePlacements() {
-        Map<Long, List<CatalogColumnPlacement>> map = new HashMap<>();
-        this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> {
+    private ImmutableMap<Long, List<AllocationColumn>> buildTablePlacements() {
+        Map<Long, List<AllocationColumn>> map = new HashMap<>();
+        this.columns.forEach( ( k, v ) -> v.placements.forEach( p -> {
             if ( !map.containsKey( v.id ) ) {
                 map.put( v.id, new ArrayList<>() );
             }
@@ -150,8 +158,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Pair<Long, Long>, List<CatalogColumnPlacement>> buildAdapterLogicalTablePlacements() {
-        Map<Pair<Long, Long>, List<CatalogColumnPlacement>> map = new HashMap<>();
+    private ImmutableMap<Pair<Long, Long>, List<AllocationColumn>> buildAdapterLogicalTablePlacements() {
+        Map<Pair<Long, Long>, List<AllocationColumn>> map = new HashMap<>();
         this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> {
             if ( !map.containsKey( Pair.of( p.adapterId, p.tableId ) ) ) {
                 map.put( Pair.of( p.adapterId, p.tableId ), new ArrayList<>() );
@@ -163,8 +171,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Long, List<CatalogColumnPlacement>> buildColumnPlacements() {
-        Map<Long, List<CatalogColumnPlacement>> map = new HashMap<>();
+    private ImmutableMap<Long, List<AllocationColumn>> buildColumnPlacements() {
+        Map<Long, List<AllocationColumn>> map = new HashMap<>();
         this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> {
             if ( !map.containsKey( p.columnId ) ) {
                 map.put( p.columnId, new ArrayList<>() );
@@ -176,8 +184,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Pair<Long, Long>, CatalogColumnPlacement> buildAdapterColumnPlacement() {
-        Map<Pair<Long, Long>, CatalogColumnPlacement> map = new HashMap<>();
+    private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildAdapterColumnPlacement() {
+        Map<Pair<Long, Long>, AllocationColumn> map = new HashMap<>();
         this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> map.put( Pair.of( v.adapterId, p.columnId ), p ) ) );
         return ImmutableMap.copyOf( map );
     }
@@ -243,7 +251,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public CatalogColumnPlacement getColumnPlacement( long adapterId, long columnId ) {
+    public AllocationColumn getColumnPlacement( long adapterId, long columnId ) {
         return adapterColumnPlacement.get( Pair.of( adapterId, columnId ) );
     }
 
@@ -255,25 +263,25 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
+    public List<AllocationColumn> getColumnPlacements( long columnId ) {
         return columPlacements.get( columnId );
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId ) {
+    public List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId ) {
         return adapterLogicalTablePlacements.get( Pair.of( adapterId, tableId ) );
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( long adapterId ) {
+    public List<AllocationColumn> getColumnPlacementsOnAdapter( long adapterId ) {
         return null;
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
+    public List<AllocationColumn> getColumnPlacementsByColumn( long columnId ) {
         return null;
     }
 
@@ -291,7 +299,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId ) {
+    public List<AllocationColumn> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId ) {
         return null;
     }
 
@@ -345,7 +353,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
+    public List<AllocationColumn> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
         return null;
     }
 
@@ -534,6 +542,12 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @Override
     public AllocationEntity getAllocation( long adapterId, long entityId ) {
         return adapterLogicalTableAlloc.get( Pair.of( adapterId, entityId ) );
+    }
+
+
+    @Override
+    public List<AllocationColumn> getColumns( long allocId ) {
+
     }
 
 }

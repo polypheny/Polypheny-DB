@@ -28,8 +28,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -38,7 +38,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
@@ -66,19 +65,19 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
     }
 
 
-    public abstract List<? extends PhysicalEntity> createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable allocationTable );
+    public abstract List<? extends PhysicalEntity> createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable alloc, List<AllocationColumn> allocationTable );
 
     public abstract void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
 
-    public abstract void addColumn( Context context, LogicalTable catalogTable, LogicalColumn logicalColumn );
+    public abstract void addColumn( Context context, AllocationTable catalogTable, LogicalColumn logicalColumn );
 
-    public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
+    public abstract void dropColumn( Context context, AllocationColumn columnPlacement );
 
     public abstract void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds );
 
     public abstract void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds );
 
-    public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, LogicalColumn logicalColumn, PolyType oldType );
+    public abstract void updateColumnType( Context context, AllocationColumn columnPlacement, LogicalColumn logicalColumn, PolyType oldType );
 
     public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
 

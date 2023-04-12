@@ -74,9 +74,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -209,11 +209,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
 
         // Essentially gets a list of all stores where this table resides
-        List<CatalogColumnPlacement> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
+        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
         List<AllocationEntity> allocs = snapshot.alloc().getAllocationsFromLogical( catalogTable.id );//.getPartitionProperty( catalogTable.id );
         if ( !allocs.isEmpty() && log.isDebugEnabled() ) {
             log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, -1 );//property.partitionGroupIds );
-            for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
+            for ( AllocationColumn dataPlacement : pkPlacements ) {
                 log.debug(
                         "\t\t -> '{}' {}\t{}",
                         dataPlacement.adapterId,
@@ -234,10 +234,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<Map<Long, Object>> allValues = statement.getDataContext().getParameterValues();
 
         Map<Long, Object> newParameterValues = new HashMap<>();
-        for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
+        for ( AllocationColumn pkPlacement : pkPlacements ) {
 
             // Get placements on store
-            List<CatalogColumnPlacement> placementsOnAdapter = snapshot.alloc().getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
+            List<AllocationColumn> placementsOnAdapter = snapshot.alloc().getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
 
             // If this is an update, check whether we need to execute on this store at all
             List<String> updateColumnList = modify.getUpdateColumnList();
@@ -1241,7 +1241,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             AlgNode node,
             RoutedAlgBuilder builder,
             LogicalTable catalogTable,
-            List<CatalogColumnPlacement> placements,
+            List<AllocationColumn> placements,
             CatalogPartitionPlacement partitionPlacement,
             Statement statement,
             AlgOptCluster cluster,
@@ -1253,7 +1253,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         if ( log.isDebugEnabled() ) {
             log.debug( "List of Store specific ColumnPlacements: " );
-            for ( CatalogColumnPlacement ccp : placements ) {
+            for ( AllocationColumn ccp : placements ) {
                 log.debug( "{}.{}", ccp.adapterId, ccp.getLogicalColumnName() );
             }
         }
@@ -1300,7 +1300,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 return builder;
             } else { // partitioned, add additional project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
-                for ( CatalogColumnPlacement ccp : placements ) {
+                for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
                 return builder.project( rexNodes );
@@ -1321,13 +1321,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     }
                     builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
                     ArrayList<RexNode> rexNodes = new ArrayList<>();
-                    for ( CatalogColumnPlacement ccp : placements ) {
+                    for ( AllocationColumn ccp : placements ) {
                         rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                     }
                     return builder.project( rexNodes );
                 } else {
                     ArrayList<RexNode> rexNodes = new ArrayList<>();
-                    for ( CatalogColumnPlacement ccp : placements ) {
+                    for ( AllocationColumn ccp : placements ) {
                         rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                     }
                     for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
@@ -1365,10 +1365,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         long pkid = fromTable.primaryKey;
         List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
-        List<CatalogColumnPlacement> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
+        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
 
         List<AlgNode> nodes = new ArrayList<>();
-        for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
+        for ( AllocationColumn pkPlacement : pkPlacements ) {
 
             snapshot.alloc().getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, fromTable.id );
 
@@ -1392,7 +1392,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
+    private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<AllocationColumn> placements, RexNode operand ) {
         if ( operand instanceof RexInputRef ) {
             int index = ((RexInputRef) operand).getIndex();
             AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
