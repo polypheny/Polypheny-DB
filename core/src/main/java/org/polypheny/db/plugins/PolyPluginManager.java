@@ -90,8 +90,8 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     static {
         final File jarFile = new File( PolyPluginManager.class.getProtectionDomain().getCodeSource().getLocation().getPath() );
+        File pluginsFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" );
         if ( jarFile.isFile() ) {  // Run with JAR file
-            File pluginsFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" );
             try {
                 final JarFile jar = new JarFile( jarFile );
                 final Enumeration<JarEntry> entries = jar.entries();
@@ -104,16 +104,14 @@ public class PolyPluginManager extends DefaultPluginManager {
                 }
                 jar.close();
             } catch ( Exception e ) {
-                // Ignore
+                // ignore
             }
-            pluginManager = new PolyPluginManager( Path.of( pluginsFolder.getPath() ) );
-        } else {
-            pluginManager = new PolyPluginManager(
-                    Path.of( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath() ),
-                    Path.of( "../build/plugins" ),
-                    Path.of( "./build/plugins" ),
-                    Path.of( "../../build/plugins" ) );
         }
+        pluginManager = new PolyPluginManager(
+                Path.of( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath() ),
+                Path.of( "../build/plugins" ),
+                Path.of( "./build/plugins" ),
+                Path.of( "../../build/plugins" ) );
     }
 
 
@@ -156,7 +154,6 @@ public class PolyPluginManager extends DefaultPluginManager {
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
         for ( PluginWrapper plugin : startedPlugins ) {
             String pluginId = plugin.getDescriptor().getPluginId();
-
             log.info( String.format( "Plugin '%s' added", pluginId ) );
         }
     }
