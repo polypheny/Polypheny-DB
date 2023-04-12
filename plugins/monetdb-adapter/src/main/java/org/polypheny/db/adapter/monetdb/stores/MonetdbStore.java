@@ -86,7 +86,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/monet", getUniqueName(), dockerInstanceId )
                 .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
-                .withReadyTest( this::testConnection, 15000 )
+                .withReadyTest( this::testDockerConnection, 15000 )
                 .build();
 
         this.container = container;
@@ -330,19 +330,23 @@ public class MonetdbStore extends AbstractJdbcStore {
         return String.format( "jdbc:monetdb://%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
-
-    private boolean testConnection() {
-        ConnectionFactory connectionFactory = null;
-        ConnectionHandler handler = null;
-
+    private boolean testDockerConnection() {
         if ( container == null ) {
             return false;
         }
+
         container.updateIpAddress();
         this.host = container.getIpAddress();
         if ( this.host == null ) {
             return false;
         }
+
+        return testConnection();
+    }
+
+    private boolean testConnection() {
+        ConnectionFactory connectionFactory = null;
+        ConnectionHandler handler = null;
 
         try {
             connectionFactory = createConnectionFactory();
