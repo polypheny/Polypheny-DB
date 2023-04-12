@@ -98,7 +98,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/postgres", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
-                .withReadyTest( this::testConnection, 15000 )
+                .withReadyTest( this::testDockerConnection, 15000 )
                 .build();
 
         this.container = container;
@@ -376,19 +376,23 @@ public class PostgresqlStore extends AbstractJdbcStore {
         return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
-
-    private boolean testConnection() {
-        ConnectionFactory connectionFactory = null;
-        ConnectionHandler handler = null;
-
+    private boolean testDockerConnection() {
         if ( container == null ) {
             return false;
         }
+
         container.updateIpAddress();
         this.host = container.getIpAddress();
         if ( this.host == null ) {
             return false;
         }
+
+        return testConnection();
+    }
+
+    private boolean testConnection() {
+        ConnectionFactory connectionFactory = null;
+        ConnectionHandler handler = null;
 
         try {
             connectionFactory = createConnectionFactory();
