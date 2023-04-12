@@ -44,33 +44,52 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     public ImmutableMap<Long, String> columns;
+    public ImmutableMap<Long, String> logicalColumns;
 
     public String namespaceName;
     public ImmutableMap<Long, AlgDataType> types;
     public ImmutableList<Long> order;
 
 
-    public PhysicalTable( long id, long logicalId, long allocationId, String name, long namespaceId, String namespaceName, long adapterId, Map<Long, String> columns, Map<Long, AlgDataType> types, List<Long> order ) {
+    public PhysicalTable(
+            long id,
+            long logicalId,
+            long allocationId,
+            String name,
+            long namespaceId,
+            String namespaceName,
+            long adapterId,
+            Map<Long, String> columns,
+            Map<Long, String> logicalColumns,
+            Map<Long, AlgDataType> types,
+            List<Long> order ) {
         super( id, logicalId, allocationId, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
         this.namespaceName = namespaceName;
         this.columns = ImmutableMap.copyOf( columns );
+        this.logicalColumns = ImmutableMap.copyOf( logicalColumns );
         this.types = ImmutableMap.copyOf( types );
         this.order = ImmutableList.copyOf( order );
     }
 
 
-    public PhysicalTable( long id, AllocationTable table, String name, String namespaceName, Map<Long, String> columns, Map<Long, AlgDataType> types, List<Long> order ) {
-        this( id, table.logicalId, table.id, name, table.namespaceId, namespaceName, table.adapterId, columns, types, order );
+    public PhysicalTable( long id, AllocationTable table, String name, String namespaceName, Map<Long, String> columns, Map<Long, String> logicalColumns, Map<Long, AlgDataType> types, List<Long> order ) {
+        this( id, table.logicalId, table.id, name, table.namespaceId, namespaceName, table.adapterId, columns, logicalColumns, types, order );
     }
 
 
     @Override
     public AlgDataType getRowType() {
-        return buildProto().apply( AlgDataTypeFactory.DEFAULT );
+        return buildProto( columns ).apply( AlgDataTypeFactory.DEFAULT );
     }
 
 
-    public AlgProtoDataType buildProto() {
+    @Override
+    public AlgDataType getLogicalRowType() {
+        return buildProto( logicalColumns ).apply( AlgDataTypeFactory.DEFAULT );
+    }
+
+
+    public AlgProtoDataType buildProto( Map<Long, String> columns ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 

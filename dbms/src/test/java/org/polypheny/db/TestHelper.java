@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
@@ -51,9 +50,6 @@ import org.bson.BsonDocument;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -82,17 +78,13 @@ public class TestHelper {
         log.info( "Starting Polypheny-DB..." );
 
         Runnable runnable = () -> {
-            try {
-                polyphenyDb.testMode = true;
-                String defaultStoreName = System.getProperty( "store.default" );
-                if ( defaultStoreName != null ) {
-                    polyphenyDb.defaultStoreName = defaultStoreName;
-                }
-                // polyphenyDb.resetCatalog = true;
-                polyphenyDb.runPolyphenyDb();
-            } catch ( GenericCatalogException e ) {
-                log.error( "Exception while starting Polypheny-DB", e );
+            polyphenyDb.testMode = true;
+            String defaultStoreName = System.getProperty( "store.default" );
+            if ( defaultStoreName != null ) {
+                polyphenyDb.defaultStoreName = defaultStoreName;
             }
+            // polyphenyDb.resetCatalog = true;
+            polyphenyDb.runPolyphenyDb();
         };
         Thread thread = new Thread( runnable );
         thread.start();
@@ -128,11 +120,7 @@ public class TestHelper {
 
 
     public Transaction getTransaction() {
-        try {
-            return transactionManager.startTransaction( Catalog.defaultUserId, true, "Test Helper" );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
-        }
+        return transactionManager.startTransaction( Catalog.defaultUserId, true, "Test Helper" );
     }
 
 

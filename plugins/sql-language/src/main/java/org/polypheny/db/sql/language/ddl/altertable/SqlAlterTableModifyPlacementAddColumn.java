@@ -17,18 +17,12 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
-import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -38,7 +32,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -101,29 +94,11 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        try {
-            DdlManager.getInstance().addColumnPlacement(
-                    catalogTable,
-                    columnName.getSimple(),
-                    storeInstance,
-                    statement );
-        } catch ( UnknownAdapterException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.unknownAdapter( storeName.getSimple() ) );
-        } catch ( PlacementNotExistsException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
-        } catch ( PlacementAlreadyExistsException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
-        } catch ( ColumnNotExistsException e ) {
-            throw CoreUtil.newContextException(
-                    columnName.getPos(),
-                    RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
-        }
+        DdlManager.getInstance().addColumnPlacement(
+                catalogTable,
+                columnName.getSimple(),
+                storeInstance,
+                statement );
     }
 
 }

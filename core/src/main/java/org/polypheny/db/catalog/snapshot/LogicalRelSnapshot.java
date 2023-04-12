@@ -26,12 +26,6 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.Pattern;
 
 public interface LogicalRelSnapshot {
@@ -57,7 +51,6 @@ public interface LogicalRelSnapshot {
      *
      * @param tableName The name of the table
      * @return The table
-     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
     LogicalTable getTable( long namespaceId, String tableName );
 
@@ -113,7 +106,6 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @param columnName The name of the column
      * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
     LogicalColumn getColumn( long tableId, String columnName );
 
@@ -124,7 +116,7 @@ public interface LogicalRelSnapshot {
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    LogicalColumn getColumn( String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException;
+    LogicalColumn getColumn( String tableName, String columnName );
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -215,7 +207,7 @@ public interface LogicalRelSnapshot {
      * @param constraintName The name of the constraint
      * @return The constraint
      */
-    CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException;
+    CatalogConstraint getConstraint( long tableId, String constraintName );
 
     /**
      * Return the foreign key with the specified name from the specified table
@@ -224,7 +216,7 @@ public interface LogicalRelSnapshot {
      * @param foreignKeyName The name of the foreign key
      * @return The foreign key
      */
-    CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException;
+    CatalogForeignKey getForeignKey( long tableId, String foreignKeyName );
 
     List<CatalogIndex> getIndexes();
 
@@ -260,7 +252,7 @@ public interface LogicalRelSnapshot {
      * @param indexName The name of the index
      * @return The Index
      */
-    CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException;
+    CatalogIndex getIndex( long tableId, String indexName );
 
     /**
      * Checks if there is an index with the specified name in the specified table.

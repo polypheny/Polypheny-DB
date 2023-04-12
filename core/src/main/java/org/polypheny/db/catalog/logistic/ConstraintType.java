@@ -17,8 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeRuntimeException;
 
 public enum ConstraintType {
     UNIQUE( 1 ),
@@ -43,14 +41,14 @@ public enum ConstraintType {
                 return e;
             }
         }
-        throw new UnknownConstraintTypeRuntimeException( id );
+        throw new RuntimeException( "Unknown ConstraintType with id: " + id );
     }
 
 
-    public static ConstraintType parse( @NonNull String str ) throws UnknownConstraintTypeException {
+    public static ConstraintType parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "UNIQUE" ) ) {
             return ConstraintType.UNIQUE;
         }
-        throw new UnknownConstraintTypeException( str );
+        throw new RuntimeException( "Unknown ConstraintType with name: " + str );
     }
 }

@@ -18,9 +18,7 @@ package org.polypheny.db.languages.mql;
 
 import java.util.List;
 import java.util.Optional;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -76,7 +74,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
             }
 
             DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException | EntityAlreadyExistsException e ) {
+        } catch ( DdlOnSourceException e ) {
             throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
         }
     }

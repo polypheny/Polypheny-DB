@@ -17,8 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
 public enum Collation {
@@ -44,17 +42,17 @@ public enum Collation {
                 return c;
             }
         }
-        throw new UnknownCollationIdRuntimeException( id );
+        throw new RuntimeException( "Unknown Collation with id: " + id );
     }
 
 
-    public static Collation parse( @NonNull String str ) throws UnknownCollationException {
+    public static Collation parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "CASE SENSITIVE" ) ) {
             return Collation.CASE_SENSITIVE;
         } else if ( str.equalsIgnoreCase( "CASE INSENSITIVE" ) ) {
             return Collation.CASE_INSENSITIVE;
         }
-        throw new UnknownCollationException( str );
+        throw new RuntimeException( "Unknown Collation with name: " + str );
     }
 
 

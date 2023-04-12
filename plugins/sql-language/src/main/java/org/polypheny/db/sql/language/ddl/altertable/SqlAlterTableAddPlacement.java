@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -29,7 +27,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -40,7 +37,6 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -135,19 +131,13 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             columnIds.add( logicalColumn.id );
         }
 
-        try {
-            DdlManager.getInstance().addDataPlacement(
-                    catalogTable,
-                    columnIds,
-                    partitionGroupsList,
-                    partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
-                    storeInstance,
-                    statement );
-        } catch ( PlacementAlreadyExistsException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
-        }
+        DdlManager.getInstance().addDataPlacement(
+                catalogTable,
+                columnIds,
+                partitionGroupsList,
+                partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
+                storeInstance,
+                statement );
 
     }
 

@@ -27,15 +27,11 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.PolyCatalog;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 @Value
 @SuperBuilder(toBuilder = true)
@@ -99,12 +95,6 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
     @Override
     public void deleteGraph( long id ) {
-
-    }
-
-
-    @Override
-    public void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException {
 
     }
 

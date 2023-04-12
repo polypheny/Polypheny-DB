@@ -35,11 +35,6 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
@@ -166,7 +161,7 @@ public class PolyphenyDb {
     }
 
 
-    public void runPolyphenyDb() throws GenericCatalogException {
+    public void runPolyphenyDb() {
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
@@ -397,7 +392,7 @@ public class PolyphenyDb {
         try {
             IndexManager.getInstance().initialize( transactionManager );
             IndexManager.getInstance().restoreIndexes();
-        } catch ( UnknownUserException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
+        } catch ( TransactionException e ) {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 

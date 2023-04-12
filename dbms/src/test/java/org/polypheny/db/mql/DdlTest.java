@@ -34,7 +34,6 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.excluded.CassandraExcluded;
@@ -54,7 +53,7 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    public void addCollectionTest() throws UnknownSchemaException {
+    public void addCollectionTest() {
         Snapshot snapshot = Catalog.snapshot();
         String name = "testCollection";
 
@@ -79,7 +78,7 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    public void addPlacementTest() throws UnknownSchemaException, SQLException {
+    public void addPlacementTest() throws SQLException {
         Snapshot snapshot = Catalog.snapshot();
 
         String placement = "store1";
@@ -112,7 +111,7 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    public void deletePlacementTest() throws UnknownSchemaException, SQLException {
+    public void deletePlacementTest() throws SQLException {
         Snapshot snapshot = Catalog.snapshot();
 
         String placement = "store1";

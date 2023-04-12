@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,9 +27,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -52,7 +47,6 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -132,24 +126,18 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
             columns = getColumnInfo();
         }
 
-        try {
-            DdlManager.getInstance().createView(
-                    viewName,
-                    schemaId,
-                    algNode,
-                    algCollation,
-                    replace,
-                    statement,
-                    placementType,
-                    columns,
-                    String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
-                    QueryLanguage.from( "sql" ) );
-        } catch ( EntityAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            // we just added the table/column so it has to exist or we have a internal problem
-            throw new RuntimeException( e );
-        }
+        DdlManager.getInstance().createView(
+                viewName,
+                schemaId,
+                algNode,
+                algCollation,
+                replace,
+                statement,
+                placementType,
+                columns,
+                String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
+                QueryLanguage.from( "sql" ) );
+
     }
 
 

@@ -23,8 +23,6 @@ import org.polypheny.db.schema.Namespace;
 
 public interface PhysicalCatalog {
 
-    void addPhysicalEntity( PhysicalEntity physicalEntity );
-
 
     ConcurrentHashMap<Long, PhysicalEntity> getPhysicals();
 

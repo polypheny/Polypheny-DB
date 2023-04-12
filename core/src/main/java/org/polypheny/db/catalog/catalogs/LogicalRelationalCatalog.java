@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
@@ -47,7 +46,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract LogicalTable addTable( String name, EntityType entityType, boolean modifiable );
+    LogicalTable addTable( String name, EntityType entityType, boolean modifiable );
 
 
     /**
@@ -62,7 +61,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
+    long addView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
     /**
      * Adds a materialized view to a specified schema.
@@ -81,7 +80,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    public abstract long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+    long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered );
 
     /**
      * Renames a table
@@ -89,14 +88,14 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The if of the table to rename
      * @param name New name of the table
      */
-    public abstract void renameTable( long tableId, String name );
+    void renameTable( long tableId, String name );
 
     /**
      * Delete the specified table. Columns need to be deleted before.
      *
      * @param tableId The id of the table to delete
      */
-    public abstract void deleteTable( long tableId );
+    void deleteTable( long tableId );
 
     /**
      * Set the primary key of a table
@@ -104,7 +103,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The id of the table
      * @param keyId The id of the key to set as primary key. Set null to set no primary key.
      */
-    public abstract void setPrimaryKey( long tableId, Long keyId );
+    void setPrimaryKey( long tableId, Long keyId );
 
     /**
      * Adds a column.
@@ -119,7 +118,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation );
+    long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation );
 
 
     /**
@@ -128,7 +127,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The if of the column to rename
      * @param name New name of the column
      */
-    public abstract void renameColumn( long columnId, String name );
+    void renameColumn( long columnId, String name );
 
     /**
      * Change the position of the column.
@@ -136,7 +135,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column for which to change the position
      * @param position The new position of the column
      */
-    public abstract void setColumnPosition( long columnId, int position );
+    void setColumnPosition( long columnId, int position );
 
     /**
      * Change the data type of a column.
@@ -144,7 +143,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param type The new type of the column
      */
-    public abstract void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality ) throws GenericCatalogException;
+    void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality );
 
     /**
      * Change nullability of the column (weather the column allows null values).
@@ -152,7 +151,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param nullable True if the column should allow null values, false if not.
      */
-    public abstract void setNullable( long columnId, boolean nullable ) throws GenericCatalogException;
+    void setNullable( long columnId, boolean nullable );
 
     /**
      * Set the collation of a column.
@@ -161,7 +160,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param collation The collation to set
      */
-    public abstract void setCollation( long columnId, Collation collation );
+    void setCollation( long columnId, Collation collation );
 
 
     /**
@@ -169,7 +168,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param columnId The id of the column to delete
      */
-    public abstract void deleteColumn( long columnId );
+    void deleteColumn( long columnId );
 
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
@@ -178,15 +177,14 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue );
+    void setDefaultValue( long columnId, PolyType type, String defaultValue );
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.
      *
      * @param columnId The id of the column
      */
-    public abstract void deleteDefaultValue( long columnId );
-
+    void deleteDefaultValue( long columnId );
 
 
     /**
@@ -195,7 +193,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The id of the table
      * @param columnIds The id of key which will be part of the primary keys
      */
-    public abstract void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException;
+    void addPrimaryKey( long tableId, List<Long> columnIds );
 
 
     /**
@@ -209,7 +207,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param onUpdate The option for updates
      * @param onDelete The option for deletes
      */
-    public abstract void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException;
+    void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
 
     /**
      * Adds a unique constraint.
@@ -218,21 +216,21 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param constraintName The name of the constraint
      * @param columnIds A list of column ids
      */
-    public abstract void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException;
+    void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds );
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
      *
      * @param tableId The id of the key to drop
      */
-    public abstract void deletePrimaryKey( long tableId ) throws GenericCatalogException;
+    void deletePrimaryKey( long tableId );
 
     /**
      * Delete the specified foreign key (does not delete the referenced key).
      *
      * @param foreignKeyId The id of the foreign key to delete
      */
-    public abstract void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException;
+    void deleteForeignKey( long foreignKeyId );
 
     /**
      * Delete the specified constraint.
@@ -240,7 +238,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param constraintId The id of the constraint to delete
      */
-    public abstract void deleteConstraint( long constraintId ) throws GenericCatalogException;
+    void deleteConstraint( long constraintId );
 
 
     /**
@@ -248,14 +246,14 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param catalogView view for which to delete its dependencies
      */
-    public abstract void deleteViewDependencies( CatalogView catalogView );
+    void deleteViewDependencies( CatalogView catalogView );
 
     /**
      * Updates the last time a materialized view has been refreshed.
      *
      * @param materializedViewId id of the materialized view
      */
-    public abstract void updateMaterializedViewRefreshTime( long materializedViewId );
+    void updateMaterializedViewRefreshTime( long materializedViewId );
 
 
     /**
@@ -265,7 +263,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId table to be flagged for deletion
      * @param flag true if it should be flagged, false if flag should be removed
      */
-    public abstract void flagTableForDeletion( long tableId, boolean flag );
+    void flagTableForDeletion( long tableId, boolean flag );
 
     /**
      * Is used to detect if a table is flagged for deletion.
@@ -275,7 +273,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId table to be checked
      * @return If table is flagged for deletion or not
      */
-    public abstract boolean isTableFlaggedForDeletion( long tableId );
+    boolean isTableFlaggedForDeletion( long tableId );
 
     /**
      * Adds an index over the specified columns
@@ -290,7 +288,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param indexName The name of the index
      * @return The id of the created index
      */
-    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) throws GenericCatalogException;
+    long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName );
 
     /**
      * Set physical index name.
@@ -298,14 +296,14 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param indexId The id of the index
      * @param physicalName The physical name to be set
      */
-    public abstract void setIndexPhysicalName( long indexId, String physicalName );
+    void setIndexPhysicalName( long indexId, String physicalName );
 
     /**
      * Delete the specified index
      *
      * @param indexId The id of the index to drop
      */
-    public abstract void deleteIndex( long indexId );
+    void deleteIndex( long indexId );
 
     Map<Long, LogicalTable> getTables();
 

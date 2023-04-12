@@ -31,10 +31,7 @@ import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
@@ -253,19 +250,16 @@ public class StatisticsTest {
                             REGION_TEST_DATA
                     );
                     waiter.await( 20, TimeUnit.SECONDS );
-                    try {
-                        Snapshot snapshot = Catalog.getInstance().getSnapshot();
-                        LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" );
-                        LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" );
+                    Snapshot snapshot = Catalog.getInstance().getSnapshot();
+                    LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" );
+                    LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" );
 
-                        Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                        Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
+                    Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                    Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
-                        Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
-                        Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
-                    } catch ( UnknownTableException  | UnknownSchemaException e ) {
-                        log.error( "Caught exception test", e );
-                    }
+                    Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
+                    Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
+
                     connection.commit();
                 } catch ( InterruptedException e ) {
                     log.error( "Caught exception test", e );
@@ -335,7 +329,7 @@ public class StatisticsTest {
                 log.warn( "Collection was already removed from the catalog, therefore the count will be null, which is correct" );
             }
 
-        } catch ( UnknownTableException | UnknownSchemaException | InterruptedException e ) {
+        } catch ( InterruptedException e ) {
             log.error( "Caught exception test", e );
         }
     }

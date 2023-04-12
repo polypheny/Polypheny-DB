@@ -17,8 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 
 public enum EntityType {
     ENTITY( 1 ),
@@ -46,17 +44,17 @@ public enum EntityType {
                 return t;
             }
         }
-        throw new UnknownTableTypeRuntimeException( id );
+        throw new RuntimeException( "Unknown EntityType with id: " + id );
     }
 
 
-    public static EntityType getByName( final String name ) throws UnknownTableTypeException {
+    public static EntityType getByName( final String name ) {
         for ( EntityType t : values() ) {
             if ( t.name().equalsIgnoreCase( name ) ) {
                 return t;
             }
         }
-        throw new UnknownTableTypeException( name );
+        throw new RuntimeException( "Unknown EntityType with name: " + name );
     }
 
 

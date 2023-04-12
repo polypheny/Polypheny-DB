@@ -20,10 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.cql.exception.UnknownIndexException;
 
 
 /**
@@ -52,17 +48,12 @@ public class ColumnIndex {
     }
 
 
-    public static ColumnIndex createIndex( String inDatabase, String schemaName, String tableName, String columnName ) throws UnknownIndexException {
-        try {
-            log.debug( "Creating ColumnIndex." );
-            Catalog catalog = Catalog.getInstance();
-            LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
-            LogicalColumn column = catalog.getSnapshot().rel().getColumn( tableName, columnName );
-            return new ColumnIndex( column, schemaName, tableName, columnName );
-        } catch ( UnknownTableException | UnknownSchemaException | UnknownColumnException e ) {
-            log.error( "Cannot find a underlying column for the specified column name: {}.{}.{}.", schemaName, tableName, columnName, e );
-            throw new UnknownIndexException( "Cannot find a underlying column for the specified column name: " + schemaName + "." + tableName + "." + columnName + "." );
-        }
+    public static ColumnIndex createIndex( String inDatabase, String schemaName, String tableName, String columnName ) {
+        log.debug( "Creating ColumnIndex." );
+        Catalog catalog = Catalog.getInstance();
+        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
+        LogicalColumn column = catalog.getSnapshot().rel().getColumn( tableName, columnName );
+        return new ColumnIndex( column, schemaName, tableName, columnName );
     }
 
 

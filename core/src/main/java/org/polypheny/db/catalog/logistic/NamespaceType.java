@@ -17,8 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import com.google.gson.annotations.SerializedName;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.schema.ModelTrait;
 
@@ -51,23 +49,23 @@ public enum NamespaceType {
     }
 
 
-    public static NamespaceType getById( final int id ) throws UnknownSchemaTypeException {
+    public static NamespaceType getById( final int id ) {
         for ( NamespaceType t : values() ) {
             if ( t.id == id ) {
                 return t;
             }
         }
-        throw new UnknownSchemaTypeRuntimeException( id );
+        throw new RuntimeException( "Unknown NamespaceType with id: " + id );
     }
 
 
-    public static NamespaceType getByName( final String name ) throws UnknownSchemaTypeException {
+    public static NamespaceType getByName( final String name ) {
         for ( NamespaceType t : values() ) {
             if ( t.name().equalsIgnoreCase( name ) ) {
                 return t;
             }
         }
-        throw new UnknownSchemaTypeException( name );
+        throw new RuntimeException( "Unknown NamespaceType with name: " + name );
     }
 
 

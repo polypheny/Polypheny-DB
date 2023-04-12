@@ -17,19 +17,14 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -40,7 +35,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -138,23 +132,15 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
-        try {
-            DdlManager.getInstance().addColumn(
-                    column.getSimple(),
-                    catalogTable,
-                    beforeColumnName == null ? null : beforeColumnName.getSimple(),
-                    afterColumnName == null ? null : afterColumnName.getSimple(),
-                    ColumnTypeInformation.fromDataTypeSpec( type ),
-                    nullable,
-                    defaultValue,
-                    statement );
-        } catch ( NotNullAndDefaultValueException e ) {
-            throw CoreUtil.newContextException( column.getPos(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
-        } catch ( ColumnAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( column.getPos(), RESOURCE.columnExists( column.getSimple() ) );
-        } catch ( ColumnNotExistsException e ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
-        }
+        DdlManager.getInstance().addColumn(
+                column.getSimple(),
+                catalogTable,
+                beforeColumnName == null ? null : beforeColumnName.getSimple(),
+                afterColumnName == null ? null : afterColumnName.getSimple(),
+                ColumnTypeInformation.fromDataTypeSpec( type ),
+                nullable,
+                defaultValue,
+                statement );
     }
 
 }

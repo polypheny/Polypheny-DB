@@ -17,16 +17,12 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.LastPlacementException;
-import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -36,7 +32,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -90,17 +85,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        try {
-            DdlManager.getInstance().dropDataPlacement( catalogTable, storeInstance, statement );
-        } catch ( PlacementNotExistsException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
-        } catch ( LastPlacementException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.onlyOnePlacementLeft() );
-        }
+        DdlManager.getInstance().dropTableAllocation( catalogTable, storeInstance, statement );
     }
 
 }

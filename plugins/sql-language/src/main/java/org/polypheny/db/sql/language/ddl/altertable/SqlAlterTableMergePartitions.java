@@ -21,11 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.ddl.DdlManager;
@@ -96,15 +92,15 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
             try {
                 DdlManager.getInstance().removePartitioning( catalogTable, statement );
-            } catch ( GenericCatalogException | UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
-                throw new RuntimeException( "Error while merging partitions", e );
+            } catch ( TransactionException e ) {
+                throw new GenericRuntimeException( "Error while merging partitions", e );
             }
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Table: '{}' has been merged", catalogTable.name );
             }
         } else {
-            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned!" );
+            throw new GenericRuntimeException( "Table '%s' is not partitioned!", catalogTable.name );
         }
     }
 

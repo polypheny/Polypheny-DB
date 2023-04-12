@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
 
 package org.polypheny.db.catalog.exceptions;
 
+public class GenericRuntimeException extends RuntimeException {
 
-public class UnknownKeyIdRuntimeException extends CatalogRuntimeException {
-
-    public UnknownKeyIdRuntimeException( long keyId ) {
-        super( "Unknown key id: " + keyId + ". There is no key with this id." );
+    public GenericRuntimeException( String message, Object... params ) {
+        super( String.format( message, params ) );
     }
 
 }

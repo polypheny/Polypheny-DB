@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.StatisticsManager;
@@ -75,22 +76,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownGraphException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
@@ -106,22 +92,15 @@ import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.ddl.exception.AlterSourceException;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
-import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
-import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.NotMaterializedViewException;
-import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.ddl.exception.NotViewException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
-import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
-import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -133,7 +112,6 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty.Partit
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
@@ -153,9 +131,9 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void checkIfDdlPossible( EntityType entityType ) throws DdlOnSourceException {
+    private void checkIfDdlPossible( EntityType entityType ) {
         if ( entityType == EntityType.SOURCE ) {
-            throw new DdlOnSourceException();
+            throw new GenericRuntimeException( "Can not use DDLs on Sources" );
         }
     }
 
@@ -183,29 +161,29 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    protected DataStore getDataStoreInstance( long storeId ) throws DdlOnSourceException {
+    protected DataStore getDataStoreInstance( long storeId ) {
         Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
         if ( adapterInstance == null ) {
-            throw new RuntimeException( "Unknown store id: " + storeId );
+            throw new GenericRuntimeException( "Unknown store id: %i", storeId );
         }
         // Make sure it is a data store instance
         if ( adapterInstance instanceof DataStore ) {
             return (DataStore) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {
-            throw new DdlOnSourceException();
+            throw new GenericRuntimeException( "Can not use DDLs on Sources" );
         } else {
-            throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
+            throw new GenericRuntimeException( "Unknown kind of adapter: %s", adapterInstance.getClass().getName() );
         }
     }
 
 
-    private LogicalColumn getCatalogColumn( long namespaceId, long tableId, String columnName ) throws ColumnNotExistsException {
+    private LogicalColumn getCatalogColumn( long namespaceId, long tableId, String columnName ) {
         return catalog.getSnapshot().rel().getColumn( tableId, columnName );
     }
 
 
     @Override
-    public long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException {
+    public long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace ) {
         name = name.toLowerCase();
         // Check if there is already a schema with this name
         if ( catalog.getSnapshot().checkIfExistsNamespace( name ) ) {
@@ -213,13 +191,11 @@ public class DdlManagerImpl extends DdlManager {
                 // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
                 return catalog.getSnapshot().getNamespace( name ).id;
             } else if ( replace ) {
-                throw new RuntimeException( "Replacing namespace is not yet supported." );
-            } else {
-                throw new NamespaceAlreadyExistsException();
+                throw new GenericRuntimeException( "Replacing namespace is not yet supported." );
             }
-        } else {
-            return catalog.addNamespace( name, type, false );
         }
+        return catalog.addNamespace( name, type, false );
+
     }
 
 
@@ -240,7 +216,7 @@ public class DdlManagerImpl extends DdlManager {
             exportedColumns = adapter.getExportedColumns();
         } catch ( Exception e ) {
             AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
-            throw new RuntimeException( "Could not deploy adapter", e );
+            throw new GenericRuntimeException( "Could not deploy adapter", e );
         }
         // Create table, columns etc.
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
@@ -289,29 +265,27 @@ public class DdlManagerImpl extends DdlManager {
                     physicalTableName = exportedColumn.physicalTableName;
                 }
             }
-            try {
-                catalog.getLogicalRel( defaultNamespaceId ).addPrimaryKey( table.id, primaryKeyColIds );
-                LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( table.id );
 
-                CatalogDataPlacement placement = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).get( 0 );
-                catalog.getAllocRel( defaultNamespaceId )
-                        .addPartitionPlacement(
-                                catalogTable.namespaceId,
-                                adapter.getAdapterId(),
-                                catalogTable.id,
-                                placement.getAdapterId(),
-                                PlacementType.AUTOMATIC,
-                                DataPlacementRole.UPTODATE );
-            } catch ( GenericCatalogException e ) {
-                throw new RuntimeException( "Exception while adding primary key" );
-            }
+            catalog.getLogicalRel( defaultNamespaceId ).addPrimaryKey( table.id, primaryKeyColIds );
+            LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( table.id );
+
+            CatalogDataPlacement placement = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).get( 0 );
+            catalog.getAllocRel( defaultNamespaceId )
+                    .addPartitionPlacement(
+                            catalogTable.namespaceId,
+                            adapter.getAdapterId(),
+                            catalogTable.id,
+                            placement.getAdapterId(),
+                            PlacementType.AUTOMATIC,
+                            DataPlacementRole.UPTODATE );
+
         }
 
     }
 
 
     @Override
-    public void dropAdapter( String name, Statement statement ) throws UnknownAdapterException {
+    public void dropAdapter( String name, Statement statement ) {
         long defaultNamespaceId = 1;
         if ( name.startsWith( "'" ) ) {
             name = name.substring( 1 );
@@ -333,7 +307,7 @@ public class DdlManagerImpl extends DdlManager {
 
                 // Make sure that there is only one adapter
                 if ( catalog.getSnapshot().alloc().getDataPlacements( collection.id ).size() != 1 ) {
-                    throw new RuntimeException( "The data source contains collections with more than one placement. This should not happen!" );
+                    throw new GenericRuntimeException( "The data source contains collections with more than one placement. This should not happen!" );
                 }
 
                 dropCollection( collection, statement );
@@ -355,11 +329,7 @@ public class DdlManagerImpl extends DdlManager {
             // Remove foreign keys
             for ( Long tableId : tablesToDrop ) {
                 for ( CatalogForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( tableId ) ) {
-                    try {
-                        catalog.getLogicalRel( defaultNamespaceId ).deleteForeignKey( fk.id );
-                    } catch ( GenericCatalogException e ) {
-                        throw new PolyphenyDbContextException( "Exception while dropping foreign key", e );
-                    }
+                    catalog.getLogicalRel( defaultNamespaceId ).deleteForeignKey( fk.id );
                 }
             }
             // Drop tables
@@ -368,12 +338,12 @@ public class DdlManagerImpl extends DdlManager {
 
                 // Make sure that there is only one adapter
                 if ( catalog.getSnapshot().alloc().getDataPlacements( tableId ).size() != 1 ) {
-                    throw new RuntimeException( "The data source contains tables with more than one placement. This should not happen!" );
+                    throw new GenericRuntimeException( "The data source contains tables with more than one placement. This should not happen!" );
                 }
 
                 // Make sure table is of type source
                 if ( table.entityType != EntityType.SOURCE ) {
-                    throw new RuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
+                    throw new GenericRuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
                 }
                 AllocationEntity entity = catalog.getSnapshot().alloc().getAllocation( catalogAdapter.id, tableId );
                 // Delete column placement in catalog
@@ -384,11 +354,7 @@ public class DdlManagerImpl extends DdlManager {
                 }
 
                 // Remove primary keys
-                try {
-                    catalog.getLogicalRel( defaultNamespaceId ).deletePrimaryKey( table.id );
-                } catch ( GenericCatalogException e ) {
-                    throw new PolyphenyDbContextException( "Exception while dropping primary key", e );
-                }
+                catalog.getLogicalRel( defaultNamespaceId ).deletePrimaryKey( table.id );
 
                 // Delete columns
                 for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( tableId ) ) {
@@ -407,10 +373,10 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void renameSchema( String newName, String oldName ) throws NamespaceAlreadyExistsException, UnknownSchemaException {
+    public void renameNamespace( String newName, String oldName ) {
         newName = newName.toLowerCase();
         if ( catalog.getSnapshot().checkIfExistsNamespace( newName ) ) {
-            throw new NamespaceAlreadyExistsException();
+            throw new GenericRuntimeException( "The name of the namespace is already used" );
         }
         LogicalNamespace logicalNamespace = catalog.getSnapshot().getNamespace( oldName );
         catalog.renameNamespace( logicalNamespace.id, newName );
@@ -421,10 +387,10 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addColumnToSourceTable( LogicalTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement ) throws ColumnAlreadyExistsException, DdlOnSourceException, ColumnNotExistsException {
+    public void addColumnToSourceTable( LogicalTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement ) {
 
         if ( catalog.getSnapshot().rel().checkIfExistsColumn( catalogTable.id, columnLogicalName ) ) {
-            throw new ColumnAlreadyExistsException( columnLogicalName, catalogTable.name );
+            throw new GenericRuntimeException( "There exist already a column with name %s on table %s", columnLogicalName, catalogTable.name );
         }
 
         LogicalColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.namespaceId, catalogTable.id, beforeColumnName );
@@ -432,12 +398,12 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that the table is of table type SOURCE
         if ( catalogTable.entityType != EntityType.SOURCE ) {
-            throw new RuntimeException( "Illegal operation on table of type " + catalogTable.entityType );
+            throw new GenericRuntimeException( "Illegal operation on table of type %s", catalogTable.entityType );
         }
 
         // Make sure there is only one adapter
         if ( catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).size() != 1 ) {
-            throw new RuntimeException( "The table has an unexpected number of placements!" );
+            throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
         }
 
         long adapterId = catalog.getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id ).get( 0 ).adapterId;
@@ -454,7 +420,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         if ( exportedColumn == null ) {
-            throw new RuntimeException( "Invalid physical column name '" + columnPhysicalName + "'!" );
+            throw new GenericRuntimeException( "Invalid physical column name '%s'", columnPhysicalName );
         }
 
         // Make sure this physical column has not already been added to this table
@@ -519,15 +485,15 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addColumn( String columnName, LogicalTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException, ColumnNotExistsException {
+    public void addColumn( String columnName, LogicalTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) {
         columnName = adjustNameIfNeeded( columnName, catalogTable.namespaceId );
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
-            throw new NotNullAndDefaultValueException();
+            throw new GenericRuntimeException( "Column is not nullable and does not have a default value defined." );
         }
 
         if ( catalog.getSnapshot().rel().checkIfExistsColumn( catalogTable.id, columnName ) ) {
-            throw new ColumnAlreadyExistsException( columnName, catalogTable.name );
+            throw new GenericRuntimeException( "There already exists a column with name %s on table %s", columnName, catalogTable.name );
         }
         //
         LogicalColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.namespaceId, catalogTable.id, beforeColumnName );
@@ -573,7 +539,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addForeignKey( LogicalTable catalogTable, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException {
+    public void addForeignKey( LogicalTable catalogTable, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
@@ -589,7 +555,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
+    public void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws TransactionException {
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
@@ -600,12 +566,12 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "It is only possible to add an index to a " + catalogTable.entityType.name() );
+            throw new GenericRuntimeException( "It is only possible to add an index to a %s", catalogTable.entityType.name() );
         }
 
         // Check if there is already an index with this name for this table
         if ( catalog.getSnapshot().rel().checkIfExistsIndex( catalogTable.id, indexName ) ) {
-            throw new IndexExistsException();
+            throw new GenericRuntimeException( "There exist already an index with the name %s", indexName );
         }
 
         if ( location == null ) {
@@ -613,7 +579,7 @@ public class DdlManagerImpl extends DdlManager {
                 addPolyphenyIndex( catalogTable, indexMethodName, columnNames, indexName, isUnique, statement );
             } else if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.ONE_DATA_STORE ) {
                 if ( indexMethodName != null ) {
-                    throw new RuntimeException( "It is not possible to specify a index method if no location has been specified." );
+                    throw new GenericRuntimeException( "It is not possible to specify a index method if no location has been specified." );
                 }
                 // Find a store that has all required columns
                 for ( CatalogDataPlacement dataPlacement : catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ) ) {
@@ -631,12 +597,12 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
                 if ( location == null ) {
-                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
+                    throw new GenericRuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
                 }
                 addDataStoreIndex( catalogTable, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
             } else if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.ALL_DATA_STORES ) {
                 if ( indexMethodName != null ) {
-                    throw new RuntimeException( "It is not possible to specify a index method if no location has been specified." );
+                    throw new GenericRuntimeException( "It is not possible to specify a index method if no location has been specified." );
                 }
                 boolean createdAtLeastOne = false;
                 for ( CatalogDataPlacement dataPlacement : catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ) ) {
@@ -661,7 +627,7 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
                 if ( !createdAtLeastOne ) {
-                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
+                    throw new GenericRuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
                 }
             }
         } else { // Store Index
@@ -670,11 +636,11 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void addDataStoreIndex( LogicalTable catalogTable, String indexMethodName, String indexName, boolean isUnique, DataStore location, Statement statement, List<Long> columnIds, IndexType type ) throws MissingColumnPlacementException, UnknownIndexMethodException, GenericCatalogException {
+    private void addDataStoreIndex( LogicalTable catalogTable, String indexMethodName, String indexName, boolean isUnique, DataStore location, Statement statement, List<Long> columnIds, IndexType type ) {
         // Check if all required columns are present on this store
         for ( long columnId : columnIds ) {
             if ( !catalog.getSnapshot().alloc().checkIfExistsColumnPlacement( location.getAdapterId(), columnId ) ) {
-                throw new MissingColumnPlacementException( catalog.getSnapshot().rel().getColumn( columnId ).name );
+                throw new GenericRuntimeException( "Not all required columns for this index are placed on this store. e.g %s ", catalog.getSnapshot().rel().getColumn( columnId ).name );
             }
         }
 
@@ -688,7 +654,7 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
             if ( aim == null ) {
-                throw new UnknownIndexMethodException();
+                throw new GenericRuntimeException( "The used Index method is not known." );
             }
             method = aim.name;
             methodDisplayName = aim.displayName;
@@ -714,7 +680,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    public void addPolyphenyIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
+    public void addPolyphenyIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException {
         indexName = indexName.toLowerCase();
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
@@ -726,12 +692,12 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "It is only possible to add an index to a " + catalogTable.entityType.name() );
+            throw new GenericRuntimeException( "It is only possible to add an index to a %s", catalogTable.entityType.name() );
         }
 
         // Check if there is already an index with this name for this table
         if ( catalog.getSnapshot().rel().checkIfExistsIndex( catalogTable.id, indexName ) ) {
-            throw new IndexExistsException();
+            throw new GenericRuntimeException( "The already exists an index with this name %s", indexName );
         }
 
         String method;
@@ -744,7 +710,7 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
             if ( aim == null ) {
-                throw new UnknownIndexMethodException();
+                throw new GenericRuntimeException( "The index method is not known" );
             }
             method = aim.name;
             methodDisplayName = aim.displayName;
@@ -768,15 +734,15 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
+    public void addDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) {
         List<LogicalColumn> addedColumns = new LinkedList<>();
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
 
         if ( catalog.getSnapshot().alloc().getDataPlacement( catalogTable.id, dataStore.getAdapterId() ) == null ) {
-            throw new PlacementAlreadyExistsException();
+            throw new GenericRuntimeException( "The placement does already exist" );
         } else {
-            catalog.getAllocRel( catalogTable.namespaceId ).createAlloctionTable( dataStore.getAdapterId(), catalogTable.id );
+            catalog.getAllocRel( catalogTable.namespaceId ).createAllocationTable( dataStore.getAdapterId(), catalogTable.id );
         }
 
         // Check whether the list is empty (this is a shorthand for a full placement)
@@ -800,8 +766,8 @@ public class DdlManagerImpl extends DdlManager {
 
             // Abort if a manual partitionList has been specified even though the data placement has already been partitioned
             if ( isDataPlacementPartitioned ) {
-                throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                        + dataStore.getUniqueName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
+                throw new GenericRuntimeException( "WARNING: The Data Placement for table: '%s' on store: "
+                        + "'%s' already contains manually specified partitions: %s. Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead", catalogTable.name, dataStore.getUniqueName(), currentPartList );
             }
 
             log.debug( "Table is partitioned and concrete partitionList has been specified " );
@@ -811,15 +777,15 @@ public class DdlManagerImpl extends DdlManager {
                 try {
                     tempPartitionGroupList.add( property.partitionGroupIds.get( partitionGroupId ) );
                 } catch ( IndexOutOfBoundsException e ) {
-                    throw new RuntimeException( "Specified Partition-Index: '" + partitionGroupId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + property.numPartitionGroups + " partitions" );
+                    throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table "
+                            + "'%s', has only %s partitions", partitionGroupId, catalogTable.name, property.numPartitionGroups );
                 }
             }
         } else if ( !partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
 
             if ( isDataPlacementPartitioned ) {
-                throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                        + dataStore.getUniqueName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
+                throw new GenericRuntimeException( "WARNING: The Data Placement for table: '%s' on store: "
+                        + "'%s' already contains manually specified partitions: %s. Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead", catalogTable.name, dataStore.getUniqueName(), currentPartList );
             }
 
             List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getSnapshot().alloc().getPartitionGroups( tableId );
@@ -833,8 +799,8 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
                 if ( !isPartOfTable ) {
-                    throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) ) );
+                    throw new GenericRuntimeException( "Specified Partition-Name: '%s' is not part of table "
+                            + "'%s'. Available partitions: %s", partitionName, catalogTable.name, String.join( ",", catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) ) );
 
                 }
             }
@@ -906,7 +872,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addPrimaryKey( LogicalTable catalogTable, List<String> columnNames, Statement statement ) throws DdlOnSourceException {
+    public void addPrimaryKey( LogicalTable catalogTable, List<String> columnNames, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
@@ -945,30 +911,27 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addUniqueConstraint( LogicalTable catalogTable, List<String> columnNames, String constraintName ) throws DdlOnSourceException {
+    public void addUniqueConstraint( LogicalTable catalogTable, List<String> columnNames, String constraintName ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
         checkModelLogic( catalogTable, null );
 
-        try {
-            List<Long> columnIds = new LinkedList<>();
-            for ( String columnName : columnNames ) {
-                LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
-                columnIds.add( logicalColumn.id );
-            }
-            catalog.getLogicalRel( catalogTable.namespaceId ).addUniqueConstraint( catalogTable.id, constraintName, columnIds );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
+        List<Long> columnIds = new LinkedList<>();
+        for ( String columnName : columnNames ) {
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+            columnIds.add( logicalColumn.id );
         }
+        catalog.getLogicalRel( catalogTable.namespaceId ).addUniqueConstraint( catalogTable.id, constraintName, columnIds );
+
     }
 
 
     @Override
-    public void dropColumn( LogicalTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException {
+    public void dropColumn( LogicalTable catalogTable, String columnName, Statement statement ) {
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( catalogTable.id );
         if ( columns.size() < 2 ) {
-            throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
+            throw new GenericRuntimeException( "Cannot drop sole column of table %s", catalogTable.name );
         }
 
         // check if model permits operation
@@ -1033,7 +996,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private void checkModelLogic( LogicalTable catalogTable ) {
         if ( catalogTable.namespaceType == NamespaceType.DOCUMENT ) {
-            throw new RuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
+            throw new GenericRuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
         }
     }
 
@@ -1041,73 +1004,62 @@ public class DdlManagerImpl extends DdlManager {
     private void checkModelLogic( LogicalTable catalogTable, String columnName ) {
         if ( catalogTable.namespaceType == NamespaceType.DOCUMENT
                 && (columnName.equals( "_data" ) || columnName.equals( "_id" )) ) {
-            throw new RuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
+            throw new GenericRuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
         }
     }
 
 
     @Override
-    public void dropConstraint( LogicalTable catalogTable, String constraintName ) throws DdlOnSourceException {
+    public void dropConstraint( LogicalTable catalogTable, String constraintName ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
-        try {
-            CatalogConstraint constraint = catalog.getSnapshot().rel().getConstraint( catalogTable.id, constraintName );
-            catalog.getLogicalRel( catalogTable.namespaceId ).deleteConstraint( constraint.id );
-        } catch ( GenericCatalogException | UnknownConstraintException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogConstraint constraint = catalog.getSnapshot().rel().getConstraint( catalogTable.id, constraintName );
+        catalog.getLogicalRel( catalogTable.namespaceId ).deleteConstraint( constraint.id );
     }
 
 
     @Override
-    public void dropForeignKey( LogicalTable catalogTable, String foreignKeyName ) throws DdlOnSourceException {
+    public void dropForeignKey( LogicalTable catalogTable, String foreignKeyName ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
-        try {
-            CatalogForeignKey foreignKey = catalog.getSnapshot().rel().getForeignKey( catalogTable.id, foreignKeyName );
-            catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
-        } catch ( GenericCatalogException | UnknownForeignKeyException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogForeignKey foreignKey = catalog.getSnapshot().rel().getForeignKey( catalogTable.id, foreignKeyName );
+        catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
     }
 
 
     @Override
-    public void dropIndex( LogicalTable catalogTable, String indexName, Statement statement ) throws DdlOnSourceException {
+    public void dropIndex( LogicalTable catalogTable, String indexName, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
-        try {
-            CatalogIndex index = catalog.getSnapshot().rel().getIndex( catalogTable.id, indexName );
+        CatalogIndex index = catalog.getSnapshot().rel().getIndex( catalogTable.id, indexName );
 
-            if ( index.location == 0 ) {
-                IndexManager.getInstance().deleteIndex( index );
-            } else {
-                DataStore storeInstance = AdapterManager.getInstance().getStore( index.location );
-                storeInstance.dropIndex( statement.getPrepareContext(), index, catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
-            }
-
-            catalog.getLogicalRel( catalogTable.namespaceId ).deleteIndex( index.id );
-        } catch ( UnknownIndexException e ) {
-            throw new RuntimeException( e );
+        if ( index.location == 0 ) {
+            IndexManager.getInstance().deleteIndex( index );
+        } else {
+            DataStore storeInstance = AdapterManager.getInstance().getStore( index.location );
+            storeInstance.dropIndex( statement.getPrepareContext(), index, catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
         }
+
+        catalog.getLogicalRel( catalogTable.namespaceId ).deleteIndex( index.id );
     }
 
 
     @Override
-    public void dropDataPlacement( LogicalTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException {
+    public void dropTableAllocation( LogicalTable catalogTable, DataStore storeInstance, Statement statement ) {
+        AllocationEntity entity = catalog.getSnapshot().alloc().getAllocation( storeInstance.getAdapterId(), catalogTable.id );
         // Check whether this placement exists
-        if ( catalog.getSnapshot().alloc().getDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) == null ) {
-            throw new PlacementNotExistsException();
+        if ( entity == null ) {
+            throw new GenericRuntimeException( "The requested placement does not exist" );
         }
 
         CatalogDataPlacement dataPlacement = catalog.getSnapshot().alloc().getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
         if ( !catalog.getAllocRel( catalogTable.namespaceId ).validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(),
                 dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds() ) ) {
 
-            throw new LastPlacementException();
+            throw new GenericRuntimeException( "The last placement cannot be deleted" );
         }
 
         // Drop all indexes on this store
@@ -1130,8 +1082,8 @@ public class DdlManagerImpl extends DdlManager {
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
 
-        // Remove physical stores afterwards
-        catalog.getAllocRel( catalogTable.namespaceId ).deleteAllocation( storeInstance.getAdapterId(), catalogTable.id );
+        // Remove allocations, physical will be removed on next rebuild
+        catalog.getAllocRel( catalogTable.namespaceId ).deleteAllocation( entity.id );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -1139,19 +1091,15 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropPrimaryKey( LogicalTable catalogTable ) throws DdlOnSourceException {
-        try {
-            // Make sure that this is a table of type TABLE (and not SOURCE)
-            checkIfDdlPossible( catalogTable.entityType );
-            catalog.getLogicalRel( catalogTable.namespaceId ).deletePrimaryKey( catalogTable.id );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+    public void dropPrimaryKey( LogicalTable catalogTable ) {
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        checkIfDdlPossible( catalogTable.entityType );
+        catalog.getLogicalRel( catalogTable.namespaceId ).deletePrimaryKey( catalogTable.id );
     }
 
 
     @Override
-    public void setColumnType( LogicalTable catalogTable, String columnName, ColumnTypeInformation type, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException, GenericCatalogException {
+    public void setColumnType( LogicalTable catalogTable, String columnName, ColumnTypeInformation type, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
@@ -1182,7 +1130,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void setColumnNullable( LogicalTable catalogTable, String columnName, boolean nullable, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException, GenericCatalogException {
+    public void setColumnNullable( LogicalTable catalogTable, String columnName, boolean nullable, Statement statement ) {
         LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
@@ -1199,7 +1147,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void setColumnPosition( LogicalTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException {
+    public void setColumnPosition( LogicalTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) {
         // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
@@ -1215,7 +1163,7 @@ public class DdlManagerImpl extends DdlManager {
             targetPosition = refColumn.position + 1;
         }
         if ( logicalColumn.id == refColumn.id ) {
-            throw new RuntimeException( "Same column!" );
+            throw new GenericRuntimeException( "Same column!" );
         }
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( catalogTable.id );
         if ( targetPosition < logicalColumn.position ) {  // Walk from last column to first column
@@ -1250,7 +1198,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void setColumnCollation( LogicalTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException {
+    public void setColumnCollation( LogicalTable catalogTable, String columnName, Collation collation, Statement statement ) {
         LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
 
         // Check if model permits operation
@@ -1267,7 +1215,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void setDefaultValue( LogicalTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException {
+    public void setDefaultValue( LogicalTable catalogTable, String columnName, String defaultValue, Statement statement ) {
         LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
 
         // Check if model permits operation
@@ -1281,7 +1229,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropDefaultValue( LogicalTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException {
+    public void dropDefaultValue( LogicalTable catalogTable, String columnName, Statement statement ) {
         LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
 
         // check if model permits operation
@@ -1295,12 +1243,11 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void modifyDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement )
-            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException {
+    public void modifyDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) {
         CatalogDataPlacement placements = statement.getDataContext().getSnapshot().alloc().getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
         // Check whether this placement already exists
         if ( placements == null ) {
-            throw new PlacementNotExistsException();
+            throw new GenericRuntimeException( "The requested placement does not exists" );
         }
 
         // Check if views are dependent from this view
@@ -1317,7 +1264,7 @@ public class DdlManagerImpl extends DdlManager {
                 // Check whether there are any indexes located on the store requiring this column
                 for ( CatalogIndex index : snapshot.getIndexes( catalogTable.id, false ) ) {
                     if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( placement.columnId ) ) {
-                        throw new IndexPreventsRemovalException( index.name, snapshot.getColumn( placement.columnId ).name );
+                        throw new GenericRuntimeException( "The index with name %s prevents the removal of the placement %s", index.name, snapshot.getColumn( placement.columnId ).name );
                     }
                 }
                 // Check whether the column is a primary key column
@@ -1339,7 +1286,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( !catalog.getAllocRel( catalogTable.namespaceId ).validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(), columnsToRemove, new ArrayList<>() ) ) {
-            throw new LastPlacementException();
+            throw new GenericRuntimeException( "Cannot remove placement as it is the last" );
         }
 
         boolean adjustPartitions = true;
@@ -1368,8 +1315,8 @@ public class DdlManagerImpl extends DdlManager {
                         int index = partition.partitionGroupIds.indexOf( partitionGroupId );
                         tempPartitionGroupList.add( partition.partitionGroupIds.get( index ) );
                     } catch ( IndexOutOfBoundsException e ) {
-                        throw new RuntimeException( "Specified Partition-Index: '" + partitionGroupId + "' is not part of table '"
-                                + catalogTable.name + "', has only " + partition.partitionGroupIds.size() + " partitions" );
+                        throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table "
+                                + "'%s', has only %s partitions", partitionGroupId, catalogTable.name, partition.partitionGroupIds.size() );
                     }
                 }
             }
@@ -1386,8 +1333,8 @@ public class DdlManagerImpl extends DdlManager {
                         }
                     }
                     if ( !isPartOfTable ) {
-                        throw new RuntimeException( "Specified partition name: '" + partitionName + "' is not part of table '"
-                                + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) ) );
+                        throw new GenericRuntimeException( "Specified partition name: '%s' is not part of table "
+                                + "'%s'. Available partitions: %s", partitionName, catalogTable.name, String.join( ",", catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) ) );
                     }
                 }
             } else if ( partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
@@ -1475,7 +1422,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void modifyPartitionPlacement( LogicalTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException {
+    public void modifyPartitionPlacement( LogicalTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) {
         long storeId = storeInstance.getAdapterId();
         List<Long> newPartitions = new ArrayList<>();
         List<Long> removedPartitions = new ArrayList<>();
@@ -1490,7 +1437,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( !catalog.getAllocRel( catalogTable.namespaceId ).validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(), new ArrayList<>(), removedPartitions ) ) {
-            throw new LastPlacementException();
+            throw new GenericRuntimeException( "Cannot remove the placement as it is the last" );
         }
 
         // Get PartitionGroups that have been newly added
@@ -1544,15 +1491,12 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException, ColumnNotExistsException {
+    public void addColumnPlacement( LogicalTable catalogTable, String columnName, @NonNull DataStore storeInstance, Statement statement ) {
         columnName = adjustNameIfNeeded( columnName, catalogTable.namespaceId );
         Snapshot snapshot = statement.getTransaction().getSnapshot();
-        if ( storeInstance == null ) {
-            throw new UnknownAdapterException( "" );
-        }
         // Check whether this placement already exists
         if ( !snapshot.alloc().adapterHasPlacement( storeInstance.getAdapterId(), catalogTable.id ) ) {
-            throw new PlacementNotExistsException();
+            throw new GenericRuntimeException( "The requested placement does not exist" );
         }
 
         LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
@@ -1567,7 +1511,7 @@ public class DdlManagerImpl extends DdlManager {
                         logicalColumn.id,
                         PlacementType.MANUAL );
             } else {
-                throw new PlacementAlreadyExistsException();
+                throw new GenericRuntimeException( "There already exist a placement" );
             }
         } else {
             AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( storeInstance.getAdapterId(), catalogTable.id );
@@ -1591,15 +1535,12 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, PlacementIsPrimaryException, ColumnNotExistsException {
-        if ( storeInstance == null ) {
-            throw new UnknownAdapterException( "" );
-        }
+    public void dropColumnPlacement( LogicalTable catalogTable, String columnName, @NonNull DataStore storeInstance, Statement statement ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         // Check whether this placement already exists
         if ( !snapshot.alloc().adapterHasPlacement( storeInstance.getAdapterId(), catalogTable.id ) ) {
-            throw new PlacementNotExistsException();
+            throw new GenericRuntimeException( "The placement already exists" );
         }
 
         LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
@@ -1636,15 +1577,15 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableOwner( LogicalTable catalogTable, String newOwnerName ) throws UnknownUserException {
+    public void alterTableOwner( LogicalTable catalogTable, String newOwnerName ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public void renameTable( LogicalTable catalogTable, String newTableName, Statement statement ) throws EntityAlreadyExistsException {
+    public void renameTable( LogicalTable catalogTable, String newTableName, Statement statement ) {
         if ( catalog.getSnapshot().rel().checkIfExistsEntity( newTableName ) ) {
-            throw new EntityAlreadyExistsException();
+            throw new GenericRuntimeException( "An entity with name %s already exists", newTableName );
         }
         // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
@@ -1664,11 +1605,11 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException {
+    public void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement ) {
         LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
 
         if ( catalog.getSnapshot().rel().checkIfExistsColumn( logicalColumn.tableId, newColumnName ) ) {
-            throw new ColumnAlreadyExistsException( newColumnName, logicalColumn.getTableName() );
+            throw new GenericRuntimeException( "There already exists a column with name %s on table %s", newColumnName, logicalColumn.getTableName() );
         }
         // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
@@ -1684,7 +1625,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long namespaceId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException {
+    public void createView( String viewName, long namespaceId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) {
         viewName = adjustNameIfNeeded( viewName, namespaceId );
 
         if ( catalog.getSnapshot().rel().checkIfExistsEntity( viewName ) ) {
@@ -1692,10 +1633,10 @@ public class DdlManagerImpl extends DdlManager {
                 try {
                     dropView( catalog.getSnapshot().rel().getTable( namespaceId, viewName ), statement );
                 } catch ( DdlOnSourceException e ) {
-                    throw new RuntimeException( "Unable tp drop the existing View with this name." );
+                    throw new GenericRuntimeException( "Unable tp drop the existing View with this name." );
                 }
             } else {
-                throw new EntityAlreadyExistsException();
+                throw new GenericRuntimeException( "There already exists a view with the name %s", viewName );
             }
         }
 
@@ -1749,7 +1690,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException {
+    public void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) {
         viewName = adjustNameIfNeeded( viewName, namespaceId );
         // Check if there is already a table with this name
         if ( assertEntityExists( namespaceId, viewName, ifNotExists ) ) {
@@ -1776,7 +1717,7 @@ public class DdlManagerImpl extends DdlManager {
             List<EntityType> entityTypes = new ArrayList<>();
             underlying.keySet().forEach( t -> entityTypes.add( relSnapshot.getTable( t ).entityType ) );
             if ( !(entityTypes.contains( EntityType.ENTITY )) ) {
-                throw new GenericCatalogException( "Not possible to use Materialized View with Update Freshness if underlying table does not include a modifiable table." );
+                throw new GenericRuntimeException( "Not possible to use Materialized View with Update Freshness if underlying table does not include a modifiable table." );
             }
         }
 
@@ -1867,10 +1808,9 @@ public class DdlManagerImpl extends DdlManager {
     private void checkModelLangCompatibility( QueryLanguage language, long namespaceId, Long tableId ) {
         LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( tableId );
         if ( catalogTable.getNamespaceType() != language.getNamespaceType() ) {
-            throw new RuntimeException(
-                    String.format(
-                            "The used language cannot execute schema changing queries on this entity with the data model %s.",
-                            catalogTable.getNamespaceType() ) );
+            throw new GenericRuntimeException(
+                    "The used language cannot execute schema changing queries on this entity with the data model %s.",
+                    catalogTable.getNamespaceType() );
         }
     }
 
@@ -1906,11 +1846,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public long addGraphPlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement ) {
-        try {
-            catalog.getLogicalGraph( graphId ).addGraphLogistics( graphId, stores, onlyPlacement );
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
-            throw new RuntimeException();
-        }
+
+        //catalog.getLogicalGraph( graphId ).addGraphLogistics( graphId, stores, onlyPlacement );
 
         LogicalGraph graph = catalog.getSnapshot().graph().getGraph( graphId );
         Snapshot snapshot = statement.getTransaction().getSnapshot();
@@ -1974,10 +1911,10 @@ public class DdlManagerImpl extends DdlManager {
         LogicalTable edges = catalog.getLogicalRel( catalogTable.namespaceId ).getTable( mapping.edgesId );
         LogicalTable edgeProperty = catalog.getLogicalRel( catalogTable.namespaceId ).getTable( mapping.edgesPropertyId );
 
-        catalog.getLogicalRel( catalogTable.namespaceId ).createAlloctionTable( store.getAdapterId(), mapping.nodesId );
-        catalog.getLogicalRel( catalogTable.namespaceId ).createAlloctionTable( store.getAdapterId(), mapping.nodesPropertyId );
-        catalog.getLogicalRel( catalogTable.namespaceId ).createAlloctionTable( store.getAdapterId(), mapping.edgesId );
-        catalog.getLogicalRel( catalogTable.namespaceId ).createAlloctionTable( store.getAdapterId(), mapping.edgesPropertyId );
+        catalog.getLogicalRel( catalogTable.namespaceId ).createAllocationTable( store.getAdapterId(), mapping.nodesId );
+        catalog.getLogicalRel( catalogTable.namespaceId ).createAllocationTable( store.getAdapterId(), mapping.nodesPropertyId );
+        catalog.getLogicalRel( catalogTable.namespaceId ).createAllocationTable( store.getAdapterId(), mapping.edgesId );
+        catalog.getLogicalRel( catalogTable.namespaceId ).createAllocationTable( store.getAdapterId(), mapping.edgesPropertyId );
 
         catalog.getLogicalRel( catalogTable.namespaceId ).addPartitionPlacement(
                 nodes.namespaceId,
@@ -2055,7 +1992,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( graph == null ) {
             if ( !ifExists ) {
-                throw new UnknownGraphException( graphId );
+                throw new GenericRuntimeException( "There exists no graph with id %s", graphId );
             }
             return;
         }
@@ -2160,78 +2097,75 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    public void createTableOld( long namespaceId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
-        name = adjustNameIfNeeded( name, namespaceId );
+    public void createTableOld( long namespaceId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) {
+        String adjustedName = adjustNameIfNeeded( name, namespaceId );
 
-        try {
-            // Check if there is already an entity with this name
-            if ( assertEntityExists( namespaceId, name, ifNotExists ) ) {
-                return;
-            }
+        // Check if there is already an entity with this name
+        if ( assertEntityExists( namespaceId, adjustedName, ifNotExists ) ) {
+            return;
+        }
 
-            fields = new ArrayList<>( fields );
-            constraints = new ArrayList<>( constraints );
+        fields = new ArrayList<>( fields );
+        constraints = new ArrayList<>( constraints );
 
-            checkDocumentModel( namespaceId, fields, constraints );
+        checkDocumentModel( namespaceId, fields, constraints );
 
-            boolean foundPk = false;
-            for ( ConstraintInformation constraintInformation : constraints ) {
-                if ( constraintInformation.type == ConstraintType.PRIMARY ) {
-                    if ( foundPk ) {
-                        throw new RuntimeException( "More than one primary key has been provided!" );
-                    } else {
-                        foundPk = true;
-                    }
+        boolean foundPk = false;
+        for ( ConstraintInformation constraintInformation : constraints ) {
+            if ( constraintInformation.type == ConstraintType.PRIMARY ) {
+                if ( foundPk ) {
+                    throw new GenericRuntimeException( "More than one primary key has been provided!" );
+                } else {
+                    foundPk = true;
                 }
             }
-            if ( !foundPk ) {
-                throw new RuntimeException( "No primary key has been provided!" );
-            }
-
-            if ( stores == null ) {
-                // Ask router on which store(s) the table should be placed
-                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
-            }
-
-            LogicalTable table = catalog.getLogicalRel( namespaceId ).addTable(
-                    name,
-                    EntityType.ENTITY,
-                    true );
-
-            // Initially create DataPlacement containers on every store the table should be placed.
-            // stores.forEach( store -> catalog.getAllocRel( namespaceId ).createAlloctionTable( store.getAdapterId(), tableId ) );
-
-            // catalog.updateSnapshot();
-
-            for ( FieldInformation information : fields ) {
-                addColumn( namespaceId, information.name, information.typeInformation, information.collation, information.defaultValue, table.id, information.position, stores, placementType );
-            }
-
-            for ( ConstraintInformation constraint : constraints ) {
-                addConstraint( namespaceId, constraint.name, constraint.type, null, table.id );
-            }
-            Snapshot snapshot = statement.getTransaction().getSnapshot();
-            LogicalTable catalogTable = snapshot.rel().getTable( table.id );
-
-            // Trigger rebuild of schema; triggers schema creation on adapters
-            catalog.updateSnapshot();
-
-            PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
-
-            for ( DataStore store : stores ) {
-                catalog.getAllocRel( catalogTable.namespaceId ).addPartitionPlacement(
-                        catalogTable.namespaceId,
-                        store.getAdapterId(),
-                        catalogTable.id,
-                        property.partitionIds.get( 0 ),
-                        PlacementType.AUTOMATIC,
-                        DataPlacementRole.UPTODATE );
-
-            }
-
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
-            throw new RuntimeException( e );
         }
+        if ( !foundPk ) {
+            throw new GenericRuntimeException( "No primary key has been provided!" );
+        }
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
+        }
+
+        LogicalTable table = catalog.getLogicalRel( namespaceId ).addTable(
+                name,
+                EntityType.ENTITY,
+                true );
+
+        // Initially create DataPlacement containers on every store the table should be placed.
+        // stores.forEach( store -> catalog.getAllocRel( namespaceId ).createAllocationTable( store.getAdapterId(), tableId ) );
+
+        // catalog.updateSnapshot();
+
+        for ( FieldInformation information : fields ) {
+            addColumn( namespaceId, information.name, information.typeInformation, information.collation, information.defaultValue, table.id, information.position, stores, placementType );
+        }
+
+        for ( ConstraintInformation constraint : constraints ) {
+            addConstraint( namespaceId, constraint.name, constraint.type, null, table.id );
+        }
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        LogicalTable catalogTable = snapshot.rel().getTable( table.id );
+
+        // Trigger rebuild of schema; triggers schema creation on adapters
+        catalog.updateSnapshot();
+
+        PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
+
+        for ( DataStore store : stores ) {
+            catalog.getAllocRel( catalogTable.namespaceId ).addPartitionPlacement(
+                    catalogTable.namespaceId,
+                    store.getAdapterId(),
+                    catalogTable.id,
+                    property.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    DataPlacementRole.UPTODATE );
+
+        }
+
+
     }
 
 
@@ -2264,7 +2198,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // addATable
         for ( DataStore store : stores ) {
-            AllocationTable alloc = catalog.getAllocRel( namespaceId ).createAlloctionTable( store.getAdapterId(), logical.id );
+            AllocationTable alloc = catalog.getAllocRel( namespaceId ).createAllocationTable( store.getAdapterId(), logical.id );
             int i = 0;
             for ( Long id : ids.values() ) {
                 alloc = catalog.getAllocRel( namespaceId ).addColumnPlacement( alloc.id, id, PlacementType.AUTOMATIC, i );
@@ -2283,7 +2217,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
+    public void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) {
         name = adjustNameIfNeeded( name, namespaceId );
 
         if ( assertEntityExists( namespaceId, name, ifNotExists ) ) {
@@ -2295,12 +2229,8 @@ public class DdlManagerImpl extends DdlManager {
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
-        long collectionId;
-        try {
-            collectionId = catalog.getAllocDoc( namespaceId ).addCollectionLogistics( namespaceId, name, stores, false );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+        long collectionId = 0;
+        //collectionId = catalog.getAllocDoc( namespaceId ).addCollectionLogistics( namespaceId, name, stores, false );
 
         catalog.getLogicalDoc( namespaceId ).addCollection(
                 collectionId,
@@ -2329,14 +2259,14 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) throws EntityAlreadyExistsException {
+    private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) {
         // Check if there is already an entity with this name
         if ( catalog.getSnapshot().rel().checkIfExistsEntity( name ) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return true;
             } else {
-                throw new EntityAlreadyExistsException();
+                throw new GenericRuntimeException( "There already exists a entity with the name %s", name );
             }
         }
         return false;
@@ -2366,8 +2296,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement ) {
-        long collectionId;
-        collectionId = catalog.getLogicalDoc( namespaceId ).addCollectionLogistics( name, stores, true );
+        long collectionId = 0;
+        //collectionId = catalog.getLogicalDoc( namespaceId ).addCollectionLogistics( name, stores, true );
 
         // Initially create DataPlacement containers on every store the table should be placed.
         LogicalCollection catalogCollection = catalog.getSnapshot().doc().getCollection( collectionId );
@@ -2408,7 +2338,7 @@ public class DdlManagerImpl extends DdlManager {
         /*CatalogCollectionMapping mapping = catalog.getAllocDoc( collection.namespaceId ).getCollectionMapping( collection.id );
         LogicalTable table = catalog.getLogicalRel( catalogTable.namespaceId ).getTable( mapping.collectionId );
         try {
-            dropDataPlacement( table, store, statement );
+            dropTableAllocation( table, store, statement );
         } catch ( PlacementNotExistsException | LastPlacementException e ) {
             throw new RuntimeException( e );
         }*/
@@ -2419,7 +2349,7 @@ public class DdlManagerImpl extends DdlManager {
         /*CatalogCollectionMapping mapping = catalog.getLogicalRel( catalogTable.namespaceId ).getCollectionMapping( collectionId );
         LogicalTable table = catalog.getLogicalRel( catalogTable.namespaceId ).getTable( mapping.collectionId );
 
-        catalog.getLogicalRel( catalogTable.namespaceId ).createAlloctionTable( store.getAdapterId(), collectionId );
+        catalog.getLogicalRel( catalogTable.namespaceId ).createAllocationTable( store.getAdapterId(), collectionId );
 
         catalog.getLogicalRel( catalogTable.namespaceId ).addPartitionPlacement(
                 table.namespaceId,
@@ -2478,7 +2408,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException {
+    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws PartitionGroupNamesNotUniqueException, TransactionException {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         LogicalColumn logicalColumn = snapshot.rel().getColumn( partitionInfo.table.id, partitionInfo.columnName );
 
@@ -2506,7 +2436,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check whether partition function supports type of partition column
         if ( !partitionManager.supportsColumnOfType( logicalColumn.type ) ) {
-            throw new RuntimeException( "The partition function " + actualPartitionType + " does not support columns of type " + logicalColumn.type );
+            throw new GenericRuntimeException( "The partition function %s does not support columns of type %s", actualPartitionType, logicalColumn.type );
         }
 
         int numberOfPartitionGroups = partitionInfo.numberOfPartitionGroups;
@@ -2527,7 +2457,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Validate partition setup
         if ( !partitionManager.validatePartitionGroupSetup( partitionInfo.qualifiers, numberOfPartitionGroups, partitionInfo.partitionGroupNames, logicalColumn ) ) {
-            throw new RuntimeException( "Partitioning failed for table: " + partitionInfo.table.name );
+            throw new GenericRuntimeException( "Partitioning failed for table: %s", partitionInfo.table.name );
         }
 
         // Loop over value to create those partitions with partitionKey to uniquelyIdentify partition
@@ -2763,7 +2693,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void removePartitioning( LogicalTable partitionedTable, Statement statement ) throws GenericCatalogException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException {
+    public void removePartitioning( LogicalTable partitionedTable, Statement statement ) throws TransactionException {
         long tableId = partitionedTable.id;
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
@@ -2895,7 +2825,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private long addColumn( long namespaceId, String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
+    private long addColumn( long namespaceId, String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) {
         columnName = adjustNameIfNeeded( columnName, namespaceId );
         long addedColumnId = catalog.getLogicalRel( namespaceId ).addColumn(
                 columnName,
@@ -2928,7 +2858,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId ) throws UnknownColumnException, GenericCatalogException {
+    public void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId ) {
         if ( constraintType == ConstraintType.PRIMARY ) {
             catalog.getLogicalRel( namespaceId ).addPrimaryKey( tableId, columnIds );
         } else if ( constraintType == ConstraintType.UNIQUE ) {
@@ -3089,13 +3019,9 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Delete the self-referencing foreign keys
-        try {
-            for ( CatalogForeignKey foreignKey : selfRefsToDelete ) {
-                catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
-            }
-        } catch ( GenericCatalogException e ) {
-            catalog.getLogicalRel( catalogTable.namespaceId ).flagTableForDeletion( catalogTable.id, true );
-            throw new PolyphenyDbContextException( "Exception while deleting self-referencing foreign key constraints.", e );
+
+        for ( CatalogForeignKey foreignKey : selfRefsToDelete ) {
+            catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
         }
 
         // Delete indexes of this table
@@ -3106,21 +3032,17 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Delete keys and constraints
-        try {
-            // Remove primary key
-            catalog.getLogicalRel( catalogTable.namespaceId ).deletePrimaryKey( catalogTable.id );
-            // Delete all foreign keys of the table
-            List<CatalogForeignKey> foreignKeys = relSnapshot.getForeignKeys( catalogTable.id );
-            for ( CatalogForeignKey foreignKey : foreignKeys ) {
-                catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
-            }
-            // Delete all constraints of the table
-            for ( CatalogConstraint constraint : relSnapshot.getConstraints( catalogTable.id ) ) {
-                catalog.getLogicalRel( catalogTable.namespaceId ).deleteConstraint( constraint.id );
-            }
-        } catch ( GenericCatalogException e ) {
-            catalog.getLogicalRel( catalogTable.namespaceId ).flagTableForDeletion( catalogTable.id, true );
-            throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
+
+        // Remove primary key
+        catalog.getLogicalRel( catalogTable.namespaceId ).deletePrimaryKey( catalogTable.id );
+        // Delete all foreign keys of the table
+        List<CatalogForeignKey> foreignKeys = relSnapshot.getForeignKeys( catalogTable.id );
+        for ( CatalogForeignKey foreignKey : foreignKeys ) {
+            catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
+        }
+        // Delete all constraints of the table
+        for ( CatalogConstraint constraint : relSnapshot.getConstraints( catalogTable.id ) ) {
+            catalog.getLogicalRel( catalogTable.namespaceId ).deleteConstraint( constraint.id );
         }
 
         // Delete columns
@@ -3170,7 +3092,7 @@ public class DdlManagerImpl extends DdlManager {
     public void truncate( LogicalTable catalogTable, Statement statement ) {
         // Make sure that the table can be modified
         if ( !catalogTable.modifiable ) {
-            throw new RuntimeException( "Unable to modify a read-only table!" );
+            throw new GenericRuntimeException( "Unable to modify a read-only table." );
         }
 
         // Monitor truncate for rowCount
@@ -3206,25 +3128,25 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropFunction() {
-        throw new RuntimeException( "Not supported yet" );
+        throw new GenericRuntimeException( "Not supported yet" );
     }
 
 
     @Override
     public void setOption() {
-        throw new RuntimeException( "Not supported yet" );
+        throw new GenericRuntimeException( "Not supported yet" );
     }
 
 
     @Override
     public void createType() {
-        throw new RuntimeException( "Not supported yet" );
+        throw new GenericRuntimeException( "Not supported yet" );
     }
 
 
     @Override
     public void dropType() {
-        throw new RuntimeException( "Not supported yet" );
+        throw new GenericRuntimeException( "Not supported yet" );
     }
 
 }

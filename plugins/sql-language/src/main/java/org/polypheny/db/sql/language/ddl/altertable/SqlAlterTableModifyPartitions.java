@@ -31,7 +31,6 @@ import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -172,16 +171,12 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             return;
         }
         // Update
-        try {
-            DdlManager.getInstance().modifyPartitionPlacement(
-                    catalogTable,
-                    tempPartitionList,
-                    storeInstance,
-                    statement
-            );
-        } catch ( LastPlacementException e ) {
-            throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogTable.name + "'", e );
-        }
+        DdlManager.getInstance().modifyPartitionPlacement(
+                catalogTable,
+                tempPartitionList,
+                storeInstance,
+                statement
+        );
     }
 
 }

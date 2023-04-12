@@ -55,7 +55,7 @@ import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -169,7 +169,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
+    public long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 
@@ -198,7 +198,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) throws GenericCatalogException {
+    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         if ( unique ) {
             // TODO: Check if the current values are unique
@@ -227,28 +227,20 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         if ( keyId != null ) {
             return keyId;
         }
-        try {
-            return addKey( tableId, columnIds, enforcementTime );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+        return addKey( tableId, columnIds, enforcementTime );
     }
 
 
-    private long addKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) throws GenericCatalogException {
-        try {
-            LogicalTable table = Objects.requireNonNull( tables.get( tableId ) );
-            long id = idBuilder.getNewKeyId();
-            CatalogKey key = new CatalogKey( id, table.id, table.namespaceId, columnIds, enforcementTime );
-            synchronized ( this ) {
-                keys.put( id, key );
-                keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
-            }
-            listeners.firePropertyChange( "key", null, key );
-            return id;
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+    private long addKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
+        LogicalTable table = Objects.requireNonNull( tables.get( tableId ) );
+        long id = idBuilder.getNewKeyId();
+        CatalogKey key = new CatalogKey( id, table.id, table.namespaceId, columnIds, enforcementTime );
+        synchronized ( this ) {
+            keys.put( id, key );
+            keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
         }
+        listeners.firePropertyChange( "key", null, key );
+        return id;
     }
 
 
@@ -286,7 +278,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality ) throws GenericCatalogException {
+    public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality ) {
         if ( scale != null && scale > length ) {
             throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
         }
@@ -296,7 +288,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
+    public void setNullable( long columnId, boolean nullable ) {
         columns.put( columnId, columns.get( columnId ).toBuilder().nullable( nullable ).build() );
     }
 
@@ -326,9 +318,9 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+    public void addPrimaryKey( long tableId, List<Long> columnIds ) {
         if ( columnIds.stream().anyMatch( id -> columns.get( id ).nullable ) ) {
-            throw new GenericCatalogException( "Primary key is not allowed to use nullable columns." );
+            throw new GenericRuntimeException( "Primary key is not allowed to use nullable columns." );
         }
 
         // TODO: Check if the current values are unique
@@ -340,7 +332,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             // CatalogCombinedKey combinedKey = getCombinedKey( table.primaryKey );
             if ( getKeyUniqueCount( table.primaryKey ) == 1 && isForeignKey( table.primaryKey ) ) {
                 // This primary key is the only constraint for the uniqueness of this key.
-                throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
+                throw new GenericRuntimeException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
             }
             synchronized ( this ) {
                 setPrimaryKey( tableId, null );
@@ -415,7 +407,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
+    public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
         LogicalTable table = tables.get( tableId );
         List<CatalogKey> childKeys = keys.values().stream().filter( k -> k.tableId == referencesTableId ).collect( Collectors.toList() );
 
@@ -427,7 +419,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
                     LogicalColumn referencingColumn = columns.get( columnIds.get( i++ ) );
                     LogicalColumn referencedColumn = columns.get( referencedColumnId );
                     if ( referencedColumn.type != referencingColumn.type ) {
-                        throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
+                        throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
                     }
                 }
                 // TODO same keys for key and foreign key
@@ -457,14 +449,14 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
+    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         // Check if there is already a unique constraint
         List<CatalogConstraint> catalogConstraints = constraints.values().stream()
                 .filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE )
                 .collect( Collectors.toList() );
         if ( catalogConstraints.size() > 0 ) {
-            throw new GenericCatalogException( "There is already a unique constraint!" );
+            throw new GenericRuntimeException( "There is already a unique constraint!" );
         }
         long id = idBuilder.getNewConstraintId();
         synchronized ( this ) {
@@ -474,7 +466,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void deletePrimaryKey( long tableId ) throws GenericCatalogException {
+    public void deletePrimaryKey( long tableId ) {
         LogicalTable table = tables.get( tableId );
 
         // TODO: Check if the currently stored values are unique
@@ -483,7 +475,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             // CatalogCombinedKey key = getCombinedKey( table.primaryKey );
             if ( isForeignKey( table.primaryKey ) ) {
                 if ( getKeyUniqueCount( table.primaryKey ) < 2 ) {
-                    throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key either drop the foreign key or create a unique constraint." );
+                    throw new GenericRuntimeException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key either drop the foreign key or create a unique constraint." );
                 }
             }
 
@@ -494,7 +486,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException {
+    public void deleteForeignKey( long foreignKeyId ) {
         CatalogForeignKey catalogForeignKey = (CatalogForeignKey) keys.get( foreignKeyId );
         synchronized ( this ) {
             keys.remove( catalogForeignKey.id );
@@ -504,12 +496,12 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void deleteConstraint( long constraintId ) throws GenericCatalogException {
+    public void deleteConstraint( long constraintId ) {
         CatalogConstraint catalogConstraint = Objects.requireNonNull( constraints.get( constraintId ) );
         //CatalogCombinedKey key = getCombinedKey( catalogConstraint.keyId );
         if ( catalogConstraint.type == ConstraintType.UNIQUE && isForeignKey( catalogConstraint.keyId ) ) {
             if ( getKeyUniqueCount( catalogConstraint.keyId ) < 2 ) {
-                throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
+                throw new GenericRuntimeException( "This key is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
             }
         }
         synchronized ( this ) {

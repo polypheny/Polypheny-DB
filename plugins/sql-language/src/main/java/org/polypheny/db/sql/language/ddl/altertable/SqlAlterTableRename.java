@@ -17,12 +17,9 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -33,7 +30,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -81,14 +77,10 @@ public class SqlAlterTableRename extends SqlAlterTable {
         LogicalTable table = getCatalogTable( context, oldName );
 
         if ( newName.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
+            throw new RuntimeException( "No FQDN allowed here: " + newName );
         }
 
-        try {
-            DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
-        } catch ( EntityAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( newName.getPos(), RESOURCE.tableExists( newName.getSimple() ) );
-        }
+        DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
     }
 
 }

@@ -62,6 +62,7 @@ public abstract class CsvTable extends PhysicalTable {
                 allocationTable.name,
                 allocationTable.getNamespaceName(),
                 allocationTable.getColumnNames(),
+                allocationTable.getColumnNames(),
                 allocationTable.getColumns().values().stream().collect( Collectors.toMap( c -> c.id, c -> AlgDataTypeFactory.DEFAULT.createPolyType( c.type ) ) ),
                 allocationTable.getColumnOrder() );
         this.source = source;

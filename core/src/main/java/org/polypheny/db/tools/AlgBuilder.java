@@ -103,10 +103,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -1344,6 +1344,14 @@ public class AlgBuilder {
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
         rename( entity.getRowType().getFieldNames() );
+        return this;
+    }
+
+
+    public AlgBuilder scan( @Nonnull PhysicalEntity entity ) {
+        final AlgNode scan = scanFactory.createScan( cluster, entity );
+        push( scan );
+        rename( entity.getLogicalRowType().getFieldNames() );
         return this;
     }
 

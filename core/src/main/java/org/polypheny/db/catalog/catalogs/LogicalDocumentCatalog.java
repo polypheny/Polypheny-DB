@@ -16,9 +16,7 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import java.util.List;
 import java.util.Map;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
 
@@ -33,7 +31,7 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
      * @param modifiable If the collection is modifiable
      * @return The id of the added collection
      */
-    public abstract long addCollection( Long id, String name, EntityType entity, boolean modifiable );
+    long addCollection( Long id, String name, EntityType entity, boolean modifiable );
 
 
     /**
@@ -41,9 +39,8 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
      *
      * @param id The id of the collection to delete
      */
-    public abstract void deleteCollection( long id );
+    void deleteCollection( long id );
 
-    long addCollectionLogistics( String name, List<DataStore> stores, boolean placementOnly );
 
     Map<Long, LogicalCollection> getCollections();
 

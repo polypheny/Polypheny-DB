@@ -57,9 +57,6 @@ import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -678,7 +675,7 @@ public class ConstraintEnforceAttacher {
                     }
 
 
-                } catch ( UnknownSchemaException | UnknownUserException | TransactionException | GenericCatalogException e ) {
+                } catch ( TransactionException e ) {
                     return false;
                 }
             }

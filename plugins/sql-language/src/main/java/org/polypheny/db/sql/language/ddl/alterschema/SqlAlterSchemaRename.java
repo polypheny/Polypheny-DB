@@ -17,12 +17,8 @@
 package org.polypheny.db.sql.language.ddl.alterschema;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -33,7 +29,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterSchema;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -78,13 +73,7 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        try {
-            DdlManager.getInstance().renameSchema( newName.getSimple(), oldName.getSimple() );
-        } catch ( NamespaceAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( newName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
-        } catch ( UnknownSchemaException e ) {
-            throw CoreUtil.newContextException( oldName.getPos(), RESOURCE.schemaNotFound( oldName.getSimple() ) );
-        }
+        DdlManager.getInstance().renameNamespace( newName.getSimple(), oldName.getSimple() );
     }
 
 }

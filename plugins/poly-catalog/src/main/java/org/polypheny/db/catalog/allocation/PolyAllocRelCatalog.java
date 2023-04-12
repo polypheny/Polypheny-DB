@@ -27,10 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -82,12 +80,10 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     }
 
 
-
     @Override
     public void deleteColumnPlacement( long allocationId, long columnId, boolean columnOnly ) {
         tables.put( allocationId, tables.get( allocationId ).withRemovedColumn( columnId ) );
     }
-
 
 
     @Override
@@ -115,7 +111,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
+    public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) {
         return 0;
     }
 
@@ -127,7 +123,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
+    public long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) {
         return 0;
     }
 
@@ -151,25 +147,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty ) {
-
-    }
-
-
-    @Override
     public void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds ) {
-
-    }
-
-
-    @Override
-    public void addPartitionToGroup( long partitionGroupId, Long partitionId ) {
-
-    }
-
-
-    @Override
-    public void removePartitionFromGroup( long partitionGroupId, Long partitionId ) {
 
     }
 
@@ -193,23 +171,11 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public AllocationTable createAlloctionTable( long adapterId, long tableId ) {
+    public AllocationTable createAllocationTable( long adapterId, long tableId ) {
         long id = idBuilder.getNewAllocId();
         AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId, List.of() );
         tables.put( id, table );
         return table;
-    }
-
-
-    @Override
-    public CatalogDataPlacement addDataPlacementIfNotExists( long adapterId, long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public void modifyDataPlacement( long adapterId, long tableId, CatalogDataPlacement catalogDataPlacement ) {
-
     }
 
 
@@ -226,48 +192,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void addSingleDataPlacementToTable( long adapterId, long tableId ) {
-
-    }
-
-
-    @Override
-    public void removeSingleDataPlacementFromTable( long adapterId, long tableId ) {
-
-    }
-
-
-    @Override
-    public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
-
-    }
-
-
-    @Override
-    public void addColumnsToDataPlacement( long adapterId, long tableId, List<Long> columnIds ) {
-
-    }
-
-
-    @Override
-    public void removeColumnsFromDataPlacement( long adapterId, long tableId, List<Long> columnIds ) {
-
-    }
-
-
-    @Override
-    public void addPartitionsToDataPlacement( long adapterId, long tableId, List<Long> partitionIds ) {
-
-    }
-
-
-    @Override
-    public void removePartitionsFromDataPlacement( long adapterId, long tableId, List<Long> partitionIds ) {
-
-    }
-
-
-    @Override
     public void updateDataPlacement( long adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds ) {
 
     }
@@ -275,18 +199,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Override
     public void deletePartitionPlacement( long adapterId, long partitionId ) {
-
-    }
-
-
-    @Override
-    public void addTableToPeriodicProcessing( long tableId ) {
-
-    }
-
-
-    @Override
-    public void removeTableFromPeriodicProcessing( long tableId ) {
 
     }
 

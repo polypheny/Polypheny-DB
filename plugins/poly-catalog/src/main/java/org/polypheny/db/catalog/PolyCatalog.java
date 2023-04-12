@@ -25,6 +25,7 @@ import java.beans.PropertyChangeSupport;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,6 @@ import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
@@ -149,7 +149,7 @@ public class PolyCatalog extends Catalog implements Serializable {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws UnknownAdapterException {
+    private void insertDefaultData() {
 
         //////////////
         // init users
@@ -270,7 +270,7 @@ public class PolyCatalog extends Catalog implements Serializable {
             updateSnapshot();
             AllocationEntity alloc;
             if ( !getSnapshot().alloc().adapterHasPlacement( csv.id, table.id ) ) {
-                alloc = getAllocRel( table.namespaceId ).createAlloctionTable( csv.id, table.id );
+                alloc = getAllocRel( table.namespaceId ).createAllocationTable( csv.id, table.id );
             } else {
                 alloc = getSnapshot().alloc().getAllocation( csv.id, table.id );
             }
@@ -301,8 +301,8 @@ public class PolyCatalog extends Catalog implements Serializable {
     @Override
     public void updateSnapshot() {
         // reset physical catalogs
-        // Set<Long> keys = this.physicalCatalogs.keySet();
-        // keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
+        Set<Long> keys = this.physicalCatalogs.keySet();
+        keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
 
         // generate new physical entities, atm only relational
         this.allocationCatalogs.forEach( ( k, v ) -> {
@@ -312,8 +312,10 @@ public class PolyCatalog extends Catalog implements Serializable {
 
                     if ( adapter.getCurrentSchema() == null || adapter.getCurrentSchema().getId() != v2.namespaceId ) {
                         adapter.createNewSchema( getSnapshot(), v2.name, v2.namespaceId );
-                        getPhysical( v2.namespaceId ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
                     }
+
+                    // re-add physical namespace, we could check first, but not necessary
+                    getPhysical( v2.namespaceId ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
 
                     LogicalTable table = getSnapshot().getLogicalEntity( v2.logicalId ).unwrap( LogicalTable.class );
                     List<PhysicalEntity> physicals = AdapterManager.getInstance().getAdapter( v2.adapterId ).createAdapterTable( idBuilder, table, v2 );

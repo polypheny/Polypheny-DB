@@ -17,16 +17,12 @@
 package org.polypheny.db.catalog.allocation;
 
 import io.activej.serializer.BinarySerializer;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.PolyCatalog;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCatalog {
@@ -50,12 +46,6 @@ public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCata
     @Override
     public PolyAllocDocCatalog copy() {
         return deserialize( serialize(), PolyAllocDocCatalog.class );
-    }
-
-
-    @Override
-    public long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
-        return 0;
     }
 
 

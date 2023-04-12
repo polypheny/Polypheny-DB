@@ -35,9 +35,6 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -313,7 +310,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             transaction.commit();
-        } catch ( GenericCatalogException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
+        } catch ( TransactionException e ) {
             log.error( "Error while reassigning new location for temperature-based partitions", e );
             if ( transaction != null ) {
                 try {

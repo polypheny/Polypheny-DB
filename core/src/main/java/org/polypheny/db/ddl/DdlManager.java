@@ -29,36 +29,11 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.ddl.exception.AlterSourceException;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
-import org.polypheny.db.ddl.exception.IndexExistsException;
-import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
-import org.polypheny.db.ddl.exception.LastPlacementException;
-import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
-import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
-import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
-import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
-import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
-import org.polypheny.db.ddl.exception.PlacementNotExistsException;
-import org.polypheny.db.ddl.exception.SchemaNotExistException;
-import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Identifier;
@@ -115,7 +90,7 @@ public abstract class DdlManager {
      * @param ifNotExists whether to silently ignore if the schema does already exist
      * @param replace whether the replace a existing schema
      */
-    public abstract long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException;
+    public abstract long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace );
 
     /**
      * Adds a new adapter (data store or data source)
@@ -133,7 +108,7 @@ public abstract class DdlManager {
      * @param name name of the adapter to be dropped
      * @param statement the query statement
      */
-    public abstract void dropAdapter( String name, Statement statement ) throws UnknownAdapterException;
+    public abstract void dropAdapter( String name, Statement statement );
 
     /**
      * Change the name of a schema
@@ -141,7 +116,7 @@ public abstract class DdlManager {
      * @param newName the new name for the schema
      * @param oldName the old name current name of the schema
      */
-    public abstract void renameSchema( String newName, String oldName ) throws NamespaceAlreadyExistsException, UnknownSchemaException;
+    public abstract void renameNamespace( String newName, String oldName );
 
     /**
      * Adds a column to an existing source table
@@ -153,7 +128,7 @@ public abstract class DdlManager {
      * @param afterColumnName the name of the column after the column, which is inserted; can be null
      * @param defaultValue the default value of the inserted column
      */
-    public abstract void addColumnToSourceTable( LogicalTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement ) throws ColumnAlreadyExistsException, DdlOnSourceException, ColumnNotExistsException;
+    public abstract void addColumnToSourceTable( LogicalTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement );
 
     /**
      * Add a column to an existing table
@@ -167,7 +142,7 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void addColumn( String columnName, LogicalTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException, ColumnNotExistsException;
+    public abstract void addColumn( String columnName, LogicalTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement );
 
     /**
      * Add a foreign key to a table
@@ -180,7 +155,7 @@ public abstract class DdlManager {
      * @param onUpdate how to enforce the constraint on updated
      * @param onDelete how to enforce the constraint on delete
      */
-    public abstract void addForeignKey( LogicalTable catalogTable, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException;
+    public abstract void addForeignKey( LogicalTable catalogTable, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
 
     /**
      * Adds an index to a table
@@ -193,7 +168,7 @@ public abstract class DdlManager {
      * @param location instance of the data store on which to create the index; if null, default strategy is being used
      * @param statement the initial query statement
      */
-    public abstract void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException;
+    public abstract void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws TransactionException;
 
     /**
      * Adds an index located in Polypheny to a table
@@ -205,7 +180,7 @@ public abstract class DdlManager {
      * @param isUnique whether the index is unique
      * @param statement the initial query statement
      */
-    public abstract void addPolyphenyIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException;
+    public abstract void addPolyphenyIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException;
 
     /**
      * Adds new column placements to a table
@@ -217,7 +192,7 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+    public abstract void addDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement );
 
     /**
      * Adds a new primary key to a table
@@ -226,7 +201,7 @@ public abstract class DdlManager {
      * @param columnNames the names of all columns in the primary key
      * @param statement the query statement
      */
-    public abstract void addPrimaryKey( LogicalTable catalogTable, List<String> columnNames, Statement statement ) throws DdlOnSourceException;
+    public abstract void addPrimaryKey( LogicalTable catalogTable, List<String> columnNames, Statement statement );
 
     /**
      * Adds a unique constraint to a table
@@ -235,7 +210,7 @@ public abstract class DdlManager {
      * @param columnNames the names of the columns which are part of the constraint
      * @param constraintName the name of the unique constraint
      */
-    public abstract void addUniqueConstraint( LogicalTable catalogTable, List<String> columnNames, String constraintName ) throws DdlOnSourceException;
+    public abstract void addUniqueConstraint( LogicalTable catalogTable, List<String> columnNames, String constraintName );
 
     /**
      * Drop a specific column in a table
@@ -244,7 +219,7 @@ public abstract class DdlManager {
      * @param columnName the name of column which is dropped
      * @param statement the query statement
      */
-    public abstract void dropColumn( LogicalTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException;
+    public abstract void dropColumn( LogicalTable catalogTable, String columnName, Statement statement );
 
     /**
      * Drop a specific constraint from a table
@@ -252,7 +227,7 @@ public abstract class DdlManager {
      * @param catalogTable the table
      * @param constraintName the name of the constraint to be dropped
      */
-    public abstract void dropConstraint( LogicalTable catalogTable, String constraintName ) throws DdlOnSourceException;
+    public abstract void dropConstraint( LogicalTable catalogTable, String constraintName );
 
     /**
      * Drop a foreign key of a table
@@ -260,7 +235,7 @@ public abstract class DdlManager {
      * @param catalogTable the table the foreign key belongs to
      * @param foreignKeyName the name of the foreign key to drop
      */
-    public abstract void dropForeignKey( LogicalTable catalogTable, String foreignKeyName ) throws DdlOnSourceException;
+    public abstract void dropForeignKey( LogicalTable catalogTable, String foreignKeyName );
 
     /**
      * Drop an indexes
@@ -269,7 +244,7 @@ public abstract class DdlManager {
      * @param indexName the name of the index to drop
      * @param statement the query statement
      */
-    public abstract void dropIndex( LogicalTable catalogTable, String indexName, Statement statement ) throws DdlOnSourceException;
+    public abstract void dropIndex( LogicalTable catalogTable, String indexName, Statement statement );
 
     /**
      * Drop the data placement of a table on a specified data store
@@ -278,14 +253,14 @@ public abstract class DdlManager {
      * @param storeInstance the data store from which to drop the placement
      * @param statement the query statement
      */
-    public abstract void dropDataPlacement( LogicalTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException;
+    public abstract void dropTableAllocation( LogicalTable catalogTable, DataStore storeInstance, Statement statement );
 
     /**
      * Drop the primary key of a table
      *
      * @param catalogTable the table
      */
-    public abstract void dropPrimaryKey( LogicalTable catalogTable ) throws DdlOnSourceException;
+    public abstract void dropPrimaryKey( LogicalTable catalogTable );
 
     /**
      * Set the type of the column
@@ -295,7 +270,7 @@ public abstract class DdlManager {
      * @param typeInformation the new type of the column
      * @param statement the used statement
      */
-    public abstract void setColumnType( LogicalTable catalogTable, String columnName, ColumnTypeInformation typeInformation, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException, GenericCatalogException;
+    public abstract void setColumnType( LogicalTable catalogTable, String columnName, ColumnTypeInformation typeInformation, Statement statement );
 
     /**
      * Set if the column can hold the value NULL or not
@@ -305,7 +280,7 @@ public abstract class DdlManager {
      * @param nullable if the column should be nullable
      * @param statement the used statement
      */
-    public abstract void setColumnNullable( LogicalTable catalogTable, String columnName, boolean nullable, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException, GenericCatalogException;
+    public abstract void setColumnNullable( LogicalTable catalogTable, String columnName, boolean nullable, Statement statement );
 
     /**
      * Changes the position of the column and places it before or after the provided columns
@@ -316,7 +291,7 @@ public abstract class DdlManager {
      * @param afterColumnName change position of the column and place it after this column; nullable
      * @param statement the used statement
      */
-    public abstract void setColumnPosition( LogicalTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException;
+    public abstract void setColumnPosition( LogicalTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement );
 
     /**
      * Set the collation to the column
@@ -326,7 +301,7 @@ public abstract class DdlManager {
      * @param collation the new collation of the column
      * @param statement the used statement
      */
-    public abstract void setColumnCollation( LogicalTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException;
+    public abstract void setColumnCollation( LogicalTable catalogTable, String columnName, Collation collation, Statement statement );
 
     /**
      * Set the default value of the column
@@ -336,7 +311,7 @@ public abstract class DdlManager {
      * @param defaultValue the new default value of the column
      * @param statement the used statement
      */
-    public abstract void setDefaultValue( LogicalTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException;
+    public abstract void setDefaultValue( LogicalTable catalogTable, String columnName, String defaultValue, Statement statement );
 
     /**
      * Drop the default value of the column
@@ -345,7 +320,7 @@ public abstract class DdlManager {
      * @param columnName the name of the column to be modified
      * @param statement the used statement
      */
-    public abstract void dropDefaultValue( LogicalTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException;
+    public abstract void dropDefaultValue( LogicalTable catalogTable, String columnName, Statement statement );
 
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with
@@ -362,7 +337,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+    public abstract void modifyDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement );
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -373,7 +348,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store on which the partition placements should be altered
      * @param statement the used statement
      */
-    public abstract void modifyPartitionPlacement( LogicalTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException;
+    public abstract void modifyPartitionPlacement( LogicalTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement );
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
@@ -384,7 +359,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException, ColumnNotExistsException;
+    public abstract void addColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement );
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
@@ -395,7 +370,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store from which to remove the placement
      * @param statement the used statement
      */
-    public abstract void dropColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, PlacementIsPrimaryException, ColumnNotExistsException;
+    public abstract void dropColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement );
 
     /**
      * Change the owner of a table
@@ -403,7 +378,7 @@ public abstract class DdlManager {
      * @param catalogTable the table
      * @param newOwnerName the name of the new owner
      */
-    public abstract void alterTableOwner( LogicalTable catalogTable, String newOwnerName ) throws UnknownUserException;
+    public abstract void alterTableOwner( LogicalTable catalogTable, String newOwnerName );
 
     /**
      * Rename a table (changing the logical name of the table)
@@ -412,7 +387,7 @@ public abstract class DdlManager {
      * @param newTableName the new name for the table
      * @param statement the used statement
      */
-    public abstract void renameTable( LogicalTable catalogTable, String newTableName, Statement statement ) throws EntityAlreadyExistsException;
+    public abstract void renameTable( LogicalTable catalogTable, String newTableName, Statement statement );
 
     /**
      * Rename a column of a table (changing the logical name of the column)
@@ -422,7 +397,7 @@ public abstract class DdlManager {
      * @param newColumnName the new name for the column
      * @param statement the used statement
      */
-    public abstract void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException;
+    public abstract void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement );
 
     public abstract void removeGraph( long graphId, boolean ifExists, Statement statement );
 
@@ -438,7 +413,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement );
 
     /**
      * Create a new view
@@ -448,7 +423,7 @@ public abstract class DdlManager {
      * @param algNode the algNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long namespaceId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long namespaceId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language );
 
 
     /**
@@ -459,9 +434,9 @@ public abstract class DdlManager {
      * @param algRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+    public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered );
 
-    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException;
+    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement );
 
     public abstract void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement );
 
@@ -470,7 +445,7 @@ public abstract class DdlManager {
      *
      * @param partitionInfo the information concerning the partition
      */
-    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException;
+    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws TransactionException;
 
     /**
      * Removes partitioning from Table
@@ -478,7 +453,7 @@ public abstract class DdlManager {
      * @param catalogTable teh table to be merged
      * @param statement the used Statement
      */
-    public abstract void removePartitioning( LogicalTable catalogTable, Statement statement ) throws GenericCatalogException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException;
+    public abstract void removePartitioning( LogicalTable catalogTable, Statement statement ) throws TransactionException;
 
     /**
      * Adds a new constraint to a table
@@ -489,7 +464,7 @@ public abstract class DdlManager {
      * @param columnIds the ids of the columns for which to create the constraint
      * @param tableId the id of the table
      */
-    public abstract void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId ) throws UnknownColumnException, GenericCatalogException;
+    public abstract void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId );
 
     /**
      * Drop a schema
@@ -498,7 +473,7 @@ public abstract class DdlManager {
      * @param ifExists whether to silently ignore if the schema does not exist
      * @param statement the used statement
      */
-    public abstract void dropNamespace( String schemaName, boolean ifExists, Statement statement ) throws SchemaNotExistException, DdlOnSourceException;
+    public abstract void dropNamespace( String schemaName, boolean ifExists, Statement statement );
 
     /**
      * Drop a table
@@ -506,19 +481,19 @@ public abstract class DdlManager {
      * @param catalogTable the table to be dropped
      * @param statement the used statement
      */
-    public abstract void dropTable( LogicalTable catalogTable, Statement statement ) throws DdlOnSourceException;
+    public abstract void dropTable( LogicalTable catalogTable, Statement statement );
 
     /**
      * Drop View
      */
-    public abstract void dropView( LogicalTable catalogTable, Statement statement ) throws DdlOnSourceException;
+    public abstract void dropView( LogicalTable catalogTable, Statement statement );
 
 
     /**
      * @param materializedView to be dropped
      * @param statement the used statement
      */
-    public abstract void dropMaterializedView( LogicalTable materializedView, Statement statement ) throws DdlOnSourceException;
+    public abstract void dropMaterializedView( LogicalTable materializedView, Statement statement );
 
     /**
      * Truncate a table

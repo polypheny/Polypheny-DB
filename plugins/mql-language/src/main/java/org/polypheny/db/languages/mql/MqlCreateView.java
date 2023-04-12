@@ -21,9 +21,6 @@ import org.bson.BsonDocument;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -70,21 +67,18 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
         AlgNode algNode = algRoot.alg;
         AlgCollation algCollation = algRoot.collation;
 
-        try {
-            DdlManager.getInstance().createView(
-                    name,
-                    schemaId,
-                    algNode,
-                    algCollation,
-                    true,
-                    statement,
-                    placementType,
-                    algRoot.alg.getRowType().getFieldNames(),
-                    buildQuery(),
-                    QueryLanguage.from( "mongo" ) );
-        } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
-        } // we just added the table/column, so it has to exist, or we have an internal problem
+        DdlManager.getInstance().createView(
+                name,
+                schemaId,
+                algNode,
+                algCollation,
+                true,
+                statement,
+                placementType,
+                algRoot.alg.getRowType().getFieldNames(),
+                buildQuery(),
+                QueryLanguage.from( "mongo" ) );
+
     }
 
 

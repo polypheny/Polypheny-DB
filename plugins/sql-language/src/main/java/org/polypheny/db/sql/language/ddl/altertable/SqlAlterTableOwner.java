@@ -17,13 +17,10 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -34,7 +31,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -89,11 +85,8 @@ public class SqlAlterTableOwner extends SqlAlterTable {
             throw new RuntimeException( "No FQDN allowed here: " + owner.toString() );
         }
 
-        try {
-            DdlManager.getInstance().alterTableOwner( catalogTable, owner.getSimple() );
-        } catch ( UnknownUserException e ) {
-            throw CoreUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
-        }
+        DdlManager.getInstance().alterTableOwner( catalogTable, owner.getSimple() );
+
     }
 
 }

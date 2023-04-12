@@ -24,9 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -98,7 +95,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( long userId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownSchemaException {
+    public Transaction startTransaction( long userId, boolean analyze, String origin, MultimediaFlavor flavor ) {
         /*Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( (int) userId );
         LogicalNamespace logicalNamespace = catalog.getNamespace( catalogDatabase.defaultNamespaceName );
@@ -108,7 +105,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( long userId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownSchemaException {
+    public Transaction startTransaction( long userId, boolean analyze, String origin ) {
         throw new RuntimeException();
         // return startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.DEFAULT );
     }

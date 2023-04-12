@@ -17,8 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
 
 public enum IndexType {
     MANUAL( 1 ),
@@ -43,16 +41,16 @@ public enum IndexType {
                 return e;
             }
         }
-        throw new UnknownIndexTypeRuntimeException( id );
+        throw new RuntimeException( "Unknown indexType with id: " + id );
     }
 
 
-    public static IndexType parse( @NonNull String str ) throws UnknownIndexTypeException {
+    public static IndexType parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "MANUAL" ) ) {
             return IndexType.MANUAL;
         } else if ( str.equalsIgnoreCase( "AUTOMATIC" ) ) {
             return IndexType.AUTOMATIC;
         }
-        throw new UnknownIndexTypeException( str );
+        throw new RuntimeException( "Unknown indexType with name: " + str );
     }
 }

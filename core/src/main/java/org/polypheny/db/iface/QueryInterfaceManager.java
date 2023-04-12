@@ -36,7 +36,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.transaction.TransactionManager;
@@ -201,7 +200,7 @@ public class QueryInterfaceManager {
     }
 
 
-    public void removeQueryInterface( Catalog catalog, String uniqueName ) throws UnknownQueryInterfaceException {
+    public void removeQueryInterface( Catalog catalog, String uniqueName ) {
         uniqueName = uniqueName.toLowerCase();
         if ( !interfaceByName.containsKey( uniqueName ) ) {
             throw new RuntimeException( "Unknown query interface: " + uniqueName );

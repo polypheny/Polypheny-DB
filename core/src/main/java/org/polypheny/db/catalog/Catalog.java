@@ -35,7 +35,6 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
@@ -82,7 +81,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void updateSnapshot();
 
-    public abstract void commit() throws NoTablePrimaryKeyException;
+    public abstract void commit();
 
     public abstract void rollback();
 
@@ -154,8 +153,7 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     /**
-     * Inserts a new user,
-     * if a user with the same name already exists, it throws an error
+     * Inserts a new user
      *
      * @param name of the user
      * @param password of the user

@@ -16,8 +16,6 @@
 
 package org.polypheny.db.sql.language.ddl;
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,10 +29,6 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -56,7 +50,6 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -193,9 +186,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
                     QueryLanguage.from( "sql" ),
                     ifNotExists,
                     ordered );
-        } catch ( EntityAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
-        } catch ( GenericCatalogException | UnknownColumnException | ColumnNotExistsException | ColumnAlreadyExistsException e ) {
+        } catch ( ColumnNotExistsException e ) {
             // we just added the table/column, so it has to exist, or we have an internal problem
             throw new RuntimeException( e );
         }

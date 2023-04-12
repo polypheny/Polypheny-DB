@@ -17,13 +17,10 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -37,7 +34,6 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -91,12 +87,8 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        try {
-            DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace );
-        } catch ( NamespaceAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaExists( name.getSimple() ) );
-        }
 
+        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace );
     }
 
 }

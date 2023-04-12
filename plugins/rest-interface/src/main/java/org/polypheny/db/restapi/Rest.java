@@ -47,10 +47,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -549,11 +546,7 @@ public class Rest {
 
 
     private Transaction getTransaction() {
-        try {
-            return transactionManager.startTransaction( userId, false, "REST Interface", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
-        }
+        return transactionManager.startTransaction( userId, false, "REST Interface", MultimediaFlavor.FILE );
     }
 
 

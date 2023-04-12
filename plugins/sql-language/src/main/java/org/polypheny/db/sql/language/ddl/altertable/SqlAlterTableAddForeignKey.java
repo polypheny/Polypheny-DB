@@ -22,12 +22,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -64,12 +61,9 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         this.columnList = Objects.requireNonNull( columnList );
         this.referencesTable = Objects.requireNonNull( referencesTable );
         this.referencesList = Objects.requireNonNull( referencesList );
-        try {
-            this.onUpdate = onUpdate != null ? ForeignKeyOption.parse( onUpdate ) : ForeignKeyOption.RESTRICT;
-            this.onDelete = onDelete != null ? ForeignKeyOption.parse( onDelete ) : ForeignKeyOption.RESTRICT;
-        } catch ( UnknownForeignKeyOptionException e ) {
-            throw new RuntimeException( e );
-        }
+        this.onUpdate = onUpdate != null ? ForeignKeyOption.parse( onUpdate ) : ForeignKeyOption.RESTRICT;
+        this.onDelete = onDelete != null ? ForeignKeyOption.parse( onDelete ) : ForeignKeyOption.RESTRICT;
+
     }
 
 
@@ -119,20 +113,16 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         if ( refTable.entityType != EntityType.ENTITY ) {
             throw CoreUtil.newContextException( referencesTable.getPos(), RESOURCE.ddlOnSourceTable() );
         }
-        try {
-            DdlManager.getInstance().addForeignKey(
-                    catalogTable,
-                    refTable,
-                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
-                    referencesList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
-                    constraintName.getSimple(),
-                    onUpdate,
-                    onDelete );
-        } catch ( UnknownColumnException e ) {
-            throw CoreUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+
+        DdlManager.getInstance().addForeignKey(
+                catalogTable,
+                refTable,
+                columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                referencesList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                constraintName.getSimple(),
+                onUpdate,
+                onDelete );
+
     }
 
 }

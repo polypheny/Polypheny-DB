@@ -51,9 +51,6 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -276,29 +273,26 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         Catalog catalog = Catalog.getInstance();
         LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( materializedId ).unwrap( LogicalTable.class );
 
-        try {
-            Transaction transaction = getTransactionManager().startTransaction(
-                    Catalog.defaultUserId,
-                    false,
-                    "Materialized View" );
+        Transaction transaction = getTransactionManager().startTransaction(
+                Catalog.defaultUserId,
+                false,
+                "Materialized View" );
 
-            try {
-                Statement statement = transaction.createStatement();
-                Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
-                // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-                idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
-                // Get locks for individual tables
-                EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
-                idAccessMap.addAll( accessMap.getAccessedEntityPair() );
-                LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( "DeadLock while locking for materialized view update", e );
-            }
-            updateData( transaction, materializedId );
-            commitTransaction( transaction );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
+        try {
+            Statement statement = transaction.createStatement();
+            Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
+            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+            // Get locks for individual tables
+            EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
+            idAccessMap.addAll( accessMap.getAccessedEntityPair() );
+            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( "DeadLock while locking for materialized view update", e );
         }
+        updateData( transaction, materializedId );
+        commitTransaction( transaction );
+
         updateMaterializedTime( materializedId );
     }
 

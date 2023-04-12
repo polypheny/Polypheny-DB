@@ -19,7 +19,6 @@ package org.polypheny.db.catalog.logical;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Builder;
@@ -27,9 +26,7 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.PolyCatalog;
 import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
@@ -90,11 +87,6 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
     }
 
-
-    @Override
-    public long addCollectionLogistics( String name, List<DataStore> stores, boolean placementOnly ) {
-        return 0;
-    }
 
 
     @Override

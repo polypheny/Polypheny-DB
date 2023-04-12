@@ -47,9 +47,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -328,15 +325,8 @@ public class RequestParser {
             Matcher matcher = PROJECTION_ENTRY_PATTERN.matcher( projectionToParse );
             if ( matcher.find() ) {
                 String columnName = matcher.group( "column" );
-                LogicalColumn logicalColumn;
-
-                try {
-                    logicalColumn = this.getCatalogColumnFromString( columnName );
-                    log.debug( "Fetched catalog column for projection key: {}.", columnName );
-                } catch ( UnknownColumnException | UnknownSchemaException | UnknownTableException e ) {
-                    log.warn( "Unable to fetch column: {}.", columnName, e );
-                    throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, columnName );
-                }
+                LogicalColumn logicalColumn = this.getCatalogColumnFromString( columnName );
+                log.debug( "Fetched catalog column for projection key: {}.", columnName );
 
                 if ( !validColumns.contains( logicalColumn.id ) ) {
                     log.warn( "Column isn't valid. Column: {}.", columnName );
@@ -408,7 +398,7 @@ public class RequestParser {
     }
 
 
-    private LogicalColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownSchemaException, UnknownTableException {
+    private LogicalColumn getCatalogColumnFromString( String name ) throws ParserException {
         String[] splitString = name.split( "\\." );
         if ( splitString.length != 3 ) {
             log.warn( "Column name is not 3 fields long. Got: {}", name );

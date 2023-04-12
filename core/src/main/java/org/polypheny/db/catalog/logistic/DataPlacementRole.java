@@ -16,9 +16,6 @@
 
 package org.polypheny.db.catalog.logistic;
 
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
-
 public enum DataPlacementRole {
     UPTODATE( 0 ),
     REFRESHABLE( 1 );
@@ -42,17 +39,17 @@ public enum DataPlacementRole {
                 return t;
             }
         }
-        throw new UnknownPlacementRoleRuntimeException( id );
+        throw new RuntimeException( "Unknown DataPlacementRole with id: " + id );
     }
 
 
-    public static DataPlacementRole getByName( final String name ) throws UnknownPlacementRoleException {
+    public static DataPlacementRole getByName( final String name ) {
         for ( DataPlacementRole t : values() ) {
             if ( t.name().equalsIgnoreCase( name ) ) {
                 return t;
             }
         }
-        throw new UnknownPlacementRoleException( name );
+        throw new RuntimeException( "Unknown PartitionType with name: " + name );
     }
 
 }

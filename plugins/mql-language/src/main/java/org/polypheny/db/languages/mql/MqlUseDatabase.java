@@ -18,7 +18,6 @@ package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -42,11 +41,7 @@ public class MqlUseDatabase extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        try {
-            DdlManager.getInstance().createNamespace( this.database, NamespaceType.DOCUMENT, true, false );
-        } catch ( NamespaceAlreadyExistsException e ) {
-            throw new RuntimeException( "The schema creation failed" );
-        }
+        DdlManager.getInstance().createNamespace( this.database, NamespaceType.DOCUMENT, true, false );
     }
 
 

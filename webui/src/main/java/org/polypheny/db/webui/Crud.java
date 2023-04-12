@@ -115,14 +115,6 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
@@ -134,7 +126,6 @@ import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -1159,7 +1150,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getDataSourceColumns( final Context ctx ) throws UnknownTableException, UnknownSchemaException {
+    void getDataSourceColumns( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( request.getSchemaName(), request.getTableName() );
@@ -1217,7 +1208,7 @@ public class Crud implements InformationObserver {
     /**
      * Get additional columns of the DataSource that are not mapped to the table.
      */
-    void getAvailableSourceColumns( final Context ctx ) throws UnknownTableException {
+    void getAvailableSourceColumns( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         LogicalTable table = catalog.getSnapshot().rel().getTable( request.getSchemaName(), request.getTableName() );
@@ -1260,7 +1251,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getMaterializedInfo( final Context ctx ) throws UnknownTableException, UnknownSchemaException {
+    void getMaterializedInfo( final Context ctx ) {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
 
         LogicalTable catalogTable = getLogicalTable( request.schema, request.table );
@@ -1291,7 +1282,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private LogicalTable getLogicalTable( String schema, String table ) throws UnknownTableException {
+    private LogicalTable getLogicalTable( String schema, String table ) {
         return catalog.getSnapshot().rel().getTable( schema, table );
     }
 
@@ -1591,46 +1582,41 @@ public class Crud implements InformationObserver {
         ArrayList<TableConstraint> resultList = new ArrayList<>();
         Map<String, ArrayList<String>> temp = new HashMap<>();
 
-        try {
-            LogicalTable catalogTable = getLogicalTable( t[0], t[1] );
+        LogicalTable catalogTable = getLogicalTable( t[0], t[1] );
 
-            // get primary key
-            if ( catalogTable.primaryKey != null ) {
-                CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
-                for ( String columnName : primaryKey.getColumnNames() ) {
-                    if ( !temp.containsKey( "" ) ) {
-                        temp.put( "", new ArrayList<>() );
-                    }
-                    temp.get( "" ).add( columnName );
+        // get primary key
+        if ( catalogTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+            for ( String columnName : primaryKey.getColumnNames() ) {
+                if ( !temp.containsKey( "" ) ) {
+                    temp.put( "", new ArrayList<>() );
                 }
-                for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
-                    resultList.add( new TableConstraint( entry.getKey(), "PRIMARY KEY", entry.getValue() ) );
-                }
-            }
-
-            // get unique constraints.
-            temp.clear();
-            List<CatalogConstraint> constraints = catalog.getSnapshot().rel().getConstraints( catalogTable.id );
-            for ( CatalogConstraint catalogConstraint : constraints ) {
-                if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
-                    temp.put( catalogConstraint.name, new ArrayList<>( catalogConstraint.key.getColumnNames() ) );
-                }
+                temp.get( "" ).add( columnName );
             }
             for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
-                resultList.add( new TableConstraint( entry.getKey(), "UNIQUE", entry.getValue() ) );
+                resultList.add( new TableConstraint( entry.getKey(), "PRIMARY KEY", entry.getValue() ) );
             }
-
-            // the foreign keys are listed separately
-
-            DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
-            ArrayList<String[]> data = new ArrayList<>();
-            resultList.forEach( c -> data.add( c.asRow() ) );
-
-            result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception while fetching constraints", e );
-            result = new Result( e );
         }
+
+        // get unique constraints.
+        temp.clear();
+        List<CatalogConstraint> constraints = catalog.getSnapshot().rel().getConstraints( catalogTable.id );
+        for ( CatalogConstraint catalogConstraint : constraints ) {
+            if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
+                temp.put( catalogConstraint.name, new ArrayList<>( catalogConstraint.key.getColumnNames() ) );
+            }
+        }
+        for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
+            resultList.add( new TableConstraint( entry.getKey(), "UNIQUE", entry.getValue() ) );
+        }
+
+        // the foreign keys are listed separately
+
+        DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
+        ArrayList<String[]> data = new ArrayList<>();
+        resultList.forEach( c -> data.add( c.asRow() ) );
+
+        result = new Result( header, data.toArray( new String[0][2] ) );
 
         ctx.json( result );
     }
@@ -1749,70 +1735,68 @@ public class Crud implements InformationObserver {
     void getIndexes( final Context ctx ) {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Result result;
-        try {
-            LogicalTable catalogTable = getLogicalTable( request.schema, request.table );
-            List<CatalogIndex> catalogIndexes = catalog.getSnapshot().rel().getIndexes( catalogTable.id, false );
 
-            DbColumn[] header = {
-                    new DbColumn( "Name" ),
-                    new DbColumn( "Columns" ),
-                    new DbColumn( "Location" ),
-                    new DbColumn( "Method" ),
-                    new DbColumn( "Type" ) };
+        LogicalTable catalogTable = getLogicalTable( request.schema, request.table );
+        List<CatalogIndex> catalogIndexes = catalog.getSnapshot().rel().getIndexes( catalogTable.id, false );
 
-            ArrayList<String[]> data = new ArrayList<>();
+        DbColumn[] header = {
+                new DbColumn( "Name" ),
+                new DbColumn( "Columns" ),
+                new DbColumn( "Location" ),
+                new DbColumn( "Method" ),
+                new DbColumn( "Type" ) };
 
-            // Get explicit indexes
-            for ( CatalogIndex catalogIndex : catalogIndexes ) {
+        ArrayList<String[]> data = new ArrayList<>();
+
+        // Get explicit indexes
+        for ( CatalogIndex catalogIndex : catalogIndexes ) {
+            String[] arr = new String[5];
+            String storeUniqueName;
+            if ( catalogIndex.location == 0 ) {
+                // a polystore index
+                storeUniqueName = "Polypheny-DB";
+            } else {
+                storeUniqueName = catalog.getSnapshot().getAdapter( catalogIndex.location ).uniqueName;
+            }
+            arr[0] = catalogIndex.name;
+            arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
+            arr[2] = storeUniqueName;
+            arr[3] = catalogIndex.methodDisplayName;
+            arr[4] = catalogIndex.type.name();
+            data.add( arr );
+        }
+
+        // Get functional indexes
+        List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id );
+        for ( CatalogDataPlacement placement : placements ) {
+            Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+            DataStore store;
+            if ( adapter instanceof DataStore ) {
+                store = (DataStore) adapter;
+            } else {
+                break;
+            }
+            for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
                 String[] arr = new String[5];
-                String storeUniqueName;
-                if ( catalogIndex.location == 0 ) {
-                    // a polystore index
-                    storeUniqueName = "Polypheny-DB";
-                } else {
-                    storeUniqueName = catalog.getSnapshot().getAdapter( catalogIndex.location ).uniqueName;
-                }
-                arr[0] = catalogIndex.name;
-                arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
-                arr[2] = storeUniqueName;
-                arr[3] = catalogIndex.methodDisplayName;
-                arr[4] = catalogIndex.type.name();
+                arr[0] = "";
+                arr[1] = String.join( ", ", fif.getColumnNames() );
+                arr[2] = store.getUniqueName();
+                arr[3] = fif.methodDisplayName;
+                arr[4] = "FUNCTIONAL";
                 data.add( arr );
             }
-
-            // Get functional indexes
-            List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id );
-            for ( CatalogDataPlacement placement : placements ) {
-                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                DataStore store;
-                if ( adapter instanceof DataStore ) {
-                    store = (DataStore) adapter;
-                } else {
-                    break;
-                }
-                for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
-                    String[] arr = new String[5];
-                    arr[0] = "";
-                    arr[1] = String.join( ", ", fif.getColumnNames() );
-                    arr[2] = store.getUniqueName();
-                    arr[3] = fif.methodDisplayName;
-                    arr[4] = "FUNCTIONAL";
-                    data.add( arr );
-                }
-            }
-
-            result = new Result( header, data.toArray( new String[0][2] ) );
-
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception while fetching indexes", e );
-            result = new Result( e );
         }
+
+        result = new Result( header, data.toArray( new String[0][2] ) );
+
         ctx.json( result );
     }
 
 
     /**
      * Drop an index of a table
+     *
+     * @param ctx
      */
     void dropIndex( final Context ctx ) {
         Index index = ctx.bodyAsClass( Index.class );
@@ -1875,7 +1859,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getUnderlyingTable( final Context ctx ) throws UnknownTableException {
+    void getUnderlyingTable( final Context ctx ) {
 
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
@@ -1911,33 +1895,29 @@ public class Crud implements InformationObserver {
         String schemaName = index.getSchema();
         String tableName = index.getTable();
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        try {
-            LogicalTable table = getLogicalTable( schemaName, tableName );
-            Placement p = new Placement( snapshot.alloc().isPartitioned( table.id ), snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
-            if ( table.entityType == EntityType.VIEW ) {
 
-                return p;
-            } else {
-                long pkid = table.primaryKey;
-                List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
-                LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
-                List<CatalogColumnPlacement> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
-                for ( CatalogColumnPlacement placement : pkPlacements ) {
-                    Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                    PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
-                    p.addAdapter( new RelationalStore(
-                            adapter.getUniqueName(),
-                            adapter.getUniqueName(),
-                            snapshot.alloc().getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
-                            snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                            property.numPartitionGroups,
-                            property.partitionType ) );
-                }
-                return p;
+        LogicalTable table = getLogicalTable( schemaName, tableName );
+        Placement p = new Placement( snapshot.alloc().isPartitioned( table.id ), snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
+        if ( table.entityType == EntityType.VIEW ) {
+
+            return p;
+        } else {
+            long pkid = table.primaryKey;
+            List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
+            LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
+            List<CatalogColumnPlacement> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
+            for ( CatalogColumnPlacement placement : pkPlacements ) {
+                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
+                p.addAdapter( new RelationalStore(
+                        adapter.getUniqueName(),
+                        adapter.getUniqueName(),
+                        snapshot.alloc().getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
+                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                        property.numPartitionGroups,
+                        property.partitionType ) );
             }
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception while getting placements", e );
-            return new Placement( e );
+            return p;
         }
     }
 
@@ -2044,7 +2024,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getPartitionFunctionModel( final Context ctx ) throws UnknownColumnException, UnknownTableException, UnknownSchemaException {
+    void getPartitionFunctionModel( final Context ctx ) {
         PartitioningRequest request = ctx.bodyAsClass( PartitioningRequest.class );
 
         // Get correct partition function
@@ -2107,12 +2087,7 @@ public class Crud implements InformationObserver {
 
         // Get correct partition function
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionManager partitionManager = null;
-        try {
-            partitionManager = partitionManagerFactory.getPartitionManager( PartitionType.getByName( request.functionName ) );
-        } catch ( UnknownPartitionTypeException e ) {
-            throw new RuntimeException( e );
-        }
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( PartitionType.getByName( request.functionName ) );
 
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
 
@@ -2708,33 +2683,22 @@ public class Crud implements InformationObserver {
 
                 Gson gson = new Gson();
 
-                try {
-                    DdlManager.getInstance().createMaterializedView(
-                            viewName,
-                            schemaId,
-                            root,
-                            replace,
-                            statement,
-                            stores,
-                            placementType,
-                            columns,
-                            materializedCriteria,
-                            gson.toJson( request.topNode ),
-                            QueryLanguage.from( "rel" ),
-                            false,
-                            false
-                    );
-                } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-                    log.error( "Not possible to create Materialized View because the name is already used", e );
-                    Result finalResult = new Result( e );
-                    finalResult.setGeneratedQuery( "Execute logical query plan" );
-                    return finalResult;
-                } catch ( ColumnNotExistsException | ColumnAlreadyExistsException e ) {
-                    log.error( "Error while creating materialized view", e );
-                    Result finalResult = new Result( e );
-                    finalResult.setGeneratedQuery( "Execute logical query plan" );
-                    return finalResult;
-                }
+                DdlManager.getInstance().createMaterializedView(
+                        viewName,
+                        schemaId,
+                        root,
+                        replace,
+                        statement,
+                        stores,
+                        placementType,
+                        columns,
+                        materializedCriteria,
+                        gson.toJson( request.topNode ),
+                        QueryLanguage.from( "rel" ),
+                        false,
+                        false
+                );
+
 
             } else {
 
@@ -2750,25 +2714,19 @@ public class Crud implements InformationObserver {
 
                 Gson gson = new Gson();
 
-                try {
-                    DdlManager.getInstance().createView(
-                            viewName,
-                            schemaId,
-                            root.alg,
-                            root.collation,
-                            replace,
-                            statement,
-                            placementType,
-                            columns,
-                            gson.toJson( request.topNode ),
-                            QueryLanguage.from( "rel" )
-                    );
-                } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-                    log.error( "Not possible to create View because the Name is already used", e );
-                    Result finalResult = new Result( e );
-                    finalResult.setGeneratedQuery( "Execute logical query plan" );
-                    return finalResult;
-                }
+                DdlManager.getInstance().createView(
+                        viewName,
+                        schemaId,
+                        root.alg,
+                        root.collation,
+                        replace,
+                        statement,
+                        placementType,
+                        columns,
+                        gson.toJson( request.topNode ),
+                        QueryLanguage.from( "rel" )
+                );
+
 
             }
             try {
@@ -3564,14 +3522,10 @@ public class Crud implements InformationObserver {
 
 
     public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId, String origin ) {
-        try {
-            Snapshot snapshot = Catalog.getInstance().getSnapshot();
-            Transaction transaction = transactionManager.startTransaction( snapshot.getUser( Catalog.defaultUserId ), snapshot.getNamespace( Catalog.defaultNamespaceId ), analyze, origin, MultimediaFlavor.FILE );
-            transaction.setUseCache( useCache );
-            return transaction;
-        } catch ( UnknownUserException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
-        }
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Transaction transaction = transactionManager.startTransaction( snapshot.getUser( Catalog.defaultUserId ), snapshot.getNamespace( Catalog.defaultNamespaceId ), analyze, origin, MultimediaFlavor.FILE );
+        transaction.setUseCache( useCache );
+        return transaction;
     }
 
 
@@ -3589,15 +3543,13 @@ public class Crud implements InformationObserver {
      */
     private Map<String, LogicalColumn> getCatalogColumns( String schemaName, String tableName ) {
         Map<String, LogicalColumn> dataTypes = new HashMap<>();
-        try {
-            LogicalTable table = getLogicalTable( schemaName, tableName );
-            List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( table.id );
-            for ( LogicalColumn logicalColumn : logicalColumns ) {
-                dataTypes.put( logicalColumn.name, logicalColumn );
-            }
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception", e );
+
+        LogicalTable table = getLogicalTable( schemaName, tableName );
+        List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( table.id );
+        for ( LogicalColumn logicalColumn : logicalColumns ) {
+            dataTypes.put( logicalColumn.name, logicalColumn );
         }
+
         return dataTypes;
     }
 

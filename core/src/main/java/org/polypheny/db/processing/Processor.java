@@ -23,7 +23,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -53,7 +52,7 @@ public abstract class Processor {
                 return getResult( statement, parsed, parameters );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "Exception while acquiring global schema lock", e );
-            } catch ( TransactionException | NoTablePrimaryKeyException e ) {
+            } catch ( TransactionException e ) {
                 throw new RuntimeException( e );
             } finally {
                 // Release lock
@@ -65,7 +64,7 @@ public abstract class Processor {
     }
 
 
-    PolyImplementation getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
+    PolyImplementation getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException {
         ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();

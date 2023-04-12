@@ -33,8 +33,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
@@ -120,7 +118,7 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public CatalogUser getUser( String name ) throws UnknownUserException {
+    public CatalogUser getUser( String name ) {
         return userNames.get( name );
     }
 
@@ -162,7 +160,7 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException {
+    public CatalogQueryInterface getQueryInterface( String uniqueName ) {
         return interfaceNames.get( uniqueName );
     }
 

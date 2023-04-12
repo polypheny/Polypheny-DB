@@ -17,8 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 
 public enum PlacementType {
     MANUAL( 1 ),
@@ -44,17 +42,17 @@ public enum PlacementType {
                 return e;
             }
         }
-        throw new UnknownPlacementTypeRuntimeException( id );
+        throw new RuntimeException( "Unknown PlacementType with id: " + id );
     }
 
 
-    public static PlacementType parse( @NonNull String str ) throws UnknownPlacementTypeException {
+    public static PlacementType parse( @NonNull String str ) {
         if ( str.equalsIgnoreCase( "MANUAL" ) ) {
             return PlacementType.MANUAL;
         } else if ( str.equalsIgnoreCase( "AUTOMATIC" ) ) {
             return PlacementType.AUTOMATIC;
         }
-        throw new UnknownPlacementTypeException( str );
+        throw new RuntimeException( "Unknown PlacementType with name: " + str );
     }
 
 

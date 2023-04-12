@@ -22,7 +22,6 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
@@ -75,19 +74,16 @@ public class SqlColumnDeclaration extends SqlCall {
      * @return the parsed collation
      */
     public Collation getCollation() {
-        try {
-            if ( dataType.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
-                if ( collation != null ) {
-                    return Collation.parse( collation );
-                } else {
-                    return Collation.getDefaultCollation(); // Set default collation
-                }
+        if ( dataType.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
+            if ( collation != null ) {
+                return Collation.parse( collation );
+            } else {
+                return Collation.getDefaultCollation(); // Set default collation
             }
-            return null;
-
-        } catch ( UnknownCollationException e ) {
-            throw new RuntimeException( e );
         }
+        return null;
+
+
     }
 
 

@@ -16,25 +16,11 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import java.util.List;
 import java.util.Map;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 public interface AllocationDocumentCatalog extends AllocationCatalog {
-
-    /**
-     * Added the required additional entities for the substitutions entities on different data models.
-     *
-     * @param schemaId The id of the namespace to which the collection belongs
-     * @param name The name of the collection
-     * @param stores The stores on which the collection was added
-     * @param onlyPlacement If the substitution entities should be created fully or only the placements
-     * @return The id of the mapping
-     */
-    public abstract long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException;
 
     void addCollectionPlacement( long namespaceId, long adapterId, long id, PlacementType placementType );
 

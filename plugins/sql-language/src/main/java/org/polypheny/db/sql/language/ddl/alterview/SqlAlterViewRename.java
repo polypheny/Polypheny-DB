@@ -16,13 +16,11 @@
 
 package org.polypheny.db.sql.language.ddl.alterview;
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -33,7 +31,6 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterView;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 /**
@@ -83,17 +80,14 @@ public class SqlAlterViewRename extends SqlAlterView {
         LogicalTable catalogTable = getCatalogTable( context, oldName );
 
         if ( catalogTable.entityType != EntityType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER VIEW because " + catalogTable.name + " is not a View." );
+            throw new GenericRuntimeException( "Not Possible to use ALTER VIEW because %s is not a View.", catalogTable.name );
         }
 
         if ( newName.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
+            throw new GenericRuntimeException( "No FQDN allowed here: %s", newName );
         }
-        try {
-            DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
-        } catch ( EntityAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( oldName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
-        }
+
+        DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
     }
 
 }

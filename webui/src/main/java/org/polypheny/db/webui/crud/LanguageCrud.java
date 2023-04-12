@@ -41,7 +41,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -365,7 +364,7 @@ public class LanguageCrud {
         List<LogicalCollection> collections = catalog.getSnapshot().doc().getCollections( namespaceId, new Pattern( collectionName ) );
 
         if ( collections.size() != 1 ) {
-            context.json( new Placement( new UnknownCollectionException( 0 ) ) );
+            context.json( new Placement( new RuntimeException( "The collation is not know" ) ) );
             return;
         }
 

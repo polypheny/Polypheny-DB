@@ -167,7 +167,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
             return alg;
         } else if ( alg.getDocType() == DocType.SCAN ) {
-            builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, null ).build() );
+            builder.push( handleDocumentScan( (DocumentScan<?>) alg, statement, builder, null ).build() );
             return alg;
         } else if ( alg.getDocType() == DocType.VALUES ) {
             return alg;
@@ -216,7 +216,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
 
-            if ( logicalTable == null || logicalTable.getNamespaceType() == NamespaceType.GRAPH ) {
+            if ( logicalTable.getNamespaceType() == NamespaceType.GRAPH ) {
                 return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
             }
 

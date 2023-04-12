@@ -114,6 +114,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
                 getPhysicalTableName( jdbcSchema.adapter, logicalTable, allocationTable ),
                 getPhysicalSchemaName( jdbcSchema.adapter ),
                 getPhysicalColumnNames( jdbcSchema.adapter, allocationTable ),
+                allocationTable.getColumnNames(),
                 allocationTable.getColumnTypes(),
                 allocationTable.getColumnOrder() );
         this.logical = logicalTable;

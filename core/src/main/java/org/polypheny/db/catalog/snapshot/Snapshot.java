@@ -32,8 +32,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.nodes.Identifier;
@@ -92,9 +90,8 @@ public interface Snapshot extends OperatorTable {
      *
      * @param name The name of the user
      * @return The user
-     * @throws UnknownUserException If there is no user with the specified name
      */
-    CatalogUser getUser( String name ) throws UnknownUserException;
+    CatalogUser getUser( String name );
 
     /**
      * Get the user with the specified id.
@@ -147,7 +144,7 @@ public interface Snapshot extends OperatorTable {
      * @param uniqueName The unique name of the query interface
      * @return The CatalogQueryInterface
      */
-    CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException;
+    CatalogQueryInterface getQueryInterface( String uniqueName );
 
     /**
      * Get a query interface by its id
@@ -191,4 +188,5 @@ public interface Snapshot extends OperatorTable {
     AllocSnapshot alloc();
 
     PhysicalSnapshot physical();
+
 }

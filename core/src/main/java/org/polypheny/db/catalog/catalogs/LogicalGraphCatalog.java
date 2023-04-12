@@ -20,9 +20,6 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 public interface LogicalGraphCatalog extends LogicalCatalog {
 
@@ -33,7 +30,7 @@ public interface LogicalGraphCatalog extends LogicalCatalog {
      * @param alias The alias to add
      * @param ifNotExists If the alias should only be added if it not already exists
      */
-    public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
+    void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 
     /**
      * Removes a given alias for a specific graph.
@@ -42,7 +39,7 @@ public interface LogicalGraphCatalog extends LogicalCatalog {
      * @param alias The alias to remove
      * @param ifExists If the alias should only be removed if it exists
      */
-    public abstract void removeGraphAlias( long graphId, String alias, boolean ifExists );
+    void removeGraphAlias( long graphId, String alias, boolean ifExists );
 
     /**
      * Adds a new graph to the catalog, on the same layer as schema in relational.
@@ -54,24 +51,14 @@ public interface LogicalGraphCatalog extends LogicalCatalog {
      * @param replace If the graph should replace an existing one
      * @return The id of the newly added graph
      */
-    public abstract long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
+    long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
 
     /**
      * Deletes an existing graph.
      *
      * @param id The id of the graph to delete
      */
-    public abstract void deleteGraph( long id );
-
-
-    /**
-     * Additional operations for the creation of a graph entity.
-     *
-     * @param id The predefined id of the already added graph
-     * @param stores The stores on which the graph was placed
-     * @param onlyPlacement If the substitution only creates the placements and not the entites
-     */
-    public abstract void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException;
+    void deleteGraph( long id );
 
 
     Map<Long, LogicalGraph> getGraphs();

@@ -18,9 +18,7 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -48,7 +46,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param columnOnly columnOnly If delete originates from a dropColumn
      */
     void deleteColumnPlacement( long allocationId, long columnId, boolean columnOnly );
-
 
 
     /**
@@ -97,7 +94,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionType partition Type of the added partition
      * @return The id of the created partitionGroup
      */
-    long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
+    long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
 
     /**
      * Should only be called from mergePartitions(). Deletes a single partition and all references.
@@ -117,7 +114,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId partitionGroupId where the partition should be initially added to
      * @return The id of the created partition
      */
-    long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
+    long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
 
     /**
      * Deletes a single partition and all references.
@@ -149,37 +146,12 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     void mergeTable( long tableId );
 
     /**
-     * Updates partitionProperties on table
-     *
-     * @param tableId Table to be partitioned
-     * @param partitionProperty Partition properties
-     */
-    void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty );
-
-
-    /**
      * Updates the specified partition group with the attached partitionIds
      *
      * @param partitionGroupId Partition Group to be updated
      * @param partitionIds List of new partitionIds
      */
     void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
-
-    /**
-     * Adds a partition to an already existing partition Group
-     *
-     * @param partitionGroupId Group to add to
-     * @param partitionId Partition to add
-     */
-    void addPartitionToGroup( long partitionGroupId, Long partitionId );
-
-    /**
-     * Removes a partition from an already existing partition Group
-     *
-     * @param partitionGroupId Group to remove the partition from
-     * @param partitionId Partition to remove
-     */
-    void removePartitionFromGroup( long partitionGroupId, Long partitionId );
 
     /**
      * Assign the partition to a new partitionGroup
@@ -221,27 +193,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the placement from
      * @return
      */
-    AllocationTable createAlloctionTable( long adapterId, long tableId );
-
-    /**
-     * Adds a new DataPlacement for a given table on a specific store.
-     * If it already exists it simply returns the existing placement.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
-     */
-    CatalogDataPlacement addDataPlacementIfNotExists( long adapterId, long tableId );
-
-    /**
-     * Modifies a specific DataPlacement of a given table.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @param catalogDataPlacement new dataPlacement to be written
-     */
-    void modifyDataPlacement( long adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
-
+    AllocationTable createAllocationTable( long adapterId, long tableId );
 
     /**
      * Removes a DataPlacement for a given table on a specific store
@@ -252,66 +204,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     void deleteAllocation( long adapterId, long tableId );
 
     void deleteAllocation( long allocId );
-
-    /**
-     * Adds a single dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     */
-    void addSingleDataPlacementToTable( long adapterId, long tableId );
-
-    /**
-     * Removes a single dataPlacement from a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     */
-    void removeSingleDataPlacementFromTable( long adapterId, long tableId );
-
-    /**
-     * Updates the list of data placements on a table
-     *
-     * @param tableId table to be updated
-     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
-     */
-    void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements );
-
-    /**
-     * Adds columns to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param columnIds List of columnIds to add to a specific store for the table
-     */
-    void addColumnsToDataPlacement( long adapterId, long tableId, List<Long> columnIds );
-
-    /**
-     * Remove columns to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param columnIds List of columnIds to remove from a specific store for the table
-     */
-    void removeColumnsFromDataPlacement( long adapterId, long tableId, List<Long> columnIds );
-
-    /**
-     * Adds partitions to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param partitionIds List of partitionIds to add to a specific store for the table
-     */
-    void addPartitionsToDataPlacement( long adapterId, long tableId, List<Long> partitionIds );
-
-    /**
-     * Remove partitions to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param partitionIds List of partitionIds to remove from a specific store for the table
-     */
-    void removePartitionsFromDataPlacement( long adapterId, long tableId, List<Long> partitionIds );
 
     /**
      * Updates and overrides list of associated columnPlacements {@code &} partitionPlacements for a given data placement
@@ -331,22 +223,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionId The id of a partition which shall be removed from that store.
      */
     void deletePartitionPlacement( long adapterId, long partitionId );
-
-
-
-    /**
-     * Registers a table to be considered for periodic processing
-     *
-     * @param tableId ID of table to be considered for periodic processing
-     */
-    void addTableToPeriodicProcessing( long tableId );
-
-    /**
-     * Remove a table from periodic background processing
-     *
-     * @param tableId ID of table to be removed for periodic processing
-     */
-    void removeTableFromPeriodicProcessing( long tableId );
 
 
     Map<Long, AllocationTable> getTables();

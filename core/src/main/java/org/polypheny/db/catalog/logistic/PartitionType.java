@@ -16,9 +16,6 @@
 
 package org.polypheny.db.catalog.logistic;
 
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
-
 public enum PartitionType {
     NONE( 0 ),
     RANGE( 1 ),
@@ -46,17 +43,17 @@ public enum PartitionType {
                 return t;
             }
         }
-        throw new UnknownPartitionTypeRuntimeException( id );
+        throw new RuntimeException( "Unknown PartitionType with id: " + id );
     }
 
 
-    public static PartitionType getByName( final String name ) throws UnknownPartitionTypeException {
+    public static PartitionType getByName( final String name ) {
         for ( PartitionType t : values() ) {
             if ( t.name().equalsIgnoreCase( name ) ) {
                 return t;
             }
         }
-        throw new UnknownPartitionTypeException( name );
+        throw new RuntimeException( "Unknown PartitionType with name: " + name );
     }
 
 }

@@ -34,11 +34,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.util.Pair;
@@ -228,7 +223,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public LogicalColumn getColumn( String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownTableException {
+    public LogicalColumn getColumn( String tableName, String columnName ) {
         return tableIdColumnNameColumn.get( Pair.of( tableName, columnName ) );
     }
 
@@ -295,13 +290,13 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException {
+    public CatalogConstraint getConstraint( long tableId, String constraintName ) {
         return tableConstraints.get( tableId ).stream().filter( c -> c.name.equals( constraintName ) ).findFirst().orElse( null );
     }
 
 
     @Override
-    public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException {
+    public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) {
         return tableForeignKeys.get( tableId ).stream().filter( e -> e.name.equals( foreignKeyName ) ).findFirst().orElse( null );
     }
 

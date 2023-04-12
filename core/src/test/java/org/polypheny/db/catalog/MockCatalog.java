@@ -34,16 +34,8 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.snapshot.AllocSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
-import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
-import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
 
@@ -85,6 +77,7 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+
     @Override
     public LogicalRelationalCatalog getLogicalRel( long namespaceId ) {
         throw new NotImplementedException();
@@ -121,7 +114,6 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-
     @Override
     public PhysicalCatalog getPhysical( long namespaceId ) {
         throw new NotImplementedException();
@@ -146,9 +138,8 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-
     @Override
-    public void commit() throws NoTablePrimaryKeyException {
+    public void commit() {
         throw new NotImplementedException();
     }
 
@@ -204,13 +195,12 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-
     private List<LogicalNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
 
-    private LogicalNamespace getNamespace( long databaseId, String schemaName ) throws UnknownSchemaException {
+    private LogicalNamespace getNamespace( long databaseId, String schemaName ) {
         throw new NotImplementedException();
     }
 
@@ -219,7 +209,6 @@ public abstract class MockCatalog extends Catalog {
     public long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
         throw new NotImplementedException();
     }
-
 
 
     @Override

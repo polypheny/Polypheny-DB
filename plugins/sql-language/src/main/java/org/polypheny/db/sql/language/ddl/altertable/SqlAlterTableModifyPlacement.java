@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -27,9 +25,6 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
-import org.polypheny.db.ddl.exception.LastPlacementException;
-import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -40,7 +35,6 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -133,31 +127,17 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         }
 
         DataStore storeInstance = getDataStoreInstance( storeName );
-        try {
-            DdlManager.getInstance().modifyDataPlacement(
-                    catalogTable,
-                    columnList.getList().stream()
-                            .map( c -> getCatalogColumn( catalogTable.namespaceId, catalogTable.id, (SqlIdentifier) c ).id )
-                            .collect( Collectors.toList() ),
-                    partitionGroupList,
-                    partitionGroupNamesList.stream()
-                            .map( SqlIdentifier::toString )
-                            .collect( Collectors.toList() ),
-                    storeInstance,
-                    statement );
-        } catch ( PlacementNotExistsException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
-        } catch ( IndexPreventsRemovalException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.indexPreventsRemovalOfPlacement( e.getIndexName(), e.getColumnName() ) );
-        } catch ( LastPlacementException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.onlyOnePlacementLeft() );
-        }
+        DdlManager.getInstance().modifyDataPlacement(
+                catalogTable,
+                columnList.getList().stream()
+                        .map( c -> getCatalogColumn( catalogTable.namespaceId, catalogTable.id, (SqlIdentifier) c ).id )
+                        .collect( Collectors.toList() ),
+                partitionGroupList,
+                partitionGroupNamesList.stream()
+                        .map( SqlIdentifier::toString )
+                        .collect( Collectors.toList() ),
+                storeInstance,
+                statement );
 
     }
 
