@@ -17,14 +17,10 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
-import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -37,7 +33,6 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 
 
 /**
@@ -83,13 +78,7 @@ public class SqlDropSchema extends SqlDrop implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        try {
-            DdlManager.getInstance().dropNamespace( name.getSimple(), ifExists, statement );
-        } catch ( SchemaNotExistException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.getSimple() ) );
-        } catch ( DdlOnSourceException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
-        }
+        DdlManager.getInstance().dropNamespace( name.getSimple(), ifExists, statement );
     }
 
 }

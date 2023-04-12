@@ -17,13 +17,10 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
@@ -32,7 +29,6 @@ import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 
 
 /**
@@ -70,11 +66,8 @@ public class SqlDropView extends SqlDropObject {
             throw new RuntimeException( "Not Possible to use DROP VIEW because " + catalogTable.name + " is not a View." );
         }
 
-        try {
-            DdlManager.getInstance().dropView( catalogTable, statement );
-        } catch ( DdlOnSourceException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
-        }
+        DdlManager.getInstance().dropView( catalogTable, statement );
+
 
     }
 

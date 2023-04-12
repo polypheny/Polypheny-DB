@@ -19,7 +19,6 @@ package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,15 +91,6 @@ import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
-import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
-import org.polypheny.db.ddl.exception.LastPlacementException;
-import org.polypheny.db.ddl.exception.NotMaterializedViewException;
-import org.polypheny.db.ddl.exception.NotViewException;
-import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
-import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
-import org.polypheny.db.ddl.exception.PlacementNotExistsException;
-import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -1547,23 +1537,23 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check whether this store actually contains a placement of this column
         if ( !catalog.getSnapshot().alloc().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id ) ) {
-            throw new PlacementNotExistsException();
+            throw new GenericRuntimeException( "The placement does not exist on the store" );
         }
         // Check whether there are any indexes located on the store requiring this column
         for ( CatalogIndex index : catalog.getSnapshot().rel().getIndexes( catalogTable.id, false ) ) {
             if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( logicalColumn.id ) ) {
-                throw new IndexPreventsRemovalException( index.name, columnName );
+                throw new GenericRuntimeException( "Cannot remove the column %s, as there is a index %s using it", columnName, index.name );
             }
         }
 
-        if ( !catalog.getAllocRel( catalogTable.namespaceId ).validateDataPlacementsConstraints( logicalColumn.tableId, storeInstance.getAdapterId(), Arrays.asList( logicalColumn.id ), new ArrayList<>() ) ) {
-            throw new LastPlacementException();
+        if ( !catalog.getAllocRel( catalogTable.namespaceId ).validateDataPlacementsConstraints( logicalColumn.tableId, storeInstance.getAdapterId(), List.of( logicalColumn.id ), new ArrayList<>() ) ) {
+            throw new GenericRuntimeException( "Cannot drop the placement as it is the last" );
         }
 
         // Check whether the column to drop is a primary key
         CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
         if ( primaryKey.columnIds.contains( logicalColumn.id ) ) {
-            throw new PlacementIsPrimaryException();
+            throw new GenericRuntimeException( "Cannot drop primary key" );
         }
         // Drop Column on store
         storeInstance.dropColumn( statement.getPrepareContext(), catalog.getSnapshot().alloc().getColumnPlacement( storeInstance.getAdapterId(), logicalColumn.id ) );
@@ -1630,11 +1620,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( catalog.getSnapshot().rel().checkIfExistsEntity( viewName ) ) {
             if ( replace ) {
-                try {
-                    dropView( catalog.getSnapshot().rel().getTable( namespaceId, viewName ), statement );
-                } catch ( DdlOnSourceException e ) {
-                    throw new GenericRuntimeException( "Unable tp drop the existing View with this name." );
-                }
+                dropView( catalog.getSnapshot().rel().getTable( namespaceId, viewName ), statement );
             } else {
                 throw new GenericRuntimeException( "There already exists a view with the name %s", viewName );
             }
@@ -2408,7 +2394,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws PartitionGroupNamesNotUniqueException, TransactionException {
+    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws TransactionException {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         LogicalColumn logicalColumn = snapshot.rel().getColumn( partitionInfo.table.id, partitionInfo.columnName );
 
@@ -2420,7 +2406,7 @@ public class DdlManagerImpl extends DdlManager {
                 .map( name -> name.trim().toLowerCase() )
                 .collect( Collectors.toList() );
         if ( sanitizedPartitionGroupNames.size() != new HashSet<>( sanitizedPartitionGroupNames ).size() ) {
-            throw new PartitionGroupNamesNotUniqueException();
+            throw new GenericRuntimeException( "Name is not unique" );
         }
 
         // Check if specified partitionColumn is even part of the table
@@ -2871,7 +2857,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropNamespace( String namespaceName, boolean ifExists, Statement statement ) throws SchemaNotExistException, DdlOnSourceException {
+    public void dropNamespace( String namespaceName, boolean ifExists, Statement statement ) {
         namespaceName = namespaceName.toLowerCase();
 
         // Check if there is a schema with this name
@@ -2897,18 +2883,18 @@ public class DdlManagerImpl extends DdlManager {
                 // This is ok because "IF EXISTS" was specified
                 return;
             } else {
-                throw new SchemaNotExistException();
+                throw new GenericRuntimeException( "The namespace does not exist" );
             }
         }
     }
 
 
     @Override
-    public void dropView( LogicalTable catalogView, Statement statement ) throws DdlOnSourceException {
+    public void dropView( LogicalTable catalogView, Statement statement ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         // Make sure that this is a table of type VIEW
         if ( catalogView.entityType != EntityType.VIEW ) {
-            throw new NotViewException();
+            throw new GenericRuntimeException( "Can only drop views with this method" );
         }
 
         // Check if views are dependent from this view
@@ -2932,12 +2918,10 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropMaterializedView( LogicalTable materializedView, Statement statement ) throws DdlOnSourceException {
+    public void dropMaterializedView( LogicalTable materializedView, Statement statement ) {
         // Make sure that this is a table of type Materialized View
-        if ( materializedView.entityType == EntityType.MATERIALIZED_VIEW ) {
-            // Empty on purpose
-        } else {
-            throw new NotMaterializedViewException();
+        if ( materializedView.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new GenericRuntimeException( "Only materialized views can be dropped with this method" );
         }
         // Check if views are dependent from this view
         checkViewDependencies( materializedView );
@@ -2953,7 +2937,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    public void dropTableOld( LogicalTable catalogTable, Statement statement ) throws DdlOnSourceException {
+    public void dropTableOld( LogicalTable catalogTable, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
         // Make sure that this is a table of type TABLE (and not SOURCE)
         //checkIfDdlPossible( catalogEntity.tableType );
@@ -3066,7 +3050,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropTable( LogicalTable catalogTable, Statement statement ) throws DdlOnSourceException {
+    public void dropTable( LogicalTable catalogTable, Statement statement ) {
         // Make sure that all adapters are of type store (and not source)
         Snapshot snapshot = catalog.getSnapshot();
 

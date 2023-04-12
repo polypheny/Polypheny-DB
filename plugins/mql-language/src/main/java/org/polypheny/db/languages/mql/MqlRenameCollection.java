@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -52,31 +51,26 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        try {
-            List<LogicalTable> tables = context.getSnapshot().rel().getTables( database, null );
+        List<LogicalTable> tables = context.getSnapshot().rel().getTables( database, null );
 
-            if ( dropTarget ) {
-                Optional<LogicalTable> newTable = tables.stream()
-                        .filter( t -> t.name.equals( newName ) )
-                        .findAny();
-
-                if ( newTable.isPresent() ) {
-                    DdlManager.getInstance().dropTable( newTable.get(), statement );
-                }
-            }
-
-            Optional<LogicalTable> table = tables.stream()
-                    .filter( t -> t.name.equals( getCollection() ) )
+        if ( dropTarget ) {
+            Optional<LogicalTable> newTable = tables.stream()
+                    .filter( t -> t.name.equals( newName ) )
                     .findAny();
 
-            if ( table.isEmpty() ) {
-                throw new RuntimeException( "The target for the rename is not valid." );
-            }
-
-            DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException e ) {
-            throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
+            newTable.ifPresent( logicalTable -> DdlManager.getInstance().dropTable( logicalTable, statement ) );
         }
+
+        Optional<LogicalTable> table = tables.stream()
+                .filter( t -> t.name.equals( getCollection() ) )
+                .findAny();
+
+        if ( table.isEmpty() ) {
+            throw new RuntimeException( "The target for the rename is not valid." );
+        }
+
+        DdlManager.getInstance().renameTable( table.get(), newName, statement );
+
     }
 
 }

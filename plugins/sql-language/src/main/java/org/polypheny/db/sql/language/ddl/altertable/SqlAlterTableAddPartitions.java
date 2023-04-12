@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -28,7 +26,6 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
-import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Identifier;
@@ -41,7 +38,6 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -165,8 +161,6 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             }
         } catch ( TransactionException e ) {
             throw new RuntimeException( e );
-        } catch ( PartitionGroupNamesNotUniqueException e ) {
-            throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );
         }
     }
 

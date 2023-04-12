@@ -33,7 +33,6 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
@@ -171,25 +170,20 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
         boolean ordered = query.getKind().belongsTo( Kind.ORDER );
 
-        try {
-            DdlManager.getInstance().createMaterializedView(
-                    viewName.replaceAll( "[^A-Za-z0-9]", "_" ),
-                    schemaId,
-                    algRoot,
-                    replace,
-                    statement,
-                    stores,
-                    placementType,
-                    columns,
-                    materializedCriteria,
-                    String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
-                    QueryLanguage.from( "sql" ),
-                    ifNotExists,
-                    ordered );
-        } catch ( ColumnNotExistsException e ) {
-            // we just added the table/column, so it has to exist, or we have an internal problem
-            throw new RuntimeException( e );
-        }
+        DdlManager.getInstance().createMaterializedView(
+                viewName.replaceAll( "[^A-Za-z0-9]", "_" ),
+                schemaId,
+                algRoot,
+                replace,
+                statement,
+                stores,
+                placementType,
+                columns,
+                materializedCriteria,
+                String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
+                QueryLanguage.from( "sql" ),
+                ifNotExists,
+                ordered );
 
         MaterializedViewManager.getInstance().isCreatingMaterialized = false;
     }
