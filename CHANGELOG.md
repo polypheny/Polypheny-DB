@@ -1,5 +1,18 @@
 # Change Log
 
+## 0.9.0 (April 12, 2023)
+
+* Adding the ability to use sha256 digest for Docker images
+* A new -version command line option
+* Introduction of Plugin System & Plugin Refactor
+* A data source adapter for Excel sheets
+* A data source adapter for Google sheets
+* Improve handling of file-based sources and allow linking of files
+* Fix a naming error in graphs
+* Fix an issue with deploying Docker containers from Polypheny
+* Improve handling of logical operators on graph properties
+
+
 ## 0.8.1 (November 3, 2022)
 
 * Fixing support for Java 19

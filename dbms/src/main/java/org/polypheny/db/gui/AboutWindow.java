@@ -103,7 +103,7 @@ public class AboutWindow {
             add( ossButton );
 
             JTextPane txtpnCopyright = new JTextPane();
-            txtpnCopyright.setText( "Copyright 2019-2022 The Polypheny Project\n"
+            txtpnCopyright.setText( "Copyright 2019-2023 The Polypheny Project\n"
                     + "Polypheny is powered by " );
             txtpnCopyright.setFont( new Font( "Verdana", Font.PLAIN, 14 ) );
             txtpnCopyright.setBackground( lblIcon.getBackground() );
@@ -121,8 +121,8 @@ public class AboutWindow {
             add( txtpnRuntime );
 
             JButton websiteButton = new JButton();
-            final URI websiteUri = new URI( "https://polypheny.org/" );
-            websiteButton.setText( "https://polypheny.org" );
+            final URI websiteUri = new URI( "https://polypheny.com/" );
+            websiteButton.setText( "https://polypheny.com" );
             websiteButton.setBorderPainted( false );
             websiteButton.setOpaque( false );
             websiteButton.setFont( new Font( "Verdana", Font.PLAIN, 14 ) );
