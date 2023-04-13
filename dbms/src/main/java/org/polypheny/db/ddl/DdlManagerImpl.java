@@ -2199,7 +2199,7 @@ public class DdlManagerImpl extends DdlManager {
                 columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, id, PlacementType.AUTOMATIC, i ) );
                 i++;
             }
-
+            catalog.updateSnapshot();
             catalog.getPhysical( namespaceId ).addEntities( store.createPhysicalTable( statement.getPrepareContext(), logical, alloc, columns ) );
         }
 

@@ -88,11 +88,11 @@ public class CsvSchema extends AbstractNamespace implements Schema {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
-        List<Integer> fieldIds = new ArrayList<>( allocationTable.placements.size() );
+        List<Integer> fieldIds = new ArrayList<>();
 
         List<ExportedColumn> columns = csvSource.getExportedColumns().get( catalogTable.name );
 
-        for ( AllocationColumn placement : allocationTable.placements ) {
+        for ( AllocationColumn placement : allocationTable.getColumns().values() ) {
             LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, logicalColumn.type, logicalColumn.length, logicalColumn.scale, null );
             fieldInfo.add( logicalColumn.name, columns.get( (int) placement.position ).physicalColumnName, sqlType ).nullable( logicalColumn.nullable );

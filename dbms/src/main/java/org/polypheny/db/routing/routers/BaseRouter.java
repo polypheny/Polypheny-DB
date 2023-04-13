@@ -365,7 +365,7 @@ public abstract class BaseRouter implements Router {
             joinedScanCache.put( allocationEntities.hashCode(), node );
         }
 
-        AllocationColumn placement = allocationEntities.get( 0 ).unwrap( AllocationTable.class ).placements.get( 0 );
+        AllocationColumn placement = catalog.getSnapshot().alloc().getColumns( allocationEntities.get( 0 ).id ).get( 0 );
         // todo dl: remove after RowType refactor
         if ( Catalog.snapshot().getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );

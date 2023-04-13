@@ -68,21 +68,19 @@ public class AllocationColumn implements CatalogObject {
 
     @SneakyThrows
     public String getLogicalTableName() {
-        throw new org.apache.commons.lang3.NotImplementedException();
+        return Catalog.snapshot().rel().getTable( tableId ).name;
     }
 
 
     @SneakyThrows
     public String getLogicalColumnName() {
-        //return Catalog.getInstance().getLogicalRel( namespaceId ).getColumn( columnId ).name;
-        throw new org.apache.commons.lang3.NotImplementedException();
+        return Catalog.snapshot().rel().getColumn( columnId ).name;
     }
 
 
     @SneakyThrows
     public String getAdapterUniqueName() {
-        // return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
-        throw new org.apache.commons.lang3.NotImplementedException();
+        return Catalog.snapshot().getAdapter( adapterId ).uniqueName;
     }
 
 
