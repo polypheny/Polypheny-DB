@@ -82,8 +82,8 @@ public class StatisticResult {
 //     */
 //    public static <E> Map<E, Integer> toOccurrenceMap( StatisticResult stats ) {
 //        HashMap<E, Integer> map = new HashMap<>();
-//        String[] values = stats.getColumns()[0].getData();
-//        String[] occurrences = stats.getColumns()[1].getData();
+//        String[] values = stats.getAllocColumns()[0].getData();
+//        String[] occurrences = stats.getAllocColumns()[1].getData();
 //        //TODO: handle mismatch
 //        for ( int i = 0; i < values.length; i++ ) {
 //            map.put( (E) values[i], Integer.parseInt( occurrences[i] ) );

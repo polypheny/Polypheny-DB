@@ -53,6 +53,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -102,11 +103,13 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -141,6 +144,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Permutation;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -1348,11 +1352,31 @@ public class AlgBuilder {
     }
 
 
+    private void reorder( List<Long> order, Map<String, Long> namesIdMapping ) {
+        List<String> names = peek().getRowType().getFieldNames();
+        List<Integer> mapping = new ArrayList<>();
+        for ( String name : names ) {
+            mapping.add( order.indexOf( namesIdMapping.get( name ) ) );
+        }
+        permute( new Permutation( mapping ) );
+    }
+
+
     public AlgBuilder scan( @Nonnull PhysicalEntity entity ) {
+
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
         rename( entity.getLogicalRowType().getFieldNames() );
+        if ( entity.unwrap( PhysicalTable.class ) != null ) {
+            List<Long> order = Catalog.snapshot().rel().getTable( entity.logicalId ).unwrap( LogicalTable.class ).getColumnIds();
+            reorder( order, flip( entity.unwrap( PhysicalTable.class ).logicalColumns ) );
+        }
         return this;
+    }
+
+
+    private <K, V> Map<V, K> flip( Map<K, V> map ) {
+        return map.entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
     }
 
 

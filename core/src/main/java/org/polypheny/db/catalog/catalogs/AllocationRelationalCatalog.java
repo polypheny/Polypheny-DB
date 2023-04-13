@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.util.Pair;
 
 public interface AllocationRelationalCatalog extends AllocationCatalog {
 
@@ -208,6 +209,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
     Map<Long, AllocationTable> getTables();
 
-    Map<Long, AllocationColumn> getColumns();
+    Map<Pair<Long, Long>, AllocationColumn> getAllocColumns();
 
 }

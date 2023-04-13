@@ -20,6 +20,7 @@ package org.polypheny.db.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -139,15 +140,16 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void addDefaultValue( long namespaceId, String defaultValue, long addedColumnId ) {
+    private LogicalColumn addDefaultValue( long namespaceId, String defaultValue, LogicalColumn column ) {
         if ( defaultValue != null ) {
             // TODO: String is only a temporal solution for default values
             String v = defaultValue;
             if ( v.startsWith( "'" ) ) {
                 v = v.substring( 1, v.length() - 1 );
             }
-            catalog.getLogicalRel( namespaceId ).setDefaultValue( addedColumnId, PolyType.VARCHAR, v );
+            return catalog.getLogicalRel( namespaceId ).setDefaultValue( column.id, PolyType.VARCHAR, v );
         }
+        return column;
     }
 
 
@@ -437,7 +439,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         // Add default value
-        addDefaultValue( catalogTable.namespaceId, defaultValue, addedColumn.id );
+        addDefaultValue( catalogTable.namespaceId, defaultValue, addedColumn );
 
         AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( adapterId, catalogTable.id );
         // Add column placement
@@ -445,7 +447,7 @@ public class DdlManagerImpl extends DdlManager {
                 allocation.id,
                 addedColumn.id,
                 PlacementType.STATIC,
-                position );//Not a valid partitionID --> placeholder
+                catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );//Not a valid partitionID --> placeholder
 
         // Set column position
         catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementPhysicalPosition( adapterId, addedColumn.id, exportedColumn.physicalPosition );
@@ -456,7 +458,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private int updateAdjacentPositions( LogicalTable catalogTable, LogicalColumn beforeColumn, LogicalColumn afterColumn ) {
-        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( catalogTable.id );
+        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( catalogTable.id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
         int position = columns.size() + 1;
         if ( beforeColumn != null || afterColumn != null ) {
             if ( beforeColumn != null ) {
@@ -475,9 +477,9 @@ public class DdlManagerImpl extends DdlManager {
 
     private void updateColumnPosition( LogicalTable catalogTable, List<LogicalColumn> columns, int i ) {
         catalog.getLogicalRel( catalogTable.namespaceId ).setColumnPosition( columns.get( i - 1 ).id, i + 1 );
-        for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id ) ) {
+        /*for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id ) ) {
             catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementPhysicalPosition( allocation.id, columns.get( i - 1 ).id, i + 1 );
-        }
+        }*/
     }
 
 
@@ -513,7 +515,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         // Add default value
-        addDefaultValue( catalogTable.namespaceId, defaultValue, addedColumn.id );
+        addedColumn = addDefaultValue( catalogTable.namespaceId, defaultValue, addedColumn );
 
         // Ask router on which stores this column shall be placed
         List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
@@ -525,7 +527,7 @@ public class DdlManagerImpl extends DdlManager {
                     allocation.id,
                     addedColumn.id,   // Will be set later
                     PlacementType.AUTOMATIC,   // Will be set later
-                    position );//Not a valid partitionID --> placeholder
+                    catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );//Not a valid partitionID --> placeholder
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), allocation.unwrap( AllocationTable.class ), addedColumn );
         }
 
@@ -1218,7 +1220,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
-        addDefaultValue( catalogTable.namespaceId, defaultValue, logicalColumn.id );
+        addDefaultValue( catalogTable.namespaceId, defaultValue, logicalColumn );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2837,7 +2839,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         // Add default value
-        addDefaultValue( namespaceId, defaultValue, addedColumn.id );
+        addedColumn = addDefaultValue( namespaceId, defaultValue, addedColumn );
 
         /*for ( DataStore s : stores ) {
             AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( s.getAdapterId(), tableId );

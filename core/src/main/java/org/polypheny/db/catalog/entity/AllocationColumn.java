@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Value;
+import lombok.With;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
@@ -31,6 +32,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 
 @EqualsAndHashCode
 @Value
+@With
 public class AllocationColumn implements CatalogObject {
 
     private static final long serialVersionUID = -1909757888176291095L;

@@ -94,7 +94,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .stream()
                 .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
-                .map( AllocationRelationalCatalog::getColumns )
+                .map( AllocationRelationalCatalog::getAllocColumns )
                 .flatMap( c -> c.values().stream() )
                 .collect( Collectors.toList() ) );
 

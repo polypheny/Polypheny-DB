@@ -306,8 +306,10 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void setDefaultValue( long columnId, PolyType type, String defaultValue ) {
-        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).defaultValue( new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) ).build() );
+    public LogicalColumn setDefaultValue( long columnId, PolyType type, String defaultValue ) {
+        LogicalColumn column = columns.get( columnId ).toBuilder().defaultValue( new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) ).build();
+        columns.put( columnId, column );
+        return column;
     }
 
 

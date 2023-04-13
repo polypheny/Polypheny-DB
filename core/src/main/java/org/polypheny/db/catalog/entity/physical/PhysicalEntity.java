@@ -52,4 +52,5 @@ public abstract class PhysicalEntity extends CatalogEntity {
 
     public abstract AlgDataType getLogicalRowType();
 
+
 }

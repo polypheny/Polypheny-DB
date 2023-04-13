@@ -176,8 +176,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
+     * @return
      */
-    void setDefaultValue( long columnId, PolyType type, String defaultValue );
+    LogicalColumn setDefaultValue( long columnId, PolyType type, String defaultValue );
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.

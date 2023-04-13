@@ -34,6 +34,8 @@
 package org.polypheny.db.util;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Collections;
@@ -43,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 
 
 /**
@@ -53,10 +57,14 @@ import javax.annotation.Nonnull;
  * @param <T1> Left-hand type
  * @param <T2> Right-hand type
  */
+@Value
+@NonFinal
 public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>, Serializable {
 
-    public final T1 left;
-    public final T2 right;
+    @Serialize
+    public T1 left;
+    @Serialize
+    public T2 right;
 
 
     /**
@@ -65,7 +73,9 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
      * @param left left value
      * @param right right value
      */
-    public Pair( T1 left, T2 right ) {
+    public Pair(
+            @Deserialize("left") T1 left,
+            @Deserialize("right") T2 right ) {
         this.left = left;
         this.right = right;
     }

@@ -139,7 +139,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         executeUpdate( query, context );
 
         return Collections.singletonList( JdbcSchema.create( logicalTable.id, catalog.getSnapshot(), logicalTable.getNamespaceName(), connectionFactory, dialect, this ).createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), logicalTable, allocationTable ) );
-        //return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
+        //return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getAllocColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
     }
 
 

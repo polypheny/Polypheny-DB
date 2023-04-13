@@ -28,7 +28,7 @@ public interface Serializable {
 
     <T extends Serializable> BinarySerializer<T> getSerializer();
 
-    default <T extends Serializable> byte[] serialize() {
+    default byte[] serialize() {
         byte[] buffer = new byte[1000];
         getSerializer().encode( buffer, 0, this );
         return buffer;

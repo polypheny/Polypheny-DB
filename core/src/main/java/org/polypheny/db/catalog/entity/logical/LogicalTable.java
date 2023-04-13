@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -139,7 +140,7 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
 
 
     public List<Long> getColumnIds() {
-        return getColumns().stream().map( c -> c.id ).collect( Collectors.toList() );
+        return getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).map( c -> c.id ).collect( Collectors.toList() );
     }
 
 

@@ -158,7 +158,7 @@ public interface AllocSnapshot {
 
     /**
      * Get all partitions of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     * <code>getAllocColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
      *
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
@@ -177,7 +177,7 @@ public interface AllocSnapshot {
 
     /**
      * Get all partitions of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     * <code>getAllocColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
      *
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.

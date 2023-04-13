@@ -36,6 +36,7 @@ package org.polypheny.db.util;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import org.polypheny.db.util.mapping.IntPair;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.MappingType;
@@ -65,6 +66,11 @@ public class Permutation implements Mapping, TargetMapping {
 
         // Initialize to identity.
         identity();
+    }
+
+
+    public Permutation( List<Integer> targets ) {
+        this( targets.stream().mapToInt( i -> i ).toArray() );
     }
 
 
@@ -577,5 +583,6 @@ public class Permutation implements Mapping, TargetMapping {
         }
         return product;
     }
+
 }
 

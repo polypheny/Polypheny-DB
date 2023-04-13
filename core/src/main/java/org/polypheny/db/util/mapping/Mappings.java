@@ -252,7 +252,7 @@ public abstract class Mappings {
 
 
     public static List<Integer> apply2( final Mapping mapping, final List<Integer> list ) {
-        return new AbstractList<Integer>() {
+        return new AbstractList<>() {
             @Override
             public Integer get( int index ) {
                 final int source = list.get( index );
@@ -277,7 +277,7 @@ public abstract class Mappings {
      * @return Permuted view of list
      */
     public static <T> List<T> apply3( final Mapping mapping, final List<T> list ) {
-        return new AbstractList<T>() {
+        return new AbstractList<>() {
             @Override
             public T get( int index ) {
                 return list.get( mapping.getSource( index ) );
@@ -322,7 +322,7 @@ public abstract class Mappings {
      * Converse of {@link #target(List, int)}
      */
     public static List<Integer> asList( final TargetMapping mapping ) {
-        return new AbstractList<Integer>() {
+        return new AbstractList<>() {
             @Override
             public Integer get( int source ) {
                 int target = mapping.getTargetOpt( source );

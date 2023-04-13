@@ -84,7 +84,7 @@ public interface LogicalRelSnapshot {
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
+     * <code>getAllocColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
      *
      * @param tableName Pattern for the table name. null returns all.
      * @param columnName Pattern for the column name. null returns all.

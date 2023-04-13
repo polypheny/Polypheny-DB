@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Serializable {
@@ -53,7 +54,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Serialize
     @Getter
-    public final ConcurrentHashMap<Long, AllocationColumn> columns;
+    public final ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> allocColumns;
 
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
@@ -64,10 +65,10 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     public PolyAllocRelCatalog(
             @Deserialize("namespace") LogicalNamespace namespace,
             @Deserialize("tables") Map<Long, AllocationTable> tables,
-            @Deserialize("columns") Map<Long, AllocationColumn> columns ) {
+            @Deserialize("allocColumns") Map<Pair<Long, Long>, AllocationColumn> allocColumns ) {
         this.tables = new ConcurrentHashMap<>( tables );
         this.namespace = namespace;
-        this.columns = new ConcurrentHashMap<>( columns );
+        this.allocColumns = new ConcurrentHashMap<>( allocColumns );
     }
 
 
@@ -82,14 +83,14 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public AllocationColumn addColumn( long allocationId, long columnId, PlacementType placementType, int position ) {
         AllocationColumn column = new AllocationColumn( namespace.id, allocationId, columnId, placementType, position, tables.get( allocationId ).adapterId );
-        columns.put( columnId, column );
+        allocColumns.put( Pair.of( allocationId, columnId ), column );
         return column;
     }
 
 
     @Override
     public void deleteColumn( long allocationId, long columnId, boolean columnOnly ) {
-        columns.remove( columnId );
+        allocColumns.remove( Pair.of( allocationId, columnId ) );
     }
 
 
@@ -101,6 +102,8 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
     @Override
     public void updateColumnPlacementPhysicalPosition( long allocId, long columnId, long position ) {
+        // Pair<Long, Long> key = Pair.of( allocId, columnId );
+        // allocColumns.put( key, allocColumns.get( key ).withPosition( position ) );
     }
 
 
