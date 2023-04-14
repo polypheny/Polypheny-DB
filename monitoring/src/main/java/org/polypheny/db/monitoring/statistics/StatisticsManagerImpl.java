@@ -962,8 +962,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private void handleInsertColumn( long tableId, Map<Long, List<?>> changedValues, long schemaId, List<Long> columns, int i, QueryResult queryResult ) {
-        StatisticColumn<?> statisticColumn = this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) );
+    private void handleInsertColumn( long tableId, Map<Long, List<?>> changedValues, long namespaceId, List<Long> columns, int i, QueryResult queryResult ) {
+        StatisticColumn<?> statisticColumn = this.statisticSchemaMap.get( namespaceId ).get( tableId ).get( columns.get( i ) );
         statisticColumn.insert( (List) changedValues.get( (long) i ) );
         put( queryResult, statisticColumn );
     }

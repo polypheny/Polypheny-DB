@@ -135,13 +135,14 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
             assert this.type.allowsNoPrecNoScale();
             elementType = typeFactory.createPolyType( this.type );
         }
+
         if ( collectionsType == PolyType.ARRAY ) {
-            return typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+            elementType = typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
         } else if ( collectionsType == PolyType.MAP ) {
-            return typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
-        } else {
-            return elementType;
+            elementType = typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
         }
+
+        return typeFactory.createTypeWithNullability( elementType, nullable );
     }
 
 

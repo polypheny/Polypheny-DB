@@ -233,10 +233,9 @@ public abstract class BaseRouter implements Router {
 
     protected List<RoutedAlgBuilder> handleGeneric( AlgNode node, List<RoutedAlgBuilder> builders ) {
         if ( node.getInputs().size() == 1 ) {
-            log.warn( "why?" );
-            /*builders.forEach(
+            builders.forEach(
                     builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) )
-            );*/
+            );
         } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
             builders.forEach(
                     builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ), 2 )

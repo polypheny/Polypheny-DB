@@ -889,10 +889,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
         validateNamespace( ns, targetRowType );
-        switch ( node.getKind() ) {
-            case EXTEND:
-                // Until we have a dedicated namespace for EXTEND
-                deriveType( scope, node );
+        if ( Objects.requireNonNull( node.getKind() ) == Kind.EXTEND ) {// Until we have a dedicated namespace for EXTEND
+            deriveType( scope, node );
         }
         if ( node == top ) {
             validateModality( node );

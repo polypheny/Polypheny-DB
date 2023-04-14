@@ -28,11 +28,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException;
 import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
@@ -46,9 +44,9 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    protected final HashMap<Class<?>, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
+    protected final HashMap<Class<?>, HashMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     protected DB simpleBackendDb;
-    protected BTreeMap<String, QueryPostCostImpl> queryPostCosts;
+    protected HashMap<String, QueryPostCostImpl> queryPostCosts;
 
 
     @Override
@@ -59,7 +57,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
     @Override
     public void dataPoint( @NonNull MonitoringDataPoint dataPoint ) {
-        BTreeMap table = this.data.get( dataPoint.getClass() );
+        HashMap<UUID, MonitoringDataPoint> table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
             this.createPersistentTable( dataPoint.getClass() );
             table = this.data.get( dataPoint.getClass() );
@@ -265,13 +263,13 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
 
     private void initializePostCosts() {
-        queryPostCosts = simpleBackendDb.treeMap( QueryPostCost.class.getName(), Serializer.STRING, Serializer.JAVA ).createOrOpen();
+        queryPostCosts = new HashMap<>();//simpleBackendDb.treeMap( QueryPostCost.class.getName(), Serializer.STRING, Serializer.JAVA ).createOrOpen();
     }
 
 
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
-            final BTreeMap<UUID, MonitoringDataPoint> treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
+            final HashMap<UUID, MonitoringDataPoint> treeMap = new HashMap<>();//simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
             data.put( classPersistentData, treeMap );
         }
     }

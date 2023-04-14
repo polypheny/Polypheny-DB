@@ -182,7 +182,7 @@ public class DbmsMeta implements ProtobufMeta {
             CursorFactory cursorFactory,
             final Frame firstFrame ) {
         final PolyphenyDbSignature<Object> signature =
-                new PolyphenyDbSignature<Object>(
+                new PolyphenyDbSignature<>(
                         "",
                         ImmutableList.of(),
                         internalParameters,
@@ -1113,7 +1113,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
-            final PolyphenyDbSignature signature = statementHandle.getSignature();
+            final PolyphenyDbSignature<?> signature = statementHandle.getSignature();
             final Iterator<Object> iterator;
             if ( statementHandle.getOpenResultSet() == null ) {
                 final Iterable<Object> iterable = createIterable( statementHandle.getStatement().getDataContext(), signature );
@@ -1124,7 +1124,7 @@ public class DbmsMeta implements ProtobufMeta {
                 iterator = statementHandle.getOpenResultSet();
                 statementHandle.getExecutionStopWatch().resume();
             }
-            final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+            final List<?> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
             statementHandle.getExecutionStopWatch().suspend();
             boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
             @SuppressWarnings("unchecked")
@@ -1301,7 +1301,7 @@ public class DbmsMeta implements ProtobufMeta {
                         // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
                         //  Remember that fetch is synchronized
                         maxRowsInFirstFrame != 0 && SEND_FIRST_FRAME_WITH_RESPONSE
-                                ? fetch( h, 0, (int) Math.min( Math.max( statementHandle.getMaxRowCount(), maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                ? fetch( h, 0, Math.min( Math.max( statementHandle.getMaxRowCount(), maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
                                 : null //Frame.MORE // Send first frame to together with the response to save a fetch call
                 ) );
             } catch ( NoSuchStatementException e ) {
