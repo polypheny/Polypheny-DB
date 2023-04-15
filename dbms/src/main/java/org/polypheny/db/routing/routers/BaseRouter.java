@@ -126,7 +126,7 @@ public abstract class BaseRouter implements Router {
         }
 
         return new HashMap<>() {{
-            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getAllocationsFromLogical( table.id );
+            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id );
             put( allocs.get( 0 ).id, placementList );
         }};
     }

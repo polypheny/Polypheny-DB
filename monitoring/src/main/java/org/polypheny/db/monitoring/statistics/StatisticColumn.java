@@ -23,45 +23,20 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.type.PolyType;
 
 
 /**
  * Stores the available statistic data of a specific column
  */
+
 public abstract class StatisticColumn<T> {
 
-    @Expose
-    @Getter
-    private String schema;
 
-    @Expose
-    @Getter
-    private String table;
+    public final long columnId;
 
-    @Expose
-    @Getter
-    private String column;
+    public final PolyType type;
 
-    @Getter
-    private final long schemaId;
-
-    @Getter
-    private final long tableId;
-
-    @Getter
-    private final long columnId;
-
-    @Expose
-    private final String qualifiedColumnName;
-
-    @Getter
-    private final PolyType type;
-
-    @Expose
-    private final StatisticType columnType;
 
     @Expose
     @Setter
@@ -79,31 +54,11 @@ public abstract class StatisticColumn<T> {
     protected Integer count;
 
 
-    public StatisticColumn( long schemaId, long tableId, long columnId, PolyType type, StatisticType columnType ) {
-        this.schemaId = schemaId;
-        this.tableId = tableId;
+    public StatisticColumn( long columnId, PolyType type ) {
         this.columnId = columnId;
         this.type = type;
-        this.columnType = columnType;
-
-        LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
-        if ( snapshot.getTable( tableId ) != null ) {
-            this.schema = Catalog.getInstance().getSnapshot().getNamespace( schemaId ).name;
-            this.table = snapshot.getTable( tableId ).name;
-            this.column = snapshot.getColumn( columnId ).name;
-        }
-        this.qualifiedColumnName = String.format( "%s.%s.%s", this.schema, this.table, this.column );
     }
 
-
-    public String getQualifiedColumnName() {
-        return this.schema + "." + this.table + "." + this.column;
-    }
-
-
-    public String getQualifiedTableName() {
-        return this.schema + "." + this.table;
-    }
 
 
     public abstract void insert( T val );
@@ -111,21 +66,6 @@ public abstract class StatisticColumn<T> {
     public abstract void insert( List<T> values );
 
     public abstract String toString();
-
-
-    public void updateColumnName( String columnName ) {
-        this.column = columnName;
-    }
-
-
-    public void updateTableName( String tableName ) {
-        this.table = tableName;
-    }
-
-
-    public void updateSchemaName( String schemaName ) {
-        this.schema = schemaName;
-    }
 
 
     public enum StatisticType {

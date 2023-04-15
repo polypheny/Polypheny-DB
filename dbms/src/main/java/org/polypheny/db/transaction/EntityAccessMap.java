@@ -269,7 +269,7 @@ public class EntityAccessMap {
                 relevantPartitions = accessedPartitions.get( p.getId() );
             } else if ( table != null ) {
                 if ( table.namespaceType == NamespaceType.RELATIONAL ) {
-                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getAllocationsFromLogical( table.id );
+                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getFromLogical( table.id );
                     relevantPartitions = allocations.stream().map( a -> a.id ).collect( Collectors.toList() );
                 } else {
                     relevantPartitions = List.of();

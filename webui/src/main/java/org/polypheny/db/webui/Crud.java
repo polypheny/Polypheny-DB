@@ -1176,8 +1176,8 @@ public class Crud implements InformationObserver {
             }
             ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW ) );
         } else {
-            List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id );
-            if ( catalog.getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id ).size() != 1 ) {
+            List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( catalogTable.id );
+            if ( catalog.getSnapshot().alloc().getFromLogical( catalogTable.id ).size() != 1 ) {
                 throw new RuntimeException( "The table has an unexpected number of placements!" );
             }
 

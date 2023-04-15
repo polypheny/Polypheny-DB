@@ -54,6 +54,7 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
@@ -175,16 +176,16 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumnPlacement( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( store.id, logicalColumn.id ) );
         }
 
-        List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
+        List<LogicalColumn> selectedColumns = new LinkedList<>( columns );
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
             LogicalColumn logicalColumn = relSnapshot.getColumn( cid );
-            if ( !selectColumnList.contains( logicalColumn ) ) {
-                selectColumnList.add( logicalColumn );
+            if ( !selectedColumns.contains( logicalColumn ) ) {
+                selectedColumns.add( logicalColumn );
             }
         }
 
@@ -198,7 +199,7 @@ public class DataMigratorImpl implements DataMigrator {
         } else {
             placementDistribution.put(
                     property.partitionIds.get( 0 ),
-                    selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
+                    selectSourcePlacements( table, selectedColumns, targetColumnPlacements.get( 0 ).adapterId ) );
         }
 
         for ( long partitionId : partitionIds ) {
@@ -218,13 +219,13 @@ public class DataMigratorImpl implements DataMigrator {
             }
 
             // Execute Query
-            executeQuery( selectColumnList, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
+            executeQuery( targetColumnPlacements, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
         }
     }
 
 
     @Override
-    public void executeQuery( List<LogicalColumn> selectColumnList, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
+    public void executeQuery( List<AllocationColumn> selectedColumns, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
             PolyImplementation result;
             if ( isMaterializedView ) {
@@ -247,20 +248,20 @@ public class DataMigratorImpl implements DataMigrator {
             Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
-            for ( LogicalColumn logicalColumn : selectColumnList ) {
+            for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
                 for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
-                    if ( metaData.getName().equalsIgnoreCase( logicalColumn.name ) ) {
-                        resultColMapping.put( logicalColumn.id, i );
+                    if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
+                        resultColMapping.put( column.getColumnId(), i );
                     }
                     i++;
                 }
             }
             if ( isMaterializedView ) {
-                for ( LogicalColumn logicalColumn : selectColumnList ) {
-                    if ( !resultColMapping.containsKey( logicalColumn.id ) ) {
+                for ( AllocationColumn column : selectedColumns ) {
+                    if ( !resultColMapping.containsKey( column.getColumnId() ) ) {
                         int i = resultColMapping.values().stream().mapToInt( v -> v ).max().orElseThrow( NoSuchElementException::new );
-                        resultColMapping.put( logicalColumn.id, i + 1 );
+                        resultColMapping.put( column.getColumnId(), i + 1 );
                     }
                 }
             }
@@ -294,13 +295,12 @@ public class DataMigratorImpl implements DataMigrator {
                 } else {
                     fields = sourceAlg.validatedRowType.getFieldList();
                 }
-                int pos = 0;
+
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
                     targetStatement.getDataContext().addParameterValues(
                             v.getKey(),
                             fields.get( resultColMapping.get( v.getKey() ) ).getType(),
                             v.getValue() );
-                    pos++;
                 }
 
                 Iterator<?> iterator = targetStatement.getQueryProcessor()
@@ -355,9 +355,9 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long partitionId ) {
-        PhysicalTable physical = statement.getTransaction().getSnapshot().physical().getPhysicalTable( partitionId );
-        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
+    public AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long allocId ) {
+        List<PhysicalEntity> physicals = statement.getTransaction().getSnapshot().physical().fromAlloc( allocId );
+        ModifiableEntity modifiableTable = physicals.get( 0 ).unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -382,7 +382,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
                 cluster.traitSet(),
-                physical,
+                physicals.get( 0 ),
                 builder.build(),
                 Modify.Operation.INSERT,
                 null,
@@ -410,7 +410,7 @@ public class DataMigratorImpl implements DataMigrator {
         LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey );
         for ( long cid : primaryKey.columnIds ) {
-            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumnPlacement( to.get( 0 ).adapterId, cid );
+            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).adapterId, cid );
             LogicalColumn logicalColumn = snapshot.getColumn( cid );
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
@@ -489,7 +489,7 @@ public class DataMigratorImpl implements DataMigrator {
         for ( LogicalColumn column : snapshot.rel().getColumns( table.id ) ) {
             if ( columnIds.contains( column.id ) ) {
                 if ( snapshot.alloc().getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
-                    placementList.add( snapshot.alloc().getColumnPlacement( adapterIdWithMostPlacements, column.id ) );
+                    placementList.add( snapshot.alloc().getColumn( adapterIdWithMostPlacements, column.id ) );
                 } else {
                     for ( AllocationColumn placement : snapshot.alloc().getColumnPlacements( column.id ) ) {
                         if ( placement.adapterId != excludingAdapterId ) {
@@ -525,7 +525,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( snapshot.getColumnPlacement( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( snapshot.getColumn( store.id, logicalColumn.id ) );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
@@ -627,7 +627,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( snapshot.alloc().getColumnPlacement( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( snapshot.alloc().getColumn( store.id, logicalColumn.id ) );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );

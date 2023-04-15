@@ -31,6 +31,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.MonitoringType;
 
 
 @Getter
@@ -47,7 +48,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private final Map<String, Object> dataElements = new HashMap<>();
     private UUID Id;
     private Timestamp recordedTimestamp;
-    private String monitoringType;
+    private MonitoringType monitoringType;
     private String description;
     private long executionTime;
     private boolean isSubQuery;

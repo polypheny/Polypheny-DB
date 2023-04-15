@@ -19,9 +19,7 @@ package org.polypheny.db;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.monitoring.events.MonitoringType;
 
 
 public abstract class StatisticsManager implements PropertyChangeListener {
@@ -50,7 +48,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
     public abstract void tablesToUpdate( long tableId );
 
     // Use cache if possible
-    public abstract void tablesToUpdate( long tableId, Map<Long, List<?>> changedValues, String type, long schemaId );
+    public abstract void tablesToUpdate( long tableId, Map<Long, List<?>> changedValues, MonitoringType type, long schemaId );
 
     protected abstract void reevaluateTable( long tableId );
 
@@ -60,17 +58,17 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract void deleteTableToUpdate( long tableId, long schemaId );
 
-    public abstract void updateRowCountPerTable( long tableId, int number, String source );
+    public abstract void updateRowCountPerTable( long tableId, int number, MonitoringType type );
 
     public abstract void setIndexSize( long tableId, int indexSize );
 
-    public abstract void setTableCalls( long tableId, String kind );
+    public abstract void setTableCalls( long tableId, MonitoringType type );
 
     public abstract String getRevalId();
 
     public abstract void setRevalId( String revalId );
 
-    public abstract Map<?, ?> getStatisticSchemaMap();
+    public abstract Map<?, ?> getStatisticFields();
 
     public abstract Map<?, ?> getQualifiedStatisticMap();
 
@@ -83,11 +81,5 @@ public abstract class StatisticsManager implements PropertyChangeListener {
     public abstract Object getDashboardInformation();
 
     public abstract void initializeStatisticSettings();
-
-    public abstract void updateColumnName( LogicalColumn logicalColumn, String newName );
-
-    public abstract void updateTableName( LogicalTable catalogTable, String newName );
-
-    public abstract void updateSchemaName( LogicalNamespace logicalNamespace, String newName );
 
 }

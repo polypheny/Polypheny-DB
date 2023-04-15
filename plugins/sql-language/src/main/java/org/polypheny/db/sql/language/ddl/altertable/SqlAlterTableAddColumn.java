@@ -126,7 +126,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id ) ) {
+        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
             getDataStoreInstance( allocation.adapterId );
         }
 

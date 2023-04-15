@@ -103,7 +103,7 @@ public class UiRoutingPageUtil {
                 CatalogPartitionGroup catalogPartitionGroup = snapshot.alloc().getPartitionGroup( catalogPartition.partitionGroupId );
 
                 v.forEach( p -> {
-                    AllocationColumn allocationColumn = snapshot.alloc().getColumnPlacement( p.left, p.right );
+                    AllocationColumn allocationColumn = snapshot.alloc().getColumn( p.left, p.right );
                     CatalogPartitionPlacement catalogPartitionPlacement = snapshot.alloc().getPartitionPlacement( p.left, k );
                     LogicalColumn logicalColumn = snapshot.rel().getColumn( allocationColumn.columnId );
                     table.addRow(

@@ -30,6 +30,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.QueryDataPoint;
 
 
@@ -47,7 +48,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private final HashMap<String, Object> dataElements = new HashMap<>();
     private UUID Id;
     private Timestamp recordedTimestamp;
-    private String monitoringType;
+    private MonitoringType monitoringType;
     private String description;
     private long executionTime;
     private boolean isSubQuery;

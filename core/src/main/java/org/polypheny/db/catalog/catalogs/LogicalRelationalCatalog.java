@@ -55,21 +55,19 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param name The name of the view to add
      * @param namespaceId The id of the schema
-     * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    long addView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
+    LogicalView addView( String name, long namespaceId, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, List<Long> connectedViews, AlgDataType fieldList, String query, QueryLanguage language );
 
     /**
      * Adds a materialized view to a specified schema.
      *
      * @param name of the view to add
      * @param namespaceId id of the schema
-     * @param entityType type of table
      * @param definition {@link AlgNode} used to create Views
      * @param algCollation relCollation used for materialized view
      * @param underlyingTables all tables and columns used within the view
@@ -80,7 +78,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    LogicalMaterializedView addMaterializedView( String name, long namespaceId, EntityType entityType, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered );
+    LogicalMaterializedView addMaterializedView( String name, long namespaceId, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered );
 
     /**
      * Renames a table

@@ -229,7 +229,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             } else {
                 // At the moment multiple strategies
-                if ( Catalog.snapshot().alloc().getAllocationsFromLogical( catalogTable.id ).size() > 1 ) {
+                if ( Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).size() > 1 ) {
                     return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
                 }
                 return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );

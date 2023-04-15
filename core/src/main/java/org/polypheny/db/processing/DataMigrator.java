@@ -76,10 +76,10 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
-    AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long partitionId );
+    AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long allocId );
 
     //is used within copyData
-    void executeQuery( List<LogicalColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+    void executeQuery( List<AllocationColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, long partitionId );
 

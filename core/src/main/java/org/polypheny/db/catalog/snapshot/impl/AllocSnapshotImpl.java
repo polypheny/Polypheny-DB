@@ -246,13 +246,13 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public AllocationEntity getAllocEntity( long id ) {
+    public AllocationEntity getAllocation( long id ) {
         return allocs.get( id );
     }
 
 
     @Override
-    public AllocationColumn getColumnPlacement( long adapterId, long columnId ) {
+    public AllocationColumn getColumn( long adapterId, long columnId ) {
         return adapterColumnPlacement.get( Pair.of( adapterId, columnId ) );
     }
 
@@ -480,7 +480,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<AllocationEntity> getAllocationsFromLogical( long logicalId ) {
+    public List<AllocationEntity> getFromLogical( long logicalId ) {
         return logicalAllocs.get( logicalId );
     }
 

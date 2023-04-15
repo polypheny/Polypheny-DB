@@ -34,7 +34,6 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -169,37 +168,32 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public long addView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
-        throw new NotImplementedException();
+    public LogicalView addView( String name, long namespaceId, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, List<Long> connectedViews, AlgDataType fieldList, String query, QueryLanguage language ) {
+        long id = idBuilder.getNewEntityId();
+
+        LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, algCollation, underlyingTables, connectedViews, language );
+
+        tables.put( id, view );
+        nodes.put( id, definition );
+
+        return view;
     }
 
 
     @Override
-    public LogicalMaterializedView addMaterializedView( final String name, long namespaceId, EntityType entityType, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
+    public LogicalMaterializedView addMaterializedView( final String name, long namespaceId, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         long id = idBuilder.getNewEntityId();
-
-        String adjustedName = name;
-
-        if ( !logicalNamespace.caseSensitive ) {
-            adjustedName = name.toLowerCase();
-        }
-
-        if ( entityType != EntityType.MATERIALIZED_VIEW ) {
-            // Should not happen, addViewTable is only called with EntityType.View
-            throw new RuntimeException( "addMaterializedViewTable is only possible with EntityType = MATERIALIZED_VIEW" );
-        }
 
         LogicalMaterializedView materializedViewTable = new LogicalMaterializedView(
                 id,
-                adjustedName,
+                name,
                 namespaceId,
-                entityType,
                 query,
                 null,
                 algCollation,
                 ImmutableList.of(),
                 underlyingTables,
-                language.getSerializedName(),
+                language,
                 materializedCriteria,
                 ordered
         );

@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.HashMap;
@@ -41,12 +40,6 @@ public class LogicalMaterializedView extends LogicalView {
     private static final long serialVersionUID = 4728996184367206274L;
 
     @Serialize
-    public String language;
-    @Serialize
-    public AlgCollation algCollation;
-    @Serialize
-    public String query;
-    @Serialize
     public MaterializedCriteria materializedCriteria;
     @Serialize
     public boolean ordered;
@@ -56,13 +49,12 @@ public class LogicalMaterializedView extends LogicalView {
             @Deserialize("id") long id,
             @Deserialize("name") String name,
             @Deserialize("namespaceId") long namespaceId,
-            @Deserialize("id") EntityType entityType,
             @Deserialize("entityType") String query,
             @Deserialize("primaryKey") Long primaryKey,
             @Deserialize("algCollation") AlgCollation algCollation,
             @Deserialize("connectedViews") List<Long> connectedViews,
             @Deserialize("underlyingTables") Map<Long, List<Long>> underlyingTables,
-            @Deserialize("language") String language,
+            @Deserialize("language") QueryLanguage language,
             @Deserialize("materializedCriteria") MaterializedCriteria materializedCriteria,
             @Deserialize("ordered") boolean ordered
     ) {
@@ -70,12 +62,11 @@ public class LogicalMaterializedView extends LogicalView {
                 id,
                 name,
                 namespaceId,
-                entityType,
+                EntityType.MATERIALIZED_VIEW,
                 query,
-                primaryKey,
                 algCollation,
-                ImmutableMap.copyOf( underlyingTables ),
-                ImmutableList.copyOf( connectedViews ),
+                underlyingTables,
+                connectedViews,
                 language );
 
         Map<Long, ImmutableList<Long>> map = new HashMap<>();
@@ -84,9 +75,6 @@ public class LogicalMaterializedView extends LogicalView {
                 throw new IllegalStateException( "Duplicate key" );
             }
         }
-        this.query = query;
-        this.algCollation = algCollation;
-        this.language = language;
         this.materializedCriteria = materializedCriteria;
         this.ordered = ordered;
     }
@@ -97,9 +85,5 @@ public class LogicalMaterializedView extends LogicalView {
         return Catalog.getInstance().getNodeInfo().get( id );
     }
 
-
-    public QueryLanguage getLanguage() {
-        return QueryLanguage.from( language );
-    }
 
 }

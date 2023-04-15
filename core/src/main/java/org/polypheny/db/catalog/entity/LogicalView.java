@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.List;
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -50,7 +51,7 @@ public class LogicalView extends LogicalTable {
     @Serialize
     public ImmutableMap<Long, List<Long>> underlyingTables;
     @Serialize
-    public String language;
+    public QueryLanguage language;
     @Serialize
     public AlgCollation algCollation;
     @Serialize
@@ -63,28 +64,22 @@ public class LogicalView extends LogicalTable {
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("entityType") EntityType entityType,
             @Deserialize("query") String query,
-            @Deserialize("primaryKey") Long primaryKey,
             @Deserialize("algCollation") AlgCollation algCollation,
-            @Deserialize("underlyingTables") ImmutableMap<Long, List<Long>> underlyingTables,
-            @Deserialize("connectedViews") ImmutableList<Long> connectedViews,
-            @Deserialize("language") String language ) {
+            @Deserialize("underlyingTables") Map<Long, List<Long>> underlyingTables,
+            @Deserialize("connectedViews") List<Long> connectedViews,
+            @Deserialize("language") QueryLanguage language ) {
         super(
                 id,
                 name,
                 namespaceId,
                 entityType,
-                primaryKey,
+                null,
                 false,
-                connectedViews );
+                ImmutableList.copyOf( connectedViews ) );
         this.query = query;
         this.algCollation = algCollation;
-        this.underlyingTables = underlyingTables;
+        this.underlyingTables = ImmutableMap.copyOf( underlyingTables );
         this.language = language;
-    }
-
-
-    public QueryLanguage getLanguage() {
-        return QueryLanguage.from( language );
     }
 
 

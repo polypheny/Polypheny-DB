@@ -51,7 +51,7 @@ public class NumericalStatisticColumn extends StatisticColumn<Number> {
 
 
     public NumericalStatisticColumn( QueryResult column ) {
-        super( column.getColumn().namespaceId, column.getEntity().id, column.getColumn().id, column.getColumn().type, StatisticType.NUMERICAL );
+        super( column.getColumn().id, column.getColumn().type );
     }
 
 

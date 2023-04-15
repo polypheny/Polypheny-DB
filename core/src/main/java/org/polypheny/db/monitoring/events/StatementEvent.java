@@ -41,7 +41,7 @@ import org.polypheny.db.transaction.Statement;
 @Getter
 public abstract class StatementEvent extends BaseEvent {
 
-    protected String monitoringType;
+    protected MonitoringType monitoringType;
     protected AlgRoot routed;
     protected PolyImplementation result;
     protected Statement statement;

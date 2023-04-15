@@ -44,7 +44,7 @@ public interface AllocSnapshot {
 
     List<AllocationEntity> getAllocationsOnAdapter( long id );
 
-    AllocationEntity getAllocEntity( long id );
+    AllocationEntity getAllocation( long id );
 
     /**
      * Gets a collective list of column placements per column on an adapter.
@@ -54,7 +54,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the column
      * @return The specific column placement
      */
-    AllocationColumn getColumnPlacement( long adapterId, long columnId );
+    AllocationColumn getColumn( long adapterId, long columnId );
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -371,7 +371,7 @@ public interface AllocSnapshot {
     boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId );
 
 
-    List<AllocationEntity> getAllocationsFromLogical( long logicalId );
+    List<AllocationEntity> getFromLogical( long logicalId );
 
     boolean isPartitioned( long id );
 

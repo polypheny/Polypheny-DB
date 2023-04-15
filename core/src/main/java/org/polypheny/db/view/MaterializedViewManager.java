@@ -18,7 +18,6 @@ package org.polypheny.db.view;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
@@ -28,7 +27,8 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 
@@ -63,13 +63,12 @@ public abstract class MaterializedViewManager {
     public abstract void addData(
             Transaction transaction,
             List<DataStore> stores,
-            Map<Long, List<LogicalColumn>> addedColumns,
             AlgRoot algRoot,
             LogicalMaterializedView materializedView );
 
     public abstract void addTables( Transaction transaction, List<Long> ids );
 
-    public abstract void updateData( Transaction transaction, Long viewId );
+    public abstract void updateData( Transaction transaction, long viewId );
 
     public abstract void updateCommittedXid( PolyXid xid );
 
@@ -91,7 +90,13 @@ public abstract class MaterializedViewManager {
         public AlgNode visit( LogicalRelModify modify ) {
             if ( modify.getOperation() != Modify.Operation.MERGE ) {
                 if ( (modify.getEntity() != null) ) {
-                    ids.add( modify.getEntity().id );
+                    if ( modify.getEntity().unwrap( PhysicalEntity.class ) != null ) {
+                        ids.add( modify.getEntity().unwrap( PhysicalEntity.class ).getLogicalId() );
+                    } else if ( modify.getEntity().unwrap( AllocationEntity.class ) != null ) {
+                        ids.add( modify.getEntity().unwrap( AllocationEntity.class ).getLogicalId() );
+                    } else {
+                        ids.add( modify.getEntity().id );
+                    }
                 }
             }
             return super.visit( modify );

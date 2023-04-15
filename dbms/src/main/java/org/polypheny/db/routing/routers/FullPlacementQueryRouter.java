@@ -113,7 +113,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );*/
         //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
-        List<AllocationEntity> allocationEntities = Catalog.snapshot().alloc().getAllocationsFromLogical( catalogTable.id );
+        List<AllocationEntity> allocationEntities = Catalog.snapshot().alloc().getFromLogical( catalogTable.id );
 
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
@@ -158,7 +158,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         final Set<List<AllocationColumn>> result = new HashSet<>();
         for ( long adapterId : adapters ) {
             List<AllocationColumn> placements = usedColumns.stream()
-                    .map( colId -> Catalog.snapshot().alloc().getColumnPlacement( adapterId, colId ) )
+                    .map( colId -> Catalog.snapshot().alloc().getColumn( adapterId, colId ) )
                     .collect( Collectors.toList() );
 
             if ( !placements.isEmpty() ) {

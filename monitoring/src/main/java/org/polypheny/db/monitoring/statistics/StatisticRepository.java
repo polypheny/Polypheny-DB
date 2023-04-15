@@ -24,6 +24,7 @@ import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
@@ -54,7 +55,7 @@ public class StatisticRepository implements MonitoringRepository {
 
 
     private void updateDdlStatistics( DdlDataPoint dataPoint, StatisticsManager statisticsManager ) {
-        if ( dataPoint.getMonitoringType().equals( "TRUNCATE" ) ) {
+        if ( dataPoint.getMonitoringType() == MonitoringType.TRUNCATE ) {
             statisticsManager.updateRowCountPerTable(
                     dataPoint.getTableId(),
                     0,
@@ -110,40 +111,44 @@ public class StatisticRepository implements MonitoringRepository {
 
 
     private void updateDmlStatistics( DmlDataPoint dataPoint, StatisticsManager statisticsManager ) {
-        if ( dataPoint.getChangedValues() != null ) {
-            Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
-            boolean isOneTable = values.size() == 1;
+        if ( dataPoint.getChangedValues() == null ) {
+            return;
+        }
 
-            Catalog catalog = Catalog.getInstance();
-            if ( isOneTable ) {
-                long tableId = values.stream().findFirst().get();
-                statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
+        Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
+        boolean isOneTable = values.size() == 1;
 
-                if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
-                    if ( dataPoint.getMonitoringType().equals( "INSERT" ) ) {
-                        int added = dataPoint.getRowCount();
-                        statisticsManager.tablesToUpdate(
-                                tableId,
-                                dataPoint.getChangedValues(),
-                                dataPoint.getMonitoringType(),
-                                catalog.getSnapshot().getLogicalEntity( tableId ).namespaceId );
-                        statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
-                    } else if ( dataPoint.getMonitoringType().equals( "DELETE" ) ) {
-                        int deleted = dataPoint.getRowCount();
-                        statisticsManager.updateRowCountPerTable( tableId, deleted, dataPoint.getMonitoringType() );
-                        // After a delete, it is not clear what exactly was deleted, so the statistics of the table are updated
-                        statisticsManager.tablesToUpdate( tableId );
-                    }
+        Catalog catalog = Catalog.getInstance();
+        if ( isOneTable ) {
+            long tableId = values.stream().findFirst().get();
+            statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
+
+            if ( catalog.getSnapshot().getLogicalEntity( tableId ) == null ) {
+                return;
+            }
+            if ( dataPoint.getMonitoringType() == MonitoringType.INSERT ) {
+                int added = dataPoint.getRowCount();
+                statisticsManager.tablesToUpdate(
+                        tableId,
+                        dataPoint.getChangedValues(),
+                        dataPoint.getMonitoringType(),
+                        catalog.getSnapshot().getLogicalEntity( tableId ).namespaceId );
+                statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
+            } else if ( dataPoint.getMonitoringType() == MonitoringType.DELETE ) {
+                int deleted = dataPoint.getRowCount();
+                statisticsManager.updateRowCountPerTable( tableId, deleted, dataPoint.getMonitoringType() );
+                // After a delete, it is not clear what exactly was deleted, so the statistics of the table are updated
+                statisticsManager.tablesToUpdate( tableId );
+            }
+        } else {
+            for ( long id : values ) {
+                if ( catalog.getSnapshot().getLogicalEntity( id ) != null ) {
+                    statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                 }
-            } else {
-                for ( long id : values ) {
-                    if ( catalog.getSnapshot().getLogicalEntity( id ) != null ) {
-                        statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
-                    }
 
-                }
             }
         }
+
     }
 
 }
