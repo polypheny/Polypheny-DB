@@ -16,8 +16,6 @@
 
 package org.polypheny.db.polyfier.core.construct;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.util.Pair;
 

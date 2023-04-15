@@ -11,10 +11,11 @@ dependencies {
     // https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core
     implementation group: 'org.jgrapht', name: 'jgrapht-core', version: '1.5.1'
 
+    implementation 'javax.websocket:javax.websocket-api:1.1'
+    implementation 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.17'
+
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
-
-    implementation 'org.apache.httpcomponents:httpclient:4.5'
 }
 
 

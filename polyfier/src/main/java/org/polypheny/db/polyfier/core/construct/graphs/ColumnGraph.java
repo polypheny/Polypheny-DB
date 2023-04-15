@@ -76,7 +76,7 @@ public class ColumnGraph {
         List<List<Long>> referencing = catalog.getForeignKeys( catalogTable.id )
                 .stream()
                 .map(key -> key.referencedKeyColumnIds)
-                .collect(Collectors.toList());
+                .collect( Collectors.toList() );
         List<Pair<List<Long>,List<Long>>> pairs = ConstructUtil.zip( foreignKeys, referencing );
 
         // Get all Vertexes

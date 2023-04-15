@@ -21,17 +21,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
-import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.polyfier.core.construct.DqlConstructor;
-import org.polypheny.db.polyfier.core.construct.model.ColumnStatistic;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.polyfier.core.construct.DqlConstructor;
+import org.polypheny.db.polyfier.core.construct.model.ColumnStatistic;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -111,43 +105,11 @@ public class PolyfierDQLGenerator {
 
         Optional<Triple<Statement, AlgNode, Long>> tree = new DqlConstructor( transaction, nodes, columnStatistics ).construct( seed, tables );
 
-        Statement statement;
-        AlgRoot logicalRoot;
-        if ( tree.isPresent() && tree.get().getMiddle() != null ) {
-            statement = tree.get().getLeft();
-            try {
-                if (log.isDebugEnabled()) {
-                    log.debug("Creating Root...");
-                }
-                logicalRoot = AlgRoot.of(tree.get().getMiddle(), Kind.SELECT);
-            } catch (Exception | Error e) {
-                transactionManager.removeTransaction( transaction.getXid() );
-                return Optional.empty();
-            }
-        } else {
-            transactionManager.removeTransaction( transaction.getXid() );
+        if (tree.isEmpty() || tree.get().getMiddle() == null ) {
             return Optional.empty();
         }
 
-        PolyImplementation polyImplementation = null;
-        AlgNode physicalRoot = null;
-        try {
-            if (log.isDebugEnabled()) {
-                log.debug("Preparing Query...");
-            }
-            polyImplementation = statement.getQueryProcessor().prepareQuery(logicalRoot, false);
-        } catch (Exception | Error e) {
-            transactionManager.removeTransaction( transaction.getXid() );
-            return Optional.empty();
-        }
-
-        physicalRoot = statement.getQueryProcessor().getPlanner().getRoot();
-
-        transactionManager.removeTransaction( transaction.getXid() );
-        if ( physicalRoot != null  ) {
-            return Optional.of( AlgOptUtil.dumpPlan("", physicalRoot, ExplainFormat.TEXT, ExplainLevel.NON_COST_ATTRIBUTES) );
-        }
-        return Optional.empty();
+        return Optional.of("");
 
     }
 

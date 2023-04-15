@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.polyfier.core.construct.graphs.ColumnGraph;
 import org.polypheny.db.polyfier.core.construct.graphs.DecisionGraph;
 import org.polypheny.db.polyfier.core.construct.graphs.QueryGraph;
+import org.polypheny.db.polyfier.core.construct.model.Decision;
 import org.polypheny.db.transaction.Statement;
 
 @Getter
@@ -32,12 +33,17 @@ public class ConstructionGraph {
     public ConstructionGraph(Statement statement ) {
         this.columnGraph = new ColumnGraph();
         this.queryGraph = new QueryGraph();
+
         this.decisionGraph = new DecisionGraph();
         this.statement = statement;
     }
 
-    public void clearDecisionGraph() {
-        this.decisionGraph = new DecisionGraph();
+    public void clearDecisionGraph( Decision<?> decision ) {
+        if ( decision == null ) {
+            this.decisionGraph = new DecisionGraph();
+            return;
+        }
+        this.decisionGraph = new DecisionGraph( decision );
     }
 
 }

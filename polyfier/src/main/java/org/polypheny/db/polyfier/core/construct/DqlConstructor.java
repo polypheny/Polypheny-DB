@@ -44,6 +44,8 @@ public class DqlConstructor {
     private ConstructionGraph constructionGraph;
     private final HashMap<String, ColumnStatistic> columnStatistics;
 
+    private Decision<?> lastDecisionStump = null;
+
     public DqlConstructor(Transaction transaction, int complexity, HashMap<String, ColumnStatistic> columnStatistics ) {
         this.transaction = transaction;
         this.complexity = complexity;
@@ -78,6 +80,7 @@ public class DqlConstructor {
 
     /**
      * Constructs a random query on the given list of tables.
+     * @throws NoSuchElementException if the generation with the given seed leads to an unresolvable operator tree.
      */
     @SuppressWarnings("unchecked")
     private void constructDql( long seed, List<CatalogTable> tables ) throws NoSuchElementException {
@@ -120,7 +123,7 @@ public class DqlConstructor {
             }
 
             // Building the Decision Graph
-            constructionGraph.clearDecisionGraph();
+            constructionGraph.clearDecisionGraph( lastDecisionStump );
 
             // At zero nodes available we have to have one node left, ergo we can see what operations we are allowed in the iteration.
             // Each binary op allows us to reduce the number of nodes by 1, while a unary operation reduces available nodes by one.
@@ -310,6 +313,7 @@ public class DqlConstructor {
                     decision = iterator.next();
                     children = projectionSetOp( decision, nodes );
                     parent = Union.union( children );
+
                     break;
                 case MINUS:
                     decision = iterator.next();
@@ -373,6 +377,8 @@ public class DqlConstructor {
                     throw new RuntimeException();
 
             }
+
+            lastDecisionStump = decision; // Visualization
 
             if (parent instanceof Unary) {
                 Unary unary = (Unary) parent;

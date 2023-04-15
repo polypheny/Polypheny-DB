@@ -16,21 +16,14 @@
 
 package org.polypheny.db.polyfier;
 
+import com.google.common.annotations.Beta;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonReader;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.MurmurHash2;
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Adapter;
@@ -48,6 +41,9 @@ import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.polyfier.core.PolyfierDQLGenerator;
 import org.polypheny.db.polyfier.core.PolyfierJob;
 import org.polypheny.db.polyfier.core.PolyfierResult;
+import org.polypheny.db.polyfier.core.client.PolyfierClientPdb;
+import org.polypheny.db.polyfier.core.client.profile.DataConfig;
+import org.polypheny.db.polyfier.core.client.profile.Profile;
 import org.polypheny.db.polyfier.core.construct.model.ColumnStatistic;
 import org.polypheny.db.polyfier.data.DataUtil;
 import org.polypheny.db.polyfier.schemas.DefaultTestEnvironment;
@@ -59,73 +55,61 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class PolyfierProcess implements Runnable {
-    private static final HttpClient HTTP_CLIENT = HttpClients.createDefault();
-    private static final Gson GSON = new GsonBuilder().create();
-
+public class PolyfierProcess {
     @Setter
     @Getter
     private static TransactionManager transactionManager;
+    private static final Gson GSON = new GsonBuilder().create();
+    public static final String SCHEMA_NAME = "adapt";
+    private static final Catalog CATALOG = Catalog.getInstance();
+    private static final DdlManager DDL_MANAGER = DdlManager.getInstance();
+    private static final AdapterManager ADAPTER_MANAGER = AdapterManager.getInstance();
+    private static PolyfierConfig polyfierConfig;
 
+    private final PolyfierClientPdb polyfierClientPdb;
     public static boolean testRun = false;
 
-    public static final String SCHEMA_NAME = "adapt";
-    private final Catalog catalog = Catalog.getInstance();
-    private final DdlManager ddlManager = DdlManager.getInstance();
-    private final AdapterManager adapterManager = AdapterManager.getInstance();
-    private final PolyfierJob polyfierJob;
-    private final String polyfierUrl;
-    private final String apiKey;
-    private final String orderKey;
-
-    private PolyfierProcess(PolyfierJob polyfierJob, String polyfierUrl, String apiKey, String orderKey ) {
-        this.polyfierJob = polyfierJob;
-        this.polyfierUrl = polyfierUrl;
-        this.apiKey = apiKey;
-        this.orderKey = orderKey;
-    }
-
-    private static String executeHttpPost(String url, String requestBody) {
+    private PolyfierProcess( PolyfierConfig polyfierConfig ) {
         try {
-            HttpPost httpPost = new HttpPost(url);
-            HttpEntity entity = new StringEntity(requestBody, ContentType.APPLICATION_JSON);
-            httpPost.setEntity(entity);
-            String responseBody;
-            try (CloseableHttpResponse response = (CloseableHttpResponse) HTTP_CLIENT.execute(httpPost)) {
-                responseBody = EntityUtils.toString(response.getEntity());
-            }
-            if (responseBody == null) {
-                throw new RuntimeException("Server did not respond.");
-            }
-            return responseBody;
-        } catch ( IOException ioException) {
-            throw new RuntimeException("Could not contact server: ", ioException );
+            polyfierClientPdb = new PolyfierClientPdb(
+                    new URI("ws://" + polyfierConfig.getUri() + "/ws"),
+                    polyfierConfig.getApiKey(),
+                    UUID.fromString( polyfierConfig.getPdbKey() )
+            );
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
-
     }
 
-    public static void processPolyfierJob(String polyfierUrl, String apiKey, String orderKey) {
-        String requestBody = "{'apiKey':" + apiKey + ",'clientId':" + orderKey + "}";
-        String responseBody = executeHttpPost(polyfierUrl + "/request/polypheny-db/get-task", requestBody);
-        PolyfierJob polyfierJob = GSON.fromJson(responseBody, PolyfierJob.class);
-        PolyfierProcess polyfierProcess = new PolyfierProcess(polyfierJob, polyfierUrl, apiKey, orderKey);
-        polyfierProcess.run();
+    @Getter
+    @AllArgsConstructor
+    private static class PolyfierConfig implements Serializable {
+        private final String uri;
+        private final String apiKey;
+        private final String pdbKey;
     }
 
-    private void sendResult(PolyfierResult polyfierResult) {
-        polyfierResult.setApiKey(this.apiKey);
-        polyfierResult.setOrderKey(this.orderKey);
-        if ( log.isDebugEnabled() ) {
-            log.debug("Result to send: " + GSON.toJson(polyfierResult));
+    public static void preparePolyfierProcess( String defaultPolyfierConfigPath ) {
+        try {
+            polyfierConfig = GSON.fromJson(
+                    new JsonReader( new FileReader( defaultPolyfierConfigPath ) ),
+                    PolyfierConfig.class
+            );
+            PolyfierProcess polyfierProcess = new PolyfierProcess( polyfierConfig );
+
+            polyfierProcess.launch();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Could not read polyfier configuration from path: " + defaultPolyfierConfigPath, e);
         }
-        String requestBody = GSON.toJson(polyfierResult);
-        executeHttpPost(polyfierUrl + "/request/polypheny-db/result", requestBody);
     }
 
     public static String testPolyfierProcess() {
@@ -143,58 +127,51 @@ public class PolyfierProcess implements Runnable {
         PolyfierJob polyfierJob = PolyfierJob.builder()
                 .storeConfig(new PolyfierJob.StoreConfig(null, dataStores))
                 .seedsConfig(new PolyfierJob.SeedsConfig(List.of("0-1000")))
-                .queryConfig(new PolyfierJob.QueryConfig(null, null, 3))
+                .queryConfig(new PolyfierJob.QueryConfig(null, null, 8))
                 .dataConfig(new PolyfierJob.DataConfig(null))
                 .partitionConfig(new PolyfierJob.PartitionConfig(null))
                 .schemaConfig(new PolyfierJob.SchemaConfig("default"))
                 .build();
 
-        PolyfierProcess polyfierProcess = new PolyfierProcess(polyfierJob, null, null , null );
-
-        polyfierProcess.run();
+        // new PolyfierProcess( polyfierJob ).run();
 
         return "Success";
     }
 
 
     private DataStore configureSchemaOnConfigDataStore() {
-        PolyfierJob.SchemaConfig schemaConfig = this.polyfierJob.getSchemaConfig();
-
-        String schemaType = schemaConfig.getSchema();
-
         // Todo add multiple schemas.
         if ( log.isDebugEnabled() ) {
             log.debug("Generating Schema on configuration Store HSQLDB");
         }
         return DefaultTestEnvironment.generate( Adapter.fromString("HSQLDB", CatalogAdapter.AdapterType.STORE ) );
-
     }
 
-    private void generateEnvironmentData() {
-        PolyfierJob.DataConfig dataConfig = this.polyfierJob.getDataConfig();
-        HashMap<String, String> parameters = dataConfig.getParameters();
+    private void configureEnvironmentData( DataConfig dataConfig ) {
+        Map<String, String> parameters = dataConfig.getParameters();
 
-        // Todo add parameter based data generation.
+        // Todo add parameter based data generation. -> data module
         try {
             DataUtil.generateDataForDefaultEnvironment();
         } catch (UnknownColumnException e) {
             throw new RuntimeException(e);
         }
         //
-
     }
 
+    @Beta
     private void addDataPlacement( Statement statement, CatalogTable table, DataStore dataStore) {
         try {
             if (log.isDebugEnabled()) {
                 log.debug("Adding full data placement for Table " + table.name + " on " + dataStore.getAdapterName());
             }
-            ddlManager.addDataPlacement(table, List.of(), List.of(), List.of(), dataStore, statement);
+            DDL_MANAGER.addDataPlacement(table, List.of(), List.of(), List.of(), dataStore, statement);
         } catch (PlacementAlreadyExistsException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Beta
     private void placeTables( Statement statement, Stack<CatalogTable> tables, List<DataStore> dataStores, List<CatalogTable> catalogTables) {
         int j = -1;
         Random random = new Random( 0 );
@@ -213,13 +190,24 @@ public class PolyfierProcess implements Runnable {
     }
 
 
-    public void run() {
+    public void launch() {
         log.info("#".repeat(120));
         log.info(" ".repeat(46) + "POLYFIER PROCESS LAUNCHING");
         log.info("#".repeat(120));
 
-        HashMap<String, String> stores = this.polyfierJob.getStoreConfig().getStores(); // True / False depending on whether store will be used.
-        HashMap<String, String> storeParameters = this.polyfierJob.getStoreConfig().getParameters(); // Further configuration for stores.
+        polyfierClientPdb.changeStatus("START");
+
+        Profile profile;
+        try {
+            profile = polyfierClientPdb.requestJob();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        // True / False depending on whether store will be used.
+        Map<String, String> stores = profile.getStoreConfig().getStores();
+        // Further configuration for stores. // Unused
+        Map<String, String> storeParameters = profile.getStoreConfig().getParameters();
 
         log.info("Initializing Schema...");
 
@@ -259,8 +247,7 @@ public class PolyfierProcess implements Runnable {
         // -----------------------------------------------------------------------
 
         // Todo exchange with partitioning configuration from config.
-        PolyfierJob.PartitionConfig partitionConfig = polyfierJob.getPartitionConfig();
-        HashMap<String, String> partitionParameters = partitionConfig.getParameters();
+        Map<String, String> partitionParameters = profile.getPartitionConfig().getParameters();
 
         if (log.isDebugEnabled()) {
             log.debug("Partitioning Setup TMP...");
@@ -269,7 +256,7 @@ public class PolyfierProcess implements Runnable {
 
         List<CatalogTable> catalogTables;
         try {
-            catalogTables = catalog.getTables(catalog.getSchema(Catalog.defaultDatabaseId, SCHEMA_NAME).id, null);
+            catalogTables = CATALOG.getTables(CATALOG.getSchema(Catalog.defaultDatabaseId, SCHEMA_NAME).id, null);
         } catch (UnknownSchemaException e) {
             throw new RuntimeException(e);
         }
@@ -299,7 +286,7 @@ public class PolyfierProcess implements Runnable {
 
         for ( CatalogTable table : catalogTables ) {
             try {
-                ddlManager.dropDataPlacement( table, configDataStore, statement );
+                DDL_MANAGER.dropDataPlacement( table, configDataStore, statement );
             } catch (PlacementNotExistsException | LastPlacementException e) {
                 throw new RuntimeException(e);
             }
@@ -309,14 +296,14 @@ public class PolyfierProcess implements Runnable {
         } catch (TransactionException e) {
             throw new RuntimeException(e);
         }
-        adapterManager.removeAdapter( configDataStore.getAdapterId() );
+        ADAPTER_MANAGER.removeAdapter( configDataStore.getAdapterId() );
 
         if ( log.isDebugEnabled() ) {
             log.debug("-".repeat(90));
             log.debug( "The Partition IDS / Partition Group IDS of the columns on the config Datastore are: " );
             log.debug("-".repeat(90));
-            catalogTables.stream().map( table -> table.id ).map( catalog::getColumns ).forEach( columns -> columns.forEach( column -> {
-                log.debug( String.format( "%-30s%-30s%-30s", "Table: " + column.getTableName(), "Column: " + column.name, "AdapterId: " + catalog.getColumnPlacement(column.id).stream().map(catalogColumnPlacement -> catalogColumnPlacement.adapterId).collect(Collectors.toList())));
+            catalogTables.stream().map( table -> table.id ).map( CATALOG::getColumns ).forEach(columns -> columns.forEach(column -> {
+                log.debug( String.format( "%-30s%-30s%-30s", "Table: " + column.getTableName(), "Column: " + column.name, "AdapterId: " + CATALOG.getColumnPlacement(column.id).stream().map(catalogColumnPlacement -> catalogColumnPlacement.adapterId).collect(Collectors.toList())));
             } ) );
             log.debug("-".repeat(90));
         }
@@ -326,7 +313,7 @@ public class PolyfierProcess implements Runnable {
 
         log.info("Generating Data...");
 
-        generateEnvironmentData();
+        configureEnvironmentData( profile.getDataConfig() );
 
         // -----------------------------------------------------------------------
 
@@ -335,6 +322,7 @@ public class PolyfierProcess implements Runnable {
 
         // -----------------------------------------------------------------------
 
+        // Todo capsule statistics in Statistics class
         HashMap<String, ColumnStatistic> columnStatistics = new HashMap<>();
 
         // Retrieve relevant Statistical Information about the current Schema and data within it...
@@ -342,7 +330,7 @@ public class PolyfierProcess implements Runnable {
         for ( CatalogTable table : catalogTables ) {
             CatalogSchema catalogSchema = null;
             try {
-                catalogSchema = catalog.getSchema( catalog.getDatabase( Catalog.defaultDatabaseId ).name , SCHEMA_NAME );
+                catalogSchema = CATALOG.getSchema( CATALOG.getDatabase( Catalog.defaultDatabaseId ).name , SCHEMA_NAME );
             } catch (UnknownSchemaException | UnknownDatabaseException e) {
                 throw new RuntimeException(e);
             }
@@ -372,7 +360,7 @@ public class PolyfierProcess implements Runnable {
 
                 PolyType polyType = null;
                 try {
-                    polyType = catalog.getColumn( table.id, column ).type;
+                    polyType = CATALOG.getColumn( table.id, column ).type;
                 } catch (UnknownColumnException e) {
                     throw new RuntimeException(e);
                 }
@@ -453,176 +441,45 @@ public class PolyfierProcess implements Runnable {
 
 
         log.info("Generating Queries...");
+        polyfierClientPdb.changeStatus("BUSY");
         // Query Generation...
 
         // Todo add weights and parameters from server to the process...
-        PolyfierJob.QueryConfig queryConfig = this.polyfierJob.getQueryConfig();
-        HashMap<String, String> queryParameters = queryConfig.getParameters();
-        HashMap<String, Double> decisionTreeWeights = queryConfig.getWeights();
-        int nodes = queryConfig.getComplexity();
+        Map<String, String> queryParameters = profile.getQueryConfig().getParameters();
+        Map<String, Double> decisionTreeWeights = profile.getQueryConfig().getWeights();
+        int nodes = profile.getQueryConfig().getComplexity();
 
-        Iterator<Long> seeds = this.polyfierJob.getSeedsConfig().iterator();
+        Iterator<Long> seeds = profile.getIssuedSeeds().iter();
 
-        if ( testRun ) {
 
-            // Test A
-            boolean runA = false;
-            if ( runA ) {
-                PolyfierJob.SeedsConfig seedsConfig = new PolyfierJob.SeedsConfig(
-                        List.of( "0-1000") // Test range
+        while ( seeds.hasNext() ) {
+            Long seed = seeds.next();
+            PolyfierDQLGenerator.builder()
+                .transactionManager( transactionManager )
+                .tables( catalogTables )
+                .columnStatistics( columnStatistics )
+                .nodes( nodes )
+                .seed( seed )
+                .build()
+                .generate()
+                .ifPresentOrElse(
+                        this::sendResult,
+                        () -> this.sendResult( PolyfierResult.blankFailure( seed ) )
                 );
-
-                List<Object> headers = List.of("complexity", "millis", "success", "failure", "blank-failure");
-                Statistics.createCsvFile("test-run-a", headers );
-
-                List<Object> data;
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 1 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 2 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 3 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 4 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 5 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 6 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 7 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 8 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 9 );
-                Statistics.appendCsvFile( "test-run-a", data );
-                data = testRunA( seedsConfig.iterator(), catalogTables, columnStatistics, 10 );
-                Statistics.appendCsvFile( "test-run-a", data );
-            }
-
-            for ( int i = 1; i < 9; i++) {
-                Statistics.createCsvFile("test-run-e" + i, List.of("Queries", "Unique"));
-                testRunB( new PolyfierJob.SeedsConfig(List.of("0-100000") ).iterator(), catalogTables, columnStatistics, i );
-            }
-
-
-        } else {
-            while ( seeds.hasNext() ) {
-                Long seed = seeds.next();
-                PolyfierDQLGenerator.builder()
-                    .transactionManager( transactionManager )
-                    .tables( catalogTables )
-                    .columnStatistics( columnStatistics )
-                    .nodes( nodes )
-                    .seed( seed )
-                    .build()
-                    .generate()
-                    .ifPresentOrElse(
-                            this::sendResult,
-                            () -> this.sendResult( PolyfierResult.blankFailure( seed ) )
-                    );
-            }
         }
 
     }
 
-
-    private List<Object> testRunA( Iterator<Long> seeds, List<CatalogTable> catalogTables, HashMap<String, ColumnStatistic> columnStatistics, int nodes ) {
-        final Integer[] counts = new Integer[3];
-        counts[0] = 0;
-        counts[1] = 0;
-        counts[2] = 0;
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
-        while ( seeds.hasNext() ) {
-            Long seed = seeds.next();
-            PolyfierDQLGenerator.builder()
-                    .transactionManager( transactionManager )
-                    .tables( catalogTables )
-                    .columnStatistics( columnStatistics )
-                    .nodes( nodes )
-                    .seed( seed )
-                    .build()
-                    .generate()
-                    .ifPresentOrElse(
-                            res -> {
-                                if ( res.wasSuccess() ) {
-                                    counts[0] += 1;
-                                } else {
-                                    counts[1] += 1;
-                                }
-                            },
-                            () -> {
-                                counts[2] += 1;
-                            }
-                    );
-        }
-
-        stopWatch.stop();
-
-        return List.of(nodes, stopWatch.getTime(TimeUnit.MILLISECONDS), counts[0], counts[1], counts[2]);
-    }
-
-    private void testRunB(  Iterator<Long> seeds, List<CatalogTable> catalogTables, HashMap<String, ColumnStatistic> columnStatistics, int nodes ) {
-        Set<Long> planHashes = new HashSet<>();
-        final ArrayList<Integer> queries = new ArrayList<>();
-        final ArrayList<Integer> unique = new ArrayList<>();
-        final int[] successQueries = new int[1];
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
-        int i = 0;
-        while ( seeds.hasNext() ) {
-            Long seed = seeds.next();
-
-            PolyfierDQLGenerator.builder()
-                    .transactionManager( transactionManager )
-                    .tables( catalogTables )
-                    .columnStatistics( columnStatistics )
-                    .nodes( nodes )
-                    .seed( seed )
-                    .build()
-                    .testGenerate()
-                    .ifPresentOrElse(
-                            res -> {
-                                successQueries[0]++;
-                                planHashes.add( MurmurHash2.hash64( res ) );
-                            },
-                            () -> {
-                                return;
-                            }
-                    );
-            if ( successQueries[0] % 100 == 0 ) {
-                i += 100;
-                queries.add( i );
-                unique.add( planHashes.size() );
-            }
-            if ( i % 1000 == 0 ) {
-                log.info( "Count: " + successQueries[0] );
-                transpose( queries, unique ).forEach(row -> {
-                    Statistics.appendCsvFile("test-run-e" + nodes, row );
-                });
-                queries.clear();
-                unique.clear();
-            }
-        }
-
-        stopWatch.stop();
-
-    }
-
-    public static <T, U> List<List<Object>> transpose(List<T> list1, List<U> list2) {
-        List<List<Object>> result = new ArrayList<>();
-        Iterator<T> it1 = list1.iterator();
-        Iterator<U> it2 = list2.iterator();
-        while (it1.hasNext() && it2.hasNext()) {
-            List<Object> sublist = new ArrayList<>();
-            sublist.add(it1.next());
-            sublist.add(it2.next());
-            result.add(sublist);
-        }
-        return result;
+    private void sendResult( PolyfierResult polyfierResult ) {
+        polyfierClientPdb.depositResult(
+                polyfierResult.getSeed(),
+                polyfierResult.getSuccess(),
+                polyfierResult.getResultSetHash(),
+                polyfierResult.getError(),
+                polyfierResult.getLogical(),
+                polyfierResult.getPhysical(),
+                polyfierResult.getActual()
+        );
     }
 
 

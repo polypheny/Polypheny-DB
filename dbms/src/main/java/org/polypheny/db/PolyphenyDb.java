@@ -72,7 +72,6 @@ import java.awt.*;
 import java.io.File;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 
 @Command(name = "polypheny-db", description = "Polypheny-DB command line hook.")
@@ -116,17 +115,11 @@ public class PolyphenyDb {
     @Option(name = { "-v", "--version" }, description = "Current version of Polypheny-DB")
     public boolean versionOptionEnabled = false;
 
-    @Option(name = { "--polyfier" }, description = "Launches Polypheny-DB in Polyfier-Mode")
-    public boolean polyfierMode = false;
+    @Option(name = {"-polyfier"}, description = "Launches Polypheny-DB in Polyfier-Mode")
+    boolean polyfierMode = false;
 
-    @Option(name = { "-pcid" }, description = "Launches Polypheny-DB in Polyfier-Mode")
-    public String polyfierClientId = "";
-
-    @Option(name = { "-papik" }, description = "Launches Polypheny-DB in Polyfier-Mode")
-    public String polyfierApiKey = "";
-
-    @Option(name = { "-purl" }, description = "Launches Polypheny-DB in Polyfier-Mode")
-    public String polyfierUrl = "";
+    @Option(name = { "-defaultPolyfierConfigPath" }, description = "Path to polyfier configuration.")
+    public String defaultPolyfierConfigPath = System.getProperty("user.home") + "/.polypheny/polyfier/config.json" ;
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
@@ -431,23 +424,17 @@ public class PolyphenyDb {
         RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.addObserver( tracker );
         RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.addObserver( tracker );
 
-        // Add adaptive optimizer for operator costs
-//        AdaptiveOptimizerImpl.configure( transactionManager );
 
-
-        DefaultTestEnvironment.setTransactionManager( transactionManager );
-        PolyfierProcess.setTransactionManager( transactionManager );
-        DataGenerator.setTransactionManager( transactionManager );
-        RandomSchemaGenerator.setTransactionManager( transactionManager );
-        PolyfierInformation.configurePolyfierInformation();
         // Polyfier Mode
         if ( polyfierMode ) {
-            if (Objects.equals(polyfierApiKey, "") || Objects.equals(polyfierClientId, "") || Objects.equals(polyfierUrl, "")) {
-                log.error("No API Key or ClientID or URL for Polyfier provided.");
-                System.exit(1);
-            }
+            DefaultTestEnvironment.setTransactionManager( transactionManager );
+            PolyfierProcess.setTransactionManager( transactionManager );
+            DataGenerator.setTransactionManager( transactionManager );
+            RandomSchemaGenerator.setTransactionManager( transactionManager );
+            PolyfierInformation.configurePolyfierInformation();
+
             log.info("Launching in Polyfier-mode...");
-            PolyfierProcess.processPolyfierJob( polyfierUrl, polyfierApiKey, polyfierClientId );
+            PolyfierProcess.preparePolyfierProcess( defaultPolyfierConfigPath );
             log.info("Polyfier-Job successfully processed.");
             System.exit( 0 );
         }

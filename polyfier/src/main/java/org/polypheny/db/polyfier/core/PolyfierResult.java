@@ -17,34 +17,42 @@
 package org.polypheny.db.polyfier.core;
 
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.codec.digest.MurmurHash2;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.plan.AlgOptUtil;
 
 import java.io.Serializable;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
+/**
+ * Mirrors the class PolyphenyDbRequest.Result in the Polyfier-Server module.
+ */
+@Getter
 @Setter(AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PolyfierResult implements Serializable {
 
     @Setter(AccessLevel.PUBLIC)
     public String apiKey;
+
     @Setter(AccessLevel.PUBLIC)
     public String orderKey;
+
+    public Long seed;
+    public Long resultSetHash;
+    public Boolean success;
+    public String error;
     public String logical;
     public String physical;
-    public String message;
-    public String cause;
-    public String result;
-    public Long seed;
     public Long actual;
     public Long predicted;
-    public Boolean success;
 
     public boolean wasSuccess() {
         return this.success;
@@ -59,13 +67,9 @@ public class PolyfierResult implements Serializable {
                 node -> setPhysical( formatPhysicalPlan( node ) ),
                 () -> setPhysical( null )
         );
-        polyfierQueryResult.getMessage().ifPresentOrElse(
-                this::setMessage,
-                () -> setMessage( null )
-        );
         polyfierQueryResult.getCause().ifPresentOrElse(
-                e -> setCause( formatCause( e ) ),
-                () -> setCause( null )
+                e -> setError( formatError( e ) ),
+                () -> setError( null )
         );
         polyfierQueryResult.getActualTime().ifPresentOrElse(
                 this::setActual,
@@ -84,13 +88,12 @@ public class PolyfierResult implements Serializable {
                 () -> setSuccess( null )
         );
         polyfierQueryResult.getResultSet().ifPresentOrElse(
-                resultSet -> setResult( formatResultSet( resultSet ) ),
-                () -> setResult( null )
+                resultSet -> setResultSetHash( rowOrderIndependentHash( resultSet ) ),
+                () -> setResultSetHash( null )
         );
 
     }
 
-    // Formatting --->
     private String formatLogicalPlan( AlgNode node ) {
         return AlgOptUtil.dumpPlan("logicalPlan", node, ExplainFormat.TEXT, ExplainLevel.NON_COST_ATTRIBUTES );
     }
@@ -99,27 +102,26 @@ public class PolyfierResult implements Serializable {
         return AlgOptUtil.dumpPlan("physicalPlan", node, ExplainFormat.TEXT, ExplainLevel.NON_COST_ATTRIBUTES );
     }
 
-    private String formatCause( Throwable cause ) {
+    private String formatError( Throwable cause ) {
         return "\n" + cause.toString() + "\n" + (( cause.getCause() == null ) ? "" : cause.getCause().getMessage() + "\n" + cause.getMessage());
     }
 
-    private String formatResultSet( List<List<Object>> resultSet ) {
-        try {
-            List<String> result = new LinkedList<>();
-            for ( List<Object> row : resultSet ) {
-                row.stream().map( Object::toString ).forEach( result::add );
-            }
-            return result.toString();
-        } catch ( NullPointerException nullPointerException ) {
+    private Long rowOrderIndependentHash( List<List<Object>> resultSet ) {
+        if ( resultSet == null || resultSet.isEmpty() || resultSet.get( 0 ).isEmpty() ) {
             this.setSuccess( false );
-            return "[]";
+            return null;
         }
+        List<Long> hR = resultSet.stream().map( xs -> MurmurHash2.hash64( xs.toString() ) ).collect( Collectors.toList() );
+        List<Long> hU = hR.stream().filter( x -> Collections.frequency( hR, x ) == 1 ).collect( Collectors.toList() );
+        List<Long> hD = hR.stream().filter( x -> ! hU.contains( x ) ).distinct().collect( Collectors.toList() );
+        hU.addAll( hD.stream().map( x -> Math.floorDiv( x, Collections.frequency( hR, x ) ) ).collect( Collectors.toList()) );
+        return hU.stream().reduce( ( Long a, Long b ) -> a ^ b ).orElseThrow();
     }
 
     public static PolyfierResult blankFailure( long seed ) {
         PolyfierResult polyfierResult = new PolyfierResult();
         polyfierResult.setSuccess( false );
-        polyfierResult.setCause( "QueryGenerator" );
+        polyfierResult.setError( "QueryGenerator" );
         polyfierResult.setSeed( seed );
         return polyfierResult;
     }
@@ -130,12 +132,13 @@ public class PolyfierResult implements Serializable {
                 "time_m" + ":" + actual + "\n" +
                 "time_p" + ":" + predicted + "\n" +
                 "success" + ":" + success + "\n" +
-                "cause" + ":" + cause + "\n" +
-                ((result == null) ? null:"result" + ": [" + result.length() + "] :" + result.substring(0, Math.min( result.length(), 1000) ) + "...[...]") + "\n" +
+                "error" + ":" + error + "\n" +
+                "result-hash" + ":" + resultSetHash + "\n" +
                 "----" + ":" + "----" + "\n" +
                 "Logical Plan" + "\n" +
                 logical + ":" + seed + "\n" +
                 "Physical Plan" + "\n" +
                 physical;
     }
+
 }
