@@ -32,7 +32,7 @@ public class DdlDataPoint implements MonitoringDataPoint, Serializable {
     private static final long serialVersionUID = 268576586444646401L;
     UUID Id;
     Timestamp recordedTimestamp;
-    protected boolean isCommitted;
+    boolean isCommitted;
     long tableId;
     MonitoringType monitoringType;
     long schemaId;

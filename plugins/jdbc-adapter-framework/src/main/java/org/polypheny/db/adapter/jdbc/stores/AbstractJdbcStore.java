@@ -169,7 +169,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     @Override
     public void addColumn( Context context, AllocationTable catalogTable, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
-        PhysicalTable physicalTable = context.getSnapshot().physical().getPhysicalTable( this.getAdapterId(), catalogTable.id );
+        PhysicalTable physicalTable = context.getSnapshot().physical().getPhysicalTable( catalogTable.id, this.getAdapterId() );
 
         String physicalTableName = physicalTable.name;
         String physicalSchemaName = physicalTable.namespaceName;

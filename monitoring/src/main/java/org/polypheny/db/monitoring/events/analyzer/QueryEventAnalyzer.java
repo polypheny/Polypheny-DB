@@ -29,7 +29,8 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 public class QueryEventAnalyzer {
 
     public static QueryDataPointImpl analyze( QueryEvent queryEvent ) {
-        QueryDataPointImpl metric = QueryDataPointImpl
+
+        return QueryDataPointImpl
                 .builder()
                 .Id( queryEvent.getId() )
                 .tables( queryEvent.getLogicalQueryInformation().getTablesIds() )
@@ -45,14 +46,8 @@ public class QueryEventAnalyzer {
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
                 .availableColumnsWithTable( queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .indexSize( queryEvent.getIndexSize() )
+                .accessedPartitions( queryEvent.getAccessedPartitions() != null ? queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) : Collections.emptyList() )
                 .build();
-        if ( queryEvent.getAccessedPartitions() != null ) {
-            metric.setAccessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );
-        } else {
-            metric.setAccessedPartitions( Collections.emptyList() );
-        }
-
-        return metric;
     }
 
 }

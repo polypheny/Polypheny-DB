@@ -93,6 +93,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.events.DdlEvent;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -1591,7 +1592,6 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.getLogicalRel( catalogTable.namespaceId ).renameTable( catalogTable.id, newTableName );
 
-
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -1644,7 +1644,7 @@ public class DdlManagerImpl extends DdlManager {
                 algNode,
                 algCollation,
                 underlyingTables,
-                null,
+                List.of(),
                 fieldList,
                 query,
                 language
@@ -3066,16 +3066,18 @@ public class DdlManagerImpl extends DdlManager {
 
     private void prepareMonitoring( Statement statement, Kind kind, LogicalTable catalogTable, LogicalColumn logicalColumn ) {
         // Initialize Monitoring
-        if ( statement.getMonitoringEvent() == null ) {
-            StatementEvent event = new DdlEvent();
-            event.setMonitoringType( kind.name() );
-            event.setTableId( catalogTable.id );
-            event.setSchemaId( catalogTable.namespaceId );
-            if ( kind == Kind.DROP_COLUMN ) {
-                event.setColumnId( logicalColumn.id );
-            }
-            statement.setMonitoringEvent( event );
+        if ( statement.getMonitoringEvent() != null ) {
+            return;
         }
+        StatementEvent event = new DdlEvent();
+        event.setMonitoringType( MonitoringType.from( kind ) );
+        event.setTableId( catalogTable.id );
+        event.setSchemaId( catalogTable.namespaceId );
+        if ( kind == Kind.DROP_COLUMN ) {
+            event.setColumnId( logicalColumn.id );
+        }
+        statement.setMonitoringEvent( event );
+
     }
 
 

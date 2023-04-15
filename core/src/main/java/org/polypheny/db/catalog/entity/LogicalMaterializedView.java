@@ -82,7 +82,7 @@ public class LogicalMaterializedView extends LogicalView {
 
     @Override
     public AlgNode getDefinition() {
-        return Catalog.getInstance().getNodeInfo().get( id );
+        return Catalog.snapshot().rel().getNodeInfo( id );
     }
 
 

@@ -59,7 +59,7 @@ public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
     @Setter
-    private List<AlphabeticStatisticColumn<T>> alphabeticColumn;
+    private List<AlphabeticStatisticColumn> alphabeticColumn;
 
     @Getter
     @Setter

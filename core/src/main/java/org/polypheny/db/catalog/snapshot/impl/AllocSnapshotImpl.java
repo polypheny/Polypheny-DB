@@ -18,9 +18,11 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +66,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Long, List<AllocationEntity>> allocsOnAdapters;
     ImmutableMap<Long, List<AllocationColumn>> logicalColumnToAlloc;
 
-    ImmutableMap<Long, List<AllocationColumn>> allocColumns;
+    ImmutableMap<Long, TreeSet<AllocationColumn>> allocColumns;
     ImmutableMap<Pair<Long, Long>, List<AllocationColumn>> adapterLogicalTablePlacements;
     ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
     ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
@@ -145,11 +147,11 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Long, List<AllocationColumn>> buildAllocColumns() {
-        Map<Long, List<AllocationColumn>> map = new HashMap<>();
+    private ImmutableMap<Long, TreeSet<AllocationColumn>> buildAllocColumns() {
+        Map<Long, TreeSet<AllocationColumn>> map = new HashMap<>();
         for ( AllocationColumn value : columns.values() ) {
             if ( !map.containsKey( value.tableId ) ) {
-                map.put( value.tableId, new ArrayList<>() );
+                map.put( value.tableId, new TreeSet<>( Comparator.comparingLong( c -> c.position ) ) );
             }
             map.get( value.tableId ).add( value );
         }
@@ -548,7 +550,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     @Override
     public List<AllocationColumn> getColumns( long allocId ) {
-        return allocColumns.get( allocId );
+        return List.copyOf( allocColumns.get( allocId ) );
     }
 
 }

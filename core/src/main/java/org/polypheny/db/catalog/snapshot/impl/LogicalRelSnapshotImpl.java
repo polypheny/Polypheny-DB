@@ -18,13 +18,16 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -49,7 +52,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Pair<Long, String>, LogicalTable> tableNames;
 
-    ImmutableMap<Long, List<LogicalColumn>> tableColumns;
+    ImmutableMap<Long, TreeSet<LogicalColumn>> tableColumns;
     ImmutableMap<Long, LogicalColumn> columns;
 
     ImmutableMap<Pair<Long, String>, LogicalColumn> columnNames;
@@ -74,6 +77,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Pair<Long, String>, LogicalColumn> tableIdColumnNameColumn;
     ImmutableMap<Long, List<CatalogConstraint>> tableConstraints;
     ImmutableMap<Long, List<CatalogForeignKey>> tableForeignKeys;
+    ImmutableMap<Long, AlgNode> nodes;
 
 
     public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs ) {
@@ -88,10 +92,10 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         //// tables
 
-        Map<Long, List<LogicalColumn>> tableChildren = new HashMap<>();
+        Map<Long, TreeSet<LogicalColumn>> tableChildren = new HashMap<>();
         columns.forEach( ( k, v ) -> {
             if ( !tableChildren.containsKey( v.tableId ) ) {
-                tableChildren.put( v.tableId, new ArrayList<>() );
+                tableChildren.put( v.tableId, new TreeSet<>( Comparator.comparingInt( a -> a.position ) ) );
             }
             tableChildren.get( v.tableId ).add( v );
         } );
@@ -151,6 +155,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
             tableConstraints.get( v.key.tableId ).add( v );
         } );
         this.tableConstraints = ImmutableMap.copyOf( tableConstraints );
+
+        /// ALGNODES e.g. views and materializedViews
+        this.nodes = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getNodes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
     }
 
 
@@ -200,7 +207,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public List<LogicalColumn> getColumns( long tableId ) {
-        return tableColumns.get( tableId );
+        return List.copyOf( tableColumns.get( tableId ) );
     }
 
 
@@ -374,6 +381,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public boolean checkIfExistsEntity( String newName ) {
         return tableNames.containsKey( newName );
+    }
+
+
+    @Override
+    public AlgNode getNodeInfo( long id ) {
+        return nodes.get( id );
     }
 
 }

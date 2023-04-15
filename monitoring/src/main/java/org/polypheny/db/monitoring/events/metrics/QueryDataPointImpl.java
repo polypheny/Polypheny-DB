@@ -24,44 +24,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Value;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.QueryDataPoint;
 
 
-@Getter
-@Setter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PUBLIC)
-@AllArgsConstructor(access = AccessLevel.MODULE)
+@Value
 public class QueryDataPointImpl implements QueryDataPoint, Serializable {
 
     private static final long serialVersionUID = 4389301720141941770L;
 
     @Builder.Default
-    private final List<Long> tables = new ArrayList<>();
-    private final HashMap<String, Object> dataElements = new HashMap<>();
-    private UUID Id;
-    private Timestamp recordedTimestamp;
-    private MonitoringType monitoringType;
-    private String description;
-    private long executionTime;
-    private boolean isSubQuery;
-    protected boolean isCommitted;
-    private int rowCount;
-    private List<String> fieldNames;
-    private List<Long> accessedPartitions;
-    private String algCompareString;
-    private String queryClass;
-    private String physicalQueryClass;
-    private Integer indexSize;
+    List<Long> tables = new ArrayList<>();
+    Map<String, Object> dataElements = new HashMap<>();
+    UUID Id;
+    Timestamp recordedTimestamp;
+    MonitoringType monitoringType;
+    String description;
+    long executionTime;
+    boolean isSubQuery;
+    boolean isCommitted;
+    int rowCount;
+    List<String> fieldNames;
+    List<Long> accessedPartitions;
+    String algCompareString;
+    String queryClass;
+    String physicalQueryClass;
+    Integer indexSize;
     @Builder.Default
-    private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
+    Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 
 
     @Override

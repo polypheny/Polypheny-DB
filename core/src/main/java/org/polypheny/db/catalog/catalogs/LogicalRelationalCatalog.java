@@ -316,4 +316,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
 
     Map<Long, CatalogConstraint> getConstraints();
 
+    Map<Long, AlgNode> getNodes();
+
 }

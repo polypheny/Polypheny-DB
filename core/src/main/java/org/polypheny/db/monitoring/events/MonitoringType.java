@@ -16,10 +16,23 @@
 
 package org.polypheny.db.monitoring.events;
 
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.algebra.constant.Kind;
+
 public enum MonitoringType {
     INSERT,
     TRUNCATE,
     DROP_COLUMN,
     DROP_TABLE,
-    DELETE;
+    SET_ROW_COUNT,
+    DELETE, SELECT, UPDATE;
+
+
+    public static MonitoringType from( Kind kind ) {
+        if ( EnumUtils.isValidEnum( MonitoringType.class, kind.name().toUpperCase() ) ) {
+            return valueOf( kind.name().toUpperCase() );
+        }
+        throw new NotImplementedException();
+    }
 }

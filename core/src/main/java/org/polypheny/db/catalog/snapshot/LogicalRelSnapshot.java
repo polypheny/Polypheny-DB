@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -277,5 +278,7 @@ public interface LogicalRelSnapshot {
 
     boolean checkIfExistsEntity( String name );
 
+
+    AlgNode getNodeInfo( long id );
 
 }

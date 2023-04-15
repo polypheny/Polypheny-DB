@@ -66,10 +66,10 @@ public class StatisticRepository implements MonitoringRepository {
                     dataPoint.getMonitoringType(),
                     dataPoint.getSchemaId() );
         }
-        if ( dataPoint.getMonitoringType().equals( "DROP_TABLE" ) ) {
-            statisticsManager.deleteTableToUpdate( dataPoint.getTableId(), dataPoint.getSchemaId() );
+        if ( dataPoint.getMonitoringType() == MonitoringType.DROP_TABLE ) {
+            statisticsManager.deleteTableToUpdate( dataPoint.getTableId() );
         }
-        if ( dataPoint.getMonitoringType().equals( "DROP_COLUMN" ) ) {
+        if ( dataPoint.getMonitoringType() == MonitoringType.DROP_COLUMN ) {
             statisticsManager.tablesToUpdate(
                     dataPoint.getTableId(),
                     Collections.singletonMap( dataPoint.getColumnId(), null ),
@@ -92,7 +92,7 @@ public class StatisticRepository implements MonitoringRepository {
 
                     // RowCount from UI is only used if there is no other possibility
                     if ( statisticsManager.rowCountPerTable( tableId ) == null || statisticsManager.rowCountPerTable( tableId ) == 0 ) {
-                        statisticsManager.updateRowCountPerTable( tableId, dataPoint.getRowCount(), "SET-ROW-COUNT" );
+                        statisticsManager.updateRowCountPerTable( tableId, dataPoint.getRowCount(), MonitoringType.SET_ROW_COUNT );
                     }
 
                     if ( dataPoint.getIndexSize() != null ) {

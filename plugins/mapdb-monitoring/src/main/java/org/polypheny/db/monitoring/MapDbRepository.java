@@ -28,9 +28,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.mapdb.DB;
-import org.mapdb.DBException;
-import org.mapdb.DBMaker;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
@@ -45,7 +42,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
     protected final HashMap<Class<?>, HashMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
-    protected DB simpleBackendDb;
+    //protected DB simpleBackendDb;
     protected HashMap<String, QueryPostCostImpl> queryPostCosts;
 
 
@@ -63,9 +60,9 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             table = this.data.get( dataPoint.getClass() );
         }
 
-        if ( table != null && dataPoint != null ) {
+        if ( table != null ) {
             table.put( dataPoint.id(), dataPoint );
-            this.simpleBackendDb.commit();
+            //this.simpleBackendDb.commit();
         }
     }
 
@@ -149,7 +146,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             return;
         }
         data.clear();
-        this.simpleBackendDb.commit();
+        //this.simpleBackendDb.commit();
     }
 
 
@@ -197,7 +194,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             queryPostCosts.replace( physicalQueryClass, new QueryPostCostImpl( physicalQueryClass, newTime, samples ) );
         }
 
-        this.simpleBackendDb.commit();
+        // this.simpleBackendDb.commit();
     }
 
 
@@ -207,14 +204,14 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             return;
         }
         queryPostCosts.clear();
-        this.simpleBackendDb.commit();
+        // this.simpleBackendDb.commit();
     }
 
 
     protected void initialize( String filePath, String folderName, boolean resetRepository ) {
-        if ( simpleBackendDb != null ) {
+        /* if ( simpleBackendDb != null ) {
             simpleBackendDb.close();
-        }
+        }*/
 
         synchronized ( this ) {
             File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( folderName );
@@ -235,7 +232,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
             long start = System.currentTimeMillis();
             long finish = System.currentTimeMillis();
-            while ( fileLocked && ((finish - start) < timeThreshold) ) {
+            /*while ( fileLocked && ((finish - start) < timeThreshold) ) {
                 try {
                     simpleBackendDb = DBMaker
                             .fileDB( new File( folder, filePath ) )
@@ -257,7 +254,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
                         + "Wait a few seconds or stop the locking process and try again. " );
             }
 
-            simpleBackendDb.getStore().fileLoad();
+            simpleBackendDb.getStore().fileLoad();*/
         }
     }
 

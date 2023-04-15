@@ -22,7 +22,8 @@ import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
 public class DdlEventAnalyzer {
 
     public static DdlDataPoint analyze( DdlEvent ddlEvent ) {
-        DdlDataPoint metric = DdlDataPoint
+
+        return DdlDataPoint
                 .builder()
                 .Id( ddlEvent.getId() )
                 .recordedTimestamp( ddlEvent.getRecordedTimestamp() )
@@ -32,8 +33,6 @@ public class DdlEventAnalyzer {
                 .schemaId( ddlEvent.getSchemaId() )
                 .columnId( ddlEvent.getColumnId() )
                 .build();
-
-        return metric;
     }
 
 }

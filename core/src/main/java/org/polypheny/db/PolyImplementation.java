@@ -44,6 +44,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
@@ -289,7 +290,7 @@ public class PolyImplementation {
             int rowsChanged;
             try {
                 Iterator<?> iterator = enumerable( statement.getDataContext() ).iterator();
-                rowsChanged = getRowsChanged( statement, iterator, getKind().name() );
+                rowsChanged = getRowsChanged( statement, iterator, MonitoringType.from( getKind() ) );
             } catch ( RuntimeException e ) {
                 if ( e.getCause() != null ) {
                     throw new Exception( e.getCause().getMessage(), e );
@@ -304,7 +305,7 @@ public class PolyImplementation {
     }
 
 
-    public static int getRowsChanged( Statement statement, Iterator<?> iterator, String kind ) throws Exception {
+    public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) throws Exception {
         int rowsChanged = -1;
         Object object;
         while ( iterator.hasNext() ) {
@@ -336,12 +337,12 @@ public class PolyImplementation {
     }
 
 
-    public static void addMonitoringInformation( Statement statement, String kind, int rowsChanged ) {
+    public static void addMonitoringInformation( Statement statement, MonitoringType kind, int rowsChanged ) {
         StatementEvent eventData = statement.getMonitoringEvent();
         if ( rowsChanged > 0 ) {
             eventData.setRowCount( rowsChanged );
         }
-        if ( Kind.INSERT.name().equals( kind ) || Kind.DELETE.name().equals( kind ) ) {
+        if ( MonitoringType.INSERT == kind || MonitoringType.DELETE == kind ) {
 
             HashMap<Long, List<Object>> ordered = new HashMap<>();
 
@@ -359,7 +360,7 @@ public class PolyImplementation {
             }
 
             eventData.getChangedValues().putAll( ordered );
-            if ( Kind.INSERT.name().equals( kind ) ) {
+            if ( MonitoringType.INSERT == kind ) {
                 if ( rowsChanged >= 0 ) {
                     eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
                 }

@@ -56,7 +56,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract void asyncReevaluateAllStatistics();
 
-    public abstract void deleteTableToUpdate( long tableId, long schemaId );
+    public abstract void deleteTableToUpdate( long tableId );
 
     public abstract void updateRowCountPerTable( long tableId, int number, MonitoringType type );
 

@@ -29,20 +29,20 @@ import org.polypheny.db.config.RuntimeConfig;
  * Responsible to validate if data should be changed
  */
 @Slf4j
-public class AlphabeticStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
+public class AlphabeticStatisticColumn extends StatisticColumn<String> {
 
     @Getter
-    public List<T> uniqueValuesCache = new ArrayList<>();
+    public List<String> uniqueValuesCache = new ArrayList<>();
     boolean cacheFull;
 
 
     public AlphabeticStatisticColumn( QueryResult column ) {
-        super( column.getColumn().namespaceId, column.getColumn().tableId, column.getColumn().id, column.getColumn().type, StatisticType.ALPHABETICAL );
+        super( column.getColumn().id, column.getColumn().type );
     }
 
 
     @Override
-    public void insert( T val ) {
+    public void insert( String val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
@@ -59,11 +59,13 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
 
     @Override
-    public void insert( List<T> values ) {
-        if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
-            for ( T val : values ) {
-                insert( val );
-            }
+    public void insert( List<String> values ) {
+        if ( values == null ) {
+            return;
+        }
+
+        for ( String val : values ) {
+            insert( val );
         }
     }
 
