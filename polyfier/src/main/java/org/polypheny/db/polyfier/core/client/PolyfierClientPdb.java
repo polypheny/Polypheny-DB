@@ -17,11 +17,11 @@
 package org.polypheny.db.polyfier.core.client;
 
 import com.google.gson.Gson;
+import jakarta.websocket.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.polyfier.core.client.profile.Profile;
 
-import javax.websocket.*;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
