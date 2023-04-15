@@ -30,7 +30,7 @@ public class ConstructionGraph {
     private final ColumnGraph columnGraph;
     private DecisionGraph decisionGraph;
 
-    public ConstructionGraph(Statement statement ) {
+    public ConstructionGraph( Statement statement ) {
         this.columnGraph = new ColumnGraph();
         this.queryGraph = new QueryGraph();
 
@@ -38,12 +38,8 @@ public class ConstructionGraph {
         this.statement = statement;
     }
 
-    public void clearDecisionGraph( Decision<?> decision ) {
-        if ( decision == null ) {
-            this.decisionGraph = new DecisionGraph();
-            return;
-        }
-        this.decisionGraph = new DecisionGraph( decision );
+    public void clearDecisionGraph() {
+        this.decisionGraph = new DecisionGraph( Decision.root() );
     }
 
 }

@@ -30,8 +30,6 @@ import java.util.stream.Collectors;
 
 @Getter
 public class DecisionGraph {
-    static int graphCount = 0;
-    static int decisionCount = 0;
     private final Decision<?> root;
     private final Graph<Decision<?>, DefaultEdge> decisionGraph;
 
@@ -69,11 +67,6 @@ public class DecisionGraph {
         decisionGraph.addVertex( decision );
         DefaultEdge defaultEdge = decisionGraph.addEdge( parent, decision );
         decisionGraph.setEdgeWeight( defaultEdge, weight );
-        try {
-            Thread.sleep( 10 );
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
 
         return decision;
     }

@@ -44,8 +44,6 @@ public class DqlConstructor {
     private ConstructionGraph constructionGraph;
     private final HashMap<String, ColumnStatistic> columnStatistics;
 
-    private Decision<?> lastDecisionStump = null;
-
     public DqlConstructor(Transaction transaction, int complexity, HashMap<String, ColumnStatistic> columnStatistics ) {
         this.transaction = transaction;
         this.complexity = complexity;
@@ -122,8 +120,7 @@ public class DqlConstructor {
                 });
             }
 
-            // Building the Decision Graph
-            constructionGraph.clearDecisionGraph( lastDecisionStump );
+            constructionGraph.clearDecisionGraph();
 
             // At zero nodes available we have to have one node left, ergo we can see what operations we are allowed in the iteration.
             // Each binary op allows us to reduce the number of nodes by 1, while a unary operation reduces available nodes by one.
@@ -377,8 +374,6 @@ public class DqlConstructor {
                     throw new RuntimeException();
 
             }
-
-            lastDecisionStump = decision; // Visualization
 
             if (parent instanceof Unary) {
                 Unary unary = (Unary) parent;
