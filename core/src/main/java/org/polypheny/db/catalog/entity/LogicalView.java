@@ -19,8 +19,10 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -41,41 +43,42 @@ import org.polypheny.db.view.ViewManager.ViewVisitor;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public class CatalogView extends LogicalTable {
+public class LogicalView extends LogicalTable {
 
     private static final long serialVersionUID = -4771308114962700515L;
 
-    @Getter
-    protected ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
+    @Serialize
+    public ImmutableMap<Long, List<Long>> underlyingTables;
+    @Serialize
     public String language;
+    @Serialize
     public AlgCollation algCollation;
+    @Serialize
     public String query;
 
 
-    public CatalogView(
-            long id,
-            String name,
-            long namespaceId,
-            EntityType entityType,
-            String query,
-            Long primaryKey,
-            boolean modifiable,
-            AlgCollation algCollation,
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            ImmutableList<Long> connectedViews,
-            String language ) {
+    public LogicalView(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("entityType") EntityType entityType,
+            @Deserialize("query") String query,
+            @Deserialize("primaryKey") Long primaryKey,
+            @Deserialize("algCollation") AlgCollation algCollation,
+            @Deserialize("underlyingTables") ImmutableMap<Long, List<Long>> underlyingTables,
+            @Deserialize("connectedViews") ImmutableList<Long> connectedViews,
+            @Deserialize("language") String language ) {
         super(
                 id,
                 name,
                 namespaceId,
                 entityType,
                 primaryKey,
-                modifiable,
+                false,
                 connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
-        // mapdb cannot handle the class QueryLanguage, therefore we use the String here
         this.language = language;
     }
 

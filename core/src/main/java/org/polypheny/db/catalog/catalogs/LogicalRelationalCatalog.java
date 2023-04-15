@@ -24,8 +24,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -69,7 +70,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param name of the view to add
      * @param namespaceId id of the schema
      * @param entityType type of table
-     * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
      * @param algCollation relCollation used for materialized view
      * @param underlyingTables all tables and columns used within the view
@@ -80,7 +80,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered );
+    LogicalMaterializedView addMaterializedView( String name, long namespaceId, EntityType entityType, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered );
 
     /**
      * Renames a table
@@ -247,7 +247,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param catalogView view for which to delete its dependencies
      */
-    void deleteViewDependencies( CatalogView catalogView );
+    void deleteViewDependencies( LogicalView catalogView );
 
     /**
      * Updates the last time a materialized view has been refreshed.

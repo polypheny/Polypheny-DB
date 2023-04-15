@@ -242,7 +242,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Reset all statistics and reevaluate them.
      */
     private void reevaluateAllStatistics() {
-        if ( true || statisticQueryInterface == null ) {
+        if ( statisticQueryInterface == null ) {
             return;
         }
         log.debug( "Resetting StatisticManager." );

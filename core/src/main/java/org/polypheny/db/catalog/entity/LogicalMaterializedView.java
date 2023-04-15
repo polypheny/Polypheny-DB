@@ -18,6 +18,12 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -30,35 +36,35 @@ import org.polypheny.db.languages.QueryLanguage;
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class CatalogMaterializedView extends CatalogView {
+public class LogicalMaterializedView extends LogicalView {
 
     private static final long serialVersionUID = 4728996184367206274L;
 
+    @Serialize
     public String language;
-
+    @Serialize
     public AlgCollation algCollation;
-
+    @Serialize
     public String query;
-
+    @Serialize
     public MaterializedCriteria materializedCriteria;
-
+    @Serialize
     public boolean ordered;
 
 
-    public CatalogMaterializedView(
-            long id,
-            String name,
-            long namespaceId,
-            EntityType entityType,
-            String query,
-            Long primaryKey,
-            boolean modifiable,
-            AlgCollation algCollation,
-            ImmutableList<Long> connectedViews,
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            String language,
-            MaterializedCriteria materializedCriteria,
-            boolean ordered
+    public LogicalMaterializedView(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("id") EntityType entityType,
+            @Deserialize("entityType") String query,
+            @Deserialize("primaryKey") Long primaryKey,
+            @Deserialize("algCollation") AlgCollation algCollation,
+            @Deserialize("connectedViews") List<Long> connectedViews,
+            @Deserialize("underlyingTables") Map<Long, List<Long>> underlyingTables,
+            @Deserialize("language") String language,
+            @Deserialize("materializedCriteria") MaterializedCriteria materializedCriteria,
+            @Deserialize("ordered") boolean ordered
     ) {
         super(
                 id,
@@ -67,11 +73,17 @@ public class CatalogMaterializedView extends CatalogView {
                 entityType,
                 query,
                 primaryKey,
-                modifiable,
                 algCollation,
-                underlyingTables,
-                connectedViews,
+                ImmutableMap.copyOf( underlyingTables ),
+                ImmutableList.copyOf( connectedViews ),
                 language );
+
+        Map<Long, ImmutableList<Long>> map = new HashMap<>();
+        for ( Entry<Long, List<Long>> e : underlyingTables.entrySet() ) {
+            if ( map.put( e.getKey(), ImmutableList.copyOf( e.getValue() ) ) != null ) {
+                throw new IllegalStateException( "Duplicate key" );
+            }
+        }
         this.query = query;
         this.algCollation = algCollation;
         this.language = language;

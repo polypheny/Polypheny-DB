@@ -62,11 +62,11 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -1687,6 +1687,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) {
         viewName = adjustNameIfNeeded( viewName, namespaceId );
+
         // Check if there is already a table with this name
         if ( assertEntityExists( namespaceId, viewName, ifNotExists ) ) {
             return;
@@ -1716,11 +1717,10 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        long tableId = catalog.getLogicalRel( namespaceId ).addMaterializedView(
+        LogicalMaterializedView view = catalog.getLogicalRel( namespaceId ).addMaterializedView(
                 viewName,
                 namespaceId,
                 EntityType.MATERIALIZED_VIEW,
-                false,
                 algRoot.alg,
                 algRoot.collation,
                 underlying,
@@ -1732,71 +1732,36 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         // Creates a list with all columns, tableId is needed to create the primary key
-        List<FieldInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
-        Map<Long, List<LogicalColumn>> addedColumns = new HashMap<>();
+        List<FieldInformation> fields = getColumnInformation( projectedColumns, fieldList, true, view.id );
 
-        List<Long> columnIds = new ArrayList<>();
+        Map<String, Long> ids = new LinkedHashMap<>();
 
-        for ( FieldInformation field : columns ) {
-            LogicalColumn column = catalog.getLogicalRel( namespaceId ).addColumn(
-                    field.name,
-                    tableId,
-                    field.position,
-                    field.typeInformation.type,
-                    field.typeInformation.collectionType,
-                    field.typeInformation.precision,
-                    field.typeInformation.scale,
-                    field.typeInformation.dimension,
-                    field.typeInformation.cardinality,
-                    field.typeInformation.nullable,
-                    field.collation );
-
-            // Created primary key is added to list
-            if ( field.name.startsWith( "_matid_" ) ) {
-                columnIds.add( column.id );
-            }
-
-            for ( DataStore s : stores ) {
-                long adapterId = s.getAdapterId();
-                AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( adapterId, tableId );
-                catalog.getAllocRel( namespaceId ).addColumn(
-                        allocation.id,
-                        column.id,
-                        placementType,
-                        0 );
-
-                List<LogicalColumn> logicalColumns;
-                if ( addedColumns.containsKey( adapterId ) ) {
-                    logicalColumns = addedColumns.get( adapterId );
-                } else {
-                    logicalColumns = new ArrayList<>();
-                }
-                logicalColumns.add( relSnapshot.getColumn( column.id ) );
-                addedColumns.put( adapterId, logicalColumns );
-            }
-
+        for ( FieldInformation field : fields ) {
+            ids.put( field.name, addColumn( namespaceId, field.name, field.typeInformation, field.collation, field.defaultValue, view.id, field.position, stores, placementType ) );
         }
         // Sets previously created primary key
-        catalog.getLogicalRel( namespaceId ).addPrimaryKey( tableId, columnIds );
+        //catalog.getLogicalRel( namespaceId ).addPrimaryKey( view.id, columnIds );
 
-        CatalogMaterializedView catalogMaterializedView = catalog.getSnapshot().rel().getTable( tableId ).unwrap( CatalogMaterializedView.class );
-        Catalog.getInstance().getSnapshot();
+        catalog.updateSnapshot();
 
         for ( DataStore store : stores ) {
-            catalog.getAllocRel( namespaceId ).addPartitionPlacement(
-                    catalogMaterializedView.namespaceId,
-                    store.getAdapterId(),
-                    tableId,
-                    snapshot.alloc().getPartitionProperty( catalogMaterializedView.id ).partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    DataPlacementRole.UPTODATE );
+            AllocationTable alloc = catalog.getAllocRel( namespaceId ).createAllocationTable( store.getAdapterId(), view.id );
+            List<AllocationColumn> columns = new ArrayList<>();
 
-            store.createPhysicalTable( statement.getPrepareContext(), catalogMaterializedView, null, null );
+            int i = 0;
+            for ( long id : ids.values() ) {
+                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, id, PlacementType.AUTOMATIC, i ) );
+                i++;
+            }
+            catalog.updateSnapshot();
+            catalog.getPhysical( namespaceId ).addEntities( store.createPhysicalTable( statement.getPrepareContext(), view, alloc, columns ) );
         }
+        catalog.updateSnapshot();
 
         // Selected data from tables is added into the newly crated materialized view
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
-        materializedManager.addData( statement.getTransaction(), stores, addedColumns, algRoot, catalogMaterializedView );
+        log.warn( "add" );
+        materializedManager.addData( statement.getTransaction(), stores, null, algRoot, view );
     }
 
 
@@ -2167,6 +2132,11 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createTable( long namespaceId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) {
         String adjustedName = adjustNameIfNeeded( name, namespaceId );
+
+        // Check if there is already a table with this name
+        if ( assertEntityExists( namespaceId, adjustedName, ifNotExists ) ) {
+            return;
+        }
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
@@ -2912,7 +2882,7 @@ public class DdlManagerImpl extends DdlManager {
         checkViewDependencies( catalogView );
 
         catalog.getLogicalRel( catalogView.namespaceId ).flagTableForDeletion( catalogView.id, true );
-        catalog.getLogicalRel( catalogView.namespaceId ).deleteViewDependencies( (CatalogView) catalogView );
+        catalog.getLogicalRel( catalogView.namespaceId ).deleteViewDependencies( (LogicalView) catalogView );
 
         // Delete columns
 
@@ -2939,7 +2909,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.getLogicalRel( materializedView.namespaceId ).flagTableForDeletion( materializedView.id, true );
 
-        catalog.getLogicalRel( materializedView.namespaceId ).deleteViewDependencies( (CatalogView) materializedView );
+        catalog.getLogicalRel( materializedView.namespaceId ).deleteViewDependencies( (LogicalView) materializedView );
 
         dropTable( materializedView, statement );
 

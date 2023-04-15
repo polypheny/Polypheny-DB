@@ -106,10 +106,10 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -1257,9 +1257,9 @@ public class Crud implements InformationObserver {
         LogicalTable catalogTable = getLogicalTable( request.schema, request.table );
 
         if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
-            CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
+            LogicalMaterializedView logicalMaterializedView = (LogicalMaterializedView) catalogTable;
 
-            MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();
+            MaterializedCriteria materializedCriteria = logicalMaterializedView.getMaterializedCriteria();
 
             ArrayList<String> materializedInfo = new ArrayList<>();
             materializedInfo.add( materializedCriteria.getCriteriaType().toString() );
@@ -1866,9 +1866,9 @@ public class Crud implements InformationObserver {
         LogicalTable catalogTable = getLogicalTable( request.getSchemaName(), request.getTableName() );
 
         if ( catalogTable.entityType == EntityType.VIEW ) {
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
+            ImmutableMap<Long, List<Long>> underlyingTableOriginal = catalogTable.unwrap( LogicalView.class ).underlyingTables;
             Map<String, List<String>> underlyingTable = new HashMap<>();
-            for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
+            for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
                 List<String> columns = new ArrayList<>();
                 for ( Long ids : entry.getValue() ) {
                     columns.add( catalog.getSnapshot().rel().getColumn( ids ).name );

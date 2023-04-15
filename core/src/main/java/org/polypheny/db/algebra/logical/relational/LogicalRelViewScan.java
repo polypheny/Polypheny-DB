@@ -26,14 +26,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.Entity;
 
 
 public class LogicalRelViewScan extends RelScan<CatalogEntity> {
@@ -64,10 +62,10 @@ public class LogicalRelViewScan extends RelScan<CatalogEntity> {
                                     return ImmutableList.of();
                                 } );
 
-        CatalogView catalogView = entity.unwrap( CatalogView.class );
-        AlgCollation algCollation = catalogView.getAlgCollation();
+        LogicalView logicalView = entity.unwrap( LogicalView.class );
+        AlgCollation algCollation = logicalView.getAlgCollation();
 
-        return new LogicalRelViewScan( cluster, traitSet, entity, catalogView.prepareView( cluster ), algCollation );
+        return new LogicalRelViewScan( cluster, traitSet, entity, logicalView.prepareView( cluster ), algCollation );
     }
 
 

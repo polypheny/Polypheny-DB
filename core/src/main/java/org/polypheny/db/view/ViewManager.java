@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.rex.RexBuilder;
@@ -252,7 +252,7 @@ public class ViewManager {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
                 LogicalTable catalogTable = other.getEntity().unwrap( LogicalTable.class );
-                if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogTable).isOrdered() ) {
+                if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((LogicalMaterializedView) catalogTable).isOrdered() ) {
                     return orderMaterialized( other );
                 }
             }

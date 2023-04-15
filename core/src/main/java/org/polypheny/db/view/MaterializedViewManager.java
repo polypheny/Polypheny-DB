@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.transaction.PolyXid;
@@ -65,7 +65,7 @@ public abstract class MaterializedViewManager {
             List<DataStore> stores,
             Map<Long, List<LogicalColumn>> addedColumns,
             AlgRoot algRoot,
-            CatalogMaterializedView materializedView );
+            LogicalMaterializedView materializedView );
 
     public abstract void addTables( Transaction transaction, List<Long> ids );
 

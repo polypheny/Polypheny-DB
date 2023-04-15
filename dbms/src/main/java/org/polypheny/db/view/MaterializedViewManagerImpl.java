@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -284,7 +284,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
             idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
             // Get locks for individual tables
-            EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
+            EntityAccessMap accessMap = new EntityAccessMap( ((LogicalMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
             idAccessMap.addAll( accessMap.getAccessedEntityPair() );
             LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
@@ -301,7 +301,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * Is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
      */
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, Map<Long, List<LogicalColumn>> columns, AlgRoot algRoot, CatalogMaterializedView materializedView ) {
+    public void addData( Transaction transaction, List<DataStore> stores, Map<Long, List<LogicalColumn>> columns, AlgRoot algRoot, LogicalMaterializedView materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         List<AllocationColumn> columnPlacements = new LinkedList<>();
@@ -338,7 +338,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         List<Long> ids = new ArrayList<>();
         if ( snapshot.getLogicalEntity( materializedId ) != null && materializedInfo.containsKey( materializedId ) ) {
-            CatalogMaterializedView catalogMaterializedView = snapshot.getLogicalEntity( materializedId ).unwrap( CatalogMaterializedView.class );
+            LogicalMaterializedView catalogMaterializedView = snapshot.getLogicalEntity( materializedId ).unwrap( LogicalMaterializedView.class );
             List<CatalogDataPlacement> dataPlacements = snapshot.alloc().getDataPlacements( catalogMaterializedView.id );
             for ( CatalogDataPlacement placement : dataPlacements ) {
                 ids.add( placement.adapterId );

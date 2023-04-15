@@ -48,10 +48,10 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -79,6 +79,10 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Serialize
     @Getter
     public Map<Long, LogicalColumn> columns;
+
+    @Serialize
+    @Getter
+    public Map<Long, AlgNode> nodes;
 
     @Serialize
     @Getter
@@ -119,7 +123,8 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             @Deserialize("indexes") Map<Long, CatalogIndex> indexes,
             @Deserialize("keys") Map<Long, CatalogKey> keys,
             @Deserialize("keyColumns") Map<long[], Long> keyColumns,
-            @Deserialize("constraints") Map<Long, CatalogConstraint> constraints ) {
+            @Deserialize("constraints") Map<Long, CatalogConstraint> constraints,
+            @Deserialize("nodes") Map<Long, AlgNode> nodes ) {
         this.logicalNamespace = logicalNamespace;
 
         this.tables = tables;
@@ -128,11 +133,12 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         this.keys = keys;
         this.keyColumns = keyColumns;
         this.constraints = constraints;
+        this.nodes = nodes;
     }
 
 
     public RelationalCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
@@ -169,8 +175,39 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public long addMaterializedView( String name, long namespaceId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
-        throw new NotImplementedException();
+    public LogicalMaterializedView addMaterializedView( final String name, long namespaceId, EntityType entityType, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
+        long id = idBuilder.getNewEntityId();
+
+        String adjustedName = name;
+
+        if ( !logicalNamespace.caseSensitive ) {
+            adjustedName = name.toLowerCase();
+        }
+
+        if ( entityType != EntityType.MATERIALIZED_VIEW ) {
+            // Should not happen, addViewTable is only called with EntityType.View
+            throw new RuntimeException( "addMaterializedViewTable is only possible with EntityType = MATERIALIZED_VIEW" );
+        }
+
+        LogicalMaterializedView materializedViewTable = new LogicalMaterializedView(
+                id,
+                adjustedName,
+                namespaceId,
+                entityType,
+                query,
+                null,
+                algCollation,
+                ImmutableList.of(),
+                underlyingTables,
+                language.getSerializedName(),
+                materializedCriteria,
+                ordered
+        );
+
+        tables.put( id, materializedViewTable );
+        nodes.put( id, definition );
+
+        return materializedViewTable;
     }
 
 
@@ -515,10 +552,10 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public void deleteViewDependencies( CatalogView catalogView ) {
-        for ( long id : catalogView.getUnderlyingTables().keySet() ) {
+    public void deleteViewDependencies( LogicalView logicalView ) {
+        for ( long id : logicalView.underlyingTables.keySet() ) {
             LogicalTable old = tables.get( id );
-            List<Long> connectedViews = old.connectedViews.stream().filter( e -> e != catalogView.id ).collect( Collectors.toList() );
+            List<Long> connectedViews = old.connectedViews.stream().filter( e -> e != logicalView.id ).collect( Collectors.toList() );
 
             LogicalTable table = old.toBuilder().connectedViews( ImmutableList.copyOf( connectedViews ) ).build();
 
@@ -533,7 +570,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public void updateMaterializedViewRefreshTime( long materializedViewId ) {
 
-        CatalogMaterializedView old = (CatalogMaterializedView) tables.get( materializedViewId );
+        LogicalMaterializedView old = (LogicalMaterializedView) tables.get( materializedViewId );
 
         MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
         materializedCriteria.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
