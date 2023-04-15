@@ -144,6 +144,10 @@ licensee {
     allowDependency('org.ow2.asm', 'asm-commons', '7.1') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm-tree', '7.1') { because 'BSD 3-Clause' }
 
+    // Both dependencies are EPL v. 2.0 under the newest distribution, but old distribution is listed under CDDL 1.1 -> Todo update.
+    allowDependency('javax.websocket', 'javax.websocket-api', '1.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.tyrus.bundles', 'tyrus-standalone-client', '1.7') { because 'Eclipse Public License v. 2.0' }
+
     // Glassfish
     allowDependency('org.glassfish.jersey.core', 'jersey-common', '2.30.1') { because 'Eclipse Public License v. 2.0' }
     allowDependency('org.glassfish.jersey.core', 'jersey-client', '2.30.1') { because 'Eclipse Public License v. 2.0' }
