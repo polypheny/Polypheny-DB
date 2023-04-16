@@ -127,7 +127,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
         List<Long> columnIds = new LinkedList<>();
         for ( SqlNode node : columnList.getSqlList() ) {
-            LogicalColumn logicalColumn = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, (SqlIdentifier) node );
+            LogicalColumn logicalColumn = getCatalogColumn( context, catalogTable.id, (SqlIdentifier) node );
             columnIds.add( logicalColumn.id );
         }
 

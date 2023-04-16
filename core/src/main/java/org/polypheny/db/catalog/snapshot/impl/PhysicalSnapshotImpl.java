@@ -115,7 +115,10 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
     @Override
     public PhysicalTable getPhysicalTable( long logicalId, long adapterId ) {
-        return adapterLogicalEntity.get( Pair.of( adapterId, logicalId ) ).unwrap( PhysicalTable.class );
+        if ( adapterLogicalEntity.get( Pair.of( adapterId, logicalId ) ) != null ) {
+            return adapterLogicalEntity.get( Pair.of( adapterId, logicalId ) ).unwrap( PhysicalTable.class );
+        }
+        return null;
     }
 
 

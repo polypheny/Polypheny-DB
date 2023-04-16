@@ -25,10 +25,8 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
@@ -46,7 +44,6 @@ public abstract class SqlDdl extends SqlCall {
     protected static final SqlOperator DDL_OPERATOR = new SqlSpecialOperator( "DDL", Kind.OTHER_DDL );
 
     private final SqlOperator operator;
-    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
 
     /**
@@ -68,21 +65,21 @@ public abstract class SqlDdl extends SqlCall {
         long schemaId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            schemaId = snapshot.getNamespace( tableName.names.get( 1 ) ).id;
+            schemaId = context.getSnapshot().getNamespace( tableName.names.get( 1 ) ).id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = snapshot.getNamespace( tableName.names.get( 0 ) ).id;
+            schemaId = context.getSnapshot().getNamespace( tableName.names.get( 0 ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
+            schemaId = context.getSnapshot().getNamespace( context.getDefaultSchemaName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        return snapshot.rel().getTable( schemaId, tableOldName );
+        return context.getSnapshot().rel().getTable( schemaId, tableOldName );
     }
 
 
-    protected LogicalColumn getCatalogColumn( long namespaceId, long tableId, SqlIdentifier columnName ) {
-        return snapshot.rel().getColumn( tableId, columnName.getSimple() );
+    protected LogicalColumn getCatalogColumn( Context context, long tableId, SqlIdentifier columnName ) {
+        return context.getSnapshot().rel().getColumn( tableId, columnName.getSimple() );
     }
 
 

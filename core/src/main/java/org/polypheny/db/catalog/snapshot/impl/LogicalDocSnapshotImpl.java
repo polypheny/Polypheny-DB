@@ -18,11 +18,13 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 
+@Slf4j
 public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     public LogicalDocSnapshotImpl( Map<Long, LogicalDocumentCatalog> value ) {
@@ -38,7 +40,8 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     @Override
     public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
-        return null;
+        log.warn( "fix" );
+        return List.of();
     }
 
 

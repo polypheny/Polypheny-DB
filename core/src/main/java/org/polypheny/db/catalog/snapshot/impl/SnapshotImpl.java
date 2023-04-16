@@ -205,7 +205,7 @@ public class SnapshotImpl implements Snapshot {
             return entity;
         }
 
-        return graph.getLogicalGraph( id );
+        return graph.getGraph( id );
     }
 
 

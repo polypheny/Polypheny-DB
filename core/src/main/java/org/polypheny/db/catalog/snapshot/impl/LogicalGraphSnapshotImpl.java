@@ -47,10 +47,6 @@ public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
     }
 
 
-    @Override
-    public LogicalGraph getLogicalGraph( long id ) {
-        return null;
-    }
 
 
     @Override

@@ -2210,8 +2210,11 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) {
+        Snapshot snapshot = catalog.getSnapshot();
         // Check if there is already an entity with this name
-        if ( catalog.getSnapshot().rel().checkIfExistsEntity( name ) ) {
+        if ( snapshot.rel().getTable( namespaceId, name ) != null
+                || snapshot.doc().getCollection( namespaceId, name ) != null
+                || snapshot.graph().getGraph( namespaceId ) != null ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return true;
@@ -2829,7 +2832,7 @@ public class DdlManagerImpl extends DdlManager {
             LogicalNamespace logicalNamespace = catalog.getSnapshot().getNamespace( namespaceName );
 
             // Drop all collections in this namespace
-            List<LogicalCollection> collections = catalog.getSnapshot().doc().getLogicalCollections( logicalNamespace.id, null );
+            List<LogicalCollection> collections = catalog.getSnapshot().doc().getCollections( logicalNamespace.id, null );
             for ( LogicalCollection collection : collections ) {
                 dropCollection( collection, statement );
             }
@@ -3030,7 +3033,9 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // delete logical
-
+        for ( long columnId : catalogTable.getColumnIds() ) {
+            catalog.getLogicalRel( catalogTable.namespaceId ).deleteColumn( columnId );
+        }
         catalog.getLogicalRel( catalogTable.namespaceId ).deleteTable( catalogTable.id );
 
         catalog.updateSnapshot();

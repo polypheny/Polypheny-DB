@@ -30,8 +30,7 @@ public interface LogicalGraphSnapshot {
      * @param id The id of the graph to return
      * @return The graph entity with the provided id
      */
-    public abstract LogicalGraph getGraph( long id );
-
+    LogicalGraph getGraph( long id );
 
 
     /**
@@ -40,13 +39,12 @@ public interface LogicalGraphSnapshot {
      * @param graphName The pattern to which the name has to match, null if every name is matched
      * @return A collection of all graphs matching
      */
-    public abstract List<LogicalGraph> getGraphs( Pattern graphName );
+    List<LogicalGraph> getGraphs( Pattern graphName );
 
     @Deprecated
     LogicalGraph getLogicalGraph( List<String> names );
 
 
-    LogicalGraph getLogicalGraph( long id );
 
     LogicalGraph getLogicalGraph( long namespaceId, String name );
 
