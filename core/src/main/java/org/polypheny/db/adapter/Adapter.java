@@ -49,6 +49,7 @@ import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -342,7 +343,7 @@ public abstract class Adapter {
     }
 
 
-    public abstract void truncate( Context context, LogicalTable table );
+    public abstract void truncate( Context context, AllocationEntity table );
 
     public abstract boolean prepare( PolyXid xid );
 

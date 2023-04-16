@@ -491,7 +491,7 @@ public class DataMigratorImpl implements DataMigrator {
                 if ( snapshot.alloc().getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
                     placementList.add( snapshot.alloc().getColumn( adapterIdWithMostPlacements, column.id ) );
                 } else {
-                    for ( AllocationColumn placement : snapshot.alloc().getColumnPlacements( column.id ) ) {
+                    for ( AllocationColumn placement : snapshot.alloc().getColumnFromLogical( column.id ) ) {
                         if ( placement.adapterId != excludingAdapterId ) {
                             placementList.add( placement );
                             break;

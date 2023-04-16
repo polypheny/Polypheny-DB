@@ -209,7 +209,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
 
         // Essentially gets a list of all stores where this table resides
-        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
+        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id );
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( catalogTable.id );//.getPartitionProperty( catalogTable.id );
         if ( !allocs.isEmpty() && log.isDebugEnabled() ) {
             log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, -1 );//property.partitionGroupIds );
@@ -1365,7 +1365,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         long pkid = fromTable.primaryKey;
         List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
-        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
+        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id );
 
         List<AlgNode> nodes = new ArrayList<>();
         for ( AllocationColumn pkPlacement : pkPlacements ) {

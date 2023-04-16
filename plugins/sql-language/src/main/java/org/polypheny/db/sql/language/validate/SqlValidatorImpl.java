@@ -41,6 +41,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -476,108 +477,107 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return false;
         }
         final ParserPos startPosition = identifier.getPos();
-        switch ( identifier.names.size() ) {
-            case 1:
-                boolean hasDynamicStruct = false;
-                for ( ScopeChild child : scope.children ) {
-                    final int before = fields.size();
-                    if ( child.namespace.getRowType().isDynamicStruct() ) {
-                        hasDynamicStruct = true;
-                        // don't expand star if the underneath table is dynamic.
-                        // Treat this star as a special field in validation/conversion and wait until execution time to expand this star.
-                        final SqlNode exp =
-                                new SqlIdentifier(
-                                        ImmutableList.of(
-                                                child.name,
-                                                DynamicRecordType.DYNAMIC_STAR_PREFIX ),
-                                        startPosition );
-                        addToSelectList(
-                                selectItems,
-                                aliases,
-                                fields,
-                                exp,
-                                scope,
-                                includeSystemVars );
-                    } else {
-                        final SqlNode from = child.namespace.getNode();
-                        final SqlValidatorNamespace fromNs = getNamespace( from, scope );
-                        assert fromNs != null;
-                        final AlgDataType rowType = fromNs.getRowType();
-                        for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                            String columnName = field.getName();
-
-                            // TODO: do real implicit collation here
-                            final SqlIdentifier exp =
-                                    new SqlIdentifier(
-                                            ImmutableList.of( child.name, columnName ),
-                                            startPosition );
-                            // Don't add expanded rolled up columns
-                            if ( !isRolledUpColumn( exp, scope ) ) {
-                                addOrExpandField(
-                                        selectItems,
-                                        aliases,
-                                        fields,
-                                        includeSystemVars,
-                                        scope,
-                                        exp,
-                                        field );
-                            }
-                        }
-                    }
-                    if ( child.nullable ) {
-                        for ( int i = before; i < fields.size(); i++ ) {
-                            final Map.Entry<String, AlgDataType> entry = fields.get( i );
-                            final AlgDataType type = entry.getValue();
-                            if ( !type.isNullable() ) {
-                                fields.set( i, Pair.of( entry.getKey(), typeFactory.createTypeWithNullability( type, true ) ) );
-                            }
-                        }
-                    }
-                }
-                // If NATURAL JOIN or USING is present, move key fields to the front of the list, per standard SQL. Disabled if there are dynamic fields.
-                if ( !hasDynamicStruct || Bug.CALCITE_2400_FIXED ) {
-                    new Permute( scope.getNode().getSqlFrom(), 0 ).permute( selectItems, fields );
-                }
-                return true;
-
-            default:
-                final SqlIdentifier prefixId = identifier.skipLast( 1 );
-                final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-                final NameMatcher nameMatcher = scope.validator.nameMatcher;
-                scope.resolve( prefixId.names, nameMatcher, true, resolved );
-                if ( resolved.count() == 0 ) {
-                    // e.g. "select s.t.* from e" or "select r.* from e"
-                    throw newValidationError( prefixId, RESOURCE.unknownIdentifier( prefixId.toString() ) );
-                }
-                final AlgDataType rowType = resolved.only().rowType();
-                if ( rowType.isDynamicStruct() ) {
+        if ( identifier.names.size() == 1 ) {
+            boolean hasDynamicStruct = false;
+            for ( ScopeChild child : scope.children ) {
+                final int before = fields.size();
+                if ( child.namespace.getRowType().isDynamicStruct() ) {
+                    hasDynamicStruct = true;
                     // don't expand star if the underneath table is dynamic.
+                    // Treat this star as a special field in validation/conversion and wait until execution time to expand this star.
+                    final SqlNode exp =
+                            new SqlIdentifier(
+                                    ImmutableList.of(
+                                            child.name,
+                                            DynamicRecordType.DYNAMIC_STAR_PREFIX ),
+                                    startPosition );
                     addToSelectList(
                             selectItems,
                             aliases,
                             fields,
-                            prefixId.plus( DynamicRecordType.DYNAMIC_STAR_PREFIX, startPosition ),
+                            exp,
                             scope,
                             includeSystemVars );
-                } else if ( rowType.isStruct() ) {
+                } else {
+                    final SqlNode from = child.namespace.getNode();
+                    final SqlValidatorNamespace fromNs = getNamespace( from, scope );
+                    assert fromNs != null;
+                    final AlgDataType rowType = fromNs.getRowType();
                     for ( AlgDataTypeField field : rowType.getFieldList() ) {
                         String columnName = field.getName();
 
                         // TODO: do real implicit collation here
-                        addOrExpandField(
-                                selectItems,
-                                aliases,
-                                fields,
-                                includeSystemVars,
-                                scope,
-                                prefixId.plus( columnName, startPosition ),
-                                field );
+                        final SqlIdentifier exp =
+                                new SqlIdentifier(
+                                        ImmutableList.of( child.name, columnName ),
+                                        startPosition );
+                        // Don't add expanded rolled up columns
+                        if ( !isRolledUpColumn( exp, scope ) ) {
+                            addOrExpandField(
+                                    selectItems,
+                                    aliases,
+                                    fields,
+                                    includeSystemVars,
+                                    scope,
+                                    exp,
+                                    field );
+                        }
                     }
-                } else {
-                    throw newValidationError( prefixId, RESOURCE.starRequiresRecordType() );
                 }
-                return true;
+                if ( child.nullable ) {
+                    for ( int i = before; i < fields.size(); i++ ) {
+                        final Entry<String, AlgDataType> entry = fields.get( i );
+                        final AlgDataType type = entry.getValue();
+                        if ( !type.isNullable() ) {
+                            fields.set( i, Pair.of( entry.getKey(), typeFactory.createTypeWithNullability( type, true ) ) );
+                        }
+                    }
+                }
+            }
+            // If NATURAL JOIN or USING is present, move key fields to the front of the list, per standard SQL. Disabled if there are dynamic fields.
+            if ( !hasDynamicStruct || Bug.CALCITE_2400_FIXED ) {
+                new Permute( scope.getNode().getSqlFrom(), 0 ).permute( selectItems, fields );
+            }
+            return true;
         }
+
+        final SqlIdentifier prefixId = identifier.skipLast( 1 );
+        final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
+        final NameMatcher nameMatcher = scope.validator.nameMatcher;
+        scope.resolve( prefixId.names, nameMatcher, true, resolved );
+        if ( resolved.count() == 0 ) {
+            // e.g. "select s.t.* from e" or "select r.* from e"
+            throw newValidationError( prefixId, RESOURCE.unknownIdentifier( prefixId.toString() ) );
+        }
+        final AlgDataType rowType = resolved.only().rowType();
+        if ( rowType.isDynamicStruct() ) {
+            // don't expand star if the underneath table is dynamic.
+            addToSelectList(
+                    selectItems,
+                    aliases,
+                    fields,
+                    prefixId.plus( DynamicRecordType.DYNAMIC_STAR_PREFIX, startPosition ),
+                    scope,
+                    includeSystemVars );
+        } else if ( rowType.isStruct() ) {
+            for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                String columnName = field.getName();
+
+                // TODO: do real implicit collation here
+                addOrExpandField(
+                        selectItems,
+                        aliases,
+                        fields,
+                        includeSystemVars,
+                        scope,
+                        prefixId.plus( columnName, startPosition ),
+                        field );
+            }
+        } else {
+            throw newValidationError( prefixId, RESOURCE.starRequiresRecordType() );
+        }
+        return true;
+
     }
 
 

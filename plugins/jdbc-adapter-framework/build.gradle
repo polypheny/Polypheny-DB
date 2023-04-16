@@ -38,6 +38,7 @@ sourceSets {
     }
 }
 
+
 compileJava {
     dependsOn(":core:processResources")
     dependsOn(":plugins:sql-language:processResources")

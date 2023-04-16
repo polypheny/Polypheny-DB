@@ -122,7 +122,7 @@ public abstract class BaseRouter implements Router {
         // Take the adapter with most placements as base and add missing column placements
         List<AllocationColumn> placementList = new LinkedList<>();
         for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( table.id ) ) {
-            placementList.add( Catalog.snapshot().alloc().getColumnPlacements( column.id ).get( 0 ) );
+            placementList.add( Catalog.snapshot().alloc().getColumnFromLogical( column.id ).get( 0 ) );
         }
 
         return new HashMap<>() {{
@@ -307,7 +307,7 @@ public abstract class BaseRouter implements Router {
                 // Add primary key
                 for ( Entry<Long, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
                     for ( LogicalColumn pkColumn : pkColumns ) {
-                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getSnapshot().alloc().getColumnPlacements( pkColumn.id ).get( 0 );
+                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getSnapshot().alloc().getColumnFromLogical( pkColumn.id ).get( 0 );
                         if ( !entry.getValue().contains( pkPlacement ) ) {
                             entry.getValue().add( pkPlacement );
                         }
@@ -496,7 +496,7 @@ public abstract class BaseRouter implements Router {
 
     protected CatalogEntity getSubstitutionTable( Statement statement, long tableId, long columnId, long adapterId ) {
         /*LogicalTable nodes = Catalog.getInstance().getTable( tableId );
-        CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacements( adapterId, columnId );
+        CatalogColumnPlacement placement = Catalog.getInstance().getColumnFromLogical( adapterId, columnId );
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
                         placement.adapterUniqueName,

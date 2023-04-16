@@ -182,6 +182,7 @@ public abstract class ListScope extends DelegatingScope {
                     this,
                     path,
                     null );
+            return;
         }
 
         // Recursively look deeper into the record-valued fields of the namespace, if it allows skipping fields.

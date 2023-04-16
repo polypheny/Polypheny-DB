@@ -71,7 +71,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
-    List<AllocationColumn> getColumnPlacements( long columnId );
+    List<AllocationColumn> getColumnFromLogical( long columnId );
 
     /**
      * Get column placements of a specific table on a specific adapter on column detail level.

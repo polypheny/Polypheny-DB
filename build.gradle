@@ -145,7 +145,6 @@ allprojects {
         }
     }
 
-
     idea {
         module {
             downloadJavadoc = true
@@ -165,8 +164,13 @@ allprojects {
 // plugin location
 ext.pluginsDir = rootProject.buildDir.path + '/plugins'
 
+
 build {
     dependsOn(":plugins:build")
+}
+
+allprojects {
+    test.dependsOn(":plugins:assemblePlugins")
 }
 
 

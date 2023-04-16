@@ -1112,7 +1112,7 @@ public class DdlManagerImpl extends DdlManager {
                 type.scale,
                 type.dimension,
                 type.cardinality );
-        for ( AllocationColumn placement : catalog.getSnapshot().alloc().getColumnPlacements( logicalColumn.id ) ) {
+        for ( AllocationColumn placement : catalog.getSnapshot().alloc().getColumnFromLogical( logicalColumn.id ) ) {
             AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                     statement.getPrepareContext(),
                     placement,
@@ -2567,7 +2567,7 @@ public class DdlManagerImpl extends DdlManager {
             stores = new ArrayList<>();
             fillStores = true;
         }
-        List<AllocationColumn> allocationColumns = snapshot.alloc().getColumnPlacements( pkColumn.id );
+        List<AllocationColumn> allocationColumns = snapshot.alloc().getColumnFromLogical( pkColumn.id );
         for ( AllocationColumn ccp : allocationColumns ) {
             if ( fillStores ) {
                 // Ask router on which store(s) the table should be placed
@@ -2683,7 +2683,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalColumn pkColumn = relSnapshot.getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
 
-        List<AllocationColumn> allocationColumns = catalog.getSnapshot().alloc().getColumnPlacements( pkColumn.id );
+        List<AllocationColumn> allocationColumns = catalog.getSnapshot().alloc().getColumnFromLogical( pkColumn.id );
         for ( AllocationColumn ccp : allocationColumns ) {
             // Ask router on which store(s) the table should be placed
             Adapter adapter = AdapterManager.getInstance().getAdapter( ccp.adapterId );
@@ -3052,10 +3052,8 @@ public class DdlManagerImpl extends DdlManager {
         prepareMonitoring( statement, Kind.TRUNCATE, catalogTable );
 
         //  Execute truncate on all placements
-        List<CatalogDataPlacement> placements = statement.getTransaction().getSnapshot().alloc().getDataPlacements( catalogTable.id );
-        placements.forEach( placement -> {
-            AdapterManager.getInstance().getAdapter( placement.adapterId ).truncate( statement.getPrepareContext(), catalogTable );
-        } );
+        List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( catalogTable.id );
+        allocations.forEach( a -> AdapterManager.getInstance().getAdapter( a.adapterId ).truncate( statement.getPrepareContext(), a ) );
     }
 
 

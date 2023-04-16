@@ -34,6 +34,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -270,24 +271,25 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         if ( !this.dialect.supportsNestedArrays() && logicalColumn.collectionsType != null ) {
             return;
         }
-        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
-            StringBuilder builder = new StringBuilder();
-            builder.append( "ALTER TABLE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            //builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-            builder.append( " " ).append( getTypeString( logicalColumn.type ) );
-            if ( logicalColumn.length != null ) {
-                builder.append( "(" );
-                builder.append( logicalColumn.length );
-                if ( logicalColumn.scale != null ) {
-                    builder.append( "," ).append( logicalColumn.scale );
-                }
-                builder.append( ")" );
+        PhysicalTable physicalTable = context.getSnapshot().physical().fromAlloc( columnPlacement.tableId ).get( 0 ).unwrap( PhysicalTable.class );
+
+        StringBuilder builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( physicalTable.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physicalTable.name ) );
+        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( physicalTable.columns.get( columnPlacement.columnId ) ) );
+        builder.append( " " ).append( getTypeString( logicalColumn.type ) );
+        if ( logicalColumn.length != null ) {
+            builder.append( "(" );
+            builder.append( logicalColumn.length );
+            if ( logicalColumn.scale != null ) {
+                builder.append( "," ).append( logicalColumn.scale );
             }
-            executeUpdate( builder, context );
+            builder.append( ")" );
         }
+        executeUpdate( builder, context );
+
     }
 
 
@@ -337,20 +339,18 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void truncate( Context context, LogicalTable catalogTable ) {
+    public void truncate( Context context, AllocationEntity allocation ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ) ) {
-            String physicalTableName = partitionPlacement.physicalTableName;
-            String physicalSchemaName = partitionPlacement.physicalSchemaName;
-            StringBuilder builder = new StringBuilder();
-            builder.append( "TRUNCATE TABLE " )
-                    .append( dialect.quoteIdentifier( physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( physicalTableName ) );
-            executeUpdate( builder, context );
-        }
+        PhysicalTable physical = context.getSnapshot().physical().fromAlloc( allocation.id ).get( 0 ).unwrap( PhysicalTable.class );
+
+        StringBuilder builder = new StringBuilder();
+        builder.append( "TRUNCATE TABLE " )
+                .append( dialect.quoteIdentifier( physical.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physical.name ) );
+        executeUpdate( builder, context );
     }
 
 

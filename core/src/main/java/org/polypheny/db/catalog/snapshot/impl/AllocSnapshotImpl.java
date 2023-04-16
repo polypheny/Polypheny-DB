@@ -266,7 +266,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<AllocationColumn> getColumnPlacements( long columnId ) {
+    public List<AllocationColumn> getColumnFromLogical( long columnId ) {
         return logicalColumnToAlloc.get( columnId );
     }
 

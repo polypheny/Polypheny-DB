@@ -1905,7 +1905,7 @@ public class Crud implements InformationObserver {
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
-            List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnPlacements( pkColumn.id );
+            List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id );
             for ( AllocationColumn placement : pkPlacements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );

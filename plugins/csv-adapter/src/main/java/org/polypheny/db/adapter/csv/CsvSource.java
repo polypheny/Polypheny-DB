@@ -42,6 +42,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -145,7 +146,7 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public void truncate( Context context, LogicalTable table ) {
+    public void truncate( Context context, AllocationEntity table ) {
         throw new RuntimeException( "CSV adapter does not support truncate" );
     }
 
