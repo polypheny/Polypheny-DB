@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.logical;
 
-import com.google.common.collect.ImmutableList;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -161,7 +160,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public LogicalTable addTable( String name, EntityType entityType, boolean modifiable ) {
         long id = idBuilder.getNewEntityId();
-        LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, modifiable, null );
+        LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, modifiable );
         tables.put( id, table );
         return table;
     }
@@ -171,7 +170,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     public LogicalView addView( String name, long namespaceId, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, List<Long> connectedViews, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = idBuilder.getNewEntityId();
 
-        LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, algCollation, underlyingTables, connectedViews, language );
+        LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, algCollation, underlyingTables, language );
 
         tables.put( id, view );
         nodes.put( id, definition );
@@ -189,9 +188,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
                 name,
                 namespaceId,
                 query,
-                null,
                 algCollation,
-                ImmutableList.of(),
                 underlyingTables,
                 language,
                 materializedCriteria,
@@ -542,22 +539,6 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         }
         deleteKeyIfNoLongerUsed( catalogConstraint.keyId );
 
-    }
-
-
-    @Override
-    public void deleteViewDependencies( LogicalView logicalView ) {
-        for ( long id : logicalView.underlyingTables.keySet() ) {
-            LogicalTable old = tables.get( id );
-            List<Long> connectedViews = old.connectedViews.stream().filter( e -> e != logicalView.id ).collect( Collectors.toList() );
-
-            LogicalTable table = old.toBuilder().connectedViews( ImmutableList.copyOf( connectedViews ) ).build();
-
-            synchronized ( this ) {
-                tables.put( id, table );
-            }
-            listeners.firePropertyChange( "table", old, table );
-        }
     }
 
 

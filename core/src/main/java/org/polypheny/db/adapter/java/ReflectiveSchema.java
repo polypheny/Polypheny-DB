@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.java;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -247,7 +246,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
         ReflectiveEntity( Type elementType, Enumerable<?> enumerable, Long id, Long partitionId, Long adapterId ) {
-            super( id, "test", -1, EntityType.ENTITY, null, false, ImmutableList.of() );
+            super( id, "test", -1, EntityType.ENTITY, null, false );
             this.elementType = elementType;
             this.enumerable = enumerable;
             throw new NotImplementedException();

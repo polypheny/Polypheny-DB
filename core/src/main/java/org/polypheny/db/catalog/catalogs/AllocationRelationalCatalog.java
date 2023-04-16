@@ -45,9 +45,8 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      *
      * @param allocationId The id of the adapter
      * @param columnId The id of the column
-     * @param columnOnly columnOnly If delete originates from a dropColumn
      */
-    void deleteColumn( long allocationId, long columnId, boolean columnOnly );
+    void deleteColumn( long allocationId, long columnId );
 
 
     /**

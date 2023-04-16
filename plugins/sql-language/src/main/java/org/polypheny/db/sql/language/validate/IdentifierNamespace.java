@@ -152,9 +152,9 @@ public class IdentifierNamespace extends AbstractNamespace {
         }
         List<String> ns = id.names;
         if ( ns.size() == 1 ) {
-            return new EntityNamespace( validator, Catalog.getInstance().getSnapshot().rel().getTable( Catalog.defaultNamespaceId, ns.get( 0 ) ) );
+            return new EntityNamespace( validator, validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, ns.get( 0 ) ) );
         } else if ( ns.size() == 2 ) {
-            return new EntityNamespace( validator, Catalog.getInstance().getSnapshot().rel().getTable( ns.get( 0 ), ns.get( 1 ) ) );
+            return new EntityNamespace( validator, validator.snapshot.rel().getTable( ns.get( 0 ), ns.get( 1 ) ) );
         } else {
             throw new RuntimeException();
         }

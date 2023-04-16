@@ -27,7 +27,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +43,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.LogicalMaterializedView;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -210,11 +210,10 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void materializedUpdate( long potentialInteresting ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        LogicalTable catalogTable = snapshot.getNamespaces( null ).stream().map( n -> snapshot.rel().getTable( potentialInteresting ) ).filter( Objects::nonNull ).findFirst().orElse( null );
-        List<Long> connectedViews = catalogTable.getConnectedViews();
+        //LogicalTable catalogTable = snapshot.getNamespaces( null ).stream().map( n -> snapshot.rel().getTable( potentialInteresting ) ).filter( Objects::nonNull ).findFirst().orElse( null );
+        List<LogicalView> connectedViews = snapshot.rel().getConnectedViews( potentialInteresting );
 
-        for ( long id : connectedViews ) {
-            LogicalTable view = snapshot.rel().getTable( id );
+        for ( LogicalView view : connectedViews ) {
             if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {

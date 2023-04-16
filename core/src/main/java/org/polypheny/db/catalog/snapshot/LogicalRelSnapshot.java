@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -280,5 +281,7 @@ public interface LogicalRelSnapshot {
 
 
     AlgNode getNodeInfo( long id );
+
+    List<LogicalView> getConnectedViews( long id );
 
 }

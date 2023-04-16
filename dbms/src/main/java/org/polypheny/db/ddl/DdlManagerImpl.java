@@ -130,13 +130,16 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void checkViewDependencies( LogicalTable catalogTable ) {
-        if ( catalogTable.connectedViews.size() > 0 ) {
-            List<String> views = new ArrayList<>();
-            for ( Long id : catalogTable.connectedViews ) {
-                views.add( catalog.getSnapshot().rel().getTable( id ).name );
-            }
-            throw new GenericRuntimeException( "Cannot alter table because of underlying views: %s ", views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
+        List<LogicalView> entities = catalog.getSnapshot().rel().getConnectedViews( catalogTable.id );
+        if ( entities.isEmpty() ) {
+            return;
         }
+        List<String> views = new ArrayList<>();
+        for ( LogicalView view : entities ) {
+            views.add( view.name );
+        }
+        throw new GenericRuntimeException( "Cannot alter table because of underlying views: %s ", views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
+
     }
 
 
@@ -341,7 +344,7 @@ public class DdlManagerImpl extends DdlManager {
                 // Delete column placement in catalog
                 for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( tableId ) ) {
                     if ( catalog.getSnapshot().alloc().checkIfExistsColumnPlacement( catalogAdapter.id, column.id ) ) {
-                        catalog.getAllocRel( defaultNamespaceId ).deleteColumn( entity.id, column.id, false );
+                        catalog.getAllocRel( defaultNamespaceId ).deleteColumn( entity.id, column.id );
                     }
                 }
 
@@ -933,7 +936,7 @@ public class DdlManagerImpl extends DdlManager {
         // check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
-        //check if views are dependent from this view
+        //check if views are dependent from this table
         checkViewDependencies( catalogTable );
 
         LogicalColumn column = getCatalogColumn( catalogTable.namespaceId, catalogTable.id, columnName );
@@ -956,21 +959,12 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        // Delete column from underlying data stores
-        /*for ( CatalogColumnPlacement dp : catalog.getAllocRel( catalogTable.namespaceId ).getColumnPlacementsByColumn( column.id ) ) {
+        for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( column.id ) ) {
             if ( catalogTable.entityType == EntityType.ENTITY ) {
-                AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
+                AdapterManager.getInstance().getStore( allocationColumn.adapterId ).dropColumn( statement.getPrepareContext(), allocationColumn );
             }
-            catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( dp.adapterId, dp.columnId, true );
-        }*/
-        for ( AllocationEntity table : catalog.getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
-            for ( AllocationColumn placement : catalog.getSnapshot().alloc().getColumns( table.id ) ) {
-                if ( catalogTable.entityType == EntityType.ENTITY ) {
-                    AdapterManager.getInstance().getStore( table.adapterId ).dropColumn( statement.getPrepareContext(), placement );
-                }
-                AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( table.adapterId, catalogTable.id );
-                catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, placement.columnId, true );
-            }
+            AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( allocationColumn.adapterId, catalogTable.id );
+            catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, allocationColumn.columnId );
         }
 
         // Delete from catalog
@@ -1292,7 +1286,7 @@ public class DdlManagerImpl extends DdlManager {
             storeInstance.dropColumn( statement.getPrepareContext(), catalog.getSnapshot().alloc().getColumn( storeInstance.getAdapterId(), columnId ) );
             // Drop column placement
             AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( storeInstance.getAdapterId(), catalogTable.id );
-            catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, columnId, true );
+            catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, columnId );
         }
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
@@ -1565,7 +1559,7 @@ public class DdlManagerImpl extends DdlManager {
         storeInstance.dropColumn( statement.getPrepareContext(), catalog.getSnapshot().alloc().getColumn( storeInstance.getAdapterId(), logicalColumn.id ) );
         AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( storeInstance.getAdapterId(), catalogTable.id );
         // Drop column placement
-        catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, logicalColumn.id, false );
+        catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, logicalColumn.id );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2966,7 +2960,7 @@ public class DdlManagerImpl extends DdlManager {
             for ( LogicalColumn column : columns ) {
                 if ( catalog.getSnapshot().alloc().checkIfExistsColumnPlacement( placement.adapterId, column.id ) ) {
                     AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( placement.getAdapterId(), catalogTable.id );
-                    catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, column.id, false );
+                    catalog.getAllocRel( catalogTable.namespaceId ).deleteColumn( allocation.id, column.id );
                 }
             }
         }
@@ -3028,6 +3022,9 @@ public class DdlManagerImpl extends DdlManager {
         for ( AllocationEntity allocation : allocations ) {
             for ( PhysicalEntity physical : snapshot.physical().fromAlloc( allocation.id ) ) {
                 catalog.getPhysical( catalogTable.namespaceId ).deleteEntity( physical.id );
+            }
+            for ( long columnId : allocation.unwrap( AllocationTable.class ).getColumns().keySet() ) {
+                catalog.getAllocRel( allocation.namespaceId ).deleteColumn( allocation.id, columnId );
             }
             catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
         }

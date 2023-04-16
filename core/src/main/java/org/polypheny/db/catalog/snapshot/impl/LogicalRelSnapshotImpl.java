@@ -35,6 +35,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -49,6 +50,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<String, LogicalNamespace> namespaceNames;
 
     ImmutableMap<Long, LogicalTable> tables;
+
+    ImmutableMap<Long, LogicalView> views;
 
     ImmutableMap<Pair<Long, String>, LogicalTable> tableNames;
 
@@ -78,6 +81,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, List<CatalogConstraint>> tableConstraints;
     ImmutableMap<Long, List<CatalogForeignKey>> tableForeignKeys;
     ImmutableMap<Long, AlgNode> nodes;
+    ImmutableMap<Long, List<LogicalView>> connectedViews;
 
 
     public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs ) {
@@ -158,6 +162,38 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         /// ALGNODES e.g. views and materializedViews
         this.nodes = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getNodes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+
+        this.views = ImmutableMap.copyOf( tables
+                .values()
+                .stream()
+                .filter( t -> t.unwrap( LogicalView.class ) != null )
+                .map( t -> t.unwrap( LogicalView.class ) )
+                .collect( Collectors.toMap( e -> e.id, e -> e ) ) );
+
+        this.connectedViews = buildConnectedViews();
+
+    }
+
+
+    private ImmutableMap<Long, List<LogicalView>> buildConnectedViews() {
+        Map<Long, List<LogicalView>> map = new HashMap<>();
+
+        for ( LogicalView view : this.views.values() ) {
+            for ( long entityId : view.underlyingTables.keySet() ) {
+                if ( !map.containsKey( entityId ) ) {
+                    map.put( entityId, new ArrayList<>() );
+                }
+                map.get( entityId ).add( view );
+            }
+        }
+        // add tables which are not connected
+        for ( long id : this.tables.keySet() ) {
+            if ( !map.containsKey( id ) ) {
+                map.put( id, new ArrayList<>() );
+            }
+        }
+
+        return ImmutableMap.copyOf( map );
     }
 
 
@@ -387,6 +423,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public AlgNode getNodeInfo( long id ) {
         return nodes.get( id );
+    }
+
+
+    @Override
+    public List<LogicalView> getConnectedViews( long id ) {
+        return connectedViews.get( id );
     }
 
 }

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +28,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
@@ -149,16 +149,21 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
         // Filter for placements by adapters
-        List<Long> adapters = Catalog.snapshot().alloc().getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
+        List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).stream()
+                .map( a -> a.unwrap( AllocationTable.class ) )
+                .filter( a -> new HashSet<>( a.getColumns().values().stream().map( AllocationColumn::getColumnId ).collect( Collectors.toList() ) ).containsAll( usedColumns ) )
+                .collect( Collectors.toList() );
+
+        /*List<Long> adapters = Catalog.snapshot().alloc().getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
                 .stream()
                 .filter( elem -> new HashSet<>( elem.getValue() ).containsAll( usedColumns ) )
                 .map( Entry::getKey )
-                .collect( Collectors.toList() );
+                .collect( Collectors.toList() );*/
 
         final Set<List<AllocationColumn>> result = new HashSet<>();
-        for ( long adapterId : adapters ) {
+        for ( AllocationEntity alloc : allocs ) {
             List<AllocationColumn> placements = usedColumns.stream()
-                    .map( colId -> Catalog.snapshot().alloc().getColumn( adapterId, colId ) )
+                    .map( colId -> alloc.unwrap( AllocationTable.class ).getColumns().get( colId ) )
                     .collect( Collectors.toList() );
 
             if ( !placements.isEmpty() ) {

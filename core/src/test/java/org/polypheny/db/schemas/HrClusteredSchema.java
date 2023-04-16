@@ -122,7 +122,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
 
         PkClusteredEntity( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
-            super( -1, "", -1, EntityType.ENTITY, null, false, ImmutableList.of() );
+            super( -1, "", -1, EntityType.ENTITY, null, false );
             this.data = data;
             this.typeBuilder = dataTypeBuilder;
             this.pkColumns = pkColumns;

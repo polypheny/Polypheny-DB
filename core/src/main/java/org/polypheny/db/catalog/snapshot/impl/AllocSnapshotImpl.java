@@ -70,7 +70,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Pair<Long, Long>, List<AllocationColumn>> adapterLogicalTablePlacements;
     ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
     ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
-    ImmutableMap<Long, Map<Long, List<Long>>> tableAdapterColumns;
+    ImmutableMap<Long, Map<Long, List<Long>>> logicalTableAdapterColumns;
 
 
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs ) {
@@ -109,7 +109,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.allocColumns = buildAllocColumns();
         this.logicalAllocs = buildLogicalAllocs();
 
-        this.tableAdapterColumns = buildTableAdapterColumns();
+        this.logicalTableAdapterColumns = buildTableAdapterColumns();
     }
 
 
@@ -122,13 +122,14 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, Map<Long, List<Long>>> buildTableAdapterColumns() {
         Map<Long, Map<Long, List<Long>>> map = new HashMap<>();
         for ( AllocationColumn column : this.columns.values() ) {
-            if ( !map.containsKey( column.tableId ) ) {
-                map.put( column.tableId, new HashMap<>() );
+            AllocationTable table = tables.get( column.tableId );
+            if ( !map.containsKey( table.logicalId ) ) {
+                map.put( table.logicalId, new HashMap<>() );
             }
-            if ( !map.get( column.tableId ).containsKey( column.adapterId ) ) {
-                map.get( column.tableId ).put( column.adapterId, new ArrayList<>() );
+            if ( !map.get( table.logicalId ).containsKey( column.adapterId ) ) {
+                map.get( table.logicalId ).put( column.adapterId, new ArrayList<>() );
             }
-            map.get( column.tableId ).get( column.adapterId ).add( column.columnId );
+            map.get( table.logicalId ).get( column.adapterId ).add( column.columnId );
         }
 
         return ImmutableMap.copyOf( map );
@@ -291,7 +292,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     @Override
     public Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId ) {
-        return tableAdapterColumns.get( tableId );
+        return logicalTableAdapterColumns.get( tableId );
     }
 
 

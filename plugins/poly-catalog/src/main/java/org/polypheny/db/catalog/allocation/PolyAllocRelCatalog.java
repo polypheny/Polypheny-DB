@@ -89,7 +89,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public void deleteColumn( long allocationId, long columnId, boolean columnOnly ) {
+    public void deleteColumn( long allocationId, long columnId ) {
         allocColumns.remove( Pair.of( allocationId, columnId ) );
     }
 
@@ -185,6 +185,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public void deleteAllocation( long allocId ) {
         tables.remove( allocId );
+
     }
 
 

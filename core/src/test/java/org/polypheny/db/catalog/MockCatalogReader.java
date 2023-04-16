@@ -280,7 +280,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         private MockEntity( MockCatalogReader catalogReader, List<String> names, boolean stream, double rowCount, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
-            super( -1, Util.last( names ), -1, EntityType.ENTITY, null, true, ImmutableList.of() );
+            super( -1, Util.last( names ), -1, EntityType.ENTITY, null, true );
             this.catalogReader = catalogReader;
             this.stream = stream;
             this.rowCount = rowCount;
@@ -296,7 +296,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         protected MockEntity(
                 MockCatalogReader catalogReader, boolean stream, double rowCount, List<Map.Entry<String, AlgDataType>> columnList, List<Integer> keyList, AlgDataType rowType, List<AlgCollation> collationList,
                 List<String> names, Set<String> monotonicColumnSet, StructKind kind, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
-            super( -1, Util.last( names ), -1, EntityType.ENTITY, null, true, ImmutableList.of() );
+            super( -1, Util.last( names ), -1, EntityType.ENTITY, null, true );
             this.catalogReader = catalogReader;
             this.stream = stream;
             this.rowCount = rowCount;
@@ -318,7 +318,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         private class ModifiableEntity extends LogicalTable implements Wrapper {
 
             protected ModifiableEntity( String tableName ) {
-                super( -1, Util.last( names ), -1, EntityType.ENTITY, null, true, ImmutableList.of() );
+                super( -1, Util.last( names ), -1, EntityType.ENTITY, null, true );
 
             }
 

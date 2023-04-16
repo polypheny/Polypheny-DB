@@ -240,12 +240,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     void deleteConstraint( long constraintId );
 
 
-    /**
-     * Deletes all the dependencies of a view. This is used when deleting a view.
-     *
-     * @param catalogView view for which to delete its dependencies
-     */
-    void deleteViewDependencies( LogicalView catalogView );
 
     /**
      * Updates the last time a materialized view has been refreshed.

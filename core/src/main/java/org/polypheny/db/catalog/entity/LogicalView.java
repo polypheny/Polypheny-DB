@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -66,7 +65,6 @@ public class LogicalView extends LogicalTable {
             @Deserialize("query") String query,
             @Deserialize("algCollation") AlgCollation algCollation,
             @Deserialize("underlyingTables") Map<Long, List<Long>> underlyingTables,
-            @Deserialize("connectedViews") List<Long> connectedViews,
             @Deserialize("language") QueryLanguage language ) {
         super(
                 id,
@@ -74,8 +72,7 @@ public class LogicalView extends LogicalTable {
                 namespaceId,
                 entityType,
                 null,
-                false,
-                ImmutableList.copyOf( connectedViews ) );
+                false );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = ImmutableMap.copyOf( underlyingTables );

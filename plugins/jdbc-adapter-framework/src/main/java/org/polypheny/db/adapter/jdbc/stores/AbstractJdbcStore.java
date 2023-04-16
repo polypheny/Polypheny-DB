@@ -326,15 +326,16 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
     @Override
     public void dropColumn( Context context, AllocationColumn columnPlacement ) {
-        for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
-            StringBuilder builder = new StringBuilder();
-            builder.append( "ALTER TABLE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            //builder.append( " DROP " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-            executeUpdate( builder, context );
-        }
+        //for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getAllocation( columnPlacement.tableId ) ) {
+        PhysicalTable physical = context.getSnapshot().physical().fromAlloc( columnPlacement.tableId ).get( 0 ).unwrap( PhysicalTable.class );
+        StringBuilder builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( physical.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physical.name ) );
+        builder.append( " DROP " ).append( dialect.quoteIdentifier( physical.columns.get( columnPlacement.columnId ) ) );
+        executeUpdate( builder, context );
+        //}
     }
 
 

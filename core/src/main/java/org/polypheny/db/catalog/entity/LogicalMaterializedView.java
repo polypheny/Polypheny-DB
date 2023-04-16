@@ -50,9 +50,7 @@ public class LogicalMaterializedView extends LogicalView {
             @Deserialize("name") String name,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("entityType") String query,
-            @Deserialize("primaryKey") Long primaryKey,
             @Deserialize("algCollation") AlgCollation algCollation,
-            @Deserialize("connectedViews") List<Long> connectedViews,
             @Deserialize("underlyingTables") Map<Long, List<Long>> underlyingTables,
             @Deserialize("language") QueryLanguage language,
             @Deserialize("materializedCriteria") MaterializedCriteria materializedCriteria,
@@ -66,7 +64,6 @@ public class LogicalMaterializedView extends LogicalView {
                 query,
                 algCollation,
                 underlyingTables,
-                connectedViews,
                 language );
 
         Map<Long, ImmutableList<Long>> map = new HashMap<>();
