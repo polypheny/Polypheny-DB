@@ -92,14 +92,17 @@ public class PolyPluginManager extends DefaultPluginManager {
         final File jarFile = new File( PolyPluginManager.class.getProtectionDomain().getCodeSource().getLocation().getPath() );
         File pluginsFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" );
         if ( jarFile.isFile() ) {  // Run with JAR file
+            // Copy plugins bundled into the jar file to the designated plugins folder.
+            // Overwrites existing plugins with same name (name includes version number).
             try {
                 final JarFile jar = new JarFile( jarFile );
                 final Enumeration<JarEntry> entries = jar.entries();
                 while ( entries.hasMoreElements() ) {
                     final String name = entries.nextElement().getName();
                     if ( name.startsWith( "plugins/" ) && name.endsWith( ".zip" ) ) {
-                        System.out.println( name );
-                        FileUtils.copyURLToFile( PolyPluginManager.class.getResource( "/" + name ), new File( pluginsFolder, name.split( "/" )[1] ) );
+                        FileUtils.copyURLToFile(
+                                PolyPluginManager.class.getResource( "/" + name ),
+                                new File( pluginsFolder, name.split( "/" )[1] ) );
                     }
                 }
                 jar.close();
