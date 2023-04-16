@@ -25,8 +25,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,16 +89,37 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     static {
+        final File jarFile = new File( PolyPluginManager.class.getProtectionDomain().getCodeSource().getLocation().getPath() );
+        File pluginsFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" );
+        if ( jarFile.isFile() ) {  // Run with JAR file
+            // Copy plugins bundled into the jar file to the designated plugins folder.
+            // Overwrites existing plugins with same name (name includes version number).
+            try {
+                final JarFile jar = new JarFile( jarFile );
+                final Enumeration<JarEntry> entries = jar.entries();
+                while ( entries.hasMoreElements() ) {
+                    final String name = entries.nextElement().getName();
+                    if ( name.startsWith( "plugins/" ) && name.endsWith( ".zip" ) ) {
+                        FileUtils.copyURLToFile(
+                                PolyPluginManager.class.getResource( "/" + name ),
+                                new File( pluginsFolder, name.split( "/" )[1] ) );
+                    }
+                }
+                jar.close();
+            } catch ( Exception e ) {
+                // ignore
+            }
+        }
         pluginManager = new PolyPluginManager(
-                PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath(),
-                "../build/plugins",
-                "./build/plugins",
-                "../../build/plugins" );
+                Path.of( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath() ),
+                Path.of( "../build/plugins" ),
+                Path.of( "./build/plugins" ),
+                Path.of( "../../build/plugins" ) );
     }
 
 
-    public PolyPluginManager( String... paths ) {
-        super( Arrays.stream( paths ).map( Path::of ).collect( Collectors.toList() ) );
+    public PolyPluginManager( Path... paths ) {
+        super( List.of( paths ) );
     }
 
 
@@ -133,7 +157,6 @@ public class PolyPluginManager extends DefaultPluginManager {
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
         for ( PluginWrapper plugin : startedPlugins ) {
             String pluginId = plugin.getDescriptor().getPluginId();
-
             log.info( String.format( "Plugin '%s' added", pluginId ) );
         }
     }
