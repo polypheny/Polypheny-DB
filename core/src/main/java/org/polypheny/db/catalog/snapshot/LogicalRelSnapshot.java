@@ -21,10 +21,10 @@ import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.LogicalIndex;
+import org.polypheny.db.catalog.entity.LogicalKey;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -64,7 +64,7 @@ public interface LogicalRelSnapshot {
      *
      * @return The keys
      */
-    List<CatalogKey> getKeys();
+    List<LogicalKey> getKeys();
 
 
     /**
@@ -73,7 +73,7 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table for which the keys are returned
      * @return The collection of keys
      */
-    List<CatalogKey> getTableKeys( long tableId );
+    List<LogicalKey> getTableKeys( long tableId );
 
 
     /**
@@ -135,7 +135,7 @@ public interface LogicalRelSnapshot {
      * @param key The id of the primary key
      * @return The primary key
      */
-    CatalogPrimaryKey getPrimaryKey( long key );
+    LogicalPrimaryKey getPrimaryKey( long key );
 
     /**
      * Check whether a key is a primary key
@@ -175,7 +175,7 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @return List of foreign keys
      */
-    List<CatalogForeignKey> getForeignKeys( long tableId );
+    List<LogicalForeignKey> getForeignKeys( long tableId );
 
     /**
      * Returns all foreign keys that reference the specified table (exported keys).
@@ -183,7 +183,7 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @return List of foreign keys
      */
-    List<CatalogForeignKey> getExportedKeys( long tableId );
+    List<LogicalForeignKey> getExportedKeys( long tableId );
 
     /**
      * Get all constraints of the specified table
@@ -200,7 +200,7 @@ public interface LogicalRelSnapshot {
      * @param key The key for which the collection is returned
      * @return The collection of constraints
      */
-    List<CatalogConstraint> getConstraints( CatalogKey key );
+    List<CatalogConstraint> getConstraints( LogicalKey key );
 
     /**
      * Returns the constraint with the specified name in the specified table.
@@ -218,9 +218,9 @@ public interface LogicalRelSnapshot {
      * @param foreignKeyName The name of the foreign key
      * @return The foreign key
      */
-    CatalogForeignKey getForeignKey( long tableId, String foreignKeyName );
+    LogicalForeignKey getForeignKey( long tableId, String foreignKeyName );
 
-    List<CatalogIndex> getIndexes();
+    List<LogicalIndex> getIndexes();
 
     /**
      * Gets a collection of index for the given key.
@@ -228,7 +228,7 @@ public interface LogicalRelSnapshot {
      * @param key The key for which the collection is returned
      * @return The collection of indexes
      */
-    List<CatalogIndex> getIndexes( CatalogKey key );
+    List<LogicalIndex> getIndexes( LogicalKey key );
 
     /**
      * Gets a collection of foreign keys for a given {@link Catalog Key}.
@@ -236,7 +236,7 @@ public interface LogicalRelSnapshot {
      * @param key The key for which the collection is returned
      * @return The collection foreign keys
      */
-    List<CatalogIndex> getForeignKeys( CatalogKey key );
+    List<LogicalIndex> getForeignKeys( LogicalKey key );
 
     /**
      * Returns all indexes of a table
@@ -245,7 +245,7 @@ public interface LogicalRelSnapshot {
      * @param onlyUnique true if only indexes for unique values are returned. false if all indexes are returned.
      * @return List of indexes
      */
-    List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique );
+    List<LogicalIndex> getIndexes( long tableId, boolean onlyUnique );
 
     /**
      * Returns the index with the specified name in the specified table
@@ -254,7 +254,7 @@ public interface LogicalRelSnapshot {
      * @param indexName The name of the index
      * @return The Index
      */
-    CatalogIndex getIndex( long tableId, String indexName );
+    LogicalIndex getIndex( long tableId, String indexName );
 
     /**
      * Checks if there is an index with the specified name in the specified table.
@@ -271,7 +271,7 @@ public interface LogicalRelSnapshot {
      * @param indexId The id of the index
      * @return The Index
      */
-    CatalogIndex getIndex( long indexId );
+    LogicalIndex getIndex( long indexId );
 
 
     LogicalTable getTable( long id );
@@ -283,5 +283,7 @@ public interface LogicalRelSnapshot {
     AlgNode getNodeInfo( long id );
 
     List<LogicalView> getConnectedViews( long id );
+
+    LogicalKey getKeys( long[] columnIds );
 
 }

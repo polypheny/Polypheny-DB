@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 
 
 @EqualsAndHashCode(callSuper = true)
-public final class CatalogForeignKey extends CatalogKey {
+public final class LogicalForeignKey extends LogicalKey {
 
     public final String name;
     public final long referencedKeyId;
@@ -41,7 +41,7 @@ public final class CatalogForeignKey extends CatalogKey {
     public final ImmutableList<Long> referencedKeyColumnIds;
 
 
-    public CatalogForeignKey(
+    public LogicalForeignKey(
             final long id,
             @NonNull final String name,
             final long tableId,

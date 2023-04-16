@@ -17,6 +17,10 @@
 package org.polypheny.db.catalog.allocation;
 
 import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.catalog.Serializable;
@@ -28,14 +32,24 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCatalog {
 
     @Getter
+    @Serialize
     public final LogicalNamespace namespace;
 
     @Getter
-    public ConcurrentHashMap<Long, AllocationCollection> collections;
+    @Serialize
+    public final ConcurrentHashMap<Long, AllocationCollection> collections;
 
 
     public PolyAllocDocCatalog( LogicalNamespace namespace ) {
+        this( namespace, new HashMap<>() );
+    }
+
+
+    public PolyAllocDocCatalog(
+            @Deserialize("namespace") LogicalNamespace namespace,
+            @Deserialize("collections") Map<Long, AllocationCollection> collections ) {
         this.namespace = namespace;
+        this.collections = new ConcurrentHashMap<>( collections );
     }
 
 

@@ -25,7 +25,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.LogicalKey;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -61,9 +61,9 @@ public class SchemaToJsonMapper {
         }
         List<String> primaryKeyColumnNames = null;
         if ( exportPrimaryKey ) {
-            for ( CatalogKey catalogKey : Catalog.getInstance().getSnapshot().rel().getTableKeys( catalogTable.id ) ) {
-                if ( catalogKey.id == catalogTable.primaryKey ) {
-                    primaryKeyColumnNames = catalogKey.getColumnNames();
+            for ( LogicalKey logicalKey : Catalog.getInstance().getSnapshot().rel().getTableKeys( catalogTable.id ) ) {
+                if ( logicalKey.id == catalogTable.primaryKey ) {
+                    primaryKeyColumnNames = logicalKey.getColumnNames();
                     break;
                 }
             }

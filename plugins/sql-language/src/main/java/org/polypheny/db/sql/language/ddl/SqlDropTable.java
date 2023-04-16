@@ -48,7 +48,7 @@ public class SqlDropTable extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final LogicalTable table = getCatalogTable( context, name );
+        final LogicalTable table = getFromCatalog( context, name );
 
         if ( table == null ) {
             if ( ifExists ) {

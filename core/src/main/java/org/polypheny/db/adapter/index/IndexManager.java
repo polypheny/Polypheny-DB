@@ -30,10 +30,10 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalIndex;
+import org.polypheny.db.catalog.entity.LogicalKey;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
@@ -144,7 +144,7 @@ public class IndexManager {
 
 
     public void restoreIndexes() throws TransactionException {
-        for ( final CatalogIndex index : Catalog.getInstance().getSnapshot().rel().getIndexes() ) {
+        for ( final LogicalIndex index : Catalog.getInstance().getSnapshot().rel().getIndexes() ) {
             if ( index.location == 0 ) {
                 addIndex( index );
             }
@@ -152,24 +152,24 @@ public class IndexManager {
     }
 
 
-    public void addIndex( final CatalogIndex index ) throws TransactionException {
+    public void addIndex( final LogicalIndex index ) throws TransactionException {
         addIndex( index, null );
     }
 
 
-    public void addIndex( final CatalogIndex index, final Statement statement ) throws TransactionException {
+    public void addIndex( final LogicalIndex index, final Statement statement ) throws TransactionException {
         // TODO(s3lph): persistent
         addIndex( index.id, index.name, index.key, index.method, index.unique, null, statement );
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws TransactionException {
+    protected void addIndex( final long id, final String name, final LogicalKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws TransactionException {
         final IndexFactory factory = INDEX_FACTORIES.stream()
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
         final LogicalTable table = statement.getTransaction().getSnapshot().rel().getTable( key.tableId );
-        final CatalogPrimaryKey pk = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey );
+        final LogicalPrimaryKey pk = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
                 name,
@@ -197,7 +197,7 @@ public class IndexManager {
     }
 
 
-    public void deleteIndex( final CatalogIndex index ) {
+    public void deleteIndex( final LogicalIndex index ) {
         deleteIndex( index.id );
     }
 

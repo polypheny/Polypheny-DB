@@ -75,7 +75,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getFromCatalog( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.SOURCE ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );

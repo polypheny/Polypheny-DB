@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalKey;
+import org.polypheny.db.catalog.entity.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -78,8 +78,8 @@ public class NamespaceToJsonMapperTest extends SqlLanguageDependent {
         new HashMap<>();
         new HashMap<>();
         Arrays.asList(
-                new CatalogKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ), EnforcementTime.ON_COMMIT ),
-                new CatalogKey( 24L, 4, 1, 1, List.of( 6L ), EnforcementTime.ON_COMMIT )
+                new LogicalKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ), EnforcementTime.ON_COMMIT ),
+                new LogicalKey( 24L, 4, 1, 1, List.of( 6L ), EnforcementTime.ON_COMMIT )
         );
         String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, true, true );
         Assert.assertEquals( json, mockJson );

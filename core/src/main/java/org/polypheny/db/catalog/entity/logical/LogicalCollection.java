@@ -16,9 +16,9 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
+import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -33,26 +33,13 @@ public class LogicalCollection extends LogicalEntity implements CatalogObject {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
-    @Getter
-    public long id;
-    public String name;
-    public long namespaceId;
-    public EntityType entityType;
-    public String physicalName;
-
 
     public LogicalCollection(
-            long namespaceId,
-            long id,
-            String name,
-            EntityType type,
-            String physicalName ) {
-        super( id, name, namespaceId, EntityType.ENTITY, NamespaceType.DOCUMENT );
-        this.id = id;
-        this.namespaceId = namespaceId;
-        this.name = name;
-        this.entityType = type;
-        this.physicalName = physicalName;
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("entityType") EntityType entityType ) {
+        super( id, name, namespaceId, entityType, NamespaceType.DOCUMENT );
     }
 
 
@@ -60,7 +47,6 @@ public class LogicalCollection extends LogicalEntity implements CatalogObject {
     public Serializable[] getParameterArray() {
         return new Serializable[0];
     }
-
 
 
     @Override

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -23,7 +24,6 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -31,8 +31,12 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @NonFinal
 public class AllocationCollection extends AllocationEntity {
 
-    public AllocationCollection( LogicalCollection collection, long id, long adapterId ) {
-        super( id, collection.id, collection.namespaceId, adapterId, NamespaceType.DOCUMENT );
+    public AllocationCollection(
+            @Deserialize("id") Long id,
+            @Deserialize("logicalId") long logicalId,
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("adapterId") long adapterId ) {
+        super( id, logicalId, namespaceId, adapterId, NamespaceType.DOCUMENT );
     }
 
 

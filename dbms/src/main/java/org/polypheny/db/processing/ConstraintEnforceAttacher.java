@@ -52,9 +52,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.LogicalKey.EnforcementTime;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -194,10 +194,10 @@ public class ConstraintEnforceAttacher {
 
         final Catalog catalog = Catalog.getInstance();
         final LogicalTable table;
-        final CatalogPrimaryKey primaryKey;
+        final LogicalPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;
-        final List<CatalogForeignKey> foreignKeys;
-        final List<CatalogForeignKey> exportedKeys;
+        final List<LogicalForeignKey> foreignKeys;
+        final List<LogicalForeignKey> exportedKeys;
         table = root.getEntity().unwrap( LogicalTable.class );
         LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
         primaryKey = snapshot.getPrimaryKey( table.primaryKey );
@@ -205,7 +205,7 @@ public class ConstraintEnforceAttacher {
         foreignKeys = snapshot.getForeignKeys( table.id );
         exportedKeys = snapshot.getExportedKeys( table.id );
         // Turn primary key into an artificial unique constraint
-        CatalogPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
+        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
         final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
         constraints.add( pkc );
 
@@ -325,7 +325,7 @@ public class ConstraintEnforceAttacher {
             AlgBuilder builder = AlgBuilder.create( statement );
             final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
-            for ( final CatalogForeignKey foreignKey : foreignKeys ) {
+            for ( final LogicalForeignKey foreignKey : foreignKeys ) {
 
                 final LogicalTable entity = statement.getDataContext().getSnapshot().rel().getTable( foreignKey.referencedKeyTableId );
                 final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), entity );
@@ -474,7 +474,7 @@ public class ConstraintEnforceAttacher {
         if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
-            for ( final CatalogForeignKey foreignKey : foreignKeys ) {
+            for ( final LogicalForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
@@ -535,7 +535,7 @@ public class ConstraintEnforceAttacher {
         if ( (root.isDelete() || root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
-            for ( final CatalogForeignKey foreignKey : exportedKeys ) {
+            for ( final LogicalForeignKey foreignKey : exportedKeys ) {
                 final String constraintRule = root.isDelete() ? "ON DELETE " + foreignKey.deleteRule : "ON UPDATE " + foreignKey.updateRule;
                 switch ( root.isDelete() ? foreignKey.deleteRule : foreignKey.updateRule ) {
                     case RESTRICT:

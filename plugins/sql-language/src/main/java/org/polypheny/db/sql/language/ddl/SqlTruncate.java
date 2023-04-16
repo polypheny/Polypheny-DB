@@ -77,7 +77,7 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getCatalogTable( context, name );
+        LogicalTable table = getFromCatalog( context, name );
 
         DdlManager.getInstance().truncate( table, statement );
     }

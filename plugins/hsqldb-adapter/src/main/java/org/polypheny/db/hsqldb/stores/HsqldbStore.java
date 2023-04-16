@@ -34,14 +34,13 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.LogicalIndex;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -119,53 +118,55 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-        List<AllocationColumn> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
-        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
+    public String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation ) {
+        // List<AllocationColumn> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
+        // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        //partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
-        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
-        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+        String physicalIndexName = getPhysicalIndexName( logicalIndex.key.tableId, logicalIndex.id );
+        PhysicalTable physical = catalog.getSnapshot().physical().fromAlloc( allocation.id ).get( 0 ).unwrap( PhysicalTable.class );
+        // for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
-            StringBuilder builder = new StringBuilder();
-            builder.append( "CREATE " );
-            if ( catalogIndex.unique ) {
-                builder.append( "UNIQUE INDEX " );
-            } else {
-                builder.append( "INDEX " );
-            }
-
-            builder.append( dialect.quoteIdentifier( physicalIndexName + "_" + partitionPlacement.partitionId ) );
-            builder.append( " ON " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-
-            builder.append( "(" );
-            boolean first = true;
-            for ( long columnId : catalogIndex.key.columnIds ) {
-                if ( !first ) {
-                    builder.append( ", " );
-                }
-                first = false;
-                builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
-            }
-            builder.append( ")" );
-            executeUpdate( builder, context );
+        StringBuilder builder = new StringBuilder();
+        builder.append( "CREATE " );
+        if ( logicalIndex.unique ) {
+            builder.append( "UNIQUE INDEX " );
+        } else {
+            builder.append( "INDEX " );
         }
-        Catalog.getInstance().getLogicalRel( catalogIndex.key.namespaceId ).setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );//+ "_" + partitionPlacement.partitionId ) );
+        builder.append( " ON " )
+                .append( dialect.quoteIdentifier( physical.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physical.name ) );
+
+        builder.append( "(" );
+        boolean first = true;
+        for ( long columnId : logicalIndex.key.columnIds ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+        }
+        builder.append( ")" );
+        executeUpdate( builder, context );
+        //}
+        return physicalIndexName;
+        // Catalog.getInstance().getLogicalRel( catalogIndex.key.namespaceId ).setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+    public void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         partitionIds.forEach( id -> partitionPlacements.add( catalog.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             StringBuilder builder = new StringBuilder();
             builder.append( "DROP INDEX " );
-            builder.append( dialect.quoteIdentifier( catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
+            builder.append( dialect.quoteIdentifier( logicalIndex.physicalName + "_" + partitionPlacement.partitionId ) );
             executeUpdate( builder, context );
         }
     }

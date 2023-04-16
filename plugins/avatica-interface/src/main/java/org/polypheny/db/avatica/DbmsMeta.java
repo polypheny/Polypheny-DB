@@ -71,19 +71,19 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn;
-import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
 import org.polypheny.db.catalog.entity.CatalogObject;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.LogicalForeignKey.CatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.LogicalForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.LogicalIndex;
+import org.polypheny.db.catalog.entity.LogicalIndex.CatalogIndexColumn;
+import org.polypheny.db.catalog.entity.LogicalIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.LogicalNamespace.PrimitiveCatalogSchema;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -303,12 +303,9 @@ public class DbmsMeta implements ProtobufMeta {
 
     @NotNull
     private List<LogicalTable> getLogicalTables( Pattern schemaPattern, Pattern tablePattern ) {
-        List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( schemaPattern );
+        //List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( schemaPattern );
 
-        return namespaces
-                .stream()
-                .flatMap(
-                        n -> catalog.getSnapshot().rel().getTables( Pattern.of( n.name ), tablePattern ).stream() ).collect( Collectors.toList() );
+        return catalog.getSnapshot().rel().getTables( schemaPattern, tablePattern );
     }
 
 
@@ -532,7 +529,7 @@ public class DbmsMeta implements ProtobufMeta {
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+                    final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -568,7 +565,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> importedKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
+                List<LogicalForeignKey> importedKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -611,7 +608,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
+                List<LogicalForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -727,8 +724,8 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
-                List<CatalogIndex> catalogIndexInfos = catalog.getSnapshot().rel().getIndexes( catalogTable.id, unique );
-                catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+                List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( catalogTable.id, unique );
+                logicalIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(

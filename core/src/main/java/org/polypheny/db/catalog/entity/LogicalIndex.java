@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.logistic.IndexType;
 @EqualsAndHashCode(callSuper = false)
 @Value
 @SuperBuilder(toBuilder = true)
-public class CatalogIndex implements Serializable {
+public class LogicalIndex implements Serializable {
 
     private static final long serialVersionUID = -318228681682792406L;
 
@@ -54,12 +54,12 @@ public class CatalogIndex implements Serializable {
     @Serialize
     public String methodDisplayName;
     @Serialize
-    public CatalogKey key;
+    public LogicalKey key;
     @Serialize
     public long keyId;
 
 
-    public CatalogIndex(
+    public LogicalIndex(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String name,
             @Deserialize("unique") final boolean unique,
@@ -68,7 +68,7 @@ public class CatalogIndex implements Serializable {
             @Deserialize("type") final IndexType type,
             @Deserialize("location") final Long location,
             @Deserialize("keyId") final long keyId,
-            @Deserialize("key") final CatalogKey key,
+            @Deserialize("key") final LogicalKey key,
             @Deserialize("physicalName") final String physicalName ) {
         this.id = id;
         this.name = name;
@@ -125,7 +125,7 @@ public class CatalogIndex implements Serializable {
 
         public String columnName;
 
-        public CatalogIndex index;
+        public LogicalIndex index;
 
 
         @Override

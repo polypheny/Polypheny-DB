@@ -76,6 +76,8 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
+                "APP",
+                getNamespaceName(),
                 name,
                 entityType.name(),
                 "",
@@ -83,7 +85,8 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
                 null,
                 null,
                 null,
-                null
+                null,
+                "pa"
 
         };
     }

@@ -17,13 +17,10 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -36,7 +33,6 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -103,16 +99,8 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getCatalogTable( context, table );
-        LogicalTable refTable = getCatalogTable( context, referencesTable );
-
-        // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
-        }
-        if ( refTable.entityType != EntityType.ENTITY ) {
-            throw CoreUtil.newContextException( referencesTable.getPos(), RESOURCE.ddlOnSourceTable() );
-        }
+        LogicalTable catalogTable = getFromCatalog( context, table );
+        LogicalTable refTable = getFromCatalog( context, referencesTable );
 
         DdlManager.getInstance().addForeignKey(
                 catalogTable,

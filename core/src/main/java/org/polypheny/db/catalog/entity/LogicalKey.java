@@ -31,7 +31,7 @@ import org.apache.commons.lang.NotImplementedException;
 @EqualsAndHashCode
 @Value
 @NonFinal
-public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
+public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
 
     private static final long serialVersionUID = -5803762884192662540L;
 
@@ -47,7 +47,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
     public EnforcementTime enforcementTime;
 
 
-    public CatalogKey(
+    public LogicalKey(
             @Deserialize("id") final long id,
             @Deserialize("tableId") final long tableId,
             @Deserialize("namespaceId") final long namespaceId,
@@ -94,7 +94,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
 
     @Override
-    public int compareTo( CatalogKey o ) {
+    public int compareTo( LogicalKey o ) {
         if ( o != null ) {
             return (int) (this.id - o.id);
         }

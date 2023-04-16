@@ -111,7 +111,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getFromCatalog( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + catalogTable.name + " is not a table or materialized view." );

@@ -29,13 +29,13 @@ import org.apache.commons.lang.NotImplementedException;
 
 
 @EqualsAndHashCode(callSuper = true)
-public final class CatalogPrimaryKey extends CatalogKey {
+public final class LogicalPrimaryKey extends LogicalKey {
 
     @Serialize
-    private final CatalogKey key;
+    private final LogicalKey key;
 
 
-    public CatalogPrimaryKey( @Deserialize("key") @NonNull final CatalogKey key ) {
+    public LogicalPrimaryKey( @Deserialize("key") @NonNull final LogicalKey key ) {
         super(
                 key.id,
                 key.tableId,

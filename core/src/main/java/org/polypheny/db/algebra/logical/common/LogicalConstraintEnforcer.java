@@ -39,9 +39,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.LogicalKey.EnforcementTime;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
@@ -101,19 +101,19 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 .stream()
                 .filter( f -> f.key.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
-        final List<CatalogForeignKey> foreignKeys = snapshot
+        final List<LogicalForeignKey> foreignKeys = snapshot
                 .getForeignKeys( table.id )
                 .stream()
                 .filter( f -> f.enforcementTime == enforcementTime )
                 .collect( Collectors.toList() );
-        final List<CatalogForeignKey> exportedKeys = snapshot
+        final List<LogicalForeignKey> exportedKeys = snapshot
                 .getExportedKeys( table.id )
                 .stream()
                 .filter( f -> f.enforcementTime == enforcementTime )
                 .collect( Collectors.toList() );
 
         // Turn primary key into an artificial unique constraint
-        CatalogPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
+        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
         if ( pk.enforcementTime == enforcementTime ) {
             final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
@@ -161,7 +161,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            for ( final CatalogForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
+            for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
                 final LogicalTable scanOptTable = snapshot.getTable( foreignKey.tableId );
                 final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyTableId );
@@ -230,17 +230,17 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 .stream()
                 .filter( c -> c.key.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
-        final List<CatalogForeignKey> foreignKeys = snapshot.getForeignKeys( table.id )
+        final List<LogicalForeignKey> foreignKeys = snapshot.getForeignKeys( table.id )
                 .stream()
                 .filter( c -> c.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
-        final List<CatalogForeignKey> exportedKeys = snapshot.getExportedKeys( table.id )
+        final List<LogicalForeignKey> exportedKeys = snapshot.getExportedKeys( table.id )
                 .stream()
                 .filter( c -> c.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
 
         // Turn primary key into an artificial unique constraint
-        CatalogPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
+        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
         if ( pk.enforcementTime == enforcementTime ) {
             final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
@@ -286,7 +286,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            for ( final CatalogForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
+            for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
                 //final AlgOptSchema algOptSchema = modify.getCatalogReader();
                 //final AlgOptTable scanOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getTableName() ) );

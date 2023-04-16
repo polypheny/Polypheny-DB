@@ -61,7 +61,7 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected LogicalTable getCatalogTable( Context context, SqlIdentifier tableName ) {
+    protected LogicalTable getFromCatalog( Context context, SqlIdentifier tableName ) {
         long schemaId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName

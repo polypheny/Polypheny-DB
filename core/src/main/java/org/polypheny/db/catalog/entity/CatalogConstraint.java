@@ -39,7 +39,7 @@ public class CatalogConstraint implements Serializable {
     @Serialize
     public String name;
     @Serialize
-    public CatalogKey key;
+    public LogicalKey key;
 
 
     public CatalogConstraint(
@@ -47,7 +47,7 @@ public class CatalogConstraint implements Serializable {
             @Deserialize("keyId") final long keyId,
             @Deserialize("type") @NonNull final ConstraintType constraintType,
             @Deserialize("name") final String name,
-            @Deserialize("key") final CatalogKey key ) {
+            @Deserialize("key") final LogicalKey key ) {
         this.id = id;
         this.keyId = keyId;
         this.type = constraintType;

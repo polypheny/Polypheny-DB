@@ -113,7 +113,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getCatalogTable( context, table );
+        LogicalTable catalogTable = getFromCatalog( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {

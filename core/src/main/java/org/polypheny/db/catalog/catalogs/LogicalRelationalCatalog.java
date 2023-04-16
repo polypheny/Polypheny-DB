@@ -22,8 +22,8 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.LogicalIndex;
+import org.polypheny.db.catalog.entity.LogicalKey;
 import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.LogicalView;
@@ -281,7 +281,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param indexName The name of the index
      * @return The id of the created index
      */
-    long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName );
+    LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName );
 
     /**
      * Set physical index name.
@@ -304,9 +304,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
 
     LogicalNamespace getLogicalNamespace();
 
-    Map<Long, CatalogIndex> getIndexes();
+    Map<Long, LogicalIndex> getIndexes();
 
-    Map<Long, CatalogKey> getKeys();
+    Map<Long, LogicalKey> getKeys();
 
     Map<Long, CatalogConstraint> getConstraints();
 

@@ -36,19 +36,20 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.LogicalIndex;
+import org.polypheny.db.catalog.entity.LogicalKey;
+import org.polypheny.db.catalog.entity.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -88,16 +89,12 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Serialize
     @Getter
-    public Map<Long, CatalogIndex> indexes;
+    public Map<Long, LogicalIndex> indexes;
 
     @Serialize
     @Getter
-    public Map<Long, CatalogKey> keys;
+    public Map<Long, LogicalKey> keys;
 
-
-    @Serialize
-    @Getter
-    public Map<long[], Long> keyColumns;
 
     @Serialize
     @Getter
@@ -118,9 +115,8 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             @Deserialize("logicalNamespace") LogicalNamespace logicalNamespace,
             @Deserialize("tables") Map<Long, LogicalTable> tables,
             @Deserialize("columns") Map<Long, LogicalColumn> columns,
-            @Deserialize("indexes") Map<Long, CatalogIndex> indexes,
-            @Deserialize("keys") Map<Long, CatalogKey> keys,
-            @Deserialize("keyColumns") Map<long[], Long> keyColumns,
+            @Deserialize("indexes") Map<Long, LogicalIndex> indexes,
+            @Deserialize("keys") Map<Long, LogicalKey> keys,
             @Deserialize("constraints") Map<Long, CatalogConstraint> constraints,
             @Deserialize("nodes") Map<Long, AlgNode> nodes ) {
         this.logicalNamespace = logicalNamespace;
@@ -129,14 +125,13 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         this.columns = columns;
         this.indexes = indexes;
         this.keys = keys;
-        this.keyColumns = keyColumns;
         this.constraints = constraints;
         this.nodes = nodes;
     }
 
 
     public RelationalCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
@@ -221,39 +216,40 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     public void setPrimaryKey( long tableId, Long keyId ) {
         tables.put( tableId, tables.get( tableId ).toBuilder().primaryKey( keyId ).build() );
 
-        keys.put( keyId, new CatalogPrimaryKey( keys.get( keyId ) ) );
+        keys.put( keyId, new LogicalPrimaryKey( keys.get( keyId ) ) );
     }
 
 
     @Override
-    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) {
+    public LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         if ( unique ) {
             // TODO: Check if the current values are unique
         }
         long id = idBuilder.getNewIndexId();
+        LogicalIndex index = new LogicalIndex(
+                id,
+                indexName,
+                unique,
+                method,
+                methodDisplayName,
+                type,
+                adapterId,
+                keyId,
+                Objects.requireNonNull( keys.get( keyId ) ),
+                null );
         synchronized ( this ) {
-            indexes.put( id, new CatalogIndex(
-                    id,
-                    indexName,
-                    unique,
-                    method,
-                    methodDisplayName,
-                    type,
-                    adapterId,
-                    keyId,
-                    Objects.requireNonNull( keys.get( keyId ) ),
-                    null ) );
+            indexes.put( id, index );
         }
         listeners.firePropertyChange( "index", null, keyId );
-        return id;
+        return index;
     }
 
 
     private long getOrAddKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
-        Long keyId = keyColumns.get( columnIds.stream().mapToLong( Long::longValue ).toArray() );
-        if ( keyId != null ) {
-            return keyId;
+        LogicalKey key = Catalog.snapshot().rel().getKeys( columnIds.stream().mapToLong( Long::longValue ).toArray() );
+        if ( key != null ) {
+            return key.id;
         }
         return addKey( tableId, columnIds, enforcementTime );
     }
@@ -262,10 +258,9 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     private long addKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         LogicalTable table = Objects.requireNonNull( tables.get( tableId ) );
         long id = idBuilder.getNewKeyId();
-        CatalogKey key = new CatalogKey( id, table.id, table.namespaceId, columnIds, enforcementTime );
+        LogicalKey key = new LogicalKey( id, table.id, table.namespaceId, columnIds, enforcementTime );
         synchronized ( this ) {
             keys.put( id, key );
-            keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
         }
         listeners.firePropertyChange( "key", null, key );
         return id;
@@ -375,12 +370,12 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     private boolean isForeignKey( long key ) {
-        return keys.values().stream().filter( k -> k instanceof CatalogForeignKey ).map( k -> (CatalogForeignKey) k ).anyMatch( k -> k.referencedKeyId == key );
+        return keys.values().stream().filter( k -> k instanceof LogicalForeignKey ).map( k -> (LogicalForeignKey) k ).anyMatch( k -> k.referencedKeyId == key );
     }
 
 
     private boolean isPrimaryKey( long key ) {
-        return keys.values().stream().filter( k -> k instanceof CatalogPrimaryKey ).map( k -> (CatalogPrimaryKey) k ).anyMatch( k -> k.id == key );
+        return keys.values().stream().filter( k -> k instanceof LogicalPrimaryKey ).map( k -> (LogicalPrimaryKey) k ).anyMatch( k -> k.id == key );
     }
 
 
@@ -391,7 +386,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         if ( keyId == null ) {
             return;
         }
-        CatalogKey key = keys.get( keyId );
+        LogicalKey key = keys.get( keyId );
         LogicalTable table = tables.get( key.tableId );
         if ( table.primaryKey != null && table.primaryKey.equals( keyId ) ) {
             return;
@@ -399,7 +394,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         if ( constraints.values().stream().anyMatch( c -> c.keyId == keyId ) ) {
             return;
         }
-        if ( keys.values().stream().filter( k -> k instanceof CatalogForeignKey ).anyMatch( f -> f.id == keyId ) ) {
+        if ( keys.values().stream().filter( k -> k instanceof LogicalForeignKey ).anyMatch( f -> f.id == keyId ) ) {
             return;
         }
         if ( indexes.values().stream().anyMatch( i -> i.keyId == keyId ) ) {
@@ -407,14 +402,13 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
         }
         synchronized ( this ) {
             keys.remove( keyId );
-            keyColumns.remove( key.columnIds.stream().mapToLong( Long::longValue ).toArray() );
         }
         listeners.firePropertyChange( "key", key, null );
     }
 
 
     private int getKeyUniqueCount( long keyId ) {
-        CatalogKey key = keys.get( keyId );
+        LogicalKey key = keys.get( keyId );
         int count = 0;
         if ( isPrimaryKey( keyId ) ) {
             count++;
@@ -426,7 +420,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
             }
         }
 
-        for ( CatalogIndex index : indexes.values().stream().filter( i -> i.keyId == keyId ).collect( Collectors.toList() ) ) {
+        for ( LogicalIndex index : indexes.values().stream().filter( i -> i.keyId == keyId ).collect( Collectors.toList() ) ) {
             if ( index.unique ) {
                 count++;
             }
@@ -439,9 +433,9 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
         LogicalTable table = tables.get( tableId );
-        List<CatalogKey> childKeys = keys.values().stream().filter( k -> k.tableId == referencesTableId ).collect( Collectors.toList() );
+        List<LogicalKey> childKeys = keys.values().stream().filter( k -> k.tableId == referencesTableId ).collect( Collectors.toList() );
 
-        for ( CatalogKey refKey : childKeys ) {
+        for ( LogicalKey refKey : childKeys ) {
             if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && new HashSet<>( referencesIds ).containsAll( refKey.columnIds ) ) {
 
                 int i = 0;
@@ -455,7 +449,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
                 // TODO same keys for key and foreign key
                 if ( getKeyUniqueCount( refKey.id ) > 0 ) {
                     long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
-                    CatalogForeignKey key = new CatalogForeignKey(
+                    LogicalForeignKey key = new LogicalForeignKey(
                             keyId,
                             constraintName,
                             tableId,
@@ -517,10 +511,10 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Override
     public void deleteForeignKey( long foreignKeyId ) {
-        CatalogForeignKey catalogForeignKey = (CatalogForeignKey) keys.get( foreignKeyId );
+        LogicalForeignKey logicalForeignKey = (LogicalForeignKey) keys.get( foreignKeyId );
         synchronized ( this ) {
-            keys.remove( catalogForeignKey.id );
-            deleteKeyIfNoLongerUsed( catalogForeignKey.id );
+            keys.remove( logicalForeignKey.id );
+            deleteKeyIfNoLongerUsed( logicalForeignKey.id );
         }
     }
 

@@ -104,11 +104,11 @@ import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.LogicalIndex;
 import org.polypheny.db.catalog.entity.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -307,7 +307,7 @@ public class Crud implements InformationObserver {
         ArrayList<DbColumn> cols = new ArrayList<>();
         ArrayList<String> primaryColumns;
         if ( catalogTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
             primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
         } else {
             primaryColumns = new ArrayList<>();
@@ -942,7 +942,7 @@ public class Crud implements InformationObserver {
         }
 
         LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( catalogColumns.values().iterator().next().namespaceId, tableName );
-        CatalogPrimaryKey pk = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+        LogicalPrimaryKey pk = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
         for ( long colId : pk.columnIds ) {
             String colName = catalog.getSnapshot().rel().getColumn( colId ).name;
             String condition;
@@ -1116,7 +1116,7 @@ public class Crud implements InformationObserver {
         LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( t[0], t[1] );
         ArrayList<String> primaryColumns;
         if ( catalogTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
             primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
         } else {
             primaryColumns = new ArrayList<>();
@@ -1182,7 +1182,7 @@ public class Crud implements InformationObserver {
             }
 
             long adapterId = allocs.get( 0 ).adapterId;
-            CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
             List<String> pkColumnNames = primaryKey.getColumnNames();
             List<DbColumn> columns = new ArrayList<>();
             for ( AllocationColumn ccp : catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
@@ -1586,7 +1586,7 @@ public class Crud implements InformationObserver {
 
         // get primary key
         if ( catalogTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
             for ( String columnName : primaryKey.getColumnNames() ) {
                 if ( !temp.containsKey( "" ) ) {
                     temp.put( "", new ArrayList<>() );
@@ -1737,7 +1737,7 @@ public class Crud implements InformationObserver {
         Result result;
 
         LogicalTable catalogTable = getLogicalTable( request.schema, request.table );
-        List<CatalogIndex> catalogIndexes = catalog.getSnapshot().rel().getIndexes( catalogTable.id, false );
+        List<LogicalIndex> logicalIndices = catalog.getSnapshot().rel().getIndexes( catalogTable.id, false );
 
         DbColumn[] header = {
                 new DbColumn( "Name" ),
@@ -1749,20 +1749,20 @@ public class Crud implements InformationObserver {
         ArrayList<String[]> data = new ArrayList<>();
 
         // Get explicit indexes
-        for ( CatalogIndex catalogIndex : catalogIndexes ) {
+        for ( LogicalIndex logicalIndex : logicalIndices ) {
             String[] arr = new String[5];
             String storeUniqueName;
-            if ( catalogIndex.location == 0 ) {
+            if ( logicalIndex.location == 0 ) {
                 // a polystore index
                 storeUniqueName = "Polypheny-DB";
             } else {
-                storeUniqueName = catalog.getSnapshot().getAdapter( catalogIndex.location ).uniqueName;
+                storeUniqueName = catalog.getSnapshot().getAdapter( logicalIndex.location ).uniqueName;
             }
-            arr[0] = catalogIndex.name;
-            arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
+            arr[0] = logicalIndex.name;
+            arr[1] = String.join( ", ", logicalIndex.key.getColumnNames() );
             arr[2] = storeUniqueName;
-            arr[3] = catalogIndex.methodDisplayName;
-            arr[4] = catalogIndex.type.name();
+            arr[3] = logicalIndex.methodDisplayName;
+            arr[4] = logicalIndex.type.name();
             data.add( arr );
         }
 
@@ -2487,19 +2487,19 @@ public class Crud implements InformationObserver {
         for ( LogicalTable catalogTable : catalogEntities ) {
             if ( catalogTable.entityType == EntityType.ENTITY || catalogTable.entityType == EntityType.SOURCE ) {
                 // get foreign keys
-                List<CatalogForeignKey> foreignKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
-                for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                    for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
+                List<LogicalForeignKey> foreignKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
+                for ( LogicalForeignKey logicalForeignKey : foreignKeys ) {
+                    for ( int i = 0; i < logicalForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
                         fKeys.add( ForeignKey.builder()
-                                .targetSchema( catalogForeignKey.getReferencedKeySchemaName() )
-                                .targetTable( catalogForeignKey.getReferencedKeyTableName() )
-                                .targetColumn( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
-                                .sourceSchema( catalogForeignKey.getSchemaName() )
-                                .sourceTable( catalogForeignKey.getTableName() )
-                                .sourceColumn( catalogForeignKey.getColumnNames().get( i ) )
-                                .fkName( catalogForeignKey.name )
-                                .onUpdate( catalogForeignKey.updateRule.toString() )
-                                .onDelete( catalogForeignKey.deleteRule.toString() )
+                                .targetSchema( logicalForeignKey.getReferencedKeySchemaName() )
+                                .targetTable( logicalForeignKey.getReferencedKeyTableName() )
+                                .targetColumn( logicalForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                .sourceSchema( logicalForeignKey.getSchemaName() )
+                                .sourceTable( logicalForeignKey.getTableName() )
+                                .sourceColumn( logicalForeignKey.getColumnNames().get( i ) )
+                                .fkName( logicalForeignKey.name )
+                                .onUpdate( logicalForeignKey.updateRule.toString() )
+                                .onDelete( logicalForeignKey.deleteRule.toString() )
                                 .build() );
                     }
                 }
@@ -2513,7 +2513,7 @@ public class Crud implements InformationObserver {
 
                 // get primary key with its columns
                 if ( catalogTable.primaryKey != null ) {
-                    CatalogPrimaryKey catalogPrimaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+                    LogicalPrimaryKey catalogPrimaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
                     for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
                         table.addPrimaryKeyField( columnName );
                     }
@@ -2534,13 +2534,13 @@ public class Crud implements InformationObserver {
                 }
 
                 // get unique indexes
-                List<CatalogIndex> catalogIndexes = catalog.getSnapshot().rel().getIndexes( catalogTable.id, true );
-                for ( CatalogIndex catalogIndex : catalogIndexes ) {
+                List<LogicalIndex> logicalIndices = catalog.getSnapshot().rel().getIndexes( catalogTable.id, true );
+                for ( LogicalIndex logicalIndex : logicalIndices ) {
                     // TODO: unique indexes can be over multiple columns.
-                    if ( catalogIndex.key.getColumnNames().size() == 1 &&
-                            catalogIndex.key.getSchemaName().equals( table.getSchema() ) &&
-                            catalogIndex.key.getTableName().equals( table.getTableName() ) ) {
-                        table.addUniqueColumn( catalogIndex.key.getColumnNames().get( 0 ) );
+                    if ( logicalIndex.key.getColumnNames().size() == 1 &&
+                            logicalIndex.key.getSchemaName().equals( table.getSchema() ) &&
+                            logicalIndex.key.getTableName().equals( table.getTableName() ) ) {
+                        table.addUniqueColumn( logicalIndex.key.getColumnNames().get( 0 ) );
                     }
                     // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
                 }

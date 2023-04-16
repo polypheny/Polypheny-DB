@@ -232,7 +232,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             if ( partitionType != null ) {
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromNodeLists(
-                                getCatalogTable( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
+                                getFromCatalog( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),

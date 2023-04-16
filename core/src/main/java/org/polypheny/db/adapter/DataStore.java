@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.LogicalIndex;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -73,9 +73,9 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
 
     public abstract void dropColumn( Context context, AllocationColumn columnPlacement );
 
-    public abstract void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds );
+    public abstract String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
 
-    public abstract void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds );
+    public abstract void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds );
 
     public abstract void updateColumnType( Context context, AllocationColumn columnPlacement, LogicalColumn logicalColumn, PolyType oldType );
 

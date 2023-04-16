@@ -51,7 +51,7 @@ public class IdBuilder {
         if ( INSTANCE == null ) {
             INSTANCE = new IdBuilder();
         }
-        return new IdBuilder();
+        return INSTANCE;
     }
 
 
