@@ -158,6 +158,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
+                Catalog.DATABASE_NAME,
                 getNamespaceName(),
                 getTableName(),
                 name,

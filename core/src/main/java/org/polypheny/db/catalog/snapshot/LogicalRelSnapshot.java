@@ -21,13 +21,13 @@ import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.LogicalIndex;
-import org.polypheny.db.catalog.entity.LogicalKey;
-import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalKey;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.logistic.Pattern;
 
 public interface LogicalRelSnapshot {

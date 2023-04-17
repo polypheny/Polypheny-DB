@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -617,16 +618,13 @@ public class SqlValidatorUtil {
             return false;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
-        return validator.snapshot.getNamespace( id.names.get( 0 ) ).namespaceType == NamespaceType.RELATIONAL;
-        /*LogicalGraph graph = validator.snapshot.getGraphSnapshot( namespace.id ).getTable( names.get( 1 ) );
-        if ( graph != null ) {
-            return false;
+
+        String namespace = id.names.get( 0 );
+        if ( id.names.size() == 1 ) {
+            namespace = Catalog.defaultNamespaceName;
         }
-        LogicalCollection collection = validator.getSnapshot().getLogicalCollection( id.names );
-        if ( collection != null ) {
-            return false;
-        }
-        return true;*/
+
+        return validator.snapshot.getNamespace( namespace ).namespaceType == NamespaceType.RELATIONAL;
     }
 
 

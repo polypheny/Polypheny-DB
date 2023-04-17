@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.apache.commons.lang3.NotImplementedException;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.relational.RelScan;
@@ -70,6 +70,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Universal routing alg shuttle class to extract partition and column information from AlgNode.
  */
+@Slf4j
 public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     protected final LogicalAlgAnalyzeRexShuttle rexShuttle;
@@ -422,7 +423,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     private void handleIfPartitioned( AlgNode node, LogicalTable catalogTable ) {
         // Only if table is partitioned
-        throw new NotImplementedException();
+        log.warn( "todo" );
         /*if ( Catalog.getInstance().getSnapshot().alloc().isPartitioned( catalogTable.id ) ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,

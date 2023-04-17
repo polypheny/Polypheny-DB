@@ -16,13 +16,11 @@
 
 package org.polypheny.db.catalog;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,25 +46,17 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
-import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.physical.PolyPhysicalCatalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
-import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceType;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -119,14 +109,7 @@ public class PolyCatalog extends Catalog implements Serializable {
     }
 
 
-    @Override
-    public void init() {
-        insertDefaultData();
-        if ( snapshot.getQueryInterface( "avatica" ) == null ) {
-            QueryInterfaceType avatica = QueryInterfaceManager.getREGISTER().get( "AvaticaInterface" );
-            addQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
-        }
-    }
+
 
 
     public PolyCatalog(
@@ -147,155 +130,9 @@ public class PolyCatalog extends Catalog implements Serializable {
     }
 
 
-    /**
-     * Fills the catalog database with default data, skips if data is already inserted
-     */
-    private void insertDefaultData() {
-
-        //////////////
-        // init users
-        long systemId = addUser( "system", "" );
-
-        addUser( "pa", "" );
-
-        Catalog.defaultUserId = systemId;
-
-        //////////////
-        // init schema
-
-        long namespaceId = addNamespace( "public", NamespaceType.getDefault(), false );
-
-        //////////////
-        // init adapters
-        if ( adapters.size() == 0 ) {
-            // Deploy default store
-            AdapterManager.getInstance().addAdapter( defaultStore.getAdapterName(), "hsqldb", AdapterType.STORE, defaultStore.getDefaultSettings() );
-
-            // Deploy default CSV view
-            Adapter adapter = AdapterManager.getInstance().addAdapter( defaultSource.getAdapterName(), "hr", AdapterType.SOURCE, defaultSource.getDefaultSettings() );
-
-            adapter.createNewSchema( getSnapshot(), "public", namespaceId );
-            // init schema
-
-            // getLogicalRel( namespaceId ).addTable( "depts", EntityType.SOURCE, false );
-            // getLogicalRel( namespaceId ).addTable( "emps", EntityType.SOURCE, false );
-            // getLogicalRel( namespaceId ).addTable( "emp", EntityType.SOURCE, false );
-            // getLogicalRel( namespaceId ).addTable( "work", EntityType.SOURCE, false );
-
-            // updateSnapshot();
-
-            // CatalogAdapter csv = getSnapshot().getAdapter( "hr" );
-            // addDefaultCsvColumns( csv, namespaceId );
-
-        }
-
-        commit();
-
-    }
-
-
-    /**
-     * Initiates default columns for csv files
-     */
-    private void addDefaultCsvColumns( CatalogAdapter csv, long namespaceId ) {
-        LogicalTable depts = getSnapshot().rel().getTable( namespaceId, "depts" );
-        addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
-        addDefaultCsvColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
-
-        LogicalTable emps = getSnapshot().rel().getTable( namespaceId, "emps" );
-        addDefaultCsvColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
-        addDefaultCsvColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
-        addDefaultCsvColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultCsvColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
-        addDefaultCsvColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
-
-        LogicalTable emp = getSnapshot().rel().getTable( namespaceId, "emp" );
-        addDefaultCsvColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
-        addDefaultCsvColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
-        addDefaultCsvColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultCsvColumn( csv, emp, "maritalstatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
-        addDefaultCsvColumn( csv, emp, "worklifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
-        addDefaultCsvColumn( csv, emp, "education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
-        addDefaultCsvColumn( csv, emp, "monthlyincome", PolyType.INTEGER, null, 7, null );
-        addDefaultCsvColumn( csv, emp, "relationshipjoy", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
-        addDefaultCsvColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
-        addDefaultCsvColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
-
-        LogicalTable work = getSnapshot().rel().getTable( namespaceId, "work" );
-        addDefaultCsvColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
-        addDefaultCsvColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
-        addDefaultCsvColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultCsvColumn( csv, work, "joblevel", PolyType.INTEGER, null, 4, null );
-        addDefaultCsvColumn( csv, work, "jobrole", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 30 );
-        addDefaultCsvColumn( csv, work, "businesstravel", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
-        addDefaultCsvColumn( csv, work, "department", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 7, 25 );
-        addDefaultCsvColumn( csv, work, "attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
-        addDefaultCsvColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
-
-        updateSnapshot();
-
-        // set all needed primary keys
-        getLogicalRel( namespaceId ).addPrimaryKey( depts.id, Collections.singletonList( getSnapshot().rel().getColumn( depts.id, "deptno" ).id ) );
-        getLogicalRel( namespaceId ).addPrimaryKey( emps.id, Collections.singletonList( getSnapshot().rel().getColumn( emps.id, "empid" ).id ) );
-        getLogicalRel( namespaceId ).addPrimaryKey( emp.id, Collections.singletonList( getSnapshot().rel().getColumn( emp.id, "employeeno" ).id ) );
-        getLogicalRel( namespaceId ).addPrimaryKey( work.id, Collections.singletonList( getSnapshot().rel().getColumn( work.id, "employeeno" ).id ) );
-
-        // set foreign keys
-        getLogicalRel( namespaceId ).addForeignKey(
-                emps.id,
-                ImmutableList.of( getSnapshot().rel().getColumn( emps.id, "deptno" ).id ),
-                depts.id,
-                ImmutableList.of( getSnapshot().rel().getColumn( depts.id, "deptno" ).id ),
-                "fk_emps_depts",
-                ForeignKeyOption.NONE,
-                ForeignKeyOption.NONE );
-        getLogicalRel( namespaceId ).addForeignKey(
-                work.id,
-                ImmutableList.of( getSnapshot().rel().getColumn( work.id, "employeeno" ).id ),
-                emp.id,
-                ImmutableList.of( getSnapshot().rel().getColumn( emp.id, "employeeno" ).id ),
-                "fk_work_emp",
-                ForeignKeyOption.NONE,
-                ForeignKeyOption.NONE );
-    }
-
-
-    private void addDefaultCsvColumn( CatalogAdapter csv, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
-        if ( !getSnapshot().rel().checkIfExistsColumn( table.id, name ) ) {
-            LogicalColumn column = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
-            String filename = table.name + ".csv";
-            if ( table.name.equals( "emp" ) || table.name.equals( "work" ) ) {
-                filename += ".gz";
-            }
-
-            updateSnapshot();
-            AllocationEntity alloc;
-            if ( !getSnapshot().alloc().adapterHasPlacement( csv.id, table.id ) ) {
-                alloc = getAllocRel( table.namespaceId ).createAllocationTable( csv.id, table.id );
-            } else {
-                alloc = getSnapshot().alloc().getAllocation( csv.id, table.id );
-            }
-
-            getAllocRel( table.namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, position );
-            //getAllocRel( table.namespaceId ).addColumn( alloc.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, position );
-            //getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( allocId, colId, position );
-
-            updateSnapshot();
-
-            // long partitionId = table.partitionProperty.partitionIds.get( 0 );
-            // getAllocRel( table.namespaceId ).addPartitionPlacement( table.namespaceId, csv.id, table.id, partitionId, PlacementType.AUTOMATIC, DataPlacementRole.UPTODATE );
-        }
-    }
-
-
-    private void addDefaultColumn( CatalogAdapter adapter, LogicalTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
-        if ( !getSnapshot().rel().checkIfExistsColumn( table.id, name ) ) {
-            LogicalColumn column = getLogicalRel( table.namespaceId ).addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
-            AllocationEntity entity = getSnapshot().alloc().getAllocation( adapter.id, table.id );
-            getAllocRel( table.namespaceId ).addColumn( entity.id, column.id, PlacementType.AUTOMATIC, position );
-            //getAllocRel( table.namespaceId ).addColumn( entity.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, position );
-            getAllocRel( table.namespaceId ).updateColumnPlacementPhysicalPosition( adapter.id, column.id, position );
-        }
+    @Override
+    public void init() {
+        //new DefaultInserter();
     }
 
 

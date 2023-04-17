@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.logical;
 
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
@@ -26,7 +26,9 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
@@ -71,7 +73,6 @@ public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
 
     @SneakyThrows
     public String getTableName() {
-        // return Catalog.getInstance().getTable( tableId ).name;
         return Catalog.snapshot().rel().getTable( tableId ).name;
     }
 
@@ -94,11 +95,8 @@ public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
 
 
     @Override
-    public int compareTo( LogicalKey o ) {
-        if ( o != null ) {
-            return (int) (this.id - o.id);
-        }
-        return -1;
+    public int compareTo( @NotNull LogicalKey o ) {
+        return (int) (this.id - o.id);
     }
 
 

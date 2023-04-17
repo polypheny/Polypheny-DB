@@ -55,13 +55,12 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
@@ -443,7 +442,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Long placementId ) {
+    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, LogicalNamespace namespace, Statement statement, Long placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
         List<Pair<String, AlgNode>> scans = tables.stream()
@@ -457,7 +456,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Long placementId ) {
+    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, LogicalNamespace namespace, Statement statement, Long placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( namespace.id, null );
         List<Pair<String, AlgNode>> scans = collections.stream()

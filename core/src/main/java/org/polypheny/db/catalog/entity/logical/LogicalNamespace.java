@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.logical;
 
 
 import io.activej.serializer.annotations.Deserialize;
@@ -27,13 +27,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 @EqualsAndHashCode(callSuper = false)
 @With
 @Value
-public class LogicalNamespace extends CatalogNamespace implements CatalogObject, Comparable<LogicalNamespace> {
+public class LogicalNamespace implements CatalogObject, Comparable<LogicalNamespace> {
 
     private static final long serialVersionUID = 3090632164988970558L;
 
@@ -55,7 +56,6 @@ public class LogicalNamespace extends CatalogNamespace implements CatalogObject,
             @Deserialize("name") @NonNull final String name,
             @Deserialize("namespaceType") @NonNull final NamespaceType namespaceType,
             @Deserialize("caseSensitive") boolean caseSensitive ) {
-        super( id, name, namespaceType );
         this.id = id;
         this.name = name;
         this.namespaceType = namespaceType;
@@ -85,6 +85,7 @@ public class LogicalNamespace extends CatalogNamespace implements CatalogObject,
 
         public final String tableSchem;
         public final String tableCatalog;
+        public final String owner;
         public final String schemaType;
 
     }

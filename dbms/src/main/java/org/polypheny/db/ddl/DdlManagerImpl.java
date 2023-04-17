@@ -59,21 +59,21 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.LogicalIndex;
-import org.polypheny.db.catalog.entity.LogicalKey;
-import org.polypheny.db.catalog.entity.LogicalMaterializedView;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalKey;
+import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
@@ -106,6 +106,7 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -117,7 +118,7 @@ public class DdlManagerImpl extends DdlManager {
     private final Catalog catalog;
 
 
-    public DdlManagerImpl( Catalog catalog ) {
+    public DdlManagerImpl( Catalog catalog, TransactionManager manager ) {
         this.catalog = catalog;
     }
 
@@ -205,7 +206,6 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void handleSource( DataSource adapter ) {
-        long defaultNamespaceId = 1;
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
             exportedColumns = adapter.getExportedColumns();
@@ -225,13 +225,14 @@ public class DdlManagerImpl extends DdlManager {
                 tableName += i;
             }
 
-            LogicalTable table = catalog.getLogicalRel( defaultNamespaceId ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            LogicalTable table = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            AllocationEntity allocation = catalog.getAllocRel( Catalog.defaultNamespaceId ).createAllocationTable( adapter.getAdapterId(), table.id );
             List<Long> primaryKeyColIds = new ArrayList<>();
             int colPos = 1;
             String physicalSchemaName = null;
             String physicalTableName = null;
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                LogicalColumn column = catalog.getLogicalRel( defaultNamespaceId ).addColumn(
+                LogicalColumn column = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addColumn(
                         exportedColumn.name,
                         table.id,
                         colPos++,
@@ -243,13 +244,13 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.cardinality,
                         exportedColumn.nullable,
                         Collation.getDefaultCollation() );
-                AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( adapter.getAdapterId(), table.id );
-                catalog.getAllocRel( defaultNamespaceId ).addColumn(
+
+                catalog.getAllocRel( Catalog.defaultNamespaceId ).addColumn(
                         allocation.id,
                         column.id,
                         PlacementType.STATIC,
-                        exportedColumn.physicalPosition ); // Not a valid partitionGroupID --> placeholder
-                catalog.getAllocRel( defaultNamespaceId ).updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), column.id, exportedColumn.physicalPosition );
+                        exportedColumn.physicalPosition - 1 ); // Not a valid partitionGroupID --> placeholder
+                //catalog.getAllocRel( Catalog.defaultNamespaceId ).updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), column.id, exportedColumn.physicalPosition - 1 );
                 if ( exportedColumn.primary ) {
                     primaryKeyColIds.add( column.id );
                 }
@@ -261,18 +262,19 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
 
-            catalog.getLogicalRel( defaultNamespaceId ).addPrimaryKey( table.id, primaryKeyColIds );
-            LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( table.id );
+            catalog.getLogicalRel( Catalog.defaultNamespaceId ).addPrimaryKey( table.id, primaryKeyColIds );
+            //LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( table.id );
 
-            CatalogDataPlacement placement = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).get( 0 );
-            catalog.getAllocRel( defaultNamespaceId )
+
+            /*CatalogDataPlacement placement = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).get( 0 );
+            catalog.getAllocRel( Catalog.defaultNamespaceId )
                     .addPartitionPlacement(
                             catalogTable.namespaceId,
                             adapter.getAdapterId(),
                             catalogTable.id,
                             placement.getAdapterId(),
                             PlacementType.AUTOMATIC,
-                            DataPlacementRole.UPTODATE );
+                            DataPlacementRole.UPTODATE );*/
 
         }
 

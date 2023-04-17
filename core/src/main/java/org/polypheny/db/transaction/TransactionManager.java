@@ -18,7 +18,7 @@ package org.polypheny.db.transaction;
 
 
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 
 

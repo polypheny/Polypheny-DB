@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.logical;
 
 
 import io.activej.serializer.annotations.Deserialize;
@@ -25,7 +25,8 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogObject;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -59,7 +60,7 @@ public final class LogicalPrimaryKey extends LogicalKey {
 
 
     public Serializable[] getParameterArray( String columnName, int keySeq ) {
-        return new Serializable[]{ getSchemaName(), getTableName(), columnName, keySeq, null };
+        return new Serializable[]{ Catalog.DATABASE_NAME, getSchemaName(), getTableName(), columnName, keySeq, null };
     }
 
 
@@ -77,8 +78,7 @@ public final class LogicalPrimaryKey extends LogicalKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            throw new NotImplementedException();
-            //return Catalog.getInstance().getPrimaryKey( pkId ).getParameterArray( columnName, keySeq );
+            return Catalog.snapshot().rel().getPrimaryKey( pkId ).getParameterArray( columnName, keySeq );
         }
 
 

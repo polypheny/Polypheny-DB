@@ -69,23 +69,22 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.LogicalForeignKey.CatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.LogicalForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.LogicalIndex;
-import org.polypheny.db.catalog.entity.LogicalIndex.CatalogIndexColumn;
-import org.polypheny.db.catalog.entity.LogicalIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.LogicalNamespace.PrimitiveCatalogSchema;
-import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.LogicalPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace.PrimitiveCatalogSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -386,12 +385,13 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
             }
-            final List<CatalogDatabase> databases = List.of();
+            //final List<CatalogDatabase> databases = Linq4j.asEnumerable( new String[]{ "APP", "system", "public" } );
+            List<Object> databases = Collections.singletonList( new Serializable[]{ Catalog.DATABASE_NAME, "system", Catalog.defaultNamespaceName } );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
                     statementHandle,
-                    toEnumerable( databases ),
+                    Linq4j.asEnumerable( databases ),
                     PrimitiveCatalogDatabase.class,
                     // According to JDBC standard:
                     "TABLE_CAT",
@@ -980,7 +980,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             List<AvaticaParameter> avaticaParameters = deriveAvaticaParameters( parameterRowType );
 
-            PolyphenyDbSignature signature = new PolyphenyDbSignature<>(
+            PolyphenyDbSignature<?> signature = new PolyphenyDbSignature<>(
                     sql,
                     avaticaParameters,
                     ImmutableMap.of(),
@@ -1412,7 +1412,6 @@ public class DbmsMeta implements ProtobufMeta {
 
         // Create transaction
         Transaction transaction = transactionManager.startTransaction( user, null, false, "AVATICA Interface" );
-
 
 //            Authorizer.hasAccess( user, database );
 

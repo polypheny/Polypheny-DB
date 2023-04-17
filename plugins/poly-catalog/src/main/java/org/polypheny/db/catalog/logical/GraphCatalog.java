@@ -30,8 +30,8 @@ import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 @Value
 @SuperBuilder(toBuilder = true)

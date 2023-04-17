@@ -31,14 +31,14 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.LogicalIndex;
-import org.polypheny.db.catalog.entity.LogicalKey;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
-import org.polypheny.db.catalog.entity.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.LogicalView;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalKey;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.util.Pair;
@@ -428,7 +428,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public List<LogicalIndex> getIndexes( long tableId, boolean onlyUnique ) {
-        return tableKeys.get( tableId ).stream().flatMap( k -> getIndexes( k ).stream() ).collect( Collectors.toList() );
+        return index.values().stream().filter( i -> i.key.tableId == tableId && (!onlyUnique || i.unique) ).collect( Collectors.toList() );
     }
 
 

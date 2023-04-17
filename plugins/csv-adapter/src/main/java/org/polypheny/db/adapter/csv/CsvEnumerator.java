@@ -35,15 +35,6 @@ package org.polypheny.db.adapter.csv;
 
 
 import au.com.bytecode.opencsv.CSVReader;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Source;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
@@ -52,6 +43,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Source;
 
 
 /**
@@ -393,7 +392,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
             final Object[] objects = new Object[fields.length];
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }
@@ -404,7 +403,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
             objects[0] = System.currentTimeMillis();
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i + 1] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i + 1] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }
@@ -415,7 +414,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
     /**
      * Single column row converter.
      */
-    private static class SingleColumnRowConverter extends RowConverter {
+    private static class SingleColumnRowConverter extends RowConverter<Object> {
 
         private final CsvFieldType fieldType;
         private final int fieldIndex;

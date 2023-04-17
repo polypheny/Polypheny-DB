@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.logical;
 
 
 import io.activej.serializer.annotations.Deserialize;
@@ -27,6 +27,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.IndexType;
 
 
@@ -96,6 +98,7 @@ public class LogicalIndex implements Serializable {
 
     public Serializable[] getParameterArray( int ordinalPosition, String columnName ) {
         return new Serializable[]{
+                Catalog.DATABASE_NAME,
                 key.getSchemaName(),
                 key.getTableName(),
                 !unique,

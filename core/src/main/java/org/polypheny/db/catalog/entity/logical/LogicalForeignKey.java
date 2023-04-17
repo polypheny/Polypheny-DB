@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.logical;
 
 
 import com.google.common.collect.ImmutableList;
@@ -25,8 +25,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
@@ -68,15 +68,13 @@ public final class LogicalForeignKey extends LogicalKey {
 
     @SneakyThrows
     public String getReferencedKeySchemaName() {
-        // return Catalog.getInstance().getNamespace( referencedKeySchemaId ).name;
-        throw new NotImplementedException();
+        return Catalog.snapshot().getNamespace( referencedKeySchemaId ).name;
     }
 
 
     @SneakyThrows
     public String getReferencedKeyTableName() {
-        // return Catalog.getInstance().getLogicalRel( referencedKeySchemaId ).getTable( referencedKeyTableId ).name;
-        throw new NotImplementedException();
+        return Catalog.snapshot().rel().getTable( referencedKeyTableId ).name;
     }
 
 
@@ -106,9 +104,11 @@ public final class LogicalForeignKey extends LogicalKey {
 
     public Serializable[] getParameterArray( String referencedKeyColumnName, String foreignKeyColumnName, int keySeq ) {
         return new Serializable[]{
+                Catalog.DATABASE_NAME,
                 getReferencedKeySchemaName(),
                 getReferencedKeyTableName(),
                 referencedKeyColumnName,
+                Catalog.DATABASE_NAME,
                 getSchemaName(),
                 getTableName(),
                 foreignKeyColumnName,
@@ -138,11 +138,10 @@ public final class LogicalForeignKey extends LogicalKey {
         @SneakyThrows
         @Override
         public Serializable[] getParameterArray() {
-            /*return Catalog.getInstance()
-                    .getLogicalRel(  )
+            return Catalog.snapshot()
+                    .rel()
                     .getForeignKey( tableId, foreignKeyName )
-                    .getParameterArray( referencedKeyColumnName, foreignKeyColumnName, keySeq );*/
-            throw new NotImplementedException();
+                    .getParameterArray( referencedKeyColumnName, foreignKeyColumnName, keySeq );
         }
 
 

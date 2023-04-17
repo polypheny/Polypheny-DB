@@ -20,7 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import java.util.List;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWithItem;
 import org.polypheny.db.util.NameMatcher;

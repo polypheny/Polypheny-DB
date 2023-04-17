@@ -18,7 +18,7 @@ package org.polypheny.db.mql.mql2alg;
 
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 

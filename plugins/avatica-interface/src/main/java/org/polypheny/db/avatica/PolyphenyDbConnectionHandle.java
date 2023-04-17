@@ -26,7 +26,7 @@ import org.apache.calcite.avatica.Meta.ConnectionProperties;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.transaction.PUID.ConnectionId;
 import org.polypheny.db.transaction.PUID.UserId;
 import org.polypheny.db.transaction.Transaction;

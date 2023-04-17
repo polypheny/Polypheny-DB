@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.logical;
 
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
@@ -29,6 +29,7 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
 

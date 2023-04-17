@@ -23,6 +23,7 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
+import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 
 

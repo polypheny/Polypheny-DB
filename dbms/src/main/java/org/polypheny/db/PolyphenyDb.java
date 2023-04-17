@@ -40,6 +40,7 @@ import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.ddl.DefaultInserter;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
@@ -360,14 +361,11 @@ public class PolyphenyDb {
         }
 
         // Initialize DDL Manager
-        DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
+        DdlManager.setAndGetInstance( new DdlManagerImpl( catalog, transactionManager ) );
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
-
-        // Initialize statistic settings
-        StatisticsManager.getInstance().initializeStatisticSettings();
 
         // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
@@ -416,6 +414,9 @@ public class PolyphenyDb {
         }
 
         PolyPluginManager.startUp( transactionManager, authenticator );
+        new DefaultInserter( DdlManager.getInstance(), transactionManager );
+        // Initialize statistic settings
+        StatisticsManager.getInstance().initializeStatisticSettings();
 
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );

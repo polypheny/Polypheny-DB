@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCatalog {

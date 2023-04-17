@@ -196,7 +196,7 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "SCHEMA_TYPE", rsmd.getColumnName( 4 ) );
 
             // Check data
-            final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
+            final Object[] schemaPublic = new Object[]{ "public", "APP", "pa", "RELATIONAL" };
             final Object[] schemaDoc = new Object[]{ "doc", "APP", "pa", "DOCUMENT" };
             final Object[] schemaTest = new Object[]{ "test", "APP", "pa", "RELATIONAL" };
 
@@ -473,9 +473,9 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "INDEX_TYPE", rsmd.getColumnName( 15 ) );
 
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "public", "foo", false, null, "i_foo", 0, 1, "id", null, -1, null, null, 1, 1 };
-            final Object[] index2a = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 1, "name", null, -1, null, null, 1, 1 };
-            final Object[] index2b = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 2, "foobar", null, -1, null, null, 1, 1 };
+            final Object[] index1 = new Object[]{ "APP", "public", "foo", false, null, "i_foo", 0, 1, "id", null, -1, null, null, 0, 1 };
+            final Object[] index2a = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 1, "name", null, -1, null, null, 0, 1 };
+            final Object[] index2b = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 2, "foobar", null, -1, null, null, 0, 1 };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "public", "foo", false, false ),

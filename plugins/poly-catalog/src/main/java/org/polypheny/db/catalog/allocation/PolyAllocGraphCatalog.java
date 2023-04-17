@@ -19,11 +19,10 @@ package org.polypheny.db.catalog.allocation;
 import io.activej.serializer.BinarySerializer;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
-import org.polypheny.db.catalog.PolyCatalog;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
-import org.polypheny.db.catalog.entity.LogicalNamespace;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatalog {
 

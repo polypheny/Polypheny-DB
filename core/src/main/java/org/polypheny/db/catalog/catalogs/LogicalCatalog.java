@@ -16,7 +16,7 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import org.polypheny.db.catalog.entity.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 
 public interface LogicalCatalog {
