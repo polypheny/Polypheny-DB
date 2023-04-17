@@ -132,7 +132,7 @@ public class RestInterfacePlugin extends Plugin {
 
         public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
-            this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
+            this.requestParser = new RequestParser( transactionManager, authenticator, Catalog.USER_NAME, Catalog.DATABASE_NAME );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {

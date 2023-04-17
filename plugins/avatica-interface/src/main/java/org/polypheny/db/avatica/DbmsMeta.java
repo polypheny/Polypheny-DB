@@ -1403,11 +1403,11 @@ public class DbmsMeta implements ProtobufMeta {
 
         String databaseName = connectionParameters.getOrDefault( "database", connectionParameters.get( "db" ) );
         if ( databaseName == null || databaseName.isEmpty() ) {
-            databaseName = "APP";
+            databaseName = Catalog.DATABASE_NAME;
         }
         String defaultSchemaName = connectionParameters.get( "schema" );
         if ( defaultSchemaName == null || defaultSchemaName.isEmpty() ) {
-            defaultSchemaName = "public";
+            defaultSchemaName = Catalog.defaultNamespaceName;
         }
 
         // Create transaction

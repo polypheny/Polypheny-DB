@@ -41,6 +41,9 @@ import org.polypheny.db.transaction.Transaction;
 
 public abstract class Catalog implements ExtensionPoint {
 
+    public static String DATABASE_NAME = "APP";
+    public static String USER_NAME = "pa"; // change with user management
+
     public static Adapter defaultStore;
     public static Adapter defaultSource;
     public static long defaultUserId = 0;

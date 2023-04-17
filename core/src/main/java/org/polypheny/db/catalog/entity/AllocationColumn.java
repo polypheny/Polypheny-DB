@@ -21,7 +21,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.With;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -68,22 +67,15 @@ public class AllocationColumn implements CatalogObject {
 
 
 
-    @SneakyThrows
     public String getLogicalTableName() {
         return Catalog.snapshot().rel().getTable( tableId ).name;
     }
 
 
-    @SneakyThrows
     public String getLogicalColumnName() {
         return Catalog.snapshot().rel().getColumn( columnId ).name;
     }
 
-
-    @SneakyThrows
-    public String getAdapterUniqueName() {
-        return Catalog.snapshot().getAdapter( adapterId ).uniqueName;
-    }
 
 
     // Used for creating ResultSets

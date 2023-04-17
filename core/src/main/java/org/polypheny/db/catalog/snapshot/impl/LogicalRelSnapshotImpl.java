@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
@@ -63,6 +64,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, LogicalKey> keys;
 
     ImmutableMap<Long, List<LogicalKey>> tableKeys;
+    ImmutableMap<long[], LogicalKey> columnsKey;
 
     ImmutableMap<Long, LogicalIndex> index;
 
@@ -82,29 +84,21 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, List<LogicalForeignKey>> tableForeignKeys;
     ImmutableMap<Long, AlgNode> nodes;
     ImmutableMap<Long, List<LogicalView>> connectedViews;
-    ImmutableMap<long[], LogicalKey> columnsKey;
 
 
     public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs ) {
-        namespaces = ImmutableMap.copyOf( catalogs.values().stream().map( LogicalRelationalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n ) ) );
-        namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
+        this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().map( LogicalRelationalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n ) ) );
+        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
 
-        tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-        tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
+        this.tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
 
-        columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-        columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespaces.get( e.getValue().namespaceId ).caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
+        this.columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespaces.get( e.getValue().namespaceId ).caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
 
         //// tables
 
-        Map<Long, TreeSet<LogicalColumn>> tableChildren = new HashMap<>();
-        columns.forEach( ( k, v ) -> {
-            if ( !tableChildren.containsKey( v.tableId ) ) {
-                tableChildren.put( v.tableId, new TreeSet<>( Comparator.comparingInt( a -> a.position ) ) );
-            }
-            tableChildren.get( v.tableId ).add( v );
-        } );
-        this.tableColumns = ImmutableMap.copyOf( tableChildren );
+        this.tableColumns = buildTableColumns();
 
         this.tableColumnIdColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().id ), Entry::getValue ) ) );
         this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( tables.get( c.getValue().tableId ).name, c.getValue().name ), Entry::getValue ) ) );
@@ -112,7 +106,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         //// KEYS
 
-        keys = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getKeys().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.keys = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getKeys().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
 
         this.tableKeys = buildTableKeys();
 
@@ -120,25 +114,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         this.index = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getIndexes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
 
-        Map<Long, List<LogicalIndex>> keyToIndexes = new HashMap<>();
-        this.index.forEach( ( k, v ) -> {
-            if ( !keyToIndexes.containsKey( v.keyId ) ) {
-                keyToIndexes.put( v.keyId, new ArrayList<>() );
-            }
-            keyToIndexes.get( v.keyId ).add( v );
-        } );
-        this.keyToIndexes = ImmutableMap.copyOf( keyToIndexes );
+        this.keyToIndexes = buildKeyToIndexes();
 
         this.foreignKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof LogicalForeignKey ).collect( Collectors.toMap( Entry::getKey, e -> (LogicalForeignKey) e.getValue() ) ) );
 
-        HashMap<Long, List<LogicalForeignKey>> tableForeignKeys = new HashMap<>();
-        foreignKeys.forEach( ( k, v ) -> {
-            if ( !tableForeignKeys.containsKey( v.tableId ) ) {
-                tableForeignKeys.put( v.tableId, new ArrayList<>() );
-            }
-            tableForeignKeys.get( v.tableId ).add( v );
-        } );
-        this.tableForeignKeys = ImmutableMap.copyOf( tableForeignKeys );
+        this.tableForeignKeys = buildTableForeignKeys();
 
         this.primaryKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof LogicalPrimaryKey ).collect( Collectors.toMap( Entry::getKey, e -> (LogicalPrimaryKey) e.getValue() ) ) );
 
@@ -146,27 +126,76 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         this.constraints = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getConstraints().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
 
-        HashMap<Long, List<CatalogConstraint>> tableConstraints = new HashMap<>();
-        constraints.forEach( ( k, v ) -> {
-            if ( !tableConstraints.containsKey( v.key.tableId ) ) {
-                tableConstraints.put( v.key.tableId, new ArrayList<>() );
-            }
-            tableConstraints.get( v.key.tableId ).add( v );
-        } );
-        this.tableConstraints = ImmutableMap.copyOf( tableConstraints );
+        this.tableConstraints = buildTableConstraints();
 
         /// ALGNODES e.g. views and materializedViews
         this.nodes = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getNodes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
 
-        this.views = ImmutableMap.copyOf( tables
+        this.views = buildViews();
+
+        this.connectedViews = buildConnectedViews();
+
+    }
+
+
+    private ImmutableMap<Long, LogicalView> buildViews() {
+        return ImmutableMap.copyOf( tables
                 .values()
                 .stream()
                 .filter( t -> t.unwrap( LogicalView.class ) != null )
                 .map( t -> t.unwrap( LogicalView.class ) )
                 .collect( Collectors.toMap( e -> e.id, e -> e ) ) );
+    }
 
-        this.connectedViews = buildConnectedViews();
 
+    private ImmutableMap<Long, TreeSet<LogicalColumn>> buildTableColumns() {
+        Map<Long, TreeSet<LogicalColumn>> map = new HashMap<>();
+        columns.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.tableId ) ) {
+                map.put( v.tableId, new TreeSet<>( Comparator.comparingInt( a -> a.position ) ) );
+            }
+            map.get( v.tableId ).add( v );
+        } );
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    @NotNull
+    private ImmutableMap<Long, List<LogicalIndex>> buildKeyToIndexes() {
+        Map<Long, List<LogicalIndex>> map = new HashMap<>();
+        this.index.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.keyId ) ) {
+                map.put( v.keyId, new ArrayList<>() );
+            }
+            map.get( v.keyId ).add( v );
+        } );
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    @NotNull
+    private ImmutableMap<Long, List<CatalogConstraint>> buildTableConstraints() {
+        Map<Long, List<CatalogConstraint>> map = new HashMap<>();
+        constraints.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.key.tableId ) ) {
+                map.put( v.key.tableId, new ArrayList<>() );
+            }
+            map.get( v.key.tableId ).add( v );
+        } );
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    @NotNull
+    private ImmutableMap<Long, List<LogicalForeignKey>> buildTableForeignKeys() {
+        Map<Long, List<LogicalForeignKey>> map = new HashMap<>();
+        foreignKeys.forEach( ( k, v ) -> {
+            if ( !map.containsKey( v.tableId ) ) {
+                map.put( v.tableId, new ArrayList<>() );
+            }
+            map.get( v.tableId ).add( v );
+        } );
+        return ImmutableMap.copyOf( map );
     }
 
 
@@ -466,5 +495,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public LogicalKey getKeys( long[] columnIds ) {
         return columnsKey.get( columnIds );
     }
+
+
+    @Override
+    public LogicalKey getKey( long id ) {
+        return keys.get( id );
+    }
+
 
 }

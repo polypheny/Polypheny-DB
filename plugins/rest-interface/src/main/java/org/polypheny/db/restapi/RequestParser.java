@@ -736,7 +736,7 @@ public class RequestParser {
         Map<String, LogicalColumn> nameMapping = new HashMap<>();
         for ( LogicalTable table : tables ) {
             for ( LogicalColumn column : snapshop.rel().getColumns( table.id ) ) {
-                nameMapping.put( column.getSchemaName() + "." + column.getTableName() + "." + column.name, column );
+                nameMapping.put( column.getNamespaceName() + "." + column.getTableName() + "." + column.name, column );
             }
         }
 

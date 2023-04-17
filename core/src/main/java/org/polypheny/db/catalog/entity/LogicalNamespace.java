@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
@@ -65,7 +66,7 @@ public class LogicalNamespace extends CatalogNamespace implements CatalogObject,
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, CatalogObject.getEnumNameOrNull( namespaceType ) };
+        return new Serializable[]{ name, Catalog.DATABASE_NAME, Catalog.USER_NAME, CatalogObject.getEnumNameOrNull( namespaceType ) };
     }
 
 
@@ -77,6 +78,7 @@ public class LogicalNamespace extends CatalogNamespace implements CatalogObject,
 
         return -1;
     }
+
 
     @RequiredArgsConstructor
     public static class PrimitiveCatalogSchema {

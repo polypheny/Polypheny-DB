@@ -28,7 +28,7 @@ public interface CatalogObject extends Serializable {
     Serializable[] getParameterArray();
 
 
-    static String getEnumNameOrNull( Enum theEnum ) {
+    static String getEnumNameOrNull( Enum<?> theEnum ) {
         if ( theEnum == null ) {
             return null;
         } else {

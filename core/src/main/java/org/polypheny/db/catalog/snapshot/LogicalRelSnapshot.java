@@ -286,4 +286,6 @@ public interface LogicalRelSnapshot {
 
     LogicalKey getKeys( long[] columnIds );
 
+    LogicalKey getKey( long id );
+
 }

@@ -129,7 +129,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<String> errorMessages = new ArrayList<>();
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( (modify.isInsert() || modify.isMerge() || modify.isUpdate()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            //builder.scan( table.getSchemaName(), table.name );
+            //builder.scan( table.getNamespaceName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
@@ -256,7 +256,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<String> errorMessages = new ArrayList<>();
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            //builder.scan( table.getSchemaName(), table.name );
+            //builder.scan( table.getNamespaceName(), table.name );
             for ( CatalogConstraint constraint : constraints ) {
                 builder.clear();
                 builder.scan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );

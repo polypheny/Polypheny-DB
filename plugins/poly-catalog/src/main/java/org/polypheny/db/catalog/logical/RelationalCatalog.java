@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.PolyType;
 
@@ -91,6 +92,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Getter
     public Map<Long, LogicalIndex> indexes;
 
+    // while keys "belong" to a specific table, they can reference other namespaces, atm they are place here, might change later
     @Serialize
     @Getter
     public Map<Long, LogicalKey> keys;
@@ -408,9 +410,9 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     private int getKeyUniqueCount( long keyId ) {
-        LogicalKey key = keys.get( keyId );
+        LogicalKey key = Catalog.snapshot().rel().getKey( keyId );
         int count = 0;
-        if ( isPrimaryKey( keyId ) ) {
+        if ( Catalog.snapshot().rel().getPrimaryKey( keyId ) != null ) {
             count++;
         }
 
@@ -433,40 +435,42 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
         LogicalTable table = tables.get( tableId );
-        List<LogicalKey> childKeys = keys.values().stream().filter( k -> k.tableId == referencesTableId ).collect( Collectors.toList() );
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
 
         for ( LogicalKey refKey : childKeys ) {
-            if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && new HashSet<>( referencesIds ).containsAll( refKey.columnIds ) ) {
-
-                int i = 0;
-                for ( long referencedColumnId : refKey.columnIds ) {
-                    LogicalColumn referencingColumn = columns.get( columnIds.get( i++ ) );
-                    LogicalColumn referencedColumn = columns.get( referencedColumnId );
-                    if ( referencedColumn.type != referencingColumn.type ) {
-                        throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
-                    }
-                }
-                // TODO same keys for key and foreign key
-                if ( getKeyUniqueCount( refKey.id ) > 0 ) {
-                    long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
-                    LogicalForeignKey key = new LogicalForeignKey(
-                            keyId,
-                            constraintName,
-                            tableId,
-                            table.namespaceId,
-                            refKey.id,
-                            refKey.tableId,
-                            refKey.namespaceId,
-                            columnIds,
-                            referencesIds,
-                            onUpdate,
-                            onDelete );
-                    synchronized ( this ) {
-                        keys.put( keyId, key );
-                    }
-                    return;
+            if ( refKey.columnIds.size() != referencesIds.size() || !refKey.columnIds.containsAll( referencesIds ) || !new HashSet<>( referencesIds ).containsAll( refKey.columnIds ) ) {
+                continue;
+            }
+            int i = 0;
+            for ( long referencedColumnId : refKey.columnIds ) {
+                LogicalColumn referencingColumn = snapshot.rel().getColumn( columnIds.get( i++ ) );
+                LogicalColumn referencedColumn = snapshot.rel().getColumn( referencedColumnId );
+                if ( referencedColumn.type != referencingColumn.type ) {
+                    throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
                 }
             }
+            // TODO same keys for key and foreign key
+            if ( getKeyUniqueCount( refKey.id ) > 0 ) {
+                long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
+                LogicalForeignKey key = new LogicalForeignKey(
+                        keyId,
+                        constraintName,
+                        tableId,
+                        table.namespaceId,
+                        refKey.id,
+                        refKey.tableId,
+                        refKey.namespaceId,
+                        columnIds,
+                        referencesIds,
+                        onUpdate,
+                        onDelete );
+                synchronized ( this ) {
+                    keys.put( keyId, key );
+                }
+                return;
+            }
+
         }
 
     }

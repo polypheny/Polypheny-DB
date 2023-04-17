@@ -22,13 +22,12 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.Collation;
@@ -146,22 +145,20 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
     }
 
 
-    @SneakyThrows
-    public String getSchemaName() {
-        throw new NotImplementedException();
+    public String getNamespaceName() {
+        return Catalog.snapshot().getNamespace( namespaceId ).name;
     }
 
 
-    @SneakyThrows
     public String getTableName() {
-        throw new NotImplementedException();
+        return Catalog.snapshot().rel().getTable( tableId ).name;
     }
 
 
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
-                getSchemaName(),
+                getNamespaceName(),
                 getTableName(),
                 name,
                 type.getJdbcOrdinal(),

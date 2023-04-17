@@ -25,6 +25,7 @@ import org.pf4j.PluginWrapper;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.information.InformationManager;
@@ -112,7 +113,7 @@ public class CqlLanguagePlugin extends Plugin {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Parsing" );
             }
-            CqlParser cqlParser = new CqlParser( query, "APP" );
+            CqlParser cqlParser = new CqlParser( query, Catalog.DATABASE_NAME );
             CqlQuery cqlQuery = cqlParser.parse();
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Parsing" );
