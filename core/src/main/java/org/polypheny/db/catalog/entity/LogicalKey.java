@@ -20,12 +20,14 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
 @EqualsAndHashCode
@@ -63,27 +65,25 @@ public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
 
     @SneakyThrows
     public String getSchemaName() {
-        // return Catalog.getInstance().getNamespace( namespaceId ).name;
-        throw new NotImplementedException();
+        return Catalog.snapshot().getNamespace( namespaceId ).name;
     }
 
 
     @SneakyThrows
     public String getTableName() {
         // return Catalog.getInstance().getTable( tableId ).name;
-        throw new NotImplementedException();
+        return Catalog.snapshot().rel().getTable( tableId ).name;
     }
 
 
     @SneakyThrows
     public List<String> getColumnNames() {
-        /*Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.snapshot();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : columnIds ) {
-            columnNames.add( catalog.getColumn( columnId ).name );
+            columnNames.add( snapshot.rel().getColumn( columnId ).name );
         }
-        return columnNames;*/
-        throw new NotImplementedException();
+        return columnNames;
     }
 
 

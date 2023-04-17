@@ -26,7 +26,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -80,13 +82,12 @@ public final class LogicalForeignKey extends LogicalKey {
 
     @SneakyThrows
     public List<String> getReferencedKeyColumnNames() {
-        /*Catalog catalog = Catalog.getInstance();
+        Snapshot snapshot = Catalog.snapshot();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : referencedKeyColumnIds ) {
-            columnNames.add( catalog.getColumn( columnId ).name );
+            columnNames.add( snapshot.rel().getColumn( columnId ).name );
         }
-        return columnNames;*/
-        throw new NotImplementedException();
+        return columnNames;
     }
 
 

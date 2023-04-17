@@ -451,25 +451,27 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
                 }
             }
             // TODO same keys for key and foreign key
-            if ( getKeyUniqueCount( refKey.id ) > 0 ) {
-                long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
-                LogicalForeignKey key = new LogicalForeignKey(
-                        keyId,
-                        constraintName,
-                        tableId,
-                        table.namespaceId,
-                        refKey.id,
-                        refKey.tableId,
-                        refKey.namespaceId,
-                        columnIds,
-                        referencesIds,
-                        onUpdate,
-                        onDelete );
-                synchronized ( this ) {
-                    keys.put( keyId, key );
-                }
-                return;
+            /*if ( getKeyUniqueCount( refKey.id ) > 0 ) {
+                continue;
+            }*/
+            long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
+            LogicalForeignKey key = new LogicalForeignKey(
+                    keyId,
+                    constraintName,
+                    tableId,
+                    table.namespaceId,
+                    refKey.id,
+                    refKey.tableId,
+                    refKey.namespaceId,
+                    columnIds,
+                    referencesIds,
+                    onUpdate,
+                    onDelete );
+            synchronized ( this ) {
+                keys.put( keyId, key );
             }
+            return;
+
 
         }
 
@@ -517,7 +519,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
     public void deleteForeignKey( long foreignKeyId ) {
         LogicalForeignKey logicalForeignKey = (LogicalForeignKey) keys.get( foreignKeyId );
         synchronized ( this ) {
-            keys.remove( logicalForeignKey.id );
+            //keys.remove( logicalForeignKey.id );
             deleteKeyIfNoLongerUsed( logicalForeignKey.id );
         }
     }
