@@ -249,9 +249,9 @@ public class DdlManagerImpl extends DdlManager {
                         allocation.id,
                         column.id,
                         PlacementType.STATIC,
-                        exportedColumn.physicalPosition - 1 ); // Not a valid partitionGroupID --> placeholder
+                        exportedColumn.physicalPosition ); // Not a valid partitionGroupID --> placeholder
                 //catalog.getAllocRel( Catalog.defaultNamespaceId ).updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), column.id, exportedColumn.physicalPosition - 1 );
-                if ( exportedColumn.primary ) {
+                /*if ( exportedColumn.primary ) {
                     primaryKeyColIds.add( column.id );
                 }
                 if ( physicalSchemaName == null ) {
@@ -259,10 +259,10 @@ public class DdlManagerImpl extends DdlManager {
                 }
                 if ( physicalTableName == null ) {
                     physicalTableName = exportedColumn.physicalTableName;
-                }
+                }*/
             }
 
-            catalog.getLogicalRel( Catalog.defaultNamespaceId ).addPrimaryKey( table.id, primaryKeyColIds );
+            // catalog.getLogicalRel( Catalog.defaultNamespaceId ).addPrimaryKey( table.id, primaryKeyColIds );
             //LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( table.id );
 
 
@@ -645,7 +645,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check if all required columns are present on this store
         AllocationTable alloc = catalog.getSnapshot().alloc().getAllocation( location.getAdapterId(), catalogTable.id ).unwrap( AllocationTable.class );
 
-        if ( !alloc.getColumns().keySet().containsAll( columnIds ) ) {
+        if ( !new HashSet<>( alloc.getColumns().stream().map( c -> c.columnId ).collect( Collectors.toList() ) ).containsAll( columnIds ) ) {
             throw new GenericRuntimeException( "Not all required columns for this index are placed on this store." );
         }
 
@@ -898,9 +898,9 @@ public class DdlManagerImpl extends DdlManager {
         // long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficient to check for one because all get replicated on all stores
         List<AllocationEntity> allocations = catalog.getSnapshot().alloc().getFromLogical( catalogTable.id );
         for ( AllocationEntity allocation : allocations ) {
-            Map<Long, AllocationColumn> allocColumns = allocation.unwrap( AllocationTable.class ).getColumns();
+            List<Long> allocColumns = allocation.unwrap( AllocationTable.class ).getColumnIds();
             for ( long columnId : columnIds ) {
-                if ( !allocColumns.containsKey( columnId ) ) {
+                if ( !allocColumns.contains( columnId ) ) {
                     catalog.getAllocRel( catalogTable.namespaceId ).addColumn(
                             allocation.id,
                             columnId,   // Will be set later
@@ -3039,7 +3039,7 @@ public class DdlManagerImpl extends DdlManager {
             for ( PhysicalEntity physical : snapshot.physical().fromAlloc( allocation.id ) ) {
                 catalog.getPhysical( catalogTable.namespaceId ).deleteEntity( physical.id );
             }
-            for ( long columnId : allocation.unwrap( AllocationTable.class ).getColumns().keySet() ) {
+            for ( long columnId : allocation.unwrap( AllocationTable.class ).getColumnIds() ) {
                 catalog.getAllocRel( allocation.namespaceId ).deleteColumn( allocation.id, columnId );
             }
             catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );

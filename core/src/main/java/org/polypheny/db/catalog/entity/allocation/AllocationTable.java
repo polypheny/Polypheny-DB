@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity.allocation;
 import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -59,12 +60,12 @@ public class AllocationTable extends AllocationEntity {
 
 
     public Map<Long, String> getColumnNames() {
-        return getColumns().values().stream().collect( Collectors.toMap( c -> c.columnId, AllocationColumn::getLogicalColumnName ) );
+        return getColumns().stream().collect( Collectors.toMap( c -> c.columnId, AllocationColumn::getLogicalColumnName ) );
     }
 
 
-    public Map<Long, AllocationColumn> getColumns() {
-        return Catalog.snapshot().alloc().getColumns( id ).stream().collect( Collectors.toMap( c -> c.columnId, c -> c ) );
+    public List<AllocationColumn> getColumns() {
+        return Catalog.snapshot().alloc().getColumns( id ).stream().sorted( Comparator.comparingLong( a -> a.position ) ).collect( Collectors.toList() );
     }
 
 
@@ -74,7 +75,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     public Map<Long, AlgDataType> getColumnTypes() {
-        return getColumns().values().stream().collect( Collectors.toMap( c -> c.columnId, AllocationColumn::getAlgDataType ) );
+        return getColumns().stream().collect( Collectors.toMap( c -> c.columnId, AllocationColumn::getAlgDataType ) );
     }
 
 
@@ -84,10 +85,15 @@ public class AllocationTable extends AllocationEntity {
 
 
     public List<Long> getColumnOrder() {
-        List<AllocationColumn> columns = new ArrayList<>( getColumns().values() );
+        List<AllocationColumn> columns = new ArrayList<>( getColumns() );
         columns.sort( ( a, b ) -> Math.toIntExact( a.position - b.position ) );
 
         return columns.stream().map( c -> c.columnId ).collect( Collectors.toList() );
+    }
+
+
+    public List<Long> getColumnIds() {
+        return getColumns().stream().map( c -> c.columnId ).collect( Collectors.toList() );
     }
 
 }

@@ -92,10 +92,10 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 
         List<ExportedColumn> columns = csvSource.getExportedColumns().get( catalogTable.name );
 
-        for ( AllocationColumn placement : allocationTable.getColumns().values() ) {
+        for ( AllocationColumn placement : allocationTable.getColumns() ) {
             LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, logicalColumn.type, logicalColumn.length, logicalColumn.scale, null );
-            fieldInfo.add( logicalColumn.name, columns.get( (int) placement.position ).physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
+            fieldInfo.add( logicalColumn.name, columns.get( (int) placement.position - 1 ).physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( logicalColumn.type ) );
             fieldIds.add( (int) placement.position );
         }

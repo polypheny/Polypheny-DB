@@ -151,7 +151,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         // Filter for placements by adapters
         List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).stream()
                 .map( a -> a.unwrap( AllocationTable.class ) )
-                .filter( a -> new HashSet<>( a.getColumns().values().stream().map( AllocationColumn::getColumnId ).collect( Collectors.toList() ) ).containsAll( usedColumns ) )
+                .filter( a -> new HashSet<>( a.getColumnIds() ).containsAll( usedColumns ) )
                 .collect( Collectors.toList() );
 
         /*List<Long> adapters = Catalog.snapshot().alloc().getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
@@ -163,7 +163,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         final Set<List<AllocationColumn>> result = new HashSet<>();
         for ( AllocationEntity alloc : allocs ) {
             List<AllocationColumn> placements = usedColumns.stream()
-                    .map( colId -> alloc.unwrap( AllocationTable.class ).getColumns().get( colId ) )
+                    .map( colId -> alloc.unwrap( AllocationTable.class ).getColumns().stream().filter( c -> c.columnId == colId ).findFirst().get() )
                     .collect( Collectors.toList() );
 
             if ( !placements.isEmpty() ) {

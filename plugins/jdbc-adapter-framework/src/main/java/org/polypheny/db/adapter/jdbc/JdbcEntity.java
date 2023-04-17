@@ -126,7 +126,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
     private static Map<Long, String> getPhysicalColumnNames( Adapter adapter, AllocationTable allocationTable ) {
         AbstractJdbcStore store = (AbstractJdbcStore) adapter;
-        return allocationTable.getColumns().values().stream().collect( Collectors.toMap( c -> c.columnId, c -> store.getPhysicalColumnName( c.columnId ) ) );
+        return allocationTable.getColumns().stream().collect( Collectors.toMap( c -> c.columnId, c -> store.getPhysicalColumnName( c.columnId ) ) );
     }
 
 
