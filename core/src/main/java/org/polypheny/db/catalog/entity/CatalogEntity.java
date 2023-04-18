@@ -63,6 +63,8 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
     @Serialize
     public long namespaceId;
+    @Serialize
+    public boolean modifiable;
 
     @Serialize
     public boolean modifiable;
