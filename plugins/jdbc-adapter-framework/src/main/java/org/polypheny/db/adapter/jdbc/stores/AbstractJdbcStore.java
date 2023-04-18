@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,11 +32,11 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -127,11 +126,11 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public List<PhysicalTable> createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable, List<AllocationColumn> columns ) {
-        String physicalTableName = getPhysicalTableName( logicalTable.id, allocationTable.id );
+    public List<PhysicalTable> createTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable, List<AllocationColumn> columns ) {
+        String physicalTableName = getPhysicalTableName( allocationTable.id, 0 );
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "[{}] createPhysicalTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), getDefaultPhysicalSchemaName(), physicalTableName );
+            log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), getDefaultPhysicalSchemaName(), physicalTableName );
         }
         StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, allocationTable );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
@@ -139,7 +138,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         }
         executeUpdate( query, context );
 
-        return Collections.singletonList( JdbcSchema.create( logicalTable.id, catalog.getSnapshot(), logicalTable.getNamespaceName(), connectionFactory, dialect, this ).createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), logicalTable, allocationTable ) );
+        return Collections.singletonList( this.currentJdbcSchema.createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), allocationTable ) );
         //return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getAllocColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
     }
 
@@ -294,33 +293,31 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public void dropTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
+    public void dropTable( Context context, LogicalTable catalogTable, AllocationTable allocation, List<? extends PhysicalEntity> physicals ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-        String physicalTableName;
-        String physicalSchemaName;
 
-        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
+        //List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        //partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
-        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
-            physicalSchemaName = partitionPlacement.physicalSchemaName;
-            physicalTableName = partitionPlacement.physicalTableName;
+        //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+        // catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
+        // physicalSchemaName = partitionPlacement.physicalSchemaName;
+        // physicalTableName = partitionPlacement.physicalTableName;
+        PhysicalTable physical = physicals.get( 0 ).unwrap( PhysicalTable.class );
+        StringBuilder builder = new StringBuilder();
 
-            StringBuilder builder = new StringBuilder();
+        builder.append( "DROP TABLE " )
+                .append( dialect.quoteIdentifier( physical.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physical.name ) );
 
-            builder.append( "DROP TABLE " )
-                    .append( dialect.quoteIdentifier( physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( physicalTableName ) );
-
-            if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                log.info( "{} from store {}", builder.toString(), this.getUniqueName() );
-            }
-            executeUpdate( builder, context );
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
+            log.info( "{} from store {}", builder, this.getUniqueName() );
         }
+        executeUpdate( builder, context );
+        // }
     }
 
 

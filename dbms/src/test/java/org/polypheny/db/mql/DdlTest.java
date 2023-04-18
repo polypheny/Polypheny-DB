@@ -61,7 +61,7 @@ public class DdlTest extends MqlTestTemplate {
 
         int size = snapshot.doc().getCollections( namespace.id, null ).size();
 
-        execute( "db.createCollection(\"" + name + "\")" );
+        execute( "db.createPhysicalCollection(\"" + name + "\")" );
 
         assertEquals( size + 1, snapshot.doc().getCollections( namespace.id, null ).size() );
 
@@ -69,7 +69,7 @@ public class DdlTest extends MqlTestTemplate {
 
         assertEquals( size, snapshot.doc().getCollections( namespace.id, null ).size() );
 
-        execute( "db.createCollection(\"" + name + "\")" );
+        execute( "db.createPhysicalCollection(\"" + name + "\")" );
 
         assertEquals( size + 1, snapshot.doc().getCollections( namespace.id, null ).size() );
 
@@ -88,7 +88,7 @@ public class DdlTest extends MqlTestTemplate {
             List<String> collectionNames = snapshot.doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
 
-            execute( "db.createCollection(\"" + collectionName + "\")" );
+            execute( "db.createPhysicalCollection(\"" + collectionName + "\")" );
 
             LogicalCollection collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
@@ -117,7 +117,7 @@ public class DdlTest extends MqlTestTemplate {
         String placement = "store1";
         try {
 
-            execute( "db.createCollection(\"" + collectionName + "\")" );
+            execute( "db.createPhysicalCollection(\"" + collectionName + "\")" );
 
             LogicalNamespace namespace = snapshot.getNamespace( database );
 
@@ -154,7 +154,7 @@ public class DdlTest extends MqlTestTemplate {
         final String DATA = "{ \"key\": \"value\", \"key1\": \"value1\"}";
         try {
 
-            execute( "db.createCollection(\"" + collectionName + "\")" );
+            execute( "db.createPhysicalCollection(\"" + collectionName + "\")" );
 
             insert( DATA );
 

@@ -58,14 +58,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      */
     void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType );
 
-    /**
-     * Update physical position of a column placement on a specified adapter.
-     *
-     * @param allocId The id of the adapter
-     * @param columnId The id of the column
-     * @param position The physical position to set
-     */
-    void updateColumnPlacementPhysicalPosition( long allocId, long columnId, long position );
 
     /**
      * Adds a partition to the catalog
@@ -174,15 +166,8 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId table to retrieve the placement from
      * @return
      */
-    AllocationTable createAllocationTable( long adapterId, long tableId );
+    AllocationTable addAllocation( long adapterId, long tableId );
 
-    /**
-     * Removes a DataPlacement for a given table on a specific store
-     *
-     * @param adapterId adapter where placement should be removed from
-     * @param tableId table to retrieve the placement from
-     */
-    void deleteAllocation( long adapterId, long tableId );
 
     void deleteAllocation( long allocId );
 

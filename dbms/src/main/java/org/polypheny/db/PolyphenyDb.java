@@ -28,6 +28,7 @@ import java.util.List;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
@@ -124,7 +125,6 @@ public class PolyphenyDb {
     @Getter
     private volatile boolean isReady = false;
     private SplashHelper splashScreen;
-    private Catalog catalog;
 
 
     public static void main( final String[] args ) {
@@ -321,37 +321,7 @@ public class PolyphenyDb {
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 
         // Startup and restore catalog
-        Transaction trx = null;
-        try {
-            Catalog.resetCatalog = resetCatalog;
-            Catalog.memoryCatalog = memoryCatalog;
-            Catalog.testMode = testMode;
-            Catalog.resetDocker = resetDocker;
-            Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
-            Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
-            catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
-            catalog.init();
-            if ( catalog == null ) {
-                throw new RuntimeException( "There was no catalog submitted, aborting." );
-            }
-
-            trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
-            AdapterManager.getInstance().restoreAdapters();
-            //DefaultInserter.restoreInterfaces();
-            QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
-            trx.commit();
-            trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
-            catalog.restoreColumnPlacements( trx );
-            catalog.restoreViews( trx );
-            trx.commit();
-        } catch ( TransactionException e ) {
-            try {
-                trx.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Error while rolling back the transaction", e );
-            }
-            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
-        }
+        Catalog catalog = restoreCatalog();
 
         // Initialize DDL Manager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog, transactionManager ) );
@@ -406,12 +376,7 @@ public class PolyphenyDb {
             TrayGui.getInstance();
         }
 
-        PolyPluginManager.startUp( transactionManager, authenticator );
-        DefaultInserter.restoreData( DdlManager.getInstance() );
-        DefaultInserter.restoreInterfacesIfNecessary();
-        QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
-        // Initialize statistic settings
-        StatisticsManager.getInstance().initializeStatisticSettings();
+        restoreDefaults( authenticator, catalog );
 
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
@@ -424,6 +389,9 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+
+        // Initialize statistic settings
+        StatisticsManager.getInstance().initializeStatisticSettings();
 
         // Close splash screen
         if ( showSplashScreen ) {
@@ -444,6 +412,47 @@ public class PolyphenyDb {
 
         if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
+        }
+    }
+
+
+    @NotNull
+    private Catalog restoreCatalog() {
+        Catalog.resetCatalog = resetCatalog;
+        Catalog.memoryCatalog = memoryCatalog;
+        Catalog.testMode = testMode;
+        Catalog.resetDocker = resetDocker;
+        Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
+        Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
+        Catalog catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
+        if ( catalog == null ) {
+            throw new RuntimeException( "There was no catalog submitted, aborting." );
+        }
+        catalog.init();
+        return catalog;
+    }
+
+
+    private void restoreDefaults( Authenticator authenticator, Catalog catalog ) {
+        PolyPluginManager.startUp( transactionManager, authenticator );
+        DefaultInserter.restoreData( DdlManager.getInstance() );
+        DefaultInserter.restoreInterfacesIfNecessary();
+        QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
+        AdapterManager.getInstance().restoreAdapters();
+
+        Transaction trx = null;
+        try {
+            trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
+            Catalog.getInstance().restoreColumnPlacements( trx );
+            Catalog.getInstance().restoreViews( trx );
+            trx.commit();
+        } catch ( TransactionException e ) {
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
+            }
+            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
     }
 

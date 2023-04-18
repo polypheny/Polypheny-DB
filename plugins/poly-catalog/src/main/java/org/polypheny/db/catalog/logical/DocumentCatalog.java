@@ -77,16 +77,18 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
 
     @Override
-    public long addCollection( Long id, String name, EntityType entity, boolean modifiable ) {
-        return 0;
+    public LogicalCollection addCollection( String name, EntityType entity, boolean modifiable ) {
+        long id = idBuilder.getNewLogicalId();
+        LogicalCollection collection = new LogicalCollection( id, name, logicalNamespace.id, entity, modifiable );
+        collections.put( id, collection );
+        return collection;
     }
 
 
     @Override
     public void deleteCollection( long id ) {
-
+        collections.remove( id );
     }
-
 
 
     @Override

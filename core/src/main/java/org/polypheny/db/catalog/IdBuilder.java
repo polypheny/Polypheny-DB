@@ -111,7 +111,7 @@ public class IdBuilder {
     }
 
 
-    public long getNewEntityId() {
+    public long getNewLogicalId() {
         return entityId.getAndIncrement();
     }
 

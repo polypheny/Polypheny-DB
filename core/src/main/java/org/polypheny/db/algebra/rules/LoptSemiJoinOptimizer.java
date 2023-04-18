@@ -669,7 +669,7 @@ public class LoptSemiJoinOptimizer {
     private abstract static class LcsEntity extends CatalogEntity {
 
         protected LcsEntity() {
-            super( -1, "lcs", -1, EntityType.ENTITY, NamespaceType.RELATIONAL );
+            super( -1, "lcs", -1, EntityType.ENTITY, NamespaceType.RELATIONAL, false );
         }
 
     }

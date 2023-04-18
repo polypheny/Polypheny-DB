@@ -21,14 +21,10 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.allocation.PolyAllocGraphCatalog;
@@ -47,8 +43,6 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
@@ -139,11 +133,11 @@ public class PolyCatalog extends Catalog implements Serializable {
     @Override
     public void updateSnapshot() {
         // reset physical catalogs
-        Set<Long> keys = this.physicalCatalogs.keySet();
-        keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
+        //Set<Long> keys = this.physicalCatalogs.keySet();
+        //keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
 
         // update all except physicals, so information can be accessed
-        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
+        /*this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
         // generate new physical entities, atm only relational
         this.allocationCatalogs.forEach( ( k, v ) -> {
             if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
@@ -162,7 +156,7 @@ public class PolyCatalog extends Catalog implements Serializable {
                     getPhysical( table.namespaceId ).addEntities( physicals );
                 } );
             }
-        } );
+        } );*/
 
         // update with newly generated physical entities
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
@@ -284,7 +278,8 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     public long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
-        long id = idBuilder.getNewNamespaceId();
+        // cannot separate namespace and entity ids, as there are models which have their entity on the namespace level
+        long id = idBuilder.getNewLogicalId();
         LogicalNamespace namespace = new LogicalNamespace( id, name, namespaceType, caseSensitive );
 
         switch ( namespaceType ) {

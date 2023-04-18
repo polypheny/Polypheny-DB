@@ -25,13 +25,12 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
     /**
      * Add a new collection with the given parameters.
      *
-     * @param id ID of the collection to add, null if a new one needs to be generated
      * @param name The name of the collection
      * @param entity The type of entity of the collection
      * @param modifiable If the collection is modifiable
      * @return The id of the added collection
      */
-    long addCollection( Long id, String name, EntityType entity, boolean modifiable );
+    LogicalCollection addCollection( String name, EntityType entity, boolean modifiable );
 
 
     /**

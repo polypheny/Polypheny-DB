@@ -58,7 +58,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.refactor.QueryableEntity;
@@ -96,7 +95,6 @@ import org.polypheny.db.util.Util;
 public class JdbcEntity extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableEntity, QueryableEntity {
 
     private final AllocationTable allocation;
-    private final LogicalTable logical;
     private JdbcSchema jdbcSchema;
 
     private final TableType jdbcTableType;
@@ -105,19 +103,17 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
     public JdbcEntity(
             JdbcSchema jdbcSchema,
             long id,
-            LogicalTable logicalTable,
             AllocationTable allocationTable,
             @NonNull TableType jdbcTableType ) {
         super(
                 id,
                 allocationTable,
-                getPhysicalTableName( jdbcSchema.adapter, logicalTable, allocationTable ),
+                getPhysicalTableName( jdbcSchema.adapter, allocationTable ),
                 getPhysicalSchemaName( jdbcSchema.adapter ),
                 getPhysicalColumnNames( jdbcSchema.adapter, allocationTable ),
                 allocationTable.getColumnNames(),
                 allocationTable.getColumnTypes(),
                 allocationTable.getColumnOrder() );
-        this.logical = logicalTable;
         this.allocation = allocationTable;
         this.jdbcSchema = jdbcSchema;
         this.jdbcTableType = jdbcTableType;
@@ -136,9 +132,9 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
     }
 
 
-    private static String getPhysicalTableName( Adapter adapter, LogicalTable logicalTable, AllocationTable allocationTable ) {
+    private static String getPhysicalTableName( Adapter adapter, AllocationTable allocationTable ) {
         AbstractJdbcStore store = (AbstractJdbcStore) adapter;
-        return store.getPhysicalTableName( logicalTable.id, allocationTable.id );
+        return store.getPhysicalTableName( allocationTable.id, 0 );
     }
 
 

@@ -44,7 +44,7 @@ public abstract class AllocationEntity extends CatalogEntity {
             long namespaceId,
             long adapterId,
             NamespaceType type ) {
-        super( id, null, namespaceId, EntityType.ENTITY, type );
+        super( id, null, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
     }

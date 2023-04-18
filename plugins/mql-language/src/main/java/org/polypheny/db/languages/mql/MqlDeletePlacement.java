@@ -60,7 +60,7 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
             throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 
-        DdlManager.getInstance().dropCollectionPlacement( namespaceId, collections.get( 0 ), dataStores, statement );
+        DdlManager.getInstance().dropCollectionAllocation( namespaceId, collections.get( 0 ), dataStores, statement );
     }
 
 

@@ -16,9 +16,7 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import java.util.List;
 import java.util.Map;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 
 public interface LogicalGraphCatalog extends LogicalCatalog {
@@ -44,14 +42,12 @@ public interface LogicalGraphCatalog extends LogicalCatalog {
     /**
      * Adds a new graph to the catalog, on the same layer as schema in relational.
      *
+     * @param id
      * @param name The name of the graph
-     * @param stores The datastores on which the graph is placed
      * @param modifiable If the graph is modifiable
-     * @param ifNotExists If the task fails when the graph already exists
-     * @param replace If the graph should replace an existing one
      * @return The id of the newly added graph
      */
-    long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
+    LogicalGraph addGraph( long id, String name, boolean modifiable );
 
     /**
      * Deletes an existing graph.

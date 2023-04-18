@@ -18,13 +18,12 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.Map;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.logistic.PlacementType;
 
 public interface AllocationDocumentCatalog extends AllocationCatalog {
 
-    void addCollectionPlacement( long namespaceId, long adapterId, long id, PlacementType placementType );
+    AllocationCollection addAllocation( long adapterId, long logicalId );
 
-    void dropCollectionPlacement( long id, long adapterId );
+    void removeAllocation( long id );
 
 
     Map<Long, ? extends AllocationCollection> getCollections();

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -31,6 +32,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 @Value
 public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatalog {
+
+    IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Getter
     @Serialize
@@ -57,14 +60,17 @@ public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatal
 
 
     @Override
-    public long addGraphPlacement( long adapterId, long graphId ) {
-        return 0;
+    public AllocationGraph addAllocation( long adapterId, long graphId ) {
+        long id = idBuilder.getNewAllocId();
+        AllocationGraph graph = new AllocationGraph( id, graphId, namespace.id, adapterId );
+        graphs.put( id, graph );
+        return graph;
     }
 
 
     @Override
-    public void deleteGraphPlacement( long adapterId, long graphId ) {
-
+    public void deleteAllocation( long id ) {
+        graphs.remove( id );
     }
 
 

@@ -49,7 +49,7 @@ public abstract class Processor {
                 // Acquire global schema lock
                 lock( statement );
                 // Execute statement
-                return getResult( statement, parsed, parameters );
+                return getResult( statement, (ExecutableStatement) parsed, parameters );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "Exception while acquiring global schema lock", e );
             } catch ( TransactionException e ) {
@@ -64,8 +64,8 @@ public abstract class Processor {
     }
 
 
-    PolyImplementation getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException {
-        ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
+    PolyImplementation getResult( Statement statement, ExecutableStatement parsed, QueryParameters parameters ) throws TransactionException {
+        parsed.execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();
         return new PolyImplementation(

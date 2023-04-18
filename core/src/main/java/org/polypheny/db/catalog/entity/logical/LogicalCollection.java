@@ -35,11 +35,12 @@ public class LogicalCollection extends LogicalEntity implements CatalogObject {
 
 
     public LogicalCollection(
-            @Deserialize("namespaceId") long namespaceId,
             @Deserialize("id") long id,
             @Deserialize("name") String name,
-            @Deserialize("entityType") EntityType entityType ) {
-        super( id, name, namespaceId, entityType, NamespaceType.DOCUMENT );
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("entityType") EntityType entityType,
+            @Deserialize("modifiable") boolean modifiable ) {
+        super( id, name, namespaceId, entityType, NamespaceType.DOCUMENT, modifiable );
     }
 
 

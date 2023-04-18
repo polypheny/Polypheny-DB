@@ -37,14 +37,15 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
     private static final long serialVersionUID = 7343856827901459672L;
 
     @Serialize
-    public boolean modifiable;
-    @Serialize
     public boolean caseSensitive;
 
 
-    public LogicalGraph( @Deserialize("id") long id, @Deserialize("name") String name, @Deserialize("modifiable") boolean modifiable, @Deserialize("caseSensitive") boolean caseSensitive ) {
-        super( id, name, id, EntityType.ENTITY, NamespaceType.GRAPH );
-        this.modifiable = modifiable;
+    public LogicalGraph(
+            @Deserialize("id") long id,
+            @Deserialize("name") String name,
+            @Deserialize("modifiable") boolean modifiable,
+            @Deserialize("caseSensitive") boolean caseSensitive ) {
+        super( id, name, id, EntityType.ENTITY, NamespaceType.GRAPH, modifiable );
         this.caseSensitive = caseSensitive;
     }
 

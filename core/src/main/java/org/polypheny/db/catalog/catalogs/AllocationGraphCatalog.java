@@ -29,15 +29,14 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
      * @param graphId The id of the graph for which a new placement is added
      * @return The id of the new placement
      */
-    long addGraphPlacement( long adapterId, long graphId );
+    AllocationGraph addAllocation( long adapterId, long graphId );
 
     /**
      * Deletes a specific graph placement for a given graph and adapter.
      *
-     * @param adapterId The id of the adapter on which the placement is removed
-     * @param graphId The id of the graph for which the placement is removed
+     * @param id
      */
-    void deleteGraphPlacement( long adapterId, long graphId );
+    void deleteAllocation( long id );
 
 
     Map<Long, ? extends AllocationGraph> getGraphs();

@@ -107,7 +107,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public List<PhysicalEntity> createAdapterTable( IdBuilder idBuilder, LogicalTable logicalTable, AllocationTable allocationTable ) {
-        return List.of( currentJdbcSchema.createJdbcTable( idBuilder.getNewPhysicalId(), logicalTable, allocationTable ) );
+        return List.of( currentJdbcSchema.createJdbcTable( idBuilder.getNewPhysicalId(), allocationTable ) );
     }
 
 

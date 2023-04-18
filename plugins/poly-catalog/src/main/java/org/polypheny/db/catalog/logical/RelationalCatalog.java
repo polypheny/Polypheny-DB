@@ -156,7 +156,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Override
     public LogicalTable addTable( String name, EntityType entityType, boolean modifiable ) {
-        long id = idBuilder.getNewEntityId();
+        long id = idBuilder.getNewLogicalId();
         LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, modifiable );
         tables.put( id, table );
         return table;
@@ -165,7 +165,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Override
     public LogicalView addView( String name, long namespaceId, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, List<Long> connectedViews, AlgDataType fieldList, String query, QueryLanguage language ) {
-        long id = idBuilder.getNewEntityId();
+        long id = idBuilder.getNewLogicalId();
 
         LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, algCollation, underlyingTables, language );
 
@@ -178,7 +178,7 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
     @Override
     public LogicalMaterializedView addMaterializedView( final String name, long namespaceId, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
-        long id = idBuilder.getNewEntityId();
+        long id = idBuilder.getNewLogicalId();
 
         LogicalMaterializedView materializedViewTable = new LogicalMaterializedView(
                 id,

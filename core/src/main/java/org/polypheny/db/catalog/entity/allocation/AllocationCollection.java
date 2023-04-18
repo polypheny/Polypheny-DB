@@ -32,7 +32,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public class AllocationCollection extends AllocationEntity {
 
     public AllocationCollection(
-            @Deserialize("id") Long id,
+            @Deserialize("id") long id,
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {

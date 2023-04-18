@@ -36,7 +36,7 @@ public abstract class PhysicalEntity extends CatalogEntity {
 
 
     protected PhysicalEntity( long id, long logicalId, long allocationId, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( id, name, namespaceId, type, namespaceType );
+        super( id, name, namespaceId, type, namespaceType, true );
         this.allocationId = allocationId;
         this.namespaceName = namespaceName;
         this.adapterId = adapterId;

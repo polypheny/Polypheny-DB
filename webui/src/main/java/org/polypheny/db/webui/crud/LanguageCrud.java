@@ -266,7 +266,7 @@ public class LanguageCrud {
         EditCollectionRequest request = ctx.bodyAsClass( EditCollectionRequest.class );
         Transaction transaction = crud.getTransaction();
 
-        String query = String.format( "db.createCollection(%s)", request.collection );
+        String query = String.format( "db.createPhysicalCollection(%s)", request.collection );
 
         Result result;
         try {
@@ -280,7 +280,7 @@ public class LanguageCrud {
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
-                log.error( "Could not rollback createCollection statement: {}", ex.getMessage(), ex );
+                log.error( "Could not rollback createPhysicalCollection statement: {}", ex.getMessage(), ex );
             }
         }
         ctx.json( result );

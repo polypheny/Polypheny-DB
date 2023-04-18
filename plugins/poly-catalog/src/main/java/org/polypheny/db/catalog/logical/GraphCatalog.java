@@ -19,7 +19,6 @@ package org.polypheny.db.catalog.logical;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Builder;
@@ -27,7 +26,6 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
@@ -94,8 +92,10 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
 
     @Override
-    public long addGraph( String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
-        return 0;
+    public LogicalGraph addGraph( long id, String name, boolean modifiable ) {
+        LogicalGraph graph = new LogicalGraph( id, name, modifiable, logicalNamespace.caseSensitive );
+        graphs.put( id, graph );
+        return graph;
     }
 
 

@@ -245,7 +245,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 //            }
 //            final Source sourceSansCsv = sourceSansGz.trim( ".csv" );
 //
-//            final Table table = createPhysicalTable( source );
+//            final Table table = createTable( source );
 //            builder.put( sourceSansCsv.relative( baseSource ).path(), table );
 //        }
 //        return builder.build();

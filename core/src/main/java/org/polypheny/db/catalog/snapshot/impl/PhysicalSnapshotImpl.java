@@ -51,11 +51,24 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
     public PhysicalSnapshotImpl( Map<Long, PhysicalCatalog> physicalCatalogs ) {
         this.entities = ImmutableMap.copyOf( physicalCatalogs.values().stream().flatMap( c -> c.getPhysicals().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-        this.namespaces = ImmutableMap.copyOf( physicalCatalogs.values().stream().flatMap( n -> n.getNamespaces().values().stream() ).collect( Collectors.toMap( n -> Pair.of( n.getId(), n.getAdapterId() ), n -> n ) ) );
+        this.namespaces = buildAdapterIdNamespace( physicalCatalogs );
         this.adapterLogicalEntity = buildAdapterLogicalEntity();
         this.adapterPhysicals = buildAdapterPhysicals();
         this.logicalToPhysicals = buildLogicalToPhysicals();
         this.allocToPhysicals = buildAllocToPhysicals();
+    }
+
+
+    private ImmutableMap<Pair<Long, Long>, Namespace> buildAdapterIdNamespace( Map<Long, PhysicalCatalog> physicalCatalogs ) {
+        Map<Pair<Long, Long>, Namespace> map = new HashMap<>();
+        for ( Entry<Long, PhysicalCatalog> n : physicalCatalogs.entrySet() ) {
+            for ( Entry<Long, Namespace> entry : n.getValue().getNamespaces().entrySet() ) {
+                if ( map.put( Pair.of( entry.getKey(), n.getKey() ), entry.getValue() ) != null ) {
+                    throw new IllegalStateException( "Duplicate key" );
+                }
+            }
+        }
+        return ImmutableMap.copyOf( map );
     }
 
 
@@ -172,7 +185,7 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
 
     @Override
     public Namespace getNamespace( long id, long adapterId ) {
-        return namespaces.get( Pair.of( id, adapterId ) );
+        return namespaces.get( Pair.of( adapterId, id ) );
     }
 
 

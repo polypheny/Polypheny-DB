@@ -36,8 +36,9 @@ public abstract class LogicalEntity extends CatalogEntity {
             String name,
             long namespaceId,
             EntityType type,
-            NamespaceType namespaceType ) {
-        super( id, name, namespaceId, type, namespaceType );
+            NamespaceType namespaceType,
+            boolean modifiable ) {
+        super( id, name, namespaceId, type, namespaceType, modifiable );
     }
 
 

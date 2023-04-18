@@ -56,7 +56,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
@@ -142,12 +141,10 @@ public class JdbcSchema implements Namespace, Schema {
 
     public JdbcEntity createJdbcTable(
             long id,
-            LogicalTable logicalTable,
             AllocationTable allocationTable ) {
         return new JdbcEntity(
                 this,
                 id,
-                logicalTable,
                 allocationTable,
                 TableType.TABLE );
     }

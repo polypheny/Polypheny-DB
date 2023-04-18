@@ -23,21 +23,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.Value;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.logistic.PlacementType;
 
+@Value
 public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCatalog {
 
-    @Getter
-    @Serialize
-    public final LogicalNamespace namespace;
+    IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Getter
     @Serialize
-    public final ConcurrentHashMap<Long, AllocationCollection> collections;
+    public LogicalNamespace namespace;
+
+    @Getter
+    @Serialize
+    public ConcurrentHashMap<Long, AllocationCollection> collections;
 
 
     public PolyAllocDocCatalog( LogicalNamespace namespace ) {
@@ -64,14 +68,17 @@ public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCata
 
 
     @Override
-    public void addCollectionPlacement( long namespaceId, long adapterId, long id, PlacementType placementType ) {
-
+    public AllocationCollection addAllocation( long adapterId, long logicalId ) {
+        long id = idBuilder.getNewAllocId();
+        AllocationCollection collection = new AllocationCollection( id, logicalId, namespace.id, adapterId );
+        collections.put( id, collection );
+        return collection;
     }
 
 
     @Override
-    public void dropCollectionPlacement( long id, long adapterId ) {
-
+    public void removeAllocation( long id ) {
+        collections.remove( id );
     }
 
 

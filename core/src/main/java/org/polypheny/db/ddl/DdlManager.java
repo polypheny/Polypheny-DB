@@ -438,7 +438,7 @@ public abstract class DdlManager {
 
     public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement );
 
-    public abstract void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement );
+    public abstract void addCollectionAllocation( long namespaceId, String name, List<DataStore> stores, Statement statement );
 
     /**
      * Add new partitions for the column
@@ -539,14 +539,14 @@ public abstract class DdlManager {
     public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
 
 
-    public abstract long addGraphPlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
+    public abstract long addGraphAllocation( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
 
     public abstract void removeGraphDatabasePlacement( long graphId, DataStore dataStores, Statement statement );
 
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
-    public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore> dataStores, Statement statement );
+    public abstract void dropCollectionAllocation( long namespaceId, LogicalCollection collection, List<DataStore> dataStores, Statement statement );
 
 
     /**

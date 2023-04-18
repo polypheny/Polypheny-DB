@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.Serializable;
@@ -37,24 +38,25 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
+@Value
 public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Serializable {
 
 
-    private final IdBuilder idBuilder = IdBuilder.getInstance();
+    IdBuilder idBuilder = IdBuilder.getInstance();
     @Getter
     @Serialize
-    public final LogicalNamespace namespace;
+    public LogicalNamespace namespace;
 
     @Getter
     public BinarySerializer<PolyAllocRelCatalog> serializer = Serializable.builder.get().build( PolyAllocRelCatalog.class );
 
     @Serialize
     @Getter
-    public final ConcurrentHashMap<Long, AllocationTable> tables;
+    public ConcurrentHashMap<Long, AllocationTable> tables;
 
     @Serialize
     @Getter
-    public final ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> allocColumns;
+    public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> allocColumns;
 
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
@@ -97,13 +99,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType ) {
 
-    }
-
-
-    @Override
-    public void updateColumnPlacementPhysicalPosition( long allocId, long columnId, long position ) {
-        // Pair<Long, Long> key = Pair.of( allocId, columnId );
-        // allocColumns.put( key, allocColumns.get( key ).withPosition( position ) );
     }
 
 
@@ -168,18 +163,13 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public AllocationTable createAllocationTable( long adapterId, long tableId ) {
+    public AllocationTable addAllocation( long adapterId, long tableId ) {
         long id = idBuilder.getNewAllocId();
         AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId );
         tables.put( id, table );
         return table;
     }
 
-
-    @Override
-    public void deleteAllocation( long adapterId, long tableId ) {
-
-    }
 
 
     @Override

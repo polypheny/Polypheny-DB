@@ -28,9 +28,12 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -65,9 +68,9 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
     }
 
 
-    public abstract List<? extends PhysicalEntity> createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable alloc, List<AllocationColumn> allocationTable );
+    public abstract List<? extends PhysicalEntity> createTable( Context context, LogicalTable combinedTable, AllocationTable alloc, List<AllocationColumn> allocationTable );
 
-    public abstract void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds );
+    public abstract void dropTable( Context context, LogicalTable combinedTable, AllocationTable table, List<? extends PhysicalEntity> physicals );
 
     public abstract void addColumn( Context context, AllocationTable catalogTable, LogicalColumn logicalColumn );
 
@@ -91,9 +94,9 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the LPG data model natively.
      */
-    public void createGraph( Context context, LogicalGraph graphDatabase ) {
+    public List<? extends PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
         // overwrite this if the datastore supports graph
-        createGraphSubstitution( context, graphDatabase );
+        return createGraphSubstitution( context, logical, allocation );
     }
 
 
@@ -112,21 +115,23 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void createGraphSubstitution( Context context, LogicalGraph graphDatabase ) {
-        /*CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
+    private List<? extends PhysicalEntity> createGraphSubstitution( Context context, LogicalGraph graphDatabase, AllocationGraph allocation ) {
 
-        LogicalTable nodes = Catalog.getInstance().getTable( mapping.nodesId );
-        createPhysicalTable( context, nodes, null );
+        IdBuilder idBuilder = IdBuilder.getInstance();
+
+        /*LogicalTable nodes = new LogicalTable( idBuilder. )
+        createTable( context, nodes, null );
 
         LogicalTable nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
-        createPhysicalTable( context, nodeProperty, null );
+        createTable( context, nodeProperty, null );
 
         LogicalTable edges = Catalog.getInstance().getTable( mapping.edgesId );
-        createPhysicalTable( context, edges, null );
+        createTable( context, edges, null );
 
         LogicalTable edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
-        createPhysicalTable( context, edgeProperty, null );*/
+        createTable( context, edgeProperty, null );*/
         // todo dl
+        return null;
     }
 
 
@@ -158,9 +163,9 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
-    public void createCollection( Context prepareContext, LogicalCollection catalogCollection, long adapterId ) {
+    public List<? extends PhysicalEntity> createPhysicalCollection( Context prepareContext, LogicalCollection catalogCollection, AllocationCollection allocation ) {
         // overwrite this if the datastore supports document
-        createCollectionSubstitution( prepareContext, catalogCollection );
+        return createCollectionSubstitution( prepareContext, catalogCollection );
     }
 
 
@@ -168,13 +173,14 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void createCollectionSubstitution( Context prepareContext, LogicalCollection catalogCollection ) {
+    private List<? extends PhysicalEntity> createCollectionSubstitution( Context prepareContext, LogicalCollection catalogCollection ) {
         /*Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
         LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
-        createPhysicalTable( prepareContext, collectionEntity, null );*/
+        createTable( prepareContext, collectionEntity, null );*/
         // todo dl
+        return null;
     }
 
 
@@ -183,7 +189,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
-    public void dropCollection( Context prepareContext, LogicalCollection catalogCollection ) {
+    public void dropCollection( Context prepareContext, LogicalCollection catalogCollection, AllocationCollection allocation, List<PhysicalEntity> physicals ) {
         // overwrite this if the datastore supports document
         dropCollectionSubstitution( prepareContext, catalogCollection );
     }

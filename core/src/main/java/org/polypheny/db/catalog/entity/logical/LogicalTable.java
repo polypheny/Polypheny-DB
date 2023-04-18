@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -40,8 +41,8 @@ import org.polypheny.db.schema.ColumnStrategy;
 
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder(toBuilder = true)
+@Value
 @NonFinal
-//@Value
 public class LogicalTable extends LogicalEntity implements Comparable<LogicalTable> {
 
     private static final long serialVersionUID = 4653390333258552102L;
@@ -50,8 +51,6 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
     @Serialize
     public Long primaryKey;
 
-    @Serialize
-    public boolean modifiable;
 
 
 
@@ -62,9 +61,8 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
             @Deserialize("entityType") @NonNull final EntityType type,
             @Deserialize("primaryKey") final Long primaryKey,
             @Deserialize("modifiable") boolean modifiable ) {
-        super( id, name, namespaceId, type, NamespaceType.RELATIONAL );
+        super( id, name, namespaceId, type, NamespaceType.RELATIONAL, modifiable );
         this.primaryKey = primaryKey;
-        this.modifiable = modifiable;
 
         if ( type == EntityType.ENTITY && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
