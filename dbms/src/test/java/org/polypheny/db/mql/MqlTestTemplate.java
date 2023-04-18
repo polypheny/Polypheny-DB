@@ -72,7 +72,7 @@ public class MqlTestTemplate {
 
 
     public static void createCollection( String collection, String database ) {
-        MongoConnection.executeGetResponse( String.format( "db.createCollection( %s )", collection ), database );
+        MongoConnection.executeGetResponse( String.format( "db.createPhysicalCollection( %s )", collection ), database );
     }
 
 
