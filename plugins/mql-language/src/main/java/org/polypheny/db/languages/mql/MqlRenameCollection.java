@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -51,7 +52,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        List<LogicalTable> tables = context.getSnapshot().rel().getTables( database, null );
+        List<LogicalTable> tables = context.getSnapshot().rel().getTables( Pattern.of( database ), null );
 
         if ( dropTarget ) {
             Optional<LogicalTable> newTable = tables.stream()

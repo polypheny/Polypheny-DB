@@ -19,8 +19,6 @@ package org.polypheny.db.cypher;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.jetty.websocket.api.Session;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -29,6 +27,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.processing.ExtendedQueryParameters;
@@ -40,7 +40,7 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
-public class CypherLanguagePlugin extends Plugin {
+public class CypherLanguagePlugin extends PolyPlugin {
 
 
     public static final String NAME = "cypher";
@@ -50,8 +50,8 @@ public class CypherLanguagePlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public CypherLanguagePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public CypherLanguagePlugin( PluginContext context ) {
+        super( context );
     }
 
 

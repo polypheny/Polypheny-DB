@@ -237,260 +237,256 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         String columnName;
         final String tableName;
         final SqlValidatorNamespace namespace;
-        switch ( identifier.names.size() ) {
-            case 1: {
-                columnName = identifier.names.get( 0 );
-                final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
-                switch ( map.size() ) {
-                    case 0:
-                        if ( nameMatcher.isCaseSensitive() ) {
-                            final NameMatcher liberalMatcher = NameMatchers.liberal();
-                            final Map<String, ScopeChild> map2 = findQualifyingTableNames( columnName, identifier, liberalMatcher );
-                            if ( !map2.isEmpty() ) {
-                                final List<String> list = new ArrayList<>();
-                                for ( ScopeChild entry : map2.values() ) {
-                                    final AlgDataTypeField field = liberalMatcher.field( entry.namespace.getRowType(), columnName );
-                                    list.add( field.getName() );
-                                }
-                                Collections.sort( list );
-                                throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFoundDidYouMean( columnName, Util.sepList( list, "', '" ) ) );
-                            }
-                        } else if ( !SqlValidatorUtil.isTableRelational( validator ) ) {
-                            // todo dl, check if this does not lead to problems
-                            return SqlQualified.create( this, 0, validator.getSqlNamespace( identifier ), identifier );
-                        }
-                        throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( columnName ) );
-                    case 1:
-                        tableName = map.keySet().iterator().next();
-                        namespace = map.get( tableName ).namespace;
-                        break;
-                    default:
-                        throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( columnName ) );
-                }
-
-                final ResolvedImpl resolved = new ResolvedImpl();
-                resolveInNamespace( namespace, false, identifier.names, nameMatcher, Path.EMPTY, resolved );
-                final AlgDataTypeField field = nameMatcher.field( namespace.getRowType(), columnName );
-                if ( field != null ) {
-                    if ( hasAmbiguousUnresolvedStar( namespace.getRowType(), field, columnName ) ) {
-                        throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( columnName ) );
-                    }
-
-                    columnName = field.getName(); // use resolved field name
-                }
-                // todo: do implicit collation here
-                final ParserPos pos = identifier.getPos();
-                identifier =
-                        new SqlIdentifier(
-                                ImmutableList.of( tableName, columnName ),
-                                null,
-                                pos,
-                                ImmutableList.of( ParserPos.ZERO, pos ) );
-            }
-            // fall through
-            default: {
-                SqlValidatorNamespace fromNs = null;
-                Path fromPath = null;
-                AlgDataType fromRowType = null;
-                final ResolvedImpl resolved = new ResolvedImpl();
-                int size = identifier.names.size();
-                int i = size - 1;
-                for ( ; i > 0; i-- ) {
-                    final SqlIdentifier prefix = identifier.getComponent( 0, i );
-                    resolved.clear();
-                    resolve( prefix.names, nameMatcher, false, resolved );
-                    if ( resolved.count() == 1 ) {
-                        final Resolve resolve = resolved.only();
-                        fromNs = resolve.namespace;
-                        fromPath = resolve.path;
-                        fromRowType = resolve.rowType();
-                        break;
-                    }
-                    // Look for a table alias that is the wrong case.
+        if ( identifier.names.size() == 1 ) {
+            columnName = identifier.names.get( 0 );
+            final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
+            switch ( map.size() ) {
+                case 0:
                     if ( nameMatcher.isCaseSensitive() ) {
                         final NameMatcher liberalMatcher = NameMatchers.liberal();
-                        resolved.clear();
-                        resolve( prefix.names, liberalMatcher, false, resolved );
-                        if ( resolved.count() == 1 ) {
-                            final Step lastStep = Util.last( resolved.only().path.steps() );
-                            throw validator.newValidationError(
-                                    prefix,
-                                    Static.RESOURCE.tableNameNotFoundDidYouMean( prefix.toString(), lastStep.name ) );
-                        }
-                    }
-                }
-                if ( fromNs == null ) {
-                    // Look for a column not qualified by a table alias.
-                    columnName = identifier.names.get( 0 );
-                    final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
-                    if ( map.size() == 1 ) {
-                        final Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
-                        final String tableName2 = map.keySet().iterator().next();
-
-                        fromPath = Path.EMPTY;
-
-                        // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
-                        // Access to a field in a RecordType column of other StructKind should always be qualified with table name.
-                        final AlgDataTypeField field = nameMatcher.field( fromNs.getRowType(), columnName );
-                        if ( field != null ) {
-                            switch ( field.getType().getStructKind() ) {
-                                case PEEK_FIELDS:
-                                case PEEK_FIELDS_DEFAULT:
-                                case PEEK_FIELDS_NO_EXPAND:
-                                    columnName = field.getName(); // use resolved field name
-                                    resolve( ImmutableList.of( tableName2 ), nameMatcher, false, resolved );
-                                    if ( resolved.count() == 1 ) {
-                                        final Resolve resolve = resolved.only();
-                                        fromRowType = resolve.rowType();
-                                        identifier = identifier
-                                                .setName( 0, columnName )
-                                                .add( 0, tableName2, ParserPos.ZERO );
-                                        ++i;
-                                        ++size;
-                                    }
-                                    break;
-                                default:
-                                    // Throw an error if the table was not found.
-                                    // If one or more of the child namespaces allows peeking (e.g. if they are Phoenix column families) then we relax the SQL standard requirement that record fields are qualified by table alias.
-                                    final SqlIdentifier prefix = identifier.skipLast( 1 );
-                                    throw validator.newValidationError( prefix, Static.RESOURCE.tableNameNotFound( prefix.toString() ) );
+                        final Map<String, ScopeChild> map2 = findQualifyingTableNames( columnName, identifier, liberalMatcher );
+                        if ( !map2.isEmpty() ) {
+                            final List<String> list = new ArrayList<>();
+                            for ( ScopeChild entry : map2.values() ) {
+                                final AlgDataTypeField field = liberalMatcher.field( entry.namespace.getRowType(), columnName );
+                                list.add( field.getName() );
                             }
+                            Collections.sort( list );
+                            throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFoundDidYouMean( columnName, Util.sepList( list, "', '" ) ) );
                         }
-                    } else {
-                        final SqlIdentifier prefix1 = identifier.skipLast( 1 );
-                        throw validator.newValidationError( prefix1, Static.RESOURCE.tableNameNotFound( prefix1.toString() ) );
+                    } else if ( !SqlValidatorUtil.isTableRelational( validator ) ) {
+                        // todo dl, check if this does not lead to problems
+                        return SqlQualified.create( this, 0, validator.getSqlNamespace( identifier ), identifier );
                     }
+                    throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( columnName ) );
+                case 1:
+                    tableName = map.keySet().iterator().next();
+                    namespace = map.get( tableName ).namespace;
+                    break;
+                default:
+                    throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( columnName ) );
+            }
+
+            final ResolvedImpl resolved = new ResolvedImpl();
+            resolveInNamespace( namespace, false, identifier.names, nameMatcher, Path.EMPTY, resolved );
+            final AlgDataTypeField field = nameMatcher.field( namespace.getRowType(), columnName );
+            if ( field != null ) {
+                if ( hasAmbiguousUnresolvedStar( namespace.getRowType(), field, columnName ) ) {
+                    throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( columnName ) );
                 }
 
-                // If a table alias is part of the identifier, make sure that the table alias uses the same case as it was defined. For example, in
-                //
-                //    SELECT e.empno FROM Emp as E
-                //
-                // change "e.empno" to "E.empno".
-                if ( fromNs.getEnclosingNode() != null && !(this instanceof MatchRecognizeScope) ) {
-                    String alias = SqlValidatorUtil.getAlias( fromNs.getEnclosingNode(), -1 );
-                    if ( alias != null && i > 0 && !alias.equals( identifier.names.get( i - 1 ) ) ) {
-                        identifier = identifier.setName( i - 1, alias );
-                    }
-                }
-                if ( fromPath.stepCount() > 1 ) {
-                    assert fromRowType != null;
-                    for ( Step p : fromPath.steps() ) {
-                        fromRowType = fromRowType.getFieldList().get( p.i ).getType();
-                    }
-                    ++i;
-                }
-                final SqlIdentifier suffix = identifier.getComponent( i, size );
+                columnName = field.getName(); // use resolved field name
+            }
+            // todo: do implicit collation here
+            final ParserPos pos = identifier.getPos();
+            identifier =
+                    new SqlIdentifier(
+                            ImmutableList.of( tableName, columnName ),
+                            null,
+                            pos,
+                            ImmutableList.of( ParserPos.ZERO, pos ) );
+            // fall through
+        }
+        SqlValidatorNamespace fromNs = null;
+        Path fromPath = null;
+        AlgDataType fromRowType = null;
+        final ResolvedImpl resolved = new ResolvedImpl();
+        int size = identifier.names.size();
+        int i = size - 1;
+        for ( ; i > 0; i-- ) {
+            final SqlIdentifier prefix = identifier.getComponent( 0, i );
+            resolved.clear();
+            resolve( prefix.names, nameMatcher, false, resolved );
+            if ( resolved.count() == 1 ) {
+                final Resolve resolve = resolved.only();
+                fromNs = resolve.namespace;
+                fromPath = resolve.path;
+                fromRowType = resolve.rowType();
+                break;
+            }
+            // Look for a table alias that is the wrong case.
+            if ( nameMatcher.isCaseSensitive() ) {
+                final NameMatcher liberalMatcher = NameMatchers.liberal();
                 resolved.clear();
-                resolveInNamespace( fromNs, false, suffix.names, nameMatcher, Path.EMPTY, resolved );
-                final Path path;
-                switch ( resolved.count() ) {
-                    case 0:
-                        // Maybe the last component was correct, just wrong case
-                        if ( nameMatcher.isCaseSensitive() ) {
-                            NameMatcher liberalMatcher = NameMatchers.liberal();
-                            resolved.clear();
-                            resolveInNamespace( fromNs, false, suffix.names, liberalMatcher, Path.EMPTY, resolved );
-                            if ( resolved.count() > 0 ) {
-                                int k = size - 1;
-                                final SqlIdentifier prefix = identifier.getComponent( 0, i );
-                                final SqlIdentifier suffix3 = identifier.getComponent( i, k + 1 );
-                                final Step step = Util.last( resolved.resolves.get( 0 ).path.steps() );
-                                throw validator.newValidationError( suffix3, Static.RESOURCE.columnNotFoundInTableDidYouMean( suffix3.toString(), prefix.toString(), step.name ) );
-                            }
-                        }
-                        // Find the shortest suffix that also fails. Suppose we cannot resolve "a.b.c"; we find we cannot resolve "a.b" but can resolve "a". So, the error will be "Column 'a.b' not found".
-                        int k = size - 1;
-                        for ( ; k > i; --k ) {
-                            SqlIdentifier suffix2 = identifier.getComponent( i, k );
-                            resolved.clear();
-                            resolveInNamespace( fromNs, false, suffix2.names, nameMatcher, Path.EMPTY, resolved );
-                            if ( resolved.count() > 0 ) {
-                                break;
-                            }
-                        }
-                        final SqlIdentifier prefix = identifier.getComponent( 0, i );
-                        final SqlIdentifier suffix3 = identifier.getComponent( i, k + 1 );
-                        throw validator.newValidationError( suffix3, Static.RESOURCE.columnNotFoundInTable( suffix3.toString(), prefix.toString() ) );
-                    case 1:
-                        path = resolved.only().path;
-                        break;
-                    default:
-                        final Comparator<Resolve> c =
-                                new Comparator<Resolve>() {
-                                    @Override
-                                    public int compare( Resolve o1, Resolve o2 ) {
-                                        // Name resolution that uses fewer implicit steps wins.
-                                        int c = Integer.compare( worstKind( o1.path ), worstKind( o2.path ) );
-                                        if ( c != 0 ) {
-                                            return c;
-                                        }
-                                        // Shorter path wins
-                                        return Integer.compare( o1.path.stepCount(), o2.path.stepCount() );
-                                    }
-
-
-                                    private int worstKind( Path path ) {
-                                        int kind = -1;
-                                        for ( Step step : path.steps() ) {
-                                            kind = Math.max( kind, step.kind.ordinal() );
-                                        }
-                                        return kind;
-                                    }
-                                };
-                        resolved.resolves.sort( c );
-                        if ( c.compare( resolved.resolves.get( 0 ), resolved.resolves.get( 1 ) ) == 0 ) {
-                            throw validator.newValidationError( suffix, Static.RESOURCE.columnAmbiguous( suffix.toString() ) );
-                        }
-                        path = resolved.resolves.get( 0 ).path;
+                resolve( prefix.names, liberalMatcher, false, resolved );
+                if ( resolved.count() == 1 ) {
+                    final Step lastStep = Util.last( resolved.only().path.steps() );
+                    throw validator.newValidationError(
+                            prefix,
+                            Static.RESOURCE.tableNameNotFoundDidYouMean( prefix.toString(), lastStep.name ) );
                 }
+            }
+        }
+        if ( fromNs == null ) {
+            // Look for a column not qualified by a table alias.
+            columnName = identifier.names.get( 0 );
+            final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
+            if ( map.size() == 1 ) {
+                final Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
+                final String tableName2 = map.keySet().iterator().next();
 
-                // Normalize case to match definition, make elided fields explicit, and check that references to dynamic stars ("**") are unambiguous.
-                int k = i;
-                for ( Step step : path.steps() ) {
-                    final String name = identifier.names.get( k );
-                    if ( step.i < 0 ) {
-                        throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
-                    }
-                    final AlgDataTypeField field0 = step.rowType.getFieldList().get( step.i );
-                    final String fieldName = field0.getName();
-                    switch ( step.kind ) {
+                fromPath = Path.EMPTY;
+
+                // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
+                // Access to a field in a RecordType column of other StructKind should always be qualified with table name.
+                final AlgDataTypeField field = nameMatcher.field( fromNs.getRowType(), columnName );
+                if ( field != null ) {
+                    switch ( field.getType().getStructKind() ) {
                         case PEEK_FIELDS:
                         case PEEK_FIELDS_DEFAULT:
                         case PEEK_FIELDS_NO_EXPAND:
-                            identifier = identifier.add( k, fieldName, ParserPos.ZERO );
+                            columnName = field.getName(); // use resolved field name
+                            resolve( ImmutableList.of( tableName2 ), nameMatcher, false, resolved );
+                            if ( resolved.count() == 1 ) {
+                                final Resolve resolve = resolved.only();
+                                fromRowType = resolve.rowType();
+                                identifier = identifier
+                                        .setName( 0, columnName )
+                                        .add( 0, tableName2, ParserPos.ZERO );
+                                ++i;
+                                ++size;
+                            }
                             break;
                         default:
-                            if ( !fieldName.equals( name ) ) {
-                                identifier = identifier.setName( k, fieldName );
-                            }
-                            if ( hasAmbiguousUnresolvedStar( step.rowType, field0, name ) ) {
-                                throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( name ) );
-                            }
+                            // Throw an error if the table was not found.
+                            // If one or more of the child namespaces allows peeking (e.g. if they are Phoenix column families) then we relax the SQL standard requirement that record fields are qualified by table alias.
+                            final SqlIdentifier prefix = identifier.skipLast( 1 );
+                            throw validator.newValidationError( prefix, Static.RESOURCE.tableNameNotFound( prefix.toString() ) );
                     }
-                    ++k;
                 }
-
-                // Multiple name components may have been resolved as one step by CustomResolvingTable.
-                if ( identifier.names.size() > k ) {
-                    identifier = identifier.getComponent( 0, k );
-                }
-
-                if ( i > 1 ) {
-                    // Simplify overqualified identifiers.
-                    // For example, schema.emp.deptno becomes emp.deptno.
-                    //
-                    // It is safe to convert schema.emp or database.schema.emp to emp because it would not have resolved if the FROM item had an alias. The following query is invalid:
-                    //   SELECT schema.emp.deptno FROM schema.emp AS e
-                    identifier = identifier.getComponent( i - 1, identifier.names.size() );
-                }
-
-                if ( !previous.equals( identifier ) ) {
-                    validator.setOriginal( identifier, previous );
-                }
-                return SqlQualified.create( this, i, fromNs, identifier );
+            } else {
+                final SqlIdentifier prefix1 = identifier.skipLast( 1 );
+                throw validator.newValidationError( prefix1, Static.RESOURCE.tableNameNotFound( prefix1.toString() ) );
             }
         }
+
+        // If a table alias is part of the identifier, make sure that the table alias uses the same case as it was defined. For example, in
+        //
+        //    SELECT e.empno FROM Emp as E
+        //
+        // change "e.empno" to "E.empno".
+        if ( fromNs.getEnclosingNode() != null && !(this instanceof MatchRecognizeScope) ) {
+            String alias = SqlValidatorUtil.getAlias( fromNs.getEnclosingNode(), -1 );
+            if ( alias != null && i > 0 && !alias.equals( identifier.names.get( i - 1 ) ) ) {
+                identifier = identifier.setName( i - 1, alias );
+            }
+        }
+        if ( fromPath.stepCount() > 1 ) {
+            assert fromRowType != null;
+            for ( Step p : fromPath.steps() ) {
+                fromRowType = fromRowType.getFieldList().get( p.i ).getType();
+            }
+            ++i;
+        }
+        final SqlIdentifier suffix = identifier.getComponent( i, size );
+        resolved.clear();
+        resolveInNamespace( fromNs, false, suffix.names, nameMatcher, Path.EMPTY, resolved );
+        final Path path;
+        switch ( resolved.count() ) {
+            case 0:
+                // Maybe the last component was correct, just wrong case
+                if ( nameMatcher.isCaseSensitive() ) {
+                    NameMatcher liberalMatcher = NameMatchers.liberal();
+                    resolved.clear();
+                    resolveInNamespace( fromNs, false, suffix.names, liberalMatcher, Path.EMPTY, resolved );
+                    if ( resolved.count() > 0 ) {
+                        int k = size - 1;
+                        final SqlIdentifier prefix = identifier.getComponent( 0, i );
+                        final SqlIdentifier suffix3 = identifier.getComponent( i, k + 1 );
+                        final Step step = Util.last( resolved.resolves.get( 0 ).path.steps() );
+                        throw validator.newValidationError( suffix3, Static.RESOURCE.columnNotFoundInTableDidYouMean( suffix3.toString(), prefix.toString(), step.name ) );
+                    }
+                }
+                // Find the shortest suffix that also fails. Suppose we cannot resolve "a.b.c"; we find we cannot resolve "a.b" but can resolve "a". So, the error will be "Column 'a.b' not found".
+                int k = size - 1;
+                for ( ; k > i; --k ) {
+                    SqlIdentifier suffix2 = identifier.getComponent( i, k );
+                    resolved.clear();
+                    resolveInNamespace( fromNs, false, suffix2.names, nameMatcher, Path.EMPTY, resolved );
+                    if ( resolved.count() > 0 ) {
+                        break;
+                    }
+                }
+                final SqlIdentifier prefix = identifier.getComponent( 0, i );
+                final SqlIdentifier suffix3 = identifier.getComponent( i, k + 1 );
+                throw validator.newValidationError( suffix3, Static.RESOURCE.columnNotFoundInTable( suffix3.toString(), prefix.toString() ) );
+            case 1:
+                path = resolved.only().path;
+                break;
+            default:
+                final Comparator<Resolve> c =
+                        new Comparator<Resolve>() {
+                            @Override
+                            public int compare( Resolve o1, Resolve o2 ) {
+                                // Name resolution that uses fewer implicit steps wins.
+                                int c = Integer.compare( worstKind( o1.path ), worstKind( o2.path ) );
+                                if ( c != 0 ) {
+                                    return c;
+                                }
+                                // Shorter path wins
+                                return Integer.compare( o1.path.stepCount(), o2.path.stepCount() );
+                            }
+
+
+                            private int worstKind( Path path ) {
+                                int kind = -1;
+                                for ( Step step : path.steps() ) {
+                                    kind = Math.max( kind, step.kind.ordinal() );
+                                }
+                                return kind;
+                            }
+                        };
+                resolved.resolves.sort( c );
+                if ( c.compare( resolved.resolves.get( 0 ), resolved.resolves.get( 1 ) ) == 0 ) {
+                    throw validator.newValidationError( suffix, Static.RESOURCE.columnAmbiguous( suffix.toString() ) );
+                }
+                path = resolved.resolves.get( 0 ).path;
+        }
+
+        // Normalize case to match definition, make elided fields explicit, and check that references to dynamic stars ("**") are unambiguous.
+        int k = i;
+        for ( Step step : path.steps() ) {
+            final String name = identifier.names.get( k );
+            if ( step.i < 0 ) {
+                throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
+            }
+            final AlgDataTypeField field0 = step.rowType.getFieldList().get( step.i );
+            final String fieldName = field0.getName();
+            switch ( step.kind ) {
+                case PEEK_FIELDS:
+                case PEEK_FIELDS_DEFAULT:
+                case PEEK_FIELDS_NO_EXPAND:
+                    identifier = identifier.add( k, fieldName, ParserPos.ZERO );
+                    break;
+                default:
+                    if ( !fieldName.equals( name ) ) {
+                        identifier = identifier.setName( k, fieldName );
+                    }
+                    if ( hasAmbiguousUnresolvedStar( step.rowType, field0, name ) ) {
+                        throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( name ) );
+                    }
+            }
+            ++k;
+        }
+
+        // Multiple name components may have been resolved as one step by CustomResolvingTable.
+        if ( identifier.names.size() > k ) {
+            identifier = identifier.getComponent( 0, k );
+        }
+
+        if ( i > 1 ) {
+            // Simplify overqualified identifiers.
+            // For example, schema.emp.deptno becomes emp.deptno.
+            //
+            // It is safe to convert schema.emp or database.schema.emp to emp because it would not have resolved if the FROM item had an alias. The following query is invalid:
+            //   SELECT schema.emp.deptno FROM schema.emp AS e
+            identifier = identifier.getComponent( i - 1, identifier.names.size() );
+        }
+
+        if ( !previous.equals( identifier ) ) {
+            validator.setOriginal( identifier, previous );
+        }
+        return SqlQualified.create( this, i, fromNs, identifier );
     }
 
 

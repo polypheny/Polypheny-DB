@@ -18,11 +18,11 @@ package org.polypheny.db.hsqldb.stores;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 
-public class HsqldbPlugin extends Plugin {
+public class HsqldbPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "HSQLDB";
@@ -32,8 +32,8 @@ public class HsqldbPlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public HsqldbPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public HsqldbPlugin( PluginContext context ) {
+        super( context );
     }
 
 

@@ -16,21 +16,19 @@
 
 package org.polypheny.db.catalog;
 
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 
-public class CatalogPlugin extends Plugin {
+public class CatalogPlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
      * be successfully loaded by manager.
-     *
-     * @param wrapper
      */
-    public CatalogPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public CatalogPlugin( PluginContext context ) {
+        super( context );
     }
 
 

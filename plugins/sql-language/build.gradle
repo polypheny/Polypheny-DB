@@ -16,9 +16,9 @@ buildscript {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
         classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
         // Fmpp
-        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
+        //classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
     }
-    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
+    //ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
 
 dependencies {
@@ -61,10 +61,9 @@ task generateFmppSources {
     }
 }
 task generateParser (type: CompileJavaccTask) {
-    dependsOn("generateFmppSources")
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
-    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/sql/javacc")
+    inputDirectory = file("src/main/codegen")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/languages/sql/parser/impl")
 }
 

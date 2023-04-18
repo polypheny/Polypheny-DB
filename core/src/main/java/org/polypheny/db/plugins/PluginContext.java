@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.jdbc;
+package org.polypheny.db.plugins;
 
-import org.polypheny.db.plugins.PluginContext;
-import org.polypheny.db.plugins.PolyPlugin;
+import org.pf4j.RuntimeMode;
 
-public class JdbcAdapterFramework extends PolyPlugin {
+public class PluginContext {
 
-    /**
-     * Constructor to be used by plugin manager for plugin instantiation.
-     * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
-     */
-    public JdbcAdapterFramework( PluginContext context ) {
-        super( context );
+    private final RuntimeMode runtimeMode;
+
+
+    public PluginContext( RuntimeMode runtimeMode ) {
+        this.runtimeMode = runtimeMode;
     }
 
+
+    public RuntimeMode getRuntimeMode() {
+        return runtimeMode;
+    }
 
 }

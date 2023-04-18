@@ -18,6 +18,11 @@ package org.polypheny.db.avatica;
 
 
 import com.google.common.collect.ImmutableList;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
 import org.apache.calcite.avatica.metrics.MetricsSystemConfiguration;
@@ -27,30 +32,24 @@ import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-
-public class AvaticaInterfacePlugin extends Plugin {
+public class AvaticaInterfacePlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public AvaticaInterfacePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public AvaticaInterfacePlugin( PluginContext context ) {
+        super( context );
     }
 
 

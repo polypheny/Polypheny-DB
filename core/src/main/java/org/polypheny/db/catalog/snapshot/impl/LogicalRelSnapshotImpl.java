@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +56,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, LogicalView> views;
 
     ImmutableMap<Pair<Long, String>, LogicalTable> tableNames;
+
+    ImmutableMap<Long, List<LogicalTable>> tablesNamespace;
 
     ImmutableMap<Long, TreeSet<LogicalColumn>> tableColumns;
     ImmutableMap<Long, LogicalColumn> columns;
@@ -92,6 +95,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         this.tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
         this.tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
+        this.tablesNamespace = buildTablesNamespace();
 
         this.columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
         this.columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespaces.get( e.getValue().namespaceId ).caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
@@ -135,6 +139,19 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         this.connectedViews = buildConnectedViews();
 
+    }
+
+
+    private ImmutableMap<Long, List<LogicalTable>> buildTablesNamespace() {
+        Map<Long, List<LogicalTable>> map = new HashMap<>();
+        for ( LogicalTable table : tables.values() ) {
+            if ( !map.containsKey( table.namespaceId ) ) {
+                map.put( table.namespaceId, new ArrayList<>() );
+            }
+            map.get( table.namespaceId ).add( table );
+        }
+
+        return ImmutableMap.copyOf( map );
     }
 
 
@@ -272,13 +289,22 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
-        return tableNames.values().stream().filter( e -> e.name.matches( name.toRegex() ) || e.namespaceId == namespaceId ).collect( Collectors.toList() );
+        boolean caseSensitive = namespaces.get( namespaceId ).caseSensitive;
+        return tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || e.name.matches( caseSensitive ? name.toRegex() : name.toRegex().toLowerCase() )) ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public List<LogicalTable> getTables( @Nullable String namespace, @Nullable String name ) {
-        return null;
+    public LogicalTable getTables( @Nullable String namespaceName, @NonNull String name ) {
+        LogicalNamespace namespace = namespaceNames.get( namespaceName );
+
+        return tableNames.get( Pair.of( namespace.id, (namespace.caseSensitive ? name : name.toLowerCase()) ) );
+    }
+
+
+    @Override
+    public List<LogicalTable> getTablesFromNamespace( long namespace ) {
+        return tablesNamespace.get( namespace );
     }
 
 
@@ -373,7 +399,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public List<LogicalForeignKey> getForeignKeys( long tableId ) {
-        return tableKeys.get( tableId ).stream().filter( k -> isForeignKey( k.id ) ).map( f -> (LogicalForeignKey) f ).collect( Collectors.toList() );
+        return foreignKeys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
     }
 
 

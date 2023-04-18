@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -45,7 +46,9 @@ public interface LogicalRelSnapshot {
 
     List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name );
 
-    List<LogicalTable> getTables( @Nullable String namespace, @Nullable String name );
+    LogicalTable getTables( @Nullable String namespace, @NonNull String name );
+
+    List<LogicalTable> getTablesFromNamespace( long namespace );
 
 
     /**

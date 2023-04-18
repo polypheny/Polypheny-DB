@@ -295,7 +295,7 @@ public class Crud implements InformationObserver {
 
         // determine if it is a view or a table
         LogicalTable catalogTable;
-        catalogTable = catalog.getSnapshot().rel().getTables( t[0], t[1] ).get( 0 );
+        catalogTable = catalog.getSnapshot().rel().getTables( t[0], t[1] );
         result.setNamespaceType( catalogTable.namespaceType );
         if ( catalogTable.modifiable ) {
             result.setType( ResultType.TABLE );
@@ -370,10 +370,8 @@ public class Crud implements InformationObserver {
             SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
 
             if ( request.depth > 1 && schema.namespaceType != NamespaceType.GRAPH ) {
-                ArrayList<SidebarElement> tableTree = new ArrayList<>();
-                ArrayList<SidebarElement> viewTree = new ArrayList<>();
                 ArrayList<SidebarElement> collectionTree = new ArrayList<>();
-                List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( schema.name, null );
+                List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( schema.id, null );
                 for ( LogicalTable table : tables ) {
                     String icon = "fa fa-table";
                     if ( table.entityType == EntityType.SOURCE ) {
@@ -2482,7 +2480,9 @@ public class Crud implements InformationObserver {
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
-        List<LogicalTable> catalogEntities = catalog.getSnapshot().rel().getTables( request.schema, null );
+        LogicalRelSnapshot relSnapshot = catalog.getSnapshot().rel();
+        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( request.schema );
+        List<LogicalTable> catalogEntities = relSnapshot.getTablesFromNamespace( namespace.id );
 
         for ( LogicalTable catalogTable : catalogEntities ) {
             if ( catalogTable.entityType == EntityType.ENTITY || catalogTable.entityType == EntityType.SOURCE ) {
@@ -2503,7 +2503,7 @@ public class Crud implements InformationObserver {
                                 .build() );
                     }
                 }
-                LogicalRelSnapshot relSnapshot = catalog.getSnapshot().rel();
+
                 // get tables with its columns
                 DbTable table = new DbTable( catalogTable.name, catalog.getSnapshot().getNamespace( catalogTable.namespaceId ).getName(), catalogTable.modifiable, catalogTable.entityType );
 

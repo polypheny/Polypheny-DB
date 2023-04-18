@@ -20,8 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
@@ -32,6 +30,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
@@ -45,7 +45,7 @@ import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
 @Slf4j
-public class CqlLanguagePlugin extends Plugin {
+public class CqlLanguagePlugin extends PolyPlugin {
 
 
     public static final String NAME = "cql";
@@ -55,8 +55,8 @@ public class CqlLanguagePlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public CqlLanguagePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public CqlLanguagePlugin( PluginContext context ) {
+        super( context );
     }
 
 

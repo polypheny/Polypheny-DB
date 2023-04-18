@@ -46,8 +46,6 @@ import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
@@ -60,6 +58,8 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.restapi.exception.ParserException;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
@@ -71,15 +71,15 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
 
-public class RestInterfacePlugin extends Plugin {
+public class RestInterfacePlugin extends PolyPlugin {
 
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public RestInterfacePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public RestInterfacePlugin( PluginContext context ) {
+        super( context );
     }
 
 

@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.eclipse.jetty.websocket.api.Session;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -37,6 +35,8 @@ import org.polypheny.db.languages.mql.MqlUseDatabase;
 import org.polypheny.db.nodes.DeserializeFunctionOperator;
 import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.transaction.Statement;
@@ -47,7 +47,7 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
-public class MongoLanguagePlugin extends Plugin {
+public class MongoLanguagePlugin extends PolyPlugin {
 
     @Getter
     @VisibleForTesting
@@ -60,8 +60,8 @@ public class MongoLanguagePlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MongoLanguagePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public MongoLanguagePlugin( PluginContext context ) {
+        super( context );
     }
 
 

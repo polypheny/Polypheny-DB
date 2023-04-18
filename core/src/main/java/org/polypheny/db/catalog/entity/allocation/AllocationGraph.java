@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -23,7 +24,6 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -32,14 +32,12 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public class AllocationGraph extends AllocationEntity {
 
 
-    public LogicalGraph logical;
-    public long id;
-
-
-    public AllocationGraph( long id, LogicalGraph graph, long adapterId ) {
-        super( id, graph.id, graph.namespaceId, adapterId, NamespaceType.GRAPH );
-        this.id = id;
-        this.logical = graph;
+    public AllocationGraph(
+            @Deserialize("id") long id,
+            @Deserialize("logicalId") long logicalId,
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("adapterId") long adapterId ) {
+        super( id, logicalId, namespaceId, adapterId, NamespaceType.GRAPH );
     }
 
 

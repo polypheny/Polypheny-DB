@@ -29,6 +29,10 @@ import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
@@ -96,19 +100,28 @@ public abstract class ListScope extends DelegatingScope {
             }
 
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
-            /*final ValidatorTable table = child.namespace.getTable();
+            final CatalogEntity table = child.namespace.getTable();
             if ( table != null ) {
-                final ResolvedImpl resolved = new ResolvedImpl();
-                resolveTable( names, nameMatcher, Path.EMPTY, resolved );
-                if ( resolved.count() == 1
-                        && resolved.only().remainingNames.isEmpty()
-                        && resolved.only().namespace instanceof TableNamespace
-                        && resolved.only().namespace.getTable().getQualifiedName().equals( table.getQualifiedName() ) ) {
+                LogicalEntity entity = getEntity( names );
+                if ( entity != null
+                        && entity.name.equals( table.name )
+                        && entity.namespaceId == table.namespaceId ) {
                     return child;
                 }
-            }*/
+            }
         }
         return null;
+    }
+
+
+    private LogicalEntity getEntity( List<String> names ) {
+        if ( names.size() == 2 ) {
+            return validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
+        } else if ( names.size() == 1 ) {
+            return validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) );
+        } else {
+            throw new GenericRuntimeException( "Table is not known" );
+        }
     }
 
 

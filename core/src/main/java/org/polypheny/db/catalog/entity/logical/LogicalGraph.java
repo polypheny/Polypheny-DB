@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity.logical;
 
 import com.drew.lang.annotations.NotNull;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -33,22 +35,22 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGraph> {
 
     private static final long serialVersionUID = 7343856827901459672L;
-    public int ownerId;
-    public boolean modifiable;
 
+    @Serialize
+    public boolean modifiable;
+    @Serialize
     public boolean caseSensitive;
 
 
-    public LogicalGraph( long id, String name, long namespaceId, int ownerId, boolean modifiable, boolean caseSensitive ) {
-        super( id, name, namespaceId, EntityType.ENTITY, NamespaceType.GRAPH );
-        this.ownerId = ownerId;
+    public LogicalGraph( @Deserialize("id") long id, @Deserialize("name") String name, @Deserialize("modifiable") boolean modifiable, @Deserialize("caseSensitive") boolean caseSensitive ) {
+        super( id, name, id, EntityType.ENTITY, NamespaceType.GRAPH );
         this.modifiable = modifiable;
         this.caseSensitive = caseSensitive;
     }
 
 
     public LogicalGraph( LogicalGraph graph ) {
-        this( graph.id, graph.name, graph.namespaceId, graph.ownerId, graph.modifiable, graph.caseSensitive );
+        this( graph.id, graph.name, graph.modifiable, graph.caseSensitive );
     }
 
 

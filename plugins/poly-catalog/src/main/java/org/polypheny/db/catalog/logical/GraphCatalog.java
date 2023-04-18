@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.logical;
 
 import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,11 +42,13 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
     @Getter
     public BinarySerializer<GraphCatalog> serializer = Serializable.builder.get().build( GraphCatalog.class );
     @Getter
+    @Serialize
     public LogicalNamespace logicalNamespace;
     public IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Getter
-    ConcurrentHashMap<Long, LogicalGraph> graphs;
+    @Serialize
+    public ConcurrentHashMap<Long, LogicalGraph> graphs;
 
 
     @NonFinal
@@ -57,7 +61,9 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
     }
 
 
-    public GraphCatalog( LogicalNamespace logicalNamespace, Map<Long, LogicalGraph> graphs ) {
+    public GraphCatalog(
+            @Deserialize("logicalNamespace") LogicalNamespace logicalNamespace,
+            @Deserialize("graphs") Map<Long, LogicalGraph> graphs ) {
         this.logicalNamespace = logicalNamespace;
         this.graphs = new ConcurrentHashMap<>( graphs );
     }

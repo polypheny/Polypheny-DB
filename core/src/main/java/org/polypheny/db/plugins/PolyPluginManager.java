@@ -22,6 +22,7 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,15 +45,16 @@ import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DefaultPluginDescriptor;
+import org.pf4j.DefaultPluginFactory;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
-import org.pf4j.DevelopmentPluginRepository;
 import org.pf4j.JarPluginLoader;
 import org.pf4j.ManifestPluginDescriptorFinder;
+import org.pf4j.Plugin;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
+import org.pf4j.PluginFactory;
 import org.pf4j.PluginLoader;
-import org.pf4j.PluginRepository;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Catalog;
@@ -122,6 +124,25 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public PolyPluginManager( Path... paths ) {
         super( List.of( paths ) );
+    }
+
+
+    @Override
+    protected PluginFactory createPluginFactory() {
+        return new DefaultPluginFactory() {
+            @Override
+            protected Plugin createInstance( Class<?> pluginClass, PluginWrapper pluginWrapper ) {
+                PluginContext context = new PluginContext( pluginWrapper.getRuntimeMode() );
+                try {
+                    Constructor<?> constructor = pluginClass.getConstructor( PluginContext.class );
+                    return (Plugin) constructor.newInstance( context );
+                } catch ( Exception e ) {
+                    log.error( e.getMessage(), e );
+                }
+
+                return null;
+            }
+        };
     }
 
 

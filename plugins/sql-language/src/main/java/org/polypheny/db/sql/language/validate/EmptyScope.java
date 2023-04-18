@@ -25,8 +25,10 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -94,9 +96,22 @@ class EmptyScope implements SqlValidatorScope {
         final List<Resolve> imperfectResolves = new ArrayList<>();
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
+        LogicalTable table;
+        if ( names.size() == 2 ) {
+            table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
+        } else if ( names.size() == 1 ) {
+            table = validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) );
+        } else {
+            throw new GenericRuntimeException( "Table is not known" );
+        }
+
+        if ( table != null ) {
+            resolved.found( new EntityNamespace( validator, table ), false, null, Path.EMPTY, List.of() );
+        }
+
         // Look in the default schema, then default catalog, then root schema.
         /*for ( List<String> schemaPath : validator.catalogReader.getSchemaPaths() ) {
-            //resolve_( validator.catalogReader.getRootSchema(), names, schemaPath, nameMatcher, path, resolved );
+            resolve_( validator.catalogReader.getRootSchema(), names, schemaPath, nameMatcher, path, resolved );
             for ( Resolve resolve : resolves ) {
                 if ( resolve.remainingNames.isEmpty() ) {
                     // There is a full match. Return it as the only match.
@@ -106,11 +121,11 @@ class EmptyScope implements SqlValidatorScope {
                 }
             }
             imperfectResolves.addAll( resolves );
-        }*/
+        }
         // If there were no matches in the last round, restore those found in previous rounds
         if ( resolves.isEmpty() ) {
             resolves.addAll( imperfectResolves );
-        }
+        }*/
     }
 
 

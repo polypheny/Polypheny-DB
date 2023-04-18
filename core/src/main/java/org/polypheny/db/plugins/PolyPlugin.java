@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.jdbc;
+package org.polypheny.db.plugins;
 
-import org.polypheny.db.plugins.PluginContext;
-import org.polypheny.db.plugins.PolyPlugin;
+import org.pf4j.Plugin;
 
-public class JdbcAdapterFramework extends PolyPlugin {
+public class PolyPlugin extends Plugin {
 
-    /**
-     * Constructor to be used by plugin manager for plugin instantiation.
-     * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
-     */
-    public JdbcAdapterFramework( PluginContext context ) {
-        super( context );
+    protected final PluginContext context;
+
+
+    protected PolyPlugin( PluginContext context ) {
+        super();
+
+        this.context = context;
     }
-
 
 }

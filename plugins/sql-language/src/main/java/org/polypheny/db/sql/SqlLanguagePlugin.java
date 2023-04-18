@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Properties;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -43,6 +41,8 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlAsOperator;
@@ -165,7 +165,7 @@ import org.polypheny.db.util.Optionality;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 
-public class SqlLanguagePlugin extends Plugin {
+public class SqlLanguagePlugin extends PolyPlugin {
 
     @Getter
     @VisibleForTesting
@@ -176,8 +176,8 @@ public class SqlLanguagePlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public SqlLanguagePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public SqlLanguagePlugin( PluginContext context ) {
+        super( context );
     }
 
 

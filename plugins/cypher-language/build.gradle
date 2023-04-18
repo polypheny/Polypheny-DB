@@ -22,7 +22,7 @@ dependencies {
     compileOnly project(":webui")
     compileOnly project(":dbms")
 
-    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version_cypher  // BSD 2-clause
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
 
     implementation group: 'org.eclipse.jetty.websocket', name: 'websocket-api', version: jetty_websocket_api_version

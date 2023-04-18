@@ -392,7 +392,7 @@ public interface AllocSnapshot {
      * @param adapterId The id of the adapter on which the placements are placed
      * @return The collection of graph placements
      */
-    public abstract List<CatalogGraphPlacement> getGraphPlacements( long adapterId );
+    List<CatalogGraphPlacement> getGraphPlacements( long adapterId );
 
 
     CatalogCollectionPlacement getCollectionPlacement( long id, long placementId );

@@ -18,22 +18,22 @@ package org.polypheny.db.exploreByExample;
 
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.HttpServer.HandlerType;
 
-public class ExploreByExamplePlugin extends Plugin {
+public class ExploreByExamplePlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public ExploreByExamplePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public ExploreByExamplePlugin( PluginContext context ) {
+        super( context );
     }
 
 

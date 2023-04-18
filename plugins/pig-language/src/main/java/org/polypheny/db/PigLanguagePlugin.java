@@ -20,8 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.information.InformationManager;
@@ -30,6 +28,8 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.piglet.PigProcessorImpl;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;
@@ -42,7 +42,7 @@ import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
 @Slf4j
-public class PigLanguagePlugin extends Plugin {
+public class PigLanguagePlugin extends PolyPlugin {
 
 
     public static final String NAME = "pig";
@@ -52,8 +52,8 @@ public class PigLanguagePlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public PigLanguagePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public PigLanguagePlugin( PluginContext context ) {
+        super( context );
     }
 
 

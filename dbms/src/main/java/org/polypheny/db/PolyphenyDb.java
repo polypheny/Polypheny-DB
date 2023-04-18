@@ -304,13 +304,6 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
-        /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
-            try {
-                httpServerDispatcher.stop();
-            } catch ( Exception e ) {
-                GLOBAL_LOGGER.warn( "Exception during HttpServerDispatcher shutdown", e );
-            }
-        } );*/
 
         final Authenticator authenticator = new AuthenticatorImpl();
 
@@ -344,7 +337,7 @@ public class PolyphenyDb {
 
             trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
-            loadDefaults();
+            //DefaultInserter.restoreInterfaces();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
             trx.commit();
             trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
@@ -414,7 +407,9 @@ public class PolyphenyDb {
         }
 
         PolyPluginManager.startUp( transactionManager, authenticator );
-        new DefaultInserter( DdlManager.getInstance(), transactionManager );
+        DefaultInserter.restoreData( DdlManager.getInstance() );
+        DefaultInserter.restoreInterfacesIfNecessary();
+        QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
         // Initialize statistic settings
         StatisticsManager.getInstance().initializeStatisticSettings();
 
@@ -452,9 +447,5 @@ public class PolyphenyDb {
         }
     }
 
-
-    public void loadDefaults() {
-        Catalog.getInstance().restoreInterfacesIfNecessary();
-    }
 
 }

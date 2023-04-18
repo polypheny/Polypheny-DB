@@ -36,8 +36,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.iface.Authenticator;
@@ -49,6 +47,8 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.Crud;
@@ -57,14 +57,14 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
-public class HttpInterfacePlugin extends Plugin {
+public class HttpInterfacePlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public HttpInterfacePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public HttpInterfacePlugin( PluginContext context ) {
+        super( context );
     }
 
 

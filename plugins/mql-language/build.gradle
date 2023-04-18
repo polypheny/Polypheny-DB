@@ -16,16 +16,15 @@ buildscript {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
         classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
         // Fmpp
-        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
+        //classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
     }
-    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
+    // ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
 
 dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
     compileOnly project(":webui")
-    // implementation project(":sql-language")
     compileOnly project(":dbms")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause

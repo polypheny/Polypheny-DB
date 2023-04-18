@@ -27,8 +27,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -79,33 +77,6 @@ public class StatisticQueryProcessor {
         return null;
     }
 
-
-    /**
-     * Method to get all schemas, tables, and their columns in a database
-     */
-    public List<List<String>> getSchemaTree() {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        List<List<String>> result = new ArrayList<>();
-        List<String> schemaTree = new ArrayList<>();
-        List<LogicalNamespace> schemas = snapshot.getNamespaces( null );
-        for ( LogicalNamespace schema : schemas ) {
-            List<String> tables = new ArrayList<>();
-            List<LogicalTable> childTables = snapshot.rel().getTables( new Pattern( schema.name ), null );
-            for ( LogicalTable childTable : childTables ) {
-                List<String> table = new ArrayList<>();
-                List<LogicalColumn> columns = snapshot.rel().getColumns( childTable.id );
-                for ( LogicalColumn logicalColumn : columns ) {
-                    table.add( schema.name + "." + childTable.name + "." + logicalColumn.name );
-                }
-                if ( childTable.entityType == EntityType.ENTITY ) {
-                    tables.addAll( table );
-                }
-            }
-            schemaTree.addAll( tables );
-            result.add( schemaTree );
-        }
-        return result;
-    }
 
 
     /**
@@ -225,12 +196,6 @@ public class StatisticQueryProcessor {
     private int getPageSize() {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
-
-
-    public static String buildQualifiedName( String... strings ) {
-        return "\"" + String.join( "\".\"", strings ) + "\"";
-    }
-
 
     static class QueryExecutionException extends Exception {
 

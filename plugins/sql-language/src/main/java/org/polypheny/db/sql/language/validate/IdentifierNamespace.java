@@ -203,7 +203,7 @@ public class IdentifierNamespace extends AbstractNamespace {
             final String fieldName = field.getName();
             final Monotonicity monotonicity = resolvedNamespace.getMonotonicity( fieldName );
             if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
-                builder.add( Pair.of( (SqlNode) new SqlIdentifier( fieldName, ParserPos.ZERO ), monotonicity ) );
+                builder.add( Pair.of( new SqlIdentifier( fieldName, ParserPos.ZERO ), monotonicity ) );
             }
         }
         monotonicExprs = builder.build();

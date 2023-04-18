@@ -30,9 +30,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-<@pp.dropOutputFile />
-
-<@pp.changeOutputFile name="javacc/Parser.jj" />
 
 options {
     STATIC = false;
@@ -41,13 +38,111 @@ options {
 }
 
 
-PARSER_BEGIN(${parser.class})
+PARSER_BEGIN(SqlParserImpl)
 
-package ${parser.package};
+package org.polypheny.db.languages.sql.parser.impl;
 
-<#list parser.imports as importStr>
-import ${importStr};
-</#list>
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.sql.language.SqlAlter;
+import org.polypheny.db.sql.language.SqlBasicCall;
+import org.polypheny.db.sql.language.SqlBinaryOperator;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlCharStringLiteral;
+import org.polypheny.db.sql.language.SqlCollation;
+import org.polypheny.db.sql.language.SqlCreate;
+import org.polypheny.db.sql.language.SqlDataTypeSpec;
+import org.polypheny.db.sql.language.SqlDelete;
+import org.polypheny.db.sql.language.SqlDescribeSchema;
+import org.polypheny.db.sql.language.SqlDescribeTable;
+import org.polypheny.db.sql.language.SqlDrop;
+import org.polypheny.db.sql.language.SqlDynamicParam;
+import org.polypheny.db.sql.language.SqlExplain;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlInsert;
+import org.polypheny.db.sql.language.SqlInsertKeyword;
+import org.polypheny.db.sql.language.SqlIntervalQualifier;
+import org.polypheny.db.sql.language.SqlJdbcDataTypeName;
+import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
+import org.polypheny.db.sql.language.SqlJoin;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlMatchRecognize;
+import org.polypheny.db.sql.language.SqlMerge;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlNumericLiteral;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.SqlOrderBy;
+import org.polypheny.db.sql.language.SqlPostfixOperator;
+import org.polypheny.db.sql.language.SqlPrefixOperator;
+import org.polypheny.db.sql.language.SqlSampleSpec;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.SqlSelectKeyword;
+import org.polypheny.db.sql.language.SqlSetOption;
+import org.polypheny.db.sql.language.SqlUnnestOperator;
+import org.polypheny.db.sql.language.SqlUpdate;
+import org.polypheny.db.sql.language.SqlUtil;
+import org.polypheny.db.sql.language.SqlWindow;
+import org.polypheny.db.sql.language.SqlWith;
+import org.polypheny.db.sql.language.SqlWithItem;
+import org.polypheny.db.sql.language.ddl.SqlAlterAdaptersAdd;
+import org.polypheny.db.sql.language.ddl.SqlAlterAdaptersDrop;
+import org.polypheny.db.sql.language.ddl.SqlAlterConfig;
+import org.polypheny.db.sql.language.ddl.SqlAlterInterfacesAdd;
+import org.polypheny.db.sql.language.ddl.SqlAlterInterfacesDrop;
+import org.polypheny.db.sql.language.ddl.SqlAlterMaterializedView;
+import org.polypheny.db.sql.language.ddl.SqlAlterSchema;
+import org.polypheny.db.sql.language.ddl.SqlAlterTable;
+import org.polypheny.db.sql.language.ddl.SqlAlterView;
+import org.polypheny.db.sql.language.ddl.SqlDdlNodes;
+import org.polypheny.db.sql.language.ddl.SqlTruncate;
+import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewAddIndex;
+import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewDropIndex;
+import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewFreshnessManual;
+import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewRename;
+import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewRenameColumn;
+import org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaOwner;
+import org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaRename;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterSourceTableAddColumn;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddColumn;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddForeignKey;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddIndex;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddPartitions;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddPlacement;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddPrimaryKey;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddUniqueConstraint;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropColumn;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropConstraint;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropForeignKey;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropIndex;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropPlacement;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropPrimaryKey;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableMergePartitions;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableModifyColumn;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableModifyPartitions;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableModifyPlacement;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableModifyPlacementAddColumn;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableModifyPlacementDropColumn;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableOwner;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableRename;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableRenameColumn;
+import org.polypheny.db.sql.language.ddl.alterview.SqlAlterViewRename;
+import org.polypheny.db.sql.language.ddl.alterview.SqlAlterViewRenameColumn;
+import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlCase;
+import org.polypheny.db.sql.language.fun.SqlJsonArrayAggAggFunction;
+import org.polypheny.db.sql.language.fun.SqlJsonObjectAggAggFunction;
+import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.language.fun.SqlTrimFunction;
+import org.polypheny.db.sql.language.parser.Span;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl.ExprContext;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl.MetadataImpl;
+import org.polypheny.db.sql.language.parser.SqlParser;
+import org.polypheny.db.sql.language.parser.SqlParserUtil;
+import java.util.Map;
+import java.util.HashMap;
+import org.polypheny.db.util.CoreUtil;
 
 
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -108,7 +203,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
  *
  * The public wrapper for this parser is {@link SqlParser}.
  */
-public class ${parser.class} extends SqlAbstractParserImpl
+public class SqlParserImpl extends SqlAbstractParserImpl
 {
     private static final Logger LOGGER = PolyphenyDbTrace.getParserTracer();
 
@@ -130,7 +225,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
      */
     public static final ParserFactory FACTORY = new ParserFactory() {
         public SqlAbstractParserImpl getParser(Reader reader) {
-            final ${parser.class} parser = new ${parser.class}(reader);
+            final SqlParserImpl parser = new SqlParserImpl(reader);
             if (reader instanceof SourceStringReader) {
                 final String sql = ((SourceStringReader) reader).getSourceString();
                 parser.setOriginalSql(sql);
@@ -153,9 +248,9 @@ public class ${parser.class} extends SqlAbstractParserImpl
 
     public Metadata getMetadata()
     {
-        synchronized (${parser.class}.class) {
+        synchronized (SqlParserImpl.class) {
             if (metadata == null) {
-                metadata = new MetadataImpl(new ${parser.class}(new java.io.StringReader("")));
+                metadata = new MetadataImpl(new SqlParserImpl(new java.io.StringReader("")));
             }
             return metadata;
         }
@@ -168,7 +263,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
 
     public void switchTo(String stateName)
     {
-        int state = Arrays.asList(${parser.class}TokenManager.lexStateNames).indexOf(stateName);
+        int state = Arrays.asList(SqlParserImplTokenManager.lexStateNames).indexOf(stateName);
         token_source.SwitchTo(state);
     }
 
@@ -207,7 +302,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
     }
 }
 
-PARSER_END(${parser.class})
+PARSER_END(SqlParserImpl)
 
 
 /***************************************
@@ -916,23 +1011,17 @@ SqlNode SqlStmt() :
 }
 {
     (
-<#-- Add methods to parse additional statements here -->
-<#list parser.statementParserMethods as method>
-        stmt = ${method}
+        stmt = SqlTruncateTable()
     |
-</#list>
+
 //        stmt = SqlSetOption(Span.of())
 //    |
         stmt = SqlAlter()
     |
-<#if parser.createStatementParserMethods?size != 0>
         stmt = SqlCreate()
     |
-</#if>
-<#if parser.dropStatementParserMethods?size != 0>
         stmt = SqlDrop()
     |
-</#if>
         stmt = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
         stmt = Explain()
@@ -968,10 +1057,1310 @@ SqlNode SqlStmtEof() :
     }
 }
 
-<#-- Add implementations of additional parser statement calls here -->
-<#list parser.implementationFiles as file>
-    <#include "/@includes/"+file />
-</#list>
+////////////////////////////////////
+/////////////parserimpl start
+
+/**
+* Parses a TRUNCATE TABLE statement.
+*/
+SqlTruncate SqlTruncateTable() :
+{
+    final Span s;
+    final SqlIdentifier entity;
+}
+{
+    <TRUNCATE> { s = span(); }
+    <TABLE> entity = CompoundIdentifier()
+    {
+        return new SqlTruncate(s.end(this), entity);
+    }
+}
+
+
+/**
+* Parses a ALTER SCHEMA statement.
+*/
+SqlAlterSchema SqlAlterSchema(Span s) :
+{
+    final SqlIdentifier namespace;
+    final SqlIdentifier name;
+    final SqlIdentifier owner;
+}
+{
+    <SCHEMA>
+    namespace = CompoundIdentifier()
+    (
+        <RENAME> <TO>
+        name = CompoundIdentifier()
+        {
+            return new SqlAlterSchemaRename(s.end(this), namespace, name);
+        }
+    |
+        <OWNER> <TO>
+        owner = SimpleIdentifier()
+        {
+            return new SqlAlterSchemaOwner(s.end(this), namespace, owner);
+        }
+    )
+}
+
+/**
+* Parses a ALTER VIEW statement.
+**/
+SqlAlterView SqlAlterView(Span s) :
+{
+    final SqlIdentifier view;
+    final SqlIdentifier name;
+    final SqlIdentifier column;
+}
+{
+    <VIEW>
+    view = CompoundIdentifier()
+    (
+        <RENAME><TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterViewRename(s.end(this), view, name);
+        }
+    |
+        <RENAME> <COLUMN>
+        column = SimpleIdentifier()
+        <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterViewRenameColumn(s.end(this), view, column, name);
+        }
+    )
+}
+
+/**
+* Parses a ALTER MATERIALIZED VIEW statement.
+**/
+SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
+{
+    final SqlIdentifier materializedview;
+    final SqlIdentifier name;
+    final SqlIdentifier column;
+    final SqlIdentifier store;
+    final SqlIdentifier indexName;
+    final SqlNodeList columnList;
+    final SqlIdentifier indexMethod;
+    final boolean unique;
+    final SqlIdentifier storeName;
+
+}
+{
+    <MATERIALIZED><VIEW>
+    materializedview = CompoundIdentifier()
+    (
+        <RENAME><TO>
+            name = SimpleIdentifier()
+            {
+            return new SqlAlterMaterializedViewRename(s.end(this), materializedview, name);
+            }
+    |
+        <RENAME> <COLUMN>
+            column = SimpleIdentifier()
+            <TO>
+            name = SimpleIdentifier()
+            {
+                return new SqlAlterMaterializedViewRenameColumn(s.end(this), materializedview, column, name);
+            }
+    |
+        <FRESHNESS><MANUAL>
+            {
+                return new SqlAlterMaterializedViewFreshnessManual(s.end(this), materializedview);
+            }
+    |
+        <ADD>
+            (
+            <UNIQUE> { unique = true; }
+            |
+            { unique = false; }
+            )
+            <INDEX>
+                indexName = SimpleIdentifier()
+            <ON>
+            (
+            columnList = ParenthesizedSimpleIdentifierList()
+            |
+            column = SimpleIdentifier()
+            {
+                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+            }
+            )
+            (
+            <USING> indexMethod = SimpleIdentifier()
+            |
+            { indexMethod = null; }
+            )
+            (
+            <ON> <STORE> storeName = SimpleIdentifier()
+            |
+            { storeName = null; }
+            )
+            {
+            return new SqlAlterMaterializedViewAddIndex(s.end(this), materializedview, columnList, unique, indexMethod, indexName, storeName);
+            }
+    |
+        <DROP> <INDEX>
+            indexName = SimpleIdentifier()
+            {
+            return new SqlAlterMaterializedViewDropIndex(s.end(this), materializedview, indexName);
+            }
+
+    )
+}
+
+/**
+* Parses a ALTER TABLE statement.
+*/
+SqlAlterTable SqlAlterTable(Span s) :
+{
+    final SqlIdentifier entity;
+    final SqlIdentifier column;
+    final SqlIdentifier name;
+    final SqlIdentifier owner;
+    final SqlDataTypeSpec type;
+    final boolean nullable;
+    final SqlNode defaultValue;
+    final SqlIdentifier beforeColumn;
+    final SqlIdentifier afterColumn;
+    final SqlAlterTable statement;
+    final SqlNodeList columnList;
+    final SqlNodeList referencesList;
+    final SqlIdentifier refColumn;
+    final SqlIdentifier refTable;
+    final SqlIdentifier constraintName;
+    final SqlIdentifier store;
+    final SqlIdentifier indexName;
+    final SqlIdentifier indexMethod;
+    final SqlIdentifier storeName;
+    final String onUpdate;
+    final String onDelete;
+    final boolean unique;
+    final SqlIdentifier physicalName;
+    final SqlIdentifier partitionType;
+    SqlIdentifier partitionColumn; // error in javacc
+    List<Integer> partitionList = new ArrayList<Integer>();
+    int partitionIndex = 0;
+    int numPartitionGroups = 0;
+    int numPartitions = 0;
+    List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
+    SqlIdentifier partitionName = null;
+    List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
+    List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
+    SqlNode partitionValues = null;
+    SqlIdentifier tmpIdent = null;
+    int tmpInt = 0;
+    RawPartitionInformation rawPartitionInfo;
+}
+{
+    <TABLE>
+    entity = CompoundIdentifier()
+    (
+        <RENAME> <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterTableRename(s.end(this), entity, name);
+        }
+    |
+        <OWNER> <TO>
+        owner = SimpleIdentifier()
+        {
+            return new SqlAlterTableOwner(s.end(this), entity, owner);
+        }
+    |
+        <RENAME> <COLUMN>
+        column = SimpleIdentifier()
+        <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterTableRenameColumn(s.end(this), entity, column, name);
+        }
+    |
+        <ADD> <COLUMN>
+        name = SimpleIdentifier()
+        (
+            type = DataType()
+            (
+                <NULL> { nullable = true; }
+            |
+                <NOT> <NULL> { nullable = false; }
+            |
+                { nullable = true; }
+            )
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
+            (
+                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+            |
+                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+            |
+                { afterColumn = null; beforeColumn = null; }
+            )
+            {
+                return new SqlAlterTableAddColumn(s.end(this), entity, name, type, nullable, defaultValue, beforeColumn, afterColumn);
+            }
+        |
+            <AS>
+            physicalName = SimpleIdentifier()
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
+            (
+                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+            |
+                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+            |
+                { afterColumn = null; beforeColumn = null; }
+            )
+            {
+                return new SqlAlterSourceTableAddColumn(s.end(this), entity, name, physicalName, defaultValue, beforeColumn, afterColumn);
+            }
+        )
+    |
+        <DROP> <COLUMN>
+        column = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropColumn(s.end(this), entity, column);
+        }
+    |
+        <ADD> <PRIMARY> <KEY>
+        (
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
+            column = SimpleIdentifier()
+            {
+                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+            }
+        )
+        {
+            return new SqlAlterTableAddPrimaryKey(s.end(this), entity, columnList);
+        }
+    |
+        <DROP> <PRIMARY> <KEY>
+        {
+            return new SqlAlterTableDropPrimaryKey(s.end(this), entity);
+        }
+    |
+        <ADD> <CONSTRAINT>
+        constraintName = SimpleIdentifier()
+        (
+            <UNIQUE>
+            (
+                columnList = ParenthesizedSimpleIdentifierList()
+            |
+                column = SimpleIdentifier()
+                {
+                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                }
+            )
+            {
+                return new SqlAlterTableAddUniqueConstraint(s.end(this), entity, constraintName, columnList);
+            }
+        |
+            <FOREIGN> <KEY>
+            (
+                columnList = ParenthesizedSimpleIdentifierList()
+            |
+                column = SimpleIdentifier()
+                {
+                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                }
+            )
+            <REFERENCES>
+            refTable = CompoundIdentifier()
+            referencesList = ParenthesizedSimpleIdentifierList()
+            (
+                <ON> <UPDATE>
+                (
+                    <CASCADE> { onUpdate = "CASCADE"; }
+                |
+                    <NONE> { onUpdate = "NONE"; }
+                |
+                    <RESTRICT> { onUpdate = "RESTRICT"; }
+                |
+                    <SET> <NULL> { onUpdate = "SET NULL"; }
+                |
+                    <SET> <DEFAULT_> { onUpdate = "SET DEFAULT"; }
+                )
+            |
+                { onUpdate = null; }
+            )
+            (
+                <ON> <DELETE>
+                (
+                    <CASCADE> { onDelete = "CASCADE"; }
+                |
+                    <NONE> { onDelete = "NONE"; }
+                |
+                    <RESTRICT> { onDelete = "RESTRICT"; }
+                |
+                    <SET> <NULL> { onDelete = "SET NULL"; }
+                |
+                    <SET> <DEFAULT_> { onDelete = "SET DEFAULT"; }
+                )
+            |
+                { onDelete = null; }
+            )
+            {
+                return new SqlAlterTableAddForeignKey(s.end(this), entity, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
+            }
+        )
+    |
+        <DROP> <CONSTRAINT>
+        constraintName = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropConstraint(s.end(this), entity, constraintName);
+        }
+    |
+        <DROP>
+        <FOREIGN>
+        <KEY>
+        constraintName = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropForeignKey(s.end(this), entity, constraintName);
+        }
+    |
+        <ADD>
+        <PLACEMENT>
+        (
+            (
+                columnList = ParenthesizedSimpleIdentifierList()
+            |
+                column = SimpleIdentifier()
+                {
+                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                }
+            )
+        |
+            {
+                columnList = SqlNodeList.EMPTY;
+            }
+        )
+        <ON>
+        <STORE>
+        store = SimpleIdentifier()
+            [
+                <WITH> <PARTITIONS>
+                <LPAREN>
+                (
+                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        (
+                            <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        )*
+                    |
+                        partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        (
+                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        )*
+                )
+                <RPAREN>
+            ]
+        {
+            return new SqlAlterTableAddPlacement(s.end(this), entity, columnList, store, partitionList, partitionNamesList);
+        }
+    |
+        <DROP>
+        <PLACEMENT>
+        <ON>
+        <STORE>
+        store = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropPlacement(s.end(this), entity, store);
+        }
+    |
+        <MODIFY>
+        <PLACEMENT>
+        (
+            <ADD>
+            <COLUMN>
+            column = SimpleIdentifier()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableModifyPlacementAddColumn(s.end(this), entity, column, store);
+            }
+        |
+            <DROP>
+            <COLUMN>
+            column = SimpleIdentifier()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), entity, column, store);
+            }
+        |
+            columnList = ParenthesizedSimpleIdentifierList()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            [
+                <WITH> <PARTITIONS>
+                <LPAREN>
+                (
+                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        (
+                            <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        )*
+                    |
+
+                        partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        (
+                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        )*
+               )
+               <RPAREN>
+            ]
+            {
+                return new SqlAlterTableModifyPlacement(s.end(this), entity, columnList, store, partitionList, partitionNamesList);
+            }
+        )
+
+    |
+        <MODIFY>
+        <PARTITIONS>
+        <LPAREN>
+            (
+                    partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    (
+                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    )*
+                |
+
+                    partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                    (
+                         <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                    )*
+            )
+        <RPAREN>
+        <ON>
+        <STORE> store = SimpleIdentifier()
+        {
+            return new SqlAlterTableModifyPartitions(s.end(this), entity, store, partitionList, partitionNamesList);
+        }
+
+    |
+        <ADD>
+        (
+            <UNIQUE> { unique = true; }
+        |
+            { unique = false; }
+        )
+        <INDEX>
+        indexName = SimpleIdentifier()
+        <ON>
+        (
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
+            column = SimpleIdentifier()
+            {
+                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+            }
+        )
+        (
+            <USING> indexMethod = SimpleIdentifier()
+        |
+            { indexMethod = null; }
+        )
+        (
+            <ON> <STORE> storeName = SimpleIdentifier()
+        |
+            { storeName = null; }
+        )
+        {
+            return new SqlAlterTableAddIndex(s.end(this), entity, columnList, unique, indexMethod, indexName, storeName);
+        }
+    |
+        <DROP> <INDEX>
+        indexName = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropIndex(s.end(this), entity, indexName);
+        }
+    |
+        <MODIFY> <COLUMN>
+        column = SimpleIdentifier()
+        statement = AlterTableModifyColumn(s, entity, column)
+        {
+            return statement;
+        }
+
+    |
+        <PARTITION> <BY>
+                    (
+                            partitionType = SimpleIdentifier()
+                        |
+                            <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
+
+                        |
+                            <TEMPERATURE> { partitionType = new SqlIdentifier( "TEMPERATURE", s.end(this) );
+                                    rawPartitionInfo = new RawTemperaturePartitionInformation();
+                                    rawPartitionInfo.setPartitionType( partitionType );
+                                    }
+                                    <LPAREN> partitionColumn = SimpleIdentifier() { rawPartitionInfo.setPartitionColumn( partitionColumn ); } <RPAREN>
+                                    <LPAREN>
+                                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                            partitionValues = Literal()
+                                                            {
+                                                                 partitionQualifiers.add(partitionValues);
+                                                                 ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageIn( partitionValues );
+                                                            } <PERCENT_REMAINDER>
+                                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                        <COMMA>
+                                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                            partitionValues = Literal()
+                                                            {
+                                                                partitionQualifiers.add(partitionValues);
+                                                                ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageOut( partitionValues );
+                                                            } <PERCENT_REMAINDER>
+                                                    <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                    <RPAREN>
+                                                        <USING> <FREQUENCY>
+                                                                (
+                                                                    <ALL> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "ALL", s.end(this) ) ); tmpIdent = null; }
+                                                                |
+                                                                    <WRITE> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "WRITE", s.end(this) ) ); tmpIdent = null; }
+                                                                |
+                                                                    <READ> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "READ", s.end(this) ) ); tmpIdent = null;}
+                                                                )
+                                                            <INTERVAL>
+                                                                    tmpInt = UnsignedIntLiteral() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setInterval( tmpInt ); tmpInt = 0; }
+                                                                    tmpIdent = SimpleIdentifier() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setIntervalUnit( tmpIdent ); tmpIdent = null; }
+                                                        <WITH>  numPartitions = UnsignedIntLiteral() {rawPartitionInfo.setNumPartitions( numPartitions );}
+                                                                    tmpIdent = SimpleIdentifier() {
+                                                                    ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
+                                                            } <PARTITIONS>
+                                                                    {
+                                                                    rawPartitionInfo.setPartitionNamesList( CoreUtil.toNodeList( partitionNamesList, Identifier.class ) );
+                                                                    rawPartitionInfo.setPartitionQualifierList( SqlUtil.toNodeListList( partitionQualifierList ) );
+
+                                                                return new SqlAlterTableAddPartitions(s.end(this), entity, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                                                            }
+                    )
+
+        <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
+        [
+                (
+                        <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
+                    |
+                        <WITH> <LPAREN>
+                                partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                (
+                                    <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                )*
+                        <RPAREN>
+
+                    |
+                            <LPAREN>
+                                <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                <VALUES> <LPAREN>
+                                        partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                        (
+                                            <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                        )*
+                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                (
+                                    <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                            <VALUES> <LPAREN>
+                                                    partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                    (
+                                                        <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                    )*
+                                            <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                )*
+                            <RPAREN>
+                )
+        ]
+        {
+            rawPartitionInfo = new RawPartitionInformation();
+            return new SqlAlterTableAddPartitions(s.end(this), entity, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+        }
+
+    |
+        <MERGE> <PARTITIONS>
+        {
+            return new SqlAlterTableMergePartitions(s.end(this), entity);
+        }
+    )
+}
+
+/**
+* Parses the MODIFY COLUMN part of an ALTER TABLE statement.
+*/
+SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier entity, SqlIdentifier column) :
+{
+    SqlDataTypeSpec type = null;
+    Boolean nullable = null;
+    SqlIdentifier beforeColumn = null;
+    SqlIdentifier afterColumn = null;
+    SqlNode defaultValue = null;
+    Boolean dropDefault = null;
+    String collation = null;
+}
+{
+    (
+        <SET> <NOT> <NULL>
+        { nullable = false; }
+    |
+        <DROP> <NOT> <NULL>
+        { nullable = true; }
+    |
+        <SET> <TYPE>
+        type = DataType()
+    |
+        <SET> <POSITION>
+        (
+            <BEFORE>
+            beforeColumn = SimpleIdentifier()
+        |
+            <AFTER>
+            afterColumn = SimpleIdentifier()
+        )
+    |
+        <SET> <COLLATION>
+        (
+            <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
+        |
+            <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+        )
+    |
+        <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
+    |
+        <DROP> <DEFAULT_> { dropDefault = true; }
+    )
+    {
+        return new SqlAlterTableModifyColumn(s.end(this), entity, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
+    }
+}
+
+
+SqlAlterConfig SqlAlterConfig(Span s) :
+{
+    final SqlNode key;
+    final SqlNode value;
+}
+{
+    <CONFIG> key = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <SET> value = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterConfig(s.end(this), key, value);
+    }
+}
+
+
+SqlAlterAdaptersAdd SqlAlterAdaptersAdd(Span s) :
+{
+    final SqlNode uniqueName;
+    final SqlNode adapterName;
+    final SqlNode adapterType;
+    final SqlNode config;
+}
+{
+    <ADAPTERS> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <AS> adapterType = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterAdaptersAdd(s.end(this), uniqueName, adapterName, adapterType, config);
+    }
+}
+
+
+SqlAlterAdaptersDrop SqlAlterAdaptersDrop(Span s) :
+{
+    final SqlNode uniqueName;
+}
+{
+    <ADAPTERS> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterAdaptersDrop(s.end(this), uniqueName);
+    }
+}
+
+
+SqlAlterInterfacesAdd SqlAlterInterfacesAdd(Span s) :
+{
+    final SqlNode uniqueName;
+    final SqlNode clazzName;
+    final SqlNode config;
+}
+{
+    <INTERFACES> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <USING> clazzName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterInterfacesAdd(s.end(this), uniqueName, clazzName, config);
+    }
+}
+
+
+SqlAlterInterfacesDrop SqlAlterInterfacesDrop(Span s) :
+{
+    final SqlNode uniqueName;
+}
+{
+    <INTERFACES> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterInterfacesDrop(s.end(this), uniqueName);
+    }
+}
+
+
+////////////////////////////////////
+/////////////parserimpl end
+////////////////////////////////////
+/////////////ddlparser start
+
+boolean IfNotExistsOpt() :
+{
+}
+{
+    <IF> <NOT> <EXISTS> { return true; }
+    |
+    { return false; }
+}
+
+boolean IfExistsOpt() :
+{
+}
+{
+    <IF> <EXISTS> { return true; }
+    |
+    { return false; }
+}
+
+
+SqlCreate SqlCreateSchema(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier id;
+    final NamespaceType namespaceType;
+}
+{
+    (
+        <DOCUMENT> { namespaceType = NamespaceType.DOCUMENT; }
+        |
+        { namespaceType = NamespaceType.RELATIONAL; }
+    )
+    <SCHEMA> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    {
+        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id, namespaceType);
+    }
+}
+
+SqlNodeList Options() :
+{
+    final Span s;
+    final List
+    <SqlNode> list = new ArrayList
+    <SqlNode>();
+}
+{
+    <OPTIONS> { s = span(); }
+    <LPAREN>
+    [
+        Option(list)
+        (
+            <COMMA>
+            Option(list)
+        )*
+    ]
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+void Option(List<SqlNode> list) :
+{
+    final SqlIdentifier id;
+    final SqlNode value;
+}
+{
+    id = SimpleIdentifier()
+    value = Literal() {
+    list.add(id);
+    list.add(value);
+}
+}
+
+SqlNodeList TableElementList() :
+{
+    final Span s;
+    final List
+    <SqlNode> list = new ArrayList
+    <SqlNode>();
+}
+{
+    <LPAREN> { s = span(); }
+    TableElement(list)
+    (
+        <COMMA> TableElement(list)
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+void TableElement(List<SqlNode> list) :
+{
+    final SqlIdentifier id;
+    final SqlDataTypeSpec type;
+    final boolean nullable;
+    final SqlNode e;
+    final SqlNode constraint;
+    SqlIdentifier name = null;
+    final SqlNodeList columnList;
+    final Span s = Span.of();
+    final ColumnStrategy strategy;
+    final String collation;
+}
+{
+    id = SimpleIdentifier()
+    (
+        type = DataType()
+        (
+            <NULL> { nullable = true; }
+            |
+            <NOT> <NULL> { nullable = false; }
+            |
+            { nullable = true; }
+        )
+        (
+            [ <GENERATED> <ALWAYS> ]
+            <AS> <LPAREN>
+            e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+            <RPAREN>
+            (
+                    <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
+                |
+                    <STORED> { strategy = ColumnStrategy.STORED; }
+                |
+                    { strategy = ColumnStrategy.VIRTUAL; }
+            )
+            |
+                <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+                    strategy = ColumnStrategy.DEFAULT;
+                }
+            |
+                {
+                    e = null;
+                    strategy = nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE;
+                }
+        )
+        (
+                <COLLATE>
+                (
+                    <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
+                    |
+                    <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+                )
+            |
+                {
+                  collation = null;
+                }
+        )
+        {
+            list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), collation, e, strategy));
+        }
+        |
+            { list.add(id); }
+    )
+    |
+        id = SimpleIdentifier() {
+            list.add(id);
+        }
+    |
+        [ <CONSTRAINT> { s.add(this); } name = SimpleIdentifier() ]
+        (
+            <CHECK> { s.add(this); }
+            <LPAREN>
+            e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+            <RPAREN> {
+                list.add(SqlDdlNodes.check(s.end(this), name, e));
+            }
+            |
+                <UNIQUE> { s.add(this); }
+                columnList = ParenthesizedSimpleIdentifierList() {
+                    list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
+                }
+            |
+                <PRIMARY> { s.add(this); }
+                <KEY>
+                columnList = ParenthesizedSimpleIdentifierList() {
+                    list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
+                }
+        )
+}
+
+SqlNodeList AttributeDefList() :
+{
+    final Span s;
+    final List
+    <SqlNode> list = new ArrayList<SqlNode>();
+}
+{
+    <LPAREN> { s = span(); }
+    AttributeDef(list)
+    (
+        <COMMA> AttributeDef(list)
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+void AttributeDef(List<SqlNode> list) :
+{
+    final SqlIdentifier id;
+    final SqlDataTypeSpec type;
+    final boolean nullable;
+    SqlNode e = null;
+    final Span s = Span.of();
+}
+{
+    id = SimpleIdentifier()
+    (
+        type = DataType()
+        (
+                <NULL> { nullable = true; }
+            |
+                <NOT> <NULL> { nullable = false; }
+            |
+                { nullable = true; }
+            )
+        )
+    [ <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) ]
+    {
+        list.add(SqlDdlNodes.attribute(s.add(id).end(this), id,
+        type.withNullable(nullable), e, null));
+    }
+}
+
+SqlCreate SqlCreateType(Span s, boolean replace) :
+{
+    final SqlIdentifier id;
+    SqlNodeList attributeDefList = null;
+    SqlDataTypeSpec type = null;
+}
+{
+    <TYPE>
+    id = CompoundIdentifier()
+    <AS>
+    (
+        attributeDefList = AttributeDefList()
+        |
+        type = DataType()
+    )
+    {
+        return SqlDdlNodes.createType(s.end(this), replace, id, attributeDefList, type);
+    }
+}
+
+SqlCreate SqlCreateTable(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier id;
+    SqlNodeList tableElementList = null;
+    SqlNode query = null;
+    SqlIdentifier store = null;
+    SqlIdentifier partitionColumn = null;
+    SqlIdentifier partitionType = null;
+    int numPartitionGroups = 0;
+    int numPartitions = 0;
+    List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
+    SqlIdentifier partitionName = null;
+    List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
+    List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
+    SqlNode partitionValues = null;
+    SqlIdentifier tmpIdent = null;
+    int tmpInt = 0;
+    RawPartitionInformation rawPartitionInfo;
+}
+{
+    <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    [ tableElementList = TableElementList() ]
+    [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
+    [ <ON> <STORE> store = SimpleIdentifier() ]
+    [ <PARTITION> <BY>
+                       (
+                                partitionType = SimpleIdentifier()
+                            |
+                                <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
+                            |
+                                <TEMPERATURE> { partitionType = new SqlIdentifier( "TEMPERATURE", s.end(this) );
+                                    rawPartitionInfo = new RawTemperaturePartitionInformation();
+                                    rawPartitionInfo.setPartitionType( partitionType );
+                                    }
+                                <LPAREN> partitionColumn = SimpleIdentifier() { rawPartitionInfo.setPartitionColumn( partitionColumn ); } <RPAREN>
+                                        <LPAREN>
+                                            <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                            partitionValues = Literal()
+                                                                {
+                                                                    partitionQualifiers.add(partitionValues);
+                                                                    ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageIn( partitionValues );
+                                                                } <PERCENT_REMAINDER>
+                                                        <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                        <COMMA>
+                                            <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                        partitionValues = Literal()
+                                                            {
+                                                                partitionQualifiers.add(partitionValues);
+                                                                ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageOut( partitionValues );
+                                                            } <PERCENT_REMAINDER>
+                                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                        <RPAREN>
+                                            <USING> <FREQUENCY>
+
+                                                        (
+                                                            <ALL> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "ALL", s.end(this) ) ); tmpIdent = null; }
+                                                        |
+                                                            <WRITE> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "WRITE", s.end(this) ) ); tmpIdent = null; }
+                                                        |
+                                                            <READ> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "READ", s.end(this) ) ); tmpIdent = null;}
+                                                        )
+                                                    <INTERVAL>
+                                                            tmpInt = UnsignedIntLiteral() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setInterval( tmpInt ); tmpInt = 0; }
+                                                            tmpIdent = SimpleIdentifier() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setIntervalUnit( tmpIdent ); tmpIdent = null; }
+                                            <WITH>  numPartitions = UnsignedIntLiteral() {rawPartitionInfo.setNumPartitions( numPartitions );}
+                                                tmpIdent = SimpleIdentifier() {
+                                                        ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
+                                                } <PARTITIONS>
+                                        {
+                                            rawPartitionInfo.setPartitionNamesList( CoreUtil.toNodeList( partitionNamesList, Identifier.class ) );
+                                            rawPartitionInfo.setPartitionQualifierList( SqlUtil.toNodeListList( partitionQualifierList ) );
+
+                                            return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                        }
+                       )
+        <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
+        [
+            (
+                    <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
+                |
+                    <WITH> <LPAREN>
+                            partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                            (
+                                <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                            )*
+                    <RPAREN>
+                |
+                    <LPAREN>
+                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        <VALUES> <LPAREN>
+                                partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                (
+                                    <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                )*
+                        <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                        (
+                                <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                        <VALUES> <LPAREN>
+                                                partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                (
+                                                    <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                )*
+                                        <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                        )*
+                    <RPAREN>
+
+            )
+
+        ]
+    ]
+    {
+        rawPartitionInfo = new RawPartitionInformation();
+        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+    }
+}
+
+SqlCreate SqlCreateView(Span s, boolean replace) :
+{
+    final SqlIdentifier id;
+    SqlNodeList columnList = null;
+    final SqlNode query;
+}
+{
+    <VIEW> id = CompoundIdentifier()
+    [ columnList = ParenthesizedSimpleIdentifierList() ]
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
+        return SqlDdlNodes.createView(s.end(this), replace, id, columnList, query);
+    }
+}
+
+SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
+{
+    final SqlIdentifier id;
+    final boolean ifNotExists;
+    SqlNodeList columnList = null;
+    final SqlNode query;
+    SqlIdentifier storeName = null;
+    List<SqlIdentifier>  store = new ArrayList<SqlIdentifier>();
+    String freshnessType = null;
+    Integer time = null;
+    SqlIdentifier freshnessId = null;
+}
+{
+    <MATERIALIZED><VIEW> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    [ columnList = ParenthesizedSimpleIdentifierList() ]
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    [ <ON> <STORE> storeName = SimpleIdentifier() { store.add(storeName); }
+                (
+                <COMMA> storeName = SimpleIdentifier() { store.add(storeName); }
+                    )*]
+    [ <FRESHNESS>
+                    (
+                        (<INTERVAL> time=UnsignedIntLiteral() freshnessId=CompoundIdentifier())
+                            {
+                                freshnessType="INTERVAL";
+                            }
+                        |
+                        (<UPDATE> time=UnsignedIntLiteral())
+                            {
+                                freshnessType="UPDATE";
+                            }
+                        |(<MANUAL>)
+                            {
+                                freshnessType="MANUEL";
+                            }
+                    ) ]{
+        return SqlDdlNodes.createMaterializedView(s.end(this), replace, ifNotExists, id, columnList, query, store, freshnessType, time, freshnessId);
+    }
+}
+
+private void FunctionJarDef(SqlNodeList usingList) :
+{
+    final SqlDdlNodes.FileType fileType;
+    final SqlNode uri;
+}
+{
+    (
+            <ARCHIVE> { fileType = SqlDdlNodes.FileType.ARCHIVE; }
+        |
+            <FILE> { fileType = SqlDdlNodes.FileType.FILE; }
+        |
+            <JAR> { fileType = SqlDdlNodes.FileType.JAR; }
+    ) {
+        usingList.add(SqlLiteral.createSymbol(fileType, getPos()));
+    }
+    uri = StringLiteral() {
+        usingList.add(uri);
+    }
+}
+
+SqlCreate SqlCreateFunction(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier id;
+    final SqlNode className;
+    SqlNodeList usingList = SqlNodeList.EMPTY;
+}
+{
+    <FUNCTION> ifNotExists = IfNotExistsOpt()
+    id = CompoundIdentifier()
+    <AS>
+    className = StringLiteral()
+    [
+        <USING> {
+            usingList = new SqlNodeList(getPos());
+        }
+        FunctionJarDef(usingList)
+        (
+            <COMMA>
+            FunctionJarDef(usingList)
+        )*
+    ] {
+        return SqlDdlNodes.createFunction(s.end(this), replace, ifNotExists, id, className, usingList);
+    }
+}
+
+SqlDrop SqlDropSchema(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <SCHEMA> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropSchema(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropType(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <TYPE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropType(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropTable(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropView(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <VIEW> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropView(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropMaterializedView(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <MATERIALIZED><VIEW> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+    return SqlDdlNodes.dropMaterializedView(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropFunction(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <FUNCTION> ifExists = IfExistsOpt()
+    id = CompoundIdentifier() {
+        return SqlDdlNodes.dropFunction(s.end(this), ifExists, id);
+    }
+}
+
+////////////////////////////////////
+/////////////ddlparser end
+
 
 /**
  * Parses a leaf SELECT expression without ORDER BY.
@@ -1568,10 +2957,6 @@ SqlLiteral JoinType() :
         <FULL> [ <OUTER> ] <JOIN> { joinType = JoinType.FULL; }
     |
         <CROSS> <JOIN> { joinType = JoinType.CROSS; }
-<#list parser.joinTypes as method>
-    |
-        joinType = ${method}()
-</#list>
     )
     {
         return SqlLiteral.createSymbol(joinType, getPos());
@@ -2211,7 +3596,7 @@ SqlNode GroupingElement() :
 /**
  * Parses a list of expressions separated by commas.
  */
-SqlNodeList ExpressionCommaList(final Span s, ExprContext exprContext) :
+SqlNodeList ExpressionCommaList( Span s, ExprContext exprContext) :
 {
     List<SqlNode> list;
     SqlNode e;
@@ -3476,18 +4861,31 @@ SqlAlter SqlAlter() :
 {
     <ALTER> { s = span(); }
     (
-<#-- additional literal parser methods are included here -->
-<#list parser.alterStatementParserMethods as method>
-        alterNode = ${method}(s)
-        <#sep>|</#sep>
-</#list>
+        alterNode = SqlSetOption(s)
+        |
+        alterNode = SqlAlterSchema(s)
+        |
+        alterNode = SqlAlterView(s)
+        |
+        alterNode = SqlAlterMaterializedView(s)
+        |
+        alterNode = SqlAlterTable(s)
+        |
+        alterNode = SqlAlterConfig(s)
+        |
+        alterNode = SqlAlterAdaptersAdd(s)
+        |
+        alterNode = SqlAlterAdaptersDrop(s)
+        |
+        alterNode = SqlAlterInterfacesAdd(s)
+        |
+        alterNode = SqlAlterInterfacesDrop(s)
     )
     {
         return alterNode;
     }
 }
 
-<#if parser.createStatementParserMethods?size != 0>
 /**
  * Parses a CREATE statement.
  */
@@ -3505,19 +4903,24 @@ SqlCreate SqlCreate() :
         }
     ]
     (
-<#-- additional literal parser methods are included here -->
-<#list parser.createStatementParserMethods as method>
-        create = ${method}(s, replace)
-        <#sep>|</#sep>
-</#list>
+        create = SqlCreateSchema(s, replace)
+        |
+        create = SqlCreateTable(s, replace)
+        |
+        create = SqlCreateType(s, replace)
+        |
+        create = SqlCreateView(s, replace)
+        |
+        create = SqlCreateMaterializedView(s, replace)
+        |
+        create = SqlCreateFunction(s, replace)
     )
     {
         return create;
     }
 }
-</#if>
 
-<#if parser.dropStatementParserMethods?size != 0>
+
 /**
  * Parses a DROP statement.
  */
@@ -3530,17 +4933,22 @@ SqlDrop SqlDrop() :
 {
     <DROP> { s = span(); }
     (
-<#-- additional literal parser methods are included here -->
-<#list parser.dropStatementParserMethods as method>
-        drop = ${method}(s, replace)
-        <#sep>|</#sep>
-</#list>
+        drop = SqlDropSchema(s, replace)
+        |
+        drop = SqlDropTable(s, replace)
+        |
+        drop = SqlDropType(s, replace)
+        |
+        drop = SqlDropView(s, replace)
+        |
+        drop = SqlDropMaterializedView(s, replace)
+        |
+        drop = SqlDropFunction(s, replace)
     )
     {
         return drop;
     }
 }
-</#if>
 
 /**
  * Parses a literal expression, allowing continued string literals.
@@ -3563,11 +4971,6 @@ SqlNode Literal() :
         e = DateTimeLiteral()
     |
         e = IntervalLiteral()
-<#-- additional literal parser methods are included here -->
-<#list parser.literalParserMethods as method>
-    |
-        e = ${method}
-</#list>
     )
     {
         return e;
@@ -4254,7 +5657,6 @@ SqlNodeList ParenthesizedSimpleIdentifierList() :
     }
 }
 
-<#if parser.includeCompoundIdentifier >
 /**
  * Parses a compound identifier.
  */
@@ -4323,9 +5725,6 @@ Pair<SqlNodeList, SqlNodeList> ParenthesizedCompoundIdentifierList() :
         return Pair.of(new SqlNodeList(list, s.end(this)), new SqlNodeList(extendList, s.end(this)));
     }
 }
-<#else>
-  <#include "/@includes/compoundIdentifier.ftl" />
-</#if>
 
 /**
  * Parses a NEW UDT(...) expression.
@@ -4466,11 +5865,6 @@ SqlIdentifier TypeName() :
         polyType = PolyType(s) {
             typeName = new SqlIdentifier(polyType.name(), s.end(this));
         }
-<#-- additional types are included here -->
-<#list parser.dataTypeParserMethods as method>
-    |
-        typeName = ${method}
-</#list>
     |
         typeName = CollectionsTypeName()
     |
@@ -6714,10 +8108,12 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < XML: "XML" >
 |   < YEAR: "YEAR" >
 |   < ZONE: "ZONE" >
-<#-- additional parser keywords are included here -->
-<#list parser.keywords as keyword>
-|   < ${keyword}: "${keyword}" >
-</#list>
+|   < IF: "IF" >
+|   < STORED: "STORED" >
+|   < VIRTUAL: "VIRTUAL" >
+|   < JAR: "JAR" >
+|   < FILE: "FILE" >
+|   < ARCHIVE: "ARCHIVE" >
 }
 
 /**
@@ -6754,13 +8150,46 @@ void NonReservedKeyWord0of3() :
 }
 {
     (
-<#list parser.nonReservedKeywords as keyword>
-<#if keyword?index == 0>
-        <${keyword}>
-<#elseif keyword?index % 3 == 0>
-    |   <${keyword}>
-</#if>
-</#list>
+    <A>
+    |    <ABSENT>
+    |    <ABSOLUTE>
+    |    <ACTION>
+    |    <ADA>
+    |    <ADAPTERS>
+    |    <ADD>
+    |    <ADMIN>
+    |    <AFTER>
+    |    <ALWAYS>
+    |    <APPLY>
+    |    <ASC>
+    |    <ASSERTION>
+    |    <ASSIGNMENT>
+    |    <ATTRIBUTE>
+    |    <ATTRIBUTES>
+    |    <BEFORE>
+    |    <BERNOULLI>
+    |    <BREADTH>
+    |    <C>
+    |    <CASCADE>
+    |    <CATALOG>
+    |    <CATALOG_NAME>
+    |    <CENTURY>
+    |    <CONFIG>
+    |    <CHAIN>
+    |    <CHARACTER_SET_CATALOG>
+    |    <CHARACTER_SET_NAME>
+    |    <CHARACTER_SET_SCHEMA>
+    |    <CHARACTERISTICS>
+    |    <CHARACTERS>
+    |    <CLASS_ORIGIN>
+    |    <COBOL>
+    |    <COLLATION>
+    |    <COLLATION_CATALOG>
+    |    <COLLATION_NAME>
+    |    <COLLATION_SCHEMA>
+    |    <COLUMN_NAME>
+    |    <COMMAND_FUNCTION>
+    |    <COMMAND_FUNCTION_CODE>
     )
 }
 
@@ -6770,13 +8199,120 @@ void NonReservedKeyWord1of3() :
 }
 {
     (
-<#list parser.nonReservedKeywords as keyword>
-<#if keyword?index == 1>
-        <${keyword}>
-<#elseif keyword?index % 3 == 1>
-    |   <${keyword}>
-</#if>
-</#list>
+    <COMMITTED>
+    |    <CONDITION_NUMBER>
+    |    <CONDITIONAL>
+    |    <CONNECTION>
+    |    <CONNECTION_NAME>
+    |    <CONSTRAINT_CATALOG>
+    |    <CONSTRAINT_NAME>
+    |    <CONSTRAINT_SCHEMA>
+    |    <CONSTRAINTS>
+    |    <CONSTRUCTOR>
+    |    <CONTINUE>
+    |    <CURSOR_NAME>
+    |    <DATA>
+    |    <DATABASE>
+    |    <DATETIME_INTERVAL_CODE>
+    |    <DATETIME_INTERVAL_PRECISION>
+    |    <DECADE>
+    |    <DEFAULTS>
+    |    <DEFERRABLE>
+    |    <DEFERRED>
+    |    <DEFINED>
+    |    <DEFINER>
+    |    <DEGREE>
+    |    <DEPTH>
+    |    <DERIVED>
+    |    <DESC>
+    |    <DESCRIPTION>
+    |    <DESCRIPTOR>
+    |    <DIAGNOSTICS>
+    |    <DISPATCH>
+    |    <DOMAIN>
+    |    <DOW>
+    |    <DOY>
+    |    <DYNAMIC_FUNCTION>
+    |    <DYNAMIC_FUNCTION_CODE>
+    |    <ENCODING>
+    |    <EPOCH>
+    |    <ERROR>
+    |    <EXCEPTION>
+    |    <EXCLUDE>
+    |    <EXCLUDING>
+    |    <FINAL>
+    |    <FIRST>
+    |    <FOLLOWING>
+    |    <FORMAT>
+    |    <FORTRAN>
+    |    <FOUND>
+    |    <FRAC_SECOND>
+    |    <G>
+    |    <GENERAL>
+    |    <GENERATED>
+    |    <GEOMETRY>
+    |    <GO>
+    |    <GOTO>
+    |    <GRANTED>
+    |    <HIERARCHY>
+    |    <IMMEDIATE>
+    |    <IMMEDIATELY>
+    |    <IMPLEMENTATION>
+    |    <INCLUDING>
+    |    <INCREMENT>
+    |    <INDEX>
+    |    <INITIALLY>
+    |    <INPUT>
+    |    <INSTANCE>
+    |    <INSTANTIABLE>
+    |    <INTERFACES>
+    |    <INVOKER>
+    |    <ISODOW>
+    |    <ISOYEAR>
+    |    <ISOLATION>
+    |    <JAVA>
+    |    <JSON>
+    |    <K>
+    |    <KEY>
+    |    <KEY_MEMBER>
+    |    <KEY_TYPE>
+    |    <LABEL>
+    |    <LAST>
+    |    <LENGTH>
+    |    <LEVEL>
+    |    <LIBRARY>
+    |    <LOCATOR>
+    |    <M>
+    |    <MAP>
+    |    <MATCHED>
+    |    <MATERIALIZED>
+    |    <MAXVALUE>
+    |    <MICROSECOND>
+    |    <MESSAGE_LENGTH>
+    |    <MESSAGE_OCTET_LENGTH>
+    |    <MESSAGE_TEXT>
+    |    <META>
+    |    <MILLISECOND>
+    |    <MILLENNIUM>
+    |    <MINVALUE>
+    |    <MODIFY>
+    |    <MORE_>
+    |    <MUMPS>
+    |    <NAME>
+    |    <NAMES>
+    |    <NANOSECOND>
+    |    <NESTING>
+    |    <NORMALIZED>
+    |    <NULLABLE>
+    |    <NULLS>
+    |    <NUMBER>
+    |    <OBJECT>
+    |    <OCTETS>
+    |    <OPTION>
+    |    <OPTIONS>
+    |    <ORDERING>
+    |    <ORDINALITY>
+    |    <OTHERS>
     )
 }
 
@@ -6786,13 +8322,165 @@ void NonReservedKeyWord2of3() :
 }
 {
     (
-<#list parser.nonReservedKeywords as keyword>
-<#if keyword?index == 2>
-        <${keyword}>
-<#elseif keyword?index % 3 == 2>
-    |   <${keyword}>
-</#if>
-</#list>
+    <OUTPUT>
+    |    <OVERRIDING>
+    |    <OWNER>
+    |    <PAD>
+    |    <PARAMETER_MODE>
+    |    <PARAMETER_NAME>
+    |    <PARAMETER_ORDINAL_POSITION>
+    |    <PARAMETER_SPECIFIC_CATALOG>
+    |    <PARAMETER_SPECIFIC_NAME>
+    |    <PARAMETER_SPECIFIC_SCHEMA>
+    |    <PARTIAL>
+    |    <PASCAL>
+    |    <PASSING>
+    |    <PASSTHROUGH>
+    |    <PAST>
+    |    <PATH>
+    |    <PLACEMENT>
+    |    <PLACING>
+    |    <PLAN>
+    |    <PLI>
+    |    <PRECEDING>
+    |    <PRESERVE>
+    |    <PRIOR>
+    |    <PRIVILEGES>
+    |    <PUBLIC>
+    |    <QUARTER>
+    |    <READ>
+    |    <RELATIVE>
+    |    <RENAME>
+    |    <REPEATABLE>
+    |    <REPLACE>
+    |    <RESTART>
+    |    <RESTRICT>
+    |    <RETURNED_CARDINALITY>
+    |    <RETURNED_LENGTH>
+    |    <RETURNED_OCTET_LENGTH>
+    |    <RETURNED_SQLSTATE>
+    |    <RETURNING>
+    |    <ROLE>
+    |    <ROUTINE>
+    |    <ROUTINE_CATALOG>
+    |    <ROUTINE_NAME>
+    |    <ROUTINE_SCHEMA>
+    |    <ROW_COUNT>
+    |    <SCALAR>
+    |    <SCALE>
+    |    <SCHEMA>
+    |    <SCHEMA_NAME>
+    |    <SCOPE_CATALOGS>
+    |    <SCOPE_NAME>
+    |    <SCOPE_SCHEMA>
+    |    <SECTION>
+    |    <SECURITY>
+    |    <SELF>
+    |    <SEQUENCE>
+    |    <SERIALIZABLE>
+    |    <SERVER>
+    |    <SERVER_NAME>
+    |    <SESSION>
+    |    <SETS>
+    |    <SIMPLE>
+    |    <SIZE>
+    |    <SOURCE>
+    |    <SPACE>
+    |    <SPECIFIC_NAME>
+    |    <SQL_BIGINT>
+    |    <SQL_BINARY>
+    |    <SQL_BIT>
+    |    <SQL_BLOB>
+    |    <SQL_BOOLEAN>
+    |    <SQL_CHAR>
+    |    <SQL_CLOB>
+    |    <SQL_DATE>
+    |    <SQL_DECIMAL>
+    |    <SQL_DOUBLE>
+    |    <SQL_FLOAT>
+    |    <SQL_JSON>
+    |    <SQL_INTEGER>
+    |    <SQL_INTERVAL_DAY>
+    |    <SQL_INTERVAL_DAY_TO_HOUR>
+    |    <SQL_INTERVAL_DAY_TO_MINUTE>
+    |    <SQL_INTERVAL_DAY_TO_SECOND>
+    |    <SQL_INTERVAL_HOUR>
+    |    <SQL_INTERVAL_HOUR_TO_MINUTE>
+    |    <SQL_INTERVAL_HOUR_TO_SECOND>
+    |    <SQL_INTERVAL_MINUTE>
+    |    <SQL_INTERVAL_MINUTE_TO_SECOND>
+    |    <SQL_INTERVAL_MONTH>
+    |    <SQL_INTERVAL_SECOND>
+    |    <SQL_INTERVAL_YEAR>
+    |    <SQL_INTERVAL_YEAR_TO_MONTH>
+    |    <SQL_LONGVARBINARY>
+    |    <SQL_LONGVARNCHAR>
+    |    <SQL_LONGVARCHAR>
+    |    <SQL_NCHAR>
+    |    <SQL_NCLOB>
+    |    <SQL_NUMERIC>
+    |    <SQL_NVARCHAR>
+    |    <SQL_REAL>
+    |    <SQL_SMALLINT>
+    |    <SQL_TIME>
+    |    <SQL_TIMESTAMP>
+    |    <SQL_TINYINT>
+    |    <SQL_TSI_DAY>
+    |    <SQL_TSI_FRAC_SECOND>
+    |    <SQL_TSI_HOUR>
+    |    <SQL_TSI_MICROSECOND>
+    |    <SQL_TSI_MINUTE>
+    |    <SQL_TSI_MONTH>
+    |    <SQL_TSI_QUARTER>
+    |    <SQL_TSI_SECOND>
+    |    <SQL_TSI_WEEK>
+    |    <SQL_TSI_YEAR>
+    |    <SQL_VARBINARY>
+    |    <SQL_VARCHAR>
+    |    <STORE>
+    |    <STATE>
+    |    <STATEMENT>
+    |    <STRUCTURE>
+    |    <STYLE>
+    |    <SUBCLASS_ORIGIN>
+    |    <SUBSTITUTE>
+    |    <TABLE_NAME>
+    |    <TEMPORARY>
+    |    <TIES>
+    |    <TIMESTAMPADD>
+    |    <TIMESTAMPDIFF>
+    |    <TOP_LEVEL_COUNT>
+    |    <TRANSACTION>
+    |    <TRANSACTIONS_ACTIVE>
+    |    <TRANSACTIONS_COMMITTED>
+    |    <TRANSACTIONS_ROLLED_BACK>
+    |    <TRANSFORM>
+    |    <TRANSFORMS>
+    |    <TRIGGER_CATALOG>
+    |    <TRIGGER_NAME>
+    |    <TRIGGER_SCHEMA>
+    |    <TYPE>
+    |    <UNBOUNDED>
+    |    <UNCOMMITTED>
+    |    <UNCONDITIONAL>
+    |    <UNDER>
+    |    <UNNAMED>
+    |    <USAGE>
+    |    <USER_DEFINED_TYPE_CATALOG>
+    |    <USER_DEFINED_TYPE_CODE>
+    |    <USER_DEFINED_TYPE_NAME>
+    |    <USER_DEFINED_TYPE_SCHEMA>
+    |    <UTF8>
+    |    <UTF16>
+    |    <UTF32>
+    |    <VERSION>
+    |    <VIEW>
+    |    <WEEK>
+    |    <WRAPPER>
+    |    <WORK>
+    |    <WRITE>
+    |    <XML>
+    |    <ZONE>
     )
 }
 
@@ -6848,16 +8536,12 @@ void NonReservedKeyWord2of3() :
 {
     < LPAREN: "(">
 |   < RPAREN: ")">
-<#if parser.includeBraces >
 |   < LBRACE_D: "{" (" ")* ["d","D"] >
 |   < LBRACE_T: "{" (" ")* ["t","T"] >
 |   < LBRACE_TS: "{" (" ")* ["t","T"] ["s","S"] >
 |   < LBRACE_FN: "{" (" ")* ["f","F"] ["n","N"] >
 |   < LBRACE: "{" >
 |   < RBRACE: "}" >
-<#else>
-<#include "/@includes/braces.ftl" />
-</#if>
 |   < LBRACKET: "[" >
 |   < RBRACKET: "]" >
 |   < SEMICOLON: ";" >
@@ -6908,10 +8592,6 @@ TOKEN_MGR_DECLS : {
     void popState() {
       SwitchTo(lexicalStateStack.remove(lexicalStateStack.size() - 1));
     }
-
-<#if parser.includeAdditionalDeclarations>
-  <#include "/@includes/tokenManagerDeclarations.ftl" />
-</#if>
 }
 
 /*

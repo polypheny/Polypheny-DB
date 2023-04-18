@@ -28,13 +28,13 @@ options {
   UNICODE_INPUT = false;
   IGNORE_CASE = false;
   USER_TOKEN_MANAGER = false;
-  USER_CHAR_STREAM = true;
+  USER_CHAR_STREAM = false;
   BUILD_PARSER = true;
   BUILD_TOKEN_MANAGER = true;
   SANITY_CHECK = true;
   FORCE_LA_CHECK = false;
   TOKEN_EXTENDS = "WithOffset";
-  COMMON_TOKEN_ACTION = true;
+  COMMON_TOKEN_ACTION = false;
 }
 
 PARSER_BEGIN(CypherParserImpl)
@@ -109,12 +109,12 @@ public class CypherParserImpl extends CypherAbstractParserImpl {
      * {@link ParserFactory} implementation for creating parser.
      */
     public static final ParserFactory FACTORY = new ParserFactory() {
-        public CypherAbstractParserImpl getParser( Reader reader ) {
-            return new CypherParserImpl( new CypherCharStream( ((SourceStringReader) reader).getSourceString() ));
+        public CypherParserImpl getParser( Reader reader ) {
+            return new CypherParserImpl( reader );
         }
 
-        public CypherAbstractParserImpl getParser( String query ) {
-            return new CypherParserImpl( new CypherCharStream( query ));
+        public CypherParserImpl getParser( String cypher ) {
+            return getParser( new SourceStringReader( cypher ) );
         }
     };
 
@@ -147,7 +147,7 @@ public class CypherParserImpl extends CypherAbstractParserImpl {
 
 PARSER_END(CypherParserImpl)
 
-TOKEN_MGR_DECLS :
+/*TOKEN_MGR_DECLS :
 {
     public void CommonTokenAction( Token t )
     {
@@ -155,7 +155,7 @@ TOKEN_MGR_DECLS :
         t.beginOffset = ccStream.getBeginOffset();
         t.endOffset = ccStream.getEndOffset();
     }
-}
+}*/
 
 SKIP :
 {
