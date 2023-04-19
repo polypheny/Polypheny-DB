@@ -28,7 +28,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
@@ -42,6 +41,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.util.LoggedIdBuilder;
+import org.polypheny.db.catalog.util.PhysicalContext;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
@@ -94,7 +95,7 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the LPG data model natively.
      */
-    public List<? extends PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
+    public PhysicalContext createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
         // overwrite this if the datastore supports graph
         return createGraphSubstitution( context, logical, allocation );
     }
@@ -115,23 +116,34 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private List<? extends PhysicalEntity> createGraphSubstitution( Context context, LogicalGraph graphDatabase, AllocationGraph allocation ) {
+    private PhysicalContext createGraphSubstitution( Context context, LogicalGraph graphDatabase, AllocationGraph allocation ) {
+        LoggedIdBuilder idBuilder = new LoggedIdBuilder();
+        List<? extends PhysicalEntity> physicals = new ArrayList<>();
 
-        IdBuilder idBuilder = IdBuilder.getInstance();
+        PhysicalContext physicalContext = new PhysicalContext();
 
-        /*LogicalTable nodes = new LogicalTable( idBuilder. )
-        createTable( context, nodes, null );
+        LogicalTable nodes = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aNodes = new AllocationTable( idBuilder.getNewAllocId() );
+        physicalContext.getPhysicals().addAll( createTable( context, nodes, aNodes ) );
 
-        LogicalTable nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
-        createTable( context, nodeProperty, null );
+        LogicalTable nodeProperty = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aNodeProperty = new AllocationTable( idBuilder.getNewLogicalId() );
+        physicalContext.getPhysicals().addAll( createTable( context, nodeProperty, aNodeProperty ) );
 
-        LogicalTable edges = Catalog.getInstance().getTable( mapping.edgesId );
-        createTable( context, edges, null );
+        LogicalTable edges = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aEdges = new AllocationTable( idBuilder.getNewLogicalId() );
+        physicalContext.getPhysicals().addAll( context, edges, aEdges ) );
 
-        LogicalTable edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
-        createTable( context, edgeProperty, null );*/
-        // todo dl
-        return null;
+        LogicalTable edgeProperty = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aEdgeProperty = new AllocationTable( idBuilder.getNewLogicalId() );
+        physicalContext.getPhysicals().addAll( createTable( context, edgeProperty, aEdgeProperty ) );
+
+        physicalContext.getLogicals().add( nodes );
+        physicalContext.getLogicals().add( nodeProperty );
+        physicalContext.getLogicals().add( edges );
+        physicalContext.getLogicals().add( edgeProperty );
+
+        return physicalContext;
     }
 
 

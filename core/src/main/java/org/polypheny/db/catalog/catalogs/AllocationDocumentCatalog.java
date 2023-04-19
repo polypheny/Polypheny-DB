@@ -25,7 +25,6 @@ public interface AllocationDocumentCatalog extends AllocationCatalog {
 
     void removeAllocation( long id );
 
-
     Map<Long, ? extends AllocationCollection> getCollections();
 
 }

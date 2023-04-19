@@ -165,7 +165,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     @Override
     public AllocationTable addAllocation( long adapterId, long tableId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId );
+        AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId, null );
         tables.put( id, table );
         return table;
     }

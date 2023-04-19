@@ -132,7 +132,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), getDefaultPhysicalSchemaName(), physicalTableName );
         }
-        StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, allocationTable );
+        StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, allocationTable, columns );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.info( "{} on store {}", query.toString(), this.getUniqueName() );
         }
@@ -143,7 +143,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
     }
 
 
-    protected StringBuilder buildCreateTableQuery( String schemaName, String physicalTableName, AllocationTable allocationTable ) {
+    protected StringBuilder buildCreateTableQuery( String schemaName, String physicalTableName, AllocationTable allocationTable, List<AllocationColumn> columns ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE TABLE " )
                 .append( dialect.quoteIdentifier( schemaName ) )
@@ -151,7 +151,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
                 .append( dialect.quoteIdentifier( physicalTableName ) )
                 .append( " ( " );
         boolean first = true;
-        for ( AllocationColumn column : catalog.getSnapshot().alloc().getColumns( allocationTable.id ) ) {
+        for ( AllocationColumn column : columns ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( column.columnId );
             if ( !first ) {
                 builder.append( ", " );
