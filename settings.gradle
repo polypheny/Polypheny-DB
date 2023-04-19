@@ -48,6 +48,7 @@ include 'plugins:excel-adapter'
 
 // other plugins
 include 'plugins:explore-by-example'
+include 'plugins:jupyter-integration'
 
 // disabled adapter plugins
 include 'plugins:pig-adapter'
