@@ -16,8 +16,8 @@
 
 package org.polypheny.db.catalog.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import org.polypheny.db.catalog.IdBuilder;
@@ -26,15 +26,30 @@ import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 
 @Data
-public class PhysicalContext {
+public class StoreCatalog {
 
+    public final long adapterId;
     @Builder.Default
     IdBuilder idBuilder = IdBuilder.getInstance();
 
 
-    List<LogicalEntity> logicals = new ArrayList<>();
-    List<AllocationEntity> allocations = new ArrayList<>();
-    List<? extends PhysicalEntity> physicals = new ArrayList<>();
+    Map<Long, LogicalEntity> logicals = new HashMap<>();
+    Map<Long, AllocationEntity> allocations = new HashMap<>();
+    Map<Long, PhysicalEntity> physicals = new HashMap<>();
 
+
+    public void addLogical( LogicalEntity logical ) {
+        logicals.put( logical.id, logical );
+    }
+
+
+    public void addAllocation( AllocationEntity allocation ) {
+        allocations.put( allocation.id, allocation );
+    }
+
+
+    public void addPhysical( PhysicalEntity physical ) {
+        physicals.put( physical.id, physical );
+    }
 
 }

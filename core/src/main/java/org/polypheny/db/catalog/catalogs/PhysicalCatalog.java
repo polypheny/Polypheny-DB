@@ -16,17 +16,16 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.schema.Namespace;
 
 public interface PhysicalCatalog {
 
 
-    ConcurrentHashMap<Long, PhysicalEntity> getPhysicals();
+    ConcurrentHashMap<Long, StoreCatalog> getPhysicals();
 
-    void addEntities( List<? extends PhysicalEntity> physicals );
+    void addSnapshot( StoreCatalog snapshot );
 
     void deleteEntity( long id );
 

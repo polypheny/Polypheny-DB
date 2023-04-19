@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
@@ -39,6 +38,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.languages.ParserPos;
@@ -126,7 +126,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
 
 
     @Override
-    public List<PhysicalTable> createTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable, List<AllocationColumn> columns ) {
+    public void createTable( StoreCatalog storeCatalog, Context context, AllocationTable allocationTable ) {
         String physicalTableName = getPhysicalTableName( allocationTable.id, 0 );
 
         if ( log.isDebugEnabled() ) {
@@ -138,7 +138,7 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         }
         executeUpdate( query, context );
 
-        return Collections.singletonList( this.currentJdbcSchema.createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), allocationTable ) );
+        storeCatalog.addPhysical( this.currentJdbcSchema.createJdbcTable( IdBuilder.getInstance().getNewPhysicalId(), allocationTable ) );
         //return new PhysicalTable( allocationTable, getDefaultPhysicalSchemaName(), physicalTableName, allocationTable.getAllocColumns().values().stream().map( c -> getPhysicalColumnName( c.id ) ).collect( Collectors.toList() ) );
     }
 

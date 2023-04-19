@@ -141,11 +141,6 @@ public class PhysicalSnapshotImpl implements PhysicalSnapshot {
     }
 
 
-    @Override
-    public PhysicalCollection getPhysicalCollection( long logicalId, long adapterId ) {
-        return adapterLogicalEntity.get( Pair.of( adapterId, logicalId ) ).unwrap( PhysicalCollection.class );
-    }
-
 
     @Override
     public PhysicalGraph getPhysicalGraph( long id ) {

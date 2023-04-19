@@ -21,7 +21,6 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,7 +47,6 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
@@ -56,6 +54,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.physical.PolyPhysicalCatalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
+import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.transaction.Transaction;
 
 
@@ -89,6 +88,10 @@ public class PolyCatalog extends Catalog implements Serializable {
     @Getter
     public final Map<Long, CatalogQueryInterface> interfaces;
 
+    @Serialize
+    @Getter
+    public Map<Long, StoreCatalog> snapshots;
+
     private final IdBuilder idBuilder = IdBuilder.getInstance();
 
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -107,9 +110,6 @@ public class PolyCatalog extends Catalog implements Serializable {
                 new ConcurrentHashMap<>() );
 
     }
-
-
-
 
 
     public PolyCatalog(
@@ -158,8 +158,7 @@ public class PolyCatalog extends Catalog implements Serializable {
                     getPhysical( v2.namespaceId ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
 
                     LogicalTable table = getSnapshot().getLogicalEntity( v2.logicalId ).unwrap( LogicalTable.class );
-                    List<PhysicalEntity> physicals = AdapterManager.getInstance().getAdapter( v2.adapterId ).createAdapterTable( idBuilder, table, v2 );
-                    getPhysical( table.namespaceId ).addEntities( physicals );
+                    AdapterManager.getInstance().getAdapter( v2.adapterId ).createAdapterTable( , idBuilder, table, v2 );
                 } );
             }
         } );
@@ -244,6 +243,18 @@ public class PolyCatalog extends Catalog implements Serializable {
     @Deprecated
     public Map<Long, AlgNode> getNodeInfo() {
         return null;
+    }
+
+
+    @Override
+    public StoreCatalog getStoreSnapshot( long id ) {
+        return snapshots.get( id );
+    }
+
+
+    @Override
+    public void addStoreSnapshot( StoreCatalog snapshot ) {
+        snapshots.put( snapshot.adapterId, snapshot );
     }
 
 

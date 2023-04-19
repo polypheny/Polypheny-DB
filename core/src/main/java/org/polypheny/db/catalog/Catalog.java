@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.transaction.Transaction;
 
 public abstract class Catalog implements ExtensionPoint {
@@ -105,6 +106,10 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract PhysicalCatalog getPhysical( long namespaceId );
 
     public abstract Map<Long, AlgNode> getNodeInfo();
+
+    public abstract StoreCatalog getStoreSnapshot( long id );
+
+    public abstract void addStoreSnapshot( StoreCatalog snapshot );
 
 
     /**

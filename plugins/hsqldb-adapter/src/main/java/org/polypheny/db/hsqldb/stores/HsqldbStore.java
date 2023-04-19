@@ -34,14 +34,13 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
-import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
@@ -106,7 +105,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public List<PhysicalEntity> createAdapterTable( IdBuilder idBuilder, LogicalTable logicalTable, AllocationTable allocationTable ) {
+    public void createAdapterTable( StoreCatalog snapshot, LogicalTable logicalTable, AllocationTable allocationTable ) {
         return List.of( currentJdbcSchema.createJdbcTable( idBuilder.getNewPhysicalId(), allocationTable ) );
     }
 

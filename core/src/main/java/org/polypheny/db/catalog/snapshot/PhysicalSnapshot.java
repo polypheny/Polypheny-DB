@@ -22,20 +22,20 @@ import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.schema.Namespace;
 
 public interface PhysicalSnapshot {
 
     //// PHYSICAL ENTITIES
 
+    StoreCatalog getSnapshot( long id );
+
     PhysicalTable getPhysicalTable( long id );
 
     PhysicalTable getPhysicalTable( long logicalId, long adapterId );
 
     PhysicalCollection getPhysicalCollection( long id );
-
-    PhysicalCollection getPhysicalCollection( long logicalId, long adapterId );
-
 
     PhysicalGraph getPhysicalGraph( long id );
 
