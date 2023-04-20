@@ -36,7 +36,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.type.PolyType;
 
 @Slf4j
 public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> implements ExtensionPoint {
@@ -71,7 +70,7 @@ public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> imple
 
     public abstract void dropIndex( S snapshot, Context context, LogicalIndex logicalIndex, List<Long> partitionIds );
 
-    public abstract void updateColumnType( S snapshot, Context context, long allocId, long columnId, PolyType oldType );
+    public abstract void updateColumnType( S snapshot, Context context, long allocId, LogicalColumn column );
 
     public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
 

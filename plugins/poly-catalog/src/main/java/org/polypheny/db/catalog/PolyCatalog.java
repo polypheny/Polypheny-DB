@@ -247,7 +247,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
-    public StoreCatalog getStoreSnapshot( long id ) {
+    public S getStoreSnapshot( long id ) {
         return snapshots.get( id );
     }
 

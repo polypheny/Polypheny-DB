@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,8 +77,33 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    public PhysicalTable createTable( String namespaceName, String tableName, List<String> columnNames, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+    public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.adapterId, c.position, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
+        PhysicalTable table = new PhysicalTable( allocation.id, allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
+        addTable( table );
+        return table;
+    }
 
+
+    public PhysicalColumn addColumn( String name, long tableId, long adapterId, int position, LogicalColumn lColumn ) {
+        PhysicalColumn column = new PhysicalColumn( name, tableId, adapterId, position, lColumn );
+        PhysicalTable table = getTable( tableId );
+        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
+        pColumn.add( column );
+        tables.put( tableId, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+        return column;
+    }
+
+
+    public PhysicalColumn updateColumnType( long tableId, LogicalColumn newCol ) {
+        PhysicalColumn old = getColumn( newCol.id );
+        PhysicalColumn column = new PhysicalColumn( old.name, tableId, adapterId, old.position, newCol );
+        PhysicalTable table = getTable( tableId );
+        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
+        pColumn.remove( old );
+        pColumn.add( column );
+        tables.put( tableId, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+        return column;
     }
 
 }

@@ -107,7 +107,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
-    public abstract StoreCatalog getStoreSnapshot( long id );
+    public abstract <S extends StoreCatalog> S getStoreSnapshot( long id );
 
     public abstract void addStoreSnapshot( StoreCatalog snapshot );
 

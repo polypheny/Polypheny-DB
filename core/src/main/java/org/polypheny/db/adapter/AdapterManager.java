@@ -43,8 +43,8 @@ import org.polypheny.db.config.RuntimeConfig;
 
 public class AdapterManager {
 
-    private final Map<Long, Adapter> adapterById = new HashMap<>();
-    private final Map<String, Adapter> adapterByName = new HashMap<>();
+    private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
+    private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
 
 
     private static final AdapterManager INSTANCE = new AdapterManager();
@@ -60,74 +60,74 @@ public class AdapterManager {
     }
 
 
-    public Adapter getAdapter( String uniqueName ) {
+    public Adapter<?> getAdapter( String uniqueName ) {
         uniqueName = uniqueName.toLowerCase();
         return adapterByName.get( uniqueName );
     }
 
 
-    public Adapter getAdapter( long id ) {
+    public Adapter<?> getAdapter( long id ) {
         return adapterById.get( id );
     }
 
 
-    public ImmutableMap<String, Adapter> getAdapters() {
+    public ImmutableMap<String, Adapter<?>> getAdapters() {
         return ImmutableMap.copyOf( adapterByName );
     }
 
 
-    public DataStore getStore( String uniqueName ) {
-        Adapter adapter = getAdapter( uniqueName );
+    public DataStore<?> getStore( String uniqueName ) {
+        Adapter<?> adapter = getAdapter( uniqueName );
         if ( adapter instanceof DataStore ) {
-            return (DataStore) adapter;
+            return (DataStore<?>) adapter;
         }
         return null;
     }
 
 
-    public DataStore getStore( long id ) {
-        Adapter adapter = getAdapter( id );
+    public DataStore<?> getStore( long id ) {
+        Adapter<?> adapter = getAdapter( id );
         if ( adapter instanceof DataStore ) {
-            return (DataStore) adapter;
+            return (DataStore<?>) adapter;
         }
         return null;
     }
 
 
-    public ImmutableMap<String, DataStore> getStores() {
-        Map<String, DataStore> map = new HashMap<>();
-        for ( Entry<String, Adapter> entry : getAdapters().entrySet() ) {
-            if ( entry.getValue() instanceof DataStore ) {
-                map.put( entry.getKey(), (DataStore) entry.getValue() );
+    public ImmutableMap<String, DataStore<?>> getStores() {
+        Map<String, DataStore<?>> map = new HashMap<>();
+        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataStore<?> ) {
+                map.put( entry.getKey(), (DataStore<?>) entry.getValue() );
             }
         }
         return ImmutableMap.copyOf( map );
     }
 
 
-    public DataSource getSource( String uniqueName ) {
-        Adapter adapter = getAdapter( uniqueName );
-        if ( adapter instanceof DataSource ) {
-            return (DataSource) adapter;
+    public DataSource<?> getSource( String uniqueName ) {
+        Adapter<?> adapter = getAdapter( uniqueName );
+        if ( adapter instanceof DataSource<?> ) {
+            return (DataSource<?>) adapter;
         }
         return null;
     }
 
 
-    public DataSource getSource( long id ) {
-        Adapter adapter = getAdapter( id );
-        if ( adapter instanceof DataSource ) {
-            return (DataSource) adapter;
+    public DataSource<?> getSource( long id ) {
+        Adapter<?> adapter = getAdapter( id );
+        if ( adapter instanceof DataSource<?> ) {
+            return (DataSource<?>) adapter;
         }
         return null;
     }
 
 
-    public ImmutableMap<String, DataSource> getSources() {
-        Map<String, DataSource> map = new HashMap<>();
-        for ( Entry<String, Adapter> entry : getAdapters().entrySet() ) {
-            if ( entry.getValue() instanceof DataSource ) {
-                map.put( entry.getKey(), (DataSource) entry.getValue() );
+    public ImmutableMap<String, DataSource<?>> getSources() {
+        Map<String, DataSource<?>> map = new HashMap<>();
+        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataSource<?> ) {
+                map.put( entry.getKey(), (DataSource<?>) entry.getValue() );
             }
         }
         return ImmutableMap.copyOf( map );
@@ -200,7 +200,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter addAdapter( String adapterName, String uniqueName, AdapterType adapterType, Map<String, String> settings ) {
+    public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
@@ -210,7 +210,7 @@ public class AdapterManager {
         }
 
         Adapter instance;
-        Integer adapterId = null;
+        Long adapterId = null;
         try {
             adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
             instance = instantiate( adapterId, adapterName, uniqueName, adapterType, settings );
@@ -234,7 +234,7 @@ public class AdapterManager {
 
 
     public void removeAdapter( long adapterId ) {
-        Adapter adapterInstance = getAdapter( adapterId );
+        Adapter<?> adapterInstance = getAdapter( adapterId );
         if ( adapterInstance == null ) {
             throw new RuntimeException( "Unknown adapter instance with id: " + adapterId );
         }
@@ -275,7 +275,7 @@ public class AdapterManager {
     }
 
 
-    private static Adapter instantiate( int id, String adapterName, String uniqueName, AdapterType type, Map<String, String> settings ) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+    private static Adapter instantiate( long id, String adapterName, String uniqueName, AdapterType type, Map<String, String> settings ) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName, type );
         if ( adapter.getPreEvaluation() != null ) {
             adapter.getPreEvaluation().accept( settings );

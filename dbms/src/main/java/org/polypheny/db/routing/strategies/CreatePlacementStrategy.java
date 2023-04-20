@@ -26,8 +26,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
  */
 public interface CreatePlacementStrategy {
 
-    List<DataStore> getDataStoresForNewColumn( LogicalColumn addedColumn );
+    List<DataStore<?>> getDataStoresForNewColumn( LogicalColumn addedColumn );
 
-    List<DataStore> getDataStoresForNewEntity();
+    List<DataStore<?>> getDataStoresForNewEntity();
 
 }

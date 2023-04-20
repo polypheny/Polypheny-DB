@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
-    public List<DataStore> getDataStoresForNewColumn( LogicalColumn addedColumn ) {
+    public List<DataStore<?>> getDataStoresForNewColumn( LogicalColumn addedColumn ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( addedColumn.tableId );
         return ImmutableList.of( AdapterManager.getInstance().getStore( allocations.get( 0 ).adapterId ) );
@@ -38,7 +38,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
 
     @Override
-    public List<DataStore> getDataStoresForNewEntity() {
+    public List<DataStore<?>> getDataStoresForNewEntity() {
         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
         for ( DataStore store : availableStores.values() ) {
             return ImmutableList.of( store );

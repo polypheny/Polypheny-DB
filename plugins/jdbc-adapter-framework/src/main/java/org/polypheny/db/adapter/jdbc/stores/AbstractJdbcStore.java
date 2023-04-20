@@ -133,7 +133,14 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             snapshot.addNamespace( allocation.namespaceId, currentJdbcSchema );
         }
 
-        PhysicalTable table = snapshot.createTable( namespaceName, tableName, columns.stream().map( c -> getPhysicalColumnName( c.columnId ) ).collect( Collectors.toList() ), logical, lColumns, allocation, columns );
+        PhysicalTable table = snapshot.createTable(
+                namespaceName,
+                tableName,
+                columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
+                logical,
+                lColumns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                allocation,
+                columns );
 
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), namespaceName, tableName );
@@ -179,7 +186,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     public void addColumn( RelStoreCatalog snapshot, Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
         PhysicalTable table = snapshot.getTable( allocId );
-        PhysicalColumn column = new PhysicalColumn( physicalColumnName, table.id, adapterId, table.columns.size(), logicalColumn );
+        PhysicalColumn column = snapshot.addColumn( physicalColumnName, allocId, adapterId, table.columns.size(), logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );
@@ -188,6 +195,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             query = buildInsertDefaultValueQuery( table, column );
             executeUpdate( query, context );
         }
+
     }
 
 
@@ -265,8 +273,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     // Make sure to update overridden methods as well
     @Override
-    public void updateColumnType( RelStoreCatalog snapshot, Context context, long allocId, long columnId, PolyType oldType ) {
-        PhysicalColumn column = snapshot.getColumn( columnId );
+    public void updateColumnType( RelStoreCatalog snapshot, Context context, long allocId, LogicalColumn newCol ) {
+        PhysicalColumn column = snapshot.updateColumnType( allocId, newCol );
 
         if ( !this.dialect.supportsNestedArrays() && column.collectionsType != null ) {
             return;

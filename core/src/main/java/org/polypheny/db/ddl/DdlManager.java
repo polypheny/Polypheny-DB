@@ -253,7 +253,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store from which to drop the placement
      * @param statement the query statement
      */
-    public abstract void dropTableAllocation( LogicalTable catalogTable, DataStore storeInstance, Statement statement );
+    public abstract void dropTableAllocation( LogicalTable catalogTable, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Drop the primary key of a table
@@ -337,7 +337,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement );
+    public abstract void modifyDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -348,7 +348,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store on which the partition placements should be altered
      * @param statement the used statement
      */
-    public abstract void modifyPartitionPlacement( LogicalTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement );
+    public abstract void modifyPartitionPlacement( LogicalTable catalogTable, List<Long> partitionGroupIds, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
@@ -359,7 +359,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement );
+    public abstract void addColumnPlacement( LogicalTable catalogTable, String columnName, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
@@ -370,7 +370,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store from which to remove the placement
      * @param statement the used statement
      */
-    public abstract void dropColumnPlacement( LogicalTable catalogTable, String columnName, DataStore storeInstance, Statement statement );
+    public abstract void dropColumnPlacement( LogicalTable catalogTable, String columnName, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Change the owner of a table
@@ -413,7 +413,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement );
+    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
 
     /**
      * Create a new view
@@ -434,18 +434,18 @@ public abstract class DdlManager {
      * @param algRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered );
+    public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore<?>> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered );
 
-    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement );
+    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
 
-    public abstract void addCollectionAllocation( long namespaceId, String name, List<DataStore> stores, Statement statement );
+    public abstract void addCollectionAllocation( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
 
     /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition
      */
-    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws TransactionException;
+    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException;
 
     /**
      * Removes partitioning from Table
@@ -529,7 +529,7 @@ public abstract class DdlManager {
     public abstract void refreshView( Statement statement, Long materializedId );
 
 
-    public abstract long createGraph( String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement );
+    public abstract long createGraph( String namespaceName, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement );
 
     public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 
@@ -539,14 +539,14 @@ public abstract class DdlManager {
     public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
 
 
-    public abstract long addGraphAllocation( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
+    public abstract long addGraphAllocation( long graphId, List<DataStore<?>> stores, boolean onlyPlacement, Statement statement );
 
-    public abstract void removeGraphDatabasePlacement( long graphId, DataStore dataStores, Statement statement );
+    public abstract void removeGraphDatabasePlacement( long graphId, DataStore<?> dataStores, Statement statement );
 
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
-    public abstract void dropCollectionAllocation( long namespaceId, LogicalCollection collection, List<DataStore> dataStores, Statement statement );
+    public abstract void dropCollectionAllocation( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
 
 
     /**
