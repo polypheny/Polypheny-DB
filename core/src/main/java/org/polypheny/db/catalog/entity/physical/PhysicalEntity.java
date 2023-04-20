@@ -19,7 +19,6 @@ package org.polypheny.db.catalog.entity.physical;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -31,16 +30,14 @@ public abstract class PhysicalEntity extends CatalogEntity {
 
     public String namespaceName;
     public long adapterId;
-    public long logicalId;
     public long allocationId;
 
 
-    protected PhysicalEntity( long id, long logicalId, long allocationId, String name, long namespaceId, String namespaceName, EntityType type, NamespaceType namespaceType, long adapterId ) {
-        super( id, name, namespaceId, type, namespaceType, true );
+    protected PhysicalEntity( long id, long allocationId, String name, long namespaceId, String namespaceName, NamespaceType namespaceType, long adapterId ) {
+        super( id, name, namespaceId, EntityType.ENTITY, namespaceType, true );
         this.allocationId = allocationId;
         this.namespaceName = namespaceName;
         this.adapterId = adapterId;
-        this.logicalId = logicalId;
     }
 
 
@@ -49,8 +46,6 @@ public abstract class PhysicalEntity extends CatalogEntity {
         return State.PHYSICAL;
     }
 
-
-    public abstract AlgDataType getLogicalRowType();
 
 
 }

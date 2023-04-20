@@ -16,20 +16,26 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import java.util.concurrent.ConcurrentHashMap;
-import org.polypheny.db.schema.Namespace;
 
-public interface PhysicalCatalog {
+import lombok.AllArgsConstructor;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
+
+@Value
+@NonFinal
+@AllArgsConstructor
+public abstract class StoreCatalog {
+
+    public long adapterId;
+    IdBuilder idBuilder = IdBuilder.getInstance();
 
 
-    ConcurrentHashMap<Long, StoreCatalog> getPhysicals();
-
-    void addSnapshot( StoreCatalog snapshot );
-
-    void deleteEntity( long id );
-
-    void addNamespace( long adapterId, Namespace currentSchema );
-
-    ConcurrentHashMap<Long, Namespace> getNamespaces();
+    public Expression asExpression() {
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getStoreSnapshot", Expressions.constant( adapterId ) );
+    }
 
 }

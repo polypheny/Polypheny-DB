@@ -34,13 +34,13 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
@@ -71,6 +71,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
+
 
 
     @Override
@@ -104,10 +105,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     }
 
 
-    @Override
-    public void createAdapterTable( StoreCatalog snapshot, LogicalTable logicalTable, AllocationTable allocationTable ) {
-        return List.of( currentJdbcSchema.createJdbcTable( idBuilder.getNewPhysicalId(), allocationTable ) );
-    }
 
 
     @Override
@@ -117,7 +114,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation ) {
+    public String addIndex( RelStoreCatalog snapshot, Context context, LogicalIndex logicalIndex, AllocationTable allocation ) {
         // List<AllocationColumn> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
         // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         //partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
@@ -158,7 +155,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds ) {
+    public void dropIndex( RelStoreCatalog snapshot, Context context, LogicalIndex logicalIndex, List<Long> partitionIds ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         partitionIds.forEach( id -> partitionPlacements.add( catalog.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 

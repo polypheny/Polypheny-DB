@@ -78,14 +78,5 @@ public class JdbcImplementor extends AlgToSqlConverter {
     }
 
 
-    @Override
-    public SqlIdentifier getPhysicalColumnName( JdbcEntity physical, String columnName ) {
-        if ( physical.hasPhysicalColumnName( columnName ) ) {
-            return physical.physicalColumnName( columnName );
-        } else {
-            return new SqlIdentifier( "_" + columnName, ParserPos.ZERO );
-        }
-    }
-
 }
 

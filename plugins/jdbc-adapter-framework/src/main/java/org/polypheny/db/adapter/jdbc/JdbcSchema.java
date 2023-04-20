@@ -54,8 +54,11 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
@@ -86,7 +89,7 @@ public class JdbcSchema implements Namespace, Schema {
     private final Map<String, JdbcEntity> tableMap;
     private final Map<String, String> physicalToLogicalTableNameMap;
 
-    public final Adapter adapter;
+    public final Adapter<?> adapter;
     @Getter
     private final long id;
 
@@ -121,7 +124,7 @@ public class JdbcSchema implements Namespace, Schema {
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            Adapter adapter ) {
+            Adapter<?> adapter ) {
         this.id = id;
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -140,23 +143,22 @@ public class JdbcSchema implements Namespace, Schema {
 
 
     public JdbcEntity createJdbcTable(
-            long id,
-            AllocationTable allocationTable ) {
+            StoreCatalog storeCatalog,
+            PhysicalTable table ) {
         return new JdbcEntity(
                 this,
-                id,
-                allocationTable,
+                table,
                 TableType.TABLE );
     }
 
 
     public static JdbcSchema create(
             Long id,
-            Snapshot snapshot,
+            RelStoreCatalog snapshot,
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
-            Adapter adapter ) {
+            Adapter<?> adapter ) {
         final Expression expression = Schemas.subSchemaExpression( snapshot, id, adapter.getAdapterId(), JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
         return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
@@ -203,7 +205,7 @@ public class JdbcSchema implements Namespace, Schema {
 
     @Override
     public Expression getExpression( Snapshot snapshot, long id ) {
-        return Schemas.subSchemaExpression( snapshot, id, getAdapterId(), JdbcSchema.class );
+        return Schemas.subSchemaExpression( Catalog.getInstance().getStoreSnapshot( getAdapterId() ), id, getAdapterId(), JdbcSchema.class );
     }
 
 

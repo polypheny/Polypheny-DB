@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -29,13 +29,10 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -43,58 +40,34 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 public class PhysicalTable extends PhysicalEntity {
 
 
-    public ImmutableMap<Long, String> columns;
-    public ImmutableMap<Long, String> logicalColumns;
-
-    public String namespaceName;
-    public ImmutableMap<Long, AlgDataType> types;
-    public ImmutableList<Long> order;
+    public ImmutableList<PhysicalColumn> columns;
 
 
     public PhysicalTable(
             long id,
-            long logicalId,
             long allocationId,
             String name,
+            List<PhysicalColumn> columns,
             long namespaceId,
             String namespaceName,
-            long adapterId,
-            Map<Long, String> columns,
-            Map<Long, String> logicalColumns,
-            Map<Long, AlgDataType> types,
-            List<Long> order ) {
-        super( id, logicalId, allocationId, name, namespaceId, namespaceName, EntityType.ENTITY, NamespaceType.RELATIONAL, adapterId );
-        this.namespaceName = namespaceName;
-        this.columns = ImmutableMap.copyOf( columns );
-        this.logicalColumns = ImmutableMap.copyOf( logicalColumns );
-        this.types = ImmutableMap.copyOf( types );
-        this.order = ImmutableList.copyOf( order );
-    }
-
-
-    public PhysicalTable( long id, AllocationTable table, String name, String namespaceName, Map<Long, String> columns, Map<Long, String> logicalColumns, Map<Long, AlgDataType> types, List<Long> order ) {
-        this( id, table.logicalId, table.id, name, table.namespaceId, namespaceName, table.adapterId, columns, logicalColumns, types, order );
+            long adapterId ) {
+        super( id, allocationId, name, namespaceId, namespaceName, NamespaceType.RELATIONAL, adapterId );
+        this.columns = ImmutableList.copyOf( columns );
     }
 
 
     @Override
     public AlgDataType getRowType() {
-        return buildProto( columns ).apply( AlgDataTypeFactory.DEFAULT );
+        return buildProto().apply( AlgDataTypeFactory.DEFAULT );
     }
 
 
-    @Override
-    public AlgDataType getLogicalRowType() {
-        return buildProto( logicalColumns ).apply( AlgDataTypeFactory.DEFAULT );
-    }
+    public AlgProtoDataType buildProto() {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-
-    public AlgProtoDataType buildProto( Map<Long, String> columns ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-
-        for ( long id : order ) {
-            fieldInfo.add( columns.get( id ), columns.get( id ), types.get( id ) ).nullable( types.get( id ).isNullable() );
+        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+            AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            fieldInfo.add( column.name, null, sqlType ).nullable( column.nullable );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() );

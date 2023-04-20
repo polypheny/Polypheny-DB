@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
@@ -54,7 +55,6 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.physical.PolyPhysicalCatalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
-import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.transaction.Transaction;
 
 
@@ -158,7 +158,7 @@ public class PolyCatalog extends Catalog implements Serializable {
                     getPhysical( v2.namespaceId ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
 
                     LogicalTable table = getSnapshot().getLogicalEntity( v2.logicalId ).unwrap( LogicalTable.class );
-                    AdapterManager.getInstance().getAdapter( v2.adapterId ).createAdapterTable( , idBuilder, table, v2 );
+                    AdapterManager.getInstance().getAdapter( v2.adapterId ).createTable( getStoreSnapshot( v2.adapterId ), , table, v2, );
                 } );
             }
         } );

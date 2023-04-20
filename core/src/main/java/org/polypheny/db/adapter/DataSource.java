@@ -23,13 +23,14 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
-public abstract class DataSource extends Adapter implements ExtensionPoint {
+public abstract class DataSource<S extends StoreCatalog> extends Adapter<S> implements ExtensionPoint {
 
     @Getter
     private final boolean dataReadOnly;

@@ -55,6 +55,8 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.refactor.QueryableEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -104,15 +106,15 @@ public final class Schemas {
     /**
      * Returns the expression for a schema.
      */
-    public static Expression expression( Snapshot snapshot ) {
-        return snapshot.getSnapshotExpression( snapshot.id() );
+    public static Expression expression( StoreCatalog snapshot ) {
+        return snapshot.asExpression();
     }
 
 
     /**
      * Returns the expression for a sub-schema.
      */
-    public static Expression subSchemaExpression( Snapshot snapshot, long id, Long adapterId, Class<?> type ) {
+    public static Expression subSchemaExpression( StoreCatalog snapshot, long id, Long adapterId, Class<?> type ) {
         // (Type) schemaExpression.getSubSchema("name")
         final Expression schemaExpression = Expressions.call( expression( snapshot ), BuiltInMethod.SNAPSHOT_GET_PHYSICAL.method );
         Expression call =
@@ -141,7 +143,7 @@ public final class Schemas {
     /**
      * Returns the expression to access a table within a schema.
      */
-    public static Expression tableExpression( Snapshot snapshot, Type elementType, String tableName, Class<?> clazz ) {
+    public static Expression tableExpression( RelStoreCatalog snapshot, Type elementType, String tableName, Class<?> clazz ) {
         final MethodCallExpression expression;
         if ( Entity.class.isAssignableFrom( clazz ) ) {
             expression = Expressions.call(

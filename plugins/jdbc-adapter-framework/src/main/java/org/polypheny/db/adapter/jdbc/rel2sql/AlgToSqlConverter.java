@@ -519,7 +519,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList physicalIdentifierList( JdbcEntity entity, List<String> columnNames ) {
-        return new SqlNodeList( entity.order.stream().map( entity.columns::get ).map( c -> new SqlIdentifier( c, ParserPos.ZERO ) ).collect( Collectors.toList() ), POS );
+        return new SqlNodeList( entity.columns.stream().map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).collect( Collectors.toList() ), POS );
         //return new SqlNodeList( columnNames.stream().map( columnName -> getPhysicalColumnName( partitionPlacement, columnName ) ).collect( Collectors.toList() ), POS );
     }
 
@@ -663,8 +663,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
 
     public abstract SqlIdentifier getPhysicalTableName( JdbcEntity tableName );
 
-
-    public abstract SqlIdentifier getPhysicalColumnName( JdbcEntity tableName, String columnName );
 
 
     /**

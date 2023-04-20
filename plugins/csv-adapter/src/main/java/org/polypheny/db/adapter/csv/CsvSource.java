@@ -41,12 +41,13 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -68,7 +69,7 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingString(subOf = "method_link", defaultValue = ".", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class CsvSource extends DataSource {
+public class CsvSource extends DataSource<RelStoreCatalog> {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
     private final ConnectionMethod connectionMethod;
@@ -96,6 +97,30 @@ public class CsvSource extends DataSource {
 
         addInformationExportedColumns();
         enableInformationPage();
+    }
+
+
+    @Override
+    public void createNewSchema( RelStoreCatalog snapshot, String name, long id ) {
+
+    }
+
+
+    @Override
+    public void createTable( RelStoreCatalog snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+
+    }
+
+
+    @Override
+    public void updateTable( RelStoreCatalog snapshot, Context context, long allocId ) {
+
+    }
+
+
+    @Override
+    public void dropTable( RelStoreCatalog snapshot, Context context, long allocId ) {
+
     }
 
 
@@ -128,14 +153,24 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public void createNewSchema( Snapshot snapshot, String name, long id ) {
+    public void createNewSchema( RelStoreCatalog snapshot, String name, long id ) {
         currentSchema = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
     }
 
 
     @Override
-    public void createAdapterTable( StoreCatalog snapshot, LogicalTable logical, AllocationTable allocationTable ) {
-        return List.of( currentSchema.createCsvTable( idBuilder.getNewPhysicalId(), logical, allocationTable, this ) );
+    public void createTable( RelStoreCatalog snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+        snapshot.addLogical( logical );
+        snapshot.addLogicalColumns( lColumns );
+        snapshot.addAllocation( allocation );
+        snapshot.addAllocationColumns( columns );
+    }
+
+
+    @Override
+    public void updateTable( RelStoreCatalog snapshot, Context context, long allocId ) {
+        AllocationTable allocation = snapshot.getAlloc( allocId ).unwrap( AllocationTable.class );
+        snapshot.addPhysical( currentSchema.createCsvTable( IdBuilder.getInstance().getNewPhysicalId(), snapshot.getLogical( allocation.logicalId ).unwrap( LogicalTable.class ), allocation, this ) );
     }
 
 
@@ -146,7 +181,7 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public void truncate( Context context, AllocationEntity table ) {
+    public void truncate( RelStoreCatalog snapshot, Context context, long allocId ) {
         throw new RuntimeException( "CSV adapter does not support truncate" );
     }
 

@@ -46,10 +46,7 @@ import java.util.Map;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
@@ -57,18 +54,15 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.refactor.ScannableEntity;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
-import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
@@ -175,16 +169,6 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     }
 
 
-    /**
-     * Returns an expression for the object wrapped by this schema (not the schema itself).
-     */
-    Expression getTargetExpression( Snapshot snapshot, long id ) {
-        return Types.castIfNecessary(
-                target.getClass(),
-                Expressions.call(
-                        Schemas.unwrap( getExpression( snapshot, id ), ReflectiveSchema.class ),
-                        BuiltInMethod.REFLECTIVE_SCHEMA_GET_TARGET.method ) );
-    }
 
 
     /**

@@ -18,11 +18,11 @@ package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
 import lombok.NonNull;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.schema.Namespace;
 
 public interface PhysicalSnapshot {

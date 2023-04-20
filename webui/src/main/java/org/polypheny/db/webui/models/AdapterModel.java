@@ -18,7 +18,7 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.Map;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
+import org.polypheny.db.adapter.AbstractAdapterSetting;
 
 
 public class AdapterModel {

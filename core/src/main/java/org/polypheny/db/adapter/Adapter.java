@@ -17,52 +17,42 @@
 package org.polypheny.db.adapter;
 
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import java.io.InputStream;
-import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.entity.AllocationColumn;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.catalog.util.StoreCatalog;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
-import org.polypheny.db.config.ConfigObject;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.information.Information;
@@ -71,12 +61,13 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.LogicalCollection;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 
 @Getter
-public abstract class Adapter {
+@Slf4j
+public abstract class Adapter<S extends StoreCatalog> {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
@@ -282,7 +273,7 @@ public abstract class Adapter {
 
 
     @Getter
-    private final long adapterId;
+    public final long adapterId;
     @Getter
     private final String uniqueName;
 
@@ -325,25 +316,161 @@ public abstract class Adapter {
     }
 
 
-    public abstract void createNewSchema( Snapshot snapshot, String name, long id );
+    public abstract void createNewSchema( S snapshot, String name, long id );
 
 
-    public abstract void createAdapterTable( StoreCatalog snapshot, LogicalTable logical, AllocationTable allocationTable );
+    public StoreCatalog createCatalog() {
+        return new RelStoreCatalog( adapterId );
+    }
+
+
+    public abstract void createTable( S snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
+
+    public abstract void updateTable( S snapshot, Context context, long allocId );
+
+    public abstract void dropTable( S snapshot, Context context, long allocId );
+
+
+    /**
+     * Default method for creating a new graph on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the LPG data model.
+     */
+    public void createGraph( S snapshot, Context context, LogicalGraph logical, AllocationGraph allocation ) {
+        log.warn( "todo" );
+        createGraphSubstitution( snapshot, context, allocation );
+    }
+
+
+    public void updateGraph( S snapshot, Context context, long allocId ) {
+
+    }
+
+
+    /**
+     * Default method for dropping an existing graph on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the LPG data model natively.
+     */
+    public void dropGraph( S storeCatalog, Context context, AllocationGraph allocation ) {
+        log.warn( "todo" );
+        dropGraphSubstitution( storeCatalog, context, null );
+    }
+
+
+    /**
+     * Default method for creating a new collection on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the document data model natively.
+     */
+    public void createCollection( S snapshot, Context context, LogicalCollection logical, AllocationCollection allocation ) {
+        log.warn( "todo" );
+        createCollectionSubstitution( snapshot, context, allocation );
+    }
+
+
+    public void updateCollection( S snapshot, Context context, long allocId ) {
+        log.warn( "todo" );
+    }
+
+
+    /**
+     * Default method for dropping an existing collection on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the document data model natively.
+     */
+    public void dropCollection( S snapshot, Context prepareContext, AllocationCollection allocation ) {
+        // overwrite this if the datastore supports document
+        dropCollectionSubstitution( snapshot, prepareContext, allocation );
+    }
+
+
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
+    private void dropCollectionSubstitution( S snapshot, Context context, AllocationCollection catalogCollection ) {
+        /*Catalog catalog = Catalog.getInstance();
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
+
+        LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
+        dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );*/
+        // todo dl
+    }
+
+
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
+    private void createCollectionSubstitution( S snapshot, Context context, AllocationCollection allocation ) {
+        /*Catalog catalog = Catalog.getInstance();
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
+
+        LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
+        createTable( prepareContext, collectionEntity, null );*/
+        // todo dl
+    }
+
+
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
+    private void createGraphSubstitution( S catalog, Context context, AllocationGraph allocation ) {
+        /*LoggedIdBuilder idBuilder = new LoggedIdBuilder();
+        List<? extends PhysicalEntity> physicals = new ArrayList<>();
+
+        LogicalTable nodes = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aNodes = new AllocationTable( idBuilder.getNewAllocId() );
+        storeCatalog.getPhysicals().addAll( createTable( context, , nodes, aNodes, ) );
+
+        LogicalTable nodeProperty = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aNodeProperty = new AllocationTable( idBuilder.getNewLogicalId() );
+        storeCatalog.getPhysicals().addAll( createTable( context, , nodeProperty, aNodeProperty, ) );
+
+        LogicalTable edges = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aEdges = new AllocationTable( idBuilder.getNewLogicalId() );
+        storeCatalog.getPhysicals().addAll( context, edges, aEdges ) );
+
+        LogicalTable edgeProperty = new LogicalTable( idBuilder.getNewLogicalId() );
+        AllocationTable aEdgeProperty = new AllocationTable( idBuilder.getNewLogicalId() );
+        storeCatalog.getPhysicals().addAll( createTable( context, , edgeProperty, aEdgeProperty, ) );
+
+        storeCatalog.getLogicals().add( nodes );
+        storeCatalog.getLogicals().add( nodeProperty );
+        storeCatalog.getLogicals().add( edges );
+        storeCatalog.getLogicals().add( edgeProperty );*/
+
+    }
+
+
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
+    private void dropGraphSubstitution( S snapshot, Context context, CatalogGraphPlacement graphPlacement ) {
+        /*Catalog catalog = Catalog.getInstance();
+        CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
+
+        LogicalTable nodes = catalog.getTable( mapping.nodesId );
+        dropTable( context, nodes, nodes.partitionProperty.partitionIds );
+
+        LogicalTable nodeProperty = catalog.getTable( mapping.nodesPropertyId );
+        dropTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
+
+        LogicalTable edges = catalog.getTable( mapping.edgesId );
+        dropTable( context, edges, edges.partitionProperty.partitionIds );
+
+        LogicalTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
+        dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );*/
+        // todo dl
+    }
+
 
     public abstract Namespace getCurrentSchema();
 
-
-    public void createGraphNamespace( PhysicalGraph graph ) {
-        throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
-    }
-
-
-    public Entity createDocumentSchema( LogicalCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
-        throw new UnsupportedOperationException( "It is not supported to create a document with this adapter." );
-    }
-
-
-    public abstract void truncate( Context context, AllocationEntity table );
+    public abstract void truncate( S snapshot, Context context, long allocId );
 
     public abstract boolean prepare( PolyXid xid );
 
@@ -361,7 +488,7 @@ public abstract class Adapter {
     }
 
 
-    public static Map<String, String> getDefaultSettings( Class<DataStore> clazz ) {
+    public static Map<String, String> getDefaultSettings( Class<DataStore<?>> clazz ) {
         return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) )
                 .values()
                 .stream()
@@ -496,13 +623,12 @@ public abstract class Adapter {
                     continue;
                 }
                 PhysicalTable physicalTable = (PhysicalTable) entity;
-                LogicalRelSnapshot relSnapshot = snapshot.rel();
 
-                for ( Entry<Long, String> entry : physicalTable.columns.entrySet() ) {
+                for ( PhysicalColumn column : physicalTable.columns ) {
                     physicalColumnNames.addRow(
-                            entry.getKey(),
-                            relSnapshot.getColumn( entry.getKey() ),
-                            physicalTable.namespaceName + "." + physicalTable.name + "." + entry.getValue() );
+                            column.id,
+                            column.name,
+                            physicalTable.namespaceName + "." + physicalTable.name + "." + column.name );
                 }
             }
         } );
@@ -550,411 +676,5 @@ public abstract class Adapter {
         throw new RuntimeException( getUniqueName() + " uses this Docker instance and does not support to dynamically change it." );
     }
 
-
-    @Accessors(chain = true)
-    public static abstract class AbstractAdapterSetting {
-
-        public final String name;
-        public final boolean canBeNull;
-        public final String subOf;
-        public final boolean required;
-        public final boolean modifiable;
-        public final String defaultValue;
-        private final int position;
-        @Setter
-        public String description;
-
-        @Getter
-        private final List<DeploySetting> appliesTo;
-
-
-        public AbstractAdapterSetting( final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
-            this.name = name;
-            this.canBeNull = canBeNull;
-            this.subOf = Objects.equals( subOf, "" ) ? null : subOf;
-            this.required = required;
-            this.modifiable = modifiable;
-            this.position = position;
-            this.appliesTo = appliesTo;
-            this.defaultValue = defaultValue;
-            assert this.subOf == null || this.subOf.split( "_" ).length == 2
-                    : "SubOf needs to be null or has to be seperated by \"_\" and requires link and value due to limitation in Java";
-        }
-
-
-        /**
-         * Method generates the correlated AdapterSettings from the provided AdapterAnnotations,
-         * Repeatable Annotations are packed inside the underlying Lists of each AdapterSetting
-         * as those AdapterSettings belong to a specific adapter the AdapterProperties are used to
-         * unpack DeploySettings.ALL to the available modes correctly
-         *
-         * @param annotations collection of annotations
-         * @param properties which are defined by the corresponding Adapter
-         * @return a map containing the available modes and the corresponding collections of AdapterSettings
-         */
-        public static Map<String, List<AbstractAdapterSetting>> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
-            Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
-
-            for ( Annotation annotation : annotations ) {
-                if ( annotation instanceof AdapterSettingString ) {
-                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingString.fromAnnotation( (AdapterSettingString) annotation ) );
-                } else if ( annotation instanceof AdapterSettingString.List ) {
-                    Arrays.stream( ((AdapterSettingString.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingString.fromAnnotation( el ) ) );
-                } else if ( annotation instanceof AdapterSettingBoolean ) {
-                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingBoolean.fromAnnotation( (AdapterSettingBoolean) annotation ) );
-                } else if ( annotation instanceof AdapterSettingBoolean.List ) {
-                    Arrays.stream( ((AdapterSettingBoolean.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingBoolean.fromAnnotation( el ) ) );
-                } else if ( annotation instanceof AdapterSettingInteger ) {
-                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingInteger.fromAnnotation( (AdapterSettingInteger) annotation ) );
-                } else if ( annotation instanceof AdapterSettingInteger.List ) {
-                    Arrays.stream( ((AdapterSettingInteger.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingInteger.fromAnnotation( el ) ) );
-                } else if ( annotation instanceof AdapterSettingList ) {
-                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingList.fromAnnotation( (AdapterSettingList) annotation ) );
-                } else if ( annotation instanceof AdapterSettingList.List ) {
-                    Arrays.stream( ((AdapterSettingList.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingList.fromAnnotation( el ) ) );
-                } else if ( annotation instanceof AdapterSettingDirectory ) {
-                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingDirectory.fromAnnotation( (AdapterSettingDirectory) annotation ) );
-                } else if ( annotation instanceof AdapterSettingDirectory.List ) {
-                    Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
-                }
-            }
-
-            settings.forEach( ( key, values ) -> values.sort( Comparator.comparingInt( value -> value.position ) ) );
-            return settings;
-        }
-
-
-        /**
-         * Merges the provided setting into the provided map of AdapterSettings
-         *
-         * @param settings already correctly sorted settings
-         * @param deployModes the deployment modes which are supported by this specific adapter
-         * @param setting the setting which is merged into the map
-         */
-        private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, DeployMode[] deployModes, AbstractAdapterSetting setting ) {
-            // we need to unpack the underlying DeployModes
-            for ( DeployMode mode : setting.appliesTo
-                    .stream()
-                    .flatMap( mode -> mode.getModes( Arrays.asList( deployModes ) ).stream() )
-                    .collect( Collectors.toList() ) ) {
-
-                if ( settings.containsKey( mode.getName() ) ) {
-                    settings.get( mode.getName() ).add( setting );
-                } else {
-                    List<AbstractAdapterSetting> temp = new ArrayList<>();
-                    temp.add( setting );
-                    settings.put( mode.getName(), temp );
-                }
-            }
-        }
-
-
-        /**
-         * In most subclasses, this method returns the defaultValue, because the UI overrides the defaultValue when a new value is set.
-         */
-        public abstract String getValue();
-
-
-        public static List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {
-            ArrayList<AbstractAdapterSetting> abstractAdapterSettings = new ArrayList<>();
-            for ( AbstractAdapterSetting s : availableSettings ) {
-                for ( String current : currentSettings.keySet() ) {
-                    if ( s.name.equals( current ) ) {
-                        abstractAdapterSettings.add( s );
-                    }
-                }
-            }
-            return abstractAdapterSettings;
-        }
-
-
-    }
-
-
-    public static class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
-
-        private final String type = "Integer";
-
-
-        public AbstractAdapterSettingInteger( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, subOf, required, modifiable, modes, defaultValue.toString(), position );
-        }
-
-
-        public static AbstractAdapterSetting fromAnnotation( AdapterSettingInteger annotation ) {
-            return new AbstractAdapterSettingInteger(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.subOf(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    annotation.defaultValue(),
-                    Arrays.asList( annotation.appliesTo() ),
-                    annotation.position() );
-        }
-
-
-        @Override
-        public String getValue() {
-            return defaultValue;
-        }
-
-    }
-
-
-    public static class AbstractAdapterSettingString extends AbstractAdapterSetting {
-
-        private final String type = "String";
-
-
-        public AbstractAdapterSettingString( String name, boolean canBeNull, String sub, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, sub, required, modifiable, modes, defaultValue, position );
-        }
-
-
-        public static AbstractAdapterSetting fromAnnotation( AdapterSettingString annotation ) {
-            return new AbstractAdapterSettingString(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.subOf(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    annotation.defaultValue(),
-                    Arrays.asList( annotation.appliesTo() ),
-                    annotation.position() );
-        }
-
-
-        @Override
-        public String getValue() {
-            return defaultValue;
-        }
-
-    }
-
-
-    public static class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
-
-        private final String type = "Boolean";
-
-
-        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, final String sub, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, sub, required, modifiable, modes, String.valueOf( defaultValue ), position );
-        }
-
-
-        public static AbstractAdapterSettingBoolean fromAnnotation( AdapterSettingBoolean annotation ) {
-            return new AbstractAdapterSettingBoolean(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.subOf(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    annotation.defaultValue(),
-                    Arrays.asList( annotation.appliesTo() ),
-                    annotation.position() );
-        }
-
-
-        @Override
-        public String getValue() {
-            return defaultValue;
-        }
-
-    }
-
-
-    @Accessors(chain = true)
-    public static class AbstractAdapterSettingList extends AbstractAdapterSetting {
-
-        private final String type = "List";
-        public List<String> options;
-        public boolean dynamic = false;
-
-
-        public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, String defaultValue, int position ) {
-            super( name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
-            this.options = options;
-        }
-
-
-        public static AbstractAdapterSetting fromAnnotation( AdapterSettingList annotation ) {
-            return new AbstractAdapterSettingList(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.subOf(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    Arrays.asList( annotation.options() ),
-                    Arrays.asList( annotation.appliesTo() ),
-                    annotation.defaultValue(),
-                    annotation.position() );
-        }
-
-
-        @Override
-        public String getValue() {
-            return defaultValue;
-        }
-
-    }
-
-
-    /**
-     * BindableSettingsList which allows to configure mapped AdapterSettings, which expose an alias in the frontend
-     * but assign a corresponding id when the value is chosen
-     *
-     * @param <T>
-     */
-    @Accessors(chain = true)
-    public static class BindableAbstractAdapterSettingsList<T extends ConfigObject> extends AbstractAdapterSettingList {
-
-        private final transient Function<T, String> mapper;
-        private final transient Class<T> clazz;
-        private Map<Integer, String> alias;
-        private final String nameAlias;
-        public RuntimeConfig boundConfig;
-
-
-        public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
-            super( name, canBeNull, subOf, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), null, 1000 );
-            this.mapper = mapper;
-            this.clazz = clazz;
-            this.dynamic = true;
-            this.nameAlias = nameAlias;
-            this.alias = options.stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
-        }
-
-
-        /**
-         * This allows to bind this option to an existing RuntimeConfig,
-         * which will update when the bound option changes
-         *
-         * @param config the RuntimeConfig which is bound
-         * @return chain method to use the object
-         */
-        public AbstractAdapterSetting bind( RuntimeConfig config ) {
-            this.boundConfig = config;
-            ConfigListener listener = new ConfigListener() {
-                @Override
-                public void onConfigChange( Config c ) {
-                    refreshFromConfig();
-                }
-
-
-                @Override
-                public void restart( Config c ) {
-                    refreshFromConfig();
-                }
-            };
-            config.addObserver( listener );
-
-            return this;
-        }
-
-
-        public void refreshFromConfig() {
-            if ( boundConfig != null ) {
-                options = boundConfig.getList( clazz ).stream().map( ( el ) -> String.valueOf( el.id ) ).collect( Collectors.toList() );
-                alias = boundConfig.getList( clazz ).stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
-            }
-        }
-
-
-    }
-
-
-    @Accessors(chain = true)
-    public static class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
-
-        private final String type = "Directory";
-        @Setter
-        public String directory;
-        //This field is necessary for the UI and needs to be initialized to be serialized to JSON.
-        @Setter
-        public String[] fileNames = new String[]{ "" };
-        public transient final Map<String, InputStream> inputStreams;
-
-
-        public AbstractAdapterSettingDirectory( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
-            super( name, canBeNull, subOf, required, modifiable, modes, null, position );
-            //so it will be serialized
-            this.directory = "";
-            this.inputStreams = new HashMap<>();
-        }
-
-
-        public static AbstractAdapterSetting fromAnnotation( AdapterSettingDirectory annotation ) {
-            return new AbstractAdapterSettingDirectory(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.subOf(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    Arrays.asList( annotation.appliesTo() ),
-                    annotation.position()
-            );
-        }
-
-
-        @Override
-        public String getValue() {
-            return directory;
-        }
-
-    }
-
-
-    //see https://stackoverflow.com/questions/19588020/gson-serialize-a-list-of-polymorphic-objects/22081826#22081826
-    public static class AdapterSettingDeserializer implements JsonDeserializer<AbstractAdapterSetting> {
-
-        @Override
-        public AbstractAdapterSetting deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject jsonObject = json.getAsJsonObject();
-            String type = jsonObject.get( "type" ).getAsString();
-            String name = jsonObject.get( "name" ).getAsString();
-            boolean canBeNull = jsonObject.get( "canBeNull" ).getAsBoolean();
-            boolean required = jsonObject.get( "required" ).getAsBoolean();
-            boolean modifiable = jsonObject.get( "modifiable" ).getAsBoolean();
-            String subOf = jsonObject.has( "subOf" ) ? jsonObject.get( "subOf" ).getAsString() : null;
-            int position = jsonObject.get( "position" ).getAsInt();
-            String defaultValue;
-            String description = null;
-            if ( jsonObject.get( "description" ) != null ) {
-                description = jsonObject.get( "description" ).getAsString();
-            }
-
-            AbstractAdapterSetting out;
-            switch ( type ) {
-                case "Integer":
-                    Integer integer = jsonObject.get( "defaultValue" ).getAsInt();
-                    out = new AbstractAdapterSettingInteger( name, canBeNull, subOf, required, modifiable, integer, new ArrayList<>(), position );
-                    break;
-                case "String":
-                    String string = jsonObject.get( "defaultValue" ).getAsString();
-                    out = new AbstractAdapterSettingString( name, canBeNull, subOf, required, modifiable, string, new ArrayList<>(), position );
-                    break;
-                case "Boolean":
-                    boolean bool = jsonObject.get( "defaultValue" ).getAsBoolean();
-                    out = new AbstractAdapterSettingBoolean( name, canBeNull, subOf, required, modifiable, bool, new ArrayList<>(), position );
-                    break;
-                case "List":
-                    List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
-                    defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
-                    out = new AbstractAdapterSettingList( name, canBeNull, subOf, required, modifiable, options, new ArrayList<>(), defaultValue, position );
-                    break;
-                case "Directory":
-                    String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
-                    String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
-                    out = new AbstractAdapterSettingDirectory( name, canBeNull, subOf, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
-                    break;
-                default:
-                    throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );
-            }
-            out.setDescription( description );
-            return out;
-        }
-
-    }
 
 }
