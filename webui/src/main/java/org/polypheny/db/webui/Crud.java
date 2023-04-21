@@ -397,7 +397,21 @@ public class Crud implements InformationObserver {
                     }
 
                     SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, schema.namespaceType, request.routerLinkRoot, icon );
-                    if ( request.depth > 2 ) {
+                    // manually adding document-relation
+                    if ( schema.namespaceType == NamespaceType.DOCUMENT ) {
+                        schemaTree.setRouterLink( request.routerLinkRoot + "/" + schema.name );
+                        if (request.depth == 3 && request.isCrossModel) {
+                            String[] documentRelational = new String[]{"d"}; // should be _id and _data
+                            String[] collectionRelational = new String[]{"shop"}; // should be an array of the collections of a schema
+                            for (String collection : collectionRelational) {
+                                for (String doc : documentRelational) {
+                                    tableElement.addChild(new SidebarElement(schema.name + "." + collection + "." + doc, doc, schema.namespaceType, request.routerLinkRoot, "fa fa-table").setCssClass("sidebarColumn"));
+                                }
+                            }
+                        }
+                    }
+
+                    if ( request.depth > 2 && schema.namespaceType != NamespaceType.DOCUMENT) {
                         List<CatalogColumn> columns = catalog.getColumns( table.id );
                         for ( CatalogColumn column : columns ) {
                             tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
@@ -423,10 +437,30 @@ public class Crud implements InformationObserver {
                     schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
             }
+
+            // new Code from Melanie - manually adding children for graphs
+            String[] graphLabels = new String[]{"Movie", "Character", "Person"}; // hardcoded, should be the labels of the graph
+            ArrayList<SidebarElement> collectionTree = new ArrayList<>();
             if ( schema.namespaceType == NamespaceType.GRAPH ) {
                 schemaTree.setRouterLink( request.routerLinkRoot + "/" + schema.name );
+                if (request.depth == 2 && request.isCrossModel) {
+                    for (String label : graphLabels) {
+                        schemaTree.addChild(new SidebarElement(schema.name + "." + label, label, schema.namespaceType, request.routerLinkRoot, "fa fa-table"));
+                    }
+                }
+                if (request.depth == 3 && request.isCrossModel) {
+                    String[] graphRelational = new String[]{"id", "properties", "labels"}; // should always be these
+                    for (String label : graphLabels) {
+                        SidebarElement tableElement = new SidebarElement( schema.name + "." +  label,  label, schema.namespaceType, request.routerLinkRoot, "fa fa-table");
+                        for (String graphx : graphRelational) {
+                            tableElement.addChild( new SidebarElement( schema.name + "." + label + "." + graphx, graphx, schema.namespaceType, request.routerLinkRoot, "fa fa-table").setCssClass( "sidebarColumn" ) );
+                        }
+                        tableElement.setTableType( "VIEW" ); // is always views if .isCrossModel is true
+                        collectionTree.add( tableElement );
+                    }
+                    schemaTree.addChildren( collectionTree ).setRouterLink( "" );
+                }
             }
-
             result.add( schemaTree );
         }
 

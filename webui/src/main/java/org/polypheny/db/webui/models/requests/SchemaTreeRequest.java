@@ -26,6 +26,7 @@ public class SchemaTreeRequest extends UIRequest {
     public boolean views;
     public int depth;
     public boolean showTable;
+    public boolean isCrossModel;
 
     public List<NamespaceType> dataModels;
 
