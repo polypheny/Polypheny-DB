@@ -31,6 +31,8 @@ import com.github.dockerjava.api.exception.InternalServerErrorException;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Mount;
+import com.github.dockerjava.api.model.MountType;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig.Builder;
@@ -122,6 +124,13 @@ public class DockerInstance extends DockerManager {
                 for ( String tag : image.getRepoDigests() ) {
                     String[] splits = tag.split( "@" );
                     availableImages.add( new Image( splits[0], null, splits[1] ) );
+                }
+            } else {
+                // Just for testing. Adds docker images with no digests (=> not on docker hub, but locally stored)
+                for ( String tag : image.getRepoTags() ) {
+                    log.warn( "[DockerInstance] Adding local Docker Image: {}", tag );
+                    String[] splits = tag.split( ":" );
+                    availableImages.add( new Image( splits[0], null, image.getId() ) );
                 }
             }
         } );
@@ -474,6 +483,13 @@ public class DockerInstance extends DockerManager {
             }
         }
 
+        List<Mount> mounts = new ArrayList<>();
+        for ( Map.Entry<String, String> mapping : container.bindMounts.entrySet() ) {
+            mounts.add( new Mount().withSource( mapping.getKey() )
+                    .withTarget( mapping.getValue() )
+                    .withType( MountType.BIND ) );
+        }
+
         if ( usedNames.contains( container.uniqueName ) ) {
             throw new NameExistsRuntimeException();
         }
@@ -484,7 +500,8 @@ public class DockerInstance extends DockerManager {
                 .withEnv( container.envCommands )
                 .withHostConfig( new HostConfig()
                         .withPublishAllPorts( true )
-                        .withPortBindings( bindings ) );
+                        .withPortBindings( bindings )
+                        .withMounts( mounts ) );
 
         CreateContainerResponse response = cmd.exec();
         container.setContainerId( response.getId() );

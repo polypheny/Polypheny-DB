@@ -203,6 +203,7 @@ public abstract class DockerManager {
         public final String uniqueName;
         public Supplier<Boolean> containerReadySupplier = () -> true;
         public Map<Integer, Integer> internalExternalPortMapping = new HashMap<>();
+        public Map<String, String> bindMounts = new HashMap<>();
         public boolean checkUnique = false;
         public List<String> initCommands = new ArrayList<>();
         public int dockerInstanceId;
@@ -288,6 +289,21 @@ public abstract class DockerManager {
         }
 
 
+        /**
+         * This allows to add a bind mount from the local filesystem to the container.
+         * Only one mount per source path is permitted.
+         *
+         * @param source the path on the host system
+         * @param target the path inside the container
+         * @return the builder
+         */
+        public ContainerBuilder withBindMount( String source, String target ) {
+            this.bindMounts.put( source, target );
+
+            return this;
+        }
+
+
         public Container build() {
 
             return new Container(
@@ -301,7 +317,8 @@ public abstract class DockerManager {
                     maxTimeoutMs,
                     initCommands,
                     orderCommands,
-                    envCommands );
+                    envCommands,
+                    bindMounts );
         }
 
 
@@ -317,6 +334,7 @@ public abstract class DockerManager {
         public final Image image;
         public final String uniqueName;
         public final Map<Integer, Integer> internalExternalPortMapping;
+        public final Map<String, String> bindMounts;
         public final Integer adapterId;
         public final List<String> envCommands;
         @Setter
@@ -358,7 +376,8 @@ public abstract class DockerManager {
                 int maxTimeoutMs,
                 List<String> initCommands,
                 List<String> afterCommands,
-                List<String> envCommands
+                List<String> envCommands,
+                Map<String, String> bindMounts
         ) {
             this.adapterId = adapterId;
             this.image = image;
@@ -373,6 +392,7 @@ public abstract class DockerManager {
             this.envCommands = envCommands;
             this.isReadySupplier = isReadySupplier;
             this.maxTimeoutMs = maxTimeoutMs;
+            this.bindMounts = bindMounts;
 
             this.host = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ).getHost();
         }
