@@ -23,6 +23,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -123,6 +125,28 @@ public class PhysicalColumn extends CatalogEntity {
     @Override
     public State getCatalogType() {
         return State.PHYSICAL;
+    }
+
+
+    public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
+        // todo merge with LogicalColumn
+        AlgDataType elementType;
+        if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
+            elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
+        } else if ( this.length != null && this.type.allowsPrecNoScale() ) {
+            elementType = typeFactory.createPolyType( this.type, this.length );
+        } else {
+            assert this.type.allowsNoPrecNoScale();
+            elementType = typeFactory.createPolyType( this.type );
+        }
+
+        if ( collectionsType == PolyType.ARRAY ) {
+            elementType = typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+        } else if ( collectionsType == PolyType.MAP ) {
+            elementType = typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
+        }
+
+        return typeFactory.createTypeWithNullability( elementType, nullable );
     }
 
 }

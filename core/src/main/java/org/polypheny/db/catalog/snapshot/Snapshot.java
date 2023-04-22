@@ -187,6 +187,4 @@ public interface Snapshot extends OperatorTable {
 
     AllocSnapshot alloc();
 
-    PhysicalSnapshot physical();
-
 }

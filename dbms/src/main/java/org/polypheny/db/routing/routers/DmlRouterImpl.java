@@ -76,16 +76,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
-import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -151,7 +147,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( catalogTable.id );
 
-        PhysicalTable physical = snapshot.physical().fromAlloc( allocs.get( 0 ).id ).get( 0 ).unwrap( PhysicalTable.class );
+        AllocationEntity physical = allocs.get( 0 );
         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
         AlgNode input = buildDmlNew(
@@ -447,14 +443,15 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         true,
                                         statement.getDataContext().getParameterValues() ).build();
 
-                                PhysicalTable physical = snapshot.physical().getPhysicalTable( currentPartitionId );
-                                ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
+                                AllocationEntity allocation = snapshot.alloc().getAllocation( currentPartitionId );
+                                AlgNode node = catalog.getStoreSnapshot( allocation.id ).getScan( allocation.id, AlgBuilder.create( statement ) );
+                                ModifiableEntity modifiableTable = node.getEntity().unwrap( ModifiableEntity.class );
 
                                 // Build DML
                                 Modify<?> adjustedModify = modifiableTable.toModificationAlg(
                                         cluster,
                                         cluster.traitSet(),
-                                        physical,
+                                        allocation,
                                         input,
                                         modify.getOperation(),
                                         updateColumnList,
@@ -530,7 +527,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 false,
                                                 entry.getValue() ).build();
 
-                                        PhysicalTable physical = snapshot.physical().getPhysicalTable( entry.getKey() );
+                                        PhysicalTable physical = input.getEntity().unwrap( PhysicalTable.class );
                                         ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
 
                                         // Build DML
@@ -611,7 +608,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         continue;
                     }
 
-                    PhysicalTable physical = snapshot.physical().getPhysicalTable( partitionId );
+                    AllocationEntity alloc = snapshot.alloc().getAllocation( partitionId );
 
                     // Build DML
                     Modify<?> adjustedModify;
@@ -620,19 +617,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             RoutedAlgBuilder.create( statement, cluster ),
                             catalogTable,
                             placementsOnAdapter,
-                            snapshot.alloc().getAllocation( pkPlacement.adapterId, partitionId ),
+                            alloc,
                             statement,
                             cluster,
                             false,
                             statement.getDataContext().getParameterValues() ).build();
 
-                    ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
+                    ModifiableEntity modifiableTable = input.getEntity().unwrap( ModifiableEntity.class );
 
-                    if ( modifiableTable != null && modifiableTable == physical.unwrap( Entity.class ) ) {
+                    if ( modifiableTable != null && modifiableTable == input.getEntity().unwrap( Entity.class ) ) {
                         adjustedModify = modifiableTable.toModificationAlg(
                                 cluster,
                                 input.getTraitSet(),
-                                physical,
+                                alloc,
                                 input,
                                 modify.getOperation(),
                                 updateColumnList,
@@ -640,7 +637,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         );
                     } else {
                         adjustedModify = LogicalRelModify.create(
-                                physical,
+                                alloc,
                                 input,
                                 modify.getOperation(),
                                 updateColumnList,
@@ -748,19 +745,18 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         for ( long placementId : placements ) {
             CatalogAdapter adapter = snapshot.getAdapter( placementId );
-            CatalogCollectionPlacement placement = snapshot.alloc().getCollectionPlacement( collection.id, placementId );
+            AllocationEntity alloc = snapshot.alloc().getAllocation( collection.id, placementId );
 
-            PhysicalCollection document = snapshot.physical().getPhysicalCollection( placement.id );
             if ( !adapter.supportedNamespaces.contains( NamespaceType.DOCUMENT ) ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, statement, placementId, queryInformation ) );
                 continue;
             }
 
-            modifies.add( document.unwrap( ModifiableEntity.class ).toModificationAlg(
+            modifies.add( alloc.unwrap( ModifiableEntity.class ).toModificationAlg(
                     alg.getCluster(),
                     alg.getTraitSet(),
-                    document,
+                    alloc,
                     buildDocumentDml( alg.getInput(), statement, queryInformation ),
                     alg.operation,
                     alg.getKeys(),
@@ -798,24 +794,24 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         for ( long adapterId : placements ) {
             CatalogAdapter adapter = snapshot.getAdapter( adapterId );
-            CatalogGraphPlacement graphPlacement = snapshot.alloc().getGraphPlacement( catalogGraph.id, adapterId );
+            AllocationEntity alloc = snapshot.alloc().getAllocation( catalogGraph.id, adapterId );
 
-            PhysicalGraph graph = snapshot.physical().getPhysicalGraph( catalogGraph.id, adapterId );
-            if ( graph == null ) {
+            //PhysicalGraph graph = snapshot.physical().getPhysicalGraph( catalogGraph.id, adapterId );
+            if ( alloc == null ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, adapterId, statement ) );
                 usedSubstitution = true;
                 continue;
             }
 
-            if ( !(graph instanceof ModifiableGraph) ) {
+            if ( !(alloc instanceof ModifiableGraph) ) {
                 throw new RuntimeException( "Graph is not modifiable." );
             }
 
-            modifies.add( ((ModifiableEntity) graph).toModificationAlg(
+            modifies.add( ((ModifiableEntity) alloc).toModificationAlg(
                     alg.getCluster(),
                     alg.getTraitSet(),
-                    graph,
+                    alloc,
                     buildGraphDml( alg.getInput(), statement, adapterId ),
                     alg.operation,
                     alg.ids,

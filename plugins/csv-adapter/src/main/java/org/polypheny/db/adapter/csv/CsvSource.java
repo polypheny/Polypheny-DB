@@ -43,10 +43,10 @@ import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
@@ -119,21 +119,6 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
     }
 
 
-    @Override
-    public void updateTable( long allocId ) {
-        PhysicalTable table = storeCatalog.getTable( allocId );
-        if ( table == null ) {
-            log.warn( "todo" );
-            return;
-        }
-        storeCatalog.addTable( currentSchema.createCsvTable( table.id, table, this ) );
-    }
-
-
-    @Override
-    public void dropTable( Context context, long allocId ) {
-
-    }
 
 
     private void setCsvDir( Map<String, String> settings ) {
@@ -185,14 +170,11 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
-            List<PhysicalEntity> placements = Catalog
-                    .getInstance()
-                    .getSnapshot()
-                    .physical()
-                    .getPhysicalsOnAdapter( getAdapterId() );
+
+            List<AllocationEntity> placements = Catalog.snapshot().alloc().getAllocationsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
-            for ( PhysicalEntity ccp : placements ) {
-                fileNames.add( ccp.namespaceName );
+            for ( AllocationEntity ccp : placements ) {
+                fileNames.add( ccp.getNamespaceName() );
             }
         } else if ( Sources.of( csvDir ).file().isFile() ) {
             // single files

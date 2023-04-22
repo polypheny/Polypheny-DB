@@ -75,7 +75,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -388,8 +387,8 @@ public class DdlManagerImpl extends DdlManager {
         long adapterId = catalog.getSnapshot().alloc().getFromLogical( catalogTable.id ).get( 0 ).adapterId;
         DataSource<?> dataSource = (DataSource<?>) AdapterManager.getInstance().getAdapter( adapterId );
 
-        String physicalTableName = catalog.getSnapshot().physical().getPhysicalTable( catalogTable.id, adapterId ).name;
-        List<ExportedColumn> exportedColumns = dataSource.getExportedColumns().get( physicalTableName );
+        //String physicalTableName = catalog.getSnapshot().alloc().getPhysicalTable( catalogTable.id, adapterId ).name;
+        List<ExportedColumn> exportedColumns = dataSource.getExportedColumns().get( catalogTable.name );
 
         // Check if physicalColumnName is valid
         ExportedColumn exportedColumn = null;
@@ -2240,10 +2239,6 @@ public class DdlManagerImpl extends DdlManager {
         for ( AllocationEntity allocation : allocations ) {
             manager.getStore( allocation.adapterId ).dropCollection( statement.getPrepareContext(), allocation.unwrap( AllocationCollection.class ) );
 
-            for ( PhysicalEntity physical : snapshot.physical().fromAlloc( allocation.id ) ) {
-                catalog.getPhysical( catalogCollection.namespaceId ).deleteEntity( physical.id );
-            }
-
             catalog.getAllocDoc( allocation.namespaceId ).removeAllocation( allocation.id );
         }
 
@@ -3031,12 +3026,8 @@ public class DdlManagerImpl extends DdlManager {
         // delete all allocs and physicals
         List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( catalogTable.id );
         for ( AllocationEntity allocation : allocations ) {
-            List<PhysicalEntity> physicals = snapshot.physical().fromAlloc( allocation.id );
-            manager.getStore( allocation.adapterId ).dropTable( statement.getPrepareContext(), -1 );
+            manager.getStore( allocation.adapterId ).dropTable( statement.getPrepareContext(), allocation.id );
 
-            for ( PhysicalEntity physical : snapshot.physical().fromAlloc( allocation.id ) ) {
-                catalog.getPhysical( catalogTable.namespaceId ).deleteEntity( physical.id );
-            }
             for ( long columnId : allocation.unwrap( AllocationTable.class ).getColumnIds() ) {
                 catalog.getAllocRel( allocation.namespaceId ).deleteColumn( allocation.id, columnId );
             }

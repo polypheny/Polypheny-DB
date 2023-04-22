@@ -612,7 +612,7 @@ public abstract class Adapter<S extends StoreCatalog> {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity> physicalsOnAdapter = snapshot.physical().getPhysicalsOnAdapter( adapterId );
+            List<PhysicalEntity> physicalsOnAdapter = new ArrayList<>();//snapshot.physical().getPhysicalsOnAdapter( adapterId );
 
             for ( PhysicalEntity entity : physicalsOnAdapter ) {
                 if ( entity.namespaceType != NamespaceType.RELATIONAL ) {

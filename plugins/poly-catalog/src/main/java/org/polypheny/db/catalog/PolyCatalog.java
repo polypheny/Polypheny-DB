@@ -23,8 +23,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
@@ -41,7 +39,6 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -53,7 +50,6 @@ import org.polypheny.db.catalog.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logical.GraphCatalog;
 import org.polypheny.db.catalog.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.physical.PolyPhysicalCatalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.transaction.Transaction;
@@ -73,9 +69,6 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Serialize
     public final Map<Long, AllocationCatalog> allocationCatalogs;
-
-    @Serialize
-    public final Map<Long, PhysicalCatalog> physicalCatalogs;
 
     @Serialize
     @Getter
@@ -103,12 +96,11 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     public PolyCatalog() {
         this(
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
                 new HashMap<>() );
 
     }
@@ -118,7 +110,6 @@ public class PolyCatalog extends Catalog implements Serializable {
             @Deserialize("users") Map<Long, CatalogUser> users,
             @Deserialize("logicalCatalogs") Map<Long, LogicalCatalog> logicalCatalogs,
             @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
-            @Deserialize("physicalCatalogs") Map<Long, PhysicalCatalog> physicalCatalogs,
             @Deserialize("snapshots") Map<Long, StoreCatalog> snapshots,
             @Deserialize("adapters") Map<Long, CatalogAdapter> adapters,
             @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
@@ -126,7 +117,6 @@ public class PolyCatalog extends Catalog implements Serializable {
         this.users = users;
         this.logicalCatalogs = logicalCatalogs;
         this.allocationCatalogs = allocationCatalogs;
-        this.physicalCatalogs = physicalCatalogs;
         this.adapters = adapters;
         this.interfaces = interfaces;
         this.snapshots = snapshots;
@@ -143,11 +133,9 @@ public class PolyCatalog extends Catalog implements Serializable {
     @Override
     public void updateSnapshot() {
         // reset physical catalogs
-        Set<Long> keys = this.physicalCatalogs.keySet();
-        keys.forEach( k -> this.physicalCatalogs.replace( k, new PolyPhysicalCatalog() ) );
 
         // update all except physicals, so information can be accessed
-        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
+        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
         // generate new physical entities, atm only relational
         this.allocationCatalogs.forEach( ( k, v ) -> {
             if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
@@ -169,7 +157,7 @@ public class PolyCatalog extends Catalog implements Serializable {
         } );
 
         // update with newly generated physical entities
-        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, physicalCatalogs );
+        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
     }
 
 
@@ -181,7 +169,8 @@ public class PolyCatalog extends Catalog implements Serializable {
         }
 
         // re-add physical namespace, we could check first, but not necessary
-        getPhysical( entity.namespaceId ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
+
+        getStoreSnapshot( entity.id ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
     }
 
 
@@ -247,12 +236,6 @@ public class PolyCatalog extends Catalog implements Serializable {
     public AllocationGraphCatalog getAllocGraph( long namespaceId ) {
         validateNamespaceType( namespaceId, NamespaceType.GRAPH );
         return (AllocationGraphCatalog) allocationCatalogs.get( namespaceId );
-    }
-
-
-    @Override
-    public PhysicalCatalog getPhysical( long namespaceId ) {
-        return physicalCatalogs.get( namespaceId );
     }
 
 
@@ -330,7 +313,6 @@ public class PolyCatalog extends Catalog implements Serializable {
                 allocationCatalogs.put( id, new PolyAllocGraphCatalog( namespace ) );
                 break;
         }
-        physicalCatalogs.put( id, new PolyPhysicalCatalog() );
         change();
         return id;
     }

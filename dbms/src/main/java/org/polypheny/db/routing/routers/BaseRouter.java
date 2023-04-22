@@ -60,10 +60,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -387,13 +384,8 @@ public abstract class BaseRouter implements Router {
         }
 
         for ( long adapterId : placements ) {
-            PhysicalGraph graph = snapshot.physical().getPhysicalGraph( catalogGraph.id, adapterId );
+            AllocationEntity graph = snapshot.alloc().getAllocation( catalogGraph.id, adapterId );
 
-            if ( !(graph instanceof TranslatableEntity) ) {
-                // needs substitution later on
-                scans.add( getRelationalScan( alg, adapterId, statement ) );
-                continue;
-            }
 
             // a native placement was used, we go with that
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), graph, alg.getRowType() );
@@ -523,10 +515,10 @@ public abstract class BaseRouter implements Router {
             // CatalogCollectionPlacement placement = catalog.getAllocDoc( alg.entity ).getCollectionPlacement( collection.id, placementId );
             // String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             // String collectionName = collection.name + "_" + placement.id;
-            PhysicalTable collectionTable = snapshot.physical().getPhysicalTable( collection.id, adapterId );
+            AllocationEntity alloc = snapshot.alloc().getAllocation( collection.id, adapterId );
             // we might previously have pushed the non-native transformer
             builder.clear();
-            return builder.push( LogicalDocumentScan.create( alg.getCluster(), collectionTable ) );
+            return builder.push( LogicalDocumentScan.create( alg.getCluster(), alloc ) );
         }
 
         if ( scans.size() < 1 ) {

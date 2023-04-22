@@ -32,7 +32,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -67,7 +66,7 @@ public class PhysicalTable extends PhysicalEntity {
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+        for ( PhysicalColumn column : columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.name, null, sqlType ).nullable( column.nullable );
         }

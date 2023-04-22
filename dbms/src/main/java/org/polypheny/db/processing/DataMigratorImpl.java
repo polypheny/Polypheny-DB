@@ -50,12 +50,12 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
@@ -321,8 +321,9 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, long partitionId ) {
-        PhysicalTable physical = statement.getTransaction().getSnapshot().physical().getPhysicalTable( partitionId );
-        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
+        // PhysicalTable physical = statement.getTransaction().getSnapshot().physical().getPhysicalTable( partitionId );
+        CatalogEntity entity = Catalog.getInstance().getStoreSnapshot( partitionId ).getScan( partitionId, AlgBuilder.create( statement ) ).getEntity();
+        ModifiableEntity modifiableTable = entity.unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -343,7 +344,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
                 cluster.traitSet(),
-                physical,
+                entity,
                 builder.build(),
                 Modify.Operation.DELETE,
                 null,
@@ -356,8 +357,8 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long allocId ) {
-        List<PhysicalEntity> physicals = statement.getTransaction().getSnapshot().physical().fromAlloc( allocId );
-        ModifiableEntity modifiableTable = physicals.get( 0 ).unwrap( ModifiableEntity.class );
+        AllocationEntity alloc = statement.getTransaction().getSnapshot().alloc().getAllocation( allocId );
+        ModifiableEntity modifiableTable = Catalog.getInstance().getStoreSnapshot( alloc.adapterId ).getScan( allocId, AlgBuilder.create( statement ) ).getEntity().unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -382,7 +383,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
                 cluster.traitSet(),
-                physicals.get( 0 ),
+                alloc,
                 builder.build(),
                 Modify.Operation.INSERT,
                 null,
@@ -393,8 +394,9 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     private AlgRoot buildUpdateStatement( Statement statement, List<AllocationColumn> to, long partitionId ) {
-        PhysicalTable physical = statement.getTransaction().getSnapshot().physical().getPhysicalTable( partitionId );
-        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
+        AllocationEntity alloc = statement.getTransaction().getSnapshot().alloc().getAllocation( partitionId );
+        AlgNode scan = Catalog.getInstance().getStoreSnapshot( alloc.adapterId ).getScan( alloc.id, AlgBuilder.create( statement ) );
+        ModifiableEntity modifiableTable = scan.getEntity().unwrap( ModifiableEntity.class );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -402,7 +404,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.scan( physical );
+        builder.scan( alloc );
 
         // build condition
         RexNode condition = null;
@@ -437,7 +439,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgNode node = modifiableTable.toModificationAlg(
                 cluster,
                 cluster.traitSet(),
-                physical,
+                alloc,
                 builder.build(),
                 Modify.Operation.UPDATE,
                 columnNames,

@@ -103,13 +103,11 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -1366,11 +1364,11 @@ public class AlgBuilder {
 
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
-        rename( entity.getRowType().getFieldNames() );
+        /*rename( entity.getRowType().getFieldNames() );
         if ( entity.unwrap( PhysicalTable.class ) != null ) {
             List<Long> order = Catalog.snapshot().rel().getTable( entity.id ).unwrap( LogicalTable.class ).getColumnIds();
             //reorder( order, flip( entity.unwrap( PhysicalTable.class ).columns ) );
-        }
+        }*/
         return this;
     }
 

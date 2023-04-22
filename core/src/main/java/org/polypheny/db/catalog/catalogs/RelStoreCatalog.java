@@ -31,55 +31,23 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Slf4j
 public class RelStoreCatalog extends StoreCatalog {
-
-    public RelStoreCatalog( long adapterId ) {
-        this( adapterId, new HashMap<>(), new HashMap<>(), new HashMap<>() );
-    }
-
-
-    @Override
-    public AlgNode getRelScan( long allocId, Statement statement ) {
-        return AlgBuilder.create( statement ).scan( tables.get( allocId ) ).build();
-    }
-
-
-    @Override
-    public AlgNode getGraphScan( long allocId, Statement statement ) {
-        log.warn( "todo" );
-        return null;
-    }
-
-
-    @Override
-    public AlgNode getDocumentScan( long allocId, Statement statement ) {
-        log.warn( "todo" );
-        return null;
-    }
-
-
-    public RelStoreCatalog(
-            @Deserialize("adapterId") long adapterId,
-            @Deserialize("namespaces") Map<Long, Namespace> namespaces,
-            @Deserialize("tables") Map<Long, PhysicalTable> tables,
-            @Deserialize("columns") Map<Long, PhysicalColumn> columns ) {
-        super( adapterId );
-        this.namespaces = new ConcurrentHashMap<>( namespaces );
-        this.tables = new ConcurrentHashMap<>( tables );
-        this.columns = new ConcurrentHashMap<>( columns );
-    }
 
 
     @Serialize
@@ -88,6 +56,28 @@ public class RelStoreCatalog extends StoreCatalog {
     ConcurrentMap<Long, PhysicalTable> tables;
     @Serialize
     ConcurrentMap<Long, PhysicalColumn> columns;
+
+    ConcurrentMap<Long, Pair<AllocationEntity, List<Long>>> allocRelations;
+
+
+    public RelStoreCatalog( long adapterId ) {
+        this( adapterId, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+    }
+
+
+    public RelStoreCatalog(
+            @Deserialize("adapterId") long adapterId,
+            @Deserialize("namespaces") Map<Long, Namespace> namespaces,
+            @Deserialize("tables") Map<Long, PhysicalTable> tables,
+            @Deserialize("columns") Map<Long, PhysicalColumn> columns,
+            @Deserialize("allocRelations") Map<Long, Pair<AllocationEntity, List<Long>>> allocRelations ) {
+        super( adapterId );
+        this.namespaces = new ConcurrentHashMap<>( namespaces );
+        this.tables = new ConcurrentHashMap<>( tables );
+        this.columns = new ConcurrentHashMap<>( columns );
+
+        this.allocRelations = new ConcurrentHashMap<>( allocRelations );
+    }
 
 
     public void addTable( PhysicalTable table ) {
@@ -124,6 +114,7 @@ public class RelStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.adapterId, c.position, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         PhysicalTable table = new PhysicalTable( allocation.id, allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
         addTable( table );
+        allocRelations.put( allocation.id, Pair.of( allocation, List.of( allocation.id ) ) );
         return table;
     }
 
@@ -147,6 +138,42 @@ public class RelStoreCatalog extends StoreCatalog {
         pColumn.add( column );
         tables.put( tableId, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
         return column;
+    }
+
+
+    @Override
+    public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
+        Pair<AllocationEntity, List<Long>> relations = allocRelations.get( allocId );
+        return builder.scan( tables.get( relations.right.get( 0 ) ) ).build();
+    }
+
+
+    @Override
+    public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
+        log.warn( "todo" );
+        return null;
+    }
+
+
+    @Override
+    public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
+        log.warn( "todo" );
+        return null;
+    }
+
+
+    @Override
+    public AlgNode getScan( long id, AlgBuilder builder ) {
+        Pair<AllocationEntity, List<Long>> alloc = allocRelations.get( id );
+        if ( alloc.left.unwrap( AllocationTable.class ) != null ) {
+            return getRelScan( id, builder );
+        } else if ( alloc.left.unwrap( AllocationCollection.class ) != null ) {
+            return getDocumentScan( id, builder );
+        } else if ( alloc.left.unwrap( AllocationGraph.class ) != null ) {
+            return getGraphScan( id, builder );
+        } else {
+            throw new GenericRuntimeException( "This should not happen" );
+        }
     }
 
 }

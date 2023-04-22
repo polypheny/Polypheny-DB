@@ -25,34 +25,28 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
-import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 public class SnapshotBuilder {
 
-    public static Snapshot createSnapshot( long id, Catalog catalog, Map<Long, LogicalCatalog> logicalCatalogs, Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, PhysicalCatalog> physicalCatalogs ) {
+    public static Snapshot createSnapshot( long id, Catalog catalog, Map<Long, LogicalCatalog> logicalCatalogs, Map<Long, AllocationCatalog> allocationCatalogs ) {
         LogicalRelSnapshot rels = buildRelSnapshots( logicalCatalogs );
         LogicalDocSnapshot docs = buildDocSnapshots( logicalCatalogs );
         LogicalGraphSnapshot graphs = buildGraphSnapshots( logicalCatalogs );
 
         AllocSnapshot alloc = buildAlloc( allocationCatalogs );
-        PhysicalSnapshot physical = buildPhysical( physicalCatalogs );
         Map<Long, LogicalNamespace> namespaces = logicalCatalogs.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getLogicalNamespace() ) );
 
-        return new SnapshotImpl( id, catalog, namespaces, rels, docs, graphs, alloc, physical );
+        return new SnapshotImpl( id, catalog, namespaces, rels, docs, graphs, alloc );
     }
 
 
-    private static PhysicalSnapshot buildPhysical( Map<Long, PhysicalCatalog> physicalCatalogs ) {
-        return null;
-    }
 
 
     private static AllocSnapshot buildAlloc( Map<Long, AllocationCatalog> allocationCatalogs ) {

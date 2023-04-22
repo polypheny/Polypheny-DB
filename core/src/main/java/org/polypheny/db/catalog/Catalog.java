@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -102,8 +101,6 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-
-    public abstract PhysicalCatalog getPhysical( long namespaceId );
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
