@@ -46,8 +46,8 @@ public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> imple
     protected final transient Catalog catalog = Catalog.getInstance();
 
 
-    public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent ) {
-        super( adapterId, uniqueName, settings );
+    public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent, S storeCatalog ) {
+        super( adapterId, uniqueName, settings, storeCatalog );
         this.persistent = persistent;
 
         informationPage.setLabel( "Stores" );
@@ -62,15 +62,15 @@ public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> imple
     //public abstract void createTable( StoreCatalog snapshot, Context context, AllocationTable alloc );
 
 
-    public abstract void addColumn( S snapshot, Context context, long allocId, LogicalColumn column );
+    public abstract void addColumn( Context context, long allocId, LogicalColumn column );
 
-    public abstract void dropColumn( S snapshot, Context context, long allocId, long columnId );
+    public abstract void dropColumn( Context context, long allocId, long columnId );
 
-    public abstract String addIndex( S snapshot, Context context, LogicalIndex logicalIndex, AllocationTable allocation );
+    public abstract String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
 
-    public abstract void dropIndex( S snapshot, Context context, LogicalIndex logicalIndex, List<Long> partitionIds );
+    public abstract void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds );
 
-    public abstract void updateColumnType( S snapshot, Context context, long allocId, LogicalColumn column );
+    public abstract void updateColumnType( Context context, long allocId, LogicalColumn column );
 
     public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
 

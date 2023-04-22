@@ -1218,8 +1218,8 @@ public class Crud implements InformationObserver {
         List<Result> exportedColumns = new ArrayList<>();
         for ( Long adapterId : adapterIds ) {
             Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
-            if ( adapter instanceof DataSource ) {
-                DataSource dataSource = (DataSource) adapter;
+            if ( adapter instanceof DataSource<?> ) {
+                DataSource<?> dataSource = (DataSource<?>) adapter;
                 for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
                     List<DbColumn> columnList = new ArrayList<>();
                     for ( ExportedColumn col : entry.getValue() ) {
@@ -1767,10 +1767,10 @@ public class Crud implements InformationObserver {
         // Get functional indexes
         List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id );
         for ( CatalogDataPlacement placement : placements ) {
-            Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-            DataStore store;
-            if ( adapter instanceof DataStore ) {
-                store = (DataStore) adapter;
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+            DataStore<?> store;
+            if ( adapter instanceof DataStore<?> ) {
+                store = (DataStore<?>) adapter;
             } else {
                 break;
             }
@@ -2181,7 +2181,7 @@ public class Crud implements InformationObserver {
      * Get deployed data stores
      */
     void getStores( final Context ctx ) {
-        ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
+        ImmutableMap<String, DataStore<?>> stores = AdapterManager.getInstance().getStores();
         DataStore[] out = stores.values().toArray( new DataStore[0] );
         ctx.json( out );
     }
@@ -2193,7 +2193,7 @@ public class Crud implements InformationObserver {
     void getAvailableStoresForIndexes( final Context ctx, Gson gson ) {
         Index index = ctx.bodyAsClass( Index.class );
         Placement dataPlacements = getPlacements( index );
-        ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
+        ImmutableMap<String, DataStore<?>> stores = AdapterManager.getInstance().getStores();
         //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
         JsonArray jsonArray = gson.toJsonTree( stores.values().stream().filter( ( s ) -> {
             if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
@@ -2285,8 +2285,8 @@ public class Crud implements InformationObserver {
      * Get deployed data sources
      */
     void getSources( final Context ctx ) {
-        ImmutableMap<String, DataSource> sources = AdapterManager.getInstance().getSources();
-        ctx.json( sources.values().toArray( new DataSource[0] ) );
+        ImmutableMap<String, DataSource<?>> sources = AdapterManager.getInstance().getSources();
+        ctx.json( sources.values().toArray( new DataSource<?>[0] ) );
     }
 
 
@@ -2659,7 +2659,7 @@ public class Crud implements InformationObserver {
             if ( request.freshness != null ) {
                 viewType = "Materialized View";
                 DataStore store = (DataStore) AdapterManager.getInstance().getAdapter( request.store );
-                List<DataStore> stores = new ArrayList<>();
+                List<DataStore<?>> stores = new ArrayList<>();
                 stores.add( store );
 
                 PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;

@@ -52,9 +52,9 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
             throw new RuntimeException( "Error while adding new collection placement, collection not found." );
         }
 
-        List<DataStore> dataStores = stores
+        List<DataStore<?>> dataStores = stores
                 .stream()
-                .map( store -> (DataStore) adapterManager.getAdapter( store ) )
+                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
 
         if ( statement.getTransaction().getSnapshot().alloc().getCollectionPlacements( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {

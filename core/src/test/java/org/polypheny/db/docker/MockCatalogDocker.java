@@ -20,10 +20,9 @@ package org.polypheny.db.docker;
 import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.catalog.MockCatalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 /**
@@ -35,6 +34,17 @@ public class MockCatalogDocker extends MockCatalog {
     int i = 0;
     HashMap<Integer, CatalogAdapter> adapters = new HashMap<>();
 
+
+    @Override
+    public <S extends StoreCatalog> S getStoreSnapshot( long id ) {
+        return null;
+    }
+
+
+    @Override
+    public void addStoreSnapshot( StoreCatalog snapshot ) {
+
+    }
 
 
     @Override

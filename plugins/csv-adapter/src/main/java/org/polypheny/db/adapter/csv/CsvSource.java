@@ -41,13 +41,13 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -81,7 +81,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
 
     public CsvSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true );
+        super( storeId, uniqueName, settings, true, new RelStoreCatalog( storeId ) );
 
         setCsvDir( settings );
 
@@ -101,25 +101,37 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void createNewSchema( RelStoreCatalog snapshot, String name, long id ) {
-
+    public void updateNamespace( String name, long id ) {
+        currentSchema = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
     }
 
 
     @Override
-    public void createTable( RelStoreCatalog snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
-
+    public void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+        storeCatalog.createTable(
+                logical.getNamespaceName(),
+                logical.name,
+                lColumns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical,
+                lColumns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                allocation,
+                columns );
     }
 
 
     @Override
-    public void updateTable( RelStoreCatalog snapshot, Context context, long allocId ) {
-
+    public void updateTable( long allocId ) {
+        PhysicalTable table = storeCatalog.getTable( allocId );
+        if ( table == null ) {
+            log.warn( "todo" );
+            return;
+        }
+        storeCatalog.addTable( currentSchema.createCsvTable( table.id, table, this ) );
     }
 
 
     @Override
-    public void dropTable( RelStoreCatalog snapshot, Context context, long allocId ) {
+    public void dropTable( Context context, long allocId ) {
 
     }
 
@@ -142,36 +154,14 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
     }
 
 
-    @Nullable
-    public <T> T parseSetting( String key, Class<T> clazz ) {
-        if ( !settings.containsKey( key ) ) {
-            return null;
-        }
 
-        return clazz.cast( settings.get( key ) );
-    }
-
-
-    @Override
-    public void createNewSchema( RelStoreCatalog snapshot, String name, long id ) {
-        currentSchema = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
-    }
-
-
-    @Override
+    /*@Override
     public void createTable( RelStoreCatalog snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
         snapshot.addLogical( logical );
         snapshot.addLogicalColumns( lColumns );
         snapshot.addAllocation( allocation );
         snapshot.addAllocationColumns( columns );
-    }
-
-
-    @Override
-    public void updateTable( RelStoreCatalog snapshot, Context context, long allocId ) {
-        AllocationTable allocation = snapshot.getAlloc( allocId ).unwrap( AllocationTable.class );
-        snapshot.addPhysical( currentSchema.createCsvTable( IdBuilder.getInstance().getNewPhysicalId(), snapshot.getLogical( allocation.logicalId ).unwrap( LogicalTable.class ), allocation, this ) );
-    }
+    }*/
 
 
     @Override
@@ -181,7 +171,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void truncate( RelStoreCatalog snapshot, Context context, long allocId ) {
+    public void truncate( Context context, long allocId ) {
         throw new RuntimeException( "CSV adapter does not support truncate" );
     }
 

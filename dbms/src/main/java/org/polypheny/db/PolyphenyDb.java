@@ -435,6 +435,7 @@ public class PolyphenyDb {
 
     private void restoreDefaults( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
+        catalog.updateSnapshot();
         DefaultInserter.restoreData( DdlManager.getInstance() );
         DefaultInserter.restoreInterfacesIfNecessary();
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );

@@ -36,8 +36,8 @@ public abstract class DataSource<S extends StoreCatalog> extends Adapter<S> impl
     private final boolean dataReadOnly;
 
 
-    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly ) {
-        super( adapterId, uniqueName, settings );
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly, S catalog ) {
+        super( adapterId, uniqueName, settings, catalog );
         this.dataReadOnly = dataReadOnly;
 
         informationPage.setLabel( "Sources" );

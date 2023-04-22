@@ -40,6 +40,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaVersion;
@@ -78,6 +79,12 @@ public class DelegatingNamespace implements Namespace {
     @Override
     public Namespace snapshot( SchemaVersion version ) {
         return namespace.snapshot( version );
+    }
+
+
+    @Override
+    public Convention getConvention() {
+        return null;
     }
 
 

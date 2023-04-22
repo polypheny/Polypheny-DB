@@ -36,8 +36,8 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -47,7 +47,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcSource extends DataSource implements ExtensionPoint {
+public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> implements ExtensionPoint {
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
@@ -62,7 +62,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
             String diverClass,
             SqlDialect dialect,
             boolean readOnly ) {
-        super( storeId, uniqueName, settings, readOnly );
+        super( storeId, uniqueName, settings, readOnly, new RelStoreCatalog( storeId ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
@@ -111,24 +111,25 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
     protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
 
 
-    @Override
+    /*@Override
     public void createNewSchema( Snapshot snapshot, String name, long id ) {
         currentJdbcSchema = JdbcSchema.create( id, snapshot, name, connectionFactory, dialect, this );
-    }
+    }*/
 
 
     @Override
-    public void truncate( StoreCatalog snapshot, Context context, long allocId ) {
+    public void truncate( Context context, long allocId ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        // String physicalTableName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        // String physicalSchemaName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        PhysicalTable table = storeCatalog.getTable( allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
-                .append( dialect.quoteIdentifier( physicalSchemaName ) )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
                 .append( "." )
-                .append( dialect.quoteIdentifier( physicalTableName ) );
+                .append( dialect.quoteIdentifier( table.name ) );
         executeUpdate( builder, context );
     }
 

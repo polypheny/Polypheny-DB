@@ -65,7 +65,7 @@ public abstract class AbstractQueryableEntity extends AbstractEntity implements 
 
     @Override
     public Expression getExpression( Snapshot snapshot, String tableName, Class<?> clazz ) {
-        return Schemas.tableExpression( snapshot, elementType, tableName, clazz );
+        return Schemas.tableExpression( null, elementType, tableName, clazz );
     }
 
 }

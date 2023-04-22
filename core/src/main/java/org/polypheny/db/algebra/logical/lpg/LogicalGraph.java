@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaVersion;
@@ -109,7 +110,7 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
 
     @Override
     public Expression getExpression( Snapshot snapshot, long id ) {
-        return Schemas.subSchemaExpression( snapshot, id, null, LogicalGraph.class );
+        return Schemas.subSchemaExpression( null, id, null, LogicalGraph.class );
     }
 
 
@@ -122,6 +123,12 @@ public class LogicalGraph implements RelationalTransformable, Namespace, Graph, 
     @Override
     public Namespace snapshot( SchemaVersion version ) {
         return new LogicalGraph( id );
+    }
+
+
+    @Override
+    public Convention getConvention() {
+        return null;
     }
 
 

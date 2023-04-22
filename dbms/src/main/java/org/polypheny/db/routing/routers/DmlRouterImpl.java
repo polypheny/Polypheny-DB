@@ -79,7 +79,6 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -442,7 +441,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         RoutedAlgBuilder.create( statement, cluster ),
                                         catalogTable,
                                         placementsOnAdapter,
-                                        snapshot.alloc().getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
+                                        snapshot.alloc().getAllocation( pkPlacement.adapterId, currentPartitionId ),
                                         statement,
                                         cluster,
                                         true,
@@ -525,7 +524,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 RoutedAlgBuilder.create( statement, cluster ),
                                                 catalogTable,
                                                 placementsOnAdapter,
-                                                snapshot.alloc().getPartitionPlacement( pkPlacement.adapterId, entry.getKey() ),
+                                                snapshot.alloc().getAllocation( pkPlacement.adapterId, entry.getKey() ),
                                                 statement,
                                                 cluster,
                                                 false,
@@ -621,7 +620,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             RoutedAlgBuilder.create( statement, cluster ),
                             catalogTable,
                             placementsOnAdapter,
-                            snapshot.alloc().getPartitionPlacement( pkPlacement.adapterId, partitionId ),
+                            snapshot.alloc().getAllocation( pkPlacement.adapterId, partitionId ),
                             statement,
                             cluster,
                             false,
@@ -1242,13 +1241,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             RoutedAlgBuilder builder,
             LogicalTable catalogTable,
             List<AllocationColumn> placements,
-            CatalogPartitionPlacement partitionPlacement,
+            AllocationEntity allocationTable,
             Statement statement,
             AlgOptCluster cluster,
             boolean remapParameterValues,
             List<Map<Long, Object>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster, remapParameterValues, parameterValues );
+            buildDml( node.getInput( i ), builder, catalogTable, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -1262,7 +1261,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             builder = super.handleScan(
                     builder,
                     statement,
-                    partitionPlacement.partitionId
+                    allocationTable
             );
             LogicalRelScan scan = (LogicalRelScan) builder.build();
             builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
@@ -1277,7 +1276,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             builder = super.handleScan(
                     builder,
                     statement,
-                    partitionPlacement.partitionId
+                    allocationTable
             );
 
             return builder;
@@ -1374,12 +1373,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             PartitionProperty property = snapshot.alloc().getPartitionProperty( fromTable.id );
 
-            CatalogPartitionPlacement partition = snapshot.alloc().getPartitionPlacement( pkPlacement.adapterId, property.partitionIds.get( 0 ) );
+            AllocationEntity alloc = snapshot.alloc().getAllocation( pkPlacement.adapterId, property.partitionIds.get( 0 ) );
 
             nodes.add( super.handleScan(
                     builder,
                     statement,
-                    partition.partitionId
+                    alloc
             ).build() );
 
         }

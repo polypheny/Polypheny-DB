@@ -62,7 +62,7 @@ public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatal
     @Override
     public AllocationGraph addAllocation( long adapterId, long graphId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationGraph graph = new AllocationGraph( id, graphId, namespace.id, adapterId, null );
+        AllocationGraph graph = new AllocationGraph( id, graphId, namespace.id, adapterId );
         graphs.put( id, graph );
         return graph;
     }

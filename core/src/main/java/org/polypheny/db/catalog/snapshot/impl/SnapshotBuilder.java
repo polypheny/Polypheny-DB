@@ -51,7 +51,7 @@ public class SnapshotBuilder {
 
 
     private static PhysicalSnapshot buildPhysical( Map<Long, PhysicalCatalog> physicalCatalogs ) {
-        return new PhysicalSnapshotImpl( physicalCatalogs );
+        return null;
     }
 
 

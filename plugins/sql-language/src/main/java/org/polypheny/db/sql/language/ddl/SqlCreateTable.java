@@ -205,7 +205,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             tableName = name.names.get( 0 );
         }
 
-        List<DataStore> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
+        List<DataStore<?>> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
 
         PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 

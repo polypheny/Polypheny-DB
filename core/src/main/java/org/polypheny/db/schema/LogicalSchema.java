@@ -25,6 +25,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace.Schema;
 
 
@@ -98,7 +99,7 @@ public class LogicalSchema implements Namespace, Schema {
 
     @Override
     public Expression getExpression( Snapshot snapshot, long id ) {
-        return Schemas.subSchemaExpression( snapshot, id, null, LogicalSchema.class );
+        return Schemas.subSchemaExpression( null, id, null, LogicalSchema.class );
     }
 
 
@@ -111,6 +112,12 @@ public class LogicalSchema implements Namespace, Schema {
     @Override
     public Namespace snapshot( SchemaVersion version ) {
         return new LogicalSchema( id, schemaName, tableMap, collectionMap );
+    }
+
+
+    @Override
+    public Convention getConvention() {
+        return null;
     }
 
 }

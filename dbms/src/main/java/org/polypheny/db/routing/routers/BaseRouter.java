@@ -46,10 +46,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
@@ -62,7 +60,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -82,7 +79,6 @@ import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Pair;
 
 
@@ -168,42 +164,11 @@ public abstract class BaseRouter implements Router {
     public RoutedAlgBuilder handleScan(
             RoutedAlgBuilder builder,
             Statement statement,
-            long allocId ) {
+            AllocationEntity allocation ) {
 
-        List<PhysicalEntity> physicals = Catalog.snapshot().physical().fromAlloc( allocId );
-        PhysicalEntity physical = physicals.get( 0 );
-
-        AlgNode node = builder.scan( physical ).build();
-
-        builder.push( node );
-
-        if ( physical.namespaceType == NamespaceType.DOCUMENT
-                && node.getRowType().getFieldCount() == 1
-                && node.getRowType().getFieldList().get( 0 ).getName().equals( "d" )
-                && node.getRowType().getFieldList().get( 0 ).getType().getPolyType() == PolyType.DOCUMENT ) {
-            // relational on document -> expand document field into _id_ & _data_
-            AlgNode scan = builder.build();
-            builder.push( scan );
-            AlgDataType type = getDocumentRowType();
-            builder.documentProject( addDocumentNodes( scan.getRowType(), scan.getCluster().getRexBuilder(), true ), List.of( "_id_", "_data_" ) );
-
-            builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), List.of( "_id_, _data_" ), scan.getTraitSet(), ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, type, false ) );
-        }
-
-        return builder;
+        return (RoutedAlgBuilder) builder.scan( allocation );
     }
 
-
-    private AlgDataType getDocumentRowType() {
-        // label table for cross model queries
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-
-        final Builder fieldInfo = typeFactory.builder();
-        fieldInfo.add( new AlgDataTypeFieldImpl( "_id_", 0, typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ) );
-        fieldInfo.add( new AlgDataTypeFieldImpl( "_data_", 1, typeFactory.createPolyType( PolyType.VARCHAR, 2064 ) ) );
-
-        return fieldInfo.build();
-    }
 
 
     public RoutedAlgBuilder handleValues( LogicalValues node, RoutedAlgBuilder builder ) {
@@ -259,7 +224,7 @@ public abstract class BaseRouter implements Router {
             builder = handleScan(
                     builder,
                     statement,
-                    allocationEntities.get( 0 ).id );
+                    allocationEntities.get( 0 ) );
             // Final project
             //buildFinalProject( builder, allocationEntities.get( 0 ).unwrap( AllocationTable.class ) );
 

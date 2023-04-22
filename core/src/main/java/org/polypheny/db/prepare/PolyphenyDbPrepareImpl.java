@@ -78,6 +78,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
+import org.polypheny.db.algebra.rules.AllocationToPhysicalRule;
 import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
@@ -214,6 +215,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     ScanRule.INSTANCE,
+                    AllocationToPhysicalRule.REL_INSTANCE,
+                    AllocationToPhysicalRule.DOC_INSTANCE,
+                    AllocationToPhysicalRule.GRAPH_INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,

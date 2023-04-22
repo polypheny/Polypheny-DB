@@ -45,6 +45,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaVersion;
@@ -87,8 +88,14 @@ public class AbstractNamespace implements Namespace {
 
 
     @Override
+    public Convention getConvention() {
+        return null;
+    }
+
+
+    @Override
     public Expression getExpression( Snapshot snapshot, long id ) {
-        return Schemas.subSchemaExpression( snapshot, id, null, getClass() );
+        return Schemas.subSchemaExpression( null, id, null, getClass() );
     }
 
 

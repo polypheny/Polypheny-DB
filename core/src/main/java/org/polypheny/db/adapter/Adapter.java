@@ -35,13 +35,13 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -61,7 +61,6 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.LogicalCollection;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 
@@ -74,6 +73,7 @@ public abstract class Adapter<S extends StoreCatalog> {
     private final List<NamespaceType> supportedNamespaceTypes;
     @Getter
     private final String adapterName;
+    public final S storeCatalog;
 
 
     @Target(ElementType.TYPE)
@@ -285,7 +285,8 @@ public abstract class Adapter<S extends StoreCatalog> {
     private ConfigListener listener;
 
 
-    public Adapter( long adapterId, String uniqueName, Map<String, String> settings ) {
+    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, S catalog ) {
+        this.storeCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new RuntimeException( "The used adapter does not annotate its properties correctly." );
@@ -316,19 +317,14 @@ public abstract class Adapter<S extends StoreCatalog> {
     }
 
 
-    public abstract void createNewSchema( S snapshot, String name, long id );
+    public abstract void updateNamespace( String name, long id );
 
 
-    public StoreCatalog createCatalog() {
-        return new RelStoreCatalog( adapterId );
-    }
+    public abstract void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
 
+    public abstract void updateTable( long allocId );
 
-    public abstract void createTable( S snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
-
-    public abstract void updateTable( S snapshot, Context context, long allocId );
-
-    public abstract void dropTable( S snapshot, Context context, long allocId );
+    public abstract void dropTable( Context context, long allocId );
 
 
     /**
@@ -336,14 +332,14 @@ public abstract class Adapter<S extends StoreCatalog> {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the LPG data model.
      */
-    public void createGraph( S snapshot, Context context, LogicalGraph logical, AllocationGraph allocation ) {
+    public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
         log.warn( "todo" );
-        createGraphSubstitution( snapshot, context, allocation );
+        createGraphSubstitution( context, allocation );
     }
 
 
-    public void updateGraph( S snapshot, Context context, long allocId ) {
-
+    public void updateGraph( long allocId ) {
+        log.warn( "todo" );
     }
 
 
@@ -352,9 +348,9 @@ public abstract class Adapter<S extends StoreCatalog> {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the LPG data model natively.
      */
-    public void dropGraph( S storeCatalog, Context context, AllocationGraph allocation ) {
+    public void dropGraph( Context context, AllocationGraph allocation ) {
         log.warn( "todo" );
-        dropGraphSubstitution( storeCatalog, context, null );
+        dropGraphSubstitution( context, null );
     }
 
 
@@ -363,13 +359,13 @@ public abstract class Adapter<S extends StoreCatalog> {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
-    public void createCollection( S snapshot, Context context, LogicalCollection logical, AllocationCollection allocation ) {
+    public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
         log.warn( "todo" );
-        createCollectionSubstitution( snapshot, context, allocation );
+        createCollectionSubstitution( context, allocation );
     }
 
 
-    public void updateCollection( S snapshot, Context context, long allocId ) {
+    public void updateCollection( long allocId ) {
         log.warn( "todo" );
     }
 
@@ -379,9 +375,9 @@ public abstract class Adapter<S extends StoreCatalog> {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
-    public void dropCollection( S snapshot, Context prepareContext, AllocationCollection allocation ) {
+    public void dropCollection( Context prepareContext, AllocationCollection allocation ) {
         // overwrite this if the datastore supports document
-        dropCollectionSubstitution( snapshot, prepareContext, allocation );
+        dropCollectionSubstitution( prepareContext, allocation );
     }
 
 
@@ -389,7 +385,7 @@ public abstract class Adapter<S extends StoreCatalog> {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void dropCollectionSubstitution( S snapshot, Context context, AllocationCollection catalogCollection ) {
+    private void dropCollectionSubstitution( Context context, AllocationCollection catalogCollection ) {
         /*Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
@@ -403,7 +399,7 @@ public abstract class Adapter<S extends StoreCatalog> {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void createCollectionSubstitution( S snapshot, Context context, AllocationCollection allocation ) {
+    private void createCollectionSubstitution( Context context, AllocationCollection allocation ) {
         /*Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
@@ -417,7 +413,7 @@ public abstract class Adapter<S extends StoreCatalog> {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void createGraphSubstitution( S catalog, Context context, AllocationGraph allocation ) {
+    private void createGraphSubstitution( Context context, AllocationGraph allocation ) {
         /*LoggedIdBuilder idBuilder = new LoggedIdBuilder();
         List<? extends PhysicalEntity> physicals = new ArrayList<>();
 
@@ -449,7 +445,7 @@ public abstract class Adapter<S extends StoreCatalog> {
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
      */
-    private void dropGraphSubstitution( S snapshot, Context context, CatalogGraphPlacement graphPlacement ) {
+    private void dropGraphSubstitution( Context context, CatalogGraphPlacement graphPlacement ) {
         /*Catalog catalog = Catalog.getInstance();
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
 
@@ -470,7 +466,7 @@ public abstract class Adapter<S extends StoreCatalog> {
 
     public abstract Namespace getCurrentSchema();
 
-    public abstract void truncate( S snapshot, Context context, long allocId );
+    public abstract void truncate( Context context, long allocId );
 
     public abstract boolean prepare( PolyXid xid );
 

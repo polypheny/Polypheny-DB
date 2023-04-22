@@ -62,7 +62,7 @@ public abstract class MaterializedViewManager {
 
     public abstract void addData(
             Transaction transaction,
-            List<DataStore> stores,
+            List<DataStore<?>> stores,
             AlgRoot algRoot,
             LogicalMaterializedView materializedView );
 
@@ -91,7 +91,7 @@ public abstract class MaterializedViewManager {
             if ( modify.getOperation() != Modify.Operation.MERGE ) {
                 if ( (modify.getEntity() != null) ) {
                     if ( modify.getEntity().unwrap( PhysicalEntity.class ) != null ) {
-                        ids.add( modify.getEntity().unwrap( PhysicalEntity.class ).getLogicalId() );
+                        ids.add( modify.getEntity().unwrap( PhysicalEntity.class ).id );
                     } else if ( modify.getEntity().unwrap( AllocationEntity.class ) != null ) {
                         ids.add( modify.getEntity().unwrap( AllocationEntity.class ).getLogicalId() );
                     } else {

@@ -22,7 +22,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -33,7 +32,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public class PhysicalCollection extends PhysicalEntity {
 
     public PhysicalCollection( long id, long logicalId, long allocationId, long namespaceId, String name, String namespaceName, EntityType type, long adapterId ) {
-        super( id, logicalId, allocationId, name, namespaceId, namespaceName, type, NamespaceType.DOCUMENT, adapterId );
+        super( id, allocationId, name, namespaceId, namespaceName, NamespaceType.DOCUMENT, adapterId );
     }
 
 
@@ -48,10 +47,5 @@ public class PhysicalCollection extends PhysicalEntity {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getPhysicalCollection", Expressions.constant( id ) );
     }
 
-
-    @Override
-    public AlgDataType getLogicalRowType() {
-        return getRowType();
-    }
 
 }

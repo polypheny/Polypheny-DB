@@ -45,12 +45,9 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
@@ -84,20 +81,19 @@ public class CsvSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public PhysicalTable createCsvTable( long id, LogicalTable catalogTable, AllocationTable allocationTable, CsvSource csvSource ) {
+    public PhysicalTable createCsvTable( long id, PhysicalTable table, CsvSource csvSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>();
 
-        List<ExportedColumn> columns = csvSource.getExportedColumns().get( catalogTable.name );
+        List<ExportedColumn> columns = csvSource.getExportedColumns().get( table.name );
 
-        for ( AllocationColumn placement : allocationTable.getColumns() ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( placement.columnId );
-            AlgDataType sqlType = sqlType( typeFactory, logicalColumn.type, logicalColumn.length, logicalColumn.scale, null );
-            fieldInfo.add( logicalColumn.name, columns.get( (int) placement.position - 1 ).physicalColumnName, sqlType ).nullable( logicalColumn.nullable );
-            fieldTypes.add( CsvFieldType.getCsvFieldType( logicalColumn.type ) );
-            fieldIds.add( (int) placement.position );
+        for ( PhysicalColumn column : table.getColumns() ) {
+            AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
+            fieldInfo.add( column.name, columns.get( column.position - 1 ).physicalColumnName, sqlType ).nullable( column.nullable );
+            fieldTypes.add( CsvFieldType.getCsvFieldType( column.type ) );
+            fieldIds.add( column.position );
         }
 
         String csvFileName = columns.get( 0 ).physicalSchemaName;
@@ -108,16 +104,16 @@ public class CsvSchema extends AbstractNamespace implements Schema {
             throw new RuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        CsvTable table = createTable( id, source, allocationTable, fieldTypes, fields, csvSource );
-        tableMap.put( catalogTable.name + "_" + allocationTable.id, table );
-        return table;
+        CsvTable csvTable = createTable( id, source, table, fieldTypes, fields, csvSource );
+
+        return csvTable;
     }
 
 
     /**
      * Creates different subtype of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( long id, Source source, AllocationTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    private CsvTable createTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         switch ( flavor ) {
             case TRANSLATABLE:
                 return new CsvTranslatableTable( id, source, table, fieldTypes, fields, csvSource );
@@ -191,6 +187,12 @@ public class CsvSchema extends AbstractNamespace implements Schema {
         } catch ( IllegalArgumentException e ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
+    }
+
+
+    @Override
+    public Convention getConvention() {
+        return null;
     }
 
 //    /**

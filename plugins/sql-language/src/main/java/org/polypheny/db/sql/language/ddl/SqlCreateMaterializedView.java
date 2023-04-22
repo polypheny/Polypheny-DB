@@ -123,9 +123,9 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
             viewName = name.names.get( 0 );
         }
 
-        List<DataStore> stores;
+        List<DataStore<?>> stores;
         if ( store.size() > 0 ) {
-            List<DataStore> storeList = new ArrayList<>();
+            List<DataStore<?>> storeList = new ArrayList<>();
             store.forEach( s -> storeList.add( getDataStoreInstance( s ) ) );
             stores = storeList;
         } else {

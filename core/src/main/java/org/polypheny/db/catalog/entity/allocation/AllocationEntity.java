@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Serialize;
 import java.util.List;
 import javax.annotation.Nullable;
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -34,7 +33,6 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @Value
 @NonFinal
 @Slf4j
-@Builder(toBuilder = true)
 public abstract class AllocationEntity extends CatalogEntity {
 
     @Serialize

@@ -17,25 +17,41 @@
 package org.polypheny.db.catalog.catalogs;
 
 
-import lombok.AllArgsConstructor;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.transaction.Statement;
 
 @Value
 @NonFinal
-@AllArgsConstructor
 public abstract class StoreCatalog {
 
+    @Serialize
     public long adapterId;
     IdBuilder idBuilder = IdBuilder.getInstance();
+
+
+    public StoreCatalog(
+            @Deserialize("adapterId") long adapterId ) {
+        this.adapterId = adapterId;
+    }
 
 
     public Expression asExpression() {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getStoreSnapshot", Expressions.constant( adapterId ) );
     }
+
+
+    public abstract AlgNode getRelScan( long allocId, Statement statement );
+
+    public abstract AlgNode getGraphScan( long allocId, Statement statement );
+
+    public abstract AlgNode getDocumentScan( long allocId, Statement statement );
 
 }

@@ -22,7 +22,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -33,7 +32,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public class PhysicalGraph extends PhysicalEntity {
 
     public PhysicalGraph( long id, long logicalId, long allocationId, String name, EntityType type, long adapterId ) {
-        super( id, logicalId, allocationId, name, id, name, type, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
+        super( id, allocationId, name, id, name, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
 
@@ -48,10 +47,5 @@ public class PhysicalGraph extends PhysicalEntity {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getPhysicalGraph", Expressions.constant( id ) );
     }
 
-
-    @Override
-    public AlgDataType getLogicalRowType() {
-        return getRowType();
-    }
 
 }

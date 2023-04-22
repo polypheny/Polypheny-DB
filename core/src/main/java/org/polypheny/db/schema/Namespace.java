@@ -40,6 +40,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.Convention;
 
 
 /**
@@ -136,7 +137,6 @@ public interface Namespace extends Wrapper {
      * Returns the expression by which this schema can be referenced in generated code.
      *
      * @param snapshot Parent schema
-     * @param name Name of this schema
      * @return Expression by which this schema can be referenced in generated code
      */
     Expression getExpression( Snapshot snapshot, long id );
@@ -159,6 +159,8 @@ public interface Namespace extends Wrapper {
      * @return the schema snapshot.
      */
     Namespace snapshot( SchemaVersion version );
+
+    Convention getConvention();
 
     interface Graph {
 

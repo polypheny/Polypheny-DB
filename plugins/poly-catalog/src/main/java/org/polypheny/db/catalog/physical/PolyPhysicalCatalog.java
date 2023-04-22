@@ -17,11 +17,11 @@
 package org.polypheny.db.catalog.physical;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.schema.Namespace;
 
@@ -51,8 +51,8 @@ public class PolyPhysicalCatalog implements PhysicalCatalog {
 
 
     @Override
-    public void addEntities( List<? extends PhysicalEntity> physicals ) {
-        physicals.forEach( p -> this.physicals.put( p.id, p ) );
+    public void addSnapshot( StoreCatalog snapshot ) {
+
     }
 
 

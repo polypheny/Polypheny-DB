@@ -72,7 +72,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             }
         }
 
-        List<DataStore> dataStore = null;
+        List<DataStore<?>> dataStore = null;
         if ( store != null ) {
             if ( manager.getStore( store ) == null ) {
                 throw new RuntimeException( "Error while retrieving placement of graph database." );

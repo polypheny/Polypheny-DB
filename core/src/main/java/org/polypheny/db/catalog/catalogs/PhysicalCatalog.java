@@ -22,8 +22,6 @@ import org.polypheny.db.schema.Namespace;
 public interface PhysicalCatalog {
 
 
-    ConcurrentHashMap<Long, StoreCatalog> getPhysicals();
-
     void addSnapshot( StoreCatalog snapshot );
 
     void deleteEntity( long id );

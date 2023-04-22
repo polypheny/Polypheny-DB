@@ -300,7 +300,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * Is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
      */
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, AlgRoot algRoot, LogicalMaterializedView materializedView ) {
+    public void addData( Transaction transaction, List<DataStore<?>> stores, AlgRoot algRoot, LogicalMaterializedView materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         DataMigrator dataMigrator = transaction.getDataMigrator();

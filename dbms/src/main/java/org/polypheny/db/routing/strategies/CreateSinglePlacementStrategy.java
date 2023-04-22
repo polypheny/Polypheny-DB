@@ -39,8 +39,8 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore<?>> getDataStoresForNewEntity() {
-        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-        for ( DataStore store : availableStores.values() ) {
+        Map<String, DataStore<?>> availableStores = AdapterManager.getInstance().getStores();
+        for ( DataStore<?> store : availableStores.values() ) {
             return ImmutableList.of( store );
         }
         throw new RuntimeException( "No suitable data store found" );

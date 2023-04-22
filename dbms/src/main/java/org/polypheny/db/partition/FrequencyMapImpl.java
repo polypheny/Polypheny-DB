@@ -305,8 +305,8 @@ public class FrequencyMapImpl extends FrequencyMap {
             partitionsFromHotToCold.forEach( p -> Catalog.getInstance().getAllocRel( table.namespaceId ).updatePartition( p, coldPartitionGroupId ) );
 
             // Remove all tables that have been moved
-            for ( DataStore store : partitionsToRemoveFromStore.keySet() ) {
-                store.dropTable( , statement.getPrepareContext(), );
+            for ( DataStore<?> store : partitionsToRemoveFromStore.keySet() ) {
+                store.dropTable( statement.getPrepareContext(), -1 );
             }
 
             transaction.commit();
@@ -345,7 +345,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                             DataPlacementRole.UPTODATE );
                 }
 
-                store.createTable( , , statement.getPrepareContext(), , null, );
+                store.createTable( statement.getPrepareContext(), null, null, null, null );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
                 catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ) ) );

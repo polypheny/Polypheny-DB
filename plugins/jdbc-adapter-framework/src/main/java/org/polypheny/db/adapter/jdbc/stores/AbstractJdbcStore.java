@@ -65,7 +65,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             Map<String, String> settings,
             SqlDialect dialect,
             boolean persistent ) {
-        super( storeId, uniqueName, settings, persistent );
+        super( storeId, uniqueName, settings, persistent, new RelStoreCatalog( storeId ) );
         this.dialect = dialect;
 
         if ( deployMode == DeployMode.DOCKER ) {
@@ -110,8 +110,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void createNewSchema( RelStoreCatalog snapshot, String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, snapshot, name, connectionFactory, dialect, this );
+    public void updateNamespace( String name, long id ) {
+        currentJdbcSchema = JdbcSchema.create( id, storeCatalog, name, connectionFactory, dialect, this );
     }
 
 
@@ -124,16 +124,16 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void createTable( RelStoreCatalog snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+    public void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
         String namespaceName = getDefaultPhysicalSchemaName();
         String tableName = getPhysicalTableName( allocation.id, 0 );
 
-        if ( snapshot.getNamespace( allocation.namespaceId ) == null ) {
-            createNewSchema( snapshot, namespaceName, allocation.namespaceId );
-            snapshot.addNamespace( allocation.namespaceId, currentJdbcSchema );
+        if ( storeCatalog.getNamespace( allocation.namespaceId ) == null ) {
+            updateNamespace( namespaceName, allocation.namespaceId );
+            storeCatalog.addNamespace( allocation.namespaceId, currentJdbcSchema );
         }
 
-        PhysicalTable table = snapshot.createTable(
+        PhysicalTable table = storeCatalog.createTable(
                 namespaceName,
                 tableName,
                 columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
@@ -154,7 +154,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void updateTable( RelStoreCatalog storeCatalog, Context context, long allocId ) {
+    public void updateTable( long allocId ) {
         PhysicalTable template = storeCatalog.getTable( allocId );
         storeCatalog.addTable( this.currentJdbcSchema.createJdbcTable( storeCatalog, template ) );
     }
@@ -183,10 +183,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void addColumn( RelStoreCatalog snapshot, Context context, long allocId, LogicalColumn logicalColumn ) {
+    public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
-        PhysicalTable table = snapshot.getTable( allocId );
-        PhysicalColumn column = snapshot.addColumn( physicalColumnName, allocId, adapterId, table.columns.size(), logicalColumn );
+        PhysicalTable table = storeCatalog.getTable( allocId );
+        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, adapterId, table.columns.size(), logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );
@@ -273,13 +273,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     // Make sure to update overridden methods as well
     @Override
-    public void updateColumnType( RelStoreCatalog snapshot, Context context, long allocId, LogicalColumn newCol ) {
-        PhysicalColumn column = snapshot.updateColumnType( allocId, newCol );
+    public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
+        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
 
         if ( !this.dialect.supportsNestedArrays() && column.collectionsType != null ) {
             return;
         }
-        PhysicalTable physicalTable = snapshot.getTable( allocId );
+        PhysicalTable physicalTable = storeCatalog.getTable( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
@@ -302,7 +302,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void dropTable( RelStoreCatalog snapshot, Context context, long allocId ) {
+    public void dropTable( Context context, long allocId ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
@@ -314,7 +314,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
         // physicalSchemaName = partitionPlacement.physicalSchemaName;
         // physicalTableName = partitionPlacement.physicalTableName;
-        PhysicalTable physical = snapshot.getTable( allocId );
+        PhysicalTable physical = storeCatalog.getTable( allocId );
         StringBuilder builder = new StringBuilder();
 
         builder.append( "DROP TABLE " )
@@ -331,10 +331,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void dropColumn( RelStoreCatalog snapshot, Context context, long allocId, long columnId ) {
+    public void dropColumn( Context context, long allocId, long columnId ) {
         //for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getAllocation( columnPlacement.tableId ) ) {
-        PhysicalTable table = snapshot.getTable( allocId );
-        PhysicalColumn column = snapshot.getColumn( columnId );
+        PhysicalTable table = storeCatalog.getTable( allocId );
+        PhysicalColumn column = storeCatalog.getColumn( columnId );
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -348,11 +348,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void truncate( RelStoreCatalog snapshot, Context context, long allocId ) {
+    public void truncate( Context context, long allocId ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        PhysicalTable physical = snapshot.getTable( allocId );
+        PhysicalTable physical = storeCatalog.getTable( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )

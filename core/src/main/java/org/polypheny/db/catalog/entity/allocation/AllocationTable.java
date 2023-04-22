@@ -29,8 +29,11 @@ import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -44,6 +47,20 @@ public class AllocationTable extends AllocationEntity {
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
         super( id, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL, null );
+    }
+
+
+    @Override
+    public AlgDataType getRowType() {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
+
+        for ( AllocationColumn column : getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+            LogicalColumn lColumn = Catalog.snapshot().rel().getColumn( column.columnId );
+            AlgDataType sqlType = column.getAlgDataType();
+            fieldInfo.add( lColumn.name, null, sqlType ).nullable( lColumn.nullable );
+        }
+
+        return AlgDataTypeImpl.proto( fieldInfo.build() ).apply( AlgDataTypeFactory.DEFAULT );
     }
 
 

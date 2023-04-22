@@ -698,11 +698,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         }
 
 
-        @Override
-        public SqlIdentifier getPhysicalColumnName( JdbcEntity placement, String columnName ) {
-            return new SqlIdentifier( columnName, POS );
-        }
-
     }
 
 }

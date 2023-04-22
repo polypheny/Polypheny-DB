@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity.physical;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -26,6 +27,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
+@SuperBuilder(toBuilder = true)
 public abstract class PhysicalEntity extends CatalogEntity {
 
     public String namespaceName;
@@ -45,7 +47,6 @@ public abstract class PhysicalEntity extends CatalogEntity {
     public State getCatalogType() {
         return State.PHYSICAL;
     }
-
 
 
 }

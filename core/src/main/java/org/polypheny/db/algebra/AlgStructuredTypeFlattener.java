@@ -97,11 +97,14 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -868,6 +871,12 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             return;
         }
 
+        AllocationEntity alloc = alg.entity.unwrap( AllocationEntity.class );
+        Convention convention = Catalog.snapshot().physical().getNamespace( alloc.adapterId, alloc.id ).getConvention();
+        if ( convention != null ) {
+            // else we rely on BindableScan
+            convention.register( alg.getCluster().getPlanner() );
+        }
         AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, alg.traitSet );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();

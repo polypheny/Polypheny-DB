@@ -66,9 +66,9 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        List<DataStore> dataStores = stores
+        List<DataStore<?>> dataStores = stores
                 .stream()
-                .map( store -> (DataStore) adapterManager.getAdapter( store ) )
+                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
         DdlManager.getInstance().createCollection(
                 schemaId,

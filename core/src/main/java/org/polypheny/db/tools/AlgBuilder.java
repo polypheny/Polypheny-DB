@@ -1366,10 +1366,10 @@ public class AlgBuilder {
 
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
-        rename( entity.getLogicalRowType().getFieldNames() );
+        rename( entity.getRowType().getFieldNames() );
         if ( entity.unwrap( PhysicalTable.class ) != null ) {
-            List<Long> order = Catalog.snapshot().rel().getTable( entity.logicalId ).unwrap( LogicalTable.class ).getColumnIds();
-            reorder( order, flip( entity.unwrap( PhysicalTable.class ).logicalColumns ) );
+            List<Long> order = Catalog.snapshot().rel().getTable( entity.id ).unwrap( LogicalTable.class ).getColumnIds();
+            //reorder( order, flip( entity.unwrap( PhysicalTable.class ).columns ) );
         }
         return this;
     }

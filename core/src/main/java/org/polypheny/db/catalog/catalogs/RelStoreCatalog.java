@@ -17,13 +17,19 @@
 package org.polypheny.db.catalog.catalogs;
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -31,20 +37,57 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.Statement;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@Slf4j
 public class RelStoreCatalog extends StoreCatalog {
 
-
     public RelStoreCatalog( long adapterId ) {
-        super( adapterId );
+        this( adapterId, new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
-    Map<Long, Namespace> namespaces = new HashMap<>();
-    Map<Long, PhysicalTable> tables = new HashMap<>();
-    Map<Long, PhysicalColumn> columns = new HashMap<>();
+    @Override
+    public AlgNode getRelScan( long allocId, Statement statement ) {
+        return AlgBuilder.create( statement ).scan( tables.get( allocId ) ).build();
+    }
+
+
+    @Override
+    public AlgNode getGraphScan( long allocId, Statement statement ) {
+        log.warn( "todo" );
+        return null;
+    }
+
+
+    @Override
+    public AlgNode getDocumentScan( long allocId, Statement statement ) {
+        log.warn( "todo" );
+        return null;
+    }
+
+
+    public RelStoreCatalog(
+            @Deserialize("adapterId") long adapterId,
+            @Deserialize("namespaces") Map<Long, Namespace> namespaces,
+            @Deserialize("tables") Map<Long, PhysicalTable> tables,
+            @Deserialize("columns") Map<Long, PhysicalColumn> columns ) {
+        super( adapterId );
+        this.namespaces = new ConcurrentHashMap<>( namespaces );
+        this.tables = new ConcurrentHashMap<>( tables );
+        this.columns = new ConcurrentHashMap<>( columns );
+    }
+
+
+    @Serialize
+    ConcurrentMap<Long, Namespace> namespaces;
+    @Serialize
+    ConcurrentMap<Long, PhysicalTable> tables;
+    @Serialize
+    ConcurrentMap<Long, PhysicalColumn> columns;
 
 
     public void addTable( PhysicalTable table ) {

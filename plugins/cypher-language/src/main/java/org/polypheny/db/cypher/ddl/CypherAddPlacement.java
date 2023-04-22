@@ -65,8 +65,8 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
 
         List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().graph().getGraph( g.id ) ).collect( Collectors.toList() );
 
-        List<DataStore> dataStores = Stream.of( store )
-                .map( store -> (DataStore) adapterManager.getAdapter( store ) )
+        List<DataStore<?>> dataStores = Stream.of( store )
+                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
 
         if ( !adapterManager.getAdapters().containsKey( store ) ) {
