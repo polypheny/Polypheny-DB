@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -38,7 +37,6 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-@Builder(toBuilder = true)
 @NonFinal
 @SuperBuilder(toBuilder = true)
 public class PhysicalTable extends PhysicalEntity {
