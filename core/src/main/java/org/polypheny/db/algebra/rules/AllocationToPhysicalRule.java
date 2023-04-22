@@ -22,8 +22,8 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 
@@ -42,11 +42,12 @@ public class AllocationToPhysicalRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         Scan<?> scan = call.alg( 0 );
-        if ( scan.entity.unwrap( AllocationEntity.class ) == null ) {
+        AllocationEntity alloc = scan.entity.unwrap( AllocationEntity.class );
+        if ( alloc == null ) {
             return;
         }
 
-        AlgNode newAlg = scan.getEntity().unwrap( TranslatableEntity.class ).toAlg( scan::getCluster, scan.getTraitSet() );
+        AlgNode newAlg = Catalog.getInstance().getStoreSnapshot( alloc.adapterId ).getScan( alloc.id, call.builder() );
         call.transformTo( newAlg );
     }
 
