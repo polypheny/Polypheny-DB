@@ -199,7 +199,7 @@ public class DdlManagerImpl extends DdlManager {
     public void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config ) {
         uniqueName = uniqueName.toLowerCase();
         Adapter adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, config );
-        catalog.addStoreSnapshot( adapter.storeCatalog );
+        //catalog.addStoreSnapshot( adapter.storeCatalog );
         if ( adapter instanceof DataSource<?> ) {
             handleSource( (DataSource<?>) adapter );
         }

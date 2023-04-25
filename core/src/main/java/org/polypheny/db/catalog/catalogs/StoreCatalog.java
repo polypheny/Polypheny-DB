@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.tools.AlgBuilder;
 
@@ -91,5 +92,8 @@ public abstract class StoreCatalog {
     public abstract AlgNode getModify( long allocId, Modify<?> modify );
 
     public abstract AlgNode getRelModify( long allocId, RelModify<?> modify );
+
+
+    public abstract PhysicalEntity getPhysical( long id );
 
 }

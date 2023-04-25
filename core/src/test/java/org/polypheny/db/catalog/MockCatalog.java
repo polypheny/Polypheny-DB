@@ -27,7 +27,6 @@ import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.catalogs.PhysicalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -113,11 +112,6 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
-
-    @Override
-    public PhysicalCatalog getPhysical( long namespaceId ) {
-        throw new NotImplementedException();
-    }
 
 
     @Override

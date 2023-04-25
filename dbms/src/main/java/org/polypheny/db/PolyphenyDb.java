@@ -31,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
@@ -439,7 +438,7 @@ public class PolyphenyDb {
         DefaultInserter.restoreData( DdlManager.getInstance() );
         DefaultInserter.restoreInterfacesIfNecessary();
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
-        AdapterManager.getInstance().restoreAdapters();
+        // AdapterManager.getInstance().restoreAdapters();
 
         Transaction trx = null;
         try {

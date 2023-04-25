@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
@@ -91,6 +92,7 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -147,8 +149,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( catalogTable.id );
 
-        AllocationEntity physical = allocs.get( 0 );
-        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
+        AllocationEntity allocation = allocs.get( 0 );
+        ModifiableEntity modifiableTable = allocation.unwrap( ModifiableEntity.class );
 
         AlgNode input = buildDmlNew(
                 super.recursiveCopy( modify.getInput( 0 ) ),
@@ -157,17 +159,22 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         // Build DML
 
-        List<String> updateColumnList = modify.getUpdateColumnList();
-        List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
+        //List<String> updateColumnList = modify.getUpdateColumnList();
+        //List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
 
-        return modifiableTable.toModificationAlg(
+        /*return modifiableTable.toModificationAlg(
                 cluster,
                 cluster.traitSet(),
                 physical,
                 input,
                 modify.getOperation(),
                 updateColumnList,
-                sourceExpressionList );
+                sourceExpressionList );*/
+        Convention convention = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getCurrentSchema().getConvention();
+        if ( convention != null ) {
+            convention.register( modify.getCluster().getPlanner() );
+        }
+        return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumnList(), modify.getSourceExpressionList(), modify.isFlattened() );
 
     }
 

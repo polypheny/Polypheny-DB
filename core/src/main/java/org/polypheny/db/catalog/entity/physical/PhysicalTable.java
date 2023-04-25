@@ -26,10 +26,12 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -82,7 +84,7 @@ public class PhysicalTable extends PhysicalEntity {
     @Override
     public Expression asExpression() {
         //return Expressions.call( Catalog.PHYSICAL_EXPRESSION, "getPhysicalTable", Expressions.constant( id ) );
-        return null;
+        return Expressions.call( Catalog.PHYSICAL_EXPRESSION.apply( adapterId ), "getPhysical", Expressions.constant( id ) );
     }
 
 }

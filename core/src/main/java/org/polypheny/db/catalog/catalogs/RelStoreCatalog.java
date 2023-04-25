@@ -44,6 +44,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.refactor.ModifiableEntity;
@@ -225,6 +226,12 @@ public class RelStoreCatalog extends StoreCatalog {
     public AlgNode getGraphModify( long allocId, LpgModify<?> modify ) {
         log.warn( "todo" );
         return null;
+    }
+
+
+    @Override
+    public PhysicalEntity getPhysical( long id ) {
+        return tables.get( id );
     }
 
 }

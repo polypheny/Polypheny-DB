@@ -314,6 +314,7 @@ public abstract class Adapter<S extends StoreCatalog> {
         if ( deployMode == DeployMode.DOCKER ) {
             this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
+        Catalog.getInstance().addStoreSnapshot( catalog );
     }
 
 

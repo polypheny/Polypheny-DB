@@ -116,13 +116,12 @@ public final class Schemas {
      */
     public static Expression subSchemaExpression( StoreCatalog snapshot, long id, Long adapterId, Class<?> type ) {
         // (Type) schemaExpression.getSubSchema("name")
-        final Expression schemaExpression = Expressions.call( expression( snapshot ), BuiltInMethod.SNAPSHOT_GET_NAMESPACE.method );
+        final Expression schemaExpression = expression( snapshot );
         Expression call =
                 Expressions.call(
                         schemaExpression,
                         BuiltInMethod.SNAPSHOT_GET_NAMESPACE.method,
-                        Expressions.constant( id ),
-                        Expressions.constant( adapterId ) );
+                        Expressions.constant( id ) );
         //CHECKSTYLE: IGNORE 2
         //noinspection unchecked
         if ( false && type != null && !type.isAssignableFrom( Namespace.class ) ) {
