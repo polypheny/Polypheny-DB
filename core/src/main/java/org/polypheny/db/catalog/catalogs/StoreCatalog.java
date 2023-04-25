@@ -28,6 +28,8 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.schema.Namespace;
@@ -50,8 +52,8 @@ public abstract class StoreCatalog {
 
 
     public StoreCatalog(
-            @Deserialize("namespaces") Map<Long, Namespace> namespaces,
-            @Deserialize("adapterId") long adapterId ) {
+            Map<Long, Namespace> namespaces,
+            long adapterId ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
     }
@@ -68,7 +70,7 @@ public abstract class StoreCatalog {
 
     public abstract AlgNode getDocumentScan( long allocId, AlgBuilder statement );
 
-    public abstract AlgNode getScan( long id, AlgBuilder builder );
+    public abstract AlgNode getScan( long allocId, AlgBuilder builder );
 
 
     public void addNamespace( long namespaceId, Namespace namespace ) {
@@ -84,5 +86,10 @@ public abstract class StoreCatalog {
     public Namespace getNamespace( long id ) {
         return namespaces.get( id );
     }
+
+
+    public abstract AlgNode getModify( long allocId, Modify<?> modify );
+
+    public abstract AlgNode getRelModify( long allocId, RelModify<?> modify );
 
 }

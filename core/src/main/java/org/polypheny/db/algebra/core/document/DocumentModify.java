@@ -30,6 +30,7 @@ import org.polypheny.db.rex.RexNode;
 
 public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> implements DocumentAlg {
 
+    @Getter
     public final Operation operation;
     @Getter
     private final List<String> keys;

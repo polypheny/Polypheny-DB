@@ -170,7 +170,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
         // re-add physical namespace, we could check first, but not necessary
 
-        getStoreSnapshot( entity.id ).addNamespace( adapter.getAdapterId(), adapter.getCurrentSchema() );
+        getStoreSnapshot( entity.adapterId ).addNamespace( entity.id, adapter.getCurrentSchema() );
     }
 
 

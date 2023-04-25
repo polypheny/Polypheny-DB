@@ -28,7 +28,8 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
-import org.polypheny.db.algebra.rules.AllocationToPhysicalRule;
+import org.polypheny.db.algebra.rules.AllocationToPhysicalModifyRule;
+import org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule;
 import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
@@ -109,9 +110,10 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     ScanRule.INSTANCE,
-                    AllocationToPhysicalRule.REL_INSTANCE,
-                    AllocationToPhysicalRule.DOC_INSTANCE,
-                    AllocationToPhysicalRule.GRAPH_INSTANCE,
+                    AllocationToPhysicalScanRule.REL_INSTANCE,
+                    AllocationToPhysicalScanRule.DOC_INSTANCE,
+                    AllocationToPhysicalScanRule.GRAPH_INSTANCE,
+                    AllocationToPhysicalModifyRule.REL_INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,

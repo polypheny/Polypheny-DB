@@ -42,6 +42,9 @@ public abstract class Modify<E extends CatalogEntity> extends SingleAlg {
     }
 
 
+    public abstract Operation getOperation();
+
+
     /**
      * Enumeration of supported modification operations.
      */

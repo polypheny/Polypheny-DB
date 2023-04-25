@@ -438,25 +438,9 @@ public class Crud implements InformationObserver {
      * Get all tables of a schema
      */
     void getTables( final Context ctx ) {
-        Transaction transaction = getTransaction();
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
-        long namespaceId = transaction.getDefaultSchema().id;
-        String namespaceName;
-        if ( request.schema != null ) {
-            namespaceName = request.schema;
-        } else {
-            namespaceName = catalog.getSnapshot().getNamespace( namespaceId ).name;
-        }
-
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
+        String namespaceName = request.schema != null ? request.schema : Catalog.defaultNamespaceName;
+        long namespaceId = catalog.getSnapshot().getNamespace( namespaceName ).id;
 
         List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( namespaceId, null );
         ArrayList<DbTable> result = new ArrayList<>();

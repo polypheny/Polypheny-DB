@@ -20,6 +20,7 @@ package org.polypheny.db.catalog;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.Map;
+import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.pf4j.ExtensionPoint;
@@ -60,7 +61,7 @@ public abstract class Catalog implements ExtensionPoint {
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
     public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
-    public static final Expression PHYSICAL_EXPRESSION = Expressions.call( SNAPSHOT_EXPRESSION, "physical" );
+    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getStoreSnapshot", Expressions.constant( id ) );
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {

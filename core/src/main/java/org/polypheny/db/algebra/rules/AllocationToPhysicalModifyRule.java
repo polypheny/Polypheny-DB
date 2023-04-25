@@ -18,36 +18,32 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.common.Scan;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 
-public class AllocationToPhysicalRule extends AlgOptRule {
+public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
-    public static final AllocationToPhysicalRule REL_INSTANCE = new AllocationToPhysicalRule( LogicalRelScan.class );
-    public static final AllocationToPhysicalRule DOC_INSTANCE = new AllocationToPhysicalRule( LogicalDocumentScan.class );
-    public static final AllocationToPhysicalRule GRAPH_INSTANCE = new AllocationToPhysicalRule( LogicalLpgScan.class );
+    public static final AllocationToPhysicalModifyRule REL_INSTANCE = new AllocationToPhysicalModifyRule( LogicalRelModify.class );
 
 
-    public AllocationToPhysicalRule( Class<? extends Scan<?>> scan ) {
-        super( operand( scan, any() ), AlgFactories.LOGICAL_BUILDER, scan.getSimpleName() );
+    public AllocationToPhysicalModifyRule( Class<? extends Modify<?>> modify ) {
+        super( operand( modify, any() ), AlgFactories.LOGICAL_BUILDER, modify.getSimpleName() );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        Scan<?> scan = call.alg( 0 );
-        AllocationEntity alloc = scan.entity.unwrap( AllocationEntity.class );
+        Modify<?> modify = call.alg( 0 );
+        AllocationEntity alloc = modify.entity.unwrap( AllocationEntity.class );
         if ( alloc == null ) {
             return;
         }
 
-        AlgNode newAlg = Catalog.getInstance().getStoreSnapshot( alloc.adapterId ).getScan( alloc.id, call.builder() );
+        AlgNode newAlg = Catalog.getInstance().getStoreSnapshot( alloc.adapterId ).getModify( alloc.id, modify );
         call.transformTo( newAlg );
     }
 

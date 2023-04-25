@@ -163,9 +163,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     protected StringBuilder buildCreateTableQuery( PhysicalTable table ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE TABLE " )
-                .append( dialect.quoteIdentifier( table.name ) )
-                .append( "." )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( table.name ) )
                 .append( " ( " );
         boolean first = true;
         for ( PhysicalColumn column : table.columns ) {

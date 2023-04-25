@@ -22,14 +22,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
 
 public abstract class LpgModify<E extends CatalogEntity> extends Modify<E> implements LpgAlg {
-
+    @Getter
     public final Operation operation;
     public final List<String> ids;
     public final List<? extends RexNode> operations;

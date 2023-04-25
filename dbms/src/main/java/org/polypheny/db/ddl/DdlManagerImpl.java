@@ -1713,7 +1713,7 @@ public class DdlManagerImpl extends DdlManager {
         // Creates a list with all columns, tableId is needed to create the primary key
         List<FieldInformation> fields = getColumnInformation( projectedColumns, fieldList, true, view.id );
 
-        Map<String, Long> ids = new LinkedHashMap<>();
+        Map<String, LogicalColumn> ids = new LinkedHashMap<>();
 
         for ( FieldInformation field : fields ) {
             ids.put( field.name, addColumn( namespaceId, field.name, field.typeInformation, field.collation, field.defaultValue, view.id, field.position, stores, placementType ) );
@@ -1728,13 +1728,13 @@ public class DdlManagerImpl extends DdlManager {
             List<AllocationColumn> columns = new ArrayList<>();
 
             int i = 0;
-            for ( long id : ids.values() ) {
-                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, id, PlacementType.AUTOMATIC, i ) );
+            for ( LogicalColumn column : ids.values() ) {
+                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, i ) );
                 i++;
             }
             catalog.updateSnapshot();
 
-            store.createTable( statement.getPrepareContext(), view, view.getColumns(), alloc, columns );
+            store.createTable( statement.getPrepareContext(), view, new ArrayList<>( ids.values() ), alloc, columns );
         }
         catalog.updateSnapshot();
 
@@ -2137,15 +2137,15 @@ public class DdlManagerImpl extends DdlManager {
 
         // addLColumns
 
-        Map<String, Long> ids = new LinkedHashMap<>();
+        Map<String, LogicalColumn> ids = new LinkedHashMap<>();
         for ( FieldInformation information : fields ) {
             ids.put( information.name, addColumn( namespaceId, information.name, information.typeInformation, information.collation, information.defaultValue, logical.id, information.position, stores, placementType ) );
         }
         for ( ConstraintInformation constraint : constraints ) {
-            addConstraint( namespaceId, constraint.name, constraint.type, constraint.columnNames.stream().map( ids::get ).collect( Collectors.toList() ), logical.id );
+            addConstraint( namespaceId, constraint.name, constraint.type, constraint.columnNames.stream().map( key -> ids.get( key ).id ).collect( Collectors.toList() ), logical.id );
         }
 
-        catalog.updateSnapshot();
+        // catalog.updateSnapshot();
 
         // addATable
         for ( DataStore store : stores ) {
@@ -2153,13 +2153,13 @@ public class DdlManagerImpl extends DdlManager {
             List<AllocationColumn> columns = new ArrayList<>();
 
             int i = 0;
-            for ( long id : ids.values() ) {
-                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, id, PlacementType.AUTOMATIC, i ) );
+            for ( LogicalColumn column : ids.values() ) {
+                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, i ) );
                 i++;
             }
             buildNamespace( namespaceId, logical, store );
 
-            store.createTable( statement.getPrepareContext(), logical, logical.getColumns(), alloc, columns );
+            store.createTable( statement.getPrepareContext(), logical, new ArrayList<>( ids.values() ), alloc, columns );
         }
 
         catalog.updateSnapshot();
@@ -2171,7 +2171,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void buildNamespace( long namespaceId, LogicalTable logical, Adapter store ) {
-        catalog.updateSnapshot();
+        // catalog.updateSnapshot();
         store.updateNamespace( logical.getNamespaceName(), namespaceId );
         /*if ( catalog.getSnapshot().physical().getNamespace( namespaceId, store.getAdapterId() ) == null ) {
             catalog.getPhysical( namespaceId ).addNamespace( store.getAdapterId(), store.getCurrentSchema() );
@@ -2780,7 +2780,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private long addColumn( long namespaceId, String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore<?>> stores, PlacementType placementType ) {
+    private LogicalColumn addColumn( long namespaceId, String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore<?>> stores, PlacementType placementType ) {
         columnName = adjustNameIfNeeded( columnName, namespaceId );
         LogicalColumn addedColumn = catalog.getLogicalRel( namespaceId ).addColumn(
                 columnName,
@@ -2808,7 +2808,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null, null, position );
         }*/
-        return addedColumn.id;
+        return addedColumn;
     }
 
 

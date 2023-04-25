@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -118,7 +119,7 @@ public class HsqldbStore extends AbstractJdbcStore {
         //partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
         String physicalIndexName = getPhysicalIndexName( logicalIndex.key.tableId, logicalIndex.id );
-        // PhysicalTable physical = catalog.getSnapshot().physical().fromAlloc( allocation.id ).get( 0 ).unwrap( PhysicalTable.class );
+        PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
         // for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
         StringBuilder builder = new StringBuilder();

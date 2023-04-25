@@ -167,7 +167,6 @@ public enum BuiltInMethod {
 
     SNAPSHOT_GET_NAMESPACE( PhysicalSnapshot.class, "getNamespace", long.class, long.class ),
 
-    SNAPSHOT_GET_PHYSICAL( Snapshot.class, "physical" ),
     SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrap", Class.class ),
     SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),

@@ -144,10 +144,13 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, List<LogicalTable>> buildTablesNamespace() {
         Map<Long, List<LogicalTable>> map = new HashMap<>();
-        for ( LogicalTable table : tables.values() ) {
-            if ( !map.containsKey( table.namespaceId ) ) {
-                map.put( table.namespaceId, new ArrayList<>() );
+        for ( LogicalNamespace namespace : namespaces.values() ) {
+            if ( !map.containsKey( namespace.id ) ) {
+                map.put( namespace.id, new ArrayList<>() );
             }
+        }
+
+        for ( LogicalTable table : tables.values() ) {
             map.get( table.namespaceId ).add( table );
         }
 
@@ -290,7 +293,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
         boolean caseSensitive = namespaces.get( namespaceId ).caseSensitive;
-        return tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || e.name.matches( caseSensitive ? name.toRegex() : name.toRegex().toLowerCase() )) ).collect( Collectors.toList() );
+        return tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (e.name.matches( caseSensitive ? name.toRegex() : name.toRegex().toLowerCase() ))) ).collect( Collectors.toList() );
     }
 
 

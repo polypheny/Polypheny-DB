@@ -97,7 +97,7 @@ class EmptyScope implements SqlValidatorScope {
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
         LogicalTable table;
-        if ( names.size() == 2 ) {
+        if ( names.size() >= 2 ) {
             table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
         } else if ( names.size() == 1 ) {
             table = validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) );

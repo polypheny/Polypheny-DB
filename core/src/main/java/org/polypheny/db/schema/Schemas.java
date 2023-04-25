@@ -116,7 +116,7 @@ public final class Schemas {
      */
     public static Expression subSchemaExpression( StoreCatalog snapshot, long id, Long adapterId, Class<?> type ) {
         // (Type) schemaExpression.getSubSchema("name")
-        final Expression schemaExpression = Expressions.call( expression( snapshot ), BuiltInMethod.SNAPSHOT_GET_PHYSICAL.method );
+        final Expression schemaExpression = Expressions.call( expression( snapshot ), BuiltInMethod.SNAPSHOT_GET_NAMESPACE.method );
         Expression call =
                 Expressions.call(
                         schemaExpression,
