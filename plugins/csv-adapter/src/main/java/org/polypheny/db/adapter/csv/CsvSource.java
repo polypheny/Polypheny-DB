@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
+import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
@@ -39,6 +39,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalAdapterDelegate;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
@@ -72,6 +73,8 @@ import org.slf4j.LoggerFactory;
 public class CsvSource extends DataSource<RelStoreCatalog> {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
+    @Delegate(excludes = Excludes.class)
+    private final RelationalAdapterDelegate delegate;
     private final ConnectionMethod connectionMethod;
 
     private URL csvDir;
@@ -97,6 +100,8 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
         addInformationExportedColumns();
         enableInformationPage();
+
+        this.delegate = new RelationalAdapterDelegate( this, storeCatalog );
     }
 
 
@@ -119,6 +124,15 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
     }
 
 
+    @Override
+    public void updateTable( long allocId ) {
+        PhysicalTable table = storeCatalog.getTable( allocId );
+        if ( table == null ) {
+            log.warn( "todo" );
+            return;
+        }
+        storeCatalog.addTable( currentSchema.createCsvTable( table.id, table, this ) );
+    }
 
 
     private void setCsvDir( Map<String, String> settings ) {
@@ -137,16 +151,6 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
             }
         }
     }
-
-
-
-    /*@Override
-    public void createTable( RelStoreCatalog snapshot, Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
-        snapshot.addLogical( logical );
-        snapshot.addLogicalColumns( lColumns );
-        snapshot.addAllocation( allocation );
-        snapshot.addAllocationColumns( columns );
-    }*/
 
 
     @Override
@@ -353,6 +357,16 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
             }
             informationElements.add( table );
         }
+    }
+
+
+    @SuppressWarnings("unused")
+    private interface Excludes {
+
+        void updateTable( long allocId );
+
+        void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
+
     }
 
 }

@@ -16,11 +16,11 @@
 
 package org.polypheny.db.algebra.rules;
 
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -43,7 +43,7 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
             return;
         }
 
-        AlgNode newAlg = Catalog.getInstance().getStoreSnapshot( alloc.adapterId ).getModify( alloc.id, modify );
+        AlgNode newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getModify( alloc.id, modify );
         call.transformTo( newAlg );
     }
 

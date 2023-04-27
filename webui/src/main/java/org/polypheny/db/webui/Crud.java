@@ -103,7 +103,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -1749,9 +1748,9 @@ public class Crud implements InformationObserver {
         }
 
         // Get functional indexes
-        List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id );
-        for ( CatalogDataPlacement placement : placements ) {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( catalogTable.id );
+        for ( AllocationEntity alloc : allocs ) {
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( alloc.adapterId );
             DataStore<?> store;
             if ( adapter instanceof DataStore<?> ) {
                 store = (DataStore<?>) adapter;
@@ -1880,10 +1879,7 @@ public class Crud implements InformationObserver {
 
         LogicalTable table = getLogicalTable( schemaName, tableName );
         Placement p = new Placement( snapshot.alloc().isPartitioned( table.id ), snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
-        if ( table.entityType == EntityType.VIEW ) {
-
-            return p;
-        } else {
+        if ( table.entityType != EntityType.VIEW ) {
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
@@ -1899,8 +1895,8 @@ public class Crud implements InformationObserver {
                         property.numPartitionGroups,
                         property.partitionType ) );
             }
-            return p;
         }
+        return p;
     }
 
 

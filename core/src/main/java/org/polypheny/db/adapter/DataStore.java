@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
@@ -30,12 +29,7 @@ import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.prepare.Context;
 
 @Slf4j
 public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> implements ExtensionPoint {
@@ -54,23 +48,6 @@ public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> imple
     }
 
 
-    public List<NamespaceType> getSupportedSchemaType() {
-        log.info( "Using default NamespaceType support." );
-        return ImmutableList.of( NamespaceType.RELATIONAL );
-    }
-
-    //public abstract void createTable( StoreCatalog snapshot, Context context, AllocationTable alloc );
-
-
-    public abstract void addColumn( Context context, long allocId, LogicalColumn column );
-
-    public abstract void dropColumn( Context context, long allocId, long columnId );
-
-    public abstract String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
-
-    public abstract void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds );
-
-    public abstract void updateColumnType( Context context, long allocId, LogicalColumn column );
 
     public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
 

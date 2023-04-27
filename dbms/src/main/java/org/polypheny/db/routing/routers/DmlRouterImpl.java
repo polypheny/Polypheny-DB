@@ -75,6 +75,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -113,9 +114,6 @@ import org.polypheny.db.type.PolyType;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
-
-
-    private Snapshot snapshot;
 
 
     @Override
@@ -451,7 +449,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         statement.getDataContext().getParameterValues() ).build();
 
                                 AllocationEntity allocation = snapshot.alloc().getAllocation( currentPartitionId );
-                                AlgNode node = catalog.getStoreSnapshot( allocation.id ).getScan( allocation.id, AlgBuilder.create( statement ) );
+                                AlgNode node = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getScan( allocation.id, AlgBuilder.create( statement ) );
                                 ModifiableEntity modifiableTable = node.getEntity().unwrap( ModifiableEntity.class );
 
                                 // Build DML
@@ -1294,7 +1292,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             builder = super.handleValues( values, builder );
 
-            List<LogicalColumn> columns = snapshot.rel().getColumns( catalogTable.id );
+            List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( catalogTable.id );
             if ( columns.size() == placements.size() ) { // full placement, no additional checks required
                 return builder;
             } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
@@ -1308,8 +1306,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 return builder.project( rexNodes );
             }
         } else if ( node instanceof LogicalProject ) {
-            List<LogicalColumn> columns = snapshot.rel().getColumns( catalogTable.id );
-            PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );
+            List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( catalogTable.id );
+            PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id );
             if ( columns.size() == placements.size() ) { // full placement, generic handling is sufficient
                 if ( property.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
                     return remapParameterizedDml( node, builder, statement, parameterValues );
@@ -1341,7 +1339,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
             }
         } else if ( node instanceof LogicalFilter ) {
-            List<LogicalColumn> columns = snapshot.rel().getColumns( catalogTable.id );
+            List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( catalogTable.id );
             if ( columns.size() != placements.size() ) { // partitioned, check if there is a illegal condition
                 RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
 
@@ -1358,6 +1356,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     private AlgBuilder handleSelectFromOtherTable( RoutedAlgBuilder builder, LogicalTable catalogTable, Statement statement ) {
         LogicalTable fromTable = catalogTable;
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
         // Select from other table
         snapshot = statement.getDataContext().getSnapshot();
         if ( snapshot.alloc().isPartitioned( fromTable.id ) ) {
@@ -1409,7 +1408,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
                 columnName = columnNames[1];
             } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
-                if ( !snapshot.getNamespace( catalogTable.id ).name.equalsIgnoreCase( columnNames[0] ) ) {
+                if ( !Catalog.snapshot().getNamespace( catalogTable.id ).name.equalsIgnoreCase( columnNames[0] ) ) {
                     throw new RuntimeException( "Schema name does not match expected schema name: " + field.getName() );
                 }
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
@@ -1419,8 +1418,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             } else {
                 throw new RuntimeException( "Invalid column name: " + field.getName() );
             }
-            column = snapshot.rel().getColumn( catalogTable.id, columnName );
-            if ( !snapshot.alloc().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
+            column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName );
+            if ( !Catalog.snapshot().alloc().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

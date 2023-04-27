@@ -101,7 +101,7 @@ public class EnumerableValues extends Values implements EnumerableAlg {
                   new Object[] {3, 4}
               });
 */
-        final JavaTypeFactory typeFactory = (JavaTypeFactory) getCluster().getTypeFactory();
+        final JavaTypeFactory typeFactory = (JavaTypeFactory) JavaTypeFactory.DEFAULT;
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(

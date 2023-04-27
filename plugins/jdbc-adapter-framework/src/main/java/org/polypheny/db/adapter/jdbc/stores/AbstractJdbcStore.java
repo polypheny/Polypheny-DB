@@ -22,10 +22,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalAdapterDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -50,6 +52,9 @@ import org.polypheny.db.type.PolyType;
 
 @Slf4j
 public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> implements ExtensionPoint {
+
+    @Delegate(excludes = Exclude.class)
+    private final RelationalAdapterDelegate delegate;
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
@@ -84,6 +89,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
         // Create udfs
         createUdfs();
+
+        this.delegate = new RelationalAdapterDelegate( this, storeCatalog );
     }
 
 
@@ -142,8 +149,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
                 allocation,
                 columns );
 
+        executeCreatTable( context, table );
+    }
+
+
+    private void executeCreatTable( Context context, PhysicalTable table ) {
         if ( log.isDebugEnabled() ) {
-            log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), namespaceName, tableName );
+            log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), table.namespaceName, table.name );
         }
         StringBuilder query = buildCreateTableQuery( table );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
@@ -314,13 +326,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
         // physicalSchemaName = partitionPlacement.physicalSchemaName;
         // physicalTableName = partitionPlacement.physicalTableName;
-        PhysicalTable physical = storeCatalog.getTable( allocId );
+        PhysicalTable table = storeCatalog.getTable( storeCatalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
         StringBuilder builder = new StringBuilder();
 
         builder.append( "DROP TABLE " )
-                .append( dialect.quoteIdentifier( physical.namespaceName ) )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
                 .append( "." )
-                .append( dialect.quoteIdentifier( physical.name ) );
+                .append( dialect.quoteIdentifier( table.name ) );
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.info( "{} from store {}", builder, this.getUniqueName() );
@@ -439,5 +451,23 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     public abstract String getDefaultPhysicalSchemaName();
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void dropColumn( Context context, long allocId, long columnId );
+
+        void dropTable( Context context, long allocId );
+
+        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
+
+        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
+
+        void updateTable( long allocId );
+
+        void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
+
+    }
 
 }

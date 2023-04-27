@@ -29,27 +29,16 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.common.Modify;
-import org.polypheny.db.algebra.core.document.DocumentModify;
-import org.polypheny.db.algebra.core.lpg.LpgModify;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
@@ -90,11 +79,6 @@ public class RelStoreCatalog extends StoreCatalog {
 
     public void addTable( PhysicalTable table ) {
         tables.put( table.id, table );
-    }
-
-
-    public void addColumns( List<PhysicalColumn> columns ) {
-        this.columns.putAll( columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ) );
     }
 
 
@@ -149,84 +133,11 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    @Override
-    public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> relations = allocRelations.get( allocId );
-        return builder.scan( tables.get( relations.right.get( 0 ) ) ).build();
-    }
-
-
-    @Override
-    public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
-        log.warn( "todo" );
-        return null;
-    }
-
-
-    @Override
-    public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
-        log.warn( "todo" );
-        return null;
-    }
-
-
-    @Override
-    public AlgNode getScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> alloc = allocRelations.get( allocId );
-        if ( alloc.left.unwrap( AllocationTable.class ) != null ) {
-            return getRelScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationCollection.class ) != null ) {
-            return getDocumentScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationGraph.class ) != null ) {
-            return getGraphScan( allocId, builder );
-        } else {
-            throw new GenericRuntimeException( "This should not happen" );
-        }
-    }
-
 
     public PhysicalTable fromAllocation( long id ) {
         return tables.get( allocRelations.get( id ).getValue().get( 0 ) );
     }
 
-
-    @Override
-    public AlgNode getModify( long allocId, Modify<?> modify ) {
-        if ( modify.getEntity().unwrap( AllocationTable.class ) != null ) {
-            return getRelModify( allocId, (RelModify<?>) modify );
-        }
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public AlgNode getRelModify( long allocId, RelModify<?> modify ) {
-        Pair<AllocationEntity, List<Long>> relations = allocRelations.get( allocId );
-        PhysicalTable table = tables.get( relations.getValue().get( 0 ) );
-        if ( table.unwrap( ModifiableEntity.class ) == null ) {
-            return null;
-        }
-        return table.unwrap( ModifiableEntity.class ).toModificationAlg(
-                modify.getCluster(),
-                modify.getTraitSet(),
-                table,
-                modify.getInput(),
-                modify.getOperation(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList() );
-    }
-
-
-    public AlgNode getDocModify( long allocId, DocumentModify<?> modify ) {
-        log.warn( "todo" );
-        return null;
-    }
-
-
-    public AlgNode getGraphModify( long allocId, LpgModify<?> modify ) {
-        log.warn( "todo" );
-        return null;
-    }
 
 
     @Override

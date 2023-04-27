@@ -36,15 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -66,7 +57,7 @@ import org.polypheny.db.transaction.PolyXid;
 
 @Getter
 @Slf4j
-public abstract class Adapter<S extends StoreCatalog> {
+public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modifiable {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
@@ -319,151 +310,6 @@ public abstract class Adapter<S extends StoreCatalog> {
 
 
     public abstract void updateNamespace( String name, long id );
-
-
-    public abstract void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
-
-    public abstract void updateTable( long allocId );
-
-    public abstract void dropTable( Context context, long allocId );
-
-
-    /**
-     * Default method for creating a new graph on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the LPG data model.
-     */
-    public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        log.warn( "todo" );
-        createGraphSubstitution( context, allocation );
-    }
-
-
-    public void updateGraph( long allocId ) {
-        log.warn( "todo" );
-    }
-
-
-    /**
-     * Default method for dropping an existing graph on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the LPG data model natively.
-     */
-    public void dropGraph( Context context, AllocationGraph allocation ) {
-        log.warn( "todo" );
-        dropGraphSubstitution( context, null );
-    }
-
-
-    /**
-     * Default method for creating a new collection on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the document data model natively.
-     */
-    public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        log.warn( "todo" );
-        createCollectionSubstitution( context, allocation );
-    }
-
-
-    public void updateCollection( long allocId ) {
-        log.warn( "todo" );
-    }
-
-
-    /**
-     * Default method for dropping an existing collection on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the document data model natively.
-     */
-    public void dropCollection( Context prepareContext, AllocationCollection allocation ) {
-        // overwrite this if the datastore supports document
-        dropCollectionSubstitution( prepareContext, allocation );
-    }
-
-
-    /**
-     * Substitution method, which is used to handle the {@link DataStore} required operations
-     * as if the data model would be {@link NamespaceType#RELATIONAL}.
-     */
-    private void dropCollectionSubstitution( Context context, AllocationCollection catalogCollection ) {
-        /*Catalog catalog = Catalog.getInstance();
-        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
-
-        LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
-        dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );*/
-        // todo dl
-    }
-
-
-    /**
-     * Substitution method, which is used to handle the {@link DataStore} required operations
-     * as if the data model would be {@link NamespaceType#RELATIONAL}.
-     */
-    private void createCollectionSubstitution( Context context, AllocationCollection allocation ) {
-        /*Catalog catalog = Catalog.getInstance();
-        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
-
-        LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
-        createTable( prepareContext, collectionEntity, null );*/
-        // todo dl
-    }
-
-
-    /**
-     * Substitution method, which is used to handle the {@link DataStore} required operations
-     * as if the data model would be {@link NamespaceType#RELATIONAL}.
-     */
-    private void createGraphSubstitution( Context context, AllocationGraph allocation ) {
-        /*LoggedIdBuilder idBuilder = new LoggedIdBuilder();
-        List<? extends PhysicalEntity> physicals = new ArrayList<>();
-
-        LogicalTable nodes = new LogicalTable( idBuilder.getNewLogicalId() );
-        AllocationTable aNodes = new AllocationTable( idBuilder.getNewAllocId() );
-        storeCatalog.getPhysicals().addAll( createTable( context, , nodes, aNodes, ) );
-
-        LogicalTable nodeProperty = new LogicalTable( idBuilder.getNewLogicalId() );
-        AllocationTable aNodeProperty = new AllocationTable( idBuilder.getNewLogicalId() );
-        storeCatalog.getPhysicals().addAll( createTable( context, , nodeProperty, aNodeProperty, ) );
-
-        LogicalTable edges = new LogicalTable( idBuilder.getNewLogicalId() );
-        AllocationTable aEdges = new AllocationTable( idBuilder.getNewLogicalId() );
-        storeCatalog.getPhysicals().addAll( context, edges, aEdges ) );
-
-        LogicalTable edgeProperty = new LogicalTable( idBuilder.getNewLogicalId() );
-        AllocationTable aEdgeProperty = new AllocationTable( idBuilder.getNewLogicalId() );
-        storeCatalog.getPhysicals().addAll( createTable( context, , edgeProperty, aEdgeProperty, ) );
-
-        storeCatalog.getLogicals().add( nodes );
-        storeCatalog.getLogicals().add( nodeProperty );
-        storeCatalog.getLogicals().add( edges );
-        storeCatalog.getLogicals().add( edgeProperty );*/
-
-    }
-
-
-    /**
-     * Substitution method, which is used to handle the {@link DataStore} required operations
-     * as if the data model would be {@link NamespaceType#RELATIONAL}.
-     */
-    private void dropGraphSubstitution( Context context, CatalogGraphPlacement graphPlacement ) {
-        /*Catalog catalog = Catalog.getInstance();
-        CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
-
-        LogicalTable nodes = catalog.getTable( mapping.nodesId );
-        dropTable( context, nodes, nodes.partitionProperty.partitionIds );
-
-        LogicalTable nodeProperty = catalog.getTable( mapping.nodesPropertyId );
-        dropTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
-
-        LogicalTable edges = catalog.getTable( mapping.edgesId );
-        dropTable( context, edges, edges.partitionProperty.partitionIds );
-
-        LogicalTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
-        dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );*/
-        // todo dl
-    }
-
 
     public abstract Namespace getCurrentSchema();
 

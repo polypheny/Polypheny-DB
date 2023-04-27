@@ -144,15 +144,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, List<LogicalTable>> buildTablesNamespace() {
         Map<Long, List<LogicalTable>> map = new HashMap<>();
-        for ( LogicalNamespace namespace : namespaces.values() ) {
-            if ( !map.containsKey( namespace.id ) ) {
-                map.put( namespace.id, new ArrayList<>() );
-            }
-        }
-
-        for ( LogicalTable table : tables.values() ) {
-            map.get( table.namespaceId ).add( table );
-        }
+        namespaces.values().forEach( n -> map.put( n.id, new ArrayList<>() ) );
+        tables.values().forEach( t -> map.get( t.namespaceId ).add( t ) );
 
         return ImmutableMap.copyOf( map );
     }
@@ -170,12 +163,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, TreeSet<LogicalColumn>> buildTableColumns() {
         Map<Long, TreeSet<LogicalColumn>> map = new HashMap<>();
-        columns.forEach( ( k, v ) -> {
-            if ( !map.containsKey( v.tableId ) ) {
-                map.put( v.tableId, new TreeSet<>( Comparator.comparingInt( a -> a.position ) ) );
-            }
-            map.get( v.tableId ).add( v );
-        } );
+        tables.values().forEach( t -> map.put( t.id, new TreeSet<>( Comparator.comparingInt( a -> a.position ) ) ) );
+        columns.forEach( ( k, v ) -> map.get( v.tableId ).add( v ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -183,12 +172,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @NotNull
     private ImmutableMap<Long, List<LogicalIndex>> buildKeyToIndexes() {
         Map<Long, List<LogicalIndex>> map = new HashMap<>();
-        this.index.forEach( ( k, v ) -> {
-            if ( !map.containsKey( v.keyId ) ) {
-                map.put( v.keyId, new ArrayList<>() );
-            }
-            map.get( v.keyId ).add( v );
-        } );
+        keys.values().forEach( k -> map.put( k.id, new ArrayList<>() ) );
+        this.index.forEach( ( k, v ) -> map.get( v.keyId ).add( v ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -196,12 +181,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @NotNull
     private ImmutableMap<Long, List<CatalogConstraint>> buildTableConstraints() {
         Map<Long, List<CatalogConstraint>> map = new HashMap<>();
-        constraints.forEach( ( k, v ) -> {
-            if ( !map.containsKey( v.key.tableId ) ) {
-                map.put( v.key.tableId, new ArrayList<>() );
-            }
-            map.get( v.key.tableId ).add( v );
-        } );
+
+        tables.values().forEach( t -> map.put( t.id, new ArrayList<>() ) );
+        constraints.forEach( ( k, v ) -> map.get( v.key.tableId ).add( v ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -209,12 +191,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @NotNull
     private ImmutableMap<Long, List<LogicalForeignKey>> buildTableForeignKeys() {
         Map<Long, List<LogicalForeignKey>> map = new HashMap<>();
-        foreignKeys.forEach( ( k, v ) -> {
-            if ( !map.containsKey( v.tableId ) ) {
-                map.put( v.tableId, new ArrayList<>() );
-            }
-            map.get( v.tableId ).add( v );
-        } );
+        tables.values().forEach( t -> map.put( t.id, new ArrayList<>() ) );
+        foreignKeys.forEach( ( k, v ) -> map.get( v.tableId ).add( v ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -228,12 +206,10 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, List<LogicalKey>> buildTableKeys() {
         Map<Long, List<LogicalKey>> tableKeys = new HashMap<>();
-        keys.forEach( ( k, v ) -> {
-            if ( !tableKeys.containsKey( v.tableId ) ) {
-                tableKeys.put( v.tableId, new ArrayList<>() );
-            }
-            tableKeys.get( v.tableId ).add( v );
-        } );
+        for ( LogicalTable table : tables.values() ) {
+            tableKeys.put( table.id, new ArrayList<>() );
+        }
+        keys.forEach( ( k, v ) -> tableKeys.get( v.tableId ).add( v ) );
         return ImmutableMap.copyOf( tableKeys );
     }
 

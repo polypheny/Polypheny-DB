@@ -89,6 +89,7 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
@@ -131,6 +132,7 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -2482,6 +2484,21 @@ public class AlgBuilder {
         final AlgNode r = build();
         final AlgNode r2 = AlgOptUtil.createCastAlg( r, castRowType, rename, projectFactory );
         push( r2 );
+        return this;
+    }
+
+
+    public AlgBuilder transform( ModelTrait model, AlgDataType rowType, boolean isCrossModel ) {
+        if ( peek().getTraitSet().contains( model ) ) {
+            return this;
+        }
+        List<AlgNode> nodes = new ArrayList<>();
+        while ( !stack.isEmpty() ) {
+            nodes.add( build() );
+        }
+
+        AlgNode input = build();
+        push( new LogicalTransformer( input.getCluster(), List.of( input ), null, input.getTraitSet(), input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
         return this;
     }
 

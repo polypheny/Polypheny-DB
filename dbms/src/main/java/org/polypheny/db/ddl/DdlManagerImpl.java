@@ -2198,13 +2198,9 @@ public class DdlManagerImpl extends DdlManager {
                 EntityType.ENTITY,
                 true );
 
-        // Trigger rebuild of schema; triggers schema creation on adapters
-        Catalog.getInstance().getSnapshot();
 
         for ( DataStore<?> store : stores ) {
             AllocationCollection alloc = catalog.getAllocDoc( namespaceId ).addAllocation( store.getAdapterId(), logical.id );
-
-            catalog.updateSnapshot();
 
             store.createCollection( statement.getPrepareContext(), logical, alloc );
         }
