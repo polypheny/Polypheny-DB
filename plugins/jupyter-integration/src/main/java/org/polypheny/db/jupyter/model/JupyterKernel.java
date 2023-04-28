@@ -20,6 +20,8 @@ import com.google.gson.JsonObject;
 import java.net.URI;
 import java.net.http.WebSocket;
 import java.net.http.WebSocket.Listener;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -42,7 +44,7 @@ public class JupyterKernel {
         this.name = name;
         this.clientId = UUID.randomUUID().toString();
 
-        String url = JupyterClient.WS_URL + "kernels/" + this.kernelId + "/channels?session_id=" + clientId;
+        String url = "ws://" + JupyterClient.HOST + "/api/kernels/" + this.kernelId + "/channels?session_id=" + clientId;
 
         this.webSocket = builder.buildAsync( URI.create( url ), new WebSocketClient() ).join();
 
@@ -60,36 +62,49 @@ public class JupyterKernel {
 
 
     private void handleText( CharSequence data ) {
-        subscribers.forEach( s -> s.onText( data ) );
         log.warn( "Received Text: {}", data );
-
+        subscribers.forEach( s -> s.onText( data ) );
     }
 
 
     public void execute( String code ) {
-        String request = generateExecutionRequest( code );
-        log.warn( "Sending code: {}", request );
-        webSocket.sendText( request, true );
+        log.warn( "Sending code: {}", code );
+        ByteBuffer request = buildExecutionRequest( code, false, false, true );
+        webSocket.sendBinary( request, true );
     }
 
 
-    private String generateExecutionRequest( String code ) {
-
-        JsonObject content = new JsonObject();
-        content.addProperty( "silent", false );
-        content.addProperty( "code", code );
-
+    private ByteBuffer buildExecutionRequest( String code, boolean silent, boolean allowStdin, boolean stopOnError ) {
         JsonObject header = new JsonObject();
         header.addProperty( "msg_id", UUID.randomUUID().toString() );
         header.addProperty( "msg_type", "execute_request" );
+        header.addProperty( "version", "5.4" );
 
-        JsonObject body = new JsonObject();
-        body.addProperty( "channel", "shell" );
-        body.add( "content", content );
-        body.add( "header", header );
-        body.add( "metadata", new JsonObject() );
-        body.add( "parent_header", new JsonObject() );
-        return body.toString();
+        JsonObject content = new JsonObject();
+        content.addProperty( "silent", silent );
+        content.addProperty( "allow_stdin", allowStdin );
+        content.addProperty( "stop_on_error", stopOnError );
+        content.addProperty( "code", code );
+
+        return buildMessage( "shell", header, new JsonObject(), new JsonObject(), content );
+    }
+
+
+    private ByteBuffer buildMessage( String channel, JsonObject header, JsonObject parentHeader, JsonObject metadata, JsonObject content ) {
+        JsonObject msg = new JsonObject();
+        msg.addProperty( "channel", channel );
+        msg.add( "header", header );
+        msg.add( "parent_header", parentHeader );
+        msg.add( "metadata", metadata );
+        msg.add( "content", content );
+        byte[] byteMsg = msg.toString().getBytes( StandardCharsets.UTF_8 );
+
+        ByteBuffer bb = ByteBuffer.allocate( (byteMsg.length + 8) );
+        bb.putInt( 1 ); // nbufs: no. of msg parts (= no. of offsets)
+        bb.putInt( 8 ); // offset_0: position of msg in bytes
+        bb.put( byteMsg );
+        bb.rewind();
+        return bb;
     }
 
 

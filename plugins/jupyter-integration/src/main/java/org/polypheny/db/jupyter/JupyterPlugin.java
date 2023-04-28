@@ -83,7 +83,7 @@ public class JupyterPlugin extends Plugin {
 
         log.info( "trying to start jupyter container..." );
         DockerManager.Container container = new DockerManager.ContainerBuilder( adapterId, "polypheny/jupyter-server", UNIQUE_NAME, dockerInstanceId )
-                .withMappedPort( 8888, 8888 )
+                .withMappedPort( 8888, 12345 )
                 .withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
                 .withInitCommands( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
                 .withReadyTest( this::testConnection, 20000 )
@@ -127,6 +127,71 @@ public class JupyterPlugin extends Plugin {
     }
 
 
+    private void testClient() {
+        log.error( "Testing the functionality of JuypterClient..." );
+
+        JupyterSessionManager jsm = JupyterSessionManager.getInstance();
+        connection.getKernelspecs();
+        connection.createDirectory( "work" );
+        connection.moveFile( "work/test", "work/Untitled Folder" );
+        connection.createFile( "work/test", ".txt" );
+        connection.moveFile( "work/test/text_file.txt", "work/test/Untitled.txt" );
+        connection.createNotebook( "work/test" );
+        connection.moveFile( "work/test/my_notebook.ipynb", "work/test/Untitled.ipynb" );
+        connection.getContents( "work/test" );
+
+        String imageB64 = "iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAIAAADZSiLoAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAbSURBVBhXY/j/ieF/vTqQBFFvZVSAJEzsEwMA8Q4PhqPP+LEAAAAASUVORK5CYII=";
+        connection.uploadFile( "work/test/uploaded.png", "uploaded.png", imageB64, "base64", "file" );
+        connection.saveFile( "work/test/text_file.txt", "Hello World!", "text", "file" );
+        connection.copyFile( "work/test", "work/test/uploaded.png" );
+        connection.deleteFile( "work/test/uploaded.png" );
+        connection.getContents( "work/test/text_file.txt", "text" );
+
+        String sessionId = connection.createSession( jsm.getDefaultKernel(), "my_notebook.ipynb", "work/test/my_notebook.ipynb" );
+        connection.getSessions();
+        log.error( jsm.getOverview() );
+
+        // Testing the interface
+        JupyterKernelSubscriber sub = new JupyterKernelSubscriber() {
+            @Override
+            public void onText( CharSequence data ) {
+                Gson gson = new Gson();
+                JsonObject json = gson.fromJson( data.toString(), JsonObject.class );
+                String msgType = json.get( "msg_type" ).getAsString();
+                if ( msgType.equals( "stream" ) ) {
+                    log.error( "Output ({}): {}",
+                            json.get( "content" ).getAsJsonObject().get( "name" ).getAsString(),
+                            json.get( "content" ).getAsJsonObject().get( "text" ).getAsString() );
+                }
+            }
+
+
+            @Override
+            public void onClose() {
+
+            }
+        };
+
+        JupyterKernel kernel = jsm.getKernelFromSession( sessionId );
+        kernel.subscribe( sub );
+        kernel.execute( "print('The answer is:', 6 * 7)" );
+
+        connection.createNotebook( "work/test" );
+        connection.moveFile( "work/test/another_notebook.ipynb", "work/test/Untitled.ipynb" );
+        connection.renameSession( sessionId, "another_notebook.ipynb", "work/test/another_notebook.ipynb" );
+
+        String sessionId2 = connection.createSession( jsm.getDefaultKernel(), "my_notebook.ipynb", "work/test/my_notebook.ipynb" );
+
+        connection.startKernel( jsm.getDefaultKernel() );
+        log.error( jsm.getOverview() );
+        connection.deleteSession( sessionId2 );
+        connection.getRunningKernels();
+        connection.getSessions();
+        log.error( jsm.getOverview() );
+
+    }
+
+
     @Extension
     public static class JupyterStarter implements TransactionExtension {
 
@@ -144,39 +209,8 @@ public class JupyterPlugin extends Plugin {
             plugin.startContainer();
             JupyterClient client = new JupyterClient( plugin.token );
             plugin.setConnection( client );
-            log.error( "Testing the functionality of JuypterClient..." );
 
-            JupyterSessionManager jsm = JupyterSessionManager.getInstance();
-            client.getKernelspecs();
-            String sessionId = client.createSession( jsm.getDefaultKernel(), "test.ipynb", "work/test.ipynb" );
-            client.getSessions();
-            log.error( jsm.getOverview() );
-
-
-            // Testing the interface
-            JupyterKernelSubscriber sub = new JupyterKernelSubscriber() {
-                @Override
-                public void onText( CharSequence data ) {
-                    Gson gson = new Gson();
-                    JsonObject json = gson.fromJson( data.toString(), JsonObject.class );
-                    String msgType = json.get( "msg_type" ).getAsString();
-                    if ( msgType.equals( "stream" ) ) {
-                        log.error( "Output ({}): {}",
-                                json.get( "content" ).getAsJsonObject().get( "name" ).getAsString(),
-                                json.get( "content" ).getAsJsonObject().get( "text" ).getAsString() );
-                    }
-                }
-
-
-                @Override
-                public void onClose() {
-
-                }
-            };
-
-            JupyterKernel kernel = jsm.getKernelFromSession( sessionId );
-            kernel.subscribe( sub );
-            kernel.execute( "print('The answer is:', 6 * 7)" );
+            plugin.testClient();
         }
 
     }
