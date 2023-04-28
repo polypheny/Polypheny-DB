@@ -55,7 +55,7 @@ public class MqlTestTemplate {
 
     @After
     public void cleanDocuments() {
-        deleteMany( "{}" );
+        //deleteMany( "{}" );
     }
 
 

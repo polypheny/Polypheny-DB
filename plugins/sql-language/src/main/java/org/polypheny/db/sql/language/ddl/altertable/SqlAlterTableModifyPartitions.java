@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
@@ -145,16 +145,16 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         // If name partitions are specified
         else if ( !partitionGroupNamesList.isEmpty() && partitionGroupList.isEmpty() ) {
-            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getSnapshot().alloc().getPartitionGroups( tableId );
+            List<AllocationEntity> entities = catalog.getSnapshot().alloc().getFromLogical( tableId );
             for ( String partitionName : partitionGroupNamesList.stream().map( Object::toString )
                     .collect( Collectors.toList() ) ) {
                 boolean isPartOfTable = false;
-                for ( CatalogPartitionGroup catalogPartitionGroup : catalogPartitionGroups ) {
-                    if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
+                for ( AllocationEntity entity : entities ) {
+                    /*if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
                         tempPartitionList.add( catalogPartitionGroup.id );
                         isPartOfTable = true;
                         break;
-                    }
+                    }*/
                 }
                 if ( !isPartOfTable ) {
                     throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"

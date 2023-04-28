@@ -57,7 +57,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
                 .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
 
-        if ( statement.getTransaction().getSnapshot().alloc().getCollectionPlacements( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
             throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 

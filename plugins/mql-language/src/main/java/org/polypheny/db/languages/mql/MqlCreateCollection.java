@@ -62,7 +62,7 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long schemaId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
+        long namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
@@ -71,7 +71,7 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                 .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
         DdlManager.getInstance().createCollection(
-                schemaId,
+                namespaceId,
                 name,
                 true,
                 dataStores.size() == 0 ? null : dataStores,

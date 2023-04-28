@@ -32,21 +32,17 @@ import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
@@ -259,13 +255,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         return adapterColumnPlacement.get( Pair.of( adapterId, columnId ) );
     }
 
-
-    @Override
-    public boolean checkIfExistsColumnPlacement( long adapterId, long columnId ) {
-        return adapterColumnPlacement.containsKey( Pair.of( adapterId, columnId ) );
-    }
-
-
     @Override
     public List<AllocationColumn> getColumnFromLogical( long columnId ) {
         return logicalColumnToAlloc.get( columnId );
@@ -285,56 +274,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<AllocationColumn> getColumnPlacementsByColumn( long columnId ) {
-        return null;
-    }
-
-
-    @Override
     public Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId ) {
         return logicalTableAdapterColumns.get( tableId );
-    }
-
-
-    @Override
-    public long getPartitionGroupByPartition( long partitionId ) {
-        return 0;
-    }
-
-
-    @Override
-    public List<AllocationColumn> getColumnPlacementsOnAdapterAndSchema( long adapterId, long schemaId ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogPartitionGroup getPartitionGroup( long partitionGroupId ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogPartition getPartition( long partitionId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartition> getPartitionsByTable( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionGroup> getPartitionGroups( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionGroup> getPartitionGroups( Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
     }
 
 
@@ -343,11 +284,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         return null;
     }
 
-
-    @Override
-    public List<CatalogPartition> getPartitions( Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
-    }
 
 
     @Override
@@ -399,51 +335,10 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<CatalogDataPlacement> getAllFullDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
-        return null;
-    }
-
-
-    @Override
     public CatalogPartitionPlacement getPartitionPlacement( long adapterId, long partitionId ) {
         return null;
     }
 
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( long adapterId ) {
-        return null;
-    }
 
 
     @Override
@@ -458,28 +353,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId ) {
-        return null;
-    }
 
-
-    @Override
-    public boolean isHorizontalPartitioned( long id ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean isVerticalPartitioned( long id ) {
-        return false;
-    }
-
-
-    @Override
-    public boolean checkIfExistsPartitionPlacement( long adapterId, long partitionId ) {
-        return false;
-    }
 
 
     @Override
@@ -495,25 +369,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public CatalogGraphPlacement getGraphPlacement( long graphId, long adapterId ) {
-        return null;
-    }
-
-
-    @Override
     public List<CatalogGraphPlacement> getGraphPlacements( long adapterId ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogCollectionPlacement getCollectionPlacement( long id, long placementId ) {
-        return null;
-    }
-
-
-    @Override
-    public CatalogCollectionMapping getCollectionMapping( long id ) {
         return null;
     }
 

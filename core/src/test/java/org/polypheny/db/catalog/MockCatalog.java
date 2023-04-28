@@ -157,7 +157,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void restoreColumnPlacements( Transaction transaction ) {
+    public void restoreColumnAllocations( Transaction transaction ) {
         throw new NotImplementedException();
     }
 

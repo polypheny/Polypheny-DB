@@ -443,7 +443,7 @@ public class PolyphenyDb {
         Transaction trx = null;
         try {
             trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
-            Catalog.getInstance().restoreColumnPlacements( trx );
+            Catalog.getInstance().restoreColumnAllocations( trx );
             Catalog.getInstance().restoreViews( trx );
             trx.commit();
         } catch ( TransactionException e ) {

@@ -18,17 +18,20 @@ package org.polypheny.db.routing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Map.Entry;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -38,11 +41,13 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Pair;
 
 
 /**
  * Adds debug information from routing to the ui.
  */
+@Slf4j
 public class UiRoutingPageUtil {
 
 
@@ -63,6 +68,7 @@ public class UiRoutingPageUtil {
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer ) {
+        log.warn( "Should this not be done in an separate thread?" );
         InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
         page.fullWidth();
         InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
@@ -94,26 +100,46 @@ public class UiRoutingPageUtil {
         queryAnalyzer.addGroup( group );
         InformationTable table = new InformationTable(
                 group,
-                ImmutableList.of( "Entity", "Field", "Partition (Group --> ID)", "Adapter", "Physical Name" ) );
+                ImmutableList.of( "Entity", "Field", "Allocation Id", "Adapter" ) );
         if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
-            proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
+            for ( Entry<Long, List<Pair<Long, Long>>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
+                Long k = entry.getKey();
+                List<Pair<Long, Long>> v = entry.getValue();
+                AllocationEntity alloc = snapshot.alloc().getAllocation( k );
+                LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId );
 
-                CatalogPartition catalogPartition = snapshot.alloc().getPartition( k );
-                LogicalTable catalogTable = Catalog.getInstance().getSnapshot().getLogicalEntity( catalogPartition.tableId ).unwrap( LogicalTable.class );
-                CatalogPartitionGroup catalogPartitionGroup = snapshot.alloc().getPartitionGroup( catalogPartition.partitionGroupId );
+                if ( alloc.unwrap( AllocationTable.class ) != null ) {
+                    AllocationTable allocTable = alloc.unwrap( AllocationTable.class );
+                    List<AllocationColumn> columns = snapshot.alloc().getColumns( allocTable.id );
 
-                v.forEach( p -> {
-                    AllocationColumn allocationColumn = snapshot.alloc().getColumn( p.left, p.right );
-                    CatalogPartitionPlacement catalogPartitionPlacement = snapshot.alloc().getPartitionPlacement( p.left, k );
-                    LogicalColumn logicalColumn = snapshot.rel().getColumn( allocationColumn.columnId );
+                    for ( AllocationColumn column : columns ) {
+                        LogicalColumn logical = snapshot.rel().getColumn( column.columnId );
+                        table.addRow(
+                                entity.getNamespaceName() + "." + entity.name,
+                                logical.name,
+                                alloc.id,
+                                alloc.adapterId );
+                    }
+
+                } else if ( alloc.unwrap( AllocationCollection.class ) != null ) {
                     table.addRow(
-                            snapshot.getNamespace( catalogTable.namespaceId ) + "." + catalogTable.name,
-                            logicalColumn.name,
-                            catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
-                            catalogPartitionPlacement.adapterUniqueName,
-                            /*catalogColumnPlacement.physicalSchemaName + "." +*/ catalogPartitionPlacement.physicalTableName /*+ "." + catalogColumnPlacement.physicalColumnName */ );
-                } );
-            } );
+                            entity.getNamespaceName() + "." + entity.name,
+                            entity.name,
+                            alloc.id,
+                            alloc.adapterId );
+
+                } else if ( alloc.unwrap( AllocationGraph.class ) != null ) {
+                    table.addRow(
+                            entity.getNamespaceName() + "." + entity.name,
+                            entity.name,
+                            alloc.id,
+                            alloc.adapterId );
+
+                } else {
+                    log.warn( "Error when adding to UI of proposed planner." );
+                }
+
+            }
         }
         queryAnalyzer.registerInformation( table );
     }

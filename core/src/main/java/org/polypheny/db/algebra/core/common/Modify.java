@@ -17,12 +17,14 @@
 package org.polypheny.db.algebra.core.common;
 
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
+@SuperBuilder(toBuilder = true)
 public abstract class Modify<E extends CatalogEntity> extends SingleAlg {
 
     @Getter

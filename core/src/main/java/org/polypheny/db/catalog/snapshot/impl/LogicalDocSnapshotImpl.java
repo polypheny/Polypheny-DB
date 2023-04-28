@@ -16,68 +16,67 @@
 
 package org.polypheny.db.catalog.snapshot.impl;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 
 @Slf4j
 public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
-    public LogicalDocSnapshotImpl( Map<Long, LogicalDocumentCatalog> value ) {
+    private final ImmutableMap<Long, LogicalNamespace> namespaces;
+    private final ImmutableMap<Long, LogicalCollection> collections;
+    private final ImmutableMap<String, LogicalCollection> collectionNames;
+    private final ImmutableMap<Long, List<LogicalCollection>> namespaceCollections;
 
+
+    public LogicalDocSnapshotImpl( Map<Long, LogicalDocumentCatalog> catalogs ) {
+        this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( n -> n.getLogicalNamespace().id, n -> n.getLogicalNamespace() ) ) );
+        this.collections = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getCollections().values().stream() ).collect( Collectors.toMap( c -> c.id, c -> c ) ) );
+        this.collectionNames = ImmutableMap.copyOf( this.collections.values().stream().collect( Collectors.toMap( c -> c.name, c -> c ) ) );
+        this.namespaceCollections = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( c -> c.getLogicalNamespace().id, c -> List.copyOf( c.getCollections().values() ) ) ) );
     }
 
 
     @Override
-    public LogicalCollection getCollection( long collectionId ) {
-        return null;
+    public LogicalCollection getCollection( long id ) {
+        return collections.get( id );
     }
 
 
     @Override
     public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
-        log.warn( "fix" );
-        return List.of();
+        List<LogicalCollection> collections = namespaceCollections.get( namespaceId );
+
+        if ( namePattern == null ) {
+            return collections;
+        }
+
+        return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
+                ? c.name.matches( namePattern.toRegex() )
+                : c.name.toLowerCase().matches( namePattern.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public LogicalCollection getLogicalCollection( List<String> names ) {
-        return null;
+    public LogicalCollection getCollection( String name ) {
+        return collectionNames.get( name );
     }
 
 
     @Override
-    public LogicalCollection getLogicalCollection( long id ) {
-        return null;
-    }
+    public LogicalCollection getCollection( long namespaceId, String name ) {
+        List<LogicalCollection> collections = namespaceCollections.get( namespaceId );
 
-
-    @Override
-    public LogicalCollection getLogicalCollection( long namespaceId, String name ) {
-        return null;
-    }
-
-
-    @Override
-    public List<LogicalCollection> getLogicalCollections( long namespaceId, Pattern name ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalCollection getCollection( String collection ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalCollection getCollection( long id, String collection ) {
-        return null;
+        return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
+                ? c.name.equals( name )
+                : c.name.equalsIgnoreCase( name ) ).findFirst().orElse( null );
     }
 
 }

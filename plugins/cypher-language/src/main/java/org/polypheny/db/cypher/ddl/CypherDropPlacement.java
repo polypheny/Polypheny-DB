@@ -63,7 +63,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
             throw new RuntimeException( "Error while adding graph placement" );
         }
 
-        DdlManager.getInstance().removeGraphDatabasePlacement( graphs.get( 0 ).id, dataStore, statement );
+        DdlManager.getInstance().removeGraphAllocation( graphs.get( 0 ).id, dataStore, statement );
     }
 
 }

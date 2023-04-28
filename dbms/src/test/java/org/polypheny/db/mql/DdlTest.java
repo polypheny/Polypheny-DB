@@ -54,24 +54,23 @@ public class DdlTest extends MqlTestTemplate {
 
     @Test
     public void addCollectionTest() {
-        Snapshot snapshot = Catalog.snapshot();
         String name = "testCollection";
 
-        LogicalNamespace namespace = snapshot.getNamespace( database );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database );
 
-        int size = snapshot.doc().getCollections( namespace.id, null ).size();
+        int size = Catalog.snapshot().doc().getCollections( namespace.id, null ).size();
 
-        execute( "db.createPhysicalCollection(\"" + name + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
-        assertEquals( size + 1, snapshot.doc().getCollections( namespace.id, null ).size() );
+        assertEquals( size + 1, Catalog.snapshot().doc().getCollections( namespace.id, null ).size() );
 
         execute( String.format( "db.%s.drop()", name ) );
 
-        assertEquals( size, snapshot.doc().getCollections( namespace.id, null ).size() );
+        assertEquals( size, Catalog.snapshot().doc().getCollections( namespace.id, null ).size() );
 
-        execute( "db.createPhysicalCollection(\"" + name + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
-        assertEquals( size + 1, snapshot.doc().getCollections( namespace.id, null ).size() );
+        assertEquals( size + 1, Catalog.snapshot().doc().getCollections( namespace.id, null ).size() );
 
         execute( String.format( "db.%s.drop()", name ) );
     }
@@ -88,7 +87,7 @@ public class DdlTest extends MqlTestTemplate {
             List<String> collectionNames = snapshot.doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
 
-            execute( "db.createPhysicalCollection(\"" + collectionName + "\")" );
+            execute( "db.createCollection(\"" + collectionName + "\")" );
 
             LogicalCollection collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
@@ -112,32 +111,31 @@ public class DdlTest extends MqlTestTemplate {
 
     @Test
     public void deletePlacementTest() throws SQLException {
-        Snapshot snapshot = Catalog.snapshot();
 
         String placement = "store1";
+
+        execute( "db.createCollection(\"" + collectionName + "\")" );
+
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database );
+
+        LogicalCollection collection = Catalog.snapshot().doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+
+        assertEquals( Catalog.snapshot().alloc().getFromLogical( collection.id ).size(), 1 );
+
+        addStore( placement );
+
         try {
-
-            execute( "db.createPhysicalCollection(\"" + collectionName + "\")" );
-
-            LogicalNamespace namespace = snapshot.getNamespace( database );
-
-            LogicalCollection collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
-
-            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 1 );
-
-            addStore( placement );
-
             execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, placement ) );
 
-            collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            collection = Catalog.snapshot().doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 2 );
+            assertEquals( Catalog.snapshot().alloc().getFromLogical( collection.id ).size(), 2 );
 
             execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, placement ) );
 
-            collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            collection = Catalog.snapshot().doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 1 );
+            assertEquals( Catalog.snapshot().alloc().getFromLogical( collection.id ).size(), 1 );
 
             execute( String.format( "db.%s.drop()", collectionName ) );
 
@@ -154,7 +152,7 @@ public class DdlTest extends MqlTestTemplate {
         final String DATA = "{ \"key\": \"value\", \"key1\": \"value1\"}";
         try {
 
-            execute( "db.createPhysicalCollection(\"" + collectionName + "\")" );
+            execute( "db.createCollection(\"" + collectionName + "\")" );
 
             insert( DATA );
 

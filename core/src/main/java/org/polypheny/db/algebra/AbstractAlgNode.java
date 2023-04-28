@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
@@ -75,6 +76,7 @@ import org.slf4j.Logger;
 /**
  * Base class for every relational expression ({@link AlgNode}).
  */
+@SuperBuilder(toBuilder = true)
 public abstract class AbstractAlgNode implements AlgNode {
 
     /**

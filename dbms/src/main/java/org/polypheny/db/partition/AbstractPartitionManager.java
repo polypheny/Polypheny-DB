@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
@@ -66,11 +66,11 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-                CatalogPartition catalogPartition = catalog.getSnapshot().alloc().getPartition( partitionId );
+                AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( partitionId );
                 List<AllocationColumn> relevantCcps = new ArrayList<>();
 
                 for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
-                    List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, column.id );
+                    List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnPlacementsByPartitionGroup( catalogTable.id, allocation.id, column.id );
                     ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {
                         // Get first column placement which contains partition

@@ -28,7 +28,7 @@ import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlNode;
-import org.polypheny.db.mql.parser.impl.MqlParserImpl;
+import org.polypheny.db.mql.parser.MqlParserImpl;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.util.SourceStringReader;
 

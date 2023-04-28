@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -45,8 +45,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : Catalog.getInstance().getSnapshot().alloc().getPartitionsByTable( catalogTable.id ) ) {
-            if ( catalogPartition.isUnbound ) {
+        for ( AllocationEntity entity : Catalog.getInstance().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
+            /*if ( catalogPartition.isUnbound ) {
                 unboundPartitionId = catalogPartition.id;
                 break;
             }
@@ -63,7 +63,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                     selectedPartitionId = catalogPartition.id;
                     break;
                 }
-            }
+            }*/
         }
 
         // If no concrete partition could be identified, report back the unbound/default partition

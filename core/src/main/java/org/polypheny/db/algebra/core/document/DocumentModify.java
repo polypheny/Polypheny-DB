@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.core.document;
 
 import java.util.List;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
@@ -27,7 +28,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-
+@SuperBuilder(toBuilder = true)
 public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> implements DocumentAlg {
 
     @Getter

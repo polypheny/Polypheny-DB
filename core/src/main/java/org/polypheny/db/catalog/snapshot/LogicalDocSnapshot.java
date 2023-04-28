@@ -26,10 +26,10 @@ public interface LogicalDocSnapshot {
     /**
      * Get the collection with the given id.
      *
-     * @param collectionId The id of the collection
+     * @param id The id of the collection
      * @return The requested collection
      */
-    LogicalCollection getCollection( long collectionId );
+    LogicalCollection getCollection( long id );
 
     /**
      * Get a collection of collections which match the given naming pattern.
@@ -41,18 +41,8 @@ public interface LogicalDocSnapshot {
     List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
 
 
-    @Deprecated
-    LogicalCollection getLogicalCollection( List<String> names );
+    LogicalCollection getCollection( String name );
 
-    LogicalCollection getLogicalCollection( long id );
-
-    LogicalCollection getLogicalCollection( long namespaceId, String name );
-
-    List<LogicalCollection> getLogicalCollections( long namespaceId, Pattern name );
-
-
-    LogicalCollection getCollection( String collection );
-
-    LogicalCollection getCollection( long id, String collection );
+    LogicalCollection getCollection( long namespaceId, String name );
 
 }

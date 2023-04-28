@@ -7,7 +7,7 @@ options {
 
 PARSER_BEGIN(MqlParserImpl)
 
-package org.polypheny.db.mql.parser.impl;
+package org.polypheny.db.mql.parser;
 
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.mql.MqlAggregate;

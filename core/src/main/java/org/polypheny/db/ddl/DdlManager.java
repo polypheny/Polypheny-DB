@@ -539,9 +539,9 @@ public abstract class DdlManager {
     public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
 
 
-    public abstract long addGraphAllocation( long graphId, List<DataStore<?>> stores, boolean onlyPlacement, Statement statement );
+    public abstract long addGraphAllocation( long graphId, List<DataStore<?>> stores, Statement statement );
 
-    public abstract void removeGraphDatabasePlacement( long graphId, DataStore<?> dataStores, Statement statement );
+    public abstract void removeGraphAllocation( long graphId, DataStore<?> dataStores, Statement statement );
 
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );

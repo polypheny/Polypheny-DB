@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentModify;
@@ -26,7 +27,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-
+@SuperBuilder(toBuilder = true)
 public class LogicalDocumentModify extends DocumentModify<CatalogEntity> implements RelationalTransformable {
 
     /**

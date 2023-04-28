@@ -34,36 +34,23 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.common.Modify;
-import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.algebra.core.document.DocumentAlg;
-import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentScan;
-import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
-import org.polypheny.db.algebra.logical.common.LogicalStreamer;
-import org.polypheny.db.algebra.logical.common.LogicalTransformer;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -71,14 +58,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -95,7 +77,6 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.WhereClauseVisitor;
-import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -110,7 +91,6 @@ import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.PolyType;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -254,7 +234,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
                         LogicalColumn logicalColumn = snapshot.rel().getColumn( catalogTable.id, columnName );
-                        if ( !snapshot.alloc().checkIfExistsColumnPlacement( pkPlacement.adapterId, logicalColumn.id ) ) {
+                        if ( snapshot.alloc().getAllocation( pkPlacement.adapterId, logicalColumn.id ) == null ) {
                             updateColumnListIterator.remove();
                             sourceExpressionListIterator.remove();
                         }
@@ -573,9 +553,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                     if ( log.isDebugEnabled() ) {
                         String partitionColumnName = "empty";//snapshot.rel().getColumn( property.partitionColumnId ).name;
-                        String partitionName = snapshot.alloc().getPartitionGroup( identPart ).partitionGroupName;
-                        log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
-                                partitionValue, identPart, partitionName, partitionColumnName );
+                        // String partitionName = snapshot.alloc().getPartitionGroup( identPart ).partitionGroupName;
+                        log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {}, which is partitioned with column {}",
+                                partitionValue, identPart, partitionColumnName );
                     }
 
 
@@ -743,29 +723,15 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         List<AlgNode> modifies = new ArrayList<>();
 
-        List<Long> placements = snapshot.alloc().getCollectionPlacements( collection.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
+        List<Long> placements = snapshot.alloc().getFromLogical( collection.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
         if ( adapterId != null ) {
             placements = List.of( adapterId );
         }
 
         for ( long placementId : placements ) {
-            CatalogAdapter adapter = snapshot.getAdapter( placementId );
             AllocationEntity alloc = snapshot.alloc().getAllocation( collection.id, placementId );
 
-            if ( !adapter.supportedNamespaces.contains( NamespaceType.DOCUMENT ) ) {
-                // move "slower" updates in front
-                modifies.add( 0, attachRelationalModify( alg, statement, placementId, queryInformation ) );
-                continue;
-            }
-
-            modifies.add( alloc.unwrap( ModifiableEntity.class ).toModificationAlg(
-                    alg.getCluster(),
-                    alg.getTraitSet(),
-                    alloc,
-                    buildDocumentDml( alg.getInput(), statement, queryInformation ),
-                    alg.operation,
-                    alg.getKeys(),
-                    alg.getUpdates() ) );
+            modifies.add( alg.toBuilder().entity( alloc ).input( buildDocumentDml( alg.getInput(), statement, queryInformation ) ).build() );
         }
 
         if ( modifies.size() == 1 ) {
@@ -795,19 +761,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         List<AlgNode> modifies = new ArrayList<>();
-        boolean usedSubstitution = false;
 
         for ( long adapterId : placements ) {
-            CatalogAdapter adapter = snapshot.getAdapter( adapterId );
             AllocationEntity alloc = snapshot.alloc().getAllocation( catalogGraph.id, adapterId );
-
-            //PhysicalGraph graph = snapshot.physical().getPhysicalGraph( catalogGraph.id, adapterId );
-            if ( alloc == null ) {
-                // move "slower" updates in front
-                modifies.add( 0, attachRelationalModify( alg, adapterId, statement ) );
-                usedSubstitution = true;
-                continue;
-            }
 
             if ( !(alloc instanceof ModifiableGraph) ) {
                 throw new RuntimeException( "Graph is not modifiable." );
@@ -828,20 +784,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return modifies.get( 0 );
         }
 
-        if ( usedSubstitution ) {
-            // we have substitution, which uses a ContextSwitcher, so we have to add it to the native algNode as well
-            modifies = modifies.stream().map( m -> {
-                if ( m instanceof ModifyCollect ) {
-                    return m;
-                }
-                return switchContext( m );
-
-            } ).collect( Collectors.toList() );
-        }
-
         return new LogicalModifyCollect( modifies.get( 0 ).getCluster(), modifies.get( 0 ).getTraitSet(), modifies, true );
     }
-
 
     private AlgNode buildDocumentDml( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         if ( node instanceof DocumentScan ) {
@@ -871,364 +815,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement, long adapterId, LogicalQueryInformation queryInformation ) {
-
-        switch ( alg.operation ) {
-            case INSERT:
-                return attachRelationalDocInsert( alg, statement, alg.entity, queryInformation, adapterId ).get( 0 );
-            case UPDATE:
-            case DELETE:
-                return attachRelationalDoc( alg, statement, alg.entity, queryInformation, adapterId ).get( 0 );
-            case MERGE:
-                throw new RuntimeException( "MERGE is not supported." );
-            default:
-                throw new RuntimeException( "Unknown update operation for document." );
-        }
-
-    }
-
-
-    private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, long adapterId ) {
-        RoutedAlgBuilder builder = attachDocUpdate( alg.getInput(), statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation, adapterId );
-        RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
-        if ( alg.operation == Modify.Operation.UPDATE ) {
-            assert alg.getUpdates().size() == 1;
-            AlgNode old = builder.build();
-            builder.push(
-                    LogicalDocumentProject.create( old, List.of( alg.getUpdates().get( 0 ) ), List.of( old.getRowType().getFieldList().get( 0 ).getName() ) ) );
-        }
-        AlgNode query = builder.build();
-        query = createDocumentTransform( query, rexBuilder );
-        builder.push( new LogicalTransformer( alg.getCluster(), List.of( query ), null, alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, query.getRowType(), false ) );
-
-        AlgNode collector = builder.build();
-
-        builder.scan( collectionTable );
-
-        builder.filter( algBuilder.equals(
-                rexBuilder.makeInputRef( collectionTable.getRowType().getFieldList().get( 0 ).getType(), 0 ),
-                rexBuilder.makeDynamicParam( collectionTable.getRowType().getFieldList().get( 0 ).getType(), 0 ) ) );
-
-        LogicalRelModify modify;
-        if ( alg.operation == Modify.Operation.UPDATE ) {
-            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), statement, alg.operation, List.of( "_data_" ), List.of( rexBuilder.makeDynamicParam( alg.getCluster().getTypeFactory().createPolyType( PolyType.JSON ), 1 ) ) );
-        } else {
-            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), statement, alg.operation, null, null );
-        }
-
-        modify.isStreamed( true );
-        return List.of( LogicalStreamer.create( collector, modify ) );
-    }
-
-
-    private AlgNode createDocumentTransform( AlgNode query, RexBuilder rexBuilder ) {
-        List<String> names = new ArrayList<>();
-        names.add( "_id_" );
-        names.add( "_data_" );
-        List<RexNode> updates = addDocumentNodes( query.getRowType(), rexBuilder, false );
-
-        return LogicalDocumentProject.create( query, updates, names );
-    }
-
-
-    private RoutedAlgBuilder attachDocUpdate( AlgNode alg, Statement statement, CatalogEntity collectionTable, RoutedAlgBuilder builder, LogicalQueryInformation information, long adapterId ) {
-        switch ( ((DocumentAlg) alg).getDocType() ) {
-
-            case SCAN:
-                handleDocumentScan( (DocumentScan<?>) alg, statement, builder, adapterId );
-                break;
-            case VALUES:
-                builder.push( LogicalDocumentValues.create( alg.getCluster(), ((DocumentValues) alg).documentTuples ) );
-                break;
-            case PROJECT:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
-                builder.push( LogicalDocumentProject.create( builder.build(), ((DocumentProject) alg).projects, alg.getRowType().getFieldNames() ) );
-                break;
-            case FILTER:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
-                LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
-                builder.push( LogicalDocumentFilter.create( builder.build(), filter.condition ) );
-                break;
-            case AGGREGATE:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
-                LogicalDocumentAggregate aggregate = (LogicalDocumentAggregate) alg;
-                builder.push( LogicalDocumentAggregate.create( builder.build(), aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls ) );
-                break;
-            case SORT:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
-                LogicalDocumentSort sort = (LogicalDocumentSort) alg;
-                builder.push( LogicalDocumentSort.create( builder.build(), sort.collation, sort.offset, sort.fetch ) );
-                break;
-            case MODIFY:
-                break;
-            default:
-                throw new RuntimeException( "Modifies cannot be nested." );
-        }
-        return builder;
-    }
-
-
-    private List<AlgNode> attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, long adapterId ) {
-        if ( alg.getInput() instanceof DocumentValues ) {
-            // simple value insert
-            AlgNode values = ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getSnapshot() ).get( 0 );
-            return List.of( getModify( collectionTable, values, statement, alg.operation, null, null ) );
-        }
-
-        return List.of( attachDocUpdate( alg, statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation, adapterId ).build() );
-    }
-
-
-    private AlgNode attachRelationalModify( LogicalLpgModify alg, long adapterId, Statement statement ) {
-        /*CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
-
-        PhysicalTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId ).unwrap( PhysicalTable.class );
-        PhysicalTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId, adapterId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId, adapterId ).unwrap( PhysicalTable.class );
-
-        List<AlgNode> inputs = new ArrayList<>();
-        switch ( alg.operation ) {
-            case INSERT:
-                if ( alg.getInput() instanceof LpgValues ) {
-                    // simple value insert
-                    inputs.addAll( ((LogicalLpgValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getSnapshot() ) );
-                }
-                if ( alg.getInput() instanceof LpgProject ) {
-                    return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
-                }
-
-                break;
-            case UPDATE:
-                return attachRelationalGraphUpdate( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
-
-            case DELETE:
-                return attachRelationalGraphDelete( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
-            case MERGE:
-                break;
-        }
-
-        List<AlgNode> modifies = new ArrayList<>();
-        if ( inputs.get( 0 ) != null ) {
-            modifies.add( switchContext( getModify( nodesTable, inputs.get( 0 ), statement, alg.operation, null, null ) ) );
-        }
-
-        if ( inputs.get( 1 ) != null ) {
-            modifies.add( switchContext( getModify( nodePropertiesTable, inputs.get( 1 ), statement, alg.operation, null, null ) ) );
-        }
-
-        if ( inputs.size() > 2 ) {
-            if ( inputs.get( 2 ) != null ) {
-                modifies.add( switchContext( getModify( edgesTable, inputs.get( 2 ), statement, alg.operation, null, null ) ) );
-            }
-
-            if ( inputs.get( 3 ) != null ) {
-                modifies.add( switchContext( getModify( edgePropertiesTable, inputs.get( 3 ), statement, alg.operation, null, null ) ) );
-            }
-        }
-
-        return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.GRAPH ), modifies, true );
-        */// todo dl
-        return null;
-    }
-
-
-    private AlgNode attachRelationalGraphUpdate( LogicalLpgModify alg, Statement statement, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, int adapterId ) {
-        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
-
-        List<AlgNode> inputs = new ArrayList<>();
-        List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
-            sequence.add( field.getType().getPolyType() );
-            if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyDelete( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
-                inputs.addAll( attachPreparedGraphEdgeModifyInsert( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
-            } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
-                inputs.addAll( attachPreparedGraphNodeModifyInsert( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
-            } else {
-                throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
-            }
-        }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.UPDATE );
-        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
-
-    }
-
-
-    private AlgNode attachRelationalGraphDelete( LogicalLpgModify alg, Statement statement, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, int adapterId ) {
-        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
-
-        List<AlgNode> inputs = new ArrayList<>();
-        List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
-            sequence.add( field.getType().getPolyType() );
-            if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyDelete( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
-            } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
-            } else {
-                throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
-            }
-        }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.DELETE );
-        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
-
-    }
-
-
-    private List<AlgNode> attachPreparedGraphNodeModifyDelete( AlgOptCluster cluster, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
-        RexBuilder rexBuilder = algBuilder.getRexBuilder();
-        AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-
-        List<AlgNode> inputs = new ArrayList<>();
-
-        // id = ? && label = ?
-        algBuilder
-                .scan( nodesTable )
-                .filter(
-                        algBuilder.equals(
-                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
-
-        inputs.add( getModify( nodesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
-
-        // id = ?
-        algBuilder
-                .scan( nodePropertiesTable )
-                .filter(
-                        algBuilder.equals(
-                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
-
-        inputs.add( getModify( nodePropertiesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
-
-        return inputs;
-    }
-
-
-    private AlgNode attachRelationalRelatedInsert( LogicalLpgModify alg, Statement statement, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, int adapterId ) {
-        AlgNode project = buildGraphDml( alg.getInput(), statement, adapterId );
-
-        List<AlgNode> inputs = new ArrayList<>();
-        List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
-            sequence.add( field.getType().getPolyType() );
-            if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyInsert( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
-            } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyInsert( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
-            } else {
-                throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
-            }
-        }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.INSERT );
-        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
-    }
-
-
-    private List<AlgNode> attachPreparedGraphNodeModifyInsert( AlgOptCluster cluster, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
-        RexBuilder rexBuilder = algBuilder.getRexBuilder();
-        AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-
-        List<AlgNode> inputs = new ArrayList<>();
-        LogicalProject preparedNodes = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
-                List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ) ), // label
-                nodesTable.getRowType() );
-
-        inputs.add( getModify( nodesTable, preparedNodes, statement, Modify.Operation.INSERT, null, null ) );
-
-        LogicalProject preparedNProperties = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
-                List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
-                nodePropertiesTable.getRowType() );
-
-        inputs.add( getModify( nodePropertiesTable, preparedNProperties, statement, Modify.Operation.INSERT, null, null ) );
-
-        return inputs;
-    }
-
-
-    private List<AlgNode> attachPreparedGraphEdgeModifyDelete( AlgOptCluster cluster, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
-        RexBuilder rexBuilder = algBuilder.getRexBuilder();
-        AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-
-        List<AlgNode> inputs = new ArrayList<>();
-
-        // id = ?
-        algBuilder
-                .scan( edgesTable )
-                .filter( algBuilder.equals(
-                        rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
-
-        inputs.add( getModify( edgesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
-
-        // id = ?
-        algBuilder
-                .scan( edgePropertiesTable )
-                .filter(
-                        algBuilder.equals(
-                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
-
-        return inputs;
-    }
-
-
-    private List<AlgNode> attachPreparedGraphEdgeModifyInsert( AlgOptCluster cluster, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
-        RexBuilder rexBuilder = algBuilder.getRexBuilder();
-        AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-
-        List<AlgNode> inputs = new ArrayList<>();
-        LogicalProject preparedEdges = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
-                List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // label
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 2 ), // source
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 3 ) ), // target
-                edgesTable.getRowType() );
-
-        inputs.add( getModify( edgesTable, preparedEdges, statement, Modify.Operation.INSERT, null, null ) );
-
-        LogicalProject preparedEProperties = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
-                List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
-                edgePropertiesTable.getRowType() );
-
-        inputs.add( getModify( edgePropertiesTable, preparedEProperties, statement, Modify.Operation.INSERT, null, null ) );
-
-        return inputs;
-
-    }
-
-
-    private AlgNode switchContext( AlgNode node ) {
-        return new LogicalContextSwitcher( node );
-    }
-
-
-    private Modify<?> getModify( CatalogEntity table, AlgNode input, Statement statement, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
-        return table.unwrap( org.polypheny.db.catalog.refactor.ModifiableEntity.class ).toModificationAlg( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
-    }
 
 
     private AlgBuilder buildDmlNew( AlgNode algNode, Statement statement ) {
@@ -1419,7 +1005,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 throw new RuntimeException( "Invalid column name: " + field.getName() );
             }
             column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName );
-            if ( !Catalog.snapshot().alloc().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
+            if ( Catalog.snapshot().alloc().getAllocation( placements.get( 0 ).adapterId, column.id ) == null ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

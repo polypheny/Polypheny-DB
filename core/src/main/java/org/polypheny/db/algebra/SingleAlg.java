@@ -36,6 +36,7 @@ package org.polypheny.db.algebra;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -48,6 +49,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  * It is not required that single-input relational expressions use this class as a base class. However, default
  * implementations of methods make life easier.
  */
+@SuperBuilder(toBuilder = true)
 public abstract class SingleAlg extends AbstractAlgNode {
 
     protected AlgNode input;

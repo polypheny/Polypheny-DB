@@ -144,19 +144,13 @@ public abstract class Catalog implements ExtensionPoint {
     /**
      * Restores all columnPlacements in the dedicated store
      */
-    public abstract void restoreColumnPlacements( Transaction transaction );
+    public abstract void restoreColumnAllocations( Transaction transaction );
 
     /**
      * On restart, all AlgNodes used in views and materialized views need to be recreated.
      * Depending on the query language, different methods are used.
      */
     public abstract void restoreViews( Transaction transaction );
-
-
-    protected final boolean isValidIdentifier( final String str ) {
-        return str.length() <= 100 && str.matches( "^[a-z_][a-z0-9_]*$" ) && !str.isEmpty();
-    }
-
 
     /**
      * Inserts a new user

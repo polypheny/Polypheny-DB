@@ -274,7 +274,7 @@ public class PolyCatalog extends Catalog implements Serializable {
 
     @Override
     @Deprecated
-    public void restoreColumnPlacements( Transaction transaction ) {
+    public void restoreColumnAllocations( Transaction transaction ) {
 
     }
 
