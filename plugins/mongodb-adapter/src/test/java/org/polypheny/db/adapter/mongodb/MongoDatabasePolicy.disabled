@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.mongodb;
+package org.polypheny.db.adapterTemplate.mongodb;
 
 
 import com.github.fakemongo.Fongo;
