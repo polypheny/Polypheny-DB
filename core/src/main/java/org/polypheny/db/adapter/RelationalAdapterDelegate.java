@@ -57,12 +57,14 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
@@ -163,7 +165,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds ) {
+    public void dropIndex( Context context, LogicalIndex logicalIndex, long allocId ) {
         throw new NotSupportedException();
     }
 
@@ -175,13 +177,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public void createGraph( Context context, LogicalGraph graphDatabase ) {
-
-    }
-
-
-    @Override
-    public void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         throw new NotSupportedException();
     }
 
@@ -234,7 +230,7 @@ public class RelationalAdapterDelegate implements Modifiable {
             i++;
         }
 
-        callee.createTable( context, table, columns, allocTable, allocColumns );
+        callee.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
         return catalog.getTable( catalog.getAllocRelations().get( allocTable.id ).right.get( 0 ) );
     }
 
@@ -247,7 +243,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
-
+        catalog.dropTable( allocation.id );
     }
 
 

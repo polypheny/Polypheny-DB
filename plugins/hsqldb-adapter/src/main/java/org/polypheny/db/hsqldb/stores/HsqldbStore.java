@@ -21,25 +21,22 @@ import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
@@ -57,8 +54,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterProperties(
         name = "HSQLDB",
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
-        usedModes = DeployMode.EMBEDDED,
-        supportedNamespaceTypes = { NamespaceType.RELATIONAL })
+        usedModes = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1, defaultValue = "Memory")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
 @AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" }, defaultValue = "mvcc")
@@ -70,7 +66,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
-
 
 
     @Override
@@ -104,8 +99,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     }
 
 
-
-
     @Override
     public Namespace getCurrentSchema() {
         return currentJdbcSchema;
@@ -116,7 +109,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     public String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation ) {
         // List<AllocationColumn> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
         // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        //partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
+        // partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
         String physicalIndexName = getPhysicalIndexName( logicalIndex.key.tableId, logicalIndex.id );
         PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
@@ -154,16 +147,15 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds ) {
-        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
+    public void dropIndex( Context context, LogicalIndex logicalIndex, long allocId ) {
 
-        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            StringBuilder builder = new StringBuilder();
-            builder.append( "DROP INDEX " );
-            builder.append( dialect.quoteIdentifier( logicalIndex.physicalName + "_" + partitionPlacement.partitionId ) );
-            executeUpdate( builder, context );
-        }
+        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+
+        StringBuilder builder = new StringBuilder();
+        builder.append( "DROP INDEX " );
+        builder.append( dialect.quoteIdentifier( logicalIndex.physicalName + "_" + table.id ) );
+        executeUpdate( builder, context );
+
     }
 
 

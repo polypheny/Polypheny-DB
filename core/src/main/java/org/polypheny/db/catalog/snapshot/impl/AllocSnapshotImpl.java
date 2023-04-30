@@ -32,9 +32,7 @@ import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -266,13 +264,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         return adapterLogicalTablePlacements.get( Pair.of( adapterId, tableId ) );
     }
 
-
-    @Override
-    public List<AllocationColumn> getColumnPlacementsOnAdapter( long adapterId ) {
-        return null;
-    }
-
-
     @Override
     public Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId ) {
         return logicalTableAdapterColumns.get( tableId );
@@ -360,31 +351,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     public List<AllocationEntity> getFromLogical( long logicalId ) {
         return logicalAllocs.get( logicalId );
     }
-
-
-    @Override
-    public boolean isPartitioned( long id ) {
-        return false;
-    }
-
-
-    @Override
-    public List<CatalogGraphPlacement> getGraphPlacements( long adapterId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( long id ) {
-        return null;
-    }
-
-
-    @Override
-    public List<CatalogCollectionPlacement> getCollectionPlacements( long collectionId ) {
-        return null;
-    }
-
 
     @Override
     public PartitionProperty getPartitionProperty( long id ) {

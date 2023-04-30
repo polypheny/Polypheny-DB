@@ -33,8 +33,10 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -342,10 +344,10 @@ public class FrequencyMapImpl extends FrequencyMap {
                             table.id,
                             partitionId,
                             PlacementType.AUTOMATIC,
-                            DataPlacementRole.UPTODATE );
+                            DataPlacementRole.UP_TO_DATE );
                 }
 
-                store.createTable( statement.getPrepareContext(), null, null, null, null );
+                store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null ), AllocationTableWrapper.of( null, null ) );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
                 catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ) ) );

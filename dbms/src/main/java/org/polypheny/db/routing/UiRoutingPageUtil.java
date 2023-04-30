@@ -69,15 +69,18 @@ public class UiRoutingPageUtil {
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer ) {
         log.warn( "Should this not be done in an separate thread?" );
-        InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
-        page.fullWidth();
-        InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
-        queryAnalyzer.addPage( page );
-        queryAnalyzer.addGroup( group );
-        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                group,
-                AlgOptUtil.dumpPlan( "Physical Query Plan", optimalNode, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-        queryAnalyzer.registerInformation( informationQueryPlan );
+        new Thread( () -> {
+
+            InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
+            page.fullWidth();
+            InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    group,
+                    AlgOptUtil.dumpPlan( "Physical Query Plan", optimalNode, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        } ).start();
     }
 
 

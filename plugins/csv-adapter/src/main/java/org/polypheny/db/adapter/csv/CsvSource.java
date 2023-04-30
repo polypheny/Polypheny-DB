@@ -31,23 +31,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
-import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalAdapterDelegate;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
-import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
@@ -112,15 +107,14 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         storeCatalog.createTable(
-                logical.getNamespaceName(),
-                logical.name,
-                lColumns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
-                logical,
-                lColumns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                allocation,
-                columns );
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                allocation );
     }
 
 
@@ -365,7 +359,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
         void updateTable( long allocId );
 
-        void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
     }
 

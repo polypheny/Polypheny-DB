@@ -34,15 +34,14 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -333,8 +332,8 @@ public class LanguageCrud {
                 p.addAdapter( new Placement.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
-                        catalog.getSnapshot().alloc().getGraphPlacements( placement.adapterId ),
-                        adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) );
+                        catalog.getSnapshot().alloc().getFromLogical( placement.adapterId ),
+                        false ) );
             }
             return p;
         }
@@ -372,15 +371,15 @@ public class LanguageCrud {
 
         Placement p = new Placement( false, List.of(), EntityType.ENTITY );
 
-        List<CatalogCollectionPlacement> placements = catalog.getSnapshot().alloc().getCollectionPlacements( collection.id );
+        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( collection.id );
 
-        for ( CatalogCollectionPlacement placement : placements ) {
-            Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+        for ( AllocationEntity allocation : allocs ) {
+            Adapter adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId );
             p.addAdapter( new DocumentStore(
                     adapter.getUniqueName(),
                     adapter.getUniqueName(),
-                    catalog.getSnapshot().alloc().getCollectionPlacementsByAdapter( placement.adapterId ),
-                    adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
+                    catalog.getSnapshot().alloc().getAllocationsOnAdapter( allocation.adapterId ),
+                    false ) );
         }
 
         context.json( p );

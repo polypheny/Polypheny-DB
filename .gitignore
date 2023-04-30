@@ -220,7 +220,7 @@ nbdist/
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !/gradle/wrapper/gradle-wrapper.jar
 
-/geode-adapter/vf.gf.server.status.cmd
+/geode-adapterTemplate/vf.gf.server.status.cmd
 /core/custom-namespace-model.json
 /testTestCsv/**
 !/libs/avatica-1.16.0-POLYPHENYDB-shaded.jar

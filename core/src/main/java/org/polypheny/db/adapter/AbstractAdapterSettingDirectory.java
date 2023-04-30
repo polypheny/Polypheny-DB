@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 
 @Accessors(chain = true)
 public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {

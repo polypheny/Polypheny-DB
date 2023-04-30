@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
@@ -102,7 +103,9 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+    public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, AllocationTableWrapper wrapper ) {
+        AllocationTable allocation = wrapper.table;
+        List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.adapterId, c.position, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
         addTable( table );
@@ -139,10 +142,21 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-
     @Override
     public PhysicalEntity getPhysical( long id ) {
         return tables.get( id );
+    }
+
+
+    public void dropTable( long id ) {
+        for ( long allocId : allocRelations.get( id ).right ) {
+            for ( PhysicalColumn column : tables.get( allocId ).columns ) {
+                columns.remove( column.id );
+            }
+            tables.remove( allocId );
+        }
+        allocRelations.remove( id );
+
     }
 
 }

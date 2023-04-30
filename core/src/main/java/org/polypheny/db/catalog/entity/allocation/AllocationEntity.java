@@ -16,10 +16,7 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
-import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Serialize;
-import java.util.List;
-import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -39,8 +36,6 @@ public abstract class AllocationEntity extends CatalogEntity {
     public long adapterId;
     @Serialize
     public long logicalId;
-    @Serialize
-    public ImmutableList<Long> physicalIds;
 
 
     protected AllocationEntity(
@@ -48,12 +43,10 @@ public abstract class AllocationEntity extends CatalogEntity {
             long logicalId,
             long namespaceId,
             long adapterId,
-            NamespaceType type,
-            @Nullable List<Long> physicalIds ) {
+            NamespaceType type ) {
         super( id, null, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
-        this.physicalIds = physicalIds == null ? null : ImmutableList.copyOf( physicalIds );
     }
 
 

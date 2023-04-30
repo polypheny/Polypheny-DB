@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
@@ -77,7 +78,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
             throw new RuntimeException( "Error while adding graph placement." );
         }
 
-        if ( graphs.get( 0 ).getPlacements().stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
+        if ( Catalog.snapshot().alloc().getFromLogical( graphs.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
             throw new RuntimeException( "Could not create placement of graph as it already exists." );
         }
 

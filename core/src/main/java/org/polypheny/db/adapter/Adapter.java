@@ -17,12 +17,6 @@
 package org.polypheny.db.adapter;
 
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +27,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
@@ -61,206 +55,9 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modi
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
-    private final List<NamespaceType> supportedNamespaceTypes;
     @Getter
     private final String adapterName;
     public final S storeCatalog;
-
-
-    @Target(ElementType.TYPE)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface AdapterProperties {
-
-        String name();
-
-        String description();
-
-        DeployMode[] usedModes();
-
-        NamespaceType[] supportedNamespaceTypes() default { NamespaceType.RELATIONAL };
-
-    }
-
-
-    @Inherited
-    @Target(ElementType.TYPE)
-    @Repeatable(AdapterSettingString.List.class)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface AdapterSettingString {
-
-        String name();
-
-        boolean canBeNull() default false;
-
-        boolean required() default true;
-
-        boolean modifiable() default false;
-
-        String description() default "";
-
-        String defaultValue();
-
-        int position() default 100;
-
-        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
-
-        String subOf() default "";
-
-        @Inherited
-        @Target(ElementType.TYPE)
-        @Retention(RetentionPolicy.RUNTIME)
-        @interface List {
-
-            AdapterSettingString[] value();
-
-        }
-
-    }
-
-
-    @Inherited
-    @Repeatable(AdapterSettingInteger.List.class)
-    @Target(ElementType.TYPE)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface AdapterSettingInteger {
-
-        String name();
-
-        boolean canBeNull() default false;
-
-        boolean required() default true;
-
-        boolean modifiable() default false;
-
-        String description() default "";
-
-        int defaultValue();
-
-        int position() default 100;
-
-        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
-
-        String subOf() default "";
-
-        @Inherited
-        @Target(ElementType.TYPE)
-        @Retention(RetentionPolicy.RUNTIME)
-        @interface List {
-
-            AdapterSettingInteger[] value();
-
-        }
-
-    }
-
-
-    @Inherited
-    @Repeatable(AdapterSettingBoolean.List.class)
-    @Target(ElementType.TYPE)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface AdapterSettingBoolean {
-
-        String name();
-
-        boolean canBeNull() default false;
-
-        boolean required() default true;
-
-        boolean modifiable() default false;
-
-        String description() default "";
-
-        boolean defaultValue();
-
-        int position() default 100;
-
-        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
-
-        String subOf() default "";
-
-        @Inherited
-        @Target(ElementType.TYPE)
-        @Retention(RetentionPolicy.RUNTIME)
-        @interface List {
-
-            AdapterSettingBoolean[] value();
-
-        }
-
-    }
-
-
-    @Inherited
-    @Repeatable(AdapterSettingList.List.class)
-    @Target(ElementType.TYPE)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface AdapterSettingList {
-
-        String name();
-
-        boolean canBeNull() default false;
-
-        boolean required() default true;
-
-        boolean modifiable() default false;
-
-        String description() default "";
-
-        String defaultValue();
-
-        String[] options();
-
-
-        int position() default 100;
-
-        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
-
-        String subOf() default "";
-
-        @Inherited
-        @Target(ElementType.TYPE)
-        @Retention(RetentionPolicy.RUNTIME)
-        @interface List {
-
-            AdapterSettingList[] value();
-
-        }
-
-    }
-
-
-    @Inherited
-    @Target(ElementType.TYPE)
-    @Repeatable(AdapterSettingDirectory.List.class)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface AdapterSettingDirectory {
-
-        String name();
-
-        boolean canBeNull() default false;
-
-        boolean required() default true;
-
-        boolean modifiable() default false;
-
-        String description() default "";
-
-        int position() default 100;
-
-        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
-
-        String subOf() default "";
-
-        @Inherited
-        @Target(ElementType.TYPE)
-        @Retention(RetentionPolicy.RUNTIME)
-        @interface List {
-
-            AdapterSettingDirectory[] value();
-
-        }
-
-    }
 
 
     @Getter
@@ -285,8 +82,6 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modi
         if ( !settings.containsKey( "mode" ) ) {
             throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
-
-        this.supportedNamespaceTypes = Arrays.asList( properties.supportedNamespaceTypes() );
 
         this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
 

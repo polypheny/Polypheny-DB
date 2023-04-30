@@ -22,8 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.AllocationColumn;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -123,9 +122,9 @@ public class Placement {
         private final boolean isNative;
 
 
-        public GraphStore( String uniqueName, String adapterName, List<CatalogGraphPlacement> graphPlacements, boolean isNative ) {
+        public GraphStore( String uniqueName, String adapterName, List<AllocationEntity> allocs, boolean isNative ) {
             super( uniqueName, adapterName );
-            this.placements = graphPlacements.stream().map( p -> new GraphPlacement( p.graphId, p.adapterId ) ).collect( Collectors.toList() );
+            this.placements = allocs.stream().map( p -> new GraphPlacement( p.id, p.adapterId ) ).collect( Collectors.toList() );
             this.isNative = isNative;
         }
 
@@ -140,9 +139,9 @@ public class Placement {
         private final boolean isNative;
 
 
-        public DocumentStore( String uniqueName, String adapterName, List<CatalogCollectionPlacement> collectionPlacements, boolean isNative ) {
+        public DocumentStore( String uniqueName, String adapterName, List<AllocationEntity> allocations, boolean isNative ) {
             super( uniqueName, adapterName );
-            this.placements = collectionPlacements.stream().map( p -> new CollectionPlacement( p.collectionId, p.adapterId ) ).collect( Collectors.toList() );
+            this.placements = allocations.stream().map( p -> new CollectionPlacement( p.id, p.adapterId ) ).collect( Collectors.toList() );
             this.isNative = isNative;
         }
 

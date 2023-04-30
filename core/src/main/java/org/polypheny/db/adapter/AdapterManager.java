@@ -30,10 +30,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -42,6 +44,8 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
 public class AdapterManager {
+
+    private static final Map<String, AdapterTemplate> REGISTER = new ConcurrentHashMap<>();
 
     private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
     private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
@@ -57,6 +61,34 @@ public class AdapterManager {
 
     private AdapterManager() {
         // intentionally empty
+    }
+
+
+    public static void addAdapterTemplate( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
+        REGISTER.put( getKey( clazz, adapterName ), new AdapterTemplate( clazz, adapterName.toUpperCase(), defaultSettings ) );
+    }
+
+
+    public static void removeAdapterTemplate( Class<?> clazz, String adapterName ) {
+        if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( adapterName ) ) ) {
+            throw new RuntimeException( "Adapter is still deployed!" );
+        }
+        REGISTER.remove( getKey( clazz, adapterName ) );
+    }
+
+
+    private static String getKey( Class<?> clazz, String adapterName ) {
+        return adapterName.toUpperCase() + "_" + AdapterTemplate.getAdapterType( clazz );
+    }
+
+
+    public static List<AdapterTemplate> getAdapters( AdapterType adapterType ) {
+        return REGISTER.values().stream().filter( a -> a.adapterType == adapterType ).collect( Collectors.toList() );
+    }
+
+
+    public static AdapterTemplate getAdapterType( String name ) {
+        return REGISTER.get( name );
     }
 
 
@@ -135,18 +167,18 @@ public class AdapterManager {
 
 
     public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
-        List<org.polypheny.db.catalog.Adapter> adapters = org.polypheny.db.catalog.Adapter.getAdapters( adapterType );
+        List<AdapterTemplate> adapterTemplates = getAdapters( adapterType );
 
         List<AdapterInformation> result = new LinkedList<>();
 
-        for ( org.polypheny.db.catalog.Adapter adapter : adapters ) {
+        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
             // Exclude abstract classes
-            if ( !Modifier.isAbstract( adapter.getClazz().getModifiers() ) ) {
+            if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
                 Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
-                AdapterProperties properties = adapter.getClazz().getAnnotation( AdapterProperties.class );
+                AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
                 if ( properties == null ) {
-                    throw new RuntimeException( adapter.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
+                    throw new RuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
 
                 // Used to evaluate which mode is used when deploying the adapter
@@ -171,7 +203,7 @@ public class AdapterManager {
                 settings.put( "default", new ArrayList<>() );
 
                 // Merge annotated AdapterSettings into settings
-                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( adapter.getClazz().getAnnotations(), adapter.getClazz().getAnnotation( AdapterProperties.class ) );
+                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
                 settings.putAll( annotatedSettings );
 
                 // If the adapter uses docker add the dynamic docker setting
@@ -209,8 +241,16 @@ public class AdapterManager {
             throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
-        Adapter instance;
-        Long adapterId = null;
+        Constructor<?> ctor;
+        try {
+            AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
+            ctor = adapterTemplate.getClazz().getConstructor( long.class, String.class, Map.class );
+        } catch ( NoSuchMethodException e ) {
+            throw new RuntimeException( "Something went wrong while adding a new adapter", e );
+        }
+
+        long adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
+        Adapter<?> instance;
         try {
             adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
             instance = instantiate( adapterId, adapterName, uniqueName, adapterType, settings );
@@ -265,7 +305,8 @@ public class AdapterManager {
         try {
             List<CatalogAdapter> adapters = Catalog.getInstance().getSnapshot().getAdapters();
             for ( CatalogAdapter adapter : adapters ) {
-                Adapter instance = instantiate( adapter.id, adapter.adapterName, adapter.uniqueName, adapter.type, adapter.settings );
+                Constructor<?> ctor = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( long.class, String.class, Map.class );
+                Adapter<?> instance = (Adapter<?>) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
                 adapterByName.put( instance.getUniqueName(), instance );
                 adapterById.put( instance.getAdapterId(), instance );
             }

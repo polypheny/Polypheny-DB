@@ -18,7 +18,7 @@ package org.polypheny.db.hsqldb.stores;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 
@@ -48,13 +48,13 @@ public class HsqldbPlugin extends PolyPlugin {
                 "trxIsolationLevel", "read_committed"
         ) );
 
-        Adapter.addAdapter( HsqldbStore.class, ADAPTER_NAME, settings );
+        AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, settings );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( HsqldbStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( HsqldbStore.class, ADAPTER_NAME );
     }
 
 }

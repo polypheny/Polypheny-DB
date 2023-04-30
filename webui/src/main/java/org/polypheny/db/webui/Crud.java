@@ -627,8 +627,8 @@ public class Crud implements InformationObserver {
         StringJoiner columns = new StringJoiner( ",", "(", ")" );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        String finalTableId = tableId;
-        List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( org.polypheny.db.catalog.logistic.Pattern.of( finalTableId ), null );
+        LogicalTable table = catalog.getSnapshot().rel().getTable( split[0], split[1] );
+        List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( table.id );
         try {
             int i = 0;
             for ( LogicalColumn logicalColumn : logicalColumns ) {
@@ -915,14 +915,14 @@ public class Crud implements InformationObserver {
      * @param columnName Column name
      * @param filter Filter. Key: column name, value: the value of the entry, e.g. 1 or abc or [1,2,3] or {@code null}
      */
-    private String computeWherePK( final String tableName, final String columnName, final Map<String, String> filter ) {
+    private String computeWherePK( final String namespace, final String table, final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
-        Map<String, LogicalColumn> catalogColumns = getCatalogColumns( tableName, columnName );
+        Map<String, LogicalColumn> catalogColumns = getCatalogColumns( namespace, table );
         if ( catalogColumns.isEmpty() ) {
             throw new RuntimeException();
         }
 
-        LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( catalogColumns.values().iterator().next().namespaceId, tableName );
+        LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( namespace, table );
         LogicalPrimaryKey pk = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
         for ( long colId : pk.columnIds ) {
             String colName = catalog.getSnapshot().rel().getColumn( colId ).name;
@@ -935,7 +935,7 @@ public class Crud implements InformationObserver {
                 joiner.add( condition );
             }
         }
-        return " WHERE " + joiner.toString();
+        return " WHERE " + joiner;
     }
 
 
@@ -1878,7 +1878,7 @@ public class Crud implements InformationObserver {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
         LogicalTable table = getLogicalTable( schemaName, tableName );
-        Placement p = new Placement( snapshot.alloc().isPartitioned( table.id ), snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
+        Placement p = new Placement( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
         if ( table.entityType != EntityType.VIEW ) {
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;

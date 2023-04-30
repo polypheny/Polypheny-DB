@@ -1014,9 +1014,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
     public void setTableCalls( long tableId, MonitoringType type ) {
         TableCalls calls;
         if ( tableStatistic.containsKey( tableId ) ) {
-            if ( tableStatistic.get( tableId ).getCalls() != null ) {
-                calls = tableStatistic.get( tableId ).getCalls();
-            } else {
+            calls = tableStatistic.get( tableId ).getCalls();
+            if ( calls == null ) {
                 calls = new TableCalls( tableId, 0, 0, 0, 0 );
             }
         } else {

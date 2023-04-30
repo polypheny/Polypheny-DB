@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -33,10 +32,10 @@ import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
-import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.config.RuntimeConfig;
@@ -131,7 +130,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns ) {
+    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
+        AllocationTable allocation = allocationWrapper.table;
         String namespaceName = getDefaultPhysicalSchemaName();
         String tableName = getPhysicalTableName( allocation.id, 0 );
 
@@ -143,11 +143,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         PhysicalTable table = storeCatalog.createTable(
                 namespaceName,
                 tableName,
-                columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
-                logical,
-                lColumns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
-                allocation,
-                columns );
+                allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                allocationWrapper );
 
         executeCreatTable( context, table );
     }
@@ -466,7 +465,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
         void updateTable( long allocId );
 
-        void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
 
     }
 

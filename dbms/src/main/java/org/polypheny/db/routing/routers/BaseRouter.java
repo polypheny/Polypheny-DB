@@ -167,7 +167,6 @@ public abstract class BaseRouter implements Router {
     }
 
 
-
     public RoutedAlgBuilder handleValues( LogicalValues node, RoutedAlgBuilder builder ) {
         return builder.values( node.tuples, node.getRowType() );
     }
@@ -378,14 +377,13 @@ public abstract class BaseRouter implements Router {
 
         List<AlgNode> scans = new ArrayList<>();
 
-        List<Long> placements = snapshot.alloc().getGraphPlacements( catalogGraph.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
+        List<Long> placements = snapshot.alloc().getFromLogical( catalogGraph.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
         if ( placementId != null ) {
             placements = List.of( placementId );
         }
 
         for ( long adapterId : placements ) {
             AllocationEntity graph = snapshot.alloc().getAllocation( catalogGraph.id, adapterId );
-
 
             // a native placement was used, we go with that
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), graph, alg.getRowType() );
@@ -498,7 +496,7 @@ public abstract class BaseRouter implements Router {
 
         List<RoutedAlgBuilder> scans = new ArrayList<>();
 
-        List<Long> placements = snapshot.alloc().getCollectionPlacements( collection.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
+        List<Long> placements = snapshot.alloc().getFromLogical( collection.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
         if ( adapterId != null ) {
             placements = List.of( adapterId );
         }
@@ -507,11 +505,6 @@ public abstract class BaseRouter implements Router {
             CatalogAdapter adapter = snapshot.getAdapter( placementId );
             NamespaceType sourceModel = collection.namespaceType;
 
-            if ( !adapter.supportedNamespaces.contains( sourceModel ) ) {
-                // document on relational
-                scans.add( handleDocumentOnRelational( (DocumentScan<LogicalTable>) alg, placementId, statement, builder ) );
-                continue;
-            }
             // CatalogCollectionPlacement placement = catalog.getAllocDoc( alg.entity ).getCollectionPlacement( collection.id, placementId );
             // String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             // String collectionName = collection.name + "_" + placement.id;

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.mongodb;
+package org.polypheny.db.adapterTemplate.mongodb;
 
 
 import org.polypheny.db.schema.Namespaceema;
@@ -73,7 +73,7 @@ import org.junit.Test;
 
 
 /**
- * Testing mongo adapter functionality. By default runs with <a href="https://github.com/fakemongo/fongo">Fongo</a> unless {@code IT} maven profile is enabled (via {@code $ mvn -Pit install}).
+ * Testing mongo adapterTemplate functionality. By default runs with <a href="https://github.com/fakemongo/fongo">Fongo</a> unless {@code IT} maven profile is enabled (via {@code $ mvn -Pit install}).
  *
  * @see MongoDatabasePolicy
  */
@@ -720,7 +720,7 @@ public class MongoAdapterTest implements SchemaFactory {
     /**
      * MongoDB's predicates are handed (they can only accept literals on the right-hand size) so it's worth testing that we handle them right both ways around.
      *
-     * Test case for "Redundant WHERE clause causes wrong result in MongoDB adapter".
+     * Test case for "Redundant WHERE clause causes wrong result in MongoDB adapterTemplate".
      */
     @Test
     public void testFilterPair() {
@@ -762,7 +762,7 @@ public class MongoAdapterTest implements SchemaFactory {
                 + "     {\n"
                 + "       type: 'custom',\n"
                 + "       name: 'test',\n"
-                + "       factory: 'org.polypheny.db.adapter.mongodb.MongoSchemaFactory',\n"
+                + "       factory: 'org.polypheny.db.adapterTemplate.mongodb.MongoSchemaFactory',\n"
                 + "       operand: {\n"
                 + "         host: 'localhost',\n"
                 + "         database: 'test'\n"
@@ -776,7 +776,7 @@ public class MongoAdapterTest implements SchemaFactory {
 
 
     /**
-     * Test case for "ClassCastException in MongoDB adapter".
+     * Test case for "ClassCastException in MongoDB adapterTemplate".
      */
     @Test
     public void testCountViaInt() {

@@ -224,7 +224,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             // Check if table is even horizontal partitioned
 
-            if ( Catalog.snapshot().alloc().isPartitioned( catalogTable.id ) ) {
+            if ( Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).size() > 1 ) {
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {

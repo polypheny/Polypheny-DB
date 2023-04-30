@@ -18,8 +18,8 @@ package org.polypheny.db.adapter;
 
 import java.util.Arrays;
 import java.util.List;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 
 public class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 

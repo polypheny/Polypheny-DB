@@ -24,13 +24,13 @@
 
 * Add support for the labeled property graph data model
 * Add support for the cypher query language
-* Add a neo4j data store adapter
+* Add a neo4j data store adapterTemplate
 * Improve cross-model query support
 * Improve the document data model
 * Improve handling of DML queries containing operations not supported on the underlying data store
 * Improve constraint enforcement
 * Refactor transaction locking
-* Add a remote deployment support for the MongoDB adapter
+* Add a remote deployment support for the MongoDB adapterTemplate
 * Allow specifying colors for information graphs
 * Add a logging for the number of monitoring threads
 * Option to select a time interval for the graph in the UI dashboard

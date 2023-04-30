@@ -19,7 +19,7 @@ package org.polypheny.db.adapter.csv;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 
@@ -43,7 +43,7 @@ public class CsvPlugin extends PolyPlugin {
                 "maxStringLength", "255"
         );
 
-        Adapter.addAdapter( CsvSource.class, "CSV", settings );
+        AdapterManager.addAdapterTemplate( CsvSource.class, "CSV", settings );
     }
 
 

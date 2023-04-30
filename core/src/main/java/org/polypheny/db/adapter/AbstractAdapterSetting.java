@@ -27,13 +27,13 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
+import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 
 @Accessors(chain = true)
 public abstract class AbstractAdapterSetting {

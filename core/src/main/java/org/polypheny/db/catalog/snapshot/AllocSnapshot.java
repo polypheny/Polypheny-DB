@@ -20,9 +20,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -62,14 +60,6 @@ public interface AllocSnapshot {
      */
     List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
 
-    /**
-     * Get column placements on a adapter. On column detail level
-     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
-     *
-     * @param adapterId The id of the adapter
-     * @return List of column placements on the specified adapter
-     */
-    List<AllocationColumn> getColumnPlacementsOnAdapter( long adapterId );
 
     /**
      * Gets all column placements of a table structured by the id of the adapters.
@@ -192,21 +182,6 @@ public interface AllocSnapshot {
 
     List<AllocationEntity> getFromLogical( long logicalId );
 
-    boolean isPartitioned( long id );
-
-
-
-    /**
-     * Gets a collection of graph placements for a given adapter.
-     *
-     * @param adapterId The id of the adapter on which the placements are placed
-     * @return The collection of graph placements
-     */
-    List<CatalogGraphPlacement> getGraphPlacements( long adapterId );
-
-    List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( long id );
-
-    List<CatalogCollectionPlacement> getCollectionPlacements( long collectionId );
 
     PartitionProperty getPartitionProperty( long id );
 

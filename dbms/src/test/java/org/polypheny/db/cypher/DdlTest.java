@@ -69,7 +69,7 @@ public class DdlTest extends CypherTestTemplate {
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName );
             LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id );
 
-            assertEquals( 1, graph.getPlacements().size() );
+            assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             addStore( "store1" );
 
@@ -78,7 +78,7 @@ public class DdlTest extends CypherTestTemplate {
             namespace = catalog.getSnapshot().getNamespace( graphName );
             graph = catalog.getSnapshot().graph().getGraph( namespace.id );
 
-            assertEquals( 2, graph.getPlacements().size() );
+            assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             execute( "DROP DATABASE " + graphName );
 
@@ -100,15 +100,15 @@ public class DdlTest extends CypherTestTemplate {
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName );
             LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id );
 
-            assertEquals( 1, graph.getPlacements().size() );
+            assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
 
             namespace = catalog.getSnapshot().getNamespace( graphName );
             graph = catalog.getSnapshot().graph().getGraph( namespace.id );
 
-            assertEquals( 1, graph.getPlacements().size() );
-            assertEquals( 2, graph.getPlacements().size() );
+            assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
+            assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             execute( "DROP DATABASE " + graphName );
 
@@ -130,7 +130,7 @@ public class DdlTest extends CypherTestTemplate {
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName );
             LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id );
 
-            assertEquals( 1, graph.getPlacements().size() );
+            assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             addStore( "store1" );
 
@@ -139,7 +139,7 @@ public class DdlTest extends CypherTestTemplate {
             namespace = catalog.getSnapshot().getNamespace( graphName );
             graph = catalog.getSnapshot().graph().getGraph( namespace.id );
 
-            assertEquals( 2, graph.getPlacements().size() );
+            assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 

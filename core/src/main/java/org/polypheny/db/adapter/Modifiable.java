@@ -17,20 +17,21 @@
 package org.polypheny.db.adapter;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.prepare.Context;
 
@@ -45,23 +46,63 @@ public interface Modifiable extends Scannable {
 
     AlgNode getGraphModify( long allocId, LpgModify<?> modify );
 
+    default void addColumn( Context context, List<Long> allocIds, LogicalColumn column ) {
+        for ( Long allocId : allocIds ) {
+            addColumn( context, allocId, column );
+        }
+    }
+
     void addColumn( Context context, long allocId, LogicalColumn column );
+
+    default void dropColumn( Context context, List<Long> allocIds, long columnId ) {
+        for ( Long allocId : allocIds ) {
+            dropColumn( context, allocId, columnId );
+        }
+    }
 
     void dropColumn( Context context, long allocId, long columnId );
 
+    default String addIndex( Context context, LogicalIndex logicalIndex, List<AllocationTable> allocations ) {
+        return allocations.stream().map( a -> addIndex( context, logicalIndex, a ) ).collect( Collectors.toList() ).get( 0 );
+    }
+
     String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
 
-    void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> partitionIds );
+    default void dropIndex( Context context, LogicalIndex logicalIndex, List<Long> allocIds ) {
+        for ( Long allocId : allocIds ) {
+            dropIndex( context, logicalIndex, allocId );
+        }
+    }
+
+    void dropIndex( Context context, LogicalIndex logicalIndex, long allocId );
 
     void updateColumnType( Context context, long allocId, LogicalColumn column );
 
-    void createGraph( Context context, LogicalGraph graphDatabase );
 
-    void createTable( Context context, LogicalTable logical, List<LogicalColumn> lColumns, AllocationTable allocation, List<AllocationColumn> columns );
+    default void createTable( Context context, LogicalTableWrapper logical, List<AllocationTableWrapper> allocations ) {
+        for ( AllocationTableWrapper allocation : allocations ) {
+            createTable( context, logical, allocation );
+        }
+    }
+
+    void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
     void updateTable( long allocId );
 
+    default void dropTable( Context context, List<Long> allocIds ) {
+        for ( Long allocId : allocIds ) {
+            dropTable( context, allocId );
+        }
+    }
+
     void dropTable( Context context, long allocId );
+
+
+    default void createGraph( Context context, LogicalGraph logical, List<AllocationGraph> allocations ) {
+        for ( AllocationGraph allocation : allocations ) {
+            createGraph( context, logical, allocation );
+        }
+    }
 
 
     /**
@@ -75,6 +116,12 @@ public interface Modifiable extends Scannable {
     void updateGraph( long allocId );
 
 
+    default void dropGraph( Context context, List<AllocationGraph> allocations ) {
+        for ( AllocationGraph allocation : allocations ) {
+            dropGraph( context, allocation );
+        }
+    }
+
     /**
      * Default method for dropping an existing graph on the {@link DataStore}.
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
@@ -82,6 +129,12 @@ public interface Modifiable extends Scannable {
      */
     void dropGraph( Context context, AllocationGraph allocation );
 
+
+    default void createCollection( Context context, LogicalCollection logical, List<AllocationCollection> allocations ) {
+        for ( AllocationCollection allocation : allocations ) {
+            createCollection( context, logical, allocation );
+        }
+    }
 
     /**
      * Default method for creating a new collection on the {@link DataStore}.

@@ -17,7 +17,7 @@
 package org.polypheny.db.catalog.logistic;
 
 public enum DataPlacementRole {
-    UPTODATE( 0 ),
+    UP_TO_DATE( 0 ),
     REFRESHABLE( 1 );
 
     private final int id;
@@ -33,7 +33,7 @@ public enum DataPlacementRole {
     }
 
 
-    public static DataPlacementRole getById( final int id ) {
+    public static DataPlacementRole from( final int id ) {
         for ( DataPlacementRole t : values() ) {
             if ( t.id == id ) {
                 return t;
@@ -43,7 +43,7 @@ public enum DataPlacementRole {
     }
 
 
-    public static DataPlacementRole getByName( final String name ) {
+    public static DataPlacementRole from( final String name ) {
         for ( DataPlacementRole t : values() ) {
             if ( t.name().equalsIgnoreCase( name ) ) {
                 return t;

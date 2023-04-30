@@ -18,11 +18,9 @@ package org.polypheny.db.catalog.entity.allocation;
 
 import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -46,7 +44,7 @@ public class AllocationTable extends AllocationEntity {
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL, null );
+        super( id, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
     }
 
 
@@ -88,24 +86,6 @@ public class AllocationTable extends AllocationEntity {
 
     public String getNamespaceName() {
         return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).name;
-    }
-
-
-    public Map<Long, AlgDataType> getColumnTypes() {
-        return getColumns().stream().collect( Collectors.toMap( c -> c.columnId, AllocationColumn::getAlgDataType ) );
-    }
-
-
-    public Map<String, Long> getColumnNamesId() {
-        return getColumnNames().entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
-    }
-
-
-    public List<Long> getColumnOrder() {
-        List<AllocationColumn> columns = new ArrayList<>( getColumns() );
-        columns.sort( ( a, b ) -> Math.toIntExact( a.position - b.position ) );
-
-        return columns.stream().map( c -> c.columnId ).collect( Collectors.toList() );
     }
 
 

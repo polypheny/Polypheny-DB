@@ -20,13 +20,11 @@ import com.drew.lang.annotations.NotNull;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
-import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
@@ -75,9 +73,5 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getCollection", Expressions.constant( id ) );
     }
 
-
-    public List<CatalogGraphPlacement> getPlacements() {
-        return Catalog.getInstance().getSnapshot().alloc().getGraphPlacements( id );
-    }
 
 }

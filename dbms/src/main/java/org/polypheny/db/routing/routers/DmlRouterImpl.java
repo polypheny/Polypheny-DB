@@ -749,7 +749,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 .getTransaction()
                 .getSnapshot()
                 .alloc()
-                .getCollectionPlacements( catalogGraph.id ).stream().map( c -> c.adapterId )
+                .getFromLogical( catalogGraph.id ).stream().map( c -> c.adapterId )
                 .collect( Collectors.toList() );
         return routeGraphDml( alg, statement, catalogGraph, placements );
     }
@@ -945,7 +945,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         // Select from other table
         snapshot = statement.getDataContext().getSnapshot();
-        if ( snapshot.alloc().isPartitioned( fromTable.id ) ) {
+        if ( snapshot.alloc().getFromLogical( fromTable.id ).size() > 1 ) {
             throw new UnsupportedOperationException( "DMLs from other partitioned tables is not supported" );
         }
 

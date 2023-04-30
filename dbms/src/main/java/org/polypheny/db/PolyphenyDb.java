@@ -32,7 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -421,8 +421,8 @@ public class PolyphenyDb {
         Catalog.memoryCatalog = memoryCatalog;
         Catalog.testMode = testMode;
         Catalog.resetDocker = resetDocker;
-        Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
-        Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
+        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
+        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
         Catalog catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
         if ( catalog == null ) {
             throw new RuntimeException( "There was no catalog submitted, aborting." );

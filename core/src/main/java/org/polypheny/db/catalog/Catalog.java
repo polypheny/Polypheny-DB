@@ -24,6 +24,7 @@ import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -45,8 +46,8 @@ public abstract class Catalog implements ExtensionPoint {
     public static String DATABASE_NAME = "APP";
     public static String USER_NAME = "pa"; // change with user management
 
-    public static Adapter defaultStore;
-    public static Adapter defaultSource;
+    public static AdapterTemplate defaultStore;
+    public static AdapterTemplate defaultSource;
     public static long defaultUserId = 0;
     public static String defaultNamespaceName = "public";
     public static long defaultNamespaceId = 0;

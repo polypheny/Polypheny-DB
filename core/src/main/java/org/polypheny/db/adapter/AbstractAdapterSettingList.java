@@ -19,8 +19,8 @@ package org.polypheny.db.adapter;
 import java.util.Arrays;
 import java.util.List;
 import lombok.experimental.Accessors;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
 
 @Accessors(chain = true)
 public class AbstractAdapterSettingList extends AbstractAdapterSetting {

@@ -17,21 +17,17 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
-import lombok.With;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 
 @EqualsAndHashCode
 @Value
@@ -50,8 +46,6 @@ public class CatalogAdapter implements CatalogObject {
     public AdapterType type;
     @Serialize
     public ImmutableMap<String, String> settings;
-    @Serialize
-    public ImmutableList<NamespaceType> supportedNamespaces;
 
     @Serialize
     public String adapterTypeName;
@@ -71,23 +65,16 @@ public class CatalogAdapter implements CatalogObject {
         this.adapterName = adapterName;
         this.type = adapterType;
         this.settings = ImmutableMap.copyOf( settings );
-        this.supportedNamespaces = ImmutableList.copyOf( createSupportedNamespaces() );
         this.adapterTypeName = getAdapterName();
     }
 
 
     private String getAdapterTypeName() {
         // General settings are provided by the annotations of the adapter class
-        AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
+        AdapterProperties annotations = AdapterTemplate.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
         return annotations.name();
     }
 
-
-    private List<NamespaceType> createSupportedNamespaces() {
-        // General settings are provided by the annotations of the adapter class
-        AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
-        return List.of( annotations.supportedNamespaceTypes() );
-    }
 
 
     // Used for creating ResultSets
