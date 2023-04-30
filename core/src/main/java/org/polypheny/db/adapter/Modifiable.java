@@ -51,6 +51,12 @@ public interface Modifiable extends Scannable {
         }
     }
 
+    default void addColumn( Context context, List<Long> allocIds, LogicalColumn column ) {
+        for ( Long allocId : allocIds ) {
+            addColumn( context, allocId, column );
+        }
+    }
+
     void addColumn( Context context, long allocId, LogicalColumn column );
 
     default void dropColumn( Context context, List<Long> allocIds, long columnId ) {
