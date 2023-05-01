@@ -67,7 +67,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Long, Map<Long, List<Long>>> logicalTableAdapterColumns;
 
 
-    public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs ) {
+    public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
         this.tables = buildTables( allocationCatalogs
                 .values()
                 .stream()
@@ -95,7 +95,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .collect( Collectors.toList() ) );
 
         this.allocs = mergeAllocs();
-        this.allocsOnAdapters = buildAllocsOnAdapters();
+        this.allocsOnAdapters = buildAllocsOnAdapters( adapters );
         this.adapterColumnPlacement = buildAdapterColumnPlacement();
         this.logicalColumnToAlloc = buildColumnPlacements();
         this.adapterLogicalTablePlacements = buildAdapterLogicalTablePlacements();
@@ -199,14 +199,13 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Long, List<AllocationEntity>> buildAllocsOnAdapters() {
+    private ImmutableMap<Long, List<AllocationEntity>> buildAllocsOnAdapters( Map<Long, CatalogAdapter> adapters ) {
         Map<Long, List<AllocationEntity>> allocs = new HashMap<>();
-        this.allocs.forEach( ( k, v ) -> {
-            if ( !allocs.containsKey( v.adapterId ) ) {
-                allocs.put( v.adapterId, new ArrayList<>() );
-            }
-            allocs.get( v.adapterId ).add( v );
-        } );
+
+        for ( CatalogAdapter adapter : adapters.values() ) {
+            allocs.put( adapter.id, new ArrayList<>() );
+        }
+        this.allocs.forEach( ( k, v ) -> allocs.get( v.adapterId ).add( v ) );
         return ImmutableMap.copyOf( allocs );
 
     }

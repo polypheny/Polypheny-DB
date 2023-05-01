@@ -60,7 +60,14 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
 
-    public EnumerableCorrelate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public EnumerableCorrelate(
+            AlgOptCluster cluster,
+            AlgTraitSet traits,
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType ) {
         super( cluster, traits, left, right, correlationId, requiredColumns, joinType );
     }
 
@@ -68,7 +75,12 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
     /**
      * Creates an EnumerableCorrelate.
      */
-    public static EnumerableCorrelate create( AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public static EnumerableCorrelate create(
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType ) {
         final AlgOptCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableCorrelate( mq, left, right, joinType ) );
@@ -77,7 +89,13 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
 
 
     @Override
-    public EnumerableCorrelate copy( AlgTraitSet traitSet, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public EnumerableCorrelate copy(
+            AlgTraitSet traitSet,
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType ) {
         return new EnumerableCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
     }
 

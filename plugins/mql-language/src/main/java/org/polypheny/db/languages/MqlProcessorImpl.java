@@ -103,8 +103,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
     @Override
     public boolean needsDdlGeneration( Node query, QueryParameters parameters ) {
         if ( query instanceof MqlCollectionStatement ) {
-            return Catalog.getInstance()
-                    .getSnapshot()
+            return Catalog.snapshot()
                     .getNamespaces( Pattern.of( ((MqlQueryParameters) parameters).getDatabase() ) )
                     .stream().flatMap( n -> Catalog.getInstance().getSnapshot().doc().getCollections( n.id, null ).stream() )
                     .noneMatch( t -> t.name.equals( ((MqlCollectionStatement) query).getCollection() ) );
@@ -131,6 +130,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
                 .execute( statement.getPrepareContext(), statement, parameters );
         try {
             statement.getTransaction().commit();
+            Catalog.getInstance().commit();
         } catch ( TransactionException e ) {
             throw new RuntimeException( "There was a problem auto-generating the needed collection." );
         }

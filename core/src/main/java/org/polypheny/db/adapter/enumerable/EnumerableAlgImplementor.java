@@ -52,6 +52,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,6 +78,8 @@ import org.apache.calcite.linq4j.tree.Statement;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.VisitorImpl;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Result;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
@@ -109,9 +112,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
 
     public EnumerableAlg.Result visitChild( EnumerableAlg parent, int ordinal, EnumerableAlg child, EnumerableAlg.Prefer prefer ) {
-        if ( parent != null ) {
-            assert child == parent.getInputs().get( ordinal );
-        }
+        assert parent == null || child == parent.getInputs().get( ordinal );
         return child.implement( this, prefer );
     }
 
@@ -123,23 +124,22 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
     public ClassDeclaration implementRoot( EnumerableAlg rootAlg, EnumerableAlg.Prefer prefer ) {
         EnumerableAlg.Result result = rootAlg.implement( this, prefer );
-        switch ( prefer ) {
-            case ARRAY:
-                if ( result.physType.getFormat() == JavaRowFormat.ARRAY && rootAlg.getRowType().getFieldCount() == 1 ) {
-                    BlockBuilder bb = new BlockBuilder();
-                    Expression e = null;
-                    for ( Statement statement : result.block.statements ) {
-                        if ( statement instanceof GotoStatement ) {
-                            e = bb.append( "v", ((GotoStatement) statement).expression );
-                        } else {
-                            bb.add( statement );
-                        }
+        if ( Objects.requireNonNull( prefer ) == Prefer.ARRAY ) {
+            if ( result.physType.getFormat() == JavaRowFormat.ARRAY && rootAlg.getRowType().getFieldCount() == 1 ) {
+                BlockBuilder bb = new BlockBuilder();
+                Expression e = null;
+                for ( Statement statement : result.block.statements ) {
+                    if ( statement instanceof GotoStatement ) {
+                        e = bb.append( "v", ((GotoStatement) statement).expression );
+                    } else {
+                        bb.add( statement );
                     }
-                    if ( e != null ) {
-                        bb.add( Expressions.return_( null, Expressions.call( null, BuiltInMethod.SLICE0.method, e ) ) );
-                    }
-                    result = new EnumerableAlg.Result( bb.toBlock(), result.physType, JavaRowFormat.SCALAR );
                 }
+                if ( e != null ) {
+                    bb.add( Expressions.return_( null, Expressions.call( null, BuiltInMethod.SLICE0.method, e ) ) );
+                }
+                result = new Result( bb.toBlock(), result.physType, JavaRowFormat.SCALAR );
+            }
         }
 
         final List<MemberDeclaration> memberDeclarations = new ArrayList<>();

@@ -108,7 +108,11 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
-    public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
+    public static Pair<Bindable<Object[]>, String> toBindable(
+            Map<String, Object> parameters,
+            EnumerableAlg alg,
+            EnumerableAlg.Prefer prefer,
+            Statement statement ) {
         EnumerableAlgImplementor algImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = algImplementor.implementRoot( alg, prefer );
@@ -121,7 +125,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         Hook.JAVA_PLAN.run( s );
 
         try {
-            return new Pair<>( getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
+            return new Pair<Bindable<Object[]>, String>( (Bindable) getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
         }
@@ -129,12 +133,12 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
 
     static ArrayBindable getArrayBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
-        Bindable bindable = getBindable( expr, s, fieldCount );
+        Bindable<?> bindable = getBindable( expr, s, fieldCount );
         return box( bindable );
     }
 
 
-    static Bindable getBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
+    static Bindable<?> getBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
         ICompilerFactory compilerFactory;
         try {
             compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();

@@ -97,7 +97,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Set<LogicalTable> catalogTables = new TreeSet<>();
 
     @Getter
-    private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
+    private final List<Adapter<?>> involvedAdapters = new CopyOnWriteArrayList<>();
 
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
@@ -142,7 +142,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void registerInvolvedAdapter( Adapter adapter ) {
+    public void registerInvolvedAdapter( Adapter<?> adapter ) {
         if ( !involvedAdapters.contains( adapter ) ) {
             involvedAdapters.add( adapter );
         }
@@ -158,7 +158,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
-            for ( Adapter adapter : involvedAdapters ) {
+            for ( Adapter<?> adapter : involvedAdapters ) {
                 okToCommit &= adapter.prepare( xid );
             }
         }
@@ -181,7 +181,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         if ( okToCommit ) {
             // Commit changes
-            for ( Adapter adapter : involvedAdapters ) {
+            for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.commit( xid );
             }
 
@@ -225,7 +225,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
         try {
             //  Rollback changes to the adapters
-            for ( Adapter adapter : involvedAdapters ) {
+            for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.rollback( xid );
             }
             IndexManager.getInstance().rollback( this.xid );

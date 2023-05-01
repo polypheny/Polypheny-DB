@@ -43,9 +43,9 @@ public interface Transaction {
 
     void rollback() throws TransactionException;
 
-    void registerInvolvedAdapter( Adapter adapter );
+    void registerInvolvedAdapter( Adapter<?> adapter );
 
-    List<Adapter> getInvolvedAdapters();
+    List<Adapter<?>> getInvolvedAdapters();
 
     Snapshot getSnapshot();
 

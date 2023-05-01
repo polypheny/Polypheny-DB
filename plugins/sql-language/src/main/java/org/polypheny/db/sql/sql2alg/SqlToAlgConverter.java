@@ -2236,7 +2236,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     private CorrelationUse getCorrelationUse( Blackboard bb, final AlgNode r0 ) {
-        /*final Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( r0 );
+        final Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( r0 );
         if ( correlatedVariables.isEmpty() ) {
             return null;
         }
@@ -2254,7 +2254,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             String originalRelName = lookup.getOriginalRelName();
             String originalFieldName = fieldAccess.getField().getName();
 
-            final NameMatcher nameMatcher = bb.getValidator().getCatalogReader().nameMatcher;
+            final NameMatcher nameMatcher = Snapshot.nameMatcher;
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
             assert resolved.count() == 1;
@@ -2328,8 +2328,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             // Add new node to leaves.
             leaves.add( r );
         }
-        return new CorrelationUse( correlNames.get( 0 ), requiredColumns.build(), r );*/
-        return null;
+        return new CorrelationUse( correlNames.get( 0 ), requiredColumns.build(), r );
     }
 
 
@@ -2341,12 +2340,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * @return true if the sub-query is non-correlated
      */
     private boolean isSubQueryNonCorrelated( AlgNode subq, Blackboard bb ) {
-        /*Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( subq );
+        Set<CorrelationId> correlatedVariables = AlgOptUtil.getVariablesUsed( subq );
         for ( CorrelationId correlName : correlatedVariables ) {
             DeferredLookup lookup = mapCorrelToDeferred.get( correlName );
             String originalRelName = lookup.getOriginalRelName();
 
-            final NameMatcher nameMatcher = lookup.bb.scope.getValidator().getCatalogReader().nameMatcher;
+            final NameMatcher nameMatcher = Snapshot.nameMatcher;
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
 
@@ -2364,7 +2363,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     break;
                 }
             } while ( parentScope != null );
-        }*/
+        }
         return true;
     }
 

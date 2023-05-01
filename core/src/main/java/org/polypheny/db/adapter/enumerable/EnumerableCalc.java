@@ -149,7 +149,8 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             typeFactory,
                             builder2,
                             new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType ) ) ),
-                            implementor.allCorrelateVariables, implementor.getConformance() );
+                            implementor.allCorrelateVariables,
+                            implementor.getConformance() );
             builder2.add(
                     Expressions.ifThen(
                             condition,

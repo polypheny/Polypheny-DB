@@ -35,7 +35,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
@@ -78,28 +77,27 @@ public class DdlTest extends MqlTestTemplate {
 
     @Test
     public void addPlacementTest() throws SQLException {
-        Snapshot snapshot = Catalog.snapshot();
 
         String placement = "store1";
         try {
-            LogicalNamespace namespace = snapshot.getNamespace( database );
+            LogicalNamespace namespace = Catalog.snapshot().getNamespace( database );
 
-            List<String> collectionNames = snapshot.doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
+            List<String> collectionNames = Catalog.snapshot().doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
 
-            LogicalCollection collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            LogicalCollection collection = Catalog.snapshot().doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( snapshot.alloc().getDataPlacements( collection.id ).size(), 1 );
+            assertEquals( Catalog.snapshot().alloc().getFromLogical( collection.id ).size(), 1 );
 
             addStore( placement );
 
             execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, placement ) );
 
-            collection = snapshot.doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            collection = Catalog.snapshot().doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-            assertEquals( Catalog.snapshot().alloc().getDataPlacements( collection.id ).size(), 2 );
+            assertEquals( Catalog.snapshot().alloc().getFromLogical( collection.id ).size(), 2 );
 
         } finally {
             execute( String.format( "db.%s.drop()", collectionName ) );

@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
@@ -40,17 +41,15 @@ public class SnapshotBuilder {
         LogicalDocSnapshot docs = buildDocSnapshots( logicalCatalogs );
         LogicalGraphSnapshot graphs = buildGraphSnapshots( logicalCatalogs );
 
-        AllocSnapshot alloc = buildAlloc( allocationCatalogs );
+        AllocSnapshot alloc = buildAlloc( allocationCatalogs, catalog.getAdapters() );
         Map<Long, LogicalNamespace> namespaces = logicalCatalogs.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getLogicalNamespace() ) );
 
         return new SnapshotImpl( id, catalog, namespaces, rels, docs, graphs, alloc );
     }
 
 
-
-
-    private static AllocSnapshot buildAlloc( Map<Long, AllocationCatalog> allocationCatalogs ) {
-        return new AllocSnapshotImpl( allocationCatalogs );
+    private static AllocSnapshot buildAlloc( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
+        return new AllocSnapshotImpl( allocationCatalogs, adapters );
     }
 
 

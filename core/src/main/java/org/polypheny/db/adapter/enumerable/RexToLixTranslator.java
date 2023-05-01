@@ -61,6 +61,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -84,6 +85,7 @@ import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
@@ -140,7 +142,7 @@ public class RexToLixTranslator {
     }
 
 
-    private static Method findMethod( Class<?> clazz, String name, Class... parameterTypes ) {
+    private static Method findMethod( Class<?> clazz, String name, Class<?>... parameterTypes ) {
         try {
             return clazz.getMethod( name, parameterTypes );
         } catch ( NoSuchMethodException e ) {
@@ -150,9 +152,9 @@ public class RexToLixTranslator {
 
 
     private RexToLixTranslator(
-            RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
-            Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, Conformance conformance, RexToLixTranslator parent, Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
-        this.program = program; // may be null
+            @Nullable RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
+            Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, Conformance conformance, @Nullable RexToLixTranslator parent, @Nullable Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
+        this.program = program;
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.conformance = Objects.requireNonNull( conformance );
         this.root = Objects.requireNonNull( root );
@@ -160,8 +162,8 @@ public class RexToLixTranslator {
         this.list = Objects.requireNonNull( list );
         this.exprNullableMap = Objects.requireNonNull( exprNullableMap );
         this.builder = Objects.requireNonNull( builder );
-        this.parent = parent; // may be null
-        this.correlates = correlates; // may be null
+        this.parent = parent;
+        this.correlates = correlates;
         this.replace = replace;
         this.doSubstitute = !replace.isEmpty();
     }
@@ -198,8 +200,7 @@ public class RexToLixTranslator {
                 storageTypes.add( outputPhysType.getJavaFieldType( i ) );
             }
         }
-        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, Collections.emptyMap(), new RexBuilder( typeFactory ), conformance, null, null )
-                .setCorrelates( correlates )
+        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, Collections.emptyMap(), new RexBuilder( typeFactory ), conformance, null, correlates )
                 .setUnwindContext( unwindContext )
                 .translateList( program.getProjectList(), storageTypes );
     }
@@ -574,11 +575,10 @@ public class RexToLixTranslator {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                switch ( sourceType.getPolyType().getFamily() ) {
-                    case NUMERIC:
-                        final BigDecimal multiplier = targetType.getPolyType().getEndUnit().multiplier;
-                        final BigDecimal divider = BigDecimal.ONE;
-                        convert = RexImpTable.multiplyDivide( convert, multiplier, divider );
+                if ( Objects.requireNonNull( sourceType.getPolyType().getFamily() ) == PolyTypeFamily.NUMERIC ) {
+                    final BigDecimal multiplier = targetType.getPolyType().getEndUnit().multiplier;
+                    final BigDecimal divider = BigDecimal.ONE;
+                    convert = RexImpTable.multiplyDivide( convert, multiplier, divider );
                 }
         }
         return scaleIntervalToNumber( sourceType, targetType, convert );
@@ -665,21 +665,19 @@ public class RexToLixTranslator {
                 RexNode target = deref( fieldAccess.getReferenceExpr() );
                 int fieldIndex = fieldAccess.getField().getIndex();
                 String fieldName = fieldAccess.getField().getName();
-                switch ( target.getKind() ) {
-                    case CORREL_VARIABLE:
-                        if ( correlates == null ) {
-                            throw new RuntimeException( "Cannot translate " + expr + " since correlate variables resolver is not defined" );
-                        }
-                        InputGetter getter = correlates.apply( ((RexCorrelVariable) target).getName() );
-                        Expression y = getter.field( list, fieldIndex, storageType );
-                        Expression input = list.append( "corInp" + fieldIndex + "_", y ); // safe to share
-                        return handleNullUnboxingIfNecessary( input, nullAs, storageType );
-                    default:
-                        RexNode rxIndex = builder.makeLiteral( fieldIndex, typeFactory.createType( int.class ), true );
-                        RexNode rxName = builder.makeLiteral( fieldName, typeFactory.createType( String.class ), true );
-                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), OperatorRegistry.get( OperatorName.STRUCT_ACCESS ), ImmutableList.of( target, rxIndex, rxName ) );
-                        return translateCall( accessCall, nullAs );
+                if ( Objects.requireNonNull( target.getKind() ) == Kind.CORREL_VARIABLE ) {
+                    if ( correlates == null ) {
+                        throw new RuntimeException( "Cannot translate " + expr + " since correlate variables resolver is not defined" );
+                    }
+                    InputGetter getter = correlates.apply( ((RexCorrelVariable) target).getName() );
+                    Expression y = getter.field( list, fieldIndex, storageType );
+                    Expression input = list.append( "corInp" + fieldIndex + "_", y ); // safe to share
+                    return handleNullUnboxingIfNecessary( input, nullAs, storageType );
                 }
+                RexNode rxIndex = builder.makeLiteral( fieldIndex, typeFactory.createType( int.class ), true );
+                RexNode rxName = builder.makeLiteral( fieldName, typeFactory.createType( String.class ), true );
+                RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), OperatorRegistry.get( OperatorName.STRUCT_ACCESS ), ImmutableList.of( target, rxIndex, rxName ) );
+                return translateCall( accessCall, nullAs );
             }
             default:
                 if ( expr instanceof RexCall ) {
@@ -830,7 +828,7 @@ public class RexToLixTranslator {
                 return literal.getValueAs( PolyPath.class ).getAsExpression();
             default:
                 final Primitive primitive = Primitive.ofBoxOr( javaClass );
-                final Comparable value = literal.getValueAs( Comparable.class );
+                final Comparable<?> value = literal.getValueAs( Comparable.class );
                 if ( primitive != null && value instanceof Number ) {
                     value2 = primitive.number( (Number) value );
                 } else {
@@ -888,9 +886,7 @@ public class RexToLixTranslator {
             list.add( translate );
             // desiredType is still a hint, thus we might get any kind of output (boxed or not) when hint was provided.
             // It is favourable to get the type matching desired type
-            if ( desiredType == null && !isNullable( rex ) ) {
-                assert !Primitive.isBox( translate.getType() ) : "Not-null boxed primitive should come back as primitive: " + rex + ", " + translate.getType();
-            }
+            assert desiredType != null || isNullable( rex ) || !Primitive.isBox( translate.getType() ) : "Not-null boxed primitive should come back as primitive: " + rex + ", " + translate.getType();
         }
         return list;
     }
@@ -901,8 +897,7 @@ public class RexToLixTranslator {
             return RexImpTable.TRUE_EXPR;
         }
         final ParameterExpression root = DataContext.ROOT;
-        RexToLixTranslator translator = new RexToLixTranslator( program, typeFactory, root, inputGetter, list, Collections.emptyMap(), new RexBuilder( typeFactory ), conformance, null, null );
-        translator = translator.setCorrelates( correlates );
+        RexToLixTranslator translator = new RexToLixTranslator( program, typeFactory, root, inputGetter, list, Collections.emptyMap(), new RexBuilder( typeFactory ), conformance, null, correlates );
         return translator.translate( program.getCondition(), RexImpTable.NullAs.FALSE );
     }
 
@@ -923,7 +918,7 @@ public class RexToLixTranslator {
         final Primitive toBox = Primitive.ofBox( toType );
         final Primitive fromBox = Primitive.ofBox( fromType );
         final Primitive fromPrimitive = Primitive.of( fromType );
-        final boolean fromNumber = fromType instanceof Class && Number.class.isAssignableFrom( (Class) fromType );
+        final boolean fromNumber = fromType instanceof Class && Number.class.isAssignableFrom( (Class<?>) fromType );
         if ( fromType == String.class ) {
             if ( toPrimitive != null ) {
                 switch ( toPrimitive ) {
@@ -947,20 +942,16 @@ public class RexToLixTranslator {
                 }
             }
             if ( toBox != null ) {
-                switch ( toBox ) {
-                    case CHAR:
-                        // Generate "SqlFunctions.toCharBoxed(x)".
-                        return Expressions.call(
-                                Functions.class,
-                                "to" + Functions.initcap( toBox.primitiveName ) + "Boxed",
-                                operand );
-                    default:
-                        // Generate "Short.valueOf(x)".
-                        return Expressions.call(
-                                toBox.boxClass,
-                                "valueOf",
-                                operand );
-                }
+                if ( toBox == Primitive.CHAR ) {// Generate "SqlFunctions.toCharBoxed(x)".
+                    return Expressions.call(
+                            Functions.class,
+                            "to" + Functions.initcap( toBox.primitiveName ) + "Boxed",
+                            operand );
+                }// Generate "Short.valueOf(x)".
+                return Expressions.call(
+                        toBox.boxClass,
+                        "valueOf",
+                        operand );
             }
         }
         if ( toPrimitive != null ) {
@@ -1244,27 +1235,26 @@ public class RexToLixTranslator {
 
 
     private static Expression scaleIntervalToNumber( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
-        switch ( targetType.getPolyType().getFamily() ) {
-            case NUMERIC:
-                switch ( sourceType.getPolyType() ) {
-                    case INTERVAL_YEAR:
-                    case INTERVAL_YEAR_MONTH:
-                    case INTERVAL_MONTH:
-                    case INTERVAL_DAY:
-                    case INTERVAL_DAY_HOUR:
-                    case INTERVAL_DAY_MINUTE:
-                    case INTERVAL_DAY_SECOND:
-                    case INTERVAL_HOUR:
-                    case INTERVAL_HOUR_MINUTE:
-                    case INTERVAL_HOUR_SECOND:
-                    case INTERVAL_MINUTE:
-                    case INTERVAL_MINUTE_SECOND:
-                    case INTERVAL_SECOND:
-                        // Scale to the given field.
-                        final BigDecimal multiplier = BigDecimal.ONE;
-                        final BigDecimal divider = sourceType.getPolyType().getEndUnit().multiplier;
-                        return RexImpTable.multiplyDivide( operand, multiplier, divider );
-                }
+        if ( Objects.requireNonNull( targetType.getPolyType().getFamily() ) == PolyTypeFamily.NUMERIC ) {
+            switch ( sourceType.getPolyType() ) {
+                case INTERVAL_YEAR:
+                case INTERVAL_YEAR_MONTH:
+                case INTERVAL_MONTH:
+                case INTERVAL_DAY:
+                case INTERVAL_DAY_HOUR:
+                case INTERVAL_DAY_MINUTE:
+                case INTERVAL_DAY_SECOND:
+                case INTERVAL_HOUR:
+                case INTERVAL_HOUR_MINUTE:
+                case INTERVAL_HOUR_SECOND:
+                case INTERVAL_MINUTE:
+                case INTERVAL_MINUTE_SECOND:
+                case INTERVAL_SECOND:
+                    // Scale to the given field.
+                    final BigDecimal multiplier = BigDecimal.ONE;
+                    final BigDecimal divider = sourceType.getPolyType().getEndUnit().multiplier;
+                    return RexImpTable.multiplyDivide( operand, multiplier, divider );
+            }
         }
         return operand;
     }
@@ -1285,7 +1275,7 @@ public class RexToLixTranslator {
      */
     public static class InputGetterImpl implements InputGetter {
 
-        private List<Pair<Expression, PhysType>> inputs;
+        private final List<Pair<Expression, PhysType>> inputs;
 
 
         public InputGetterImpl( List<Pair<Expression, PhysType>> inputs ) {

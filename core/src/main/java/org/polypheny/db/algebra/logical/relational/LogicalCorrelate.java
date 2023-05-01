@@ -70,7 +70,14 @@ public final class LogicalCorrelate extends Correlate {
      * @param requiredColumns Required columns
      * @param joinType join type
      */
-    public LogicalCorrelate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public LogicalCorrelate(
+            AlgOptCluster cluster,
+            AlgTraitSet traitSet,
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType ) {
         super( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
         assert !RuntimeConfig.DEBUG.getBoolean() || isValid( Litmus.THROW, null );
     }
@@ -94,7 +101,12 @@ public final class LogicalCorrelate extends Correlate {
     /**
      * Creates a LogicalCorrelate.
      */
-    public static LogicalCorrelate create( AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public static LogicalCorrelate create(
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType ) {
         final AlgOptCluster cluster = left.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
@@ -102,7 +114,13 @@ public final class LogicalCorrelate extends Correlate {
 
 
     @Override
-    public LogicalCorrelate copy( AlgTraitSet traitSet, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public LogicalCorrelate copy(
+            AlgTraitSet traitSet,
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         return new LogicalCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
     }

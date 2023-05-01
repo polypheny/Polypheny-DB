@@ -80,7 +80,7 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
             format = JavaRowFormat.ARRAY;
         } else if ( rowType.getFieldCount() == 1 && isQueryable() ) {
             format = JavaRowFormat.SCALAR;
-        } else if ( getElementType() instanceof Class && Object[].class.isAssignableFrom( (Class) getElementType() ) ) {
+        } else if ( getElementType() instanceof Class && Object[].class.isAssignableFrom( (Class<?>) getElementType() ) ) {
             format = JavaRowFormat.ARRAY;
         } else {
             format = JavaRowFormat.CUSTOM;

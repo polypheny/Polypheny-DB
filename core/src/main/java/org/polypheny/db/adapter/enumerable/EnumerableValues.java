@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -101,7 +102,7 @@ public class EnumerableValues extends Values implements EnumerableAlg {
                   new Object[] {3, 4}
               });
 */
-        final JavaTypeFactory typeFactory = (JavaTypeFactory) JavaTypeFactory.DEFAULT;
+        final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(

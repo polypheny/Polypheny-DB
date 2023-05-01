@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
@@ -162,6 +163,7 @@ public class CypherProcessorImpl extends AutomaticDdlProcessor {
 
             statement.getTransaction().commit();
             ((ExtendedQueryParameters) parameters).setDatabaseId( namespaceId );
+            Catalog.getInstance().updateSnapshot();
         } catch ( TransactionException e ) {
             throw new RuntimeException( "Unable to commit auto-generated structure:" + e.getMessage() );
         }
