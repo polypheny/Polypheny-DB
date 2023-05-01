@@ -41,9 +41,9 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.util.Source;
 
 
@@ -87,5 +87,6 @@ public class CsvTranslatableTable extends CsvTable implements TranslatableEntity
         // Request all fields.
         return new CsvScan( context.getCluster(), this, this, fields );
     }
+
 
 }

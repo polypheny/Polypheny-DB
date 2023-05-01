@@ -36,7 +36,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public abstract class DocumentValues extends AbstractAlgNode implements DocumentAlg {
@@ -47,7 +47,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     /**
      * Creates a {@link DocumentValues}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which contains values.
+     * {@link ModelTrait#DOCUMENT} node, which contains values.
      */
     public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
         super( cluster, traitSet );

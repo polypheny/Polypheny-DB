@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.refactor;
+package org.polypheny.db.schema.types;
 
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
-import org.polypheny.db.plan.AlgTraitSet;
 
-public interface TranslatableEntity {
+import org.polypheny.db.algebra.stream.Delta;
+import org.polypheny.db.schema.Entity;
+
+
+/**
+ * Table that can be converted to a stream.
+ *
+ * @see Delta
+ */
+public interface StreamableEntity extends Typed {
 
     /**
-     * Converts this entity into a {@link AlgNode}.
+     * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
      */
-    AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet );
+    Entity stream();
 
 }
+

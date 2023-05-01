@@ -18,12 +18,12 @@ package org.polypheny.db.algebra.core.lpg;
 
 import java.util.List;
 import org.polypheny.db.algebra.core.common.Scan;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
 
 
@@ -32,7 +32,7 @@ public abstract class LpgScan<E extends CatalogEntity> extends Scan<E> implement
 
     /**
      * Creates a {@link LpgScan}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node, which is able to scan a LPG graph.
+     * {@link ModelTrait#GRAPH} native node, which is able to scan a LPG graph.
      */
     public LpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, E graph ) {
         super( cluster, traitSet, graph );

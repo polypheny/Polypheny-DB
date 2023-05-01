@@ -51,8 +51,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.impl.TableFunctionImpl;
+import org.polypheny.db.schema.types.QueryableEntity;
 
 
 /**

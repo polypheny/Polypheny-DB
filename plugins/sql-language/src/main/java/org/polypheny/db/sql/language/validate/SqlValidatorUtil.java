@@ -49,7 +49,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.ExtensibleEntity;
+import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;

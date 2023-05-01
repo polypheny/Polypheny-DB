@@ -54,10 +54,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ImplementableFunction;
-import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TableFunction;
+import org.polypheny.db.schema.types.QueryableEntity;
+import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Static;
 

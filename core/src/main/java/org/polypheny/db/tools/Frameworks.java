@@ -45,6 +45,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -58,7 +59,6 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PlannerImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 
 
 /**
@@ -195,7 +195,7 @@ public class Frameworks {
      * @param cache Whether to create a caching schema.
      */
     public static Snapshot createSnapshot( boolean cache ) {
-        return AbstractPolyphenyDbSchema.createSnapshot();
+        return Catalog.snapshot();
     }
 
 

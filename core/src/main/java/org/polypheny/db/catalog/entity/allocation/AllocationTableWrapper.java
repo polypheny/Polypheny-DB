@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity.allocation;
 
 import java.util.List;
 import lombok.Value;
-import org.polypheny.db.catalog.entity.AllocationColumn;
 
 @Value(staticConstructor = "of")
 public class AllocationTableWrapper {

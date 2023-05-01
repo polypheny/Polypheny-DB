@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.refactor;
+package org.polypheny.db.schema.types;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.calcite.linq4j.AbstractEnumerable;
+import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.rex.RexNode;
 
-public interface ScannableEntity {
+public interface ProjectableFilterableEntity extends Typed {
 
-    Enumerable<Object[]> scan( DataContext dataContext );
+    Enumerable<Object[]> scan( DataContext root, List<RexNode> mutableFilters, int[] projectInts );
+
 
 }

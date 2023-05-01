@@ -56,7 +56,7 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.schema.StreamableEntity;
+import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.CoreUtil;

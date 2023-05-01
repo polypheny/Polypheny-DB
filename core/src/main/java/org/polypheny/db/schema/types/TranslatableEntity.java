@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.lpg;
+package org.polypheny.db.schema.types;
 
-import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 
-/**
- * {@link ModelTrait#GRAPH} native node.
- */
-public interface LpgAlg {
+public interface TranslatableEntity extends Typed {
 
-    NodeType getNodeType();
+    /**
+     * Converts this entity into a {@link AlgNode}.
+     */
+    AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet );
 
-
-    enum NodeType {
-        MATCH,
-        FILTER,
-        SCAN,
-        UNWIND,
-        PROJECT,
-        MODIFY,
-        VALUES,
-        AGGREGATE,
-        MERGE,
-        SORT
-    }
 
 }

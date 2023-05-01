@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -38,7 +39,7 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
     /**
      * Creates a {@link DocumentAggregate}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of an aggregate.
+     * {@link ModelTrait#DOCUMENT} native node of an aggregate.
      */
     protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child );

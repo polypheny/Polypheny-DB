@@ -35,6 +35,7 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
+import org.polypheny.db.schema.types.TranslatableEntity;
 
 
 /**

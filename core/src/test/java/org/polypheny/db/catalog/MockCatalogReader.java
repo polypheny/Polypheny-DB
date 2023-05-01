@@ -61,13 +61,12 @@ import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
-import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.StreamableEntity;
 import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.NullInitializerExpressionFactory;
@@ -95,7 +94,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
      */
     public MockCatalogReader( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super(
-                AbstractPolyphenyDbSchema.createSnapshot(),//DEFAULT_CATALOG ),
+                Catalog.snapshot(),
                 typeFactory );
     }
 

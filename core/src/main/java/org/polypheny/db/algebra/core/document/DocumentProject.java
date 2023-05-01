@@ -25,6 +25,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
@@ -34,7 +35,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
     /**
      * Creates a {@link DocumentProject}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of a project.
+     * {@link ModelTrait#DOCUMENT} native node of a project.
      */
     protected DocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input );

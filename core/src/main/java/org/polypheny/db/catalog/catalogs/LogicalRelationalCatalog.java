@@ -312,4 +312,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
 
     Map<Long, AlgNode> getNodes();
 
+    void deleteKey( long id );
+
 }

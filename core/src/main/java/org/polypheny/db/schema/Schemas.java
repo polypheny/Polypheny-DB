@@ -42,9 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -58,14 +56,16 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.refactor.QueryableEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepare;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.schema.types.ProjectableFilterableEntity;
+import org.polypheny.db.schema.types.QueryableEntity;
+import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
@@ -381,91 +381,6 @@ public final class Schemas {
             list.add( Pair.of( s.getName(), s ) );
         }
         return new PathImpl( ImmutableList.copyOf( Lists.reverse( list ) ) );
-    }
-
-
-    /**
-     * Dummy data context that has no variables.
-     */
-    private static class DummyDataContext implements DataContext {
-
-        @Getter
-        private final Snapshot snapshot;
-        private final ImmutableMap<String, Object> map;
-
-
-        DummyDataContext( Snapshot snapshot ) {
-            this.snapshot = snapshot;
-            this.map = ImmutableMap.of();
-        }
-
-
-        @Override
-        public JavaTypeFactory getTypeFactory() {
-            //return connection.getTypeFactory();
-            return new JavaTypeFactoryImpl(); // TODO MV: Potential bug
-        }
-
-
-        @Override
-        public QueryProvider getQueryProvider() {
-            return null; // TODO MV: potential bug
-        }
-
-
-        @Override
-        public Object get( String name ) {
-            return map.get( name );
-        }
-
-
-        @Override
-        public void addAll( Map<String, Object> map ) {
-            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
-        }
-
-
-        @Override
-        public Statement getStatement() {
-            return null;
-        }
-
-
-        @Override
-        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
-            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
-        }
-
-
-        @Override
-        public AlgDataType getParameterType( long index ) {
-            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
-        }
-
-
-        @Override
-        public List<Map<Long, Object>> getParameterValues() {
-            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
-        }
-
-
-        @Override
-        public void setParameterValues( List<Map<Long, Object>> values ) {
-            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
-        }
-
-
-        @Override
-        public Map<Long, AlgDataType> getParameterTypes() {
-            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
-        }
-
-
-        @Override
-        public void setParameterTypes( Map<Long, AlgDataType> types ) {
-            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
-        }
-
     }
 
 

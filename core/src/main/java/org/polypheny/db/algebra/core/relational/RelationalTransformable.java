@@ -21,9 +21,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.schema.types.ModifiableEntity;
 
 
 /**

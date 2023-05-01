@@ -51,11 +51,11 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.util.ImmutableBitSet;
 
 

@@ -57,17 +57,17 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.refactor.FilterableEntity;
-import org.polypheny.db.catalog.refactor.ProjectableFilterableEntity;
-import org.polypheny.db.catalog.refactor.QueryableEntity;
-import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoCost;
-import org.polypheny.db.schema.StreamableEntity;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.schema.types.ProjectableFilterableEntity;
+import org.polypheny.db.schema.types.QueryableEntity;
+import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 
 

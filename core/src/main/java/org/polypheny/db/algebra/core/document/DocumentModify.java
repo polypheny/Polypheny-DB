@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 @SuperBuilder(toBuilder = true)
 public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> implements DocumentAlg {
@@ -41,7 +42,7 @@ public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> 
 
     /**
      * Creates a {@link DocumentModify}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which modifies a collection.
+     * {@link ModelTrait#DOCUMENT} node, which modifies a collection.
      */
     protected DocumentModify( AlgTraitSet traits, E collection, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
         super( input.getCluster(), input.getTraitSet(), collection, input );

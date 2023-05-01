@@ -168,7 +168,7 @@ public abstract class DdlManager {
      * @param location instance of the data store on which to create the index; if null, default strategy is being used
      * @param statement the initial query statement
      */
-    public abstract void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws TransactionException;
+    public abstract void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException;
 
     /**
      * Adds an index located in Polypheny to a table
@@ -192,7 +192,7 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement );
+    public abstract void addDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
 
     /**
      * Adds a new primary key to a table

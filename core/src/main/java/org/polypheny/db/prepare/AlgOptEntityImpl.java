@@ -67,15 +67,15 @@ import org.polypheny.db.prepare.Prepare.AbstractPreparingEntity;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.FilterableEntity;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ProjectableFilterableEntity;
-import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.types.ProjectableFilterableEntity;
+import org.polypheny.db.schema.types.QueryableEntity;
+import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.NullInitializerExpressionFactory;
@@ -278,7 +278,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
         }
 
         if ( entity instanceof TranslatableEntity ) {
-            return ((TranslatableEntity) entity).toAlg( context, this, traitSet );
+            return ((TranslatableEntity) entity).toAlg( context, traitSet );
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {

@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -29,7 +30,7 @@ public abstract class LpgAggregate extends Aggregate implements LpgAlg {
 
     /**
      * Creates a {@link LpgAggregate}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node of a aggregate.
+     * {@link ModelTrait#GRAPH} native node of a aggregate.
      */
     protected LpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );

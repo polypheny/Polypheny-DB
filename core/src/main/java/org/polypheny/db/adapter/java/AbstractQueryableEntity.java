@@ -35,12 +35,9 @@ package org.polypheny.db.adapter.java;
 
 
 import java.lang.reflect.Type;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractEntity;
+import org.polypheny.db.schema.types.QueryableEntity;
 
 
 /**
@@ -60,12 +57,6 @@ public abstract class AbstractQueryableEntity extends AbstractEntity implements 
     @Override
     public Type getElementType() {
         return elementType;
-    }
-
-
-    @Override
-    public Expression getExpression( Snapshot snapshot, String tableName, Class<?> clazz ) {
-        return Schemas.tableExpression( null, elementType, tableName, clazz );
     }
 
 }

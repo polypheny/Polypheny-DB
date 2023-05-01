@@ -323,7 +323,7 @@ public class PolyphenyDb {
         Catalog catalog = restoreCatalog();
 
         // Initialize DDL Manager
-        DdlManager.setAndGetInstance( new DdlManagerImpl( catalog, transactionManager ) );
+        DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );

@@ -51,9 +51,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
-import org.polypheny.db.catalog.entity.AllocationColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -69,14 +69,14 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.catalog.refactor.ModifiableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.ModifiableGraph;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -648,7 +648,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     private Modify<?> getModify( CatalogEntity table, AlgNode input, Statement statement, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
-        return table.unwrap( org.polypheny.db.catalog.refactor.ModifiableEntity.class ).toModificationAlg( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
+        return table.unwrap( ModifiableEntity.class ).toModificationAlg( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
 
 

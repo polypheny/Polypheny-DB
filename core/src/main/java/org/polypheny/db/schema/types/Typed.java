@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.schema;
+package org.polypheny.db.schema.types;
 
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
-import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
-public interface TranslatableGraph {
+public interface Typed {
 
-    /**
-     * Converts this table into a {@link AlgNode relational expression}.
-     */
-    AlgNode toAlg( ToAlgContext context, Graph graph );
+    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
 
 }

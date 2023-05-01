@@ -50,19 +50,21 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.refactor.ScannableEntity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableEntity;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
+import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.schema.types.TranslatableEntity;
 
 
 /**
@@ -169,8 +171,6 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     }
 
 
-
-
     /**
      * Returns a table based on a particular field of this schema. If the field is not of the right type to be a relation, returns null.
      */
@@ -252,6 +252,12 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
                 //noinspection unchecked
                 return enumerable.select( new FieldSelector( (Class<?>) elementType ) );
             }
+        }
+
+
+        @Override
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+            return getRowType();
         }
 
 

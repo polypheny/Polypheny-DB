@@ -41,11 +41,11 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.refactor.FilterableEntity;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.util.Source;
 
 
@@ -102,6 +102,7 @@ public class CsvFilterableTable extends CsvTable implements FilterableEntity {
         }
         return false;
     }
+
 
 }
 

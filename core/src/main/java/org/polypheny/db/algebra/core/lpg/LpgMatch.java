@@ -32,6 +32,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public abstract class LpgMatch extends SingleAlg implements LpgAlg {
@@ -44,7 +45,7 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
     /**
      * Creates a {@link LpgMatch}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} node, which represents a <code>MATCH</code> operator.
+     * {@link ModelTrait#GRAPH} node, which represents a <code>MATCH</code> operator.
      */
     protected LpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input );

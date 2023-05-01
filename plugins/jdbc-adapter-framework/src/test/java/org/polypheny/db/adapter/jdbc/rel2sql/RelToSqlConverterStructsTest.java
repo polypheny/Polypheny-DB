@@ -51,7 +51,6 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;

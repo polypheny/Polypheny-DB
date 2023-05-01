@@ -14,27 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.refactor;
+package org.polypheny.db.schema.types;
 
 import java.util.List;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.common.Modify;
-import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
+import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rex.RexNode;
 
-public interface ModifiableEntity {
+public interface FilterableEntity extends Typed {
 
-    Modify<?> toModificationAlg(
-            AlgOptCluster cluster,
-            AlgTraitSet traits,
-            CatalogEntity physicalEntity,
-            AlgNode child,
-            Operation operation,
-            List<String> targets,
-            List<? extends RexNode> sources );
-
+    Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters );
 
 }

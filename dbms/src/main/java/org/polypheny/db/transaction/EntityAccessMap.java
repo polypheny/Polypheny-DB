@@ -41,11 +41,11 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.schema.LogicalEntity;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 
@@ -255,7 +255,7 @@ public class EntityAccessMap {
             if ( p instanceof RelModify ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                    extractWriteConstraints( table.unwrap( LogicalEntity.class ) );
+                    extractWriteConstraints( table.unwrap( LogicalTable.class ) );
                 }
             } else {
                 newAccess = Mode.READ_ACCESS;
@@ -322,7 +322,7 @@ public class EntityAccessMap {
         /**
          * Retrieves an access map for linked tables based on foreign key constraints
          */
-        private void extractWriteConstraints( LogicalEntity logicalTable ) {
+        private void extractWriteConstraints( LogicalTable logicalTable ) {
 
             for ( long constraintTable : logicalTable.getConstraintIds() ) {
                 PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( logicalTable.id );

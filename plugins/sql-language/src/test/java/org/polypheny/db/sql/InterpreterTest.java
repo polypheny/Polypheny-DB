@@ -44,7 +44,6 @@ import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.ScannableEntityTest.BeatlesEntity;

@@ -18,7 +18,7 @@ package org.polypheny.db.catalog.logistic;
 
 import com.google.gson.annotations.SerializedName;
 import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 public enum NamespaceType {
     @SerializedName("relational")

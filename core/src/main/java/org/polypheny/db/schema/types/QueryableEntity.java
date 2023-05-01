@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.refactor;
+package org.polypheny.db.schema.types;
 
-import java.util.List;
-import org.apache.calcite.linq4j.Enumerable;
+import java.lang.reflect.Type;
+import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
-public interface ProjectableFilterableEntity {
+public interface QueryableEntity extends Typed {
 
-    Enumerable<Object[]> scan( DataContext root, List<RexNode> mutableFilters, int[] projectInts );
+    /**
+     * Converts this table into a {@link Queryable}.
+     */
+    <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId );
+
+    default Type getElementType() {
+        return Object[].class;
+    }
 
 }

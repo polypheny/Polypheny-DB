@@ -47,8 +47,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.FilterableEntity;
-import org.polypheny.db.schema.ProjectableFilterableEntity;
 import org.polypheny.db.util.BuiltInMethod;
 
 

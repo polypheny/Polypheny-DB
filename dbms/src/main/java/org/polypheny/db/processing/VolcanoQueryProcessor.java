@@ -60,7 +60,7 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.schema.ModelTraitDef;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
 
 

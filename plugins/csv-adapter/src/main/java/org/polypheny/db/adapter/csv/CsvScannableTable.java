@@ -40,7 +40,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.refactor.ScannableEntity;
+import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.util.Source;
 
 
@@ -76,6 +76,7 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
             }
         };
     }
+
 
 }
 

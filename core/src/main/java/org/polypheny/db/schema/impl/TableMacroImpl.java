@@ -41,7 +41,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableEntity;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.util.Static;
 
 

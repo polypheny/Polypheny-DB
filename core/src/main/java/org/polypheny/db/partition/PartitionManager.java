@@ -18,7 +18,7 @@ package org.polypheny.db.partition;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.PolyType;

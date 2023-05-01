@@ -16,12 +16,11 @@
 
 package org.polypheny.db.algebra.core.document;
 
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 /**
- * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node.
+ * {@link ModelTrait#DOCUMENT} native node.
  */
 public interface DocumentAlg {
 

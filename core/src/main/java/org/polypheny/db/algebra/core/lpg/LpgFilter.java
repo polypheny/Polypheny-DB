@@ -23,6 +23,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public abstract class LpgFilter extends SingleAlg implements LpgAlg {
@@ -33,7 +34,7 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
     /**
      * Creates a {@link LpgFilter}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node of a filter.
+     * {@link ModelTrait#GRAPH} native node of a filter.
      */
     protected LpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input );

@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public abstract class DocumentSort extends SingleAlg {
@@ -38,7 +39,7 @@ public abstract class DocumentSort extends SingleAlg {
 
     /**
      * Creates a {@link DocumentSort}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of a sort.
+     * {@link ModelTrait#DOCUMENT} native node of a sort.
      */
     public DocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
         this( cluster, traits, child, collation, null, null );

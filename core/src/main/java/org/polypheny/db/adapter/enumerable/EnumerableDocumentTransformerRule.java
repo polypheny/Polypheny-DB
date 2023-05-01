@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public class EnumerableDocumentTransformerRule extends ConverterRule {

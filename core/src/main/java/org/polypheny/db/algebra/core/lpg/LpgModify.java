@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public abstract class LpgModify<E extends CatalogEntity> extends Modify<E> implements LpgAlg {
@@ -36,7 +37,7 @@ public abstract class LpgModify<E extends CatalogEntity> extends Modify<E> imple
 
     /**
      * Creates a {@link LpgModify}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} node, which is able to modify an LPG graph.
+     * {@link ModelTrait#GRAPH} node, which is able to modify an LPG graph.
      */
     protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, E graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
         super( cluster, traits, graph, input );

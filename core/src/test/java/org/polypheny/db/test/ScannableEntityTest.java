@@ -56,10 +56,10 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableEntity;
-import org.polypheny.db.schema.ProjectableFilterableEntity;
-import org.polypheny.db.schema.ScannableEntity;
 import org.polypheny.db.schema.impl.AbstractEntity;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.schema.types.ProjectableFilterableEntity;
+import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 
 

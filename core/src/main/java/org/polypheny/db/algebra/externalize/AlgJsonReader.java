@@ -91,19 +91,21 @@ public class AlgJsonReader {
         lastAlg = null;
         final ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> o = mapper.readValue( s, TYPE_REF );
-        @SuppressWarnings("unchecked") final Map<String, Object> algs = (Map) o.get( "Plan" );
-        readRels( algs );
+        @SuppressWarnings("unchecked") final Map<String, Object> algs = (Map<String, Object>) o.get( "Plan" );
+        readAlgs( algs );
         System.out.println( lastAlg );
         return lastAlg;
     }
 
 
-    private void readRels( Map<String, Object> jsonRels ) {
-        @SuppressWarnings("unchecked") List<Map<String, Object>> inputsList = (List) jsonRels.get( "inputs" );
-        for ( Map<String, Object> input : inputsList ) {
-            readRels( input );
+    private void readAlgs( Map<String, Object> jsonAlgs ) {
+        List<?> inputsList = (List<?>) jsonAlgs.get( "inputs" );
+        for ( Object input : inputsList ) {
+            if ( input instanceof Map ) {
+                readAlgs( (Map<String, Object>) input );
+            }
         }
-        readAlg( jsonRels );
+        readAlg( jsonAlgs );
     }
 
 
@@ -154,7 +156,7 @@ public class AlgJsonReader {
 
             @Override
             public List<AlgNode> getInputs() {
-                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonInputs = (List) get( "inputs" );
+                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonInputs = (List<Map<String, Object>>) get( "inputs" );
                 if ( jsonInputs == null ) {
                     return ImmutableList.of( lastAlg );
                 }
@@ -234,7 +236,7 @@ public class AlgJsonReader {
             @Override
             public AlgCollation getCollation() {
                 //noinspection unchecked
-                return algJson.toCollation( (List) get( "collation" ) );
+                return algJson.toCollation( (List<Map<String, Object>>) get( "collation" ) );
             }
 
 

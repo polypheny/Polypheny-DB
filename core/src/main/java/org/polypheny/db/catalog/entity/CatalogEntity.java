@@ -27,22 +27,24 @@ import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.CatalogType;
-import org.polypheny.db.catalog.refactor.Expressible;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.schema.types.Expressible;
+import org.polypheny.db.schema.types.Typed;
 import org.polypheny.db.util.ImmutableBitSet;
 
 @Getter
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible {
+public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible, Typed {
 
     @Serialize
     public long id;
@@ -84,6 +86,12 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
                 return new GraphType();
         }
         throw new RuntimeException( "Error while generating the RowType" );
+    }
+
+
+    @Override
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+        return getRowType();
     }
 
 

@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public class LogicalTransformer extends Transformer {

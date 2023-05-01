@@ -149,6 +149,11 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
     }
 
 
+    public List<Long> getConstraintIds() {
+        return List.of();
+    }
+
+
     @RequiredArgsConstructor
     public static class PrimitiveCatalogTable {
 

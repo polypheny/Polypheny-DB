@@ -65,7 +65,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.schema.ModelTraitDef;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
