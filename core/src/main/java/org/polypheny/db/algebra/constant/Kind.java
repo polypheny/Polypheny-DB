@@ -1126,11 +1126,6 @@ public enum Kind {
     CREATE_TABLE,
 
     /**
-     * {@code CREATE ALIAS} DDL statement.
-     */
-    CREATE_ALIAS,
-
-    /**
      * {@code TRUNCATE} DDL statement
      */
     TRUNCATE,
@@ -1139,11 +1134,6 @@ public enum Kind {
      * {@code ALTER TABLE} DDL statement.
      */
     ALTER_TABLE,
-
-    /**
-     * {@code DROP ALIAS} DDL statement.
-     */
-    DROP_ALIAS,
 
     /**
      * {@code DROP TABLE} DDL statement.
@@ -1234,6 +1224,16 @@ public enum Kind {
      * {@code DROP FUNCTION} DDL statement.
      */
     DROP_FUNCTION,
+
+    /**
+     * {@code CREATE ALIAS} DDL statement.
+     */
+    CREATE_ALIAS,
+
+    /**
+     * {@code DROP ALIAS} DDL statement.
+     */
+    DROP_ALIAS,
 
     /**
      * DDL statement not handled above.
@@ -1413,7 +1413,7 @@ public enum Kind {
             CREATE_SCHEMA,
             CREATE_FOREIGN_SCHEMA,
             DROP_SCHEMA,
-            CREATE_ALIAS,
+            CREATE_TABLE,
             ALTER_TABLE,
             DROP_TABLE,
             CREATE_VIEW,
@@ -1433,7 +1433,7 @@ public enum Kind {
             SET_OPTION,
             TRUNCATE,
             ALTER_SCHEMA,
-            CREATE_TABLE,
+            CREATE_ALIAS,
             DROP_ALIAS,
             OTHER_DDL );
 
