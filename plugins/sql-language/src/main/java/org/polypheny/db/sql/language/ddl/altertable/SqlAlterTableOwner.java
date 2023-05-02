@@ -53,6 +53,16 @@ public class SqlAlterTableOwner extends SqlAlterTable {
         this.owner = Objects.requireNonNull( owner );
     }
 
+    public SqlAlterTableOwner( ParserPos pos, SqlIdentifier table, SqlIdentifier owner, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.owner = Objects.requireNonNull( owner );
+    }
+
 
     @Override
     public List<Node> getOperandList() {

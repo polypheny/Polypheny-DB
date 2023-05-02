@@ -72,6 +72,28 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
         this.afterColumnName = afterColumnName;
     }
 
+    public SqlAlterSourceTableAddColumn(
+            ParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier columnPhysical,
+            SqlIdentifier columnLogical,
+            SqlNode defaultValue,
+            SqlIdentifier beforeColumnName,
+            SqlIdentifier afterColumnName,
+            boolean isAlias) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.columnPhysical = Objects.requireNonNull( columnPhysical );
+        this.columnLogical = Objects.requireNonNull( columnLogical );
+        this.defaultValue = defaultValue;
+        this.beforeColumnName = beforeColumnName;
+        this.afterColumnName = afterColumnName;
+    }
+
 
     @Override
     public List<Node> getOperandList() {

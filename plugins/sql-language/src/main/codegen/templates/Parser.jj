@@ -987,6 +987,7 @@ SqlSelect SqlSelect() :
     final SqlNode having;
     final SqlNodeList windowDecls;
     final Span s;
+    boolean isTableAlias = false;
 }
 {
     <SELECT>
@@ -1012,7 +1013,7 @@ SqlSelect SqlSelect() :
     }
     selectList = SelectList()
     (
-        <FROM> fromClause = FromClause()
+        <FROM> [ <ALIAS> { isTableAlias = true; } ] fromClause = FromClause()
         where = WhereOpt()
         groupBy = GroupByOpt()
         having = HavingOpt()
@@ -1029,7 +1030,7 @@ SqlSelect SqlSelect() :
     {
         return new SqlSelect(s.end(this), keywordList,
             new SqlNodeList(selectList, Span.of(selectList).pos()),
-            fromClause, where, groupBy, having, windowDecls, null, null, null);
+            fromClause, where, groupBy, having, windowDecls, null, null, null, isTableAlias);
     }
 }
 
@@ -1258,6 +1259,7 @@ SqlNode SqlInsert() :
     SqlNode source;
     SqlNodeList columnList = null;
     final Span s;
+    boolean isTableAlias = false;
 }
 {
     (
@@ -1269,7 +1271,7 @@ SqlNode SqlInsert() :
     SqlInsertKeywords(keywords) {
         keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
     }
-    <INTO> table = CompoundIdentifier()
+    <INTO> [ <ALIAS> { isTableAlias = true; } ] table = CompoundIdentifier()
     [
         LOOKAHEAD(5)
         [ <EXTEND> ]
@@ -1290,7 +1292,7 @@ SqlNode SqlInsert() :
         }
     ]
     source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new SqlInsert(s.end(source), keywordList, table, source, columnList);
+        return new SqlInsert(s.end(source), keywordList, table, source, columnList, isTableAlias);
     }
 }
 
@@ -1312,12 +1314,13 @@ SqlNode SqlDelete() :
     SqlIdentifier alias = null;
     final SqlNode condition;
     final Span s;
+    boolean isTableAlias = false;
 }
 {
     <DELETE> {
         s = span();
     }
-    <FROM> table = CompoundIdentifier()
+    <FROM> [ <ALIAS> { isTableAlias = true; } ] table = CompoundIdentifier()
     [
         [ <EXTEND> ]
         extendList = ExtendList() {
@@ -1327,7 +1330,7 @@ SqlNode SqlDelete() :
     [ [ <AS> ] alias = SimpleIdentifier() ]
     condition = WhereOpt()
     {
-        return new SqlDelete(s.add(table).addIf(extendList).addIf(alias).addIf(condition).pos(), table, condition, null, alias);
+        return new SqlDelete(s.add(table).addIf(extendList).addIf(alias).addIf(condition).pos(), table, condition, null, alias, isTableAlias);
     }
 }
 
@@ -1345,9 +1348,11 @@ SqlNode SqlUpdate() :
     SqlIdentifier id;
     SqlNode exp;
     final Span s;
+    boolean isTableAlias = false;
 }
 {
     <UPDATE> { s = span(); }
+    [ <ALIAS> { isTableAlias = true; } ]
     table = CompoundIdentifier() {
         targetColumnList = new SqlNodeList(s.pos());
         sourceExpressionList = new SqlNodeList(s.pos());
@@ -1379,7 +1384,7 @@ SqlNode SqlUpdate() :
     )*
     condition = WhereOpt()
     {
-        return new SqlUpdate(s.addAll(targetColumnList.getSqlList()).addAll(sourceExpressionList.getSqlList()).addIf(condition).pos(), table, targetColumnList, sourceExpressionList, condition, null, alias);
+        return new SqlUpdate(s.addAll(targetColumnList.getSqlList()).addAll(sourceExpressionList.getSqlList()).addIf(condition).pos(), table, targetColumnList, sourceExpressionList, condition, null, alias, isTableAlias);
     }
 }
 
@@ -6043,6 +6048,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ALLOCATE: "ALLOCATE" >
 |   < ALLOW: "ALLOW" >
 |   < ALTER: "ALTER" >
+|   < ALIAS: "ALIAS" >
 |   < ALWAYS: "ALWAYS" >
 |   < AND: "AND" >
 |   < ANY: "ANY" >

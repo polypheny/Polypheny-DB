@@ -53,6 +53,16 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
         this.column = Objects.requireNonNull( column );
     }
 
+    public SqlAlterTableDropColumn( ParserPos pos, SqlIdentifier table, SqlIdentifier column, boolean isAlias ) {
+        super( pos );
+        if( isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.column = Objects.requireNonNull( column );
+    }
+
 
     @Override
     public List<Node> getOperandList() {

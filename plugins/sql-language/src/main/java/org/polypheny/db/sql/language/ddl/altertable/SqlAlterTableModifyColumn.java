@@ -84,6 +84,34 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
         this.dropDefault = dropDefault;
     }
 
+    public SqlAlterTableModifyColumn(
+            ParserPos pos,
+            @NonNull SqlIdentifier tableName,
+            @NonNull SqlIdentifier columnName,
+            SqlDataTypeSpec type,
+            Boolean nullable,
+            SqlIdentifier beforeColumn,
+            SqlIdentifier afterColumn,
+            String collation,
+            SqlNode defaultValue,
+            Boolean dropDefault,
+            boolean isAlias) {
+        super( pos );
+        if ( isAlias ) {
+            this.tableName = (SqlIdentifier) replaceTableNameIfIsAlias( tableName );
+        } else {
+            this.tableName = tableName;
+        }
+        this.columnName = columnName;
+        this.type = type;
+        this.nullable = nullable;
+        this.beforeColumn = beforeColumn;
+        this.afterColumn = afterColumn;
+        this.collation = collation;
+        this.defaultValue = defaultValue;
+        this.dropDefault = dropDefault;
+    }
+
 
     @Override
     public List<Node> getOperandList() {

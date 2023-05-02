@@ -52,6 +52,17 @@ public class SqlAlterTableRename extends SqlAlterTable {
         this.newName = Objects.requireNonNull( newName );
     }
 
+    public SqlAlterTableRename( ParserPos pos, SqlIdentifier oldName, SqlIdentifier newName, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.oldName = (SqlIdentifier) replaceTableNameIfIsAlias( oldName );
+        } else {
+            this.oldName = Objects.requireNonNull( oldName );
+        }
+        this.newName = Objects.requireNonNull( newName );
+    }
+
+
 
     @Override
     public List<Node> getOperandList() {

@@ -53,6 +53,16 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
         this.indexName = Objects.requireNonNull( indexName );
     }
 
+    public SqlAlterTableDropIndex( ParserPos pos, SqlIdentifier table, SqlIdentifier indexName, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.indexName = Objects.requireNonNull( indexName );
+    }
+
 
     @Override
     public List<Node> getOperandList() {

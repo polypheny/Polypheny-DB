@@ -84,6 +84,44 @@ public class SqlSelect extends SqlCall implements Select {
         this.fetch = fetch;
     }
 
+    public SqlSelect(
+            ParserPos pos,
+            SqlNodeList keywordList,
+            SqlNodeList selectList,
+            SqlNode from,
+            SqlNode where,
+            SqlNodeList groupBy,
+            SqlNode having,
+            SqlNodeList windowDecls,
+            SqlNodeList orderBy,
+            SqlNode offset,
+            SqlNode fetch,
+            boolean isTableAlias) {
+        super( pos );
+
+        if(isTableAlias) {
+            this.from = replaceTableNameIfIsAlias(from);
+        } else {
+            this.from = from;
+        }
+
+        this.keywordList = Objects.requireNonNull(
+                keywordList != null
+                        ? keywordList
+                        : new SqlNodeList( pos ) );
+        this.selectList = selectList;
+        this.where = where;
+        this.groupBy = groupBy;
+        this.having = having;
+        this.windowDecls = Objects.requireNonNull(
+                windowDecls != null
+                        ? windowDecls
+                        : new SqlNodeList( pos ) );
+        this.orderBy = orderBy;
+        this.offset = offset;
+        this.fetch = fetch;
+    }
+
 
     @Override
     public Operator getOperator() {

@@ -55,6 +55,13 @@ public class SqlDdlNodes {
         return new SqlCreateType( pos, replace, name, attributeList, dataTypeSpec );
     }
 
+    /**
+     * Creates a CREATE ALIAS.
+     */
+    public static SqlCreateAlias createAlias( ParserPos pos, boolean replace, SqlIdentifier name, SqlIdentifier alias ) {
+        return new SqlCreateAlias( pos, replace, name, alias );
+    }
+
 
     /**
      * Creates a CREATE TABLE.
@@ -103,12 +110,25 @@ public class SqlDdlNodes {
         return new SqlDropType( pos, ifExists, name );
     }
 
+    /**
+     * Creates a DROP ALIAS.
+     */
+    public static SqlDropAlias dropAlias( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropAlias( pos, ifExists, name );
+    }
 
     /**
      * Creates a DROP TABLE.
      */
     public static SqlDropTable dropTable( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropTable( pos, ifExists, name );
+    }
+
+    /**
+     * Creates a DROP TABLE.
+     */
+    public static SqlDropTable dropTable( ParserPos pos, boolean ifExists, SqlIdentifier name, boolean isAlias ) {
+        return new SqlDropTable( pos, ifExists, name, isAlias );
     }
 
 

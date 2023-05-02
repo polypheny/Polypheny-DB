@@ -61,6 +61,22 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
         this.columnList = Objects.requireNonNull( columnList );
     }
 
+    public SqlAlterTableAddUniqueConstraint(
+            ParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier constraintName,
+            SqlNodeList columnList,
+            boolean isAlias) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.constraintName = Objects.requireNonNull( constraintName );
+        this.columnList = Objects.requireNonNull( columnList );
+    }
+
 
     @Override
     public List<Node> getOperandList() {

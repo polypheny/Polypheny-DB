@@ -20,9 +20,12 @@ package org.polypheny.db.sql.language;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
@@ -210,5 +213,21 @@ public abstract class SqlCall extends SqlNode implements Call {
     public SqlLiteral getFunctionQuantifier() {
         return null;
     }
+
+    public SqlNode replaceTableNameIfIsAlias( SqlNode node ) {
+        if ( node instanceof SqlIdentifier ) {
+            if ( ((SqlIdentifier)node).names.size() == 1 ) {
+                Catalog catalog = Catalog.getInstance();
+                if ( catalog.isAlias( ((SqlIdentifier)node).names.get(0) ) ) {
+                    Object[] table = catalog.getTableNameFromAlias( ((SqlIdentifier)node).names.get(0) );
+                    String schemaName = catalog.getSchema( (long)table[1] ).name;
+                    ImmutableList<String> result = ImmutableList.of( schemaName, (String)table[2] );
+                    return new SqlIdentifier( result, pos );
+                }
+            }
+        }
+        throw new RuntimeException(node.toString() + " is not a known alias, but it follows an ALIAS keyword");
+    }
+
 
 }

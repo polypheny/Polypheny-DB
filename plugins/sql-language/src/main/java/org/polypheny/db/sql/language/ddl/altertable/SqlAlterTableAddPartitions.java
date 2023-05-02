@@ -90,6 +90,32 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
         this.rawPartitionInformation = rawPartitionInformation;
     }
 
+    public SqlAlterTableAddPartitions(
+            ParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier partitionColumn,
+            SqlIdentifier partitionType,
+            int numPartitionGroups,
+            int numPartitions,
+            List<SqlIdentifier> partitionGroupNamesList,
+            List<List<SqlNode>> partitionQualifierList,
+            RawPartitionInformation rawPartitionInformation,
+            boolean isAlias) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.partitionType = Objects.requireNonNull( partitionType );
+        this.partitionColumn = Objects.requireNonNull( partitionColumn );
+        this.numPartitionGroups = numPartitionGroups; //May be empty
+        this.numPartitions = numPartitions; //May be empty
+        this.partitionGroupNamesList = partitionGroupNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionQualifierList = partitionQualifierList;
+        this.rawPartitionInformation = rawPartitionInformation;
+    }
+
 
     @Override
     public List<Node> getOperandList() {

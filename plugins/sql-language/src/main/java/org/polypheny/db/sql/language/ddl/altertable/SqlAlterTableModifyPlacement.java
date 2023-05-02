@@ -72,6 +72,26 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         this.partitionGroupNamesList = partitionGroupNamesList;
     }
 
+    public SqlAlterTableModifyPlacement(
+            ParserPos pos,
+            SqlIdentifier table,
+            SqlNodeList columnList,
+            SqlIdentifier storeName,
+            List<Integer> partitionGroupList,
+            List<SqlIdentifier> partitionGroupNamesList,
+            boolean isAlias) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.columnList = Objects.requireNonNull( columnList );
+        this.storeName = Objects.requireNonNull( storeName );
+        this.partitionGroupList = partitionGroupList;
+        this.partitionGroupNamesList = partitionGroupNamesList;
+    }
+
 
     @Override
     public List<Node> getOperandList() {

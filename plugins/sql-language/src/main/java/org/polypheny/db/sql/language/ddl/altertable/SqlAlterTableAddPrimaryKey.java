@@ -55,6 +55,16 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
         this.columnList = Objects.requireNonNull( columnList );
     }
 
+    public SqlAlterTableAddPrimaryKey( ParserPos pos, SqlIdentifier table, SqlNodeList columnList, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.columnList = Objects.requireNonNull( columnList );
+    }
+
 
     @Override
     public List<Node> getOperandList() {
