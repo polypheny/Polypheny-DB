@@ -33,7 +33,6 @@
 
 package org.polypheny.db.adapter.jdbc;
 
-import java.util.function.Predicate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
@@ -53,7 +52,7 @@ public class JdbcToEnumerableConverterRule extends ConverterRule {
     public JdbcToEnumerableConverterRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                (Predicate<AlgNode>) r -> true,
+                r -> true,
                 out,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

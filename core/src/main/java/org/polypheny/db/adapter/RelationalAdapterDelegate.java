@@ -74,7 +74,6 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;
@@ -92,20 +91,20 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public AlgNode getModify( long allocId, Modify<?> modify ) {
+    public AlgNode getModify( long allocId, Modify<?> modify, AlgBuilder builder ) {
         if ( modify.getEntity().unwrap( AllocationTable.class ) != null ) {
-            return getRelModify( allocId, (RelModify<?>) modify );
+            return getRelModify( allocId, (RelModify<?>) modify, builder );
         } else if ( modify.getEntity().unwrap( AllocationCollection.class ) != null ) {
-            return getDocModify( allocId, (DocumentModify<?>) modify );
+            return getDocModify( allocId, (DocumentModify<?>) modify, builder );
         } else if ( modify.getEntity().unwrap( AllocationGraph.class ) != null ) {
-            return getGraphModify( allocId, (LpgModify<?>) modify );
+            return getGraphModify( allocId, (LpgModify<?>) modify, builder );
         }
         throw new NotImplementedException();
     }
 
 
     @Override
-    public AlgNode getRelModify( long allocId, RelModify<?> modify ) {
+    public AlgNode getRelModify( long allocId, RelModify<?> modify, AlgBuilder builder ) {
         Pair<AllocationEntity, List<Long>> relations = catalog.getAllocRelations().get( allocId );
         PhysicalTable table = catalog.getTable( relations.getValue().get( 0 ) );
         if ( table.unwrap( ModifiableEntity.class ) == null ) {
@@ -123,25 +122,28 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public AlgNode getDocModify( long allocId, DocumentModify<?> modify ) {
+    public AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
         Pair<AllocationEntity, List<Long>> relations = catalog.getAllocRelations().get( allocId );
         PhysicalTable table = catalog.getTable( relations.getValue().get( 0 ) );
-        if ( table.unwrap( ModifiableGraph.class ) == null ) {
+        if ( table.unwrap( ModifiableEntity.class ) == null ) {
             return null;
         }
-        return table.unwrap( ModifiableEntity.class ).toModificationAlg(
+        builder.clear();
+        builder.push( table.unwrap( ModifiableEntity.class ).toModificationAlg(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 table,
                 modify.getInput(),
                 modify.getOperation(),
                 modify.getKeys(),
-                modify.getUpdates() );
+                modify.getUpdates() ) );
+
+        return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
     }
 
 
     @Override
-    public AlgNode getGraphModify( long allocId, LpgModify<?> modify ) {
+    public AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {
         return null;
     }
 
@@ -256,7 +258,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
     @Override
     public void updateCollection( long allocId ) {
-
+        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
     }
 
 
@@ -353,7 +355,6 @@ public class RelationalAdapterDelegate implements Modifiable {
             modify = (LogicalRelModify) getModify( collectionTable, builder.build(), statement, alg.operation, null, null );
         }
 
-        modify.isStreamed( true );
         return List.of( LogicalStreamer.create( collector, modify ) );
     }
 

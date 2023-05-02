@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -70,13 +71,19 @@ public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamil
 
     @Override
     public List<AlgDataTypeField> getFieldList() {
-        throw new RuntimeException( "getFieldList" );
+        return List.of( new AlgDataTypeFieldImpl( "d", 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOCUMENT ) ) );
+    }
+
+
+    @Override
+    public String toString() {
+        return "DocumentType";
     }
 
 
     @Override
     public List<String> getFieldNames() {
-        throw new RuntimeException( "getFieldList" );
+        return getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 
@@ -206,7 +213,7 @@ public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamil
 
     @Override
     public AlgDataType getValue() {
-        return this;
+        return null;
     }
 
 

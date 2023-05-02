@@ -136,7 +136,8 @@ public class DdlTest extends MqlTestTemplate {
             assertEquals( Catalog.snapshot().alloc().getFromLogical( collection.id ).size(), 1 );
 
             execute( String.format( "db.%s.drop()", collectionName ) );
-
+        } catch ( Exception e ) {
+            execute( String.format( "db.%s.drop()", collectionName ) );
         } finally {
             removeStore( placement );
         }

@@ -22,7 +22,6 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -45,9 +44,9 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
 
         long namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
-        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespaceId, new Pattern( getCollection() ) );
+        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() );
 
-        if ( collections.size() != 1 ) {
+        if ( collection == null ) {
             throw new RuntimeException( "Error while adding new collection placement, collection not found." );
         }
 
@@ -56,11 +55,11 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
                 .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
 
-        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collections.get( 0 ).id ).stream().noneMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collection.id ).stream().noneMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
             throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 
-        DdlManager.getInstance().dropCollectionAllocation( namespaceId, collections.get( 0 ), dataStores, statement );
+        DdlManager.getInstance().dropCollectionAllocation( namespaceId, collection, dataStores, statement );
     }
 
 

@@ -723,15 +723,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         List<AlgNode> modifies = new ArrayList<>();
 
-        List<Long> placements = snapshot.alloc().getFromLogical( collection.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
-        if ( adapterId != null ) {
-            placements = List.of( adapterId );
-        }
+        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( collection.id );
 
-        for ( long placementId : placements ) {
-            AllocationEntity alloc = snapshot.alloc().getAllocation( collection.id, placementId );
-
-            modifies.add( alg.toBuilder().entity( alloc ).input( buildDocumentDml( alg.getInput(), statement, queryInformation ) ).build() );
+        for ( AllocationEntity allocation : allocs ) {
+            modifies.add( alg.toBuilder().entity( allocation ).input( buildDocumentDml( alg.getInput(), statement, queryInformation ) ).build() );
         }
 
         if ( modifies.size() == 1 ) {

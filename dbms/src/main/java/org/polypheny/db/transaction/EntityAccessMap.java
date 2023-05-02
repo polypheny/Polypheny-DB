@@ -30,13 +30,16 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentModify;
+import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
+import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -53,6 +56,7 @@ import org.polypheny.db.transaction.Lock.LockMode;
 /**
  * <code>EntityAccessMap</code> represents the entities accessed by a query plan, with READ/WRITE information.
  */
+@Slf4j
 public class EntityAccessMap {
 
 
@@ -233,17 +237,21 @@ public class EntityAccessMap {
      */
     private class TableRelVisitor extends AlgVisitor {
 
+
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             super.visit( p, ordinal, parent );
             CatalogEntity table = p.getEntity();
             if ( table == null ) {
-                if ( p instanceof LpgAlg ) {
-                    attachGraph( (AlgNode & LpgAlg) p );
-                }
-                if ( p instanceof DocumentAlg ) {
-                    attachDocument( (AlgNode & DocumentAlg) p );
-                }
+                return;
+            }
+
+            if ( p instanceof LpgAlg ) {
+                attachGraph( p );
+                return;
+            }
+            if ( p instanceof DocumentAlg ) {
+                attachDocument( (AlgNode & DocumentAlg) p );
                 return;
             }
 
@@ -267,7 +275,7 @@ public class EntityAccessMap {
             List<Long> relevantPartitions;
             if ( accessedPartitions.containsKey( p.getId() ) ) {
                 relevantPartitions = accessedPartitions.get( p.getId() );
-            } else if ( table != null ) {
+            } else {
                 if ( table.namespaceType == NamespaceType.RELATIONAL ) {
                     List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getFromLogical( table.id );
                     relevantPartitions = allocations.stream().map( a -> a.id ).collect( Collectors.toList() );
@@ -275,12 +283,9 @@ public class EntityAccessMap {
                     relevantPartitions = List.of();
                 }
 
-            } else {
-                relevantPartitions = List.of();
             }
 
             for ( long partitionId : relevantPartitions ) {
-
                 EntityIdentifier key = getQualifiedName( table, partitionId );
                 Mode oldAccess = accessMap.get( key );
                 if ( (oldAccess != null) && (oldAccess != newAccess) ) {
@@ -296,11 +301,13 @@ public class EntityAccessMap {
             Mode newAccess;
             if ( p instanceof DocumentModify ) {
                 newAccess = Mode.WRITE_ACCESS;
-            } else {
+            } else if ( p instanceof DocumentScan<?> ) {
                 newAccess = Mode.READ_ACCESS;
+            } else {
+                return;
             }
             // as documents are using the same id space as tables this will work
-            EntityIdentifier key = new EntityIdentifier( p.getEntity().id, 0, NamespaceLevel.ENTITY_LEVEL );
+            EntityIdentifier key = new EntityIdentifier( p.getId(), 0, NamespaceLevel.ENTITY_LEVEL );
             accessMap.put( key, newAccess );
         }
 
@@ -310,8 +317,10 @@ public class EntityAccessMap {
             Mode newAccess;
             if ( p instanceof LpgModify ) {
                 newAccess = Mode.WRITE_ACCESS;
-            } else {
+            } else if ( p instanceof LpgScan<?> ) {
                 newAccess = Mode.READ_ACCESS;
+            } else {
+                return;
             }
             // as graph is on the namespace level in the full polyschema it is unique and can be used like this
             EntityIdentifier key = new EntityIdentifier( p.getEntity().id, 0, NamespaceLevel.NAMESPACE_LEVEL );

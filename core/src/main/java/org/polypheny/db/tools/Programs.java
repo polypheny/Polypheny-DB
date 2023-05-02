@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import org.polypheny.db.adapter.enumerable.EnumerableTableModifyToStreamerRule;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
@@ -132,7 +133,9 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE,
+                    EnumerableTableModifyToStreamerRule.REL_INSTANCE,
+                    EnumerableTableModifyToStreamerRule.DOC_INSTANCE,
+                    EnumerableTableModifyToStreamerRule.GRAPH_INSTANCE,
                     EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
                     EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -156,6 +159,8 @@ public class Programs {
                     AllocationToPhysicalScanRule.DOC_INSTANCE,
                     AllocationToPhysicalScanRule.GRAPH_INSTANCE,
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
+                    AllocationToPhysicalModifyRule.DOC_INSTANCE,
+                    AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,

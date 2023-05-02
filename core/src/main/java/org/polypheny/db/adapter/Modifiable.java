@@ -34,17 +34,18 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.tools.AlgBuilder;
 
 public interface Modifiable extends Scannable {
 
 
-    AlgNode getModify( long allocId, Modify<?> modify );
+    AlgNode getModify( long allocId, Modify<?> modify, AlgBuilder builder );
 
-    AlgNode getRelModify( long allocId, RelModify<?> modify );
+    AlgNode getRelModify( long allocId, RelModify<?> modify, AlgBuilder builder );
 
-    AlgNode getDocModify( long allocId, DocumentModify<?> modify );
+    AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder );
 
-    AlgNode getGraphModify( long allocId, LpgModify<?> modify );
+    AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder );
 
     default void addColumn( Context context, List<Long> allocIds, LogicalColumn column ) {
         for ( Long allocId : allocIds ) {

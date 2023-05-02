@@ -17,28 +17,42 @@
 package org.polypheny.db.adapter.enumerable;
 
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Streamer;
+import org.polypheny.db.algebra.core.document.DocumentModify;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
-import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.Convention;
 
 public class EnumerableTableModifyToStreamerRule extends AlgOptRule {
 
+    public static final EnumerableTableModifyToStreamerRule REL_INSTANCE = new EnumerableTableModifyToStreamerRule( RelModify.class );
+
+    public static final EnumerableTableModifyToStreamerRule DOC_INSTANCE = new EnumerableTableModifyToStreamerRule( DocumentModify.class );
+
+    public static final EnumerableTableModifyToStreamerRule GRAPH_INSTANCE = new EnumerableTableModifyToStreamerRule( LpgModify.class );
+
+
     /**
      * Helper rule, which can transform a {@link RelModify} into a combination of dedicated {@link RelScan}
      * and prepared {@link RelModify}, which can be useful if the executing store is not able to perform the {@link RelScan} query natively.
      */
-    public EnumerableTableModifyToStreamerRule() {
-        super( operandJ( LogicalRelModify.class, Convention.NONE, r -> !r.isStreamed(), any() ), "EnumerableTableModifyToStreamerRule" );
+    private EnumerableTableModifyToStreamerRule( Class<? extends Modify> modify ) {
+        super( operandJ( modify, Convention.NONE, r -> true, any() ), "Enumerable" + modify.getSimpleName() + "ToStreamerRule" );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         RelModify<?> modify = call.alg( 0 );
+
+        if ( call.getParents() != null && call.getParents().stream().anyMatch( p -> p instanceof Streamer ) ) {
+            return;
+        }
 
         LogicalStreamer streamer = LogicalStreamer.create(
                 modify,

@@ -122,9 +122,7 @@ public final class Schemas {
                         schemaExpression,
                         BuiltInMethod.SNAPSHOT_GET_NAMESPACE.method,
                         Expressions.constant( id ) );
-        //CHECKSTYLE: IGNORE 2
-        //noinspection unchecked
-        if ( false && type != null && !type.isAssignableFrom( Namespace.class ) ) {
+        if ( type != null && !type.isAssignableFrom( Namespace.class ) ) {
             return unwrap( call, type );
         }
         return call;

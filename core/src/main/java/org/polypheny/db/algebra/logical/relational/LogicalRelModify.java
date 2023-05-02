@@ -17,9 +17,6 @@
 package org.polypheny.db.algebra.logical.relational;
 
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelModify;
@@ -35,11 +32,6 @@ import org.polypheny.db.schema.trait.ModelTrait;
  * Sub-class of {@link RelModify} not targeted at any particular engine or calling convention.
  */
 public final class LogicalRelModify extends RelModify<CatalogEntity> {
-
-    @Getter
-    @Setter
-    @Accessors(fluent = true)
-    boolean isStreamed = false;
 
 
     /**
@@ -70,7 +62,7 @@ public final class LogicalRelModify extends RelModify<CatalogEntity> {
     @Override
     public LogicalRelModify copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalRelModify( getCluster(), traitSet, entity, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() ).isStreamed( isStreamed );
+        return new LogicalRelModify( getCluster(), traitSet, entity, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
     }
 
 

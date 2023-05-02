@@ -66,6 +66,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import org.polypheny.db.adapter.enumerable.EnumerableTableModifyToStreamerRule;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -186,7 +187,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE,
+                    EnumerableTableModifyToStreamerRule.REL_INSTANCE,
+                    EnumerableTableModifyToStreamerRule.DOC_INSTANCE,
+                    EnumerableTableModifyToStreamerRule.GRAPH_INSTANCE,
                     EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
                     EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -220,6 +223,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     AllocationToPhysicalScanRule.DOC_INSTANCE,
                     AllocationToPhysicalScanRule.GRAPH_INSTANCE,
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
+                    AllocationToPhysicalModifyRule.DOC_INSTANCE,
+                    AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,

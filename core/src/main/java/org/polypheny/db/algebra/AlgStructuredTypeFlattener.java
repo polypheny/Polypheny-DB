@@ -536,7 +536,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                         alg.getOperation(),
                         alg.getUpdateColumnList(),
                         alg.getSourceExpressionList(),
-                        true ).isStreamed( alg.isStreamed() );
+                        true );
         setNewForOldRel( alg, newAlg );
     }
 

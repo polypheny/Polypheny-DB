@@ -20,6 +20,8 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.plan.AlgOptRule;
@@ -28,6 +30,8 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
     public static final AllocationToPhysicalModifyRule REL_INSTANCE = new AllocationToPhysicalModifyRule( LogicalRelModify.class );
+    public static final AllocationToPhysicalModifyRule DOC_INSTANCE = new AllocationToPhysicalModifyRule( LogicalDocumentModify.class );
+    public static final AllocationToPhysicalModifyRule GRAPH_INSTANCE = new AllocationToPhysicalModifyRule( LogicalLpgModify.class );
 
 
     public AllocationToPhysicalModifyRule( Class<? extends Modify<?>> modify ) {
@@ -43,7 +47,7 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
             return;
         }
 
-        AlgNode newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getModify( alloc.id, modify );
+        AlgNode newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getModify( alloc.id, modify, call.builder() );
         call.transformTo( newAlg );
     }
 

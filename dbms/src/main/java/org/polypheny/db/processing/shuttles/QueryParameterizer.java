@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
@@ -64,6 +65,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 
+@Slf4j
 public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<RexNode> {
 
     private final AtomicInteger index;
@@ -296,8 +298,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
                 newSourceExpression,
-                modify.isFlattened() )
-                .isStreamed( modify.isStreamed() );
+                modify.isFlattened() );
 
     }
 
@@ -364,13 +365,17 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
                 newSourceExpression,
-                modify.isFlattened() )
-                .isStreamed( modify.isStreamed() );
+                modify.isFlattened() );
     }
 
 
     @Override
     public AlgNode visit( LogicalDocumentModify initial ) {
+        if ( true ) {
+            log.warn( "Disabled for now" );
+            return initial;
+        }
+
         LogicalDocumentModify modify = (LogicalDocumentModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
         if ( modify.getUpdates() != null ) {

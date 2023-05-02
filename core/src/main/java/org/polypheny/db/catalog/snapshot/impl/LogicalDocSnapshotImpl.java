@@ -65,12 +65,6 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
 
     @Override
-    public LogicalCollection getCollection( String name ) {
-        return collectionNames.get( name );
-    }
-
-
-    @Override
     public LogicalCollection getCollection( long namespaceId, String name ) {
         List<LogicalCollection> collections = namespaceCollections.get( namespaceId );
 

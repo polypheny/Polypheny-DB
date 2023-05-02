@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Streamer;
-import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -125,13 +125,12 @@ public class LogicalStreamer extends Streamer {
         }
 
         LogicalRelModify prepared = LogicalRelModify.create(
-                        modify.getEntity(),
-                        algBuilder.build(),
-                        modify.getOperation(),
-                        modify.getUpdateColumnList(),
-                        modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
-                        false )
-                .isStreamed( true );
+                modify.getEntity(),
+                algBuilder.build(),
+                modify.getOperation(),
+                modify.getUpdateColumnList(),
+                modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
+                false );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
 
