@@ -16,50 +16,53 @@
 
 package org.polypheny.db.algebra.type;
 
-import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 
-public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamily, AlgDataTypeField {
+@Data
+public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
-    @Getter
-    private final StructKind structKind;
-    private final ImmutableList<AlgDataType> fixedFields;
+    public StructKind structKind;
 
-    @Getter
-    private final String name;
-
-    @Getter
-    @Setter
-    private String physicalName = null;
+    public List<AlgDataTypeField> fixedFields;
 
 
-    public DocumentType( @Nullable String name, @Nonnull List<AlgDataType> fixedFields ) {
-        this.name = name;
+    public String physicalName = null;
+
+    public String digest;
+
+
+    public DocumentType( @Nonnull List<AlgDataTypeField> fixedFields ) {
         this.structKind = fixedFields.isEmpty() ? StructKind.NONE : StructKind.SEMI;
-        this.fixedFields = ImmutableList.copyOf( fixedFields );
+        this.fixedFields = new ArrayList<>( fixedFields );
+        this.digest = computeDigest();
     }
 
 
     public DocumentType() {
-        this( null, List.of( new DocumentType( "_id_", List.of() ) ) );
+        this( List.of( new AlgDataTypeFieldImpl( "_id_", 0, new DocumentType( List.of() ) ) ) );
     }
 
 
-    public AlgDataType asRelational() {
+    public static AlgDataType asRelational() {
         return new AlgRecordType( List.of(
                 new AlgDataTypeFieldImpl( "_id_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
                 new AlgDataTypeFieldImpl( "_data_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) )
         ) );
+    }
+
+
+    private String computeDigest() {
+        assert fixedFields != null;
+        return getClass().getSimpleName() +
+                fixedFields.stream().map( f -> f.getType().getFullTypeString() ).collect( Collectors.joining( "$" ) );
     }
 
 
@@ -71,13 +74,7 @@ public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamil
 
     @Override
     public List<AlgDataTypeField> getFieldList() {
-        return List.of( new AlgDataTypeFieldImpl( "d", 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOCUMENT ) ) );
-    }
-
-
-    @Override
-    public String toString() {
-        return "DocumentType";
+        return fixedFields;
     }
 
 
@@ -89,14 +86,22 @@ public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamil
 
     @Override
     public int getFieldCount() {
-        throw new RuntimeException( "getFieldList" );
+        return getFieldList().size();
     }
 
 
     @Override
     public AlgDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
-        throw new RuntimeException( "getField on DocumentType" );
+        // everything we ask a document for is there
+        int index = getFieldNames().indexOf( fieldName );
+        if ( index >= 0 ) {
+            return getFieldList().get( index );
+        }
+        AlgDataTypeFieldImpl added = new AlgDataTypeFieldImpl( fieldName, getFieldCount(), new DocumentType() );
+        fixedFields.add( added );
+        computeDigest();
 
+        return added;
     }
 
 
@@ -183,43 +188,5 @@ public class DocumentType implements Serializable, AlgDataType, AlgDataTypeFamil
         return false;
     }
 
-
-    @Override
-    public int getIndex() {
-        return 0;
-    }
-
-
-    @Override
-    public AlgDataType getType() {
-        return this;
-    }
-
-
-    @Override
-    public boolean isDynamicStar() {
-        return false;
-    }
-
-
-    @Override
-    public String getKey() {
-        if ( name == null ) {
-            return "$d";
-        }
-        return name;
-    }
-
-
-    @Override
-    public AlgDataType getValue() {
-        return null;
-    }
-
-
-    @Override
-    public AlgDataType setValue( AlgDataType value ) {
-        throw new RuntimeException( "Error while setting field on DocumentType" );
-    }
 
 }

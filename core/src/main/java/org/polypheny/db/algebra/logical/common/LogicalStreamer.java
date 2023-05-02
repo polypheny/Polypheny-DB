@@ -20,6 +20,7 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Values;
@@ -108,20 +109,9 @@ public class LogicalStreamer extends Streamer {
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            //algBuilder.push( LogicalValues.createOneRow( input.getCluster() ) );
-
             assert input.getRowType().getFieldCount() == modify.getEntity().getRowType().getFieldCount();
             // attach a projection, so the values can be inserted on execution
-            algBuilder.push(
-                    LogicalProject.create(
-                            LogicalValues.createOneRow( input.getCluster() ),
-                            input.getRowType()
-                                    .getFieldList()
-                                    .stream()
-                                    .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
-                                    .collect( Collectors.toList() ),
-                            input.getRowType() )
-            );
+            algBuilder.push( getCollector( rexBuilder, input ) );
         }
 
         LogicalRelModify prepared = LogicalRelModify.create(
@@ -132,6 +122,19 @@ public class LogicalStreamer extends Streamer {
                 modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
                 false );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
+    }
+
+
+    @NotNull
+    private static LogicalProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
+        return LogicalProject.create(
+                LogicalValues.createOneRow( input.getCluster() ),
+                input.getRowType()
+                        .getFieldList()
+                        .stream()
+                        .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
+                        .collect( Collectors.toList() ),
+                input.getRowType() );
     }
 
 
@@ -163,7 +166,6 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-
     private static AlgNode getChild( AlgNode child ) {
         if ( child instanceof AlgSubset ) {
             return getChild( ((AlgSubset) child).getOriginal() );
@@ -182,8 +184,6 @@ public class LogicalStreamer extends Streamer {
             return !modify.isDelete() || !(modify.getInput() instanceof RelScan);
         }
     }
-
-
 
 
     private static List<RexInputRef> getOldFieldRefs( AlgDataType rowType ) {

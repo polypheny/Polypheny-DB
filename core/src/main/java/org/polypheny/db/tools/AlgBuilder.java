@@ -109,6 +109,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -2497,7 +2498,10 @@ public class AlgBuilder {
             nodes.add( build() );
         }
 
-        AlgNode input = build();
+        if ( nodes.isEmpty() ) {
+            throw new GenericRuntimeException( "Empty nodes on transform" );
+        }
+        AlgNode input = nodes.get( 0 );
         push( new LogicalTransformer( input.getCluster(), List.of( input ), null, input.getTraitSet(), input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
         return this;
     }

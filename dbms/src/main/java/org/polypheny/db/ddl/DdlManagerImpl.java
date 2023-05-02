@@ -277,9 +277,9 @@ public class DdlManagerImpl extends DdlManager {
             name = StringUtils.chop( name );
         }
 
-        CatalogAdapter catalogAdapter = catalog.getSnapshot().getAdapter( name );
-        if ( catalogAdapter.type == AdapterType.SOURCE ) {
-            for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocationsOnAdapter( catalogAdapter.id ) ) {
+        CatalogAdapter adapter = catalog.getSnapshot().getAdapter( name );
+        if ( adapter.type == AdapterType.SOURCE ) {
+            for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocationsOnAdapter( adapter.id ) ) {
                 // Make sure that there is only one adapter
                 if ( catalog.getSnapshot().alloc().getFromLogical( allocation.logicalId ).size() != 1 ) {
                     throw new GenericRuntimeException( "The data source contains entities with more than one placement. This should not happen!" );
@@ -304,10 +304,10 @@ public class DdlManagerImpl extends DdlManager {
                     if ( table.entityType != EntityType.SOURCE ) {
                         throw new GenericRuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
                     }
-                    AllocationEntity entity = catalog.getSnapshot().alloc().getAllocation( catalogAdapter.id, allocation.logicalId );
+                    AllocationEntity entity = catalog.getSnapshot().alloc().getAllocation( adapter.id, allocation.logicalId );
                     // Delete column placement in catalog
                     for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( allocation.logicalId ) ) {
-                        if ( catalog.getSnapshot().alloc().getAllocation( catalogAdapter.id, column.id ) != null ) {
+                        if ( catalog.getSnapshot().alloc().getAllocation( adapter.id, column.id ) != null ) {
                             catalog.getAllocRel( defaultNamespaceId ).deleteColumn( entity.id, column.id );
                         }
                     }
@@ -329,7 +329,7 @@ public class DdlManagerImpl extends DdlManager {
 
             }
         }
-        AdapterManager.getInstance().removeAdapter( catalogAdapter.id );
+        AdapterManager.getInstance().removeAdapter( adapter.id );
     }
 
 

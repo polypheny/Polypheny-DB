@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.Convention;
 
 public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
@@ -35,7 +36,12 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
 
     public AllocationToPhysicalModifyRule( Class<? extends Modify<?>> modify ) {
-        super( operand( modify, any() ), AlgFactories.LOGICAL_BUILDER, modify.getSimpleName() );
+        super( operandJ( modify, Convention.NONE, AllocationToPhysicalModifyRule::canApply, any() ), AlgFactories.LOGICAL_BUILDER, modify.getSimpleName() );
+    }
+
+
+    private static boolean canApply( Modify<?> r ) {
+        return r.entity.unwrap( AllocationEntity.class ) != null;
     }
 
 

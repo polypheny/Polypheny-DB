@@ -16,20 +16,12 @@
 
 package org.polypheny.db.algebra.core.document;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.type.PolyType;
 
 
 public abstract class DocumentScan<E extends CatalogEntity> extends RelScan<E> implements DocumentAlg {
@@ -41,17 +33,7 @@ public abstract class DocumentScan<E extends CatalogEntity> extends RelScan<E> i
      */
     public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, E collection ) {
         super( cluster, traitSet, collection );
-
-        AlgDataType docType = cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT );
-        // todo dl: change after RowType refactor
-        if ( getEntity().namespaceType == NamespaceType.DOCUMENT ) {
-            this.rowType = new DocumentType();
-        } else {
-            List<AlgDataTypeField> list = collection.getRowType().getFieldList().stream()
-                    .map( f -> new AlgDataTypeFieldImpl( f.getName(), f.getIndex(), cluster.getTypeFactory().createPolyType( PolyType.ANY ) ) )
-                    .collect( Collectors.toList() );
-            this.rowType = new AlgRecordType( list );
-        }
+        this.rowType = new DocumentType();
     }
 
 

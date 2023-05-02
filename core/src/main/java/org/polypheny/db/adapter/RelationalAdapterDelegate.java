@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -128,15 +129,21 @@ public class RelationalAdapterDelegate implements Modifiable {
         if ( table.unwrap( ModifiableEntity.class ) == null ) {
             return null;
         }
+
         builder.clear();
-        builder.push( table.unwrap( ModifiableEntity.class ).toModificationAlg(
+        builder.push( modify.getInput() );
+        builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
+
+        RelModify<?> relModify = (RelModify<?>) table.unwrap( ModifiableEntity.class ).toModificationAlg(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 table,
-                modify.getInput(),
+                builder.build(),
                 modify.getOperation(),
                 modify.getKeys(),
-                modify.getUpdates() ) );
+                modify.getUpdates() );
+
+        builder.push( LogicalStreamer.create( relModify, builder ) );
 
         return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
     }
