@@ -346,6 +346,37 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+    @Override
+    public boolean isAlias( String name ) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void updateAliases( Object[] oldTable, Object[] newTable ) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void addAlias( String name, Object[] table ) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeAlias( String name ) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeAliases( Object[] table ) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public Object[] getTableNameFromAlias( String name ) {
+        throw new NotImplementedException();
+    }
+
+
 
     @Override
     public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
