@@ -3904,6 +3904,19 @@ public class Functions {
     }
 
 
+    public static Object extractNames( Map<Object, Object> objects, List<String> names ) {
+        Object[] ob = new Object[names.size() + 1];
+        int i = 0;
+        for ( String name : names ) {
+            ob[i++] = objects.get( name );
+        }
+        names.forEach( objects::remove );
+        ob[i] = new BsonDocument( objects.entrySet().stream().map( o -> new BsonElement( o.getKey().toString(), o.getValue() == null ? new BsonNull() : new BsonString( o.getValue().toString() ) ) ).collect( Collectors.toList() ) ).toJson();
+
+        return ob;
+    }
+
+
     /**
      * Returned path context of JsonApiCommonSyntax, public for testing.
      */
