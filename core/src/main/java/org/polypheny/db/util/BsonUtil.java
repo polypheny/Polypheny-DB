@@ -893,7 +893,7 @@ public class BsonUtil {
 
                     literals.add( Expressions.call( Pair.class, "of", key, val ) );
                 }
-                return Expressions.call( Map.class, "ofEntries", literals );
+                return Expressions.call( EnumUtils.class, "ofEntries", literals );
 
             case ARRAY:
                 List<Expression> array = new ArrayList<>();

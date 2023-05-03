@@ -82,7 +82,7 @@ public interface PhysType {
     /**
      * Returns the Java class of the field with the given ordinal.
      */
-    Class fieldClass( int field );
+    Class<?> fieldClass( int field );
 
     /**
      * Returns whether a given field allows null values.

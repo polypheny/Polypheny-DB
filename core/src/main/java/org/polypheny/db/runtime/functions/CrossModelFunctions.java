@@ -34,13 +34,13 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.BsonUtil;
 
 public class CrossModelFunctions {

@@ -69,7 +69,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.RoutingManager;
-import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;

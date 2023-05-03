@@ -42,10 +42,13 @@ import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.type.PolyType;
@@ -309,10 +312,66 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     private Result implementUnModifyTransform( EnumerableAlgImplementor implementor, Prefer pref ) {
-        if ( getInputs().size() == 1 ) {
-            return implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
+        Result impl = implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
+        if ( getInputs().size() == 1 && getRowType().getFieldCount() == 1 ) {
+            return impl;
         }
-        throw new UnsupportedOperationException();
+
+        BlockBuilder builder = new BlockBuilder();
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.prefer( JavaRowFormat.SCALAR ) );
+
+        Type inputJavaType = physType.getJavaRowType();
+        ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
+        Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block );
+
+        List<String> extract = new ArrayList<>();
+        for ( AlgDataTypeField field : getRowType().getFieldList() ) {
+            if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
+                continue;
+            }
+            extract.add( field.getName() );
+        }
+        Expression exp = Expressions.call( Functions.class, "extractNames", Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), Map.class ), EnumUtils.constantArrayList( extract, String.class ) );
+
+        Type outputJavaType = physType.getJavaRowType();
+        final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
+
+        Expression body = Expressions.new_(
+                enumeratorType,
+                EnumUtils.NO_EXPRS,
+                Expressions.list(
+                        Expressions.fieldDecl(
+                                Modifier.PUBLIC | Modifier.FINAL,
+                                inputEnumerator,
+                                Expressions.call( old, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_RESET.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_RESET.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_MOVE_NEXT.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_CLOSE.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CLOSE.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_CURRENT.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( exp ) )
+                ) );
+
+        builder.add(
+                Expressions.return_(
+                        null,
+                        Expressions.new_(
+                                BuiltInMethod.ABSTRACT_ENUMERABLE_CTOR.constructor,
+                                // TODO: generics
+                                //   Collections.singletonList(inputRowType),
+                                EnumUtils.NO_EXPRS,
+                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
+        return implementor.result( physType, builder.toBlock() );
     }
 
 

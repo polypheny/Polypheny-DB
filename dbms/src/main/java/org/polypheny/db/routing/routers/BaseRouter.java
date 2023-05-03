@@ -50,7 +50,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -496,19 +495,15 @@ public abstract class BaseRouter implements Router {
 
         List<RoutedAlgBuilder> scans = new ArrayList<>();
 
-        List<Long> placements = snapshot.alloc().getFromLogical( collection.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
+        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( collection.id );
         if ( adapterId != null ) {
-            placements = List.of( adapterId );
+            allocs = List.of( snapshot.alloc().getAllocation( adapterId, collection.id ) );
         }
 
-        for ( Long placementId : placements ) {
-            CatalogAdapter adapter = snapshot.getAdapter( placementId );
-            NamespaceType sourceModel = collection.namespaceType;
-
+        for ( AllocationEntity alloc : allocs ) {
             // CatalogCollectionPlacement placement = catalog.getAllocDoc( alg.entity ).getCollectionPlacement( collection.id, placementId );
             // String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             // String collectionName = collection.name + "_" + placement.id;
-            AllocationEntity alloc = snapshot.alloc().getAllocation( collection.id, adapterId );
             // we might previously have pushed the non-native transformer
             builder.clear();
             return builder.push( LogicalDocumentScan.create( alg.getCluster(), alloc ) );

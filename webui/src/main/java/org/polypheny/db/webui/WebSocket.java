@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.GraphRequest;

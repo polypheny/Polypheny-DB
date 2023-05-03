@@ -39,7 +39,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.BuiltInMethod;
 
-public class EnumerableDocValues extends DocumentValues implements EnumerableAlg {
+public class EnumerableDocumentValues extends DocumentValues implements EnumerableAlg {
 
     /**
      * Creates a {@link DocumentValues}.
@@ -49,13 +49,13 @@ public class EnumerableDocValues extends DocumentValues implements EnumerableAlg
      * @param traitSet
      * @param documentTuples
      */
-    public EnumerableDocValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
+    public EnumerableDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
         super( cluster, traitSet.replace( EnumerableConvention.INSTANCE ), documentTuples );
     }
 
 
-    public static EnumerableDocValues create( DocumentValues values ) {
-        return new EnumerableDocValues( values.getCluster(), values.getTraitSet(), values.documentTuples );
+    public static EnumerableDocumentValues create( DocumentValues values ) {
+        return new EnumerableDocumentValues( values.getCluster(), values.getTraitSet(), values.documentTuples );
     }
 
 

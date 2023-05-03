@@ -73,7 +73,7 @@ public class PhysTypeImpl implements PhysType {
     private final JavaTypeFactory typeFactory;
     private final AlgDataType rowType;
     private final Type javaRowClass;
-    private final List<Class> fieldClasses = new ArrayList<>();
+    private final List<Class<?>> fieldClasses = new ArrayList<>();
     final JavaRowFormat format;
 
 
@@ -501,7 +501,7 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Class fieldClass( int field ) {
+    public Class<?> fieldClass( int field ) {
         return fieldClasses.get( field );
     }
 
@@ -529,7 +529,7 @@ public class PhysTypeImpl implements PhysType {
                 //        return v1.<fieldN>;
                 //    }
                 // }
-                Class returnType = fieldClasses.get( field0 );
+                Class<?> returnType = fieldClasses.get( field0 );
                 Expression fieldReference = Types.castIfNecessary( returnType, fieldReference( v1, field0 ) );
                 return Expressions.lambda( Function1.class, fieldReference, v1 );
             default:

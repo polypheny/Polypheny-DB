@@ -27,7 +27,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.cypher.CypherTestTemplate;
-import org.polypheny.db.schema.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.util.Pair;
 
 public class TestGraphObject implements TestObject {

@@ -40,7 +40,9 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
@@ -62,6 +64,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -344,6 +347,11 @@ public class EnumUtils {
             return ((PolyList<?>) value).getAsExpression();
         }
         return Expressions.constant( value, clazz );
+    }
+
+
+    public static Map<Object, Object> ofEntries( Pair<Object, Object>... pairs ) {
+        return new HashMap<>( Map.ofEntries( pairs ) );
     }
 
 }

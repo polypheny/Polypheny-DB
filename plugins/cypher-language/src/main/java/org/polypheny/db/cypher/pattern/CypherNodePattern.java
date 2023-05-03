@@ -25,7 +25,7 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.Pair;
 
 @Getter

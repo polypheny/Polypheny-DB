@@ -49,7 +49,7 @@ import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;

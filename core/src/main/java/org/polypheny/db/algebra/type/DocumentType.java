@@ -29,6 +29,8 @@ import org.polypheny.db.util.Collation;
 @Data
 public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
+    public static final String DOCUMENT_ID = "_id";
+    public static final String DOCUMENT_DATA = "_data";
     public StructKind structKind;
 
     public List<AlgDataTypeField> fixedFields;
@@ -47,14 +49,14 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     public DocumentType() {
-        this( List.of( new AlgDataTypeFieldImpl( "_id_", 0, new DocumentType( List.of() ) ) ) );
+        this( List.of( new AlgDataTypeFieldImpl( DOCUMENT_ID, 0, new DocumentType( List.of() ) ) ) );
     }
 
 
     public static AlgDataType asRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( "_id_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
-                new AlgDataTypeFieldImpl( "_data_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) )
+                new AlgDataTypeFieldImpl( DOCUMENT_ID, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
+                new AlgDataTypeFieldImpl( DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) )
         ) );
     }
 

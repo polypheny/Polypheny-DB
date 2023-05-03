@@ -2163,7 +2163,7 @@ public class DdlManagerImpl extends DdlManager {
             AllocationCollection alloc = catalog.getSnapshot().alloc().getAllocation( store.adapterId, collection.id ).unwrap( AllocationCollection.class );
             store.dropCollection( statement.getPrepareContext(), alloc );
 
-            catalog.getAllocDoc( namespaceId ).removeAllocation( collection.id );
+            catalog.getAllocDoc( namespaceId ).removeAllocation( alloc.id );
 
         }
 

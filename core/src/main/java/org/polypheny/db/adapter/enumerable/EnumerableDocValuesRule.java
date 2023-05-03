@@ -17,7 +17,7 @@
 package org.polypheny.db.adapter.enumerable;
 
 import java.util.function.Predicate;
-import org.polypheny.db.adapter.enumerable.document.EnumerableDocValues;
+import org.polypheny.db.adapter.enumerable.document.EnumerableDocumentValues;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -35,7 +35,7 @@ public class EnumerableDocValuesRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         DocumentValues values = (DocumentValues) alg;
-        return EnumerableDocValues.create( values );
+        return EnumerableDocumentValues.create( values );
     }
 
 }
