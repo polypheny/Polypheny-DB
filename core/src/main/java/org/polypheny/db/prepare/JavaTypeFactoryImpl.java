@@ -256,6 +256,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 } else {
                     return createSyntheticType( (AlgRecordType) type );
                 }
+            case DOCUMENT:
             case MAP:
                 return Map.class;
             case ARRAY:

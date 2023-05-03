@@ -37,6 +37,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang.NotImplementedException;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDecimal128;
@@ -52,6 +55,7 @@ import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
@@ -858,6 +862,61 @@ public class BsonUtil {
 
         }
         throw new RuntimeException( "BsonType cannot be transformed." );
+    }
+
+
+    public static Expression asExpression( BsonValue value ) {
+        switch ( value.getBsonType() ) {
+
+            case END_OF_DOCUMENT:
+            case REGULAR_EXPRESSION:
+            case DATE_TIME:
+            case OBJECT_ID:
+            case BINARY:
+            case UNDEFINED:
+            case DB_POINTER:
+            case JAVASCRIPT:
+            case SYMBOL:
+            case JAVASCRIPT_WITH_SCOPE:
+            case MIN_KEY:
+            case MAX_KEY:
+                break;
+            case DOUBLE:
+                return Expressions.constant( value.asDouble().getValue() );
+            case STRING:
+                return Expressions.constant( value.asString().getValue() );
+            case DOCUMENT:
+                List<Expression> literals = new ArrayList<>();
+                for ( Entry<String, BsonValue> doc : value.asDocument().entrySet() ) {
+                    Expression key = Expressions.constant( doc.getKey() );
+                    Expression val = asExpression( doc.getValue() );
+
+                    literals.add( Expressions.call( Pair.class, "of", key, val ) );
+                }
+                return Expressions.call( Map.class, "ofEntries", literals );
+
+            case ARRAY:
+                List<Expression> array = new ArrayList<>();
+
+                for ( BsonValue doc : value.asArray() ) {
+                    array.add( asExpression( doc ) );
+                }
+                return EnumUtils.expressionFlatList( array, Object.class );
+            case BOOLEAN:
+                return Expressions.constant( value.asBoolean().getValue() );
+            case NULL:
+                return Expressions.constant( null );
+            case INT32:
+                return Expressions.constant( value.asInt32().getValue() );
+            case TIMESTAMP:
+                return Expressions.constant( TimestampString.fromMillisSinceEpoch( value.asTimestamp().getValue() ) );
+            case INT64:
+                return Expressions.constant( value.asInt64().getValue() );
+            case DECIMAL128:
+                return Expressions.constant( value.asDecimal128().getValue().bigDecimalValue() );
+        }
+
+        throw new NotImplementedException();
     }
 
 }

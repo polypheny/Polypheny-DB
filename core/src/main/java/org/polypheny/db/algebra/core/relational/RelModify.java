@@ -37,6 +37,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -92,7 +93,7 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
      * @param flattened Whether set flattens the input row type
      */
     protected RelModify( AlgOptCluster cluster, AlgTraitSet traitSet, E table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
-        super( cluster, traitSet, table, input );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input );
         this.operation = operation;
         this.updateColumnList = updateColumnList;
         this.sourceExpressionList = sourceExpressionList;

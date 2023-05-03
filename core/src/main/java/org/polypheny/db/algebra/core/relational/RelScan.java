@@ -37,6 +37,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
@@ -48,7 +49,7 @@ import org.polypheny.db.util.ImmutableIntList;
 public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
 
     protected RelScan( AlgOptCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
-        super( cluster, traitSet, entity );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), entity );
     }
 
 

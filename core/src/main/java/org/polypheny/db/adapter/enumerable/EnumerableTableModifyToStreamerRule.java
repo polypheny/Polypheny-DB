@@ -49,7 +49,7 @@ public class EnumerableTableModifyToStreamerRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        RelModify<?> modify = call.alg( 0 );
+        Modify<?> modify = call.alg( 0 );
 
         if ( call.getParents() != null && call.getParents().stream().anyMatch( p -> p instanceof Streamer ) ) {
             return;

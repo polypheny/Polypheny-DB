@@ -96,6 +96,7 @@ import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRules;
 import org.polypheny.db.algebra.rules.ScanRule;
+import org.polypheny.db.algebra.rules.SimpleAllocationToPhysicalModifyRule;
 import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveConstantKeysRule;
@@ -204,6 +205,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
+                    EnumerableRules.ENUMERABLE_DOC_VALUES,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
@@ -225,6 +227,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.DOC_INSTANCE,
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
+                    SimpleAllocationToPhysicalModifyRule.DOC_INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,

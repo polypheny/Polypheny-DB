@@ -322,6 +322,13 @@ public class EnumUtils {
     }
 
 
+    public static MethodCallExpression expressionFlatList( List<Expression> expressions, Class<?> clazz ) {
+        List<Expression> list = new ArrayList<>( expressions );
+        list.add( 0, Expressions.constant( clazz ) );
+        return Expressions.call( BuiltInMethod.ARRAYS_AS_FLAT_LIST.method, list );
+    }
+
+
     /**
      * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
      */

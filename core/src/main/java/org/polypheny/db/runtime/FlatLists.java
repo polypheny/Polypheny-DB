@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
+import java.util.stream.Collectors;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -66,6 +67,12 @@ public class FlatLists {
     public static <T> ComparableList<T> of() {
         //noinspection unchecked
         return COMPARABLE_EMPTY_LIST;
+    }
+
+
+    public static <T extends Comparable<T>> ComparableList<T> ofNeutral( Class<T> clazz, Object... elements ) {
+        List<T> comps = Arrays.stream( elements ).filter( clazz::isInstance ).map( e -> (T) e ).collect( Collectors.toList() );
+        return new ComparableListImpl<>( comps );
     }
 
 
@@ -1031,7 +1038,7 @@ public class FlatLists {
                 return true;
             }
             if ( o instanceof Flat5List ) {
-                Flat5List that = (Flat5List) o;
+                Flat5List<?> that = (Flat5List<?>) o;
                 return Objects.equals( this.t0, that.t0 )
                         && Objects.equals( this.t1, that.t1 )
                         && Objects.equals( this.t2, that.t2 )
@@ -1039,7 +1046,7 @@ public class FlatLists {
                         && Objects.equals( this.t4, that.t4 );
             }
             return o instanceof List
-                    && ((List) o).size() == 5
+                    && ((List<?>) o).size() == 5
                     && Arrays.asList( t0, t1, t2, t3, t4 ).equals( o );
         }
 
@@ -1252,7 +1259,7 @@ public class FlatLists {
                         && Objects.equals( this.t5, that.t5 );
             }
             return o instanceof List
-                    && ((List) o).size() == 6
+                    && ((List<?>) o).size() == 6
                     && Arrays.asList( t0, t1, t2, t3, t4, t5 ).equals( o );
         }
 
@@ -1419,7 +1426,7 @@ public class FlatLists {
 
 
         public boolean equals( Object o ) {
-            return o == this || o instanceof List && ((List) o).isEmpty();
+            return o == this || o instanceof List && ((List<?>) o).isEmpty();
         }
 
 
@@ -1445,7 +1452,8 @@ public class FlatLists {
      *
      * @param <T> element type
      */
-    public interface ComparableList<T> extends List<T>, Comparable<List> {
+    public interface ComparableList<T> extends List<T>, Comparable<List<T>> {
+
 
     }
 

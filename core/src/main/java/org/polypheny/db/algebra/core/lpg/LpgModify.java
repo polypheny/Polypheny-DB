@@ -40,7 +40,7 @@ public abstract class LpgModify<E extends CatalogEntity> extends Modify<E> imple
      * {@link ModelTrait#GRAPH} node, which is able to modify an LPG graph.
      */
     protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, E graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
-        super( cluster, traits, graph, input );
+        super( cluster, traits.replace( ModelTrait.GRAPH ), graph, input );
         this.operation = operation;
         this.ids = ids;
         this.operations = operations;

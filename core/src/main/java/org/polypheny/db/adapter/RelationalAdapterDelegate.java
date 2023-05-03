@@ -131,8 +131,12 @@ public class RelationalAdapterDelegate implements Modifiable {
         }
 
         builder.clear();
+
         builder.push( modify.getInput() );
-        builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
+        if ( !modify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
+            // push a transform under the modify for collector(right side of Streamer)
+            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
+        }
 
         RelModify<?> relModify = (RelModify<?>) table.unwrap( ModifiableEntity.class ).toModificationAlg(
                 modify.getCluster(),
@@ -143,8 +147,27 @@ public class RelationalAdapterDelegate implements Modifiable {
                 modify.getKeys(),
                 modify.getUpdates() );
 
+        if ( relModify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
+            // Values has already been replaced
+            return relModify;
+        }
+
         builder.push( LogicalStreamer.create( relModify, builder ) );
 
+        return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
+    }
+
+
+    private AlgNode getSimpleDocumentValuesModify( DocumentModify<?> modify, DocumentValues input, PhysicalTable table, AlgBuilder builder ) {
+        builder.push( input );
+        builder.push( table.unwrap( ModifiableEntity.class ).toModificationAlg(
+                modify.getCluster(),
+                modify.getTraitSet(),
+                table,
+                builder.build(),
+                modify.getOperation(),
+                modify.getKeys(),
+                modify.getUpdates() ) );
         return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
     }
 

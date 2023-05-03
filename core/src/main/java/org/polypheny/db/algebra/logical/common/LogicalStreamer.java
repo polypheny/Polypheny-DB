@@ -20,10 +20,12 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Streamer;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.relational.RelScan;
@@ -40,7 +42,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 
-
+@Slf4j
 public class LogicalStreamer extends Streamer {
 
     /**
@@ -64,8 +66,14 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static LogicalStreamer create( RelModify<?> modify, AlgBuilder algBuilder ) {
+    public static LogicalStreamer create( Modify<?> allModify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
+
+        if ( !(allModify instanceof RelModify<?>) ) {
+            log.warn( "non relational nodes are not supported for toModify streamer rule" );
+            return null;
+        }
+        RelModify<?> modify = (RelModify<?>) allModify;
 
         if ( !isModifyApplicable( modify ) ) {
             return null;

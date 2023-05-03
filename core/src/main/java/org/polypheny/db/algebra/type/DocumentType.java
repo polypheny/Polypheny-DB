@@ -155,7 +155,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     @Override
     public PolyType getPolyType() {
-        return null;
+        return PolyType.DOCUMENT;
     }
 
 

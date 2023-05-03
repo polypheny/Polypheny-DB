@@ -212,6 +212,8 @@ public enum BuiltInMethod {
     FUNCTION0_APPLY( Function0.class, "apply" ),
     FUNCTION1_APPLY( Function1.class, "apply", Object.class ),
     ARRAYS_AS_LIST( Arrays.class, "asList", Object[].class ),
+
+    ARRAYS_AS_FLAT_LIST( FlatLists.class, "ofNeutral", Class.class, Object[].class ),
     MAP_OF_ENTRIES( ImmutableMap.class, "copyOf", List.class ),
     ARRAY( Functions.class, "array", Object[].class ),
     FLAT_PRODUCT( Functions.class, "flatProduct", int[].class, boolean.class, FlatProductInputType[].class ),

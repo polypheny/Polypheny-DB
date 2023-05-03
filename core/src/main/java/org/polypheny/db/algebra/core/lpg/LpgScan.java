@@ -35,7 +35,7 @@ public abstract class LpgScan<E extends CatalogEntity> extends Scan<E> implement
      * {@link ModelTrait#GRAPH} native node, which is able to scan a LPG graph.
      */
     public LpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, E graph ) {
-        super( cluster, traitSet, graph );
+        super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) );
     }
 

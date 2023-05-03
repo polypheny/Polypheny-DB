@@ -101,6 +101,8 @@ public class EnumerableRules {
 
     public static final EnumerableValuesRule ENUMERABLE_VALUES_RULE = new EnumerableValuesRule( AlgFactories.LOGICAL_BUILDER );
 
+    public static final EnumerableDocValuesRule ENUMERABLE_DOC_VALUES = new EnumerableDocValuesRule( AlgFactories.LOGICAL_BUILDER );
+
     public static final EnumerableWindowRule ENUMERABLE_WINDOW_RULE = new EnumerableWindowRule();
 
     public static final EnumerableCollectRule ENUMERABLE_COLLECT_RULE = new EnumerableCollectRule();

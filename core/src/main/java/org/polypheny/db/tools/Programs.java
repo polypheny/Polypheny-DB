@@ -74,6 +74,7 @@ import org.polypheny.db.algebra.rules.ProjectMergeRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
 import org.polypheny.db.algebra.rules.ScanRule;
 import org.polypheny.db.algebra.rules.SemiJoinRules;
+import org.polypheny.db.algebra.rules.SimpleAllocationToPhysicalModifyRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SubQueryRemoveRule;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
@@ -148,6 +149,7 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
+                    EnumerableRules.ENUMERABLE_DOC_VALUES,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
@@ -161,6 +163,7 @@ public class Programs {
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.DOC_INSTANCE,
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
+                    SimpleAllocationToPhysicalModifyRule.DOC_INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,

@@ -32,7 +32,7 @@ public abstract class DocumentScan<E extends CatalogEntity> extends RelScan<E> i
      * {@link ModelTrait#DOCUMENT} node, which scans the content of a collection.
      */
     public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, E collection ) {
-        super( cluster, traitSet, collection );
+        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), collection );
         this.rowType = new DocumentType();
     }
 

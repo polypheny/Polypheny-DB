@@ -45,7 +45,7 @@ public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> 
      * {@link ModelTrait#DOCUMENT} node, which modifies a collection.
      */
     protected DocumentModify( AlgTraitSet traits, E collection, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
-        super( input.getCluster(), input.getTraitSet(), collection, input );
+        super( input.getCluster(), input.getTraitSet().replace( ModelTrait.DOCUMENT ), collection, input );
         this.operation = operation;
         this.keys = keys;
         this.updates = updates;
