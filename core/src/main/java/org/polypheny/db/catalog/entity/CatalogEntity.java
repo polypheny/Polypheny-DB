@@ -81,7 +81,7 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
             case RELATIONAL:
                 throw new UnsupportedOperationException( "Should be overwritten by child" );
             case DOCUMENT:
-                return new DocumentType();
+                return DocumentType.ofId();
             case GRAPH:
                 return new GraphType();
         }

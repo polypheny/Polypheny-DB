@@ -1364,14 +1364,8 @@ public class AlgBuilder {
 
 
     public AlgBuilder scan( @Nonnull PhysicalEntity entity ) {
-
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
-        /*rename( entity.getRowType().getFieldNames() );
-        if ( entity.unwrap( PhysicalTable.class ) != null ) {
-            List<Long> order = Catalog.snapshot().rel().getTable( entity.id ).unwrap( LogicalTable.class ).getColumnIds();
-            //reorder( order, flip( entity.unwrap( PhysicalTable.class ).columns ) );
-        }*/
         return this;
     }
 

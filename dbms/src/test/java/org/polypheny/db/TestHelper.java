@@ -49,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.transaction.Transaction;
@@ -317,14 +318,14 @@ public class TestHelper {
             for ( String[] data : result.getData() ) {
                 int i = 0;
                 for ( String entry : data ) {
-                    if ( containsId && !entry.contains( "_id" ) ) {
+                    if ( containsId && !entry.contains( DocumentType.DOCUMENT_ID ) ) {
                         return false;
                     }
 
                     if ( entry != null && expected.get( j )[i] != null ) {
                         if ( containsId && result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
                             BsonDocument doc = BsonDocument.parse( entry );
-                            doc.remove( "_id" );
+                            doc.remove( DocumentType.DOCUMENT_ID );
 
                             assertEquals( BsonDocument.parse( ((String) expected.get( j )[i]) ), doc );
                         } else {

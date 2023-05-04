@@ -281,7 +281,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( "id", "data" ) );
+        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( DocumentType.DOCUMENT_ID, DocumentType.DOCUMENT_DATA ) );
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( physical.id ) ) );
     }
 
@@ -333,9 +333,7 @@ public class RelationalAdapterDelegate implements Modifiable {
         builder.clear();
         PhysicalTable table = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
         builder.scan( table );
-        AlgDataType rowType = new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( "_d_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOCUMENT ) )
-        ) );
+        AlgDataType rowType = DocumentType.ofId();
         builder.transform( ModelTrait.DOCUMENT, rowType, false );
         return builder.build();
     }

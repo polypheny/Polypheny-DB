@@ -113,6 +113,7 @@ import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists;
@@ -312,7 +313,7 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<Object> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
-        PolyTypeFactoryImpl factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
         boolean single = polyTypes.size() == 1;
@@ -3842,6 +3843,13 @@ public class Functions {
         ob[i] = new BsonDocument( objects.entrySet().stream().map( o -> new BsonElement( o.getKey().toString(), o.getValue() == null ? new BsonNull() : new BsonString( o.getValue().toString() ) ) ).collect( Collectors.toList() ) ).toJson();
 
         return ob;
+    }
+
+
+    public static Object insertNames( Map<Object, Object> objects, Map<String, Object> inserts ) {
+        objects.putAll( inserts );
+
+        return objects;
     }
 
 

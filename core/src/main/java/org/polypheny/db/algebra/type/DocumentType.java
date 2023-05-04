@@ -49,7 +49,12 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     public DocumentType() {
-        this( List.of( new AlgDataTypeFieldImpl( DOCUMENT_ID, 0, new DocumentType( List.of() ) ) ) );
+        this( List.of() );
+    }
+
+
+    public static DocumentType ofId() {
+        return new DocumentType( List.of( new AlgDataTypeFieldImpl( DOCUMENT_ID, 0, new DocumentType( List.of() ) ) ) );
     }
 
 

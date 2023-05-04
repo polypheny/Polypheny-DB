@@ -68,7 +68,7 @@ public class PhysicalTable extends PhysicalEntity {
 
         for ( PhysicalColumn column : columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
-            fieldInfo.add( column.name, null, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() );

@@ -78,11 +78,11 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             if ( isCrossModel && inModelTrait == ModelTrait.GRAPH ) {
                 return implementDocumentOnGraph( implementor, pref );
             }
-            return implementDocument( implementor, pref );
+            return implementDocumentOnRelational( implementor, pref );
         }
 
         if ( rowType.getFieldList().stream().map( f -> f.getType().getPolyType() ).noneMatch( t -> t == PolyType.EDGE || t == PolyType.NODE || t == PolyType.GRAPH ) ) {
-            return implementUnModifyTransform( implementor, pref );
+            return implementRelationalOnDocument( implementor, pref );
         }
 
         if ( outModelTrait == ModelTrait.GRAPH ) {
@@ -306,12 +306,16 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
     }
 
 
-    private Result implementDocument( EnumerableAlgImplementor implementor, Prefer pref ) {
-        return implementor.visitChild( this, 0, (EnumerableAlg) getInput( 0 ), pref );
+    private Result implementDocumentOnRelational( EnumerableAlgImplementor implementor, Prefer pref ) {
+        Result impl = implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
+        if ( getInputs().size() == 1 && getRowType().getFieldCount() == 1 ) {
+            return impl;
+        }
+        throw new UnsupportedOperationException();
     }
 
 
-    private Result implementUnModifyTransform( EnumerableAlgImplementor implementor, Prefer pref ) {
+    private Result implementRelationalOnDocument( EnumerableAlgImplementor implementor, Prefer pref ) {
         Result impl = implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
         if ( getInputs().size() == 1 && getRowType().getFieldCount() == 1 ) {
             return impl;

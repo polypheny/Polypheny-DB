@@ -16,7 +16,7 @@
 
 package org.polypheny.db.algebra.core.document;
 
-import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -24,7 +24,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
-public abstract class DocumentScan<E extends CatalogEntity> extends RelScan<E> implements DocumentAlg {
+public abstract class DocumentScan<E extends CatalogEntity> extends Scan<E> implements DocumentAlg {
 
 
     /**
@@ -33,7 +33,7 @@ public abstract class DocumentScan<E extends CatalogEntity> extends RelScan<E> i
      */
     public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, E collection ) {
         super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), collection );
-        this.rowType = new DocumentType();
+        this.rowType = DocumentType.ofId();
     }
 
 

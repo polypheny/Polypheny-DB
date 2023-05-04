@@ -51,7 +51,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
      */
     public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
         super( cluster, traitSet );
-        this.rowType = new DocumentType();
+        this.rowType = DocumentType.ofId();
         this.documentTuples = validate( documentTuples );
     }
 

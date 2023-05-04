@@ -68,10 +68,14 @@ public class PhysicalColumn extends CatalogEntity {
     @Serialize
     public CatalogDefaultValue defaultValue;
 
+    @Serialize
+    public String logicalName;
+
 
     public PhysicalColumn(
             @Deserialize("id") final long id,
             @Deserialize("name") final String name,
+            @Deserialize("logicalName") final String logicalName,
             @Deserialize("tableId") final long tableId,
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("position") final int position,
@@ -96,6 +100,7 @@ public class PhysicalColumn extends CatalogEntity {
         this.nullable = nullable;
         this.collation = collation;
         this.defaultValue = defaultValue;
+        this.logicalName = logicalName;
 
     }
 
@@ -106,7 +111,7 @@ public class PhysicalColumn extends CatalogEntity {
             final long adapterId,
             final int position,
             LogicalColumn column ) {
-        this( column.id, name, tableId, adapterId, position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.collation, column.defaultValue );
+        this( column.id, name, column.name, tableId, adapterId, position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.collation, column.defaultValue );
     }
 
 
