@@ -2496,7 +2496,7 @@ public class AlgBuilder {
             throw new GenericRuntimeException( "Empty nodes on transform" );
         }
         AlgNode input = nodes.get( 0 );
-        push( new LogicalTransformer( input.getCluster(), List.of( input ), null, input.getTraitSet(), input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
+        push( new LogicalTransformer( input.getCluster(), List.of( input ), null, input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel, true ) );
         return this;
     }
 

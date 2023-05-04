@@ -1420,7 +1420,13 @@ public enum OperatorName {
 
     // CROSS MODEL FUNCTION
 
-    CROSS_MODEL_ITEM( LangFunctionOperator.class );
+    CROSS_MODEL_ITEM( LangFunctionOperator.class ),
+
+    OF_LIST( LangFunctionOperator.class ),
+
+    REMOVE_NAMES( LangFunctionOperator.class ),
+
+    EXTRACT_NAME( LangFunctionOperator.class );
 
 
     @Getter

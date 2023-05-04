@@ -1428,6 +1428,10 @@ public abstract class AlgOptUtil {
             return litmus.succeed();
         }
 
+        if ( type1.getPolyType() == PolyType.DOCUMENT || type2.getPolyType() == PolyType.DOCUMENT ) {
+            return litmus.succeed();
+        }
+
         // Due to another issue with arrays in db.sql.SqlOperator#deriveType we cannot assume
         // that two arrays that are equal are also represented by the same type object.
         // This is why we have to handle it differently here and actually compare the properties

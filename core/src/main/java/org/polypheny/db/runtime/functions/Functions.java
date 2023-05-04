@@ -3846,6 +3846,19 @@ public class Functions {
     }
 
 
+    @SuppressWarnings("unused")
+    public static Object removeNames( Object object, String... names ) {
+        return object;
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Object extractName( Object objects, String name ) {
+        return ((Map<String, Object>) objects).get( name );
+    }
+
+
+    @SuppressWarnings("unused")
     public static Object insertNames( Map<Object, Object> objects, Map<String, Object> inserts ) {
         objects.putAll( inserts );
 

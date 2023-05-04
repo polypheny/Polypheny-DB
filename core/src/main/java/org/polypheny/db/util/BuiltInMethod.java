@@ -485,10 +485,12 @@ public enum BuiltInMethod {
     X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, String.class ),
     X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class ),
 
-    X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class );
+    X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
+    REMOVE_NAMES( Functions.class, "removeNames", Object.class, Object[].class ),
+    EXTRACT_NAME( Functions.class, "extractName", Object.class, String.class );
 
     public final Method method;
-    public final Constructor constructor;
+    public final Constructor<?> constructor;
     public final Field field;
 
     public static final ImmutableMap<Method, BuiltInMethod> MAP;
@@ -505,7 +507,7 @@ public enum BuiltInMethod {
     }
 
 
-    BuiltInMethod( Method method, Constructor constructor, Field field ) {
+    BuiltInMethod( Method method, Constructor<?> constructor, Field field ) {
         this.method = method;
         this.constructor = constructor;
         this.field = field;
@@ -515,7 +517,7 @@ public enum BuiltInMethod {
     /**
      * Defines a method.
      */
-    BuiltInMethod( Class clazz, String methodName, Class... argumentTypes ) {
+    BuiltInMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {
         this( Types.lookupMethod( clazz, methodName, argumentTypes ), null, null );
     }
 
@@ -523,7 +525,7 @@ public enum BuiltInMethod {
     /**
      * Defines a constructor.
      */
-    BuiltInMethod( Class clazz, Class... argumentTypes ) {
+    BuiltInMethod( Class<?> clazz, Class<?>... argumentTypes ) {
         this( null, Types.lookupConstructor( clazz, argumentTypes ), null );
     }
 
@@ -531,7 +533,7 @@ public enum BuiltInMethod {
     /**
      * Defines a field.
      */
-    BuiltInMethod( Class clazz, String fieldName, boolean dummy ) {
+    BuiltInMethod( Class<?> clazz, String fieldName, boolean dummy ) {
         this( null, null, Types.lookupField( clazz, fieldName ) );
         assert dummy : "dummy value for method overloading must be true";
     }

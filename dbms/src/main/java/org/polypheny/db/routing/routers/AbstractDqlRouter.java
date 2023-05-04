@@ -260,10 +260,9 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 node.getCluster(),
                 List.of( built ),
                 null,
-                node.getTraitSet().replace( ModelTrait.RELATIONAL ),
                 ModelTrait.GRAPH,
                 ModelTrait.RELATIONAL,
-                logicalTable.getRowType(), false ) );
+                logicalTable.getRowType(), false, false ) );
         return builders;
     }
 

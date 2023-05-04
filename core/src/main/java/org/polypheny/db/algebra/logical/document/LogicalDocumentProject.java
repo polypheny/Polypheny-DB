@@ -25,11 +25,10 @@ import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.util.ValidatorUtil;
 
 
 public class LogicalDocumentProject extends DocumentProject {
@@ -45,7 +44,7 @@ public class LogicalDocumentProject extends DocumentProject {
     public static LogicalDocumentProject create( AlgNode node, List<? extends RexNode> ids, List<String> fieldNames ) {
         assert ids.size() == fieldNames.size() : "Ids and field names need to be the same size";
         final AlgMetadataQuery mq = node.getCluster().getMetadataQuery();
-        final AlgDataType rowType = RexUtil.createStructType( node.getCluster().getTypeFactory(), ids, fieldNames, ValidatorUtil.F_SUGGESTER );
+        final AlgDataType rowType = new DocumentType( ids, fieldNames );
         AlgTraitSet traitSet = node.getCluster().traitSet().replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, node, ids ) );
         return new LogicalDocumentProject( node.getCluster(), traitSet, node, ids, rowType );
     }

@@ -51,7 +51,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -81,7 +80,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             return implementDocumentOnRelational( implementor, pref );
         }
 
-        if ( rowType.getFieldList().stream().map( f -> f.getType().getPolyType() ).noneMatch( t -> t == PolyType.EDGE || t == PolyType.NODE || t == PolyType.GRAPH ) ) {
+        if ( outModelTrait == ModelTrait.RELATIONAL ) {
             return implementRelationalOnDocument( implementor, pref );
         }
 

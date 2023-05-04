@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.type;
 
+import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +24,10 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Data;
 import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.Pair;
 
 @Data
 public class DocumentType implements AlgDataType, AlgDataTypeFamily {
@@ -50,6 +53,11 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public DocumentType() {
         this( List.of() );
+    }
+
+
+    public DocumentType( List<? extends RexNode> ids, List<String> names ) {
+        this( Streams.mapWithIndex( Pair.zip( ids, names ).stream(), ( p, i ) -> new AlgDataTypeFieldImpl( p.getRight(), (int) i, p.getLeft().getType() ) ).collect( Collectors.toList() ) );
     }
 
 

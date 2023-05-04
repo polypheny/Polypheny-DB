@@ -258,6 +258,11 @@ public class RexBuilder {
     }
 
 
+    public final RexNode makeCall( AlgDataType returnType, Operator op, RexNode... exprs ) {
+        return makeCall( returnType, op, ImmutableList.copyOf( exprs ) );
+    }
+
+
     /**
      * Derives the return type of a call to an operator.
      *

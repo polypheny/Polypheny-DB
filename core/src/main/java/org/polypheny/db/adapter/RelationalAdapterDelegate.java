@@ -366,7 +366,7 @@ public class RelationalAdapterDelegate implements Modifiable {
         }
         AlgNode query = builder.build();
         //query = createDocumentTransform( query, rexBuilder );
-        builder.push( new LogicalTransformer( alg.getCluster(), List.of( query ), null, alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, query.getRowType(), false ) );
+        builder.push( new LogicalTransformer( alg.getCluster(), List.of( query ), null, ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, query.getRowType(), false, false ) );
 
         AlgNode collector = builder.build();
 
