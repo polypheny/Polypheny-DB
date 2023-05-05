@@ -100,10 +100,6 @@ import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.bson.BsonDocument;
-import org.bson.BsonElement;
-import org.bson.BsonNull;
-import org.bson.BsonString;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
@@ -3832,38 +3828,6 @@ public class Functions {
         return new RuntimeException( e );
     }
 
-
-    public static Object extractNames( Map<Object, Object> objects, List<String> names ) {
-        Object[] ob = new Object[names.size() + 1];
-        int i = 0;
-        for ( String name : names ) {
-            ob[i++] = objects.get( name );
-        }
-        names.forEach( objects::remove );
-        ob[i] = new BsonDocument( objects.entrySet().stream().map( o -> new BsonElement( o.getKey().toString(), o.getValue() == null ? new BsonNull() : new BsonString( o.getValue().toString() ) ) ).collect( Collectors.toList() ) ).toJson();
-
-        return ob;
-    }
-
-
-    @SuppressWarnings("unused")
-    public static Object removeNames( Object object, String... names ) {
-        return object;
-    }
-
-
-    @SuppressWarnings("unused")
-    public static Object extractName( Object objects, String name ) {
-        return ((Map<String, Object>) objects).get( name );
-    }
-
-
-    @SuppressWarnings("unused")
-    public static Object insertNames( Map<Object, Object> objects, Map<String, Object> inserts ) {
-        objects.putAll( inserts );
-
-        return objects;
-    }
 
 
     /**

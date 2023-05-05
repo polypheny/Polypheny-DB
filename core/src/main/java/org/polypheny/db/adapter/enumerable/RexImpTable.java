@@ -427,8 +427,6 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
         map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UNWIND ), new UnwindImplementor() );
 
-        defineMethod( OperatorRegistry.get( OperatorName.EXTRACT_NAME ), BuiltInMethod.EXTRACT_NAME.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.REMOVE_NAMES ), BuiltInMethod.REMOVE_NAMES.method, NullPolicy.STRICT );
     }
 
 

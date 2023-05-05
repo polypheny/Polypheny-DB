@@ -100,12 +100,12 @@ public class EnumUtils {
     }
 
 
-    public static Class javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
+    public static Class<?> javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
         if ( type.isStruct() && type.getFieldCount() == 1 ) {
             type = type.getFieldList().get( 0 ).getType();
         }
         final Type clazz = typeFactory.getJavaClass( type );
-        return clazz instanceof Class ? (Class) clazz : Object[].class;
+        return clazz instanceof Class ? (Class<?>) clazz : Object[].class;
     }
 
 
@@ -201,7 +201,7 @@ public class EnumUtils {
         if ( !(e.getType() instanceof Class) ) {
             return e;
         }
-        if ( targetType.isAssignableFrom( (Class) e.getType() ) ) {
+        if ( targetType.isAssignableFrom( (Class<?>) e.getType() ) ) {
             return e;
         }
         if ( targetType == java.sql.Date.class ) {

@@ -485,9 +485,7 @@ public enum BuiltInMethod {
     X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, String.class ),
     X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class ),
 
-    X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
-    REMOVE_NAMES( Functions.class, "removeNames", Object.class, Object[].class ),
-    EXTRACT_NAME( Functions.class, "extractName", Object.class, String.class );
+    X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class );
 
     public final Method method;
     public final Constructor<?> constructor;

@@ -46,7 +46,7 @@ public class LogicalTransformer extends Transformer {
     public LogicalTransformer( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel, boolean adjust ) {
         super(
                 cluster,
-                adjust ? adjustIfNeeded( inputs, inTraitSet, outTraitSet, rowType ) : inputs,
+                inputs,
                 names,
                 inputs.get( 0 ).getTraitSet(),
                 inTraitSet,

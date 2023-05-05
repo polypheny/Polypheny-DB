@@ -521,7 +521,7 @@ public class ScannableEntityTest {
         @Override
         public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters ) {
             final Integer filter = getFilter( cooperative, filters );
-            return new AbstractEnumerable<Object[]>() {
+            return new AbstractEnumerable<>() {
                 @Override
                 public Enumerator<Object[]> enumerator() {
                     return beatles( buf, filter, null );

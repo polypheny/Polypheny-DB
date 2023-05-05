@@ -24,10 +24,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -35,6 +37,7 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -48,7 +51,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.runtime.functions.RefactorFunctions;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.BuiltInMethod;
@@ -307,10 +310,33 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
     private Result implementDocumentOnRelational( EnumerableAlgImplementor implementor, Prefer pref ) {
         Result impl = implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
-        if ( getInputs().size() == 1 && getRowType().getFieldCount() == 1 ) {
+        if ( !(getRowType() instanceof DocumentType) ) {
             return impl;
         }
-        throw new UnsupportedOperationException();
+        BlockBuilder builder = new BlockBuilder();
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.prefer( JavaRowFormat.SCALAR ) );
+        Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block );
+
+        List<Expression> expressions = new ArrayList<>();
+
+        ParameterExpression target = Expressions.parameter( Object.class );
+
+        for ( AlgDataTypeField field : getInput( 0 ).getRowType().getFieldList() ) {
+            UnaryExpression element = Expressions.convert_( target, String.class );
+            Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
+            if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
+                expressions.add( 0, Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( field.getName() ), el ) );
+            } else {
+                expressions.add( el );
+            }
+        }
+
+        MethodCallExpression res = Expressions.call( RefactorFunctions.class, "mergeDocuments", expressions );
+
+        Type outputJavaType = physType.getJavaRowType();
+        final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
+
+        return toAbstractEnumerable( implementor, builder, physType, old, target, res, enumeratorType );
     }
 
 
@@ -322,58 +348,55 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         BlockBuilder builder = new BlockBuilder();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.prefer( JavaRowFormat.SCALAR ) );
-
-        Type inputJavaType = physType.getJavaRowType();
-        ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
         Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block );
 
-        List<String> extract = new ArrayList<>();
+        List<String> extract = getRowType().getFieldNames().stream().filter( n -> !n.equals( DocumentType.DOCUMENT_DATA ) ).collect( Collectors.toList() );
+        List<Expression> expressions = new ArrayList<>();
+
+        ParameterExpression target = Expressions.parameter( Object.class );
+
         for ( AlgDataTypeField field : getRowType().getFieldList() ) {
+            Type elementType = Types.of( Map.class, String.class, Object.class );
+            UnaryExpression element = Expressions.convert_( target, elementType );
+            Expression raw = null;
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
-                continue;
+                raw = Expressions.call( RefactorFunctions.class, "removeNames", element, EnumUtils.constantArrayList( extract, String.class ) );
+            } else {
+                raw = Expressions.call( RefactorFunctions.class, "get", element, Expressions.constant( field.getName() ) );
             }
-            extract.add( field.getName() );
+            // serialize
+            expressions.add( Expressions.call( RefactorFunctions.class, "fromDocument", raw ) );
         }
-        Expression exp = Expressions.call( Functions.class, "extractNames", Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), Map.class ), EnumUtils.constantArrayList( extract, String.class ) );
+
+        MethodCallExpression res = Expressions.call( RefactorFunctions.class, "toObjectArray", expressions );
 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
-        Expression body = Expressions.new_(
-                enumeratorType,
-                EnumUtils.NO_EXPRS,
-                Expressions.list(
-                        Expressions.fieldDecl(
-                                Modifier.PUBLIC | Modifier.FINAL,
-                                inputEnumerator,
-                                Expressions.call( old, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
-                        EnumUtils.overridingMethodDecl(
-                                BuiltInMethod.ENUMERATOR_RESET.method,
-                                EnumUtils.NO_PARAMS,
-                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_RESET.method ) ) ),
-                        EnumUtils.overridingMethodDecl(
-                                BuiltInMethod.ENUMERATOR_MOVE_NEXT.method,
-                                EnumUtils.NO_PARAMS,
-                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) ),
-                        EnumUtils.overridingMethodDecl(
-                                BuiltInMethod.ENUMERATOR_CLOSE.method,
-                                EnumUtils.NO_PARAMS,
-                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CLOSE.method ) ) ),
-                        EnumUtils.overridingMethodDecl(
-                                BuiltInMethod.ENUMERATOR_CURRENT.method,
-                                EnumUtils.NO_PARAMS,
-                                Blocks.toFunctionBlock( exp ) )
-                ) );
+        return toAbstractEnumerable( implementor, builder, physType, old, target, res, enumeratorType );
+    }
+
+
+    private static Result toAbstractEnumerable( EnumerableAlgImplementor implementor, BlockBuilder builder, PhysType physType, Expression old, ParameterExpression target, MethodCallExpression transformer, Type enumeratorType ) {
+        BlockStatement block = Expressions.block(
+                Expressions.return_( null,
+                        Expressions.call(
+                                Linq4j.class,
+                                "transform",
+                                Expressions.call( old, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ),
+                                Expressions.lambda(
+                                        Expressions.block(
+                                                Expressions.return_( null, transformer ) ), target ) )
+                )
+        );
 
         builder.add(
                 Expressions.return_(
                         null,
                         Expressions.new_(
                                 BuiltInMethod.ABSTRACT_ENUMERABLE_CTOR.constructor,
-                                // TODO: generics
-                                //   Collections.singletonList(inputRowType),
                                 EnumUtils.NO_EXPRS,
-                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
+                                ImmutableList.of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, block ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
 
@@ -429,7 +452,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                                 // TODO: generics
                                 //   Collections.singletonList(inputRowType),
                                 EnumUtils.NO_EXPRS,
-                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
+                                ImmutableList.of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
 
     }
