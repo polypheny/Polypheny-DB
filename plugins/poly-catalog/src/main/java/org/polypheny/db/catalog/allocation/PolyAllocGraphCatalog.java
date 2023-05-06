@@ -25,13 +25,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.type.PolySerializable;
 
 @Value
-public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatalog {
+public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphCatalog {
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
@@ -39,7 +39,7 @@ public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatal
     @Serialize
     public LogicalNamespace namespace;
     @Getter
-    public BinarySerializer<PolyAllocGraphCatalog> serializer = Serializable.builder.get().build( PolyAllocGraphCatalog.class );
+    public BinarySerializer<PolyAllocGraphCatalog> serializer = PolySerializable.builder.get().build( PolyAllocGraphCatalog.class );
 
     @Getter
     @Serialize
@@ -75,8 +75,8 @@ public class PolyAllocGraphCatalog implements Serializable, AllocationGraphCatal
 
 
     @Override
-    public PolyAllocGraphCatalog copy() {
-        return deserialize( serialize(), PolyAllocGraphCatalog.class );
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), PolyAllocGraphCatalog.class );
     }
 
 

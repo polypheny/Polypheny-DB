@@ -405,7 +405,7 @@ public class RelationalAdapterDelegate implements Modifiable {
                 //handleDocumentScan( (DocumentScan<?>) alg, statement, builder, adapterId );
                 break;
             case VALUES:
-                builder.push( LogicalDocumentValues.create( alg.getCluster(), ((DocumentValues) alg).documentTuples ) );
+                builder.push( LogicalDocumentValues.create( alg.getCluster(), ((DocumentValues) alg).documents ) );
                 break;
             case PROJECT:
                 attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );

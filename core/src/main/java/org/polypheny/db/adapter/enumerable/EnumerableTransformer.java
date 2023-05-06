@@ -54,6 +54,8 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.functions.RefactorFunctions;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -319,15 +321,15 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         List<Expression> expressions = new ArrayList<>();
 
-        ParameterExpression target = Expressions.parameter( Object.class );
+        ParameterExpression target = Expressions.parameter( Object[].class );
 
         for ( AlgDataTypeField field : getInput( 0 ).getRowType().getFieldList() ) {
-            UnaryExpression element = Expressions.convert_( target, String.class );
+            UnaryExpression element = Expressions.convert_( Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) ), Object.class );
             Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
-                expressions.add( 0, Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( field.getName() ), el ) );
+                expressions.add( 0, el );
             } else {
-                expressions.add( el );
+                expressions.add( Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( field.getName() ), el ) );
             }
         }
 
@@ -356,13 +358,16 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         ParameterExpression target = Expressions.parameter( Object.class );
 
         for ( AlgDataTypeField field : getRowType().getFieldList() ) {
-            Type elementType = Types.of( Map.class, String.class, Object.class );
-            UnaryExpression element = Expressions.convert_( target, elementType );
-            Expression raw = null;
+
+            Expression raw;
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
+                UnaryExpression element = Expressions.convert_( target, PolyDocument.class );
                 raw = Expressions.call( RefactorFunctions.class, "removeNames", element, EnumUtils.constantArrayList( extract, String.class ) );
+                raw = Expressions.convert_( raw, PolyDocument.class );
             } else {
+                UnaryExpression element = Expressions.convert_( target, PolyDocument.class );
                 raw = Expressions.call( RefactorFunctions.class, "get", element, Expressions.constant( field.getName() ) );
+                raw = Expressions.convert_( raw, PolyValue.class );
             }
             // serialize
             expressions.add( Expressions.call( RefactorFunctions.class, "fromDocument", raw ) );

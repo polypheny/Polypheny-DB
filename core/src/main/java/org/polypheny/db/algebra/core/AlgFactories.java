@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import javax.annotation.Nonnull;
-import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
@@ -77,6 +76,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -509,7 +509,7 @@ public class AlgFactories {
 
         AlgNode createDocuments(
                 AlgOptCluster cluster,
-                ImmutableList<BsonValue> tuples,
+                List<PolyDocument> documents,
                 AlgDataType rowType );
 
     }
@@ -520,11 +520,11 @@ public class AlgFactories {
         @Override
         public AlgNode createDocuments(
                 AlgOptCluster cluster,
-                ImmutableList<BsonValue> tuples,
+                List<PolyDocument> documents,
                 AlgDataType rowType ) {
             return LogicalDocumentValues.create(
                     cluster,
-                    ImmutableList.copyOf( tuples ) );
+                    documents );
         }
 
     }

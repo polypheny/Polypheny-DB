@@ -16,20 +16,30 @@
 
 package org.polypheny.db.type.entity.document;
 
+import io.activej.serializer.BinarySerializer;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
-public class PolyInteger extends PolyValue<Integer> {
+@Value(staticConstructor = "of")
+public class PolyInteger extends PolyValue {
+
+    public Integer value;
+
+    @Getter
+    public BinarySerializer<PolyInteger> serializer = PolyValue.getAbstractBuilder().build( PolyInteger.class );
+
 
     public PolyInteger( Integer value ) {
-        super( PolyType.INTEGER, value );
+        super( PolyType.INTEGER, true );
+        this.value = value;
     }
 
 
@@ -40,8 +50,18 @@ public class PolyInteger extends PolyValue<Integer> {
 
 
     @Override
-    public int compareTo( @NotNull PolyValue<Integer> o ) {
-        return value.compareTo( o.value );
+    public int compareTo( @NotNull PolyValue o ) {
+        if ( !isSameType( o ) ) {
+            return -1;
+        }
+
+        return this.value.compareTo( o.asInteger().value );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return null;
     }
 
 }

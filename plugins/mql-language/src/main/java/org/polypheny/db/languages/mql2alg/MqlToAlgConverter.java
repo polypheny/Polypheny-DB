@@ -16,7 +16,6 @@
 
 package org.polypheny.db.languages.mql2alg;
 
-import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +89,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -812,7 +812,7 @@ public class MqlToAlgConverter {
      * @return the {@link Values} representation of the values
      */
     private AlgNode convertMultipleValues( BsonArray array, AlgDataType rowType ) {
-        LogicalDocumentValues docs = (LogicalDocumentValues) LogicalDocumentValues.create( cluster, ImmutableList.copyOf( array.asArray() ) );
+        LogicalDocumentValues docs = (LogicalDocumentValues) LogicalDocumentValues.create( cluster, array.asArray().stream().map( a -> BsonUtil.toPolyValue( a ).asDocument() ).collect( Collectors.toList() ) );
         if ( usesDocumentModel ) {
             return docs;
         } else {

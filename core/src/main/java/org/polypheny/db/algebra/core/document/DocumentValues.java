@@ -20,11 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
-import org.bson.BsonDocument;
-import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.bson.json.JsonMode;
-import org.bson.json.JsonWriterSettings;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -37,73 +32,64 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 public abstract class DocumentValues extends AbstractAlgNode implements DocumentAlg {
 
     @Getter
-    public final ImmutableList<BsonValue> documentTuples;
+    public final List<PolyDocument> documents;
 
 
     /**
      * Creates a {@link DocumentValues}.
      * {@link ModelTrait#DOCUMENT} node, which contains values.
      */
-    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
+    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents ) {
         super( cluster, traitSet );
         this.rowType = DocumentType.ofId();
-        this.documentTuples = validate( documentTuples );
+        this.documents = validate( documents );
     }
 
 
-    protected static ImmutableList<BsonValue> validate( ImmutableList<BsonValue> tuples ) {
-        List<BsonValue> docs = new ArrayList<>();
+    protected static List<PolyDocument> validate( List<PolyDocument> docs ) {
 
-        for ( BsonValue tuple : tuples ) {
-            BsonDocument doc = new BsonDocument();
-            doc.putAll( tuple.asDocument() );
-
-            String id = "_id";
+        for ( PolyDocument doc : docs ) {
+            PolyString id = PolyString.of( DocumentType.DOCUMENT_ID );
             if ( !doc.containsKey( id ) ) {
-                doc.put( id, new BsonString( ObjectId.get().toString() ) );
+                doc.put( id, PolyString.of( ObjectId.get().toString() ) );
             } else {
-                if ( doc.get( id ).isObjectId() ) {
-                    doc.replace( id, new BsonString( doc.get( id ).asObjectId().toString() ) );
-                }
-                if ( doc.get( id ).isString() && doc.get( id ).asString().getValue().length() > 24 ) {
+                if ( doc.get( id ).isString() && doc.get( id ).asString().value.length() > 24 ) {
                     throw new RuntimeException( "ObjectId was malformed." );
                 }
             }
-            docs.add( doc );
+
         }
-        return ImmutableList.copyOf( docs );
+
+        return docs;
     }
 
 
-    protected static ImmutableList<ImmutableList<RexLiteral>> relationalize( List<BsonValue> tuples, RexBuilder rexBuilder ) {
+    protected static ImmutableList<ImmutableList<RexLiteral>> relationalize( List<PolyDocument> tuples, RexBuilder rexBuilder ) {
         List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
 
-        JsonWriterSettings writerSettings = JsonWriterSettings.builder().outputMode( JsonMode.STRICT ).build();
-
-        for ( BsonValue tuple : tuples ) {
-            List<RexLiteral> normalizedTuple = new ArrayList<>();
-            String id = ObjectId.get().toString();
-            if ( tuple.isDocument() && tuple.asDocument().containsKey( "_id" ) ) {
-                BsonValue bsonId = tuple.asDocument().get( "_id" );
-                if ( bsonId.isObjectId() ) {
-                    id = bsonId.asObjectId().toString();
-                } else if ( bsonId.isString() ) {
-                    id = bsonId.asString().getValue();
+        List<RexLiteral> normalizedTuple = new ArrayList<>();
+        for ( PolyDocument tuple : tuples ) {
+            PolyString id;
+            if ( tuple.isDocument() && tuple.asDocument().containsKey( PolyString.of( "_id" ) ) ) {
+                PolyString bsonId = tuple.asDocument().get( PolyString.of( "_id" ) ).asString();
+                if ( bsonId.isString() ) {
+                    id = bsonId.asString();
                 } else {
                     throw new RuntimeException( "Error while transforming document to relational values" );
                 }
 
+                normalizedTuple.add( 0, rexBuilder.makeLiteral( id.value ) );
+                String parsed = tuple.serialize();
+                normalizedTuple.add( 1, rexBuilder.makeLiteral( parsed ) );
+                normalized.add( ImmutableList.copyOf( normalizedTuple ) );
             }
-
-            normalizedTuple.add( 0, rexBuilder.makeLiteral( id ) );
-            String parsed = tuple.asDocument().toJson( writerSettings );
-            normalizedTuple.add( 1, rexBuilder.makeLiteral( parsed ) );
-            normalized.add( ImmutableList.copyOf( normalizedTuple ) );
         }
 
         return ImmutableList.copyOf( normalized );
@@ -112,7 +98,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     @Override
     public String algCompareString() {
-        return getClass().getCanonicalName() + "$" + documentTuples.hashCode() + "$";
+        return getClass().getCanonicalName() + "$" + documents.hashCode() + "$";
     }
 
 
@@ -126,7 +112,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
 
-        return new LogicalValues( cluster, out, ((DocumentType) rowType).asRelational(), relationalize( documentTuples, cluster.getRexBuilder() ) );
+        return new LogicalValues( cluster, out, ((DocumentType) rowType).asRelational(), relationalize( documents, cluster.getRexBuilder() ) );
     }
 
 

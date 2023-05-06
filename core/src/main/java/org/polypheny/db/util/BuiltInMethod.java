@@ -54,11 +54,11 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.CorrelateJoinType;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.ExtendedEnumerable;
+import org.apache.calcite.linq4j.JoinType;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.EqualityComparer;
@@ -180,13 +180,13 @@ public enum BuiltInMethod {
     //JDBC_SCHEMA_DATA_SOURCE( JdbcSchema.class, "getDataSource" ),
     ROW_VALUE( Row.class, "getObject", int.class ),
     ROW_AS_COPY( Row.class, "asCopy", Object[].class ),
-    JOIN( ExtendedEnumerable.class, "join", Enumerable.class, Function1.class, Function1.class, Function2.class ),
+    JOIN( ExtendedEnumerable.class, "hashJoin", Enumerable.class, Function1.class, Function1.class, Function2.class ),
     MERGE_JOIN( EnumerableDefaults.class, "mergeJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class, Function2.class, boolean.class, boolean.class ),
     SLICE0( Enumerables.class, "slice0", Enumerable.class ),
     SEMI_JOIN( EnumerableDefaults.class, "semiJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class ),
-    THETA_JOIN( EnumerableDefaults.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ),
+    //THETA_JOIN( EnumerableDefaults.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ), // todo fix
     SINGLE_SUM( Functions.class, "singleSum", Enumerable.class ),
-    CORRELATE_JOIN( ExtendedEnumerable.class, "correlateJoin", CorrelateJoinType.class, Function1.class, Function2.class ),
+    CORRELATE_JOIN( ExtendedEnumerable.class, "correlateJoin", JoinType.class, Function1.class, Function2.class ),
     SELECT( ExtendedEnumerable.class, "select", Function1.class ),
     SELECT2( ExtendedEnumerable.class, "select", Function2.class ),
     SELECT_MANY( ExtendedEnumerable.class, "selectMany", Function1.class ),

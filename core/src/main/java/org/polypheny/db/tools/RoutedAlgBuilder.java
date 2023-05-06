@@ -16,7 +16,6 @@
 
 package org.polypheny.db.tools;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -35,6 +33,7 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Pair;
 
 
@@ -92,8 +91,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public RoutedAlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
-        super.documents( tuples, rowType );
+    public RoutedAlgBuilder documents( List<PolyDocument> documents, AlgDataType rowType ) {
+        super.documents( documents, rowType );
         return this;
     }
 

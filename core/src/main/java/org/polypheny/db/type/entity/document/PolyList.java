@@ -17,6 +17,9 @@
 package org.polypheny.db.type.entity.document;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,25 +30,27 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.schema.types.Expressible;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class PolyList extends PolyValue<List<PolyValue<Object>>> implements List<PolyValue<Object>> {
+public class PolyList extends PolyValue implements List<PolyValue> {
 
     @Delegate
-    public List<PolyValue<Object>> delegate;
+    @Serialize
+    public List<PolyValue> value;
 
 
-    public PolyList( List<PolyValue<Object>> value ) {
-        super( PolyType.ARRAY, value );
-        delegate = ImmutableList.copyOf( value );
+    public PolyList( @Deserialize("value") List<PolyValue> value ) {
+        super( PolyType.ARRAY, false );
+        this.value = ImmutableList.copyOf( value );
     }
 
 
-    public PolyList( PolyValue<Object>... value ) {
+    public PolyList( PolyValue... value ) {
         this( Arrays.asList( value ) );
     }
 
@@ -57,13 +62,34 @@ public class PolyList extends PolyValue<List<PolyValue<Object>>> implements List
 
 
     @Override
-    public int compareTo( @NotNull PolyValue<List<PolyValue<Object>>> o ) {
-        if ( value.size() != o.value.size() ) {
-            return value.size() - o.value.size();
+    public int compareTo( @NotNull PolyValue o ) {
+        if ( !isSameType( o ) ) {
+            return -1;
         }
 
-        return Pair.zip( value, o.value ).stream().allMatch( p -> p.getKey().isSameType( p.getValue() ) && p.getKey().compareTo( p.getValue() ) == 0 ) ? 0 : -1;
+        if ( value.size() != o.asList().value.size() ) {
+            return value.size() - o.asList().value.size();
+        }
 
+        for ( Pair<PolyValue, PolyValue> pair : Pair.zip( value, o.asList().value ) ) {
+            if ( pair.left.compareTo( pair.right ) != 0 ) {
+                return pair.left.compareTo( pair.right );
+            }
+        }
+
+        return 0;
+    }
+
+
+    @Override
+    public <T extends PolySerializable> BinarySerializer<T> getSerializer() {
+        return null;
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return null;
     }
 
 }

@@ -38,7 +38,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -62,15 +61,16 @@ import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
 // todo dl add object not null, synchronize
 @Value
 @SuperBuilder(toBuilder = true)
-public class RelationalCatalog implements Serializable, LogicalRelationalCatalog {
+public class RelationalCatalog implements PolySerializable, LogicalRelationalCatalog {
 
     @Getter
-    public BinarySerializer<RelationalCatalog> serializer = Serializable.builder.get().build( RelationalCatalog.class );
+    public BinarySerializer<RelationalCatalog> serializer = PolySerializable.builder.get().build( RelationalCatalog.class );
 
     @Serialize
     @Getter
@@ -143,8 +143,8 @@ public class RelationalCatalog implements Serializable, LogicalRelationalCatalog
 
 
     @Override
-    public RelationalCatalog copy() {
-        return deserialize( serialize(), RelationalCatalog.class );
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), RelationalCatalog.class );
     }
 
 

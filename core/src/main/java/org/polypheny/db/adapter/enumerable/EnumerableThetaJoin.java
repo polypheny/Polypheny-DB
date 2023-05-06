@@ -55,7 +55,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgramBuilder;
-import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
 
@@ -148,7 +147,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        final BlockBuilder builder = new BlockBuilder();
+        /*final BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
         Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
@@ -166,7 +165,9 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
                                 EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ),
                                 Expressions.constant( joinType.generatesNullsOnLeft() ),
                                 Expressions.constant( joinType.generatesNullsOnRight() ) )
-                ).toBlock() );
+                ).toBlock() );*/
+        // todo fix
+        return null;
     }
 
 

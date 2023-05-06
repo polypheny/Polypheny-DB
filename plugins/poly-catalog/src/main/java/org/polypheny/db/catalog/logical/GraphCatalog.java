@@ -27,18 +27,18 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.type.PolySerializable;
 
 @Value
 @SuperBuilder(toBuilder = true)
-public class GraphCatalog implements Serializable, LogicalGraphCatalog {
+public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
     @Getter
-    public BinarySerializer<GraphCatalog> serializer = Serializable.builder.get().build( GraphCatalog.class );
+    public BinarySerializer<GraphCatalog> serializer = PolySerializable.builder.get().build( GraphCatalog.class );
     @Getter
     @Serialize
     public LogicalNamespace logicalNamespace;
@@ -68,8 +68,8 @@ public class GraphCatalog implements Serializable, LogicalGraphCatalog {
 
 
     @Override
-    public GraphCatalog copy() {
-        return deserialize( serialize(), GraphCatalog.class );
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), GraphCatalog.class );
     }
 
 

@@ -19,17 +19,20 @@ package org.polypheny.db.runtime.functions;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.calcite.linq4j.function.Deterministic;
 import org.bson.BsonDocument;
 import org.bson.BsonElement;
 import org.bson.BsonNull;
 import org.bson.BsonString;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
-@Deterministic
-public interface RefactorFunctions {
 
-    static Object extractNames( Map<Object, Object> objects, List<String> names ) {
+public class RefactorFunctions {
+
+    public static Object extractNames( Map<Object, Object> objects, List<String> names ) {
         Object[] ob = new Object[names.size() + 1];
         int i = 0;
         for ( String name : names ) {
@@ -42,35 +45,39 @@ public interface RefactorFunctions {
     }
 
 
-    static <K, E> E get( Map<K, E> map, K key ) {
-        return map.get( key );
+    public static PolyValue get( PolyDocument map, String key ) {
+        return map.get( PolyString.of( key ) );
     }
 
 
     @SuppressWarnings("unused")
-    static Object removeNames( Map<String, Object> object, List<String> names ) {
-        return object.entrySet().stream().filter( e -> names.contains( e.getKey() ) ).collect( Collectors.toList() );
+    public static PolyDocument removeNames( PolyDocument object, List<String> names ) {
+        names.forEach( n -> object.remove( PolyString.of( n ) ) );
+        return object;
     }
 
 
     @SuppressWarnings("unused")
-    static Object[] toObjectArray( Object... obj ) {
+    public static Object[] toObjectArray( Object... obj ) {
         return obj;
     }
 
-    static String fromDocument( Map<String, Object> doc ) {
-        return BsonDocument.;
-    }
 
-    static Map<String, Object> toDocument( String json ) {
-        return BsonDocument.parse( json );
+    public static String fromDocument( PolyValue doc ) {
+        return doc.serialize();
     }
 
 
-    static Map<String, Object> mergeDocuments( Map<String, Object> target, Pair<String, Map>... additional ) {
-        for ( Pair<String, BsonDocument> pair : additional ) {
-            target.put( pair.left, pair.right );
+    public static PolyDocument toDocument( Object json ) {
+        return PolySerializable.deserialize( (String) json, PolyDocument.class );
+    }
+
+
+    public static PolyDocument mergeDocuments( PolyDocument target, Pair<String, PolyValue>... additional ) {
+        for ( Pair<String, PolyValue> pair : additional ) {
+            target.put( new PolyString( pair.left ), pair.right );
         }
+
         return target;
     }
 

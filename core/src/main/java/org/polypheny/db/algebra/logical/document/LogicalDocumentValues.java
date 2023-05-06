@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -36,6 +35,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BsonUtil;
 
 
@@ -67,21 +67,16 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      *
      * @param cluster the cluster, which holds the information regarding the ongoing operation
      * @param traitSet the used traitSet
-     * @param tuples the documents in their native BSON format
+     * @param document the documents in their native BSON format
      */
-    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> tuples ) {
-        super( cluster, traitSet, tuples );
+    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
+        super( cluster, traitSet, document );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> tuples ) {
+    public static AlgNode create( AlgOptCluster cluster, List<PolyDocument> documents ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalDocumentValues( cluster, traitSet, tuples );
-    }
-
-
-    public static AlgNode create( LogicalValues input ) {
-        return create( input.getCluster(), bsonify( input.getTuples(), input.getRowType() ) );
+        return new LogicalDocumentValues( cluster, traitSet, documents );
     }
 
 
@@ -133,7 +128,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
                         .add( "ZERO", null, PolyType.INTEGER )
                         .nullable( false )
                         .build();
-        return new LogicalDocumentValues( cluster, cluster.traitSet(), ImmutableList.<BsonValue>builder().build() );
+        return new LogicalDocumentValues( cluster, cluster.traitSet(), List.of( new PolyDocument() ) );
     }
 
 
@@ -147,7 +142,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
-        return new LogicalDocumentValues( getCluster(), traitSet, documentTuples );
+        return new LogicalDocumentValues( getCluster(), traitSet, documents );
     }
 
 

@@ -53,16 +53,17 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolySerializable;
 
 
 /**
  * Central catalog, which distributes the operations to the corresponding model catalogs.
  */
 @Slf4j
-public class PolyCatalog extends Catalog implements Serializable {
+public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Getter
-    public final BinarySerializer<PolyCatalog> serializer = Serializable.builder.get().build( PolyCatalog.class );
+    public final BinarySerializer<PolyCatalog> serializer = PolySerializable.builder.get().build( PolyCatalog.class );
 
     @Serialize
     public final Map<Long, LogicalCatalog> logicalCatalogs;
@@ -391,8 +392,8 @@ public class PolyCatalog extends Catalog implements Serializable {
 
 
     @Override
-    public PolyCatalog copy() {
-        return deserialize( serialize(), PolyCatalog.class );
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), PolyCatalog.class );
     }
 
 }

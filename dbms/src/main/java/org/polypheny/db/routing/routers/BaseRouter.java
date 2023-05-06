@@ -177,7 +177,7 @@ public abstract class BaseRouter implements Router {
 
 
     protected RoutedAlgBuilder handleDocuments( LogicalDocumentValues node, RoutedAlgBuilder builder ) {
-        return builder.documents( node.getDocumentTuples(), node.getRowType() );
+        return builder.documents( node.documents, node.getRowType() );
     }
 
 

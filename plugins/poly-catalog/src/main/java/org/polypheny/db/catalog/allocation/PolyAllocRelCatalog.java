@@ -26,7 +26,6 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -35,11 +34,12 @@ import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
 @Value
-public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Serializable {
+public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySerializable {
 
 
     IdBuilder idBuilder = IdBuilder.getInstance();
@@ -48,7 +48,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
     public LogicalNamespace namespace;
 
     @Getter
-    public BinarySerializer<PolyAllocRelCatalog> serializer = Serializable.builder.get().build( PolyAllocRelCatalog.class );
+    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.builder.get().build( PolyAllocRelCatalog.class );
 
     @Serialize
     @Getter
@@ -75,8 +75,8 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, Seriali
 
 
     @Override
-    public PolyAllocRelCatalog copy() {
-        return deserialize( serialize(), PolyAllocRelCatalog.class );
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), PolyAllocRelCatalog.class );
     }
 
     // move to Snapshot

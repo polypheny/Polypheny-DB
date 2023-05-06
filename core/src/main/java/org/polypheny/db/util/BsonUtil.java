@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,6 +66,11 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyBoolean;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyInteger;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 public class BsonUtil {
@@ -917,6 +923,72 @@ public class BsonUtil {
         }
 
         throw new NotImplementedException();
+    }
+
+
+    public static PolyValue toPolyValue( BsonValue input ) {
+        switch ( input.getBsonType() ) {
+            case END_OF_DOCUMENT:
+                break;
+            case DOUBLE:
+                break;
+            case STRING:
+                return PolyString.of( input.asString().getValue() );
+            case DOCUMENT:
+                Map<PolyString, PolyValue> document = new HashMap<>();
+
+                for ( Entry<String, BsonValue> entry : input.asDocument().entrySet() ) {
+                    document.put( PolyString.of( entry.getKey() ), toPolyValue( entry.getValue() ) );
+                }
+
+                return new PolyDocument( document );
+            case ARRAY:
+                org.polypheny.db.type.entity.document.PolyList list = new org.polypheny.db.type.entity.document.PolyList();
+
+                for ( BsonValue value : input.asArray() ) {
+                    if ( !value.isDocument() ) {
+                        throw new NotImplementedException();
+                    }
+
+                    list.add( toPolyValue( value ) );
+                }
+                return list;
+            case BINARY:
+                break;
+            case UNDEFINED:
+                break;
+            case OBJECT_ID:
+                break;
+            case BOOLEAN:
+                return PolyBoolean.of( input.asBoolean().getValue() );
+            case DATE_TIME:
+                break;
+            case NULL:
+                break;
+            case REGULAR_EXPRESSION:
+                break;
+            case DB_POINTER:
+                break;
+            case JAVASCRIPT:
+                break;
+            case SYMBOL:
+                break;
+            case JAVASCRIPT_WITH_SCOPE:
+                break;
+            case INT32:
+                return PolyInteger.of( input.asInt32().getValue() );
+            case TIMESTAMP:
+                break;
+            case INT64:
+                return PolyInteger.of( input.asInt32().getValue() );
+            case DECIMAL128:
+                break;
+            case MIN_KEY:
+                break;
+            case MAX_KEY:
+                break;
+        }
+        throw new NotImplementedException( "Not considered: " + input.getBsonType() );
     }
 
 }

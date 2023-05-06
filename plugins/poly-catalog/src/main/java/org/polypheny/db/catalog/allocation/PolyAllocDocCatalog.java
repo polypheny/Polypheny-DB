@@ -25,13 +25,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.type.PolySerializable;
 
 @Value
-public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCatalog {
+public class PolyAllocDocCatalog implements PolySerializable, AllocationDocumentCatalog {
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
@@ -58,12 +58,12 @@ public class PolyAllocDocCatalog implements Serializable, AllocationDocumentCata
 
 
     @Getter
-    public BinarySerializer<PolyAllocDocCatalog> serializer = Serializable.builder.get().build( PolyAllocDocCatalog.class );
+    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.builder.get().build( PolyAllocDocCatalog.class );
 
 
     @Override
-    public PolyAllocDocCatalog copy() {
-        return deserialize( serialize(), PolyAllocDocCatalog.class );
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), PolyAllocDocCatalog.class );
     }
 
 

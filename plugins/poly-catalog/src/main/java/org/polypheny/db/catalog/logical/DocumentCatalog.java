@@ -28,19 +28,19 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.PusherMap;
-import org.polypheny.db.catalog.Serializable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.type.PolySerializable;
 
 @Value
 @SuperBuilder(toBuilder = true)
-public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
+public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog {
 
     @Getter
-    public BinarySerializer<DocumentCatalog> serializer = Serializable.builder.get().build( DocumentCatalog.class );
+    public BinarySerializer<DocumentCatalog> serializer = PolySerializable.builder.get().build( DocumentCatalog.class );
 
     IdBuilder idBuilder = IdBuilder.getInstance();
     @Serialize
@@ -71,8 +71,8 @@ public class DocumentCatalog implements Serializable, LogicalDocumentCatalog {
 
 
     @Override
-    public DocumentCatalog copy() {
-        return deserialize( serialize(), DocumentCatalog.class );
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), DocumentCatalog.class );
     }
 
 

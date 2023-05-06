@@ -168,9 +168,10 @@ public class DdlTest extends MqlTestTemplate {
                             result,
                             ImmutableList.of( new Object[]{ DATA } ), true ) );
 
-            execute( String.format( "db.%s.drop()", collectionName ) );
 
         } finally {
+            execute( String.format( "db.%s.drop()", collectionName ) );
+
             removeStore( placement );
         }
     }

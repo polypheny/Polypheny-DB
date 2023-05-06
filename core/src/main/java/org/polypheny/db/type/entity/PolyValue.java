@@ -16,25 +16,165 @@
 
 package org.polypheny.db.type.entity;
 
+import io.activej.serializer.SerializerBuilder;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.schema.types.Expressible;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyBoolean;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.document.PolyInteger;
 import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.document.PolyString.PolyStringSerializerDef;
 
 @Value
 @NonFinal
-public abstract class PolyValue<T> implements Expressible, Comparable<PolyValue<T>> {
+public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
+    @Serialize
+    public boolean nullable;
+    @Serialize
     public PolyType type;
 
-    public T value;
+
+    public static SerializerBuilder getAbstractBuilder() {
+        return PolySerializable.builder.get()
+                .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
+                .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() );
+    }
 
 
-    public boolean isSameType( PolyValue<?> value ) {
+    public PolyValue( @Deserialize("type") PolyType type, @Deserialize("nullable") boolean nullable ) {
+        this.type = type;
+        this.nullable = nullable;
+    }
+
+
+    public static Class<? extends PolyValue> classFrom( PolyType polyType ) {
+        switch ( polyType ) {
+
+            case BOOLEAN:
+                return PolyBoolean.class;
+            case TINYINT:
+                break;
+            case SMALLINT:
+                break;
+            case INTEGER:
+                return PolyInteger.class;
+            case BIGINT:
+                break;
+            case DECIMAL:
+                break;
+            case FLOAT:
+                break;
+            case REAL:
+                break;
+            case DOUBLE:
+                break;
+            case DATE:
+                break;
+            case TIME:
+                break;
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                break;
+            case TIMESTAMP:
+                break;
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                break;
+            case INTERVAL_YEAR:
+                break;
+            case INTERVAL_YEAR_MONTH:
+                break;
+            case INTERVAL_MONTH:
+                break;
+            case INTERVAL_DAY:
+                break;
+            case INTERVAL_DAY_HOUR:
+                break;
+            case INTERVAL_DAY_MINUTE:
+                break;
+            case INTERVAL_DAY_SECOND:
+                break;
+            case INTERVAL_HOUR:
+                break;
+            case INTERVAL_HOUR_MINUTE:
+                break;
+            case INTERVAL_HOUR_SECOND:
+                break;
+            case INTERVAL_MINUTE:
+                break;
+            case INTERVAL_MINUTE_SECOND:
+                break;
+            case INTERVAL_SECOND:
+                break;
+            case CHAR:
+                break;
+            case VARCHAR:
+                return PolyString.class;
+            case BINARY:
+                break;
+            case VARBINARY:
+                break;
+            case NULL:
+                break;
+            case ANY:
+                break;
+            case SYMBOL:
+                break;
+            case MULTISET:
+                break;
+            case ARRAY:
+                break;
+            case MAP:
+                break;
+            case DOCUMENT:
+                break;
+            case GRAPH:
+                break;
+            case NODE:
+                break;
+            case EDGE:
+                break;
+            case PATH:
+                break;
+            case DISTINCT:
+                break;
+            case STRUCTURED:
+                break;
+            case ROW:
+                break;
+            case OTHER:
+                break;
+            case CURSOR:
+                break;
+            case COLUMN_LIST:
+                break;
+            case DYNAMIC_STAR:
+                break;
+            case GEOMETRY:
+                break;
+            case FILE:
+                break;
+            case IMAGE:
+                break;
+            case VIDEO:
+                break;
+            case AUDIO:
+                break;
+            case JSON:
+                break;
+        }
+        throw new NotImplementedException();
+    }
+
+
+    public boolean isSameType( PolyValue value ) {
         return type == value.type;
     }
 
@@ -86,6 +226,19 @@ public abstract class PolyValue<T> implements Expressible, Comparable<PolyValue<
     public PolyList asList() {
         if ( isList() ) {
             return (PolyList) this;
+        }
+        return null;
+    }
+
+
+    public boolean isString() {
+        return type == PolyType.VARCHAR;
+    }
+
+
+    public PolyString asString() {
+        if ( isString() ) {
+            return (PolyString) this;
         }
         return null;
     }

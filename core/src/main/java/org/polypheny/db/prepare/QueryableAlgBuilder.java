@@ -292,7 +292,19 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
+    public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable, boolean all ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> tEqualityComparer ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> comparer, boolean all ) {
         throw new UnsupportedOperationException();
     }
 
@@ -425,8 +437,20 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
+    public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable, boolean all ) {
+        return null;
+    }
+
+
+    @Override
     public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> tEqualityComparer ) {
         throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> comparer, boolean all ) {
+        return null;
     }
 
 

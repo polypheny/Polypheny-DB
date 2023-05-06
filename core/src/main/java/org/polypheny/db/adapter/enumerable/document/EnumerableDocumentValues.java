@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.enumerable.document;
 
-import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +23,6 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.bson.BsonValue;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
@@ -36,7 +34,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
 
 public class EnumerableDocumentValues extends DocumentValues implements EnumerableAlg {
@@ -47,15 +46,15 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
      *
      * @param cluster
      * @param traitSet
-     * @param documentTuples
+     * @param document
      */
-    public EnumerableDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<BsonValue> documentTuples ) {
-        super( cluster, traitSet.replace( EnumerableConvention.INSTANCE ), documentTuples );
+    public EnumerableDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
+        super( cluster, traitSet.replace( EnumerableConvention.INSTANCE ), document );
     }
 
 
     public static EnumerableDocumentValues create( DocumentValues values ) {
-        return new EnumerableDocumentValues( values.getCluster(), values.getTraitSet(), values.documentTuples );
+        return new EnumerableDocumentValues( values.getCluster(), values.getTraitSet(), values.documents );
     }
 
 
@@ -72,8 +71,8 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
 
         final List<Expression> expressions = new ArrayList<>();
 
-        for ( BsonValue docs : documentTuples ) {
-            expressions.add( BsonUtil.asExpression( docs ) );
+        for ( PolyValue doc : documents ) {
+            expressions.add( doc.asExpression() );
         }
         builder.add(
                 Expressions.return_(

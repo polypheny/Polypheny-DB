@@ -63,7 +63,6 @@ import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
-import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -136,6 +135,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Holder;
@@ -2260,9 +2260,9 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
-        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType );
-        push( documents );
+    public AlgBuilder documents( List<PolyDocument> documents, AlgDataType rowType ) {
+        AlgNode document = documentsFactory.createDocuments( cluster, documents, rowType );
+        push( document );
         return this;
     }
 

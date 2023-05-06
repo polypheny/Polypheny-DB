@@ -16,16 +16,14 @@
 
 package org.polypheny.db.algebra.rules;
 
-import java.util.List;
-import org.polypheny.db.algebra.AlgNode;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.tools.AlgBuilder;
 
+@Slf4j
 public class SimpleAllocationToPhysicalModifyRule extends AlgOptRule {
 
     public static final SimpleAllocationToPhysicalModifyRule DOC_INSTANCE = new SimpleAllocationToPhysicalModifyRule();
@@ -38,15 +36,16 @@ public class SimpleAllocationToPhysicalModifyRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        DocumentModify<?> modify = call.alg( 0 );
+        log.warn( "todo" );
+        return;
+        /*DocumentModify<?> modify = call.alg( 0 );
         DocumentValues values = call.alg( 1 );
 
         AlgBuilder builder = call.builder();
 
         builder.push( modify.copy( modify.getTraitSet(), List.of( values.getRelationalEquivalent() ) ) );
         AlgNode node = builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
-        call.transformTo( node );
-
+        call.transformTo( node );*/
 
     }
 

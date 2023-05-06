@@ -40,10 +40,10 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -169,14 +169,14 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
             int i = 0;
             while ( iter.hasNext() ) {
                 if ( i == 0 ) {
-                    enumerable = enumerable.join(
+                    enumerable = enumerable.hashJoin(
                             iter.next(),
                             a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
                             a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
                             ( a0, a1 ) -> new Object[]{ a0, a1 } );
                 } else {
                     int index = i;
-                    enumerable = enumerable.join(
+                    enumerable = enumerable.hashJoin(
                             iter.next(),
                             a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
                             a0 -> FlatLists.COMPARABLE_EMPTY_LIST,

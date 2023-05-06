@@ -46,7 +46,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
-import org.apache.calcite.linq4j.function.Function1;
+import java.util.function.IntFunction;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.util.mapping.Mappings;
@@ -304,14 +304,12 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
      */
     public static List<Integer> range( final int lower, final int upper ) {
         return Functions.generate( upper - lower,
-                new Function1<Integer, Integer>() {
-                    /**
-                     * @see Bug#upgrade(String) Upgrade to {@code IntFunction} when we drop support for JDK 1.7
-                     */
+                new IntFunction<Integer>() {
                     @Override
-                    public Integer apply( Integer index ) {
+                    public Integer apply( int index ) {
                         return lower + index;
                     }
+
                 } );
     }
 

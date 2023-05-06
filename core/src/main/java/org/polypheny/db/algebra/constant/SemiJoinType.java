@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.constant;
 
 
 import java.util.Locale;
-import org.apache.calcite.linq4j.CorrelateJoinType;
 import org.polypheny.db.algebra.core.JoinAlgType;
 
 
@@ -77,16 +76,16 @@ public enum SemiJoinType {
     }
 
 
-    public CorrelateJoinType toLinq4j() {
+    public JoinType toLinq4j() {
         switch ( this ) {
             case INNER:
-                return CorrelateJoinType.INNER;
+                return JoinType.INNER;
             case LEFT:
-                return CorrelateJoinType.LEFT;
+                return JoinType.LEFT;
             case SEMI:
-                return CorrelateJoinType.SEMI;
+                return JoinType.LEFT_SEMI_JOIN;
             case ANTI:
-                return CorrelateJoinType.ANTI;
+                return JoinType.COMMA;
         }
         throw new IllegalStateException( "Unable to convert " + this + " to JoinRelType" );
     }

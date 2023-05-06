@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -64,6 +63,7 @@ import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<RexNode> {
@@ -389,8 +389,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             List<RexNode> projects = new ArrayList<>();
             boolean firstRow = true;
             HashMap<Integer, Integer> idxMapping = new HashMap<>();
-            this.batchSize = ((LogicalDocumentValues) input).documentTuples.size();
-            for ( BsonValue node : ((LogicalDocumentValues) input).documentTuples ) {
+            this.batchSize = ((LogicalDocumentValues) input).documents.size();
+            for ( PolyValue node : ((LogicalDocumentValues) input).documents ) {
                 int i = 0;
                 int idx;
 
@@ -407,7 +407,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 }
                 if ( !values.containsKey( idx ) ) {
                     types.add( type );
-                    values.put( idx, new ArrayList<>( ((LogicalDocumentValues) input).documentTuples.size() ) );
+                    values.put( idx, new ArrayList<>( ((LogicalDocumentValues) input).documents.size() ) );
                 }
                 values.get( idx ).add( new ParameterValue( idx, type, node ) );
 

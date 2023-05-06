@@ -16,20 +16,40 @@
 
 package org.polypheny.db.type.entity.document;
 
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
-@EqualsAndHashCode(callSuper = true)
-@Value
-public class PolyString extends PolyValue<String> {
+@Value(staticConstructor = "of")
+public class PolyString extends PolyValue {
 
-    public PolyString( String value ) {
-        super( PolyType.VARCHAR, value );
+    @Getter
+    @EqualsAndHashCode.Exclude
+    public BinarySerializer<PolyString> serializer = PolyValue.getAbstractBuilder()
+            .build( PolyString.class );
+
+    @Serialize
+    public String value;
+
+
+    public PolyString( @Deserialize("value") String value ) {
+        super( PolyType.VARCHAR, true );
+        this.value = value;
     }
 
 
@@ -40,8 +60,62 @@ public class PolyString extends PolyValue<String> {
 
 
     @Override
-    public int compareTo( @NotNull PolyValue<String> o ) {
-        return value.compareTo( o.getValue() );
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        if ( !super.equals( o ) ) {
+            return false;
+        }
+        PolyString that = (PolyString) o;
+        return Objects.equals( value, that.value );
     }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( value );
+    }
+
+
+    @Override
+    public int compareTo( @NotNull PolyValue o ) {
+        if ( !isSameType( o ) ) {
+            return -1;
+        }
+
+        return value.compareTo( o.asString().value );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return null;
+    }
+
+
+    public static class PolyStringSerializerDef extends SimpleSerializerDef<PolyString> {
+
+        @Override
+        protected BinarySerializer<PolyString> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyString item ) {
+                    out.writeUTF8( item.value );
+                }
+
+
+                @Override
+                public PolyString decode( BinaryInput in ) throws CorruptedDataException {
+                    return PolyString.of( in.readUTF8() );
+                }
+            };
+        }
+
+    }
+
 
 }
