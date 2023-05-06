@@ -68,7 +68,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static AlgDataType asRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( DOCUMENT_ID, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
+                new AlgDataTypeFieldImpl( DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
                 new AlgDataTypeFieldImpl( DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) )
         ) );
     }

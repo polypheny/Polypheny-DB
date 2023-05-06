@@ -359,7 +359,7 @@ public class TestHelper {
                 if ( result.length == 1 ) {
                     return gson.fromJson( res.getBody(), Result[].class )[0];
                 } else if ( result.length == 0 ) {
-                    return new Result();
+                    return Result.builder().build();
                 }
                 fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );
@@ -474,7 +474,7 @@ public class TestHelper {
                 if ( result.length == 1 ) {
                     return gson.fromJson( res.getBody(), Result[].class )[0];
                 } else if ( result.length == 0 ) {
-                    return new Result();
+                    return Result.builder().build();
                 }
                 fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );

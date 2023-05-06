@@ -37,6 +37,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.GenericResult;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
@@ -77,7 +78,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<Result> anyCypherQuery(
+    public static List<GenericResult> anyCypherQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -90,7 +91,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Cypher" );
         AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.from( NAME ) );
 
-        List<Result> results = new ArrayList<>();
+        List<GenericResult> results = new ArrayList<>();
 
         InformationManager queryAnalyzer = null;
         long executionTime = 0;
@@ -129,7 +130,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
 
                 if ( stmt.isDDL() ) {
                     cypherProcessor.prepareDdl( statement, node, parameters );
-                    Result result = new Result( 1 ).setGeneratedQuery( splits.get( i ) ).setXid( transaction.getXid().toString() );
+                    Result result = Result.builder().affectedRows( 1 ).generatedQuery( splits.get( i ) ).xid( transaction.getXid().toString() ).build();
                     results.add( result );
                 } else {
                     if ( transaction.isAnalyze() ) {
@@ -146,7 +147,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, query.toLowerCase().contains( " limit " ) ).setNamespaceName( request.database ) );
+                    results.add( LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, query.toLowerCase().contains( " limit " ) ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }

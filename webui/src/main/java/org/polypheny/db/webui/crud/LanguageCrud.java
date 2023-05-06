@@ -49,14 +49,15 @@ import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
-import org.polypheny.db.webui.models.FieldDef;
+import org.polypheny.db.webui.models.DocResult;
+import org.polypheny.db.webui.models.GenericResult;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.DocumentStore;
@@ -72,7 +73,7 @@ public class LanguageCrud {
     @Getter
     private static Crud crud;
 
-    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<Result>>> REGISTER = new HashMap<>();
+    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<GenericResult>>> REGISTER = new HashMap<>();
 
 
     public LanguageCrud( Crud crud ) {
@@ -80,7 +81,7 @@ public class LanguageCrud {
     }
 
 
-    public static List<Result> anyQuery(
+    public static List<GenericResult> anyQuery(
             QueryLanguage language,
             Session session,
             QueryRequest request,
@@ -93,7 +94,7 @@ public class LanguageCrud {
     }
 
 
-    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<Result> results, long executionTime ) {
+    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<GenericResult> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
         String commitStatus;
         try {
@@ -101,7 +102,7 @@ public class LanguageCrud {
             commitStatus = "Committed";
         } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
-            results.add( new Result( e ) );
+            results.add( Result.builder().error( e.getMessage() ).build() );
             try {
                 transaction.rollback();
                 commitStatus = "Rolled back";
@@ -156,9 +157,9 @@ public class LanguageCrud {
     }
 
 
-    public static void attachError( Transaction transaction, List<Result> results, String query, Throwable t ) {
+    public static void attachError( Transaction transaction, List<GenericResult> results, String query, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
-        Result result = new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+        Result result = Result.builder().error( t == null ? null : t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build();
 
         if ( transaction.isActive() ) {
             try {
@@ -173,7 +174,7 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, final boolean noLimit ) {
+    public static GenericResult getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         if ( language == QueryLanguage.from( "mql" ) ) {
@@ -191,28 +192,20 @@ public class LanguageCrud {
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();
-        for ( AlgDataTypeField metaData : implementation.rowType.getFieldList() ) {
-            String columnName = metaData.getName();
+        for ( AlgDataTypeField field : implementation.rowType.getFieldList() ) {
+            String columnName = field.getName();
 
-            String filter = "";
-            if ( request.filter != null && request.filter.containsKey( columnName ) ) {
-                filter = request.filter.get( columnName );
-            }
+            String filter = getFilter( field, request.filter );
 
-            SortState sort;
-            if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
-                sort = request.sortState.get( columnName );
-            } else {
-                sort = new SortState();
-            }
+            SortState sort = getSortState( field, request.sortState );
 
-            DbColumn dbCol = new DbColumn(
-                    metaData.getName(),
-                    metaData.getType().getFullTypeString(),
-                    metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
-                    metaData.getType().getPrecision(),
-                    sort,
-                    filter );
+            DbColumn dbCol = DbColumn.builder()
+                    .name( field.getName() )
+                    .dataType( field.getType().getFullTypeString() )
+                    .nullable( field.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
+                    .precision( field.getType().getPrecision() )
+                    .sort( sort )
+                    .filter( filter ).build();
 
             // Get column default values
             if ( catalogTable != null ) {
@@ -228,33 +221,47 @@ public class LanguageCrud {
 
         ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
-        return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                .setNamespaceType( implementation.getNamespaceType() )
-                .setNamespaceName( request.database )
-                .setLanguage( language )
-                .setAffectedRows( data.size() )
-                .setHasMoreRows( hasMoreRows )
-                .setXid( transaction.getXid().toString() )
-                .setGeneratedQuery( query );
+        return Result
+                .builder()
+                .header( header.toArray( new DbColumn[0] ) )
+                .data( data.toArray( new String[0][] ) )
+                .namespaceType( implementation.getNamespaceType() )
+                .namespaceName( request.database )
+                .language( language )
+                .affectedRows( data.size() )
+                .hasMoreRows( hasMoreRows )
+                .xid( transaction.getXid().toString() )
+                .generatedQuery( query )
+                .build();
     }
 
 
-    private static Result getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
+    private static DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
 
-        List<List<Object>> data = implementation.getDocRows( statement, noLimit );
+        List<Object> data = implementation.getDocRows( statement, noLimit );
 
-        List<FieldDef> header = new ArrayList<>();
+        return DocResult.builder()
+                .data( data.stream().map( Object::toString ).toArray( String[]::new ) )
+                .query( query )
+                .xid( transaction.getXid().toString() )
+                .namespaceName( request.database )
+                .build();
+    }
 
-        header.add( new FieldDef() );
 
-        return new Result( header.toArray( new FieldDef[0] ), data.stream().map( d -> d.stream().map( Object::toString ).toArray( String[]::new ) ).toArray( String[][]::new ) )
-                .setNamespaceType( implementation.getNamespaceType() )
-                .setNamespaceName( request.database )
-                .setLanguage( QueryLanguage.from( "mql" ) )
-                .setAffectedRows( data.size() )
-                .setHasMoreRows( implementation.hasMoreRows() )
-                .setXid( transaction.getXid().toString() )
-                .setGeneratedQuery( query );
+    private static String getFilter( AlgDataTypeField field, Map<String, String> filter ) {
+        if ( filter != null && filter.containsKey( field.getName() ) ) {
+            return filter.get( field.getName() );
+        }
+        return "";
+    }
+
+
+    private static SortState getSortState( AlgDataTypeField field, Map<String, SortState> sortState ) {
+        if ( sortState != null && sortState.containsKey( field.getName() ) ) {
+            return sortState.get( field.getName() );
+        }
+        return new SortState();
     }
 
 
@@ -271,11 +278,11 @@ public class LanguageCrud {
         try {
             anyQuery( QueryLanguage.from( "mongo" ), null, new QueryRequest( query, false, false, "CYPHER", request.database ), crud.getTransactionManager(), crud.getUserId(), crud.getDatabaseId(), null );
 
-            result = new Result( 1 ).setGeneratedQuery( query );
+            result = Result.builder().affectedRows( 1 ).generatedQuery( query ).build();
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while creating a table", e );
-            result = new Result( e ).setGeneratedQuery( query );
+            result = Result.builder().error( e.getMessage() ).generatedQuery( query ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -297,7 +304,11 @@ public class LanguageCrud {
                 .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.namespaceType.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
-        ctx.json( new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data ) );
+        ctx.json( Result
+                .builder()
+                .header( new DbColumn[]{ DbColumn.builder().name( "Database/Schema" ).build(), DbColumn.builder().name( "Type" ).build() } )
+                .data( data )
+                .build() );
     }
 
 
@@ -347,7 +358,7 @@ public class LanguageCrud {
         Result result;
         List<DbColumn> cols = new ArrayList<>();
 
-        result = new Result( cols.toArray( new DbColumn[0] ), null );
+        result = Result.builder().header( cols.toArray( new DbColumn[0] ) ).data( null ).build();
         context.json( result );
 
     }
@@ -394,7 +405,7 @@ public class LanguageCrud {
                     Long,
                     Long,
                     Crud,
-                    List<Result>> function ) {
+                    List<GenericResult>> function ) {
         REGISTER.put( language, function );
     }
 

@@ -34,6 +34,7 @@ import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.Crud.QueryExecutionException;
 import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.Result.ResultBuilder;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
@@ -151,14 +152,18 @@ public class ExploreManager {
         if ( isConvertedToSql ) {
             Transaction transaction = crud.getTransaction();
             Statement statement = transaction.createStatement();
-            Result result;
+            ResultBuilder<?, ?> result;
 
             try {
-                result = Crud.executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false, crud ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
+                result = Crud
+                        .executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false, crud )
+                        .generatedQuery( explore.getClassifiedSqlStatement() );
                 transaction.commit();
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
-                result = new Result( e ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
+                result = Result.builder()
+                        .error( e.getMessage() )
+                        .generatedQuery( explore.getClassifiedSqlStatement() );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -166,23 +171,22 @@ public class ExploreManager {
                 }
             }
 
-            result.setExplorerId( explore.getId() );
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
-
-            result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) );
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setConvertedToSql( isConvertedToSql );
+            result.explorerId( explore.getId() )
+                    .currentPage( classifyAllData.cPage )
+                    .table( classifyAllData.tableId )
+                    .highestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) )
+                    .classificationInfo( "NoClassificationPossible" )
+                    .isConvertedToSql( isConvertedToSql );
 
             ctx.json( result );
         } else {
-            Result result = new Result( classifyAllData.header, Arrays.copyOfRange( explore.getData(), 0, 10 ) );
-
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setExplorerId( explore.getId() );
-
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
-            result.setHighestPage( (int) Math.ceil( (double) explore.getData().length / crud.getPageSize() ) );
-            result.setConvertedToSql( isConvertedToSql );
+            ResultBuilder<?, ?> result = Result.builder()
+                    .header( classifyAllData.header )
+                    .data( Arrays.copyOfRange( explore.getData(), 0, 10 ) ).classificationInfo( "NoClassificationPossible" )
+                    .explorerId( explore.getId() )
+                    .currentPage( classifyAllData.cPage ).table( classifyAllData.tableId )
+                    .highestPage( (int) Math.ceil( (double) explore.getData().length / crud.getPageSize() ) )
+                    .isConvertedToSql( isConvertedToSql );
             ctx.json( result );
         }
 
@@ -202,7 +206,7 @@ public class ExploreManager {
         Transaction transaction = crud.getTransaction();
         Statement statement = transaction.createStatement();
 
-        Result result;
+        ResultBuilder<?, ?> result;
         Explore explore = getExploreInformation( exploreTables.id );
         String[][] paginationData;
 
@@ -216,12 +220,13 @@ public class ExploreManager {
             } else {
                 paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * crud.getPageSize()), ((Math.max( 0, exploreTables.cPage )) * crud.getPageSize()) );
             }
-            result = new Result( exploreTables.columns, paginationData );
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setExplorerId( explore.getId() );
-
-            result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
-            result.setHighestPage( (int) Math.ceil( (double) tablesize / crud.getPageSize() ) );
+            result = Result.builder().header( exploreTables.columns )
+                    .classifiedData( paginationData )
+                    .classificationInfo( "NoClassificationPossible" )
+                    .explorerId( explore.getId() )
+                    .currentPage( exploreTables.cPage )
+                    .table( exploreTables.tableId )
+                    .highestPage( (int) Math.ceil( (double) tablesize / crud.getPageSize() ) );
 
             ctx.json( result );
         }
@@ -230,7 +235,7 @@ public class ExploreManager {
             result = crud.executeSqlSelect( statement, exploreTables, query );
         } catch ( QueryExecutionException e ) {
             log.error( "Caught exception while fetching a table", e );
-            result = new Result( "Could not fetch table " + exploreTables.tableId );
+            result = Result.builder().error( "Could not fetch table " + exploreTables.tableId );
             try {
                 transaction.rollback();
                 ctx.status( 500 ).json( result );
@@ -244,18 +249,19 @@ public class ExploreManager {
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing transaction", e );
         }
-        result.setExplorerId( explore.getId() );
-        result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
+        result.explorerId( explore.getId() )
+                .currentPage( exploreTables.cPage )
+                .table( exploreTables.tableId );
         int tableSize = explore.getTableSize();
 
-        result.setHighestPage( (int) Math.ceil( (double) tableSize / crud.getPageSize() ) );
+        result.highestPage( (int) Math.ceil( (double) tableSize / crud.getPageSize() ) );
 
         if ( !explore.isClassificationPossible() ) {
-            result.setClassificationInfo( "NoClassificationPossible" );
+            result.classificationInfo( "NoClassificationPossible" );
         } else {
-            result.setClassificationInfo( "ClassificationPossible" );
+            result.classificationInfo( "ClassificationPossible" );
         }
-        result.setIncludesClassificationInfo( explore.isDataAfterClassification );
+        result.includesClassificationInfo( explore.isDataAfterClassification );
 
         if ( explore.isDataAfterClassification ) {
             int tablesize = explore.getDataAfterClassification().size();
@@ -271,7 +277,7 @@ public class ExploreManager {
                 paginationData[i] = paginationDataList.get( i );
             }
 
-            result.setClassifiedData( paginationData );
+            result.classifiedData( paginationData );
         }
         ctx.json( result );
 
@@ -284,11 +290,11 @@ public class ExploreManager {
     public void createInitialExploreQuery( final Context ctx, final Crud crud ) {
         QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
 
-        Result result;
+        ResultBuilder<?, ?> result;
 
         Explore explore = createSqlQuery( null, queryExplorationRequest.query );
         if ( explore.getDataType() == null ) {
-            ctx.status( 400 ).json( new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" ) );
+            ctx.status( 400 ).json( Result.builder().error( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" ) );
             return;
         }
 
@@ -296,11 +302,11 @@ public class ExploreManager {
         Statement statement = transaction.createStatement();
         try {
             String query = explore.getSqlStatement();
-            result = Crud.executeSqlSelect( statement, queryExplorationRequest, query, false, crud ).setGeneratedQuery( query );
+            result = Crud.executeSqlSelect( statement, queryExplorationRequest, query, false, crud ).generatedQuery( query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while executing a query from the console", e );
-            result = new Result( e );
+            result = Result.builder().error( e.getMessage() );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -308,15 +314,16 @@ public class ExploreManager {
             }
         }
 
-        result.setExplorerId( explore.getId() );
+        result.explorerId( explore.getId() );
         if ( !explore.isClassificationPossible() ) {
-            result.setClassificationInfo( "NoClassificationPossible" );
+            result.classificationInfo( "NoClassificationPossible" );
 
         } else {
-            result.setClassificationInfo( "ClassificationPossible" );
+            result.classificationInfo( "ClassificationPossible" );
         }
-        result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
-        result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) );
+        result.currentPage( queryExplorationRequest.cPage )
+                .table( queryExplorationRequest.tableId )
+                .highestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) );
 
         ctx.json( result );
     }

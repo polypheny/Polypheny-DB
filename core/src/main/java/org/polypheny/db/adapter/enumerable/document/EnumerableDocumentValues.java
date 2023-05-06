@@ -28,11 +28,9 @@ import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -60,7 +58,6 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(

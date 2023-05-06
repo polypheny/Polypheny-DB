@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.GenericResult;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.GraphRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -115,7 +116,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 QueryRequest queryRequest = ctx.messageAsClass( QueryRequest.class );
                 QueryLanguage language = QueryLanguage.from( queryRequest.language );
 
-                List<Result> results = LanguageCrud.anyQuery(
+                List<GenericResult> results = LanguageCrud.anyQuery(
                         language,
                         ctx.session,
                         queryRequest,
@@ -124,9 +125,12 @@ public class WebSocket implements Consumer<WsConfig> {
                         crud.getDatabaseId(),
                         crud );
 
-                for ( Result result : results ) {
-                    if ( result.getXid() != null ) {
-                        xIds.add( result.getXid() );
+                for ( GenericResult result : results ) {
+                    if ( !(result instanceof Result) ) {
+                        continue;
+                    }
+                    if ( ((Result) result).xid != null ) {
+                        xIds.add( ((Result) result).xid );
                     }
                 }
                 ctx.send( results );
@@ -134,13 +138,13 @@ public class WebSocket implements Consumer<WsConfig> {
 
             case "RelAlgRequest":
             case "TableRequest":
-                Result result = null;
+                GenericResult result = null;
                 if ( request.requestType.equals( "RelAlgRequest" ) ) {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
                         result = crud.executeRelAlg( relAlgRequest, ctx.session );
                     } catch ( Throwable t ) {
-                        ctx.send( new Result( t ) );
+                        ctx.send( Result.builder().error( t.getMessage() ).build() );
                         return;
                     }
                 } else {//TableRequest, is equal to UIRequest
@@ -163,12 +167,12 @@ public class WebSocket implements Consumer<WsConfig> {
                         }
 
                     } catch ( Throwable t ) {
-                        ctx.send( new Result( t ) );
+                        ctx.send( Result.builder().error( t.getMessage() ).build() );
                         return;
                     }
                 }
-                if ( result.getXid() != null ) {
-                    xIds.add( result.getXid() );
+                if ( ((Result) result).xid != null ) {
+                    xIds.add( ((Result) result).xid );
                 }
                 ctx.send( result );
                 break;

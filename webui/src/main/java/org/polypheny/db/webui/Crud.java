@@ -179,6 +179,7 @@ import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.Result.ResultBuilder;
 import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
 import org.polypheny.db.webui.models.SidebarElement;
@@ -249,7 +250,7 @@ public class Crud implements InformationObserver {
      */
     Result getTable( final UIRequest request ) {
         Transaction transaction = getTransaction();
-        Result result;
+        ResultBuilder<?, ?> resultBuilder;
 
         StringBuilder query = new StringBuilder();
         String where = "";
@@ -274,18 +275,18 @@ public class Crud implements InformationObserver {
         }
 
         try {
-            result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
-            result.setXid( transaction.getXid().toString() );
+            resultBuilder = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
+            resultBuilder.xid( transaction.getXid().toString() );
         } catch ( Exception e ) {
             if ( request.filter != null ) {
-                result = new Result( "Error while filtering table " + request.tableId );
+                resultBuilder = Result.builder().error( "Error while filtering table " + request.tableId );
             } else {
-                result = new Result( "Could not fetch table " + request.tableId );
+                resultBuilder = Result.builder().error( "Could not fetch table " + request.tableId );
                 log.error( "Caught exception while fetching a table", e );
             }
             try {
                 transaction.rollback();
-                return result;
+                return resultBuilder.build();
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
@@ -294,11 +295,11 @@ public class Crud implements InformationObserver {
         // determine if it is a view or a table
         LogicalTable catalogTable;
         catalogTable = catalog.getSnapshot().rel().getTables( t[0], t[1] );
-        result.setNamespaceType( catalogTable.namespaceType );
+        resultBuilder.namespaceType( catalogTable.namespaceType );
         if ( catalogTable.modifiable ) {
-            result.setType( ResultType.TABLE );
+            resultBuilder.type( ResultType.TABLE );
         } else {
-            result.setType( ResultType.VIEW );
+            resultBuilder.type( ResultType.VIEW );
         }
 
         //get headers with default values
@@ -314,30 +315,30 @@ public class Crud implements InformationObserver {
             String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
             String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
             cols.add(
-                    new DbColumn(
-                            logicalColumn.name,
-                            logicalColumn.type.getName(),
-                            collectionsType,
-                            logicalColumn.nullable,
-                            logicalColumn.length,
-                            logicalColumn.scale,
-                            logicalColumn.dimension,
-                            logicalColumn.cardinality,
-                            primaryColumns.contains( logicalColumn.name ),
-                            defaultValue,
-                            request.sortState == null ? new SortState() : request.sortState.get( logicalColumn.name ),
-                            request.filter == null || request.filter.get( logicalColumn.name ) == null ? "" : request.filter.get( logicalColumn.name ) ) );
+                    DbColumn.builder()
+                            .name( logicalColumn.name )
+                            .dataType( logicalColumn.type.getName() )
+                            .collectionsType( collectionsType )
+                            .nullable( logicalColumn.nullable )
+                            .precision( logicalColumn.length )
+                            .scale( logicalColumn.scale )
+                            .dimension( logicalColumn.dimension )
+                            .cardinality( logicalColumn.cardinality )
+                            .primary( primaryColumns.contains( logicalColumn.name ) )
+                            .defaultValue( defaultValue )
+                            .sort( request.sortState == null ? new SortState() : request.sortState.get( logicalColumn.name ) )
+                            .filter( request.filter == null || request.filter.get( logicalColumn.name ) == null ? "" : request.filter.get( logicalColumn.name ) ).build() );
         }
-        result.setHeader( cols.toArray( new DbColumn[0] ) );
+        resultBuilder.header( cols.toArray( new DbColumn[0] ) );
 
-        result.setCurrentPage( request.currentPage ).setTable( request.tableId );
+        resultBuilder.currentPage( request.currentPage ).table( request.tableId );
         int tableSize = 0;
         try {
             tableSize = getTableSize( transaction, request );
         } catch ( Exception e ) {
             log.error( "Caught exception while determining page size", e );
         }
-        result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+        resultBuilder.highestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
@@ -348,7 +349,7 @@ public class Crud implements InformationObserver {
                 log.error( "Exception while rollback", transactionException );
             }
         }
-        return result;
+        return resultBuilder.build();
     }
 
 
@@ -456,10 +457,10 @@ public class Crud implements InformationObserver {
         Result result;
         try {
             int rows = executeSqlUpdate( transaction, query );
-            result = new Result( rows ).setGeneratedQuery( query );
+            result = Result.builder().affectedRows( rows ).generatedQuery( query ).build();
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
-            result = new Result( e );
+            result = Result.builder().error( e.getMessage() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -489,11 +490,11 @@ public class Crud implements InformationObserver {
         query.append( tableId );
         try {
             int a = executeSqlUpdate( transaction, query.toString() );
-            result = new Result( a ).setGeneratedQuery( query.toString() );
+            result = Result.builder().affectedRows( a ).generatedQuery( query.toString() ).build();
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping or truncating a table", e );
-            result = new Result( e ).setGeneratedQuery( query.toString() );
+            result = Result.builder().error( e.getMessage() ).generatedQuery( query.toString() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -574,11 +575,11 @@ public class Crud implements InformationObserver {
 
         try {
             int a = executeSqlUpdate( transaction, query.toString() );
-            result = new Result( a ).setGeneratedQuery( query.toString() );
+            result = Result.builder().affectedRows( a ).generatedQuery( query.toString() ).build();
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while creating a table", e );
-            result = new Result( e ).setGeneratedQuery( query.toString() );
+            result = Result.builder().error( e.getMessage() ).generatedQuery( query.toString() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -616,7 +617,7 @@ public class Crud implements InformationObserver {
         try {
             tableId = new BufferedReader( new InputStreamReader( ctx.req.getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
         } catch ( IOException | ServletException e ) {
-            ctx.json( new Result( e ) );
+            ctx.json( Result.builder().error( e.getMessage() ).build() );
         }
         String[] split = tableId.split( "\\." );
         tableId = String.format( "\"%s\".\"%s\"", split[0], split[1] );
@@ -659,14 +660,14 @@ public class Crud implements InformationObserver {
         } catch ( IOException | ServletException e ) {
             log.error( "Could not generate INSERT statement", e );
             ctx.status( 500 );
-            ctx.json( new Result( e ) );
+            ctx.json( Result.builder().error( e.getMessage() ).build() );
         }
 
-        String query = String.format( "INSERT INTO %s %s VALUES %s", tableId, columns.toString(), values.toString() );
+        String query = String.format( "INSERT INTO %s %s VALUES %s", tableId, columns, values );
         try {
             int numRows = executeSqlUpdate( statement, transaction, query );
             transaction.commit();
-            ctx.json( new Result( numRows ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().affectedRows( numRows ).generatedQuery( query ).build() );
         } catch ( Exception | TransactionException e ) {
             log.info( "Generated query: {}", query );
             log.error( "Could not insert row", e );
@@ -675,7 +676,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException e2 ) {
                 log.error( "Caught error while rolling back transaction", e2 );
             }
-            ctx.json( new Result( e ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( query ).build() );
         }
     }
 
@@ -683,7 +684,7 @@ public class Crud implements InformationObserver {
     /**
      * Run any query coming from the SQL console
      */
-    public static ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
+    public static List<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
         Transaction transaction = getTransaction( request.analyze, request.cache, crud );
 
         if ( request.analyze ) {
@@ -732,7 +733,7 @@ public class Crud implements InformationObserver {
                     transaction.commit();
                     executionTime += System.nanoTime() - temp;
                     transaction = getTransaction( request.analyze, request.cache, crud );
-                    results.add( new Result().setGeneratedQuery( query ) );
+                    results.add( Result.builder().generatedQuery( query ).build() );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while committing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
@@ -744,7 +745,7 @@ public class Crud implements InformationObserver {
                     transaction.rollback();
                     executionTime += System.nanoTime() - temp;
                     transaction = getTransaction( request.analyze, request.cache, crud );
-                    results.add( new Result().setGeneratedQuery( query ) );
+                    results.add( Result.builder().generatedQuery( query ).build() );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while rolling back a query from the console", e );
                     executionTime += System.nanoTime() - temp;
@@ -774,8 +775,8 @@ public class Crud implements InformationObserver {
                 try {
                     temp = System.nanoTime();
                     result = executeSqlSelect( transaction.createStatement(), request, query, noLimit, crud )
-                            .setGeneratedQuery( query )
-                            .setXid( transaction.getXid().toString() );
+                            .generatedQuery( query )
+                            .xid( transaction.getXid().toString() ).build();
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
@@ -786,12 +787,11 @@ public class Crud implements InformationObserver {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
                     if ( e.getCause() instanceof AvaticaRuntimeException ) {
-                        result = new Result( ((AvaticaRuntimeException) e.getCause()).getErrorMessage() );
+                        result = Result.builder().error( ((AvaticaRuntimeException) e.getCause()).getErrorMessage() ).build();
                     } else {
-                        result = new Result( e.getCause().getMessage() );
+                        result = Result.builder().error( e.getCause().getMessage() ).build();
                     }
-                    result.setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
-                    results.add( result );
+                    results.add( result.toBuilder().generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
                     try {
                         transaction.rollback();
                     } catch ( TransactionException ex ) {
@@ -804,8 +804,7 @@ public class Crud implements InformationObserver {
                     int numOfRows = crud.executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
 
-                    result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
-                    results.add( result );
+                    results.add( Result.builder().affectedRows( numOfRows ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
                     if ( autoCommit ) {
                         transaction.commit();
                         transaction = getTransaction( request.analyze, request.cache, crud );
@@ -813,8 +812,7 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
-                    results.add( result );
+                    results.add( Result.builder().error( e.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
                     try {
                         transaction.rollback();
                     } catch ( TransactionException ex ) {
@@ -831,7 +829,7 @@ public class Crud implements InformationObserver {
             commitStatus = "Committed";
         } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
-            results.add( new Result( e ) );
+            results.add( Result.builder().error( e.getMessage() ).build() );
             try {
                 transaction.rollback();
                 commitStatus = "Rolled back";
@@ -910,8 +908,6 @@ public class Crud implements InformationObserver {
      * Compute a WHERE condition from a filter that only consists of the PK column WHERE clauses
      * There WHERE clause contains a space at the beginning, for convenience
      *
-     * @param tableName Table name
-     * @param columnName Column name
      * @param filter Filter. Key: column name, value: the value of the entry, e.g. 1 or abc or [1,2,3] or {@code null}
      */
     private String computeWherePK( final String namespace, final String table, final Map<String, String> filter ) {
@@ -957,10 +953,10 @@ public class Crud implements InformationObserver {
             }
 
             transaction.commit();
-            result = new Result( numOfRows );
+            result = Result.builder().affectedRows( numOfRows ).build();
         } catch ( TransactionException | Exception e ) {
             log.error( "Caught exception while deleting a row", e );
-            result = new Result( e ).setGeneratedQuery( builder.toString() );
+            result = Result.builder().error( e.getMessage() ).generatedQuery( builder.toString() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -984,7 +980,7 @@ public class Crud implements InformationObserver {
             String _oldValues = new BufferedReader( new InputStreamReader( ctx.req.getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
             oldValues = gson.fromJson( _oldValues, Map.class );
         } catch ( IOException | ServletException e ) {
-            ctx.json( new Result( e ) );
+            ctx.json( Result.builder().error( e.getMessage() ).build() );
         }
 
         String[] split = tableId.split( "\\." );
@@ -1031,15 +1027,14 @@ public class Crud implements InformationObserver {
                     transaction.addChangedTable( tableId );
                 }
                 transaction.commit();
-                result = new Result( numOfRows );
+                result = Result.builder().affectedRows( numOfRows ).build();
             } else {
                 transaction.rollback();
-                result = new Result( "Attempt to update " + numOfRows + " rows was blocked." );
-                result.setGeneratedQuery( builder.toString() );
+                result = Result.builder().error( "Attempt to update " + numOfRows + " rows was blocked." ).generatedQuery( builder.toString() ).build();
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a row", e );
-            result = new Result( e ).setGeneratedQuery( builder.toString() );
+            result = Result.builder().error( e.getMessage() ).generatedQuery( builder.toString() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1068,16 +1063,16 @@ public class Crud implements InformationObserver {
                 totalRows += executeSqlUpdate( statement, transaction, query );
             }
             transaction.commit();
-            ctx.json( new Result( totalRows ) );
+            ctx.json( Result.builder().affectedRows( totalRows ).build() );
         } catch ( ServletException | IOException | QueryExecutionException | TransactionException e ) {
             try {
                 transaction.rollback();
             } catch ( TransactionException transactionException ) {
                 log.error( "Could not rollback", e );
-                ctx.status( 500 ).json( new Result( e ) );
+                ctx.status( 500 ).json( Result.builder().error( e.getMessage() ).build() );
             }
             log.error( "The batch update failed", e );
-            ctx.status( 500 ).json( new Result( e ) );
+            ctx.status( 500 ).json( Result.builder().error( e.getMessage() ).build() );
         }
     }
 
@@ -1087,7 +1082,6 @@ public class Crud implements InformationObserver {
      */
     void getColumns( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        Result result;
 
         String[] t = request.tableId.split( "\\." );
         ArrayList<DbColumn> cols = new ArrayList<>();
@@ -1105,28 +1099,28 @@ public class Crud implements InformationObserver {
             String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
             String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
             cols.add(
-                    new DbColumn(
-                            logicalColumn.name,
-                            logicalColumn.type.getName(),
-                            collectionsType,
-                            logicalColumn.nullable,
-                            logicalColumn.length,
-                            logicalColumn.scale,
-                            logicalColumn.dimension,
-                            logicalColumn.cardinality,
-                            primaryColumns.contains( logicalColumn.name ),
-                            defaultValue ) );
+                    DbColumn.builder()
+                            .name( logicalColumn.name )
+                            .dataType( logicalColumn.type.getName() )
+                            .collectionsType( collectionsType )
+                            .nullable( logicalColumn.nullable )
+                            .precision( logicalColumn.length )
+                            .scale( logicalColumn.scale )
+                            .dimension( logicalColumn.dimension )
+                            .cardinality( logicalColumn.cardinality )
+                            .primary( primaryColumns.contains( logicalColumn.name ) )
+                            .defaultValue( defaultValue ).build() );
         }
-        result = new Result( cols.toArray( new DbColumn[0] ), null );
+        ResultBuilder<?, ?> result = Result.builder().header( cols.toArray( new DbColumn[0] ) );
         if ( catalogTable.entityType == EntityType.ENTITY ) {
-            result.setType( ResultType.TABLE );
+            result.type( ResultType.TABLE );
         } else if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
-            result.setType( ResultType.MATERIALIZED );
+            result.type( ResultType.MATERIALIZED );
         } else {
-            result.setType( ResultType.VIEW );
+            result.type( ResultType.VIEW );
         }
 
-        ctx.json( result );
+        ctx.json( result.build() );
     }
 
 
@@ -1140,21 +1134,21 @@ public class Crud implements InformationObserver {
             List<DbColumn> columns = new ArrayList<>();
             List<LogicalColumn> cols = catalog.getSnapshot().rel().getColumns( catalogTable.id );
             for ( LogicalColumn col : cols ) {
-                columns.add( new DbColumn(
-                        col.name,
-                        col.type.getName(),
-                        col.collectionsType == null ? "" : col.collectionsType.getName(),
-                        col.nullable,
-                        col.length,
-                        col.scale,
-                        col.dimension,
-                        col.cardinality,
-                        false,
-                        col.defaultValue == null ? null : col.defaultValue.value
-                ).setPhysicalName( col.name ) );
+                columns.add( DbColumn.builder()
+                        .name( col.name )
+                        .dataType( col.type.getName() )
+                        .collectionsType( col.collectionsType == null ? "" : col.collectionsType.getName() )
+                        .nullable( col.nullable )
+                        .precision( col.length )
+                        .scale( col.scale )
+                        .dimension( col.dimension )
+                        .cardinality( col.cardinality )
+                        .primary( false )
+                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value ).physicalName( col.name ).build()
+                );
 
             }
-            ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW ) );
+            ctx.json( Result.builder().header( columns.toArray( new DbColumn[0] ) ).type( ResultType.VIEW ).build() );
         } else {
             List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( catalogTable.id );
             if ( catalog.getSnapshot().alloc().getFromLogical( catalogTable.id ).size() != 1 ) {
@@ -1167,20 +1161,19 @@ public class Crud implements InformationObserver {
             List<DbColumn> columns = new ArrayList<>();
             for ( AllocationColumn ccp : catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
                 LogicalColumn col = catalog.getSnapshot().rel().getColumn( ccp.columnId );
-                columns.add( new DbColumn(
-                        col.name,
-                        col.type.getName(),
-                        col.collectionsType == null ? "" : col.collectionsType.getName(),
-                        col.nullable,
-                        col.length,
-                        col.scale,
-                        col.dimension,
-                        col.cardinality,
-                        pkColumnNames.contains( col.name ),
-                        col.defaultValue == null ? null : col.defaultValue.value
-                ) );//.setPhysicalName( ccp.physicalColumnName ) );
+                columns.add( DbColumn.builder().name(
+                        col.name ).dataType(
+                        col.type.getName() ).collectionsType(
+                        col.collectionsType == null ? "" : col.collectionsType.getName() ).nullable(
+                        col.nullable ).precision(
+                        col.length ).scale(
+                        col.scale ).dimension(
+                        col.dimension ).cardinality(
+                        col.cardinality ).primary(
+                        pkColumnNames.contains( col.name ) ).defaultValue(
+                        col.defaultValue == null ? null : col.defaultValue.value ).build() );
             }
-            ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.TABLE ) );
+            ctx.json( Result.builder().header( columns.toArray( new DbColumn[0] ) ).type( ResultType.TABLE ).build() );
         }
     }
 
@@ -1199,26 +1192,26 @@ public class Crud implements InformationObserver {
         }
         List<Result> exportedColumns = new ArrayList<>();
         for ( Long adapterId : adapterIds ) {
-            Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( adapterId );
             if ( adapter instanceof DataSource<?> ) {
                 DataSource<?> dataSource = (DataSource<?>) adapter;
                 for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
                     List<DbColumn> columnList = new ArrayList<>();
                     for ( ExportedColumn col : entry.getValue() ) {
-                        DbColumn dbCol = new DbColumn(
-                                col.name,
-                                col.type.getName(),
-                                col.collectionsType == null ? "" : col.collectionsType.getName(),
-                                col.nullable,
-                                col.length,
-                                col.scale,
-                                col.dimension,
-                                col.cardinality,
-                                col.primary,
-                                null ).setPhysicalName( col.physicalColumnName );
+                        DbColumn dbCol = DbColumn.builder()
+                                .name( col.name )
+                                .dataType( col.type.getName() )
+                                .collectionsType( col.collectionsType == null ? "" : col.collectionsType.getName() )
+                                .nullable( col.nullable )
+                                .precision( col.length )
+                                .scale( col.scale )
+                                .dimension( col.dimension )
+                                .cardinality( col.cardinality )
+                                .primary( col.primary )
+                                .physicalName( col.physicalColumnName ).build();
                         columnList.add( dbCol );
                     }
-                    exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( entry.getKey() ) );
+                    exportedColumns.add( Result.builder().header( columnList.toArray( new DbColumn[0] ) ).table( entry.getKey() ).build() );
                     columnList.clear();
                 }
                 ctx.json( exportedColumns.toArray( new Result[0] ) );
@@ -1227,7 +1220,7 @@ public class Crud implements InformationObserver {
 
         }
 
-        ctx.json( new Result( "Could not retrieve exported source fields." ) );
+        ctx.json( Result.builder().error( "Could not retrieve exported source fields." ).build() );
     }
 
 
@@ -1280,7 +1273,7 @@ public class Crud implements InformationObserver {
         String query = String.format( "ALTER MATERIALIZED VIEW %s FRESHNESS MANUAL", tableId );
         queries.add( query );
 
-        result = new Result( 1 ).setGeneratedQuery( queries.toString() );
+        result = Result.builder().affectedRows( 1 ).generatedQuery( queries.toString() ).build();
         try {
             for ( String q : queries ) {
                 sBuilder.append( q );
@@ -1289,12 +1282,12 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a column", e );
-            result = new Result( e ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+            result = Result.builder().error( e.getMessage() ).affectedRows( 0 ).generatedQuery( sBuilder.toString() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException e2 ) {
                 log.error( "Caught exception during rollback", e2 );
-                result = new Result( e2 ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+                result = Result.builder().error( e2.getMessage() ).affectedRows( 0 ).generatedQuery( sBuilder.toString() ).build();
             }
         }
 
@@ -1404,7 +1397,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        result = new Result( 1 ).setGeneratedQuery( queries.toString() );
+        result = Result.builder().affectedRows( 1 ).generatedQuery( queries.toString() ).build();
         try {
             for ( String query : queries ) {
                 sBuilder.append( query );
@@ -1413,12 +1406,12 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a column", e );
-            result = new Result( e ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+            result = Result.builder().error( e.getMessage() ).affectedRows( 0 ).generatedQuery( sBuilder.toString() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException e2 ) {
                 log.error( "Caught exception during rollback", e2 );
-                result = new Result( e2 ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+                result = Result.builder().error( e2.getMessage() ).affectedRows( 0 ).generatedQuery( sBuilder.toString() ).build();
             }
         }
 
@@ -1482,7 +1475,7 @@ public class Crud implements InformationObserver {
                     case "DECIMAL":
                         request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
                         BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                        query = query + b.toString();
+                        query = query + b;
                         break;
                     case "VARCHAR":
                         query = query + String.format( "'%s'", request.newColumn.defaultValue );
@@ -1496,10 +1489,10 @@ public class Crud implements InformationObserver {
         try {
             int affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
-            result = new Result( affectedRows ).setGeneratedQuery( query );
+            result = Result.builder().affectedRows( affectedRows ).generatedQuery( query ).build();
         } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Caught exception while adding a column", e );
-            result = new Result( e );
+            result = Result.builder().error( e.getMessage() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1525,10 +1518,10 @@ public class Crud implements InformationObserver {
         try {
             int affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
-            result = new Result( affectedRows );
+            result = Result.builder().affectedRows( affectedRows ).build();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping a column", e );
-            result = new Result( e );
+            result = Result.builder().error( e.getMessage() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1547,7 +1540,7 @@ public class Crud implements InformationObserver {
         data[0] = NameGenerator.generateConstraintName();
         data[1] = NameGenerator.generateForeignKeyName();
         data[2] = NameGenerator.generateIndexName();
-        ctx.json( new Result( new DbColumn[0], new String[][]{ data } ) );
+        ctx.json( Result.builder().header( new DbColumn[0] ).data( new String[][]{ data } ).build() );
     }
 
 
@@ -1592,11 +1585,11 @@ public class Crud implements InformationObserver {
 
         // the foreign keys are listed separately
 
-        DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
+        DbColumn[] header = { DbColumn.builder().name( "Name" ).build(), DbColumn.builder().name( "Type" ).build(), DbColumn.builder().name( "Columns" ).build() };
         ArrayList<String[]> data = new ArrayList<>();
         resultList.forEach( c -> data.add( c.asRow() ) );
 
-        result = new Result( header, data.toArray( new String[0][2] ) );
+        result = Result.builder().header( header ).data( data.toArray( new String[0][2] ) ).build();
 
         ctx.json( result );
     }
@@ -1621,10 +1614,10 @@ public class Crud implements InformationObserver {
         try {
             int rows = executeSqlUpdate( transaction, query );
             transaction.commit();
-            result = new Result( rows );
+            result = Result.builder().affectedRows( rows ).build();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping a constraint", e );
-            result = new Result( e );
+            result = Result.builder().error( e.getMessage() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1646,28 +1639,30 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         Result result;
-        if ( request.constraint.columns.length > 0 ) {
-            StringJoiner joiner = new StringJoiner( ",", "(", ")" );
-            for ( String s : request.constraint.columns ) {
-                joiner.add( "\"" + s + "\"" );
-            }
-            String query = "ALTER TABLE " + tableId + " ADD PRIMARY KEY " + joiner.toString();
-            try {
-                int rows = executeSqlUpdate( transaction, query );
-                transaction.commit();
-                result = new Result( rows ).setGeneratedQuery( query );
-            } catch ( QueryExecutionException | TransactionException e ) {
-                log.error( "Caught exception while adding a primary key", e );
-                result = new Result( e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Could not rollback", ex );
-                }
-            }
-        } else {
-            result = new Result( "Cannot add primary key if no columns are provided." );
+        if ( request.constraint.columns.length < 1 ) {
+            result = Result.builder().error( "Cannot add primary key if no columns are provided." ).build();
+            ctx.json( result );
+            return;
         }
+        StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+        for ( String s : request.constraint.columns ) {
+            joiner.add( "\"" + s + "\"" );
+        }
+        String query = "ALTER TABLE " + tableId + " ADD PRIMARY KEY " + joiner;
+        try {
+            int rows = executeSqlUpdate( transaction, query );
+            transaction.commit();
+            result = Result.builder().affectedRows( rows ).generatedQuery( query ).build();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while adding a primary key", e );
+            result = Result.builder().error( e.getMessage() ).build();
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+
         ctx.json( result );
     }
 
@@ -1692,10 +1687,10 @@ public class Crud implements InformationObserver {
             try {
                 int rows = executeSqlUpdate( transaction, query );
                 transaction.commit();
-                result = new Result( rows ).setGeneratedQuery( query );
+                result = Result.builder().affectedRows( rows ).generatedQuery( query ).build();
             } catch ( QueryExecutionException | TransactionException e ) {
                 log.error( "Caught exception while adding a unique constraint", e );
-                result = new Result( e );
+                result = Result.builder().error( e.getMessage() ).build();
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -1703,7 +1698,7 @@ public class Crud implements InformationObserver {
                 }
             }
         } else {
-            result = new Result( "Cannot add unique constraint if no columns are provided." );
+            result = Result.builder().error( "Cannot add unique constraint if no columns are provided." ).build();
         }
         ctx.json( result );
     }
@@ -1720,11 +1715,11 @@ public class Crud implements InformationObserver {
         List<LogicalIndex> logicalIndices = catalog.getSnapshot().rel().getIndexes( catalogTable.id, false );
 
         DbColumn[] header = {
-                new DbColumn( "Name" ),
-                new DbColumn( "Columns" ),
-                new DbColumn( "Location" ),
-                new DbColumn( "Method" ),
-                new DbColumn( "Type" ) };
+                DbColumn.builder().name( "Name" ).build(),
+                DbColumn.builder().name( "Columns" ).build(),
+                DbColumn.builder().name( "Location" ).build(),
+                DbColumn.builder().name( "Method" ).build(),
+                DbColumn.builder().name( "Type" ).build() };
 
         ArrayList<String[]> data = new ArrayList<>();
 
@@ -1767,7 +1762,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        result = new Result( header, data.toArray( new String[0][2] ) );
+        result = Result.builder().header( header ).data( data.toArray( new String[0][2] ) ).build();
 
         ctx.json( result );
     }
@@ -1788,10 +1783,10 @@ public class Crud implements InformationObserver {
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
-            result = new Result( a ).setGeneratedQuery( query );
+            result = Result.builder().affectedRows( a ).generatedQuery( query ).build();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping an index", e );
-            result = new Result( e );
+            result = Result.builder().error( e.getMessage() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1825,10 +1820,10 @@ public class Crud implements InformationObserver {
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
-            result = new Result( a );
+            result = Result.builder().affectedRows( a ).build();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while creating an index", e );
-            result = new Result( e );
+            result = Result.builder().error( e.getMessage() ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1884,7 +1879,7 @@ public class Crud implements InformationObserver {
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
             List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id );
             for ( AllocationColumn placement : pkPlacements ) {
-                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
                 p.addAdapter( new RelationalStore(
                         adapter.getUniqueName(),
@@ -1907,7 +1902,7 @@ public class Crud implements InformationObserver {
     void addDropPlacement( final Context ctx ) {
         Index index = ctx.bodyAsClass( Index.class );
         if ( !index.getMethod().equalsIgnoreCase( "ADD" ) && !index.getMethod().equalsIgnoreCase( "DROP" ) && !index.getMethod().equalsIgnoreCase( "MODIFY" ) ) {
-            ctx.json( new Result( "Invalid request" ) );
+            ctx.json( Result.builder().error( "Invalid request" ).build() );
             return;
         }
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
@@ -1937,9 +1932,9 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            ctx.json( new Result( e ) );
+            ctx.json( Result.builder().error( e.getMessage() ).build() );
         }
-        ctx.json( new Result( affectedRows ).setGeneratedQuery( query ) );
+        ctx.json( Result.builder().affectedRows( affectedRows ).generatedQuery( query ).build() );
     }
 
 
@@ -2099,7 +2094,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            ctx.json( new Result( i ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().affectedRows( i ).generatedQuery( query ).build() );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not partition table", e );
             try {
@@ -2107,7 +2102,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            ctx.json( new Result( e ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( query ).build() );
         }
     }
 
@@ -2119,7 +2114,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            ctx.json( new Result( i ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().affectedRows( i ).generatedQuery( query ).build() );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not merge partitions", e );
             try {
@@ -2127,7 +2122,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            ctx.json( new Result( e ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( query ).build() );
         }
     }
 
@@ -2143,7 +2138,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            ctx.json( new Result( i ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().affectedRows( i ).generatedQuery( query ).build() );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not modify partitions", e );
             try {
@@ -2151,7 +2146,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            ctx.json( new Result( e ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( query ).build() );
         }
     }
 
@@ -2161,7 +2156,7 @@ public class Crud implements InformationObserver {
      */
     void getStores( final Context ctx ) {
         ImmutableMap<String, DataStore<?>> stores = AdapterManager.getInstance().getStores();
-        DataStore[] out = stores.values().toArray( new DataStore[0] );
+        DataStore<?>[] out = stores.values().toArray( new DataStore[0] );
         ctx.json( out );
     }
 
@@ -2195,7 +2190,7 @@ public class Crud implements InformationObserver {
      */
     void updateAdapterSettings( final Context ctx ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
-        JsonDeserializer<Adapter> storeDeserializer = ( json, typeOfT, context ) -> {
+        JsonDeserializer<Adapter<?>> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
             String type = jsonObject.get( "type" ).getAsString();
             try {
@@ -2205,7 +2200,7 @@ public class Crud implements InformationObserver {
             }
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
-        Adapter adapter = adapterGson.fromJson( ctx.body(), Adapter.class );
+        Adapter<?> adapter = adapterGson.fromJson( ctx.body(), Adapter.class );
         try {
             if ( adapter instanceof DataStore ) {
                 AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
@@ -2214,7 +2209,7 @@ public class Crud implements InformationObserver {
             }
             Catalog.getInstance().commit();
         } catch ( Throwable t ) {
-            ctx.json( new Result( "Could not update AdapterSettings", t ) );
+            ctx.json( Result.builder().error( "Could not update AdapterSettings: " + t.getMessage() ).build() );
             return;
         }
 
@@ -2226,18 +2221,16 @@ public class Crud implements InformationObserver {
             transaction.createStatement().getQueryProcessor().resetCaches();
             transaction.commit();
         } catch ( TransactionException e ) {
-            if ( transaction != null ) {
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException transactionException ) {
-                    log.error( "Exception while rollback", transactionException );
-                }
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
             }
-            ctx.json( new Result( "Error while resetting caches", e ) );
+            ctx.json( Result.builder().error( "Error while resetting caches: " + e.getMessage() ).build() );
             return;
         }
 
-        ctx.json( new Result( 1 ) );
+        ctx.json( Result.builder().affectedRows( 1 ).build() );
     }
 
 
@@ -2316,7 +2309,7 @@ public class Crud implements InformationObserver {
         try {
             int numRows = executeSqlUpdate( transaction, query );
             transaction.commit();
-            ctx.json( new Result( numRows ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().affectedRows( numRows ).generatedQuery( query ).build() );
         } catch ( Throwable e ) {
             log.error( "Could not deploy data store", e );
             try {
@@ -2324,7 +2317,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException transactionException ) {
                 log.error( "Exception while rollback", transactionException );
             }
-            ctx.json( new Result( e ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( query ).build() );
         }
     }
 
@@ -2380,7 +2373,7 @@ public class Crud implements InformationObserver {
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
-            ctx.json( new Result( a ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().affectedRows( a ).generatedQuery( query ).build() );
         } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not remove store {}", ctx.body(), e );
             try {
@@ -2388,7 +2381,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException transactionException ) {
                 log.error( "Exception while rollback", transactionException );
             }
-            ctx.json( new Result( e ).setGeneratedQuery( query ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( query ).build() );
         }
     }
 
@@ -2417,10 +2410,10 @@ public class Crud implements InformationObserver {
         String generatedQuery = String.format( "ALTER INTERFACES ADD \"%s\" USING '%s' WITH '%s'", request.uniqueName, request.clazzName, gson.toJson( request.currentSettings ) );
         try {
             qim.addQueryInterface( catalog, request.clazzName, request.uniqueName, request.currentSettings );
-            ctx.json( new Result( 1 ).setGeneratedQuery( generatedQuery ) );
+            ctx.json( Result.builder().affectedRows( 1 ).generatedQuery( generatedQuery ).build() );
         } catch ( RuntimeException e ) {
             log.error( "Exception while deploying query interface", e );
-            ctx.json( new Result( e ).setGeneratedQuery( generatedQuery ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( generatedQuery ).build() );
         }
     }
 
@@ -2430,9 +2423,9 @@ public class Crud implements InformationObserver {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         try {
             qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
-            ctx.json( new Result( 1 ) );
+            ctx.json( Result.builder().affectedRows( 1 ).build() );
         } catch ( Exception e ) {
-            ctx.json( new Result( e ) );
+            ctx.json( Result.builder().error( e.getMessage() ).build() );
         }
     }
 
@@ -2443,10 +2436,10 @@ public class Crud implements InformationObserver {
         String generatedQuery = String.format( "ALTER INTERFACES DROP \"%s\"", uniqueName );
         try {
             qim.removeQueryInterface( catalog, uniqueName );
-            ctx.json( new Result( 1 ).setGeneratedQuery( generatedQuery ) );
+            ctx.json( Result.builder().affectedRows( 1 ).generatedQuery( generatedQuery ).build() );
         } catch ( RuntimeException e ) {
             log.error( "Could not remove query interface {}", ctx.body(), e );
-            ctx.json( new Result( e ).setGeneratedQuery( generatedQuery ) );
+            ctx.json( Result.builder().error( e.getMessage() ).generatedQuery( generatedQuery ).build() );
         }
     }
 
@@ -2487,7 +2480,7 @@ public class Crud implements InformationObserver {
                 DbTable table = new DbTable( catalogTable.name, catalog.getSnapshot().getNamespace( catalogTable.namespaceId ).getName(), catalogTable.modifiable, catalogTable.entityType );
 
                 for ( LogicalColumn column : relSnapshot.getColumns( catalogTable.id ) ) {
-                    table.addColumn( new DbColumn( column.name ) );
+                    table.addColumn( DbColumn.builder().name( column.name ).build() );
                 }
 
                 // get primary key with its columns
@@ -2550,10 +2543,10 @@ public class Crud implements InformationObserver {
         try {
             executeSqlUpdate( transaction, sql );
             transaction.commit();
-            result = new Result( 1 ).setGeneratedQuery( sql );
+            result = Result.builder().affectedRows( 1 ).generatedQuery( sql ).build();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while adding a foreign key", e );
-            result = new Result( e ).setGeneratedQuery( sql );
+            result = Result.builder().error( e.getMessage() ).generatedQuery( sql ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -2614,7 +2607,7 @@ public class Crud implements InformationObserver {
             result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
-            return new Result( e );
+            return Result.builder().error( e.getMessage() ).build();
         }
 
         // Wrap {@link AlgNode} into a RelRoot
@@ -2682,8 +2675,8 @@ public class Crud implements InformationObserver {
             } else {
 
                 viewType = "View";
-                List<DataStore> store = null;
-                PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+                List<DataStore<?>> store = null;
+                PlacementType placementType = PlacementType.AUTOMATIC;
 
                 List<String> columns = new ArrayList<>();
                 root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
@@ -2720,7 +2713,7 @@ public class Crud implements InformationObserver {
                 throw new RuntimeException( e );
             }
 
-            return new Result().setGeneratedQuery( "Created " + viewType + " \"" + viewName + "\" from logical query plan" );
+            return Result.builder().generatedQuery( "Created " + viewType + " \"" + viewName + "\" from logical query plan" ).build();
         }
 
         List<List<Object>> rows;
@@ -2728,19 +2721,18 @@ public class Crud implements InformationObserver {
             rows = polyImplementation.getRows( statement, getPageSize(), true, false );
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
-            return new Result( e );
+            return Result.builder().error( e.getMessage() ).build();
         }
 
         DbColumn[] header = new DbColumn[polyImplementation.getRowType().getFieldCount()];
         int counter = 0;
         for ( AlgDataTypeField col : polyImplementation.getRowType().getFieldList() ) {
-            header[counter++] = new DbColumn(
-                    col.getName(),
-                    col.getType().getFullTypeString(),
-                    col.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
-                    col.getType().getPrecision(),
-                    null,
-                    null );
+            header[counter++] = DbColumn.builder()
+                    .name( col.getName() )
+                    .dataType( col.getType()
+                            .getFullTypeString() ).nullable( col.getType()
+                            .isNullable() == (ResultSetMetaData.columnNullable == 1) ).precision( col.getType()
+                            .getPrecision() ).build();
         }
 
         ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
@@ -2757,9 +2749,12 @@ public class Crud implements InformationObserver {
             }
             throw new RuntimeException( e );
         }
-        Result finalResult = new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
-
-        finalResult.setGeneratedQuery( "Execute logical query plan" );
+        Result finalResult = Result.builder()
+                .header( header )
+                .data( data.toArray( new String[0][] ) )
+                .xid( transaction.getXid().toString() )
+                .generatedQuery( "Execute logical query plan" )
+                .build();
 
         if ( queryAnalyzer != null ) {
             InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
@@ -2814,7 +2809,7 @@ public class Crud implements InformationObserver {
             try {
                 int rows = executeSqlUpdate( transaction, query.toString() );
                 transaction.commit();
-                ctx.json( new Result( rows ) );
+                ctx.json( Result.builder().affectedRows( rows ).build() );
             } catch ( QueryExecutionException | TransactionException e ) {
                 log.error( "Caught exception while creating a schema", e );
                 try {
@@ -2822,7 +2817,7 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                ctx.json( new Result( e ) );
+                ctx.json( Result.builder().error( e.getMessage() ).build() );
             }
         }
         // drop schema
@@ -2846,7 +2841,7 @@ public class Crud implements InformationObserver {
             try {
                 int rows = executeSqlUpdate( transaction, query.toString() );
                 transaction.commit();
-                ctx.json( new Result( rows ) );
+                ctx.json( Result.builder().affectedRows( rows ).build() );
             } catch ( TransactionException | QueryExecutionException e ) {
                 log.error( "Caught exception while dropping a schema", e );
                 try {
@@ -2854,10 +2849,10 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                ctx.json( new Result( e ) );
+                ctx.json( Result.builder().error( e.getMessage() ).build() );
             }
         } else {
-            ctx.json( new Result( "Neither the field 'create' nor the field 'drop' was set." ) );
+            ctx.json( Result.builder().error( "Neither the field 'create' nor the field 'drop' was set." ).build() );
         }
     }
 
@@ -2875,7 +2870,7 @@ public class Crud implements InformationObserver {
                 PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
                 transaction.commit();
-                ctx.json( new Result( rowsChanged ) );
+                ctx.json( Result.builder().affectedRows( rowsChanged ).build() );
             } catch ( TransactionException | Exception e ) {
                 log.error( "Caught exception while creating a graph namespace", e );
                 try {
@@ -2883,7 +2878,7 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                ctx.json( new Result( e ) );
+                ctx.json( Result.builder().error( e.getMessage() ).build() );
             }
         } else if ( schema.isDrop() && !schema.isCreate() ) {
             Statement statement = transaction.createStatement();
@@ -2897,7 +2892,7 @@ public class Crud implements InformationObserver {
                 PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
                 transaction.commit();
-                ctx.json( new Result( rowsChanged ) );
+                ctx.json( Result.builder().affectedRows( rowsChanged ).build() );
             } catch ( TransactionException | Exception e ) {
                 log.error( "Caught exception while dropping a graph namespace", e );
                 try {
@@ -2905,10 +2900,10 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                ctx.json( new Result( e ) );
+                ctx.json( Result.builder().error( e.getMessage() ).build() );
             }
         } else {
-            ctx.json( new Result( "Neither the field 'create' nor the field 'drop' was set." ) );
+            ctx.json( Result.builder().error( "Neither the field 'create' nor the field 'drop' was set." ).build() );
         }
     }
 
@@ -3092,12 +3087,12 @@ public class Crud implements InformationObserver {
     /**
      * Execute a select statement with default limit
      */
-    public Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
+    public ResultBuilder<?, ?> executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
         return executeSqlSelect( statement, request, sqlSelect, false, this );
     }
 
 
-    public static Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
+    public static ResultBuilder<?, ?> executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
         PolyImplementation result;
         List<List<Object>> rows;
         boolean hasMoreRows;
@@ -3146,13 +3141,13 @@ public class Crud implements InformationObserver {
                 sort = new SortState();
             }
 
-            DbColumn dbCol = new DbColumn(
-                    metaData.getName(),
-                    metaData.getType().getPolyType().getTypeName(),
-                    metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
-                    metaData.getType().getPrecision(),
-                    sort,
-                    filter );
+            DbColumn dbCol = DbColumn.builder()
+                    .name( metaData.getName() )
+                    .dataType( metaData.getType().getPolyType().getTypeName() )
+                    .nullable( metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
+                    .precision( metaData.getType().getPrecision() )
+                    .sort( sort )
+                    .filter( filter ).build();
 
             // Get column default values
             if ( catalogTable != null ) {
@@ -3168,12 +3163,7 @@ public class Crud implements InformationObserver {
 
         ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-        if ( entityType != null ) {
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.from( "sql" ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
-        } else {
-            //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use EntityType.SOURCE
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.from( "sql" ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
-        }
+        return Result.builder().header( header.toArray( new DbColumn[0] ) ).data( data.toArray( new String[0][] ) ).namespaceType( result.getNamespaceType() ).language( QueryLanguage.from( "sql" ) ).affectedRows( data.size() ).hasMoreRows( hasMoreRows );
     }
 
 
@@ -3425,7 +3415,7 @@ public class Crud implements InformationObserver {
             query += " " + filterTable( request.filter );
         }
         Statement statement = transaction.createStatement();
-        Result result = executeSqlSelect( statement, request, query );
+        Result result = executeSqlSelect( statement, request, query ).build();
         // We expect the result to be in the first column of the first row
         if ( result.getData().length == 0 ) {
             return 0;

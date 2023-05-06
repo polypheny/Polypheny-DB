@@ -16,17 +16,21 @@
 
 package org.polypheny.db.webui.models;
 
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
-@Accessors(chain = true)
-public class FieldDef {
+@Value
+@NonFinal
+@SuperBuilder(toBuilder = true)
+public abstract class GenericResult {
 
-    public String name;
-    @Setter
-    public String physicalName;
-    // for both
-    public String dataType; //varchar/int/etc
-    public String collectionsType;
+    /**
+     * Transaction id, for the websocket. It will not be serialized to gson.
+     */
+    public transient String xid;
+
+    public NamespaceType namespaceType = NamespaceType.RELATIONAL;
 
 }

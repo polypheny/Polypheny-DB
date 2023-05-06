@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Delegate;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -42,9 +41,6 @@ import org.polypheny.db.util.Pair;
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
 public class PolyDocument extends PolyValue implements Map<PolyString, PolyValue> {
-
-    @Getter
-    public BinarySerializer<PolyDocument> serializer = PolyValue.getAbstractBuilder().build( PolyDocument.class );
 
     @Delegate
     @Serialize
@@ -109,7 +105,6 @@ public class PolyDocument extends PolyValue implements Map<PolyString, PolyValue
                 public void encode( BinaryOutput out, PolyDocument item ) {
                     out.writeLong( item.size() );
                     for ( Entry<PolyString, PolyValue> entry : item.entrySet() ) {
-                        out.writeUTF8( entry.getValue().type.getName() );
                         out.writeUTF8( entry.getKey().serialize() );
                         out.writeUTF8( entry.getValue().serialize() );
                     }
@@ -120,17 +115,22 @@ public class PolyDocument extends PolyValue implements Map<PolyString, PolyValue
                 public PolyDocument decode( BinaryInput in ) throws CorruptedDataException {
                     Map<PolyString, PolyValue> map = new HashMap<>();
                     long size = in.readLong();
-
                     for ( long i = 0; i < size; i++ ) {
-                        Class<? extends PolyValue> clazz = PolyValue.classFrom( PolyType.valueOf( in.readUTF8() ) );
-                        map.put( PolySerializable.deserialize( in.readUTF8(), PolyString.class ), PolySerializable.deserialize( in.readUTF8(), clazz ) );
+                        map.put(
+                                PolyValue.deserialize( in.readUTF8() ).asString(),
+                                PolyValue.deserialize( in.readUTF8() ) );
                     }
-
                     return PolyDocument.of( map );
                 }
             };
         }
 
+    }
+
+
+    @Override
+    public String toString() {
+        return "{" + value.entrySet().stream().map( e -> String.format( "%s:%s", e.getKey(), e.getValue() ) ).collect( Collectors.joining( "," ) ) + "}";
     }
 
 }

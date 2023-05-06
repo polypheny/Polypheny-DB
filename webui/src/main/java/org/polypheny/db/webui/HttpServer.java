@@ -202,7 +202,7 @@ public class HttpServer implements Runnable {
 
     private void defaultException( Class<? extends Exception> exceptionClass, Javalin server ) {
         server.exception( exceptionClass, ( e, ctx ) -> {
-            ctx.status( 400 ).json( new Result( e ) );
+            ctx.status( 400 ).json( Result.builder().error( e.getMessage() ).build() );
         } );
     }
 

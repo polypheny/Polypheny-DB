@@ -16,9 +16,9 @@
 
 package org.polypheny.db.type.entity.document;
 
-import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -31,14 +31,11 @@ import org.polypheny.db.type.entity.PolyValue;
 @Value(staticConstructor = "of")
 public class PolyBoolean extends PolyValue {
 
-    @Getter
-    public BinarySerializer<PolyBoolean> serializer = PolyValue.getAbstractBuilder().build( PolyBoolean.class );
-
-
+    @Serialize
     public Boolean value;
 
 
-    public PolyBoolean( Boolean value ) {
+    public PolyBoolean( @Deserialize("value") Boolean value ) {
         super( PolyType.BOOLEAN, true );
         this.value = value;
     }

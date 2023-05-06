@@ -324,7 +324,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         ParameterExpression target = Expressions.parameter( Object[].class );
 
         for ( AlgDataTypeField field : getInput( 0 ).getRowType().getFieldList() ) {
-            UnaryExpression element = Expressions.convert_( Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) ), Object.class );
+            UnaryExpression element = Expressions.convert_( Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) ), String.class );
             Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
                 expressions.add( 0, el );

@@ -24,9 +24,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.util.Objects;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -35,13 +33,10 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
+@EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
 public class PolyString extends PolyValue {
 
-    @Getter
-    @EqualsAndHashCode.Exclude
-    public BinarySerializer<PolyString> serializer = PolyValue.getAbstractBuilder()
-            .build( PolyString.class );
 
     @Serialize
     public String value;
@@ -56,28 +51,6 @@ public class PolyString extends PolyValue {
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyString.class, Expressions.constant( value ) );
-    }
-
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-        if ( !super.equals( o ) ) {
-            return false;
-        }
-        PolyString that = (PolyString) o;
-        return Objects.equals( value, that.value );
-    }
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash( value );
     }
 
 
@@ -117,5 +90,10 @@ public class PolyString extends PolyValue {
 
     }
 
+
+    @Override
+    public String toString() {
+        return "\"" + value + "\"";
+    }
 
 }

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -164,6 +165,7 @@ import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.GenericResult;
 
 public class SqlLanguagePlugin extends PolyPlugin {
 
@@ -200,7 +202,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 transactionManager,
                 userId,
                 databaseId,
-                c ) -> Crud.anySqlQuery( request, session, c ) ) );
+                c ) -> Crud.anySqlQuery( request, session, c ).stream().map( r -> (GenericResult) r ).collect( Collectors.toList() ) ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "sql", List.of( "sql" ), SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
 
         if ( !isInit() ) {

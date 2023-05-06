@@ -26,9 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import lombok.Builder.Default;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryLanguage;
@@ -39,152 +40,107 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 /**
  * Contains data from a query, the titles of the columns and information about the pagination
  */
-@Accessors(chain = true)
-public class Result {
+@EqualsAndHashCode(callSuper = true)
+@SuperBuilder(toBuilder = true)
+@Value
+public class Result extends GenericResult {
 
     /**
      * The header contains information about the columns of a result
      */
-    @Getter
-    @Setter
-    private FieldDef[] header;
+    public FieldDefinition[] header;
     /**
      * The rows containing the fetched data
      */
-    @Getter
-    @Setter
-    private String[][] data;
+    public String[][] data;
     /**
      * Information for the pagination: what current page is being displayed
      */
-    private int currentPage;
+    public int currentPage;
     /**
      * Information for the pagination: how many pages there can be in total
      */
-    private int highestPage;
+    public int highestPage;
 
-    @Getter
-    @Setter
-    private String namespaceName;
+
+    public String namespaceName;
     /**
      * Table from which the data has been fetched
      */
-    private String table;
+    public String table;
     /**
      * List of tables of a schema
      */
-    private String[] tables;
+    public String[] tables;
     /**
      * The request from the UI is being sent back and contains information about which columns are being filtered and which are being sorted
      */
-    private UIRequest request;
+    public UIRequest request;
     /**
      * Error message if a query failed
      */
-    @Getter
-    private String error;
+    public String error;
     /**
      * Exception with additional information
      */
-    private Throwable exception;
+    public Throwable exception;
 
     /**
      * Number of affected rows
      */
-    @Setter
-    private int affectedRows;
+    public int affectedRows;
 
     /**
      * The query that was generated
      */
-    @Setter
-    private String generatedQuery;
+    public String generatedQuery;
 
     /**
      * ExpressionType of the result: if the data is from a table/view/arbitrary query
      */
-    private ResultType type;
+    public ResultType type;
 
     /**
      * schema type of result DOCUMENT/RELATIONAL
      */
-    @Setter
-    private NamespaceType namespaceType = NamespaceType.RELATIONAL;
+    @Default
+    public NamespaceType namespaceType = NamespaceType.RELATIONAL;
 
     /**
      * language type of result MQL/SQL/CQL
      */
-    @Setter
-    private QueryLanguage language = QueryLanguage.from( "sql" );
+    @Default
+    public QueryLanguage language = QueryLanguage.from( "sql" );
 
     /**
      * Indicate that only a subset of the specified query is being displayed.
      */
-    @Setter
-    private boolean hasMoreRows;
+    public boolean hasMoreRows;
 
     /**
      * Explore-by-Example, information about classification, because classification is only possible if a table holds at least 10 entries
      */
-    @Setter
-    private String classificationInfo;
+    public String classificationInfo;
 
     /**
      * Explore-by-Example Explorer Id for
      */
-    @Setter
-    private int explorerId;
+    public int explorerId;
 
     /**
      * Pagination for Explore-by-Example, Information if it includes classified data
      */
-    @Setter
-    private boolean includesClassificationInfo;
+    public boolean includesClassificationInfo;
 
     /**
      * Pagination for Explore-by-Example, to display the classified Data with the addition of true/false
      */
-    @Setter
-    private String[][] classifiedData;
+    public String[][] classifiedData;
 
     /**
      * Explore-by-Example, Information if the weka classifier is translated to sql or not
      */
-    @Setter
-    private boolean isConvertedToSql;
-
-    /**
-     * Transaction id, for the websocket. It will not be serialized to gson.
-     */
-    @Getter
-    @Setter
-    private transient String xid;
-
-
-    /**
-     * Build a Result object containing the data from the ResultSet, including the headers of the columns
-     *
-     * @param header columns of the result
-     * @param data data of the result
-     */
-    public Result( final FieldDef[] header, final String[][] data ) {
-        this.header = header;
-        this.data = data;
-    }
-
-
-    /**
-     * Build a Result object containing the data from the ResultSet, including the headers of the columns
-     *
-     * @param header columns of the result
-     * @param data data of the result
-     */
-    public Result( final DbColumn[] header, final String[][] data, NamespaceType namespaceType, QueryLanguage language ) {
-        this.header = header;
-        this.data = data;
-        this.namespaceType = namespaceType;
-        this.language = language;
-    }
+    public boolean isConvertedToSql;
 
 
     /**
@@ -193,91 +149,93 @@ public class Result {
      *
      * @param in the reader, which contains the Result
      */
-    private Result( JsonReader in ) throws IOException {
+    private static Result create( JsonReader in ) throws IOException {
+        ResultBuilder<?, ?> builder = Result.builder();
         while ( in.peek() != JsonToken.END_OBJECT ) {
             switch ( in.nextName() ) {
                 case "header":
                     in.beginArray();
-                    TypeAdapter<DbColumn> serializer = DbColumn.getSerializer();
+                    TypeAdapter<DbColumn> serializer = DbColumn.serializer;
                     List<DbColumn> cols = new ArrayList<>();
                     while ( in.peek() != JsonToken.END_ARRAY ) {
                         cols.add( serializer.read( in ) );
                     }
                     in.endArray();
-                    header = cols.toArray( new DbColumn[0] );
+                    builder.header( cols.toArray( new DbColumn[0] ) );
                     break;
                 case "data":
-                    data = extractNestedArray( in );
+                    builder.data( extractNestedArray( in ) );
                     break;
                 case "currentPage":
-                    currentPage = in.nextInt();
+                    builder.currentPage( in.nextInt() );
                     break;
                 case "highestPage":
-                    highestPage = in.nextInt();
+                    builder.highestPage( in.nextInt() );
                     break;
                 case "table":
-                    table = in.nextString();
+                    builder.table( in.nextString() );
                     break;
                 case "tables":
-                    tables = extractArray( in ).toArray( new String[0] );
+                    builder.tables( extractArray( in ).toArray( new String[0] ) );
                     break;
                 case "request":
-                    request = UIRequest.getSerializer().read( in );
+                    builder.request( UIRequest.getSerializer().read( in ) );
                     break;
                 case "error":
-                    error = in.nextString();
+                    builder.error( in.nextString() );
                     break;
                 case "exception":
-                    exception = HttpServer.throwableTypeAdapter.read( in );
+                    builder.exception( HttpServer.throwableTypeAdapter.read( in ) );
                     break;
                 case "affectedRows":
-                    affectedRows = in.nextInt();
+                    builder.affectedRows( in.nextInt() );
                     break;
                 case "generatedQuery":
-                    generatedQuery = in.nextString();
+                    builder.generatedQuery( in.nextString() );
                     break;
                 case "type":
-                    type = extractEnum( in, ResultType::valueOf );
+                    builder.type( extractEnum( in, ResultType::valueOf ) );
                     break;
                 case "namespaceType":
-                    namespaceType = extractEnum( in, NamespaceType::valueOf );
+                    builder.namespaceType( extractEnum( in, NamespaceType::valueOf ) );
                     break;
                 case "namespaceName":
-                    namespaceName = in.nextString();
+                    builder.namespaceName( in.nextString() );
                     break;
                 case "language":
-                    language = QueryLanguage.getSerializer().read( in );
+                    builder.language( QueryLanguage.getSerializer().read( in ) );
                     break;
                 case "hasMoreRows":
-                    hasMoreRows = in.nextBoolean();
+                    builder.hasMoreRows( in.nextBoolean() );
                     break;
                 case "classificationInfo":
-                    classificationInfo = in.nextString();
+                    builder.classificationInfo( in.nextString() );
                     break;
                 case "explorerId":
-                    explorerId = in.nextInt();
+                    builder.explorerId( in.nextInt() );
                     break;
                 case "includesClassificationInfo":
-                    includesClassificationInfo = in.nextBoolean();
+                    builder.includesClassificationInfo( in.nextBoolean() );
                     break;
                 case "classifiedData":
-                    classifiedData = extractNestedArray( in );
+                    builder.classifiedData( extractNestedArray( in ) );
                     break;
                 case "isConvertedToSql":
-                    isConvertedToSql = in.nextBoolean();
+                    builder.isConvertedToSql( in.nextBoolean() );
                     break;
                 case "xid":
-                    xid = in.nextString();
+                    builder.xid( in.nextString() );
                     break;
                 default:
                     throw new RuntimeException( "There was an unrecognized column while deserializing Result." );
             }
         }
+        return builder.build();
 
     }
 
 
-    private String[][] extractNestedArray( JsonReader in ) throws IOException {
+    private static String[][] extractNestedArray( JsonReader in ) throws IOException {
         if ( in.peek() == JsonToken.NULL ) {
             in.nextNull();
             return null;
@@ -306,7 +264,7 @@ public class Result {
 
 
     @NotNull
-    private List<String> extractArray( JsonReader in ) throws IOException {
+    private static List<String> extractArray( JsonReader in ) throws IOException {
         if ( in.peek() == JsonToken.NULL ) {
             in.nextNull();
             return new ArrayList<>();
@@ -328,7 +286,7 @@ public class Result {
     }
 
 
-    private <T extends Enum<?>> T extractEnum( JsonReader in, Function<String, T> enumFunction ) throws IOException {
+    private static <T extends Enum<?>> T extractEnum( JsonReader in, Function<String, T> enumFunction ) throws IOException {
         if ( in.peek() == JsonToken.NULL ) {
             in.nextNull();
             return null;
@@ -338,86 +296,9 @@ public class Result {
     }
 
 
-    /**
-     * Build a Result object containing the error message of a failed query
-     *
-     * @param error error message of the query
-     */
-    public Result( String error ) {
-        this.error = error;
-    }
-
-
-    /**
-     * Build a Result object containing the error message of a failed query
-     *
-     * @param e exception
-     */
-    public Result( Throwable e ) {
-        this.exception = e;
-        if ( e.getMessage() != null ) {
-            this.error = e.getMessage();
-        } else {
-            this.error = e.getClass().getSimpleName();
-        }
-    }
-
-
-    public Result( String errorMessage, Throwable e ) {
-        this.exception = e;
-        this.error = errorMessage;
-    }
-
-
-    public Result() {
-        //intentionally empty
-    }
-
-
-    public Result( int affectedRows ) {
-        this.affectedRows = affectedRows;
-    }
-
-
     public String toJson() {
         Gson gson = new Gson();
         return gson.toJson( this );
-    }
-
-
-    public Result setCurrentPage( final int page ) {
-        this.currentPage = page;
-        return this;
-    }
-
-
-    public Result setHighestPage( final int highestPage ) {
-        this.highestPage = highestPage;
-        return this;
-    }
-
-
-    public Result setTable( String table ) {
-        this.table = table;
-        return this;
-    }
-
-
-    public Result setType( ResultType type ) {
-        this.type = type;
-        return this;
-    }
-
-
-    public Result setError( String error ) {
-        this.error = error;
-        return this;
-    }
-
-
-    public Result setTables( ArrayList<String> tables ) {
-        this.tables = tables.toArray( new String[0] );
-        return this;
     }
 
 
@@ -486,10 +367,12 @@ public class Result {
                     return;
                 }
                 out.beginArray();
-                TypeAdapter<DbColumn> dbSerializer = DbColumn.getSerializer();
-                for ( FieldDef column : result.getHeader() ) {
+
+                for ( FieldDefinition column : result.getHeader() ) {
                     if ( column instanceof DbColumn ) {
-                        dbSerializer.write( out, (DbColumn) column );
+                        DbColumn.serializer.write( out, (DbColumn) column );
+                    } else {
+                        FieldDefinition.serializer.write( out, column );
                     }
                 }
                 out.endArray();
@@ -538,7 +421,7 @@ public class Result {
                     return null;
                 }
                 in.beginObject();
-                Result res = new Result( in );
+                Result res = Result.create( in );
                 in.endObject();
                 return res;
             }

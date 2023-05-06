@@ -45,6 +45,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.GenericResult;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
@@ -88,7 +89,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<Result> anyMongoQuery(
+    public static List<GenericResult> anyMongoQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -106,7 +107,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         InformationManager queryAnalyzer = LanguageCrud.attachAnalyzerIfSpecified( request, crud, transaction );
 
-        List<Result> results = new ArrayList<>();
+        List<GenericResult> results = new ArrayList<>();
 
         String[] mqls = request.query.trim().split( "\\n(?=(use|db.|show))" );
 
@@ -142,7 +143,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
                 if ( parsed.getFamily() == Family.DDL ) {
                     mqlProcessor.prepareDdl( statement, parsed, parameters );
-                    Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                    Result result = Result.builder().affectedRows( 1 ).generatedQuery( query ).xid( transaction.getXid().toString() ).namespaceType( NamespaceType.DOCUMENT ).build();
                     results.add( result );
                 } else {
                     if ( transaction.isAnalyze() ) {
@@ -159,7 +160,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, noLimit ).setNamespaceType( NamespaceType.DOCUMENT ) );
+                    results.add( LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, noLimit ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }

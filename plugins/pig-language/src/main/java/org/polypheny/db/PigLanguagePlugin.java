@@ -38,6 +38,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.GenericResult;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
@@ -71,7 +72,7 @@ public class PigLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<Result> anyPigQuery(
+    public static List<GenericResult> anyPigQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -124,7 +125,7 @@ public class PigLanguagePlugin extends PolyPlugin {
 
             PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
-            Result result = LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, request.noLimit );
+            GenericResult result = LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, request.noLimit );
 
             String commitStatus;
             try {
@@ -148,7 +149,7 @@ public class PigLanguagePlugin extends PolyPlugin {
 
             return Collections.singletonList( result );
         } catch ( Throwable t ) {
-            return Collections.singletonList( new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() ) );
+            return Collections.singletonList( Result.builder().error( t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
         }
     }
 

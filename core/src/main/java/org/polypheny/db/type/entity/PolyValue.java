@@ -16,9 +16,16 @@
 
 package org.polypheny.db.type.entity;
 
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SerializerBuilder;
+import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.commons.lang.NotImplementedException;
@@ -34,8 +41,13 @@ import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.document.PolyString.PolyStringSerializerDef;
 
 @Value
+@EqualsAndHashCode
 @NonFinal
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
+
+    @NonFinal
+    @EqualsAndHashCode.Exclude
+    public BinarySerializer<PolyValue> serializer = PolyValue.getAbstractBuilder( true ).build( PolyValue.class );
 
     @Serialize
     public boolean nullable;
@@ -43,10 +55,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyType type;
 
 
-    public static SerializerBuilder getAbstractBuilder() {
-        return PolySerializable.builder.get()
-                .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
-                .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() );
+    public static SerializerBuilder getAbstractBuilder( boolean withValue ) {
+        SerializerBuilder builder = PolySerializable.builder.get()
+                .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
+                .with( PolyString.class, ctx -> new PolyStringSerializerDef() );
+        if ( true ) {
+            return builder.with( PolyValue.class, ctx -> new PolyValueSerializerDef() );
+        }
+        return builder;
     }
 
 
@@ -174,6 +190,38 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public static PolyValue deserialize( String json ) {
+        return PolySerializable.deserialize( json, PolyValue.class );
+    }
+
+
+    public static PolyValue deserialize( PolyType type, String json ) {
+        switch ( type ) {
+            case BOOLEAN:
+                return PolySerializable.deserialize( json, getAbstractBuilder( true ).build( PolyBoolean.class ) );
+            case VARCHAR:
+                return PolySerializable.deserialize( json, getAbstractBuilder( true ).build( PolyString.class ) );
+            case DOCUMENT:
+                return PolySerializable.deserialize( json, getAbstractBuilder( true ).build( PolyDocument.class ) );
+        }
+        throw new NotImplementedException();
+    }
+
+
+    public static String serialize( PolyValue value ) {
+        switch ( value.type ) {
+            case BOOLEAN:
+                return PolySerializable.serialize( getAbstractBuilder( true ).build( PolyBoolean.class ), (PolyBoolean) value );
+            case VARCHAR:
+                return PolySerializable.serialize( getAbstractBuilder( true ).build( PolyString.class ), (PolyString) value );
+            case DOCUMENT:
+                return PolySerializable.serialize( getAbstractBuilder( true ).build( PolyDocument.class ), (PolyDocument) value );
+        }
+
+        throw new NotImplementedException();
+    }
+
+
     public boolean isSameType( PolyValue value ) {
         return type == value.type;
     }
@@ -241,6 +289,28 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyString) this;
         }
         return null;
+    }
+
+
+    public static class PolyValueSerializerDef extends SimpleSerializerDef<PolyValue> {
+
+        @Override
+        protected BinarySerializer<PolyValue> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyValue item ) {
+                    out.writeUTF8( item.type.getTypeName() );
+                    out.writeUTF8( PolyValue.serialize( item ) );
+                }
+
+
+                @Override
+                public PolyValue decode( BinaryInput in ) throws CorruptedDataException {
+                    return PolyValue.deserialize( PolyType.valueOf( in.readUTF8() ), in.readUTF8() );
+                }
+            };
+        }
+
     }
 
 

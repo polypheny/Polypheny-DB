@@ -17,7 +17,6 @@
 package org.polypheny.db.type.entity.document;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
-import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.Arrays;
@@ -38,6 +37,7 @@ import org.polypheny.db.util.Pair;
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class PolyList extends PolyValue implements List<PolyValue> {
+
 
     @Delegate
     @Serialize
@@ -80,11 +80,6 @@ public class PolyList extends PolyValue implements List<PolyValue> {
         return 0;
     }
 
-
-    @Override
-    public <T extends PolySerializable> BinarySerializer<T> getSerializer() {
-        return null;
-    }
 
 
     @Override

@@ -63,7 +63,7 @@ public class PolyImplementation {
     public final AlgDataType rowType;
     private final long maxRowCount = -1;
     private final Kind kind;
-    private Bindable bindable;
+    private Bindable<Object> bindable;
     private final NamespaceType namespaceType;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
@@ -369,7 +369,7 @@ public class PolyImplementation {
     }
 
 
-    public List<List<Object>> getDocRows( Statement statement, boolean noLimit ) {
+    public List<Object> getDocRows( Statement statement, boolean noLimit ) {
         cursorFactory = CursorFactory.OBJECT;
         Function<Object, List<Object>> transformer;
         if ( cursorFactory == CursorFactory.ARRAY ) {
@@ -382,7 +382,7 @@ public class PolyImplementation {
             throw new RuntimeException( "Error for result format" );
         }
 
-        Iterator iterator = createIterator( bindable, statement, true );
+        Iterator<Object> iterator = createIterator( bindable, statement, true );
 
         final Iterable<Object> iterable = () -> iterator;
 

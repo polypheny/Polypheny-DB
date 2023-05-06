@@ -54,7 +54,7 @@ import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.GenericResult;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
 public class HttpInterfacePlugin extends PolyPlugin {
@@ -175,7 +175,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
             String sessionId = ctx.req.getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
 
-            List<Result> results = LanguageCrud.anyQuery(
+            List<GenericResult> results = LanguageCrud.anyQuery(
                     language,
                     null,
                     query,
@@ -183,14 +183,14 @@ public class HttpInterfacePlugin extends PolyPlugin {
                     Catalog.defaultUserId,
                     Catalog.defaultNamespaceId,
                     null );
-            ctx.json( results.toArray( new Result[0] ) );
+            ctx.json( results.toArray( new GenericResult[0] ) );
 
             if ( !statementCounters.containsKey( language ) ) {
                 statementCounters.put( language, new AtomicLong() );
             }
             statementCounters.get( language ).incrementAndGet();
             // is empty from cleanupOldInfoAndFiles
-            sessionXids.put( sessionId, results.stream().map( Result::getXid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
+            sessionXids.put( sessionId, results.stream().map( t -> t.xid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
         }
 
 

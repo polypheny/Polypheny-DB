@@ -16,9 +16,7 @@
 
 package org.polypheny.db.type.entity.document;
 
-import io.activej.serializer.BinarySerializer;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -32,9 +30,6 @@ import org.polypheny.db.type.entity.PolyValue;
 public class PolyInteger extends PolyValue {
 
     public Integer value;
-
-    @Getter
-    public BinarySerializer<PolyInteger> serializer = PolyValue.getAbstractBuilder().build( PolyInteger.class );
 
 
     public PolyInteger( Integer value ) {

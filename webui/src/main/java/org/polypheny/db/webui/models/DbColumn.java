@@ -22,18 +22,23 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import lombok.Setter;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 
 /**
  * Information about a column of a table for the header of a table in the UI
  */
 @Accessors(chain = true)
-public class DbColumn extends FieldDef {
+@SuperBuilder
+public class DbColumn extends FieldDefinition {
 
     // for the Data-Table in the UI
     public SortState sort;
     public String filter;
+    @Setter
+    public String physicalName;
 
     // for editing columns
     public boolean primary;
@@ -43,134 +48,65 @@ public class DbColumn extends FieldDef {
     public String defaultValue;
     public Integer dimension;
     public Integer cardinality;
+    public String collectionsType;
 
     //for data source columns
     public String as;
 
 
-    public DbColumn( final String name ) {
-        this.name = name;
-    }
-
-
-    public DbColumn(
-            final String name,
-            final String dataType,
-            final boolean nullable,
-            final Integer precision,
-            final SortState sort,
-            final String filter ) {
-        this.name = name;
-        this.dataType = dataType;
-        this.nullable = nullable;
-        if ( dataType.equals( "varchar" ) ) {
-            this.precision = precision;
-        }
-        this.sort = sort;
-        this.filter = filter;
-    }
-
-
-    public DbColumn(
-            final String name,
-            final String dataType,
-            final String collectionsType,
-            final boolean nullable,
-            final Integer precision,
-            final Integer scale,
-            final Integer dimension,
-            final Integer cardinality,
-            final boolean primary,
-            final String defaultValue ) {
-        this.name = name;
-        this.dataType = dataType;
-        this.collectionsType = collectionsType;
-        this.nullable = nullable;
-        this.precision = precision;
-        this.scale = scale;
-        this.dimension = dimension;
-        this.cardinality = cardinality;
-        this.primary = primary;
-        this.defaultValue = defaultValue;
-    }
-
-
-    public DbColumn(
-            final String name,
-            final String dataType,
-            final String collectionsType,
-            final boolean nullable,
-            final Integer precision,
-            final Integer scale,
-            final Integer dimension,
-            final Integer cardinality,
-            final boolean primary,
-            final String defaultValue,
-            final SortState sort,
-            final String filter
-    ) {
-        this( name, dataType, collectionsType, nullable, precision, scale, dimension, cardinality, primary, defaultValue );
-        this.sort = sort;
-        this.filter = filter;
-    }
-
-
-    private DbColumn( JsonReader in ) throws IOException {
+    private static DbColumn create( JsonReader in ) throws IOException {
+        DbColumnBuilder<?, ?> builder = DbColumn.builder();
         while ( in.peek() != JsonToken.END_OBJECT ) {
             switch ( in.nextName() ) {
                 case "name":
-                    name = in.nextString();
+                    builder.name( in.nextString() );
                     break;
                 case "physicalName":
-                    physicalName = in.nextString();
+                    builder.physicalName( in.nextString() );
                     break;
                 case "dataType":
-                    dataType = in.nextString();
+                    builder.dataType( in.nextString() );
                     break;
                 case "collectionsType":
-                    collectionsType = in.nextString();
+                    builder.collectionsType( in.nextString() );
                     break;
                 case "nullable":
-                    nullable = in.nextBoolean();
+                    builder.nullable( in.nextBoolean() );
                     break;
                 case "precision":
-                    precision = handleInteger( in );
+                    builder.precision( handleInteger( in ) );
                     break;
                 case "scale":
-                    scale = handleInteger( in );
+                    builder.scale( handleInteger( in ) );
                     break;
                 case "dimension":
-                    dimension = handleInteger( in );
+                    builder.dimension( handleInteger( in ) );
                     break;
                 case "cardinality":
-                    cardinality = handleInteger( in );
+                    builder.cardinality( handleInteger( in ) );
                     break;
                 case "primary":
-                    primary = in.nextBoolean();
+                    builder.primary( in.nextBoolean() );
                     break;
                 case "defaultValue":
-                    defaultValue = in.nextString();
+                    builder.defaultValue( in.nextString() );
                     break;
                 case "sort":
-                    sort = SortState.getSerializer().read( in );
+                    builder.sort( SortState.getSerializer().read( in ) );
                     break;
                 case "filter":
-                    filter = in.nextString();
+                    builder.filter( in.nextString() );
                     break;
                 default:
                     throw new RuntimeException( "There was an unrecognized column while deserializing DbColumn." );
             }
         }
+        return builder.build();
+
     }
 
 
-    @Override
-    public DbColumn setPhysicalName( String physicalName ) {
-        return (DbColumn) super.setPhysicalName( physicalName );
-    }
-
-
-    private Integer handleInteger( JsonReader in ) throws IOException {
+    private static Integer handleInteger( JsonReader in ) throws IOException {
         if ( in.peek() == JsonToken.NULL ) {
             in.nextNull();
             return null;
@@ -180,54 +116,53 @@ public class DbColumn extends FieldDef {
     }
 
 
-    public static TypeAdapter<DbColumn> getSerializer() {
-        return new TypeAdapter<>() {
-            @Override
-            public void write( JsonWriter out, DbColumn col ) throws IOException {
-                out.beginObject();
-                out.name( "name" );
-                out.value( col.name );
-                out.name( "physicalName" );
-                out.value( col.physicalName );
-                out.name( "dataType" );
-                out.value( col.dataType );
-                out.name( "collectionsType" );
-                out.value( col.collectionsType );
-                out.name( "nullable" );
-                out.value( col.nullable );
-                out.name( "precision" );
-                out.value( col.precision );
-                out.name( "scale" );
-                out.value( col.scale );
-                out.name( "dimension" );
-                out.value( col.dimension );
-                out.name( "cardinality" );
-                out.value( col.cardinality );
-                out.name( "primary" );
-                out.value( col.primary );
-                out.name( "defaultValue" );
-                out.value( col.defaultValue );
-                out.name( "sort" );
-                SortState.getSerializer().write( out, col.sort );
-                out.name( "filter" );
-                out.value( col.filter );
-                out.endObject();
+    public static TypeAdapter<DbColumn> serializer = new TypeAdapter<>() {
+        @Override
+        public void write( JsonWriter out, DbColumn col ) throws IOException {
+            out.beginObject();
+            out.name( "name" );
+            out.value( col.name );
+            out.name( "physicalName" );
+            out.value( col.physicalName );
+            out.name( "dataType" );
+            out.value( col.dataType );
+            out.name( "collectionsType" );
+            out.value( col.collectionsType );
+            out.name( "nullable" );
+            out.value( col.nullable );
+            out.name( "precision" );
+            out.value( col.precision );
+            out.name( "scale" );
+            out.value( col.scale );
+            out.name( "dimension" );
+            out.value( col.dimension );
+            out.name( "cardinality" );
+            out.value( col.cardinality );
+            out.name( "primary" );
+            out.value( col.primary );
+            out.name( "defaultValue" );
+            out.value( col.defaultValue );
+            out.name( "sort" );
+            SortState.getSerializer().write( out, col.sort );
+            out.name( "filter" );
+            out.value( col.filter );
+            out.endObject();
+        }
+
+
+        @Override
+        public DbColumn read( JsonReader in ) throws IOException {
+            if ( in.peek() == null ) {
+                in.nextNull();
+                return null;
             }
+            in.beginObject();
+            DbColumn column = DbColumn.create( in );
+            in.endObject();
 
+            return column;
+        }
 
-            @Override
-            public DbColumn read( JsonReader in ) throws IOException {
-                if ( in.peek() == null ) {
-                    in.nextNull();
-                    return null;
-                }
-                in.beginObject();
-                DbColumn column = new DbColumn( in );
-                in.endObject();
-
-                return column;
-            }
-        };
-    }
+    };
 
 }

@@ -42,8 +42,19 @@ public interface PolySerializable {
         return new String( buffer, 0, i );
     }
 
+    static <T> String serialize( BinarySerializer<T> serializer, T item ) {
+        byte[] buffer = new byte[2000];
+        int i = serializer.encode( buffer, 0, item );
+        return new String( buffer, 0, i );
+    }
+
+
     static <T extends PolySerializable> T deserialize( String serialized, Class<T> clazz ) {
         return PolySerializable.deserialize( serialized.getBytes( StandardCharsets.UTF_8 ), clazz );
+    }
+
+    static <T extends PolySerializable> T deserialize( String serialized, BinarySerializer<T> serializer ) {
+        return serializer.decode( serialized.getBytes( StandardCharsets.UTF_8 ), 0 );
     }
 
     static <T extends PolySerializable> T deserialize( byte[] serialized, Class<T> clazz ) {
@@ -53,12 +64,12 @@ public interface PolySerializable {
     static <T extends PolySerializable> String serialize( T document, Class<T> clazz ) {
         byte[] buffer = new byte[2000];
         int i = getOrAdd( clazz ).encode( buffer, 0, document );
-        return new String( buffer, 0, i );
+        return new String( buffer, StandardCharsets.UTF_8 );
     }
 
 
     static <T> BinarySerializer<T> getOrAdd( Class<T> clazz ) {
-        return (BinarySerializer<T>) cache.computeIfAbsent( clazz, k -> PolyValue.getAbstractBuilder().build( k ) );
+        return (BinarySerializer<T>) cache.computeIfAbsent( clazz, k -> PolyValue.getAbstractBuilder( false ).build( k ) );
     }
 
 

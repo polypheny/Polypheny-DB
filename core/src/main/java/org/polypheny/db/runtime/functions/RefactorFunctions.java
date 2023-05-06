@@ -23,7 +23,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonElement;
 import org.bson.BsonNull;
 import org.bson.BsonString;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyString;
@@ -68,17 +67,17 @@ public class RefactorFunctions {
     }
 
 
-    public static PolyDocument toDocument( Object json ) {
-        return PolySerializable.deserialize( (String) json, PolyDocument.class );
+    public static PolyValue toDocument( String json ) {
+        return PolyValue.deserialize( json );
     }
 
 
-    public static PolyDocument mergeDocuments( PolyDocument target, Pair<String, PolyValue>... additional ) {
+    public static PolyDocument mergeDocuments( PolyValue target, Pair<String, PolyValue>... additional ) {
         for ( Pair<String, PolyValue> pair : additional ) {
-            target.put( new PolyString( pair.left ), pair.right );
+            target.asDocument().put( new PolyString( pair.left ), pair.right );
         }
 
-        return target;
+        return target.asDocument();
     }
 
 }
