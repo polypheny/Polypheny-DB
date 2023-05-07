@@ -1888,7 +1888,6 @@ public class DdlManagerImpl extends DdlManager {
                                 catalogTable.getNamespaceType() ) );
             }
         }
-
     }
 
 
