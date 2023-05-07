@@ -1879,11 +1879,16 @@ public class DdlManagerImpl extends DdlManager {
     private void checkModelLangCompatibility( QueryLanguage language, Long tableId ) {
         CatalogTable catalogTable = catalog.getTable( tableId );
         if ( catalogTable.getNamespaceType() != language.getNamespaceType() ) {
-            throw new RuntimeException(
-                    String.format(
-                            "The used language cannot execute schema changing queries on this entity with the data model %s.",
-                            catalogTable.getNamespaceType() ) );
+            //Enable creating a view in a document namespace using the SQL query language
+            if(language.getNamespaceType().toString()!="RELATIONAL"|| catalogTable.getNamespaceType().toString()!="DOCUMENT")
+            {
+                throw new RuntimeException(
+                        String.format(
+                                "The used language cannot execute schema changing queries on this entity with the data model %s.",
+                                catalogTable.getNamespaceType() ) );
+            }
         }
+
     }
 
 
