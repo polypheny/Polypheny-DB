@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.DocResult;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Category({ AdapterTestSuite.class, CassandraExcluded.class }) // cassandra can only compare primary key equality, but for streamer each key has to be compared
@@ -161,12 +161,13 @@ public class DdlTest extends MqlTestTemplate {
 
             execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, "hsqldb" ) );
 
-            Result result = find( "{}", "{}" );
+            DocResult result = find( "{}", "{}" );
 
             assertTrue(
-                    MongoConnection.checkResultSet(
+                    MongoConnection.checkDocResultSet(
                             result,
-                            ImmutableList.of( new Object[]{ DATA } ), true ) );
+                            ImmutableList.of( DATA ), true,
+                            false ) );
 
 
         } finally {

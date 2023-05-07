@@ -26,13 +26,13 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.enumerable.EnumUtils;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.tools.ExpressionTransformable;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.util.Pair;
 
 

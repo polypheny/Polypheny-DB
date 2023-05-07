@@ -50,9 +50,9 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
 
     @Test
     public void simpleFindTest() {
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL ), GRAPH_NAME ),
-                ImmutableList.of( new String[]{ "{\"key\":\"3\"}" } ), true );
+                ImmutableList.of( "{\"key\":\"3\"}" ), true, true );
     }
 
 
@@ -60,17 +60,17 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     public void simpleFindUppercaseTest() {
         CypherTestTemplate.execute( format( "CREATE (n:%s {key: 5})", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
 
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL.toUpperCase() ), GRAPH_NAME ),
-                ImmutableList.of( new String[]{ "{\"key\":\"5\"}" } ), true );
+                ImmutableList.of( "{\"key\":\"5\"}" ), true, true );
     }
 
 
     @Test
     public void simpleProjectTest() {
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({},{\"key\":1})", DATA_LABEL ), GRAPH_NAME ),
-                ImmutableList.of( new String[]{ "3" } ), false );
+                ImmutableList.of( "3" ), false, true );
     }
 
 

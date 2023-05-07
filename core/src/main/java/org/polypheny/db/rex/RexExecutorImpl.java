@@ -46,10 +46,10 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
@@ -166,7 +166,7 @@ public class RexExecutorImpl implements RexExecutor {
 
 
     /**
-     * Implementation of {@link org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter} that reads the values of input fields by calling
+     * Implementation of {@link RexToLixTranslator.InputGetter} that reads the values of input fields by calling
      * <code>{@link DataContext#get}("inputRecord")</code>.
      */
     private static class DataContextInputGetter implements InputGetter {

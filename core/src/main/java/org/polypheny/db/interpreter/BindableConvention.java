@@ -34,6 +34,7 @@
 package org.polypheny.db.interpreter;
 
 
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
@@ -45,7 +46,7 @@ import org.polypheny.db.plan.ConventionTraitDef;
 /**
  * Calling convention that returns results as an {@link org.apache.calcite.linq4j.Enumerable} of object arrays.
  *
- * The relational expression needs to implement {@link org.polypheny.db.runtime.ArrayBindable}. Unlike {@link org.polypheny.db.adapter.enumerable.EnumerableConvention}, no code generation is required.
+ * The relational expression needs to implement {@link org.polypheny.db.runtime.ArrayBindable}. Unlike {@link EnumerableConvention}, no code generation is required.
  */
 public enum BindableConvention implements Convention {
     INSTANCE;

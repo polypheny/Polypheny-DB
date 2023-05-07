@@ -59,15 +59,6 @@ import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.adapter.enumerable.EnumerableAlg;
-import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
-import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
-import org.polypheny.db.adapter.enumerable.EnumerableCalc;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
-import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.adapter.enumerable.EnumerableTableModifyToStreamerRule;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -75,6 +66,15 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.algebra.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableCalc;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -188,9 +188,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
-                    EnumerableTableModifyToStreamerRule.REL_INSTANCE,
-                    EnumerableTableModifyToStreamerRule.DOC_INSTANCE,
-                    EnumerableTableModifyToStreamerRule.GRAPH_INSTANCE,
+                    EnumerableModifyToStreamerRule.REL_INSTANCE,
+                    EnumerableModifyToStreamerRule.DOC_INSTANCE,
+                    EnumerableModifyToStreamerRule.GRAPH_INSTANCE,
                     EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
                     EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -205,7 +205,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
-                    EnumerableRules.ENUMERABLE_DOC_VALUES,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
@@ -215,7 +215,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
-                    EnumerableRules.ENUMERABLE_DOCUMENT_TRANSFORMER_RULE
+                    EnumerableRules.ENUMERABLE_DOCUMENT_PROJECT_RULE,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_FILTER_RULE
             );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
@@ -618,7 +619,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
                 @Override
-                public Bindable getBindable( CursorFactory cursorFactory ) {
+                public Bindable<?> getBindable( CursorFactory cursorFactory ) {
                     return bindable;
                 }
 
@@ -644,7 +645,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        public Bindable getBindable( final CursorFactory cursorFactory ) {
+        public Bindable<?> getBindable( final CursorFactory cursorFactory ) {
             final String explanation = getCode();
             return dataContext -> {
                 switch ( cursorFactory.style ) {

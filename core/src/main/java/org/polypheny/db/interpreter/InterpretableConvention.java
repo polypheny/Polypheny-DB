@@ -34,7 +34,7 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;

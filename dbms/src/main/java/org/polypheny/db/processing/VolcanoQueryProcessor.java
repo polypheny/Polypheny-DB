@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
-import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.adapter.enumerable.EnumerableTableModifyToStreamerRule;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
@@ -96,13 +96,13 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_MODIFY_COLLECT_RULE,
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
-                    EnumerableTableModifyToStreamerRule.REL_INSTANCE,
-                    EnumerableTableModifyToStreamerRule.DOC_INSTANCE,
-                    EnumerableTableModifyToStreamerRule.GRAPH_INSTANCE,
+                    EnumerableModifyToStreamerRule.REL_INSTANCE,
+                    EnumerableModifyToStreamerRule.DOC_INSTANCE,
+                    EnumerableModifyToStreamerRule.GRAPH_INSTANCE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
-                    EnumerableRules.ENUMERABLE_DOC_VALUES,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
@@ -110,7 +110,8 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE,
-                    EnumerableRules.ENUMERABLE_DOCUMENT_TRANSFORMER_RULE );
+                    EnumerableRules.ENUMERABLE_DOCUMENT_PROJECT_RULE,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_FILTER_RULE );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(

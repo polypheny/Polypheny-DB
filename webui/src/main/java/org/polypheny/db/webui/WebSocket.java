@@ -116,7 +116,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 QueryRequest queryRequest = ctx.messageAsClass( QueryRequest.class );
                 QueryLanguage language = QueryLanguage.from( queryRequest.language );
 
-                List<GenericResult> results = LanguageCrud.anyQuery(
+                List<GenericResult<?>> results = LanguageCrud.anyQuery(
                         language,
                         ctx.session,
                         queryRequest,
@@ -125,12 +125,12 @@ public class WebSocket implements Consumer<WsConfig> {
                         crud.getDatabaseId(),
                         crud );
 
-                for ( GenericResult result : results ) {
+                for ( GenericResult<?> result : results ) {
                     if ( !(result instanceof Result) ) {
                         continue;
                     }
-                    if ( ((Result) result).xid != null ) {
-                        xIds.add( ((Result) result).xid );
+                    if ( result.xid != null ) {
+                        xIds.add( result.xid );
                     }
                 }
                 ctx.send( results );
@@ -138,7 +138,7 @@ public class WebSocket implements Consumer<WsConfig> {
 
             case "RelAlgRequest":
             case "TableRequest":
-                GenericResult result = null;
+                GenericResult<?> result = null;
                 if ( request.requestType.equals( "RelAlgRequest" ) ) {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {

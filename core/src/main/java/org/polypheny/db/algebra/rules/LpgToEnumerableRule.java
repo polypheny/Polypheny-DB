@@ -16,16 +16,16 @@
 
 package org.polypheny.db.algebra.rules;
 
-import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableFilter;
-import org.polypheny.db.adapter.enumerable.EnumerableLimit;
-import org.polypheny.db.adapter.enumerable.EnumerableProject;
-import org.polypheny.db.adapter.enumerable.EnumerableSort;
-import org.polypheny.db.adapter.enumerable.EnumerableValues;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.EnumerableFilter;
+import org.polypheny.db.algebra.enumerable.EnumerableLimit;
+import org.polypheny.db.algebra.enumerable.EnumerableProject;
+import org.polypheny.db.algebra.enumerable.EnumerableSort;
+import org.polypheny.db.algebra.enumerable.EnumerableValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;

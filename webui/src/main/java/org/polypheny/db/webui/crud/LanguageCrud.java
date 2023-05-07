@@ -73,7 +73,7 @@ public class LanguageCrud {
     @Getter
     private static Crud crud;
 
-    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<GenericResult>>> REGISTER = new HashMap<>();
+    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<GenericResult<?>>>> REGISTER = new HashMap<>();
 
 
     public LanguageCrud( Crud crud ) {
@@ -81,7 +81,7 @@ public class LanguageCrud {
     }
 
 
-    public static List<GenericResult> anyQuery(
+    public static List<GenericResult<?>> anyQuery(
             QueryLanguage language,
             Session session,
             QueryRequest request,
@@ -94,7 +94,7 @@ public class LanguageCrud {
     }
 
 
-    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<GenericResult> results, long executionTime ) {
+    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<GenericResult<?>> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
         String commitStatus;
         try {
@@ -138,9 +138,9 @@ public class LanguageCrud {
 
         ExtendedQueryParameters parameters = new ExtendedQueryParameters( databaseName );
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
-        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+        PolyImplementation<PolyGraph> polyImplementation = (PolyImplementation<PolyGraph>) statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
-        List<List<Object>> res = polyImplementation.getRows( statement, 1 );
+        List<List<PolyGraph>> res = polyImplementation.getRows( statement, 1 );
 
         try {
             statement.getTransaction().commit();
@@ -148,7 +148,7 @@ public class LanguageCrud {
             throw new RuntimeException( "Error while committing graph retrieval query." );
         }
 
-        return (PolyGraph) res.get( 0 ).get( 0 );
+        return res.get( 0 ).get( 0 );
     }
 
 
@@ -157,7 +157,7 @@ public class LanguageCrud {
     }
 
 
-    public static void attachError( Transaction transaction, List<GenericResult> results, String query, Throwable t ) {
+    public static void attachError( Transaction transaction, List<GenericResult<?>> results, String query, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
         Result result = Result.builder().error( t == null ? null : t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build();
 
@@ -174,14 +174,14 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static GenericResult getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, final boolean noLimit ) {
+    public static <T> GenericResult<?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation<T> implementation, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         if ( language == QueryLanguage.from( "mql" ) ) {
             return getDocResult( statement, request, query, implementation, transaction, noLimit );
         }
 
-        List<List<Object>> rows = implementation.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        List<List<T>> rows = implementation.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
 
         boolean hasMoreRows = implementation.hasMoreRows();
 
@@ -236,9 +236,9 @@ public class LanguageCrud {
     }
 
 
-    private static DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
+    private static <T> DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation<T> implementation, Transaction transaction, boolean noLimit ) {
 
-        List<Object> data = implementation.getDocRows( statement, noLimit );
+        List<T> data = implementation.getDocRows( statement, noLimit );
 
         return DocResult.builder()
                 .data( data.stream().map( Object::toString ).toArray( String[]::new ) )
@@ -272,7 +272,7 @@ public class LanguageCrud {
         EditCollectionRequest request = ctx.bodyAsClass( EditCollectionRequest.class );
         Transaction transaction = crud.getTransaction();
 
-        String query = String.format( "db.createPhysicalCollection(%s)", request.collection );
+        String query = String.format( "db.createCollection(%s)", request.collection );
 
         Result result;
         try {
@@ -286,7 +286,7 @@ public class LanguageCrud {
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
-                log.error( "Could not rollback createPhysicalCollection statement: {}", ex.getMessage(), ex );
+                log.error( "Could not rollback createCollection statement: {}", ex.getMessage(), ex );
             }
         }
         ctx.json( result );
@@ -334,12 +334,11 @@ public class LanguageCrud {
         EntityType type = EntityType.ENTITY;
         Placement p = new Placement( false, List.of(), EntityType.ENTITY );
         if ( type == EntityType.VIEW ) {
-
             return p;
         } else {
             List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( graph.id );
             for ( CatalogDataPlacement placement : placements ) {
-                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 p.addAdapter( new Placement.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
@@ -385,7 +384,7 @@ public class LanguageCrud {
         List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( collection.id );
 
         for ( AllocationEntity allocation : allocs ) {
-            Adapter adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId );
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId );
             p.addAdapter( new DocumentStore(
                     adapter.getUniqueName(),
                     adapter.getUniqueName(),
@@ -405,7 +404,7 @@ public class LanguageCrud {
                     Long,
                     Long,
                     Crud,
-                    List<GenericResult>> function ) {
+                    List<GenericResult<?>>> function ) {
         REGISTER.put( language, function );
     }
 

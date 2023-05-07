@@ -37,6 +37,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -47,6 +48,7 @@ import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -54,6 +56,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.DocResult;
 import org.polypheny.db.webui.models.Result;
 
 
@@ -205,7 +209,7 @@ public class TestHelper {
                         }
 
                     } else {
-                        List resultList = (List) row[j];
+                        List<?> resultList = (List<?>) row[j];
                         Object[] expectedArray = (Object[]) expectedRow[j];
                         if ( expectedArray == null ) {
                             Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", resultList );
@@ -311,55 +315,23 @@ public class TestHelper {
         }
 
 
-        public static boolean checkResultSet( Result result, List<Object[]> expected, boolean containsId ) {
-            assertEquals( expected.size(), result.getData().length );
-
-            int j = 0;
-            for ( String[] data : result.getData() ) {
-                int i = 0;
-                for ( String entry : data ) {
-                    if ( containsId && !entry.contains( DocumentType.DOCUMENT_ID ) ) {
-                        return false;
-                    }
-
-                    if ( entry != null && expected.get( j )[i] != null ) {
-                        if ( containsId && result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
-                            BsonDocument doc = BsonDocument.parse( entry );
-                            doc.remove( DocumentType.DOCUMENT_ID );
-
-                            assertEquals( BsonDocument.parse( ((String) expected.get( j )[i]) ), doc );
-                        } else {
-                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
-                        }
-                    } else {
-                        assertEquals( expected.get( j )[i], entry );
-                    }
-                    i++;
-                }
-                j++;
-            }
-
-            return true;
-        }
-
-
-        public static Result executeGetResponse( String mongoQl ) {
+        public static DocResult executeGetResponse( String mongoQl ) {
             return executeGetResponse( mongoQl, MONGO_DB );
         }
 
 
-        public static Result executeGetResponse( String mongoQl, String database ) {
+        public static DocResult executeGetResponse( String mongoQl, String database ) {
             return getBody( execute( MONGO_PREFIX, mongoQl, database ) );
         }
 
 
-        private static Result getBody( HttpResponse<String> res ) {
+        private static DocResult getBody( HttpResponse<String> res ) {
             try {
-                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                DocResult[] result = gson.fromJson( res.getBody(), DocResult[].class );
                 if ( result.length == 1 ) {
-                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                    return gson.fromJson( res.getBody(), DocResult[].class )[0];
                 } else if ( result.length == 0 ) {
-                    return Result.builder().build();
+                    return DocResult.builder().build();
                 }
                 fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );
@@ -372,74 +344,56 @@ public class TestHelper {
         }
 
 
-        public static boolean checkUnorderedResultSet( Result result, List<String[]> expected, boolean excludeId ) {
+        public static boolean checkDocResultSet( DocResult result, List<String> expected, boolean excludeId, boolean unordered ) {
             if ( result.getData() == null ) {
-                fail( result.getError() );
+                fail( result.error );
             }
             assertEquals( expected.size(), result.getData().length );
 
-            List<List<String>> parsedResults = new ArrayList<>();
+            List<BsonValue> parsedResults = new ArrayList<>();
 
-            for ( String[] data : result.getData() ) {
-                int i = 0;
-                List<String> row = new ArrayList<>();
-                for ( String entry : data ) {
-                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                        BsonDocument doc = tryGetBson( result, i, entry );
-                        if ( doc != null ) {
-                            if ( excludeId && result.getHeader()[i].name.equals( "d" ) ) {
-                                doc.remove( "_id" );
-                            }
-                            row.add( doc.toJson().replace( " ", "" ) );
-                            i++;
-                            continue;
-                        }
+            for ( String data : result.getData() ) {
 
-                        if ( entry != null ) {
-                            row.add( entry.replace( " ", "" ) );
-                        } else {
-                            row.add( null );
-                        }
+                BsonDocument doc = tryGetBson( data );
+                if ( doc != null ) {
+
+                    if ( excludeId && !doc.containsKey( DocumentType.DOCUMENT_ID ) ) {
+                        fail();
+                        throw new RuntimeException( "Should contain _id field." );
                     }
-                    i++;
+                    doc.remove( "_id" );
                 }
-                parsedResults.add( row );
+                parsedResults.add( doc );
             }
-            List<List<String>> parsedExpected = new ArrayList<>();
+            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? BsonDocument.parse( e ) : null ).collect( Collectors.toList() );
 
-            expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
+            if ( unordered ) {
+                assertTrue( "Expected result does not contain all actual results", parsedExpected.containsAll( parsedResults ) );
+                assertTrue( "Actual result does not contain all expected results", parsedResults.containsAll( parsedExpected ) );
+            } else {
+                List<Pair<BsonValue, BsonValue>> wrong = new ArrayList<>();
+                for ( Pair<BsonValue, BsonValue> pair : Pair.zip( parsedExpected, parsedResults ) ) {
+                    if ( !Objects.equals( pair.left, pair.right ) ) {
+                        wrong.add( pair );
+                    }
+                }
 
-            List<List<String>> finalExpected = parsedExpected
-                    .stream()
-                    .map(
-                            list -> list
-                                    .stream()
-                                    .map( e -> {
-                                        if ( e != null ) {
-                                            return e.replace( " ", "" );
-                                        } else {
-                                            return null;
-                                        }
-                                    } )
-                                    .collect( Collectors.toList() ) )
-                    .collect( Collectors.toList() );
+                assertTrue( "Expected and actual result do not contain the same element or order: \n"
+                        + "expected: " + wrong.stream().map( p -> p.left.toString()
+                        + " != "
+                        + "actual: " + (p.right == null ? null : p.right.toString()) ).collect( Collectors.joining( ", \n" ) ), wrong.isEmpty() );
+            }
 
-            assertTrue( "Expected result does not contain all actual results", finalExpected.containsAll( parsedResults ) );
-            assertTrue( "Actual result does not contain all expected results", parsedResults.containsAll( finalExpected ) );
             return true;
         }
 
 
-        private static BsonDocument tryGetBson( Result result, int i, String entry ) {
+        private static BsonDocument tryGetBson( String entry ) {
             BsonDocument doc = null;
-            if ( result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
+            try {
                 doc = BsonDocument.parse( entry );
-            } else if ( result.getHeader()[i].dataType.toLowerCase().contains( "any" ) ) {
-                try {
-                    doc = BsonDocument.parse( entry );
-                } catch ( Exception e ) {
-                    // empty on purpose
-                }
+            } catch ( Exception e ) {
+                // empty on purpose
             }
 
             return doc;
@@ -448,6 +402,16 @@ public class TestHelper {
 
         public static String toDoc( String key, Object value ) {
             return String.format( "{\"%s\": %s}", key, value );
+        }
+
+
+        public static List<String> arrayToDoc( List<Object[]> values, String... names ) {
+            List<String> docs = new ArrayList<>();
+            for ( Object[] doc : values ) {
+                docs.add( "{" + Pair.zip( Arrays.asList( names ), Arrays.asList( doc ) ).stream().map( p -> p.left + ":" + ((p.right != null ? "\"" + p.right + "\"" : null)) ).collect( Collectors.joining( "," ) ) + "}" );
+            }
+            return docs;
+
         }
 
     }

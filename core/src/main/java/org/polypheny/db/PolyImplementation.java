@@ -20,8 +20,6 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -58,12 +56,12 @@ import org.polypheny.db.util.LimitIterator;
 
 
 @Getter
-public class PolyImplementation {
+public class PolyImplementation<T> {
 
     public final AlgDataType rowType;
     private final long maxRowCount = -1;
     private final Kind kind;
-    private Bindable<Object> bindable;
+    private Bindable<T> bindable;
     private final NamespaceType namespaceType;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
@@ -112,7 +110,7 @@ public class PolyImplementation {
     }
 
 
-    public Enumerable<Object> enumerable( DataContext dataContext ) {
+    public Enumerable<T> enumerable( DataContext dataContext ) {
         return enumerable( getBindable(), dataContext );
     }
 
@@ -147,7 +145,7 @@ public class PolyImplementation {
     }
 
 
-    public Bindable<Object> getBindable() {
+    public Bindable<T> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
             return null;
         }
@@ -155,7 +153,7 @@ public class PolyImplementation {
         if ( bindable != null ) {
             return bindable;
         }
-        bindable = preparedResult.getBindable( getCursorFactory() );
+        bindable = (Bindable<T>) preparedResult.getBindable( getCursorFactory() );
         return bindable;
     }
 
@@ -189,31 +187,32 @@ public class PolyImplementation {
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size ) {
+    public List<List<T>> getRows( Statement statement, int size ) {
         return getRows( statement, size, false, false );
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
+    public List<List<T>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
         return getRows( statement, size, isTimed, isAnalyzed, null, false );
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent, boolean isIndex ) {
-        Iterator<Object> iterator = null;
+    public List<List<T>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent, boolean isIndex ) {
+        Iterator<T> iterator = null;
         StopWatch stopWatch = null;
         try {
             iterator = createIterator( getBindable(), statement, isAnalyzed );
-            List<List<Object>> res;
+            List<List<T>> res;
 
             if ( isTimed ) {
                 stopWatch = new StopWatch();
                 stopWatch.start();
             }
             if ( size != -1 ) {
-                res = MetaImpl.collect( cursorFactory, LimitIterator.of( iterator, size ), new ArrayList<>() );
+                res = MetaImpl.collect( cursorFactory, (Iterator<Object>) LimitIterator.of( iterator, size ), new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
             } else {
-                res = MetaImpl.collect( cursorFactory, iterator, new ArrayList<>() );
+                res = (List<List<T>>) MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator, new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
+                ;
             }
             this.hasMoreRows = iterator.hasNext();
             if ( isTimed ) {
@@ -252,11 +251,11 @@ public class PolyImplementation {
     }
 
 
-    private static Iterator<Object> createIterator( Bindable<Object> bindable, Statement statement, boolean isAnalyzed ) {
+    private static <T> Iterator<T> createIterator( Bindable<T> bindable, Statement statement, boolean isAnalyzed ) {
         if ( isAnalyzed ) {
             statement.getOverviewDuration().start( "Execution" );
         }
-        final Enumerable<Object> enumerable = enumerable( bindable, statement.getDataContext() );
+        final Enumerable<T> enumerable = enumerable( bindable, statement.getDataContext() );
         if ( isAnalyzed ) {
             statement.getOverviewDuration().stop( "Execution" );
         }
@@ -369,22 +368,14 @@ public class PolyImplementation {
     }
 
 
-    public List<Object> getDocRows( Statement statement, boolean noLimit ) {
+    public List<T> getDocRows( Statement statement, boolean noLimit ) {
         cursorFactory = CursorFactory.OBJECT;
-        Function<Object, List<Object>> transformer;
-        if ( cursorFactory == CursorFactory.ARRAY ) {
-            bindable = preparedResult.getBindable( CursorFactory.ARRAY );
-            transformer = o -> Arrays.asList( (Object[]) o );
-        } else if ( cursorFactory == CursorFactory.OBJECT || Kind.DML.contains( kind ) ) {
-            bindable = preparedResult.getBindable( CursorFactory.OBJECT );
-            transformer = Collections::singletonList;
-        } else {
-            throw new RuntimeException( "Error for result format" );
-        }
+        Function<Object, T> transformer = o -> (T) o;
+        bindable = (Bindable<T>) preparedResult.getBindable( CursorFactory.OBJECT );
 
-        Iterator<Object> iterator = createIterator( bindable, statement, true );
+        Iterator<T> iterator = createIterator( bindable, statement, true );
 
-        final Iterable<Object> iterable = () -> iterator;
+        final Iterable<T> iterable = () -> iterator;
 
         return StreamSupport
                 .stream( iterable.spliterator(), false )

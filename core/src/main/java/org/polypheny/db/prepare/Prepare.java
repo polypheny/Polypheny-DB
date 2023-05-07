@@ -392,7 +392,7 @@ public abstract class Prepare {
          * @param cursorFactory How to map values into a cursor
          * @return producer of rows resulting from execution
          */
-        Bindable getBindable( Meta.CursorFactory cursorFactory );
+        Bindable<?> getBindable( Meta.CursorFactory cursorFactory );
 
     }
 

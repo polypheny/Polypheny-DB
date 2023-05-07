@@ -61,20 +61,19 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.codehaus.commons.compiler.ISimpleCompiler;
-import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
-import org.polypheny.db.adapter.enumerable.EnumerableBatchIterator;
-import org.polypheny.db.adapter.enumerable.EnumerableConditionalExecute;
-import org.polypheny.db.adapter.enumerable.EnumerableDocumentTransformer;
-import org.polypheny.db.adapter.enumerable.EnumerableFilter;
-import org.polypheny.db.adapter.enumerable.EnumerableJoin;
-import org.polypheny.db.adapter.enumerable.EnumerableModifyCollect;
-import org.polypheny.db.adapter.enumerable.EnumerableProject;
-import org.polypheny.db.adapter.enumerable.EnumerableScan;
-import org.polypheny.db.adapter.enumerable.EnumerableTransformer;
-import org.polypheny.db.adapter.enumerable.EnumerableUnwind;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
+import org.polypheny.db.algebra.enumerable.EnumerableBatchIterator;
+import org.polypheny.db.algebra.enumerable.EnumerableConditionalExecute;
+import org.polypheny.db.algebra.enumerable.EnumerableFilter;
+import org.polypheny.db.algebra.enumerable.EnumerableJoin;
+import org.polypheny.db.algebra.enumerable.EnumerableModifyCollect;
+import org.polypheny.db.algebra.enumerable.EnumerableProject;
+import org.polypheny.db.algebra.enumerable.EnumerableScan;
+import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
+import org.polypheny.db.algebra.enumerable.EnumerableUnwind;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
@@ -107,8 +106,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
@@ -221,8 +220,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         EnumerableTransformer.class,
                         EnumerableBatchIterator.class,
                         EnumerableConditionalExecute.class,
-                        EnumerableModifyCollect.class,
-                        EnumerableDocumentTransformer.class ) );
+                        EnumerableModifyCollect.class ) );
     }
 
 

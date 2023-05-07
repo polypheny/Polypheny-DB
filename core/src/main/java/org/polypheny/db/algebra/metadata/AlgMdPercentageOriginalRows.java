@@ -36,11 +36,11 @@ package org.polypheny.db.algebra.metadata;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.util.BuiltInMethod;
 

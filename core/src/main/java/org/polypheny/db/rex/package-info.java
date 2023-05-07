@@ -7,7 +7,7 @@
  * A {@link org.polypheny.db.languages.NodeToAlgConverter} converts an SQL parse tree consisting of {@link org.polypheny.db.interpreter.Node} objects into a relational expression ({@link org.polypheny.db.algebra.AlgNode}).
  * Several kinds of nodes in this tree have row expressions ({@link org.polypheny.db.rex.RexNode}).
  *
- * After the relational expression has been optimized, a {@link org.polypheny.db.adapter.enumerable.JavaAlgImplementor} converts it into to a plan. If the plan is a Java parse tree, row-expressions are
+ * After the relational expression has been optimized, a {@link org.polypheny.db.algebra.enumerable.JavaAlgImplementor} converts it into to a plan. If the plan is a Java parse tree, row-expressions are
  * translated into equivalent Java expressions.
  *
  * <h2>Expressions</h2>

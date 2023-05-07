@@ -34,16 +34,18 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.adapter.enumerable.AggImplementor;
-import org.polypheny.db.adapter.enumerable.StrictWinAggImplementor;
+import org.polypheny.db.algebra.enumerable.AggImplementor;
+import org.polypheny.db.algebra.enumerable.StrictAggImplementor;
+import org.polypheny.db.algebra.enumerable.StrictWinAggImplementor;
+import org.polypheny.db.algebra.enumerable.WinAggImplementor;
 
 
 /**
  * Function that can be translated to java code.
  *
  * @see AggImplementor
- * @see org.polypheny.db.adapter.enumerable.WinAggImplementor
- * @see org.polypheny.db.adapter.enumerable.StrictAggImplementor
+ * @see WinAggImplementor
+ * @see StrictAggImplementor
  * @see StrictWinAggImplementor
  */
 public interface ImplementableAggFunction extends AggregateFunction {

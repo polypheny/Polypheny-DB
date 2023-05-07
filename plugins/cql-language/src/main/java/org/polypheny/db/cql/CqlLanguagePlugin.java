@@ -75,7 +75,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<GenericResult> processCqlRequest(
+    public static List<GenericResult<?>> processCqlRequest(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -129,12 +129,12 @@ public class CqlLanguagePlugin extends PolyPlugin {
                 statement.getOverviewDuration().start( "Translation" );
             }
 
-            PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyImplementation<?> polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Execution" );
             }
-            GenericResult result = LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, request.noLimit );
+            GenericResult<?> result = LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, request.noLimit );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Execution" );
             }

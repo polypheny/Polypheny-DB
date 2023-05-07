@@ -20,9 +20,8 @@ import static java.lang.String.format;
 import static org.polypheny.db.mql.MqlTestTemplate.execute;
 
 import com.google.common.collect.ImmutableList;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,6 +36,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
 
     private static final String FULL_TABLE_NAME = format( "%s.%s", SCHEMA_NAME, TABLE_NAME );
 
+    private static final String[] ROW_IDS = new String[]{ "id", "name", "foo" };
 
     private static final List<Object[]> DATA = ImmutableList.of(
             new Object[]{ 1, "Hans", 5 },
@@ -46,6 +46,20 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
             new Object[]{ 5, "Rebecca", 3 },
             new Object[]{ 6, "Georg", 9 }
     );
+
+
+    private static List<String> asDocument( int... indexes ) {
+        List<String> docs = new ArrayList<>();
+        for ( Object[] row : DATA ) {
+            List<String> doc = new ArrayList<>();
+            for ( int index : indexes ) {
+                doc.add( ROW_IDS[index] + ":" + row[index] );
+            }
+            docs.add( "{" + String.join( ",", doc ) + "}" );
+        }
+
+        return docs;
+    }
 
 
     @BeforeClass
@@ -88,27 +102,30 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
 
     @Test
     public void simpleFindTest() {
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( String.format( "db.%s.find({})", TABLE_NAME ), SCHEMA_NAME ),
-                DATA.stream().map( r -> Arrays.stream( r ).map( Object::toString ).toArray( String[]::new ) ).collect( Collectors.toList() ),
+                asDocument( 1, 2, 3 ),
+                true,
                 true );
     }
 
 
     @Test
     public void simpleProjectTest() {
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( String.format( "db.%s.find({},{id: 1})", TABLE_NAME ), SCHEMA_NAME ),
-                DATA.stream().map( r -> new String[]{ r[0].toString() } ).collect( Collectors.toList() ),
+                asDocument( 1 ),
+                true,
                 true );
     }
 
 
     @Test
     public void simpleFilterTest() {
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( String.format( "db.%s.find({id: 1},{})", TABLE_NAME ), SCHEMA_NAME ),
-                List.of( new String[][]{ Arrays.stream( DATA.get( 0 ) ).map( Object::toString ).toArray( String[]::new ) } ),
+                List.of( asDocument( 1, 2, 3 ).get( 0 ) ),
+                true,
                 true );
     }
 

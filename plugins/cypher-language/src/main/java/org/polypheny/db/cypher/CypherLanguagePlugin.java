@@ -78,7 +78,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<GenericResult> anyCypherQuery(
+    public static List<GenericResult<?>> anyCypherQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -91,7 +91,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Cypher" );
         AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.from( NAME ) );
 
-        List<GenericResult> results = new ArrayList<>();
+        List<GenericResult<?>> results = new ArrayList<>();
 
         InformationManager queryAnalyzer = null;
         long executionTime = 0;
@@ -142,7 +142,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
                     }
 
                     // Prepare
-                    PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+                    PolyImplementation<?> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );

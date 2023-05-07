@@ -175,7 +175,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
             String sessionId = ctx.req.getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
 
-            List<GenericResult> results = LanguageCrud.anyQuery(
+            List<GenericResult<?>> results = LanguageCrud.anyQuery(
                     language,
                     null,
                     query,

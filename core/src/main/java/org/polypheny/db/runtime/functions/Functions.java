@@ -101,7 +101,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaRowFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;

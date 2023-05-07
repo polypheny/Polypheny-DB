@@ -23,7 +23,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.DocResult;
 
 
 /**
@@ -49,7 +49,7 @@ public class MqlTestTemplate {
 
 
     public static void createCollection( String collection, String database ) {
-        MongoConnection.executeGetResponse( String.format( "db.createPhysicalCollection( %s )", collection ), database );
+        MongoConnection.executeGetResponse( String.format( "db.createCollection( %s )", collection ), database );
     }
 
 
@@ -64,12 +64,12 @@ public class MqlTestTemplate {
     }
 
 
-    public static Result execute( String doc ) {
+    public static DocResult execute( String doc ) {
         return MongoConnection.executeGetResponse( doc );
     }
 
 
-    public static Result execute( String doc, String database ) {
+    public static DocResult execute( String doc, String database ) {
         return MongoConnection.executeGetResponse( doc, database );
     }
 
@@ -189,22 +189,22 @@ public class MqlTestTemplate {
     }
 
 
-    protected Result find( String query, String project ) {
+    protected DocResult find( String query, String project ) {
         return find( query, project, database );
     }
 
 
-    protected Result find( String query, String project, String db ) {
+    protected DocResult find( String query, String project, String db ) {
         return MongoConnection.executeGetResponse( "db." + db + ".find(" + query + "," + project + ")" );
     }
 
 
-    protected Result aggregate( String... stages ) {
+    protected DocResult aggregate( String... stages ) {
         return aggregate( database, Arrays.asList( stages ) );
     }
 
 
-    protected Result aggregate( String db, List<String> stages ) {
+    protected DocResult aggregate( String db, List<String> stages ) {
         return MongoConnection.executeGetResponse( "db." + db + ".aggregate([" + String.join( ",", stages ) + "])" );
     }
 

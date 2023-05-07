@@ -28,7 +28,7 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.DocResult;
 
 @Category({ AdapterTestSuite.class, CassandraExcluded.class, FileExcluded.class }) // todo fix error with filter in file
 public class UnsupportedDmlTest extends MqlTestTemplate {
@@ -38,13 +38,15 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
         insert( "{\"hi\":3,\"stock\":3}" );
 
         MongoConnection.executeGetResponse( "db.test.update({ \"hi\": 3 },{\"$inc\": {\"stock\": 2}})" );
-        Result res = find( "{}", "{}" );
+        DocResult res = find( "{}", "{}" );
         System.out.println( Arrays.deepToString( res.getData() ) );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         res,
-                        ImmutableList.of( new String[]{ "{\"hi\":3,\"stock\":5}" } ), true ) );
+                        ImmutableList.of( "{\"hi\":3,\"stock\":5}" ),
+                        true,
+                        true ) );
     }
 
 
@@ -54,16 +56,17 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
         insert( "{\"hi\":5,\"stock\":3}" );
 
         MongoConnection.executeGetResponse( "db.test.update({ \"hi\": 3 },{\"$inc\": {\"stock\": 3}})" );
-        Result res = find( "{}", "{}" );
-        System.out.println( Arrays.deepToString( res.getData() ) );
+        DocResult res = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         res,
                         ImmutableList.of(
-                                new String[]{ "{\"hi\":3,\"stock\":6}" },
-                                new String[]{ "{\"hi\":5,\"stock\":3}" }
-                        ), true ) );
+                                "{\"hi\":3,\"stock\":6}",
+                                "{\"hi\":5,\"stock\":3}"
+                        ),
+                        true,
+                        true ) );
     }
 
 
@@ -74,16 +77,17 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
         insert( "{\"hi\":5,\"stock\":3}" );
 
         MongoConnection.executeGetResponse( "db.test.update({ \"hi\": 3 },{\"$inc\": {\"stock\": -3}})" );
-        Result res = find( "{}", "{}" );
-        System.out.println( Arrays.deepToString( res.getData() ) );
+        DocResult res = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet( res,
+                MongoConnection.checkDocResultSet( res,
                         ImmutableList.of(
-                                new String[]{ "{\"hi\":3,\"stock\":0}" },
-                                new String[]{ "{\"hi\":3,\"stock\":29}" },
-                                new String[]{ "{\"hi\":5,\"stock\":3}" }
-                        ), true ) );
+                                "{\"hi\":3,\"stock\":0}",
+                                "{\"hi\":3,\"stock\":29}",
+                                "{\"hi\":5,\"stock\":3}"
+                        ),
+                        true,
+                        true ) );
 
     }
 
@@ -95,8 +99,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
         insert( "{\"hi\":5,\"stock\":3}" );
 
         MongoConnection.executeGetResponse( "db.test.deleteOne({ \"hi\": 3 })" );
-        Result res = find( "{}", "{}" );
-        System.out.println( Arrays.deepToString( res.getData() ) );
+        DocResult res = find( "{}", "{}" );
 
         assertEquals( 2, res.getData().length );
 
@@ -110,8 +113,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
         insert( "{\"hi\":5,\"stock\":3}" );
 
         MongoConnection.executeGetResponse( "db.test.deleteMany({ \"hi\": 3 })" );
-        Result res = find( "{}", "{}" );
-        System.out.println( Arrays.deepToString( res.getData() ) );
+        DocResult res = find( "{}", "{}" );
 
         assertEquals( 1, res.getData().length );
 

@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.metadata;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.enumerable.EnumerableLimit;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -50,6 +49,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.EnumerableLimit;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;

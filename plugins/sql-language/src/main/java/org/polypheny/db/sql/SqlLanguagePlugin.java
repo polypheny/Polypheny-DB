@@ -202,7 +202,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 transactionManager,
                 userId,
                 databaseId,
-                c ) -> Crud.anySqlQuery( request, session, c ).stream().map( r -> (GenericResult) r ).collect( Collectors.toList() ) ) );
+                c ) -> Crud.anySqlQuery( request, session, c ).stream().map( r -> (GenericResult<?>) r ).collect( Collectors.toList() ) ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "sql", List.of( "sql" ), SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
 
         if ( !isInit() ) {

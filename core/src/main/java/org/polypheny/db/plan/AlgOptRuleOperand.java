@@ -38,6 +38,8 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 
 
@@ -50,8 +52,14 @@ import org.polypheny.db.algebra.AlgNode;
  */
 public class AlgOptRuleOperand {
 
+    @Getter
+    @Setter
     private AlgOptRuleOperand parent;
+
+    @Getter
+    @Setter
     private AlgOptRule rule;
+
     private final Predicate<AlgNode> predicate;
 
     // REVIEW jvs: some of these are Volcano-specific and should be factored out
@@ -101,45 +109,6 @@ public class AlgOptRuleOperand {
         }
     }
 
-
-    /**
-     * Returns the parent operand.
-     *
-     * @return parent operand
-     */
-    public AlgOptRuleOperand getParent() {
-        return parent;
-    }
-
-
-    /**
-     * Sets the parent operand.
-     *
-     * @param parent Parent operand
-     */
-    public void setParent( AlgOptRuleOperand parent ) {
-        this.parent = parent;
-    }
-
-
-    /**
-     * Returns the rule this operand belongs to.
-     *
-     * @return containing rule
-     */
-    public AlgOptRule getRule() {
-        return rule;
-    }
-
-
-    /**
-     * Sets the rule this operand belongs to
-     *
-     * @param rule containing rule
-     */
-    public void setRule( AlgOptRule rule ) {
-        this.rule = rule;
-    }
 
 
     public int hashCode() {

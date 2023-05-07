@@ -334,7 +334,7 @@ public abstract class BaseRouter implements Router {
                     ModelTrait.DOCUMENT,
                     ModelTrait.RELATIONAL,
                     rowType,
-                    true, false ) );
+                    true ) );
             node = builder.build();
         }
 
@@ -405,7 +405,7 @@ public abstract class BaseRouter implements Router {
         Builder infoBuilder = cluster.getTypeFactory().builder();
         infoBuilder.add( "g", null, PolyType.GRAPH );
 
-        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, infoBuilder.build(), true, false );
+        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, infoBuilder.build(), true );
     }
 
 
@@ -424,7 +424,7 @@ public abstract class BaseRouter implements Router {
         Builder infoBuilder = cluster.getTypeFactory().builder();
         infoBuilder.add( "g", null, PolyType.GRAPH );
 
-        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, infoBuilder.build(), true, false );
+        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, infoBuilder.build(), true );
     }
 
 
@@ -537,7 +537,7 @@ public abstract class BaseRouter implements Router {
         CatalogEntity subTable = getSubstitutionTable( statement, node.entity.id, columns.get( 0 ).id, adapterId );
         builder.scan( subTable );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( subTable.getRowType().getFieldList().get( 1 ).getType(), 1 ) );
-        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false, false ) );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false ) );
         return builder;
     }
 
@@ -547,7 +547,7 @@ public abstract class BaseRouter implements Router {
         builder.lpgScan( alg.entity.id );
         builder.lpgMatch( List.of( builder.lpgNodeMatch( List.of( alg.entity.name ) ) ), List.of( "n" ) );
         AlgNode unrouted = builder.build();
-        builder.push( new LogicalTransformer( builder.getCluster(), List.of( routeGraph( builder, (AlgNode & LpgAlg) unrouted, statement ) ), null, ModelTrait.GRAPH, ModelTrait.DOCUMENT, alg.getRowType(), true, false ) );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( routeGraph( builder, (AlgNode & LpgAlg) unrouted, statement ) ), null, ModelTrait.GRAPH, ModelTrait.DOCUMENT, alg.getRowType(), true ) );
         return builder;
     }
 

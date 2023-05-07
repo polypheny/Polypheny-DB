@@ -17,7 +17,7 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.adapter.enumerable.CallImplementor;
+import org.polypheny.db.algebra.enumerable.CallImplementor;
 
 
 /**

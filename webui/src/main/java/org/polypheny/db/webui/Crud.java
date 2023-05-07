@@ -567,7 +567,7 @@ public class Crud implements InformationObserver {
         if ( primaryCounter > 0 ) {
             colJoiner.add( primaryKeys.toString() );
         }
-        query.append( colJoiner.toString() );
+        query.append( colJoiner );
         query.append( ")" );
         if ( request.store != null && !request.store.equals( "" ) ) {
             query.append( String.format( " ON STORE \"%s\"", request.store ) );
@@ -3173,9 +3173,9 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    public static ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
+    public static <T> ArrayList<String[]> computeResultData( final List<List<T>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
+        for ( List<T> row : rows ) {
             String[] temp = new String[row.size()];
             int counter = 0;
             for ( Object o : row ) {
@@ -3336,8 +3336,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyImplementation processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyImplementation result;
+    private PolyImplementation<?> processQuery( Statement statement, String sql, boolean isAnalyze ) {
+        PolyImplementation<?> result;
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
@@ -3375,7 +3375,7 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        PolyImplementation result;
+        PolyImplementation<?> result;
 
         try {
             result = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
@@ -3417,12 +3417,12 @@ public class Crud implements InformationObserver {
         Statement statement = transaction.createStatement();
         Result result = executeSqlSelect( statement, request, query ).build();
         // We expect the result to be in the first column of the first row
-        if ( result.getData().length == 0 ) {
+        if ( result.data.length == 0 ) {
             return 0;
         } else {
             if ( statement.getMonitoringEvent() != null ) {
                 StatementEvent eventData = statement.getMonitoringEvent();
-                eventData.setRowCount( Integer.parseInt( result.getData()[0][0] ) );
+                eventData.setRowCount( Integer.parseInt( result.data[0][0] ) );
             }
             return Integer.parseInt( result.getData()[0][0] );
         }

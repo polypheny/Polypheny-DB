@@ -35,7 +35,12 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyBoolean;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
+import org.polypheny.db.type.entity.document.PolyDouble;
+import org.polypheny.db.type.entity.document.PolyDouble.PolyDoubleSerializerDef;
+import org.polypheny.db.type.entity.document.PolyFloat;
+import org.polypheny.db.type.entity.document.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.document.PolyInteger;
+import org.polypheny.db.type.entity.document.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.document.PolyList;
 import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.document.PolyString.PolyStringSerializerDef;
@@ -47,7 +52,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     @NonFinal
     @EqualsAndHashCode.Exclude
-    public BinarySerializer<PolyValue> serializer = PolyValue.getAbstractBuilder( true ).build( PolyValue.class );
+    public BinarySerializer<PolyValue> serializer = PolyValue.getAbstractBuilder().build( PolyValue.class );
 
     @Serialize
     public boolean nullable;
@@ -55,14 +60,15 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyType type;
 
 
-    public static SerializerBuilder getAbstractBuilder( boolean withValue ) {
-        SerializerBuilder builder = PolySerializable.builder.get()
+    public static SerializerBuilder getAbstractBuilder() {
+
+        return PolySerializable.builder.get()
                 .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
-                .with( PolyString.class, ctx -> new PolyStringSerializerDef() );
-        if ( true ) {
-            return builder.with( PolyValue.class, ctx -> new PolyValueSerializerDef() );
-        }
-        return builder;
+                .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
+                .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
+                .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
+                .with( PolyDouble.class, ctx -> new PolyDoubleSerializerDef() )
+                .with( PolyFloat.class, ctx -> new PolyFloatSerializerDef() );
     }
 
 
@@ -88,11 +94,11 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DECIMAL:
                 break;
             case FLOAT:
-                break;
+                return PolyFloat.class;
             case REAL:
                 break;
             case DOUBLE:
-                break;
+                return PolyDouble.class;
             case DATE:
                 break;
             case TIME:
@@ -198,11 +204,17 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public static PolyValue deserialize( PolyType type, String json ) {
         switch ( type ) {
             case BOOLEAN:
-                return PolySerializable.deserialize( json, getAbstractBuilder( true ).build( PolyBoolean.class ) );
+                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyBoolean.class ) );
             case VARCHAR:
-                return PolySerializable.deserialize( json, getAbstractBuilder( true ).build( PolyString.class ) );
+                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyString.class ) );
             case DOCUMENT:
-                return PolySerializable.deserialize( json, getAbstractBuilder( true ).build( PolyDocument.class ) );
+                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyDocument.class ) );
+            case FLOAT:
+                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyFloat.class ) );
+            case DOUBLE:
+                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyDouble.class ) );
+            case INTEGER:
+                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyInteger.class ) );
         }
         throw new NotImplementedException();
     }
@@ -211,11 +223,17 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public static String serialize( PolyValue value ) {
         switch ( value.type ) {
             case BOOLEAN:
-                return PolySerializable.serialize( getAbstractBuilder( true ).build( PolyBoolean.class ), (PolyBoolean) value );
+                return PolySerializable.serialize( getAbstractBuilder().build( PolyBoolean.class ), (PolyBoolean) value );
             case VARCHAR:
-                return PolySerializable.serialize( getAbstractBuilder( true ).build( PolyString.class ), (PolyString) value );
+                return PolySerializable.serialize( getAbstractBuilder().build( PolyString.class ), (PolyString) value );
             case DOCUMENT:
-                return PolySerializable.serialize( getAbstractBuilder( true ).build( PolyDocument.class ), (PolyDocument) value );
+                return PolySerializable.serialize( getAbstractBuilder().build( PolyDocument.class ), (PolyDocument) value );
+            case FLOAT:
+                return PolySerializable.serialize( getAbstractBuilder().build( PolyFloat.class ), (PolyFloat) value );
+            case DOUBLE:
+                return PolySerializable.serialize( getAbstractBuilder().build( PolyDouble.class ), (PolyDouble) value );
+            case INTEGER:
+                return PolySerializable.serialize( getAbstractBuilder().build( PolyInteger.class ), (PolyInteger) value );
         }
 
         throw new NotImplementedException();
@@ -287,6 +305,32 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyString asString() {
         if ( isString() ) {
             return (PolyString) this;
+        }
+        return null;
+    }
+
+
+    public boolean isFloat() {
+        return type == PolyType.FLOAT;
+    }
+
+
+    public PolyFloat asFloat() {
+        if ( isFloat() ) {
+            return (PolyFloat) this;
+        }
+        return null;
+    }
+
+
+    public boolean isDouble() {
+        return type == PolyType.DOUBLE;
+    }
+
+
+    public PolyDouble asDouble() {
+        if ( isDouble() ) {
+            return (PolyDouble) this;
         }
         return null;
     }

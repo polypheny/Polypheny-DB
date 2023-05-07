@@ -69,7 +69,7 @@ public interface PolySerializable {
 
 
     static <T> BinarySerializer<T> getOrAdd( Class<T> clazz ) {
-        return (BinarySerializer<T>) cache.computeIfAbsent( clazz, k -> PolyValue.getAbstractBuilder( false ).build( k ) );
+        return (BinarySerializer<T>) cache.computeIfAbsent( clazz, k -> PolyValue.getAbstractBuilder().build( k ) );
     }
 
 

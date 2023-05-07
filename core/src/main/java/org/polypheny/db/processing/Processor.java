@@ -43,7 +43,7 @@ public abstract class Processor {
     public abstract AlgRoot translate( Statement statement, Node query, QueryParameters parameters );
 
 
-    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+    public PolyImplementation<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         if ( parsed instanceof ExecutableStatement ) {
             try {
                 // Acquire global schema lock
@@ -64,11 +64,11 @@ public abstract class Processor {
     }
 
 
-    PolyImplementation getResult( Statement statement, ExecutableStatement parsed, QueryParameters parameters ) throws TransactionException {
+    PolyImplementation<?> getResult( Statement statement, ExecutableStatement parsed, QueryParameters parameters ) throws TransactionException {
         parsed.execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();
-        return new PolyImplementation(
+        return new PolyImplementation<>(
                 null,
                 parameters.getNamespaceType(),
                 new ExecutionTimeMonitor(),

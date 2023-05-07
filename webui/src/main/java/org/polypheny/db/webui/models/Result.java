@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -43,16 +42,13 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Value
-public class Result extends GenericResult {
+public class Result extends GenericResult<String[]> {
 
     /**
      * The header contains information about the columns of a result
      */
     public FieldDefinition[] header;
-    /**
-     * The rows containing the fetched data
-     */
-    public String[][] data;
+
     /**
      * Information for the pagination: what current page is being displayed
      */
@@ -63,7 +59,6 @@ public class Result extends GenericResult {
     public int highestPage;
 
 
-    public String namespaceName;
     /**
      * Table from which the data has been fetched
      */
@@ -76,10 +71,7 @@ public class Result extends GenericResult {
      * The request from the UI is being sent back and contains information about which columns are being filtered and which are being sorted
      */
     public UIRequest request;
-    /**
-     * Error message if a query failed
-     */
-    public String error;
+
     /**
      * Exception with additional information
      */
@@ -101,15 +93,8 @@ public class Result extends GenericResult {
     public ResultType type;
 
     /**
-     * schema type of result DOCUMENT/RELATIONAL
-     */
-    @Default
-    public NamespaceType namespaceType = NamespaceType.RELATIONAL;
-
-    /**
      * language type of result MQL/SQL/CQL
      */
-    @Default
     public QueryLanguage language = QueryLanguage.from( "sql" );
 
     /**
@@ -149,7 +134,7 @@ public class Result extends GenericResult {
      *
      * @param in the reader, which contains the Result
      */
-    private static Result create( JsonReader in ) throws IOException {
+    public static Result create( JsonReader in ) throws IOException {
         ResultBuilder<?, ?> builder = Result.builder();
         while ( in.peek() != JsonToken.END_OBJECT ) {
             switch ( in.nextName() ) {
@@ -296,6 +281,11 @@ public class Result extends GenericResult {
     }
 
 
+    public static ResultBuilder<?, ?> builder() {
+        return new ResultBuilderImpl();
+    }
+
+
     public String toJson() {
         Gson gson = new Gson();
         return gson.toJson( this );
@@ -316,7 +306,7 @@ public class Result extends GenericResult {
                 out.name( "header" );
                 handleDbColumns( out, result );
                 out.name( "data" );
-                handleNestedArray( out, result.getData() );
+                handleNestedArray( out, result.data );
                 out.name( "currentPage" );
                 out.value( result.currentPage );
                 out.name( "highestPage" );
@@ -362,13 +352,13 @@ public class Result extends GenericResult {
 
 
             private void handleDbColumns( JsonWriter out, Result result ) throws IOException {
-                if ( result.getHeader() == null ) {
+                if ( result.header == null ) {
                     out.nullValue();
                     return;
                 }
                 out.beginArray();
 
-                for ( FieldDefinition column : result.getHeader() ) {
+                for ( FieldDefinition column : result.header ) {
                     if ( column instanceof DbColumn ) {
                         DbColumn.serializer.write( out, (DbColumn) column );
                     } else {
@@ -428,5 +418,138 @@ public class Result extends GenericResult {
 
         };
     }
+
+
+    /**
+     * Remove when bugs in SuperBuilder regarding generics are fixed
+     */
+
+    public static abstract class ResultBuilder<C extends Result, B extends ResultBuilder<C, B>> extends GenericResultBuilder<String[], C, B> {
+
+        private FieldDefinition[] header;
+        private int currentPage;
+        private int highestPage;
+        private String table;
+        private String[] tables;
+        private UIRequest request;
+        private Throwable exception;
+        private int affectedRows;
+        private String generatedQuery;
+        private ResultType type;
+        private QueryLanguage language$value;
+        private boolean language$set;
+        private boolean hasMoreRows;
+        private String classificationInfo;
+        private int explorerId;
+        private boolean includesClassificationInfo;
+        private String[][] classifiedData;
+        private boolean isConvertedToSql;
+
+
+        public B header( FieldDefinition[] header ) {
+            this.header = header;
+            return self();
+        }
+
+
+        public B currentPage( int currentPage ) {
+            this.currentPage = currentPage;
+            return self();
+        }
+
+
+        public B highestPage( int highestPage ) {
+            this.highestPage = highestPage;
+            return self();
+        }
+
+
+        public B table( String table ) {
+            this.table = table;
+            return self();
+        }
+
+
+        public B tables( String[] tables ) {
+            this.tables = tables;
+            return self();
+        }
+
+
+        public B request( UIRequest request ) {
+            this.request = request;
+            return self();
+        }
+
+
+        public B exception( Throwable exception ) {
+            this.exception = exception;
+            return self();
+        }
+
+
+        public B affectedRows( int affectedRows ) {
+            this.affectedRows = affectedRows;
+            return self();
+        }
+
+
+        public B generatedQuery( String generatedQuery ) {
+            this.generatedQuery = generatedQuery;
+            return self();
+        }
+
+
+        public B type( ResultType type ) {
+            this.type = type;
+            return self();
+        }
+
+
+        public B language( QueryLanguage language ) {
+            this.language$value = language;
+            this.language$set = true;
+            return self();
+        }
+
+
+        public B hasMoreRows( boolean hasMoreRows ) {
+            this.hasMoreRows = hasMoreRows;
+            return self();
+        }
+
+
+        public B classificationInfo( String classificationInfo ) {
+            this.classificationInfo = classificationInfo;
+            return self();
+        }
+
+
+        public B explorerId( int explorerId ) {
+            this.explorerId = explorerId;
+            return self();
+        }
+
+
+        public B includesClassificationInfo( boolean includesClassificationInfo ) {
+            this.includesClassificationInfo = includesClassificationInfo;
+            return self();
+        }
+
+
+        public B classifiedData( String[][] classifiedData ) {
+            this.classifiedData = classifiedData;
+            return self();
+        }
+
+
+        public B isConvertedToSql( boolean isConvertedToSql ) {
+            this.isConvertedToSql = isConvertedToSql;
+            return self();
+        }
+
+
+    }
+
 
 }

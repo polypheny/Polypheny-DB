@@ -89,7 +89,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<GenericResult> anyMongoQuery(
+    public static List<GenericResult<?>> anyMongoQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -107,7 +107,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         InformationManager queryAnalyzer = LanguageCrud.attachAnalyzerIfSpecified( request, crud, transaction );
 
-        List<GenericResult> results = new ArrayList<>();
+        List<GenericResult<?>> results = new ArrayList<>();
 
         String[] mqls = request.query.trim().split( "\\n(?=(use|db.|show))" );
 
@@ -155,7 +155,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                     }
 
                     // Prepare
-                    PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+                    PolyImplementation<?> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );

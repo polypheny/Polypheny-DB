@@ -655,17 +655,17 @@ public class ConstraintEnforceAttacher {
                     QueryProcessor processor = statement.getQueryProcessor();
                     List<EnforcementInformation> infos = ConstraintEnforceAttacher
                             .getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
-                    List<PolyImplementation> results = infos
+                    List<PolyImplementation<?>> results = infos
                             .stream()
                             .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )
                             .collect( Collectors.toList() );
-                    List<List<List<Object>>> rows = results.stream()
+                    List<List<?>> rows = results.stream()
                             .map( r -> r.getRows( statement, -1 ) )
                             .filter( r -> r.size() != 0 )
                             .collect( Collectors.toList() );
 
                     if ( rows.size() != 0 ) {
-                        Integer index = (Integer) rows.get( 0 ).get( 0 ).get( 1 );
+                        Integer index = ((List<Integer>) rows.get( 0 ).get( 0 )).get( 1 );
                         throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
                     }
                     try {

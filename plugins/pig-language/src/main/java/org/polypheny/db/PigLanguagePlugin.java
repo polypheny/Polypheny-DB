@@ -72,7 +72,7 @@ public class PigLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<GenericResult> anyPigQuery(
+    public static List<GenericResult<?>> anyPigQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -123,9 +123,9 @@ public class PigLanguagePlugin extends PolyPlugin {
                 statement.getOverviewDuration().stop( "Translation" );
             }
 
-            PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyImplementation<?> polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
-            GenericResult result = LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, request.noLimit );
+            GenericResult<?> result = LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, request.noLimit );
 
             String commitStatus;
             try {

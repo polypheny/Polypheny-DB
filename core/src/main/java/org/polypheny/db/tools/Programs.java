@@ -40,13 +40,13 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.adapter.enumerable.EnumerableTableModifyToStreamerRule;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.enumerable.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
@@ -134,9 +134,9 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
-                    EnumerableTableModifyToStreamerRule.REL_INSTANCE,
-                    EnumerableTableModifyToStreamerRule.DOC_INSTANCE,
-                    EnumerableTableModifyToStreamerRule.GRAPH_INSTANCE,
+                    EnumerableModifyToStreamerRule.REL_INSTANCE,
+                    EnumerableModifyToStreamerRule.DOC_INSTANCE,
+                    EnumerableModifyToStreamerRule.GRAPH_INSTANCE,
                     EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
                     EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -149,7 +149,7 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
-                    EnumerableRules.ENUMERABLE_DOC_VALUES,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,

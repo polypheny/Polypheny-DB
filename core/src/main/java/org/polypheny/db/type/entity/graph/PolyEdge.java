@@ -25,7 +25,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.enumerable.EnumUtils;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.BuiltInMethod;

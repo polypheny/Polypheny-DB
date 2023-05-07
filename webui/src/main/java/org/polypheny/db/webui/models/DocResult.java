@@ -21,15 +21,11 @@ import lombok.Value;
 import lombok.experimental.SuperBuilder;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
 @SuperBuilder(toBuilder = true)
-public class DocResult extends GenericResult {
-
-    public String[] data;
+@Value
+public class DocResult extends GenericResult<String> {
 
     public String query;
-
-    public String namespaceName;
 
     public Throwable exception;
 

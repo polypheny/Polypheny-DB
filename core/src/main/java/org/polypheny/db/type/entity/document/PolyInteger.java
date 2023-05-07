@@ -16,6 +16,14 @@
 
 package org.polypheny.db.type.entity.document;
 
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -29,10 +37,11 @@ import org.polypheny.db.type.entity.PolyValue;
 @Value(staticConstructor = "of")
 public class PolyInteger extends PolyValue {
 
+    @Serialize
     public Integer value;
 
 
-    public PolyInteger( Integer value ) {
+    public PolyInteger( @Deserialize("value") Integer value ) {
         super( PolyType.INTEGER, true );
         this.value = value;
     }
@@ -56,7 +65,34 @@ public class PolyInteger extends PolyValue {
 
     @Override
     public PolySerializable copy() {
-        return null;
+        return PolySerializable.deserialize( serialize(), PolyInteger.class );
+    }
+
+
+    @Override
+    public String toString() {
+        return value.toString();
+    }
+
+
+    public static class PolyIntegerSerializerDef extends SimpleSerializerDef<PolyInteger> {
+
+        @Override
+        protected BinarySerializer<PolyInteger> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyInteger item ) {
+                    out.writeInt( item.value );
+                }
+
+
+                @Override
+                public PolyInteger decode( BinaryInput in ) throws CorruptedDataException {
+                    return new PolyInteger( in.readInt() );
+                }
+            };
+        }
+
     }
 
 }

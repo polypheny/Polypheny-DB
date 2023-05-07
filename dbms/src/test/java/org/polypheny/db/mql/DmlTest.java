@@ -31,7 +31,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.DocResult;
 
 
 /**
@@ -44,14 +44,14 @@ public class DmlTest extends MqlTestTemplate {
     @Test
     public void emptyTest() {
         String name = "test";
-        execute( "db.createPhysicalCollection(\"" + name + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
-                        ImmutableList.of(), true ) );
+                        ImmutableList.of(), true, true ) );
 
     }
 
@@ -61,12 +61,13 @@ public class DmlTest extends MqlTestTemplate {
         String data = "{\"test\":4}";
         insert( data );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
-                        ImmutableList.of( new Object[]{ data } ), true ) );
+                        ImmutableList.of( data ), true,
+                        true ) );
 
     }
 
@@ -77,14 +78,14 @@ public class DmlTest extends MqlTestTemplate {
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
-                        data.stream()
-                                .map( d -> new String[]{ d } )
-                                .collect( Collectors.toList() ), true ) );
+                        data,
+                        true,
+                        true ) );
     }
 
 
@@ -96,16 +97,16 @@ public class DmlTest extends MqlTestTemplate {
 
         update( "{\"test\": 3}", "{\"$set\":{\"test\": 5}}" );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
         List<String> updated = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":5}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
-                        updated.stream()
-                                .map( d -> new String[]{ d } )
-                                .collect( Collectors.toList() ), true ) );
+                        updated,
+                        true,
+                        true ) );
     }
 
 
@@ -115,9 +116,9 @@ public class DmlTest extends MqlTestTemplate {
         List<Object> data = Arrays.asList( 1, 2, 3 );
         insertMany( data.stream().map( d -> toDoc( "test", d ) ).collect( Collectors.toList() ) );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
-        BsonDocument doc = BsonDocument.parse( result.getData()[0][0] );
+        BsonDocument doc = BsonDocument.parse( result.getData()[0] );
 
         BsonString id = doc.getString( "_id" );
         int content = doc.get( "test" ).asInt32().getValue();
@@ -127,7 +128,7 @@ public class DmlTest extends MqlTestTemplate {
         result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
                         data.stream()
                                 .map( d -> {
@@ -137,8 +138,7 @@ public class DmlTest extends MqlTestTemplate {
                                     return d;
                                 } )
                                 .map( d -> toDoc( "test", d ) )
-                                .map( d -> new String[]{ d } )
-                                .collect( Collectors.toList() ), true ) );
+                                .collect( Collectors.toList() ), true, true ) );
     }
 
 

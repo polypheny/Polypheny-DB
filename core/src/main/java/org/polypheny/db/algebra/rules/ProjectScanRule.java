@@ -36,10 +36,10 @@ package org.polypheny.db.algebra.rules;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;

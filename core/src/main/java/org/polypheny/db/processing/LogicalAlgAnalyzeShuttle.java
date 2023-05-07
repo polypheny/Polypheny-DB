@@ -63,6 +63,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.transaction.Statement;
 
@@ -421,7 +422,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void handleIfPartitioned( AlgNode node, LogicalTable catalogTable ) {
+    private void handleIfPartitioned( AlgNode node, LogicalEntity logicalEntity ) {
         // Only if table is partitioned
         log.warn( "todo" );
         /*if ( Catalog.getInstance().getSnapshot().alloc().isPartitioned( catalogTable.id ) ) {
@@ -453,7 +454,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
             return;
         }
 
-        handleIfPartitioned( filter, (LogicalTable) entity );
+        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
     }
 
 

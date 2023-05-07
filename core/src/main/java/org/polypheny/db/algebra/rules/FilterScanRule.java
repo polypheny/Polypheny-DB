@@ -35,10 +35,10 @@ package org.polypheny.db.algebra.rules;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -61,7 +61,7 @@ import org.polypheny.db.util.mapping.Mappings;
  * or a {@link ProjectableFilterableEntity}
  * to a {@link BindableScan}.
  *
- * The {@link #INTERPRETER} variant allows an intervening {@link org.polypheny.db.adapter.enumerable.EnumerableInterpreter}.
+ * The {@link #INTERPRETER} variant allows an intervening {@link EnumerableInterpreter}.
  *
  * @see ProjectScanRule
  */

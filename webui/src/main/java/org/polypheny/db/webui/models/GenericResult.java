@@ -21,16 +21,48 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
+
 @Value
 @NonFinal
-@SuperBuilder(toBuilder = true)
-public abstract class GenericResult {
+@SuperBuilder
+public abstract class GenericResult<E> {
+
+    /**
+     * schema type of result DOCUMENT/RELATIONAL
+     */
+    public NamespaceType namespaceType;
+
+    public String namespaceName;
+
+    public E[] data;
+
 
     /**
      * Transaction id, for the websocket. It will not be serialized to gson.
      */
     public transient String xid;
 
-    public NamespaceType namespaceType = NamespaceType.RELATIONAL;
+    /**
+     * Error message if a query failed
+     */
+    public String error;
+
+
+    /**
+     * Remove when bugs in SuperBuilder regarding generics are fixed
+     */
+    public static abstract class GenericResultBuilder<E, C extends GenericResult<E>, B extends GenericResultBuilder<E, C, B>> {
+
+        protected B $fillValuesFrom( C instance ) {
+            this.data = instance.data;
+            this.namespaceType = instance.namespaceType;
+            this.xid = instance.xid;
+            this.error = instance.error;
+            this.namespaceName = instance.namespaceName;
+
+            return self();
+        }
+
+    }
 
 }

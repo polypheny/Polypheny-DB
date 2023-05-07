@@ -56,7 +56,7 @@ import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-import org.polypheny.db.adapter.enumerable.EnumUtils;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;

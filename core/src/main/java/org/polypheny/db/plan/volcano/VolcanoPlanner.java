@@ -65,6 +65,7 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.enumerable.common.ModelSwitcherRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
@@ -72,7 +73,6 @@ import org.polypheny.db.algebra.rules.AggregateJoinTransposeRule;
 import org.polypheny.db.algebra.rules.AggregateProjectMergeRule;
 import org.polypheny.db.algebra.rules.AggregateRemoveRule;
 import org.polypheny.db.algebra.rules.CalcRemoveRule;
-import org.polypheny.db.algebra.rules.DocumentToEnumerableRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
@@ -825,11 +825,18 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         addRule( LpgToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.VALUES_TO_ENUMERABLE );
 
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_GRAPH_DOC );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_GRAPH_REL );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_REL_DOC );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_REL_GRAPH );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_REL );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_GRAPH );
+
         // Document
-        //addRule( DocumentToEnumerableRule.PROJECT_TO_ENUMERABLE );
-        addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
-        addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
-        addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
+        // addRule( DocumentToEnumerableRule.PROJECT_TO_ENUMERABLE );
+        // addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
+        // addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
+        // addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
 
         // Relational
     }

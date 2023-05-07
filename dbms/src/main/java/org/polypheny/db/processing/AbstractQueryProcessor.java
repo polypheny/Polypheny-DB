@@ -43,11 +43,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
-import org.polypheny.db.adapter.enumerable.EnumerableAlg;
-import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
-import org.polypheny.db.adapter.enumerable.EnumerableCalc;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgCollation;
@@ -68,6 +63,11 @@ import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.algebra.enumerable.EnumerableCalc;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
@@ -188,19 +188,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     @Override
-    public PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean withMonitoring ) {
+    public PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), false, false, withMonitoring );
     }
 
 
     @Override
-    public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
+    public PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, parameterRowType, false, false, withMonitoring );
     }
 
 
     @Override
-    public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
+    public PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
 
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -1207,7 +1207,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
             @Override
-            public Bindable<Object[]> getBindable( CursorFactory cursorFactory ) {
+            public Bindable<?> getBindable( CursorFactory cursorFactory ) {
                 return bindable;
             }
 

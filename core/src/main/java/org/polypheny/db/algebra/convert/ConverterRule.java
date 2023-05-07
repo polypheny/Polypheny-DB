@@ -110,7 +110,7 @@ public abstract class ConverterRule extends AlgOptRule {
     }
 
 
-    public AlgTraitDef getTraitDef() {
+    public AlgTraitDef<?> getTraitDef() {
         return inTrait.getTraitDef();
     }
 
