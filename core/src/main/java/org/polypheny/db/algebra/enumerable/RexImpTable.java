@@ -48,7 +48,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
+import lombok.Getter;
+import lombok.Value;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -66,6 +69,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.TrimFunction.Flag;
@@ -455,11 +459,11 @@ public class RexImpTable {
             case SEMI_STRICT:
                 return ( translator, call, nullAs ) -> implementNullSemantics0( translator, call, nullAs, nullPolicy, harmonize, implementor );
             case AND:
-/* TODO:
-            if (nullAs == NullAs.FALSE) {
-                nullPolicy2 = NullPolicy.ANY;
-            }
-*/
+                /* TODO:
+                if (nullAs == NullAs.FALSE) {
+                    nullPolicy2 = NullPolicy.ANY;
+                }
+                */
                 // If any of the arguments are false, result is false;
                 // else if any arguments are null, result is null;
                 // else true.
@@ -522,8 +526,7 @@ public class RexImpTable {
                             final List<Expression> nullAsIsNull = translator.translateList( call2.getOperands(), NullAs.IS_NULL );
                             Expression hasTrue = Expressions.foldOr( nullAsFalse );
                             Expression hasNull = Expressions.foldOr( nullAsIsNull );
-                            Expression result = nullAs.handle( Expressions.condition( hasTrue, BOXED_TRUE_EXPR, Expressions.condition( hasNull, NULL_EXPR, BOXED_FALSE_EXPR ) ) );
-                            return result;
+                            return nullAs.handle( Expressions.condition( hasTrue, BOXED_TRUE_EXPR, Expressions.condition( hasNull, NULL_EXPR, BOXED_FALSE_EXPR ) ) );
                         default:
                             throw new IllegalArgumentException( "Unknown nullAs when implementing OR: " + nullAs );
                     }
@@ -535,12 +538,10 @@ public class RexImpTable {
                 return new CallImplementor() {
                     @Override
                     public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
-                        switch ( nullAs ) {
-                            case NULL:
-                                return Expressions.call( BuiltInMethod.NOT.method, translator.translateList( call.getOperands(), nullAs ) );
-                            default:
-                                return Expressions.not( translator.translate( call.getOperands().get( 0 ), negate( nullAs ) ) );
+                        if ( Objects.requireNonNull( nullAs ) == NullAs.NULL ) {
+                            return Expressions.call( BuiltInMethod.NOT.method, translator.translateList( call.getOperands(), nullAs ) );
                         }
+                        return Expressions.not( translator.translate( call.getOperands().get( 0 ), negate( nullAs ) ) );
                     }
 
 
@@ -1931,9 +1932,11 @@ public class RexImpTable {
     /**
      * Implementor for a function that generates calls to a given method.
      */
-    private static class MethodImplementor implements NotNullImplementor {
+    @Value
+    public static class MethodImplementor implements NotNullImplementor {
 
-        protected final Method method;
+        @Getter
+        public Method method;
 
 
         MethodImplementor( Method method ) {
@@ -1943,6 +1946,11 @@ public class RexImpTable {
 
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
+            return implement( translator.typeFactory, call, translatedOperands );
+        }
+
+
+        public Expression implement( JavaTypeFactory typeFactory, RexCall call, List<Expression> translatedOperands ) {
             final Expression expression;
             if ( Modifier.isStatic( method.getModifiers() ) ) {
                 expression = Expressions.call( method, translatedOperands );
@@ -1950,7 +1958,7 @@ public class RexImpTable {
                 expression = Expressions.call( translatedOperands.get( 0 ), method, Util.skip( translatedOperands, 1 ) );
             }
 
-            final Type returnType = translator.typeFactory.getJavaClass( call.getType() );
+            final Type returnType = typeFactory.getJavaClass( call.getType() );
             return Types.castIfNecessary( returnType, expression );
         }
 

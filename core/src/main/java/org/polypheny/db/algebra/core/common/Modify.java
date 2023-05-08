@@ -17,6 +17,8 @@
 package org.polypheny.db.algebra.core.common;
 
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -29,6 +31,10 @@ public abstract class Modify<E extends CatalogEntity> extends SingleAlg {
 
     @Getter
     public final E entity;
+
+    @Accessors(fluent = true)
+    @Setter
+    public boolean streamed;
 
 
     /**

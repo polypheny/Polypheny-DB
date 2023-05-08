@@ -16,8 +16,15 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.mongodb.lang.Nullable;
 import java.util.List;
-import lombok.Getter;
+import java.util.Map;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -29,26 +36,39 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
+@EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
+@Value
+@NonFinal
 public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> implements DocumentAlg {
 
-    @Getter
-    public final Operation operation;
-    @Getter
-    private final List<String> keys;
-    @Getter
-    private final List<RexNode> updates;
+    @NonNull
+    public ImmutableMap<String, RexNode> updates;
+    @NonNull
+    public ImmutableList<String> removes;
+    @NonNull
+    public ImmutableMap<String, String> renames;
+    @NonNull
+    public Operation operation;
 
 
     /**
      * Creates a {@link DocumentModify}.
      * {@link ModelTrait#DOCUMENT} node, which modifies a collection.
      */
-    protected DocumentModify( AlgTraitSet traits, E collection, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+    protected DocumentModify(
+            AlgTraitSet traits,
+            E collection,
+            AlgNode input,
+            @NonNull Operation operation,
+            @Nullable Map<String, RexNode> updates,
+            @Nullable List<String> removes,
+            @Nullable Map<String, String> renames ) {
         super( input.getCluster(), input.getTraitSet().replace( ModelTrait.DOCUMENT ), collection, input );
         this.operation = operation;
-        this.keys = keys;
-        this.updates = updates;
+        this.updates = ImmutableMap.copyOf( updates == null ? Map.of() : updates );
+        this.removes = ImmutableList.copyOf( removes == null ? List.of() : removes );
+        this.renames = ImmutableMap.copyOf( renames == null ? Map.of() : renames );
         this.traitSet = traits;
     }
 
@@ -61,11 +81,7 @@ public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> 
 
     @Override
     public String algCompareString() {
-        String compare = "$" + getClass().getSimpleName() + "$" + operation + "$" + input.algCompareString();
-        if ( keys != null ) {
-            compare += "$" + keys.hashCode() + "$" + updates.hashCode();
-        }
-        return compare + "$" + input.algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + operation + "$" + input.algCompareString() + "$" + updates.hashCode() + "$" + removes.hashCode() + "$" + renames.hashCode();
     }
 
 

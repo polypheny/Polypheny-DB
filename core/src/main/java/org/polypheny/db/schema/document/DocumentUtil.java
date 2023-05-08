@@ -20,8 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonBinary;
 import org.bson.BsonBoolean;
@@ -41,6 +45,19 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
@@ -194,6 +211,110 @@ public class DocumentUtil {
             typeNumbers.add( 19 );
         }
         return typeNumbers;
+    }
+
+
+    /**
+     * Updates contain RENAME, REMOVE, REPLACE parts and are merged into a single DOC_UPDATE in this method
+     *
+     * @param rowType the default rowtype at this point
+     * @param node the transformed operation up to this step e.g. {@link RelScan} or {@link LogicalDocumentAggregate}
+     * @return the unified UPDATE AlgNode
+     */
+    public static Pair<List<String>, List<RexNode>> transformUpdateRelational( Map<String, RexNode> updates, List<String> removes, Map<String, String> renames, AlgDataType rowType, AlgNode node ) {
+        AlgOptCluster cluster = node.getCluster();
+        AlgDataType docType = DocumentType.asRelational().getFieldList().get( 1 ).getType();
+        RexNode updateChain = cluster.getRexBuilder().makeInputRef( rowType, 0 );
+
+        // replace
+        if ( !updates.isEmpty() ) {
+            updateChain = new RexCall(
+                    docType,
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( List.copyOf( updates.keySet() ), cluster ),
+                            getArray( List.copyOf( updates.values() ), docType ) ) );
+        }
+
+        // rename
+        if ( !renames.isEmpty() ) {
+            updateChain = new RexCall(
+                    docType,
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( List.copyOf( renames.keySet() ), cluster ),
+                            getStringArray( List.copyOf( renames.values() ), cluster ) ) );
+        }
+
+        // remove
+        if ( !removes.isEmpty() ) {
+            updateChain = new RexCall(
+                    docType,
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( removes, cluster ) ) );
+        }
+
+        if ( !removes.isEmpty() ) {
+            updateChain = new RexCall(
+                    docType,
+                    OperatorRegistry.get(
+                            QueryLanguage.from( "mongo" ),
+                            OperatorName.MQL_UPDATE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( removes, cluster ) ) );
+        }
+
+        return Pair.of(
+                List.of( DocumentType.DOCUMENT_DATA ),
+                List.of( createJsonify( updateChain, docType ) ) );
+    }
+
+
+    public static RexCall createJsonify( RexNode ref, AlgDataType type ) {
+        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSONIFY ), Collections.singletonList( ref ) );
+    }
+
+
+    public static RexCall getStringArray( List<String> elements, AlgOptCluster cluster ) {
+        List<RexNode> rexNodes = new ArrayList<>();
+        int maxSize = 0;
+        for ( String name : elements ) {
+            rexNodes.add( cluster.getRexBuilder().makeLiteral( name ) );
+            maxSize = Math.max( name.length(), maxSize );
+        }
+
+        AlgDataType type = cluster.getTypeFactory().createArrayType(
+                cluster.getTypeFactory().createPolyType( PolyType.CHAR, maxSize ),
+                rexNodes.size() );
+        return getArray( rexNodes, type );
+    }
+
+
+    public static RexCall getArray( List<RexNode> elements, AlgDataType type ) {
+        return new RexCall( type, OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), elements );
+    }
+
+
+    /**
+     * Defines one of the possible doc update operations
+     */
+    public enum UpdateOperation {
+        RENAME( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ) ),
+        REPLACE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ) ),
+        REMOVE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ) );
+
+        @Getter
+        private final Operator operator;
+
+
+        UpdateOperation( Operator operator ) {
+            this.operator = operator;
+        }
     }
 
 }

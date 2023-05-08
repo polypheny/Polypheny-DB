@@ -740,7 +740,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                                originalProject = LogicalProject.create( originalProject, expr, type );
 //                            }
                             AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
-                            final PolyImplementation scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
+                            final PolyImplementation<Object> scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
                             final List<List<Object>> rows = scanSig.getRows( statement, -1 );
                             // Build new query tree
                             final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
@@ -748,7 +748,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 final List<RexLiteral> record = new ArrayList<>();
                                 for ( int i = 0; i < row.size(); ++i ) {
                                     AlgDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
-                                    Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) row.get( i ), fieldType );
+                                    Pair<Comparable<?>, PolyType> converted = RexLiteral.convertType( (Comparable<?>) row.get( i ), fieldType );
                                     record.add( new RexLiteral(
                                             converted.left,
                                             fieldType,

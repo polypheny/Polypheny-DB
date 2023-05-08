@@ -61,11 +61,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.DateString;
@@ -273,7 +273,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    public static Pair<Comparable, PolyType> convertType( Comparable value, AlgDataType typeName ) {
+    public static Pair<Comparable<?>, PolyType> convertType( Comparable<?> value, AlgDataType typeName ) {
         switch ( typeName.getPolyType() ) {
             case INTEGER:
             case BIGINT:
@@ -284,19 +284,19 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case FLOAT:
             case REAL:
                 if ( value instanceof Short ) {
-                    return new Pair<>( new BigDecimal( (short) value ), PolyType.DECIMAL );
+                    return new Pair<>( new BigDecimal( (Short) value ), PolyType.DECIMAL );
                 } else if ( value instanceof Byte ) {
-                    return new Pair<>( new BigDecimal( (byte) value ), PolyType.DECIMAL );
+                    return new Pair<>( new BigDecimal( (Byte) value ), PolyType.DECIMAL );
                 } else if ( value instanceof Character ) {
-                    return new Pair<>( new BigDecimal( (char) value ), PolyType.DECIMAL );
+                    return new Pair<>( new BigDecimal( (Character) value ), PolyType.DECIMAL );
                 } else if ( value instanceof Integer ) {
-                    return new Pair<>( new BigDecimal( (int) value ), PolyType.DECIMAL );
+                    return new Pair<>( new BigDecimal( (Integer) value ), PolyType.DECIMAL );
                 } else if ( value instanceof Long ) {
-                    return new Pair<>( new BigDecimal( (long) value ), PolyType.DECIMAL );
+                    return new Pair<>( new BigDecimal( (Long) value ), PolyType.DECIMAL );
                 } else if ( value instanceof Float ) {
-                    return new Pair<>( new BigDecimal( (float) value ), PolyType.DECIMAL );
+                    return new Pair<>( BigDecimal.valueOf( (Float) value ), PolyType.DECIMAL );
                 } else if ( value instanceof Double ) {
-                    return new Pair<>( new BigDecimal( (double) value ), PolyType.DECIMAL );
+                    return new Pair<>( BigDecimal.valueOf( (Double) value ), PolyType.DECIMAL );
                 }
             case VARCHAR:
             case CHAR:

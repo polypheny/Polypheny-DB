@@ -17,6 +17,9 @@
 package org.polypheny.db.algebra.core.common;
 
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -25,8 +28,10 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 @Slf4j
+@NonFinal
 public abstract class Streamer extends BiAlg {
 
     /**

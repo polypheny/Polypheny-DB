@@ -17,6 +17,9 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import java.util.Map;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -28,24 +31,26 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
 @SuperBuilder(toBuilder = true)
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class LogicalDocumentModify extends DocumentModify<CatalogEntity> implements RelationalTransformable {
 
     /**
      * Subclass of {@link DocumentModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentModify( AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
-        super( traits, entity, input, operation, keys, updates );
+    public LogicalDocumentModify( AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, Map<String, RexNode> updates, List<String> removes, Map<String, String> renames ) {
+        super( traits, entity, input, operation, updates, removes, renames );
     }
 
 
-    public static LogicalDocumentModify create( CatalogEntity entity, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
-        return new LogicalDocumentModify( input.getTraitSet(), entity, input, operation, keys, updates );
+    public static LogicalDocumentModify create( CatalogEntity entity, AlgNode input, Operation operation, Map<String, RexNode> updates, List<String> removes, Map<String, String> renames ) {
+        return new LogicalDocumentModify( input.getTraitSet(), entity, input, operation, updates, removes, renames );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentModify( traitSet, entity, inputs.get( 0 ), operation, getKeys(), getUpdates() );
+        return new LogicalDocumentModify( traitSet, entity, inputs.get( 0 ), operation, updates, removes, renames );
     }
 
 

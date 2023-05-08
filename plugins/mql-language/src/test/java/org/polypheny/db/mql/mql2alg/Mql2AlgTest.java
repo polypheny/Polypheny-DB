@@ -44,7 +44,7 @@ public abstract class Mql2AlgTest extends MqlTest {
         cluster = AlgOptCluster.create( new MockRelOptPlanner( Contexts.empty() ), new RexBuilder( factory ), null, null );
         reader = new MockCatalogReaderDocument( factory, false );
         reader.init();
-        MQL_TO_ALG_CONVERTER = new MqlToAlgConverter( null, reader, cluster );
+        MQL_TO_ALG_CONVERTER = new MqlToAlgConverter( reader, cluster );
     }
 
 

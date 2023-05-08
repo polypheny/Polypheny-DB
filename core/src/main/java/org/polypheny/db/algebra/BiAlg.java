@@ -35,7 +35,10 @@ package org.polypheny.db.algebra;
 
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.FlatLists;
@@ -46,10 +49,16 @@ import org.polypheny.db.runtime.FlatLists;
  *
  * It is not required that two-input relational expressions use this class as a base class. However, default implementations of methods make life easier.
  */
+@EqualsAndHashCode(callSuper = true)
 @Getter
+@Value
+@NonFinal
 public abstract class BiAlg extends AbstractAlgNode {
 
+    @NonFinal
     protected AlgNode left;
+
+    @NonFinal
     protected AlgNode right;
 
 

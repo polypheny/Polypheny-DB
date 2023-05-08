@@ -380,7 +380,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         List<RexNode> newSourceExpression = null;
         if ( modify.getUpdates() != null ) {
             newSourceExpression = new ArrayList<>();
-            for ( RexNode node : modify.getUpdates() ) {
+            for ( RexNode node : modify.getUpdates().values() ) {
                 newSourceExpression.add( node.accept( this ) );
             }
         }
@@ -427,8 +427,10 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getEntity(),
                 input,
                 modify.operation,
-                modify.getKeys(),
-                newSourceExpression );
+                modify.getUpdates(),
+                modify.getRemoves(),
+                modify.getRenames()//newSourceExpression
+        );
 
     }
 

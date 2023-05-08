@@ -1125,24 +1125,24 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             assert removed == alg;
             final String newDigest = alg.recomputeDigest();
             LOGGER.trace( "Rename #{} from '{}' to '{}'", alg.getId(), oldDigest, newDigest );
-            final AlgNode equivRel = mapDigestToRel.put( newDigest, alg );
-            if ( equivRel != null ) {
-                assert equivRel != alg;
+            final AlgNode equivAlg = mapDigestToRel.put( newDigest, alg );
+            if ( equivAlg != null ) {
+                assert equivAlg != alg;
 
                 // There's already an equivalent with the same name, and we just knocked it out. Put it back, and forget about 'rel'.
-                LOGGER.trace( "After renaming alg#{} it is now equivalent to alg#{}", alg.getId(), equivRel.getId() );
+                LOGGER.trace( "After renaming alg#{} it is now equivalent to alg#{}", alg.getId(), equivAlg.getId() );
 
                 assert AlgOptUtil.equal(
                         "alg rowtype",
                         alg.getRowType(),
-                        "equivRel rowtype",
-                        equivRel.getRowType(),
+                        "equivAlg rowtype",
+                        equivAlg.getRowType(),
                         Litmus.THROW );
 
-                mapDigestToRel.put( newDigest, equivRel );
+                mapDigestToRel.put( newDigest, equivAlg );
 
-                AlgSubset equivRelSubset = getSubset( equivRel );
-                ruleQueue.recompute( equivRelSubset, true );
+                AlgSubset equivAlgSubset = getSubset( equivAlg );
+                ruleQueue.recompute( equivAlgSubset, true );
 
                 // Remove back-links from children.
                 for ( AlgNode input : alg.getInputs() ) {
@@ -1151,11 +1151,11 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
                 // Remove alg from its subset. (This may leave the subset empty, but if so, that will be dealt
                 // with when the sets get merged.)
-                final AlgSubset subset = mapRel2Subset.put( alg, equivRelSubset );
+                final AlgSubset subset = mapRel2Subset.put( alg, equivAlgSubset );
                 assert subset != null;
                 boolean existed = subset.set.algs.remove( alg );
                 assert existed : "alg was not known to its set";
-                final AlgSubset equivSubset = getSubset( equivRel );
+                final AlgSubset equivSubset = getSubset( equivAlg );
                 if ( equivSubset != subset ) {
                     // The equivalent algebra expression is in a different subset, therefore the sets are equivalent.
                     assert equivSubset.getTraitSet().equals( subset.getTraitSet() );

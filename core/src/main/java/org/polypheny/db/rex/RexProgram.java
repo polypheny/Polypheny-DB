@@ -145,7 +145,7 @@ public class RexProgram {
      * Returns a list of project expressions and their field names.
      */
     public List<Pair<RexLocalRef, String>> getNamedProjects() {
-        return new AbstractList<Pair<RexLocalRef, String>>() {
+        return new AbstractList<>() {
             @Override
             public int size() {
                 return projects.size();

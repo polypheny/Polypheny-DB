@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -59,6 +60,12 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
             return this;
         }
         return copy( traitSet, getInput(), condition );
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return copy( traitSet, inputs.get( 0 ), condition );
     }
 
 

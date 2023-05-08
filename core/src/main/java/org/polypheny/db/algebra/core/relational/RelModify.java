@@ -92,7 +92,15 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    protected RelModify( AlgOptCluster cluster, AlgTraitSet traitSet, E table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
+    protected RelModify(
+            AlgOptCluster cluster,
+            AlgTraitSet traitSet,
+            E table,
+            AlgNode input,
+            Operation operation,
+            List<String> updateColumnList,
+            List<? extends RexNode> sourceExpressionList,
+            boolean flattened ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input );
         this.operation = operation;
         this.updateColumnList = updateColumnList;

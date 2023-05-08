@@ -47,6 +47,7 @@ import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.junit.AfterClass;
@@ -368,8 +369,10 @@ public class TestHelper {
             List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? BsonDocument.parse( e ) : null ).collect( Collectors.toList() );
 
             if ( unordered ) {
-                assertTrue( "Expected result does not contain all actual results", parsedExpected.containsAll( parsedResults ) );
-                assertTrue( "Actual result does not contain all expected results", parsedResults.containsAll( parsedExpected ) );
+                assertTrue( "Expected result does not contain all actual results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ),
+                        parsedExpected.containsAll( parsedResults ) );
+                assertTrue( "Actual result does not contain all expected results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ),
+                        parsedResults.containsAll( parsedExpected ) );
             } else {
                 List<Pair<BsonValue, BsonValue>> wrong = new ArrayList<>();
                 for ( Pair<BsonValue, BsonValue> pair : Pair.zip( parsedExpected, parsedResults ) ) {

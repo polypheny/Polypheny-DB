@@ -20,6 +20,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.plan.AlgTraitSet;
 
 public class EnumerableDocumentFilterRule extends ConverterRule {
 
@@ -32,10 +33,12 @@ public class EnumerableDocumentFilterRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
 
+        AlgTraitSet out = filter.getTraitSet().replace( EnumerableConvention.INSTANCE );
+
         return new EnumerableDocumentFilter(
                 filter.getCluster(),
-                filter.getTraitSet().replace( EnumerableConvention.INSTANCE ),
-                filter.getInput(),
+                out,
+                convert( filter.getInput(), out ),
                 filter.condition );
     }
 

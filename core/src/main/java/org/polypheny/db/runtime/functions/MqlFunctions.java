@@ -242,10 +242,10 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docUpdateReplace( Object input, List names, List values ) {
+    public static Object docUpdateReplace( Object input, List<String> names, List<?> values ) {
         Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
         int i = 0;
-        for ( String name : (List<String>) names ) {
+        for ( String name : names ) {
             updateValue( values.get( i ), initial, List.of( name.split( "\\." ) ) );
             i++;
         }

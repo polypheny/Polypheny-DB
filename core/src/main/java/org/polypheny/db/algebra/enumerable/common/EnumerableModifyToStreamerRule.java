@@ -42,7 +42,7 @@ public class EnumerableModifyToStreamerRule extends AlgOptRule {
      * and prepared {@link Modify}, which can be useful if the executing store is not able to perform the {@link Scan} query natively.
      */
     private EnumerableModifyToStreamerRule( Class<? extends Modify<?>> modify ) {
-        super( operandJ( modify, Convention.NONE, r -> true, any() ), "Enumerable" + modify.getSimpleName() + "ToStreamerRule" );
+        super( operandJ( modify, Convention.NONE, r -> !r.streamed, any() ), "Enumerable" + modify.getSimpleName() + "ToStreamerRule" );
     }
 
 
@@ -59,6 +59,7 @@ public class EnumerableModifyToStreamerRule extends AlgOptRule {
                 AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCluster().getSnapshot() ) );
 
         if ( streamer != null ) {
+            modify.streamed( true );
             call.transformTo( streamer );
         }
     }

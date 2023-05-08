@@ -75,6 +75,7 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
+import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;
@@ -138,17 +139,19 @@ public class RelationalAdapterDelegate implements Modifiable {
             builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
         }
 
+        Pair<List<String>, List<RexNode>> updates = getRelationalDocumentModify( modify );
+
         RelModify<?> relModify = (RelModify<?>) table.unwrap( ModifiableEntity.class ).toModificationAlg(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 table,
                 builder.build(),
                 modify.getOperation(),
-                modify.getKeys(),
-                modify.getUpdates() );
+                updates.left,
+                updates.right );
 
         if ( relModify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
-            // Values has already been replaced
+            // Values have already been replaced
             builder.push( relModify );
             return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
         }
@@ -159,17 +162,12 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private AlgNode getSimpleDocumentValuesModify( DocumentModify<?> modify, DocumentValues input, PhysicalTable table, AlgBuilder builder ) {
-        builder.push( input );
-        builder.push( table.unwrap( ModifiableEntity.class ).toModificationAlg(
-                modify.getCluster(),
-                modify.getTraitSet(),
-                table,
-                builder.build(),
-                modify.getOperation(),
-                modify.getKeys(),
-                modify.getUpdates() ) );
-        return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
+    private Pair<List<String>, List<RexNode>> getRelationalDocumentModify( DocumentModify<?> modify ) {
+        if ( modify.isInsert() ) {
+            return Pair.of( null, null );
+        }
+
+        return DocumentUtil.transformUpdateRelational( modify.updates, modify.removes, modify.renames, DocumentType.asRelational(), modify.getInput() );
     }
 
 

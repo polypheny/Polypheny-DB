@@ -257,7 +257,7 @@ public abstract class Index {
         List<RexLiteral> row = new ArrayList<>( tuple.size() );
         for ( int i = 0; i < tuple.size(); ++i ) {
             final AlgDataType type = rowType.getFieldList().get( i ).getType();
-            final Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) tuple.get( i ), type );
+            final Pair<Comparable<?>, PolyType> converted = RexLiteral.convertType( (Comparable<?>) tuple.get( i ), type );
             row.add( new RexLiteral( converted.left, type, converted.right ) );
         }
         return ImmutableList.copyOf( row );

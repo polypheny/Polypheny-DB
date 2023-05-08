@@ -20,10 +20,11 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Streamer;
@@ -42,6 +43,8 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 @Slf4j
 public class LogicalStreamer extends Streamer {
 
@@ -122,13 +125,13 @@ public class LogicalStreamer extends Streamer {
             algBuilder.push( getCollector( rexBuilder, input ) );
         }
 
-        LogicalRelModify prepared = LogicalRelModify.create(
+        Modify<?> prepared = LogicalRelModify.create(
                 modify.getEntity(),
                 algBuilder.build(),
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
                 modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
-                false );
+                false ).streamed( true );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
 
@@ -209,10 +212,5 @@ public class LogicalStreamer extends Streamer {
         return new LogicalStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ) );
     }
 
-
-    @Override
-    public AlgNode accept( AlgShuttle shuttle ) {
-        return shuttle.visit( this );
-    }
 
 }
