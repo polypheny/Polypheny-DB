@@ -31,7 +31,7 @@ public interface QueryProcessor {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, boolean withMonitoring );
+    <T> PolyImplementation<T> prepareQuery( AlgRoot logicalRoot, boolean withMonitoring );
 
     /**
      * @param logicalRoot Logical query plan.
@@ -39,7 +39,7 @@ public interface QueryProcessor {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean withMonitoring );
+    <T> PolyImplementation<T> prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean withMonitoring );
 
     /**
      * @param logicalRoot Logical query plan.
@@ -49,7 +49,7 @@ public interface QueryProcessor {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
+    <T> PolyImplementation<T> prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
 
     /**
      * @return Gets the planner.

@@ -158,7 +158,7 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeColStat( Statement statement, AlgNode node, QueryResult queryResult ) throws QueryExecutionException {
-        PolyImplementation result;
+        PolyImplementation<Object> result;
         List<List<Object>> rows;
 
         try {

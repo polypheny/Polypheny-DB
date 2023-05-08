@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable;
+package org.polypheny.db.algebra.enumerable.common;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.common.Modify;

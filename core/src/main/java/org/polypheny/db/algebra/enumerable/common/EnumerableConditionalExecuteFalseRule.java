@@ -14,32 +14,35 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable;
+package org.polypheny.db.algebra.enumerable.common;
 
 
+import lombok.SneakyThrows;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
-import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
 
-public class EnumerableConditionalExecuteTrueRule extends ConverterRule {
+public class EnumerableConditionalExecuteFalseRule extends ConverterRule {
 
-    public EnumerableConditionalExecuteTrueRule() {
+    public EnumerableConditionalExecuteFalseRule() {
         super( LogicalConditionalExecute.class,
-                lce -> lce.getCondition() == Condition.TRUE,
+                lce -> lce.getCondition() == Condition.FALSE,
                 Convention.NONE, EnumerableConvention.INSTANCE,
-                AlgFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteTrueRule" );
+                AlgFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteFalseRule" );
     }
 
 
+    @SneakyThrows
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalConditionalExecute lce = (LogicalConditionalExecute) alg;
-        return AlgOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        ConditionalExecute ce = (ConditionalExecute) alg;
+        throw ce.getExceptionClass().getConstructor( String.class ).newInstance( ce.getExceptionMessage() );
     }
 
 }

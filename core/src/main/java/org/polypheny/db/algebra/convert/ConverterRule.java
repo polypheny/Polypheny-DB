@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.convert;
 
 import java.util.Objects;
 import java.util.function.Predicate;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgOptRule;
@@ -51,7 +52,9 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public abstract class ConverterRule extends AlgOptRule {
 
+    @Getter
     private final AlgTrait inTrait;
+    @Getter
     private final AlgTrait outTrait;
 
 
@@ -96,17 +99,6 @@ public abstract class ConverterRule extends AlgOptRule {
     @Override
     public Convention getOutConvention() {
         return (Convention) outTrait;
-    }
-
-
-    @Override
-    public AlgTrait getOutTrait() {
-        return outTrait;
-    }
-
-
-    public AlgTrait getInTrait() {
-        return inTrait;
     }
 
 

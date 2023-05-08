@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable;
+package org.polypheny.db.algebra.enumerable.common;
 
 
 import java.util.HashMap;
@@ -28,7 +28,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
 import org.polypheny.db.interpreter.BindableAlg;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Node;

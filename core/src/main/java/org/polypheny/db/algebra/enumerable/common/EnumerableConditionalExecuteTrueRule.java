@@ -14,39 +14,33 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable;
+package org.polypheny.db.algebra.enumerable.common;
 
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
 
-public class EnumerableConditionalExecuteRule extends ConverterRule {
+public class EnumerableConditionalExecuteTrueRule extends ConverterRule {
 
-    public EnumerableConditionalExecuteRule() {
+    public EnumerableConditionalExecuteTrueRule() {
         super( LogicalConditionalExecute.class,
-                operand -> true,
+                lce -> lce.getCondition() == Condition.TRUE,
                 Convention.NONE, EnumerableConvention.INSTANCE,
-                AlgFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteRule" );
+                AlgFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteTrueRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
         final LogicalConditionalExecute lce = (LogicalConditionalExecute) alg;
-        final AlgNode input = AlgOptRule.convert( lce.getLeft(), lce.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        final AlgNode action = AlgOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        final EnumerableConditionalExecute ece = EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
-        ece.setCheckDescription( lce.getCheckDescription() );
-        ece.setLogicalNamespace( lce.getLogicalNamespace() );
-        ece.setCatalogTable( lce.getCatalogTable() );
-        ece.setCatalogColumns( lce.getCatalogColumns() );
-        ece.setValues( lce.getValues() );
-        return ece;
+        return AlgOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
     }
 
 }

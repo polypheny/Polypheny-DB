@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable;
+package org.polypheny.db.algebra.enumerable.common;
 
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.EnumerableUnion;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -28,9 +31,9 @@ import org.polypheny.db.plan.Convention;
 /**
  * Rule to convert an {@link LogicalUnion} to an {@link EnumerableUnion}.
  */
-class EnumerableModifyCollectRule extends ConverterRule {
+public class EnumerableModifyCollectRule extends ConverterRule {
 
-    EnumerableModifyCollectRule() {
+    public EnumerableModifyCollectRule() {
         super( LogicalModifyCollect.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableModifyCollectRule" );
     }
 

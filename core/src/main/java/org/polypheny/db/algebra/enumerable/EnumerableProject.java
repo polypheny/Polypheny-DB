@@ -59,7 +59,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
     public static EnumerableProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
-        final AlgTraitSet traitSet = cluster.traitSet().replace( EnumerableConvention.INSTANCE )
+        final AlgTraitSet traitSet = input.getTraitSet().replace( EnumerableConvention.INSTANCE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
         return new EnumerableProject( cluster, traitSet, input, projects, rowType );
     }

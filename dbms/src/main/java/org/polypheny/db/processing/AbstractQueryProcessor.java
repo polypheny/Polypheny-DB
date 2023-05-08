@@ -188,19 +188,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     @Override
-    public PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, boolean withMonitoring ) {
+    public <T> PolyImplementation<T> prepareQuery( AlgRoot logicalRoot, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), false, false, withMonitoring );
     }
 
 
     @Override
-    public PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
+    public <T> PolyImplementation<T> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, parameterRowType, false, false, withMonitoring );
     }
 
 
     @Override
-    public PolyImplementation<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
+    public <T> PolyImplementation<T> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
 
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -225,7 +225,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getOverviewDuration().start( "Plan Selection" );
         }
 
-        final Pair<PolyImplementation, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
+        final Pair<PolyImplementation<T>, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getOverviewDuration().stop( "Plan Selection" );
@@ -574,11 +574,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @AllArgsConstructor
     @Getter
-    private static class ProposedImplementations {
+    private static class ProposedImplementations<T> {
 
         private final List<ProposedRoutingPlan> proposedRoutingPlans;
         private final List<AlgNode> optimizedPlans;
-        private final List<PolyImplementation> results;
+        private final List<PolyImplementation<T>> results;
         private final List<String> generatedCodes;
         private final LogicalQueryInformation logicalQueryInformation;
 
@@ -1465,11 +1465,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private Pair<PolyImplementation, ProposedRoutingPlan> selectPlan( ProposedImplementations proposedImplementations ) {
+    private <T> Pair<PolyImplementation<T>, ProposedRoutingPlan> selectPlan( ProposedImplementations<T> proposedImplementations ) {
         // Lists should all be same size
         List<ProposedRoutingPlan> proposedRoutingPlans = proposedImplementations.getProposedRoutingPlans();
         List<AlgNode> optimalAlgs = proposedImplementations.getOptimizedPlans();
-        List<PolyImplementation> results = proposedImplementations.getResults();
+        List<PolyImplementation<T>> results = proposedImplementations.getResults();
         List<String> generatedCodes = proposedImplementations.getGeneratedCodes();
         LogicalQueryInformation queryInformation = proposedImplementations.getLogicalQueryInformation();
 

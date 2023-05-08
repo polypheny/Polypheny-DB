@@ -22,6 +22,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -48,7 +49,7 @@ public class LogicalTransformer extends Transformer {
                 cluster,
                 inputs,
                 names,
-                inputs.get( 0 ).getTraitSet(),
+                inputs.get( 0 ).getTraitSet().replace( EnumerableConvention.NONE ),
                 inTraitSet,
                 outTraitSet,
                 rowType,
@@ -56,65 +57,10 @@ public class LogicalTransformer extends Transformer {
     }
 
 
-    private static List<AlgNode> adjustIfNeeded( List<AlgNode> inputs, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        AlgNode node = inputs.get( 0 );
-        if ( outTraitSet == ModelTrait.DOCUMENT ) {
-            node = handleDocument( inputs, inTraitSet, outTraitSet, rowType );
-        } else if ( outTraitSet == ModelTrait.RELATIONAL ) {
-            node = handleRelational( inputs, inTraitSet, outTraitSet, rowType );
-        } else if ( outTraitSet == ModelTrait.GRAPH ) {
-            node = handleGraph( inputs, inTraitSet, outTraitSet, rowType );
-        }
-        return List.of( node );
-    }
 
 
     public static AlgNode create( List<AlgNode> inputs, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-
         return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, null, inTraitSet, outTraitSet, rowType, false );
-    }
-
-
-    private static AlgNode handleRelational( List<AlgNode> inputs, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
-        AlgOptCluster cluster = inputs.get( 0 ).getCluster();
-        RexBuilder rexBuilder = cluster.getRexBuilder();
-
-        AlgNode input = inputs.get( 0 );
-
-        List<RexNode> fields = new ArrayList<>();
-        int dataId = rowType.getField( DocumentType.DOCUMENT_DATA, true, false ).getIndex();
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
-            if ( input.getRowType().getFieldNames().contains( field.getName() ) ) {
-                fields.add( rexBuilder.makeInputRef( new DocumentType(), input.getRowType().getField( field.getName(), false, false ).getIndex() ) );
-            } else if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
-                List<RexNode> nodes = new ArrayList<>();
-                nodes.add( rexBuilder.makeInputRef( field.getType(), dataId ) );
-                rowType.getFieldNames().forEach( s -> nodes.add( rexBuilder.makeLiteral( s ) ) );
-                fields.add( rexBuilder.makeCall( new DocumentType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.REMOVE_NAMES ), nodes ) );
-            } else {
-                fields.add( rexBuilder.makeCall( new DocumentType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.EXTRACT_NAME ), rexBuilder.makeInputRef( field.getType(), dataId ), rexBuilder.makeLiteral( field.getName() ) ) );
-            }
-
-        }
-        LogicalDocumentProject project = LogicalDocumentProject.create( input, fields, rowType.getFieldNames() );
-        return new LogicalTransformer( inputs.get( 0 ).getCluster(), List.of( project ), null, inTraitSet, outTraitSet, rowType, false );
-
-    }
-
-
-    private static AlgNode handleGraph( List<AlgNode> inputs, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        throw new NotImplementedException();
-    }
-
-
-    private static AlgNode handleDocument( List<AlgNode> inputs, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        if ( inputs.size() == 1 && inputs.get( 0 ).getRowType().getFieldCount() == rowType.getFieldCount() ) {
-            return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, null, inTraitSet, outTraitSet, rowType, false );
-        }
-
-        return inputs.get( 0 );
-
     }
 
 

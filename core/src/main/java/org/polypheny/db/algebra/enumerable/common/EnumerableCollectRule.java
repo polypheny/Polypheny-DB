@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable;
+package org.polypheny.db.algebra.enumerable.common;
 
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.Collect;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.common.EnumerableCollect;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -27,9 +29,9 @@ import org.polypheny.db.plan.Convention;
 /**
  * Rule to convert an {@link org.polypheny.db.algebra.core.Collect} to an {@link EnumerableCollect}.
  */
-class EnumerableCollectRule extends ConverterRule {
+public class EnumerableCollectRule extends ConverterRule {
 
-    EnumerableCollectRule() {
+    public EnumerableCollectRule() {
         super( Collect.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableCollectRule" );
     }
 

@@ -41,14 +41,21 @@ public class ModelSwitcherRule extends AlgOptRule {
 
 
     public ModelSwitcherRule( ModelTrait in, ModelTrait out ) {
-        super( operandJ( AlgNode.class, out, r -> !(r instanceof Transformer), operandJ( AlgNode.class, in, r -> !(r instanceof Transformer), any() ) ), "ModelSwitcherRule" + in + out );
+        super( operandJ( AlgNode.class, out, r -> false, any() ), "ModelSwitcherRule_" + in + "_" + out );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        AlgNode parent = call.alg( 0 );
-        AlgNode alg = call.alg( 1 );
+        AlgNode alg = call.alg( 0 );
+
+        ModelTrait rootModel = call.getPlanner().getRoot().getTraitSet().getTrait( ModelTraitDef.INSTANCE );
+        if ( call.getParents() == null && alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) == rootModel ) {
+            // no reason to go up
+            return;
+        }
+
+        AlgNode parent = call.getParents().get( 0 );
 
         LogicalTransformer transformer = new LogicalTransformer(
                 alg.getCluster(), List.of( alg ),
@@ -58,7 +65,9 @@ public class ModelSwitcherRule extends AlgOptRule {
                 alg.getRowType(),
                 false );
 
-        call.transformTo( transformer );
+        AlgNode node = parent.copy( parent.getTraitSet(), List.of( transformer ) );
+
+        call.transformTo( node );
     }
 
 }

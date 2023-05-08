@@ -17,12 +17,6 @@
 package org.polypheny.db.runtime.functions;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.bson.BsonDocument;
-import org.bson.BsonElement;
-import org.bson.BsonNull;
-import org.bson.BsonString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyString;
@@ -30,19 +24,6 @@ import org.polypheny.db.util.Pair;
 
 
 public class RefactorFunctions {
-
-    public static Object extractNames( Map<Object, Object> objects, List<String> names ) {
-        Object[] ob = new Object[names.size() + 1];
-        int i = 0;
-        for ( String name : names ) {
-            ob[i++] = objects.get( name );
-        }
-        names.forEach( objects::remove );
-        ob[i] = new BsonDocument( objects.entrySet().stream().map( o -> new BsonElement( o.getKey().toString(), o.getValue() == null ? new BsonNull() : new BsonString( o.getValue().toString() ) ) ).collect( Collectors.toList() ) ).toJson();
-
-        return ob;
-    }
-
 
     public static PolyValue get( PolyDocument map, String key ) {
         return map.get( PolyString.of( key ) );
@@ -62,16 +43,19 @@ public class RefactorFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static String fromDocument( PolyValue doc ) {
         return doc.serialize();
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyValue toDocument( String json ) {
         return PolyValue.deserialize( json );
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyDocument mergeDocuments( PolyValue target, Pair<String, PolyValue>... additional ) {
         for ( Pair<String, PolyValue> pair : additional ) {
             target.asDocument().put( new PolyString( pair.left ), pair.right );

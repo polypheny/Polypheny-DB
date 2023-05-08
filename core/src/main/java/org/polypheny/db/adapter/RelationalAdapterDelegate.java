@@ -149,7 +149,8 @@ public class RelationalAdapterDelegate implements Modifiable {
 
         if ( relModify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
             // Values has already been replaced
-            return relModify;
+            builder.push( relModify );
+            return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
         }
 
         builder.push( LogicalStreamer.create( relModify, builder ) );

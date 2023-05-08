@@ -138,7 +138,7 @@ public class LanguageCrud {
 
         ExtendedQueryParameters parameters = new ExtendedQueryParameters( databaseName );
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
-        PolyImplementation<PolyGraph> polyImplementation = (PolyImplementation<PolyGraph>) statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+        PolyImplementation<PolyGraph> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
         List<List<PolyGraph>> res = polyImplementation.getRows( statement, 1 );
 
