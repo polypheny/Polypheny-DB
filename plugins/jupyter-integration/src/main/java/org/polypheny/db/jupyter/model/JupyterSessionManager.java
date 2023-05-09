@@ -54,8 +54,8 @@ public class JupyterSessionManager {
      * Creates a new JupyterKernel, if no kernel with the same id already exists.
      * Otherwise, this has no effect.
      */
-    public void addKernel( String kernelId, String name, WebSocket.Builder builder ) {
-        kernels.computeIfAbsent( kernelId, k -> new JupyterKernel( kernelId, name, builder ) );
+    public void addKernel( String kernelId, String name, WebSocket.Builder builder, String host ) {
+        kernels.computeIfAbsent( kernelId, k -> new JupyterKernel( kernelId, name, builder, host ) );
     }
 
 
@@ -78,6 +78,10 @@ public class JupyterSessionManager {
         session.setName( name );
         session.setPath( path );
         session.setKernel( kernel );
+    }
+
+    public void removeSession( String sessionId ) {
+        sessions.remove( sessionId );
     }
 
 
@@ -149,6 +153,15 @@ public class JupyterSessionManager {
         }
         sb.append( "\nDefault Kernel: " ).append( defaultKernel ).append( "\n" );
         return sb.toString();
+    }
+
+
+    public void reset() {
+        sessions.clear();
+        kernels.forEach( ( id, kernel ) -> {
+            kernel.close();
+        } );
+        kernels.clear();
     }
 
 }

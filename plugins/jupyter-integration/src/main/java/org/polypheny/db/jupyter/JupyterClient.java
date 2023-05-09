@@ -22,6 +22,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.javalin.http.HttpCode;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
@@ -34,23 +35,26 @@ import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.jupyter.model.JupyterSessionManager;
 
 @Slf4j
 public class JupyterClient {
 
-    public static final String HOST = "localhost:12345";
-    private HttpClient client;
-    private WebSocket.Builder webSocketBuilder;
-    private String token;
+    private final String host;
+    private final HttpClient client;
+    private final WebSocket.Builder webSocketBuilder;
+    private final String token;
     private final Gson gson = new Gson();
     private final JupyterSessionManager sessionManager = JupyterSessionManager.getInstance();
 
 
-    public JupyterClient( String token ) {
+    public JupyterClient( String token, String host, int port ) {
         this.token = token;
+        this.host = host + ":" + port;
         this.client = HttpClient.newBuilder()
                 .cookieHandler( new CookieManager() )
                 .build();
@@ -59,34 +63,47 @@ public class JupyterClient {
 
 
     public boolean testConnection() {
-        HttpResponse<String> response = sendGET( "status" );
-        return response != null && response.statusCode() == 200;
+        try {
+            HttpResponse<String> response = sendGET( "status" );
+            return response.statusCode() == 200;
+        } catch ( JupyterServerException e ) {
+            return false;
+        }
     }
 
 
-    public void getSession( String sessionId ) {
+    public HttpResponse<String> getSession( String sessionId ) throws JupyterServerException {
         HttpResponse<String> response = sendGET( "sessions/" + sessionId );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in getSession" );
-            return;
+        if ( response.statusCode() == 200 ) {
+            updateSession( gson.fromJson( response.body(), JsonObject.class ) );
+        } else {
+            // if not successful, the jupyter server sends a html page that we do not want to forward to the UI
+            throw new JupyterServerException( "Requested session not found", 404 );
         }
-        updateSession( gson.fromJson( response.body(), JsonObject.class ) );
-        logResponse( response );
+        return response;
     }
 
 
-    public void getSessions() {
+    public HttpResponse<String> getSessions() throws JupyterServerException {
         HttpResponse<String> response = sendGET( "sessions" );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in getSessions" );
-            return;
+        if ( response.statusCode() == 200 ) {
+            updateSessions( gson.fromJson( response.body(), JsonArray.class ) );
         }
-        updateSessions( gson.fromJson( response.body(), JsonArray.class ) );
-        logResponse( response );
+        return response;
     }
 
 
-    public String createSession( String kernelName, String fileName, String filePath ) {
+    public HttpResponse<String> createSession( String body ) throws JupyterServerException {
+        HttpResponse<String> response = sendPOST( "sessions", body );
+        if ( response.statusCode() == 201 ) {
+            JsonObject json = gson.fromJson( response.body(), JsonObject.class );
+            updateSession( json );
+        }
+        return response;
+    }
+
+
+    public HttpResponse<String> createSession( String kernelName, String fileName, String filePath ) throws JupyterServerException {
         JsonObject kernel = new JsonObject();
         kernel.addProperty( "name", kernelName );
         JsonObject body = new JsonObject();
@@ -95,336 +112,243 @@ public class JupyterClient {
         body.addProperty( "path", filePath );
         body.addProperty( "type", "notebook" );
 
-        HttpResponse<String> response = sendPOST( "sessions", body.toString() );
-        if ( response == null || response.statusCode() != 201 ) {
-            log.error( "Error in createSession" );
-            return "ERROR";
-        }
-        JsonObject json = gson.fromJson( response.body(), JsonObject.class );
-        updateSession( json );
-        logResponse( response );
-        return json.get( "id" ).getAsString();
+        return createSession( body.toString() );
     }
 
 
-    public void renameSession( String sessionId, String fileName, String filePath ) {
+    public HttpResponse<String> patchSession( String sessionId, String body ) throws JupyterServerException {
+        HttpResponse<String> response = sendPATCH( "sessions/" + sessionId, body );
+        if ( response.statusCode() == 200 ) {
+            updateSession( gson.fromJson( response.body(), JsonObject.class ) );
+        }
+        return response;
+    }
+
+
+    public HttpResponse<String> renameSession( String sessionId, String fileName, String filePath ) throws JupyterServerException {
         JsonObject body = new JsonObject();
         body.addProperty( "name", fileName );
         body.addProperty( "path", filePath );
 
-        HttpResponse<String> response = sendPATCH( "sessions/" + sessionId, body.toString() );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in renameSession" );
-            return;
-        }
-        updateSession( gson.fromJson( response.body(), JsonObject.class ) );
-        logResponse( response );
+        return patchSession( sessionId, body.toString() );
     }
 
 
-    public void setKernelOfSession( String sessionId, String kernelId ) {
+    public HttpResponse<String> setKernelOfSession( String sessionId, String kernelId ) throws JupyterServerException {
         JsonObject kernel = new JsonObject();
         kernel.addProperty( "id", kernelId );
         JsonObject body = new JsonObject();
         body.add( "kernel", kernel );
 
-        HttpResponse<String> response = sendPATCH( "sessions/" + sessionId, body.toString() );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in setKernelOfSession" );
-            return;
-        }
-        updateSession( gson.fromJson( response.body(), JsonObject.class ) );
-        logResponse( response );
+        return patchSession( sessionId, body.toString() );
     }
 
 
-    public void deleteSession( String sessionId ) {
+    public HttpResponse<String> deleteSession( String sessionId ) throws JupyterServerException {
         HttpResponse<String> response = sendDELETE( "sessions/" + sessionId );
-        if ( response == null || response.statusCode() != 204 ) {
-            log.error( "Error in deleteSession" );
-            return;
+        if ( response.statusCode() == 204 ) {
+            sessionManager.removeSession( sessionId );
         }
-        logResponse( response );
+        return response;
     }
 
 
-    public void getRunningKernels() {
+    public HttpResponse<String> getRunningKernels() throws JupyterServerException {
         HttpResponse<String> response = sendGET( "kernels" );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in getRunningKernels" );
-            return;
+        if ( response.statusCode() == 200 ) {
+            updateKernels( gson.fromJson( response.body(), JsonArray.class ) );
         }
-        updateKernels( gson.fromJson( response.body(), JsonArray.class ) );
-        logResponse( response );
+        return response;
     }
 
 
-    public void getKernelspecs() {
+    public HttpResponse<String> getKernelspecs() throws JupyterServerException {
         HttpResponse<String> response = sendGET( "kernelspecs" );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in getKernelSpecs" );
-            return;
+        if ( response.statusCode() == 200 ) {
+            updateKernelSpecs( gson.fromJson( response.body(), JsonObject.class ) );
         }
-        updateKernelSpecs( gson.fromJson( response.body(), JsonObject.class ) );
-        logResponse( response );
-    }
-
-    public void startKernel (String kernelName) {
-        JsonObject body = new JsonObject();
-        body.addProperty( "name", kernelName );
-
-        HttpResponse<String> response = sendPOST( "kernels", body.toString() );
-        if ( response == null || response.statusCode() != 201 ) {
-            log.error( "Error in startKernel" );
-            return;
-        }
-        JsonObject json = gson.fromJson( response.body(), JsonObject.class );
-        sessionManager.addKernel( json.get( "id" ).getAsString(), json.get( "name" ).getAsString(), webSocketBuilder );
-        logResponse( response );
+        return response;
     }
 
 
-    public void deleteKernel( String kernelId ) {
-        HttpResponse<String> response = sendDELETE( "kernels/" + kernelId );
-        if ( response == null || response.statusCode() != 204 ) {
-            log.error( "Error in deleteKernel" );
-            return;
-        }
-        logResponse( response );
+    public HttpResponse<String> interruptKernel( String kernelId ) throws JupyterServerException {
+        return sendPOST( "kernels/" + kernelId + "/interrupt", "" );
     }
 
 
-    public void interruptKernel( String kernelId ) {
-
-        HttpResponse<String> response = sendPOST( "kernels/" + kernelId + "/interrupt", "" );
-        if ( response == null || response.statusCode() != 204 ) {
-            log.error( "Error in interruptKernel" );
-            return;
-        }
-        logResponse( response );
+    public HttpResponse<String> restartKernel( String kernelId ) throws JupyterServerException {
+        return sendPOST( "kernels/" + kernelId + "/restart", "" );
     }
 
 
-    public void restartKernel( String kernelId ) {
-
-        HttpResponse<String> response = sendPOST( "kernels/" + kernelId + "/restart", "" );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in restartKernel" );
-            return;
-        }
-        logResponse( response );
-    }
-
-    /**
-     * Format determines how file content should be returned.
-     * It can be text or base64.
-     */
-    public void getContents( String path, String format ) {
-        HttpResponse<String> response = sendGET( "contents/" + path );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in getContents" );
-            return;
-        }
-        logResponse( response );
-    }
-
-    public void getContents( String path) {
-        getContents( path, "text" );
+    public HttpResponse<String> getContents( String path ) throws JupyterServerException {
+        return sendGET( "contents/" + path );
     }
 
 
-    public void createNotebook( String parentPath ) {
+    public HttpResponse<String> createFile( String parentPath, String body ) throws JupyterServerException {
+        return sendPOST( "contents/" + parentPath, body );
+    }
+
+
+    public HttpResponse<String> createNotebook( String parentPath ) throws JupyterServerException {
         JsonObject body = new JsonObject();
         body.addProperty( "type", "notebook" );
 
-        HttpResponse<String> response = sendPOST( "contents/" + parentPath, body.toString() );
-        if ( response == null || response.statusCode() != 201 ) {
-            log.error( "Error in createNotebook" );
-            return;
-        }
-        logResponse( response );
+        return createFile( parentPath, body.toString() );
     }
 
 
-    public void createDirectory( String parentPath ) {
+    public HttpResponse<String> createDirectory( String parentPath ) throws JupyterServerException {
         JsonObject body = new JsonObject();
         body.addProperty( "type", "directory" );
 
-        HttpResponse<String> response = sendPOST( "contents/" + parentPath, body.toString() );
-        if ( response == null || response.statusCode() != 201 ) {
-            log.error( "Error in createDirectory" );
-            return;
-        }
-        logResponse( response );
+        return createFile( parentPath, body.toString() );
     }
 
 
-    public void createFile( String parentPath, String extension ) {
+    public HttpResponse<String> createFileWithExtension( String parentPath, String extension ) throws JupyterServerException {
         JsonObject body = new JsonObject();
         body.addProperty( "type", "file" );
         body.addProperty( "ext", extension );
+        return createFile( parentPath, body.toString() );
+    }
 
-        HttpResponse<String> response = sendPOST( "contents/" + parentPath, body.toString() );
-        if ( response == null || response.statusCode() != 201 ) {
-            log.error( "Error in createFile" );
-            return;
-        }
-        logResponse( response );
+
+    public HttpResponse<String> copyFile( String destParentPath, String srcFilePath ) throws JupyterServerException {
+        JsonObject body = new JsonObject();
+        body.addProperty( "copy_from", srcFilePath );
+        return createFile( destParentPath, body.toString() );
+    }
+
+
+    public HttpResponse<String> putFile( String filePath, String body ) throws JupyterServerException {
+        return sendPUT( "contents/" + filePath, body );
     }
 
 
     /**
      * Format can be json, text or base64
      */
-    public void saveFile( String filePath, String content, String format, String type ) {
+    public HttpResponse<String> saveFile( String filePath, String content, String format, String type ) throws JupyterServerException {
         JsonObject body = new JsonObject();
         body.addProperty( "content", content );
         body.addProperty( "format", format );
         body.addProperty( "type", type );
 
-        HttpResponse<String> response = sendPUT( "contents/" + filePath, body.toString() );
-        if ( response == null || (response.statusCode() != 200 && response.statusCode() != 201) ) {
-            log.error( "Error in saveFile" );
-            return;
-        }
-        logResponse( response );
+        return putFile( filePath, body.toString() );
     }
+
 
     /**
      * Format can be json, text or base64
      */
-    public void uploadFile( String filePath, String fileName, String content, String format, String type ) {
-        // TODO: check if path is necessary
+    public HttpResponse<String> uploadFile( String filePath, String fileName, String content, String format, String type ) throws JupyterServerException {
         JsonObject body = new JsonObject();
         body.addProperty( "content", content );
         body.addProperty( "format", format );
         body.addProperty( "type", type );
         body.addProperty( "name", fileName );
 
-        HttpResponse<String> response = sendPUT( "contents/" + filePath, body.toString() );
-        if ( response == null || (response.statusCode() != 200 && response.statusCode() != 201) ) {
-            log.error( "Error in uploadFile" );
-            return;
-        }
-        logResponse( response );
+        return putFile( filePath, body.toString() );
     }
 
 
-    public void deleteFile( String filePath ) {
-        HttpResponse<String> response = sendDELETE( "contents/" + filePath );
-        if ( response == null || response.statusCode() != 204 ) {
-            log.error( "Error in deleteFile" );
-            return;
-        }
-        logResponse( response );
-    }
-
-
-    public void copyFile( String destParentPath, String srcFilePath ) {
-        JsonObject body = new JsonObject();
-        body.addProperty( "copy_from", srcFilePath );
-
-        HttpResponse<String> response = sendPOST( "contents/" + destParentPath, body.toString() );
-        if ( response == null || response.statusCode() != 201 ) {
-            log.error( "Error in copyFile" );
-            return;
-        }
-        logResponse( response );
+    public HttpResponse<String> deleteFile( String filePath ) throws JupyterServerException {
+        return sendDELETE( "contents/" + filePath );
     }
 
 
     /**
-     * Move and rename an existing file or directory.
+     * Move and/or rename an existing file or directory.
      */
-    public void moveFile( String destFilePath, String srcFilePath ) {
-        JsonObject body = new JsonObject();
-        body.addProperty( "path", destFilePath );
 
-        HttpResponse<String> response = sendPATCH( "contents/" + srcFilePath, body.toString() );
-        if ( response == null || response.statusCode() != 200 ) {
-            log.error( "Error in moveFile" );
-            return;
-        }
-        logResponse( response );
+    public HttpResponse<String> moveFile( String srcFilePath, String body ) throws JupyterServerException {
+        return sendPATCH( "contents/" + srcFilePath, body );
     }
 
 
-    private HttpResponse<String> sendGET( String resource ) {
+    private HttpResponse<String> sendGET( String resource ) throws JupyterServerException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri( getUriFromPath( resource ) )
+                .timeout( Duration.of( 10, SECONDS ) )
+                .GET()
+                .header( "Authorization", "token " + token )
+                .build();
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri( getUriFromPath(resource) )
-                    .timeout( Duration.of( 10, SECONDS ) )
-                    .GET()
-                    .header( "Authorization", "token " + token )
-                    .build();
             return client.send( request, BodyHandlers.ofString() );
-        } catch ( IOException | InterruptedException e ) {
-            log.warn( "Caught something in sendGET: {}", e.getMessage() );
-            return null;
+        } catch ( IOException e ) {
+            throw new JupyterServerException( "GET failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+        } catch ( InterruptedException e ) {
+            throw new JupyterServerException( "GET failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
         }
     }
 
 
-    private HttpResponse<String> sendPOST( String resource, String body ) {
+    private HttpResponse<String> sendPOST( String resource, String body ) throws JupyterServerException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri( getUriFromPath( resource ) )
+                .timeout( Duration.of( 10, SECONDS ) )
+                .POST( HttpRequest.BodyPublishers.ofString( body ) )
+                .header( "Authorization", "token " + token )
+                .build();
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri( getUriFromPath(resource) )
-                    .timeout( Duration.of( 10, SECONDS ) )
-                    .POST( HttpRequest.BodyPublishers.ofString( body ) )
-                    .header( "Authorization", "token " + token )
-                    .build();
             return client.send( request, BodyHandlers.ofString() );
-        } catch ( IOException | InterruptedException e ) {
-            log.warn( "Caught something in sendPOST: {}", e.getMessage() );
-            return null;
+        } catch ( IOException e ) {
+            throw new JupyterServerException( "POST failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+        } catch ( InterruptedException e ) {
+            throw new JupyterServerException( "POST failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
         }
     }
 
 
-    private HttpResponse<String> sendPUT( String resource, String body ) {
+    private HttpResponse<String> sendPUT( String resource, String body ) throws JupyterServerException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri( getUriFromPath( resource ) )
+                .timeout( Duration.of( 10, SECONDS ) )
+                .PUT( HttpRequest.BodyPublishers.ofString( body ) )
+                .header( "Authorization", "token " + token )
+                .build();
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri( getUriFromPath(resource) )
-                    .timeout( Duration.of( 10, SECONDS ) )
-                    .PUT( HttpRequest.BodyPublishers.ofString( body ) )
-                    .header( "Authorization", "token " + token )
-                    .build();
             return client.send( request, BodyHandlers.ofString() );
-        } catch ( IOException | InterruptedException e ) {
-            log.warn( "Caught something in sendPOST: {}", e.getMessage() );
-            return null;
+        } catch ( IOException e ) {
+            throw new JupyterServerException( "PUT failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+        } catch ( InterruptedException e ) {
+            throw new JupyterServerException( "PUT failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
         }
     }
 
 
-    private HttpResponse<String> sendPATCH( String resource, String body ) {
+    private HttpResponse<String> sendPATCH( String resource, String body ) throws JupyterServerException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri( getUriFromPath( resource ) )
+                .timeout( Duration.of( 10, SECONDS ) )
+                .method( "PATCH", HttpRequest.BodyPublishers.ofString( body ) )
+                .header( "Authorization", "token " + token )
+                .build();
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri( getUriFromPath(resource) )
-                    .timeout( Duration.of( 10, SECONDS ) )
-                    .method( "PATCH", HttpRequest.BodyPublishers.ofString( body ) )
-                    .header( "Authorization", "token " + token )
-                    .build();
             return client.send( request, BodyHandlers.ofString() );
-        } catch ( IOException | InterruptedException e ) {
-            log.warn( "Caught something in sendPATCH: {}", e.getMessage() );
-            return null;
+        } catch ( IOException e ) {
+            throw new JupyterServerException( "PATCH failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+        } catch ( InterruptedException e ) {
+            throw new JupyterServerException( "PATCH failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
         }
     }
 
 
-    private HttpResponse<String> sendDELETE( String resource ) {
+    private HttpResponse<String> sendDELETE( String resource ) throws JupyterServerException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri( getUriFromPath( resource ) )
+                .timeout( Duration.of( 10, SECONDS ) )
+                .DELETE()
+                .header( "Authorization", "token " + token )
+                .build();
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri( getUriFromPath(resource) )
-                    .timeout( Duration.of( 10, SECONDS ) )
-                    .DELETE()
-                    .header( "Authorization", "token " + token )
-                    .build();
             return client.send( request, BodyHandlers.ofString() );
-        } catch ( IOException | InterruptedException e ) {
-            log.warn( "Caught something in sendGET: {}", e.getMessage() );
-            return null;
+        } catch ( IOException e ) {
+            throw new JupyterServerException( "DELETE failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+        } catch ( InterruptedException e ) {
+            throw new JupyterServerException( "DELETE failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
         }
     }
 
@@ -450,7 +374,7 @@ public class JupyterClient {
         JsonObject kernel = session.getAsJsonObject( "kernel" );
         String kernelId = kernel.get( "id" ).getAsString();
         String name = kernel.get( "name" ).getAsString();
-        sessionManager.addKernel( kernelId, name, webSocketBuilder );
+        sessionManager.addKernel( kernelId, name, webSocketBuilder, host );
 
         String sessionId = session.get( "id" ).getAsString();
         String fileName = session.get( "name" ).getAsString();
@@ -464,7 +388,7 @@ public class JupyterClient {
         Set<String> validKernelIds = new HashSet<>();
         for ( JsonElement kernel : kernels ) {
             String id = kernel.getAsJsonObject().get( "id" ).getAsString();
-            sessionManager.addKernel( id, kernel.getAsJsonObject().get( "name" ).getAsString(), webSocketBuilder );
+            sessionManager.addKernel( id, kernel.getAsJsonObject().get( "name" ).getAsString(), webSocketBuilder, host );
             validKernelIds.add( id );
         }
         sessionManager.retainValidKernels( validKernelIds );
@@ -482,20 +406,35 @@ public class JupyterClient {
 
     }
 
-    private URI getUriFromPath(String path) {
+
+    private URI getUriFromPath( String path ) {
         try {
-            return new URI( "http", HOST, "/api/" + path, null, null );
+            return new URI( "http", host, "/api/" + path, null, null );
         } catch ( URISyntaxException e ) {
             throw new RuntimeException( e );
         }
     }
 
 
-    private void logResponse( HttpResponse<String> response ) {
-        log.warn( response.toString() );
-        log.warn( "Status: {}", response.statusCode() );
-        log.warn( "Headers: {}", response.headers() );
-        log.warn( "Body: {}\n", response.body() );
+    public static class JupyterServerException extends Exception {
+
+        @Getter
+        private final String msg;
+        @Getter
+        private final HttpCode status;
+
+
+        public JupyterServerException( String msg, HttpCode status ) {
+            this.msg = msg;
+            this.status = Objects.requireNonNullElse( status, HttpCode.INTERNAL_SERVER_ERROR );
+        }
+
+
+        public JupyterServerException( String msg, int status ) {
+            this.msg = msg;
+            this.status = Objects.requireNonNullElse( HttpCode.Companion.forStatus( status ), HttpCode.INTERNAL_SERVER_ERROR );
+        }
+
     }
 
 

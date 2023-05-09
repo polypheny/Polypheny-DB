@@ -16,13 +16,10 @@
 
 package org.polypheny.db.jupyter;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import java.io.File;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
-import lombok.Setter;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -30,26 +27,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.jupyter.model.JupyterKernel;
-import org.polypheny.db.jupyter.model.JupyterKernelSubscriber;
+import org.polypheny.db.jupyter.model.JupyterProxy;
 import org.polypheny.db.jupyter.model.JupyterSessionManager;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.HttpServer.HandlerType;
 
 @Slf4j
 public class JupyterPlugin extends Plugin {
 
     private String host;
     private String token;
-    private int dockerInstanceId = 0;
-    private int adapterId = 123456;
+    private final int dockerInstanceId = 0;
+    private final int adapterId = 123456;
+    private final int PORT = 12345;
     private final String UNIQUE_NAME = "jupyter-container";
     private final String SERVER_TARGET_PATH = "/home/jovyan/work";
+    private final String REST_PATH = "/notebooks";
     private DockerManager.Container container;
     private File rootPath;
-    @Setter
-    private JupyterClient connection;
+    private JupyterProxy proxy;
 
 
     /**
@@ -70,8 +69,15 @@ public class JupyterPlugin extends Plugin {
 
     @Override
     public void stop() {
+        JupyterSessionManager.getInstance().reset();
         stopContainer();
         log.info( "Jupyter Plugin was stopped!" );
+    }
+
+
+    public void onContainerRunning() {
+        proxy = new JupyterProxy( new JupyterClient( token, host, PORT ) );
+        registerEndpoints();
     }
 
 
@@ -83,7 +89,7 @@ public class JupyterPlugin extends Plugin {
 
         log.info( "trying to start jupyter container..." );
         DockerManager.Container container = new DockerManager.ContainerBuilder( adapterId, "polypheny/jupyter-server", UNIQUE_NAME, dockerInstanceId )
-                .withMappedPort( 8888, 12345 )
+                .withMappedPort( 8888, PORT )
                 .withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
                 .withInitCommands( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
                 .withReadyTest( this::testConnection, 20000 )
@@ -100,8 +106,30 @@ public class JupyterPlugin extends Plugin {
     }
 
 
+    private void registerEndpoints() {
+        HttpServer server = HttpServer.getInstance();
+        server.addSerializedRoute( REST_PATH + "/contents/<path>", proxy::contents, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/sessions", proxy::sessions, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::session, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/kernels", proxy::kernels, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/kernelspecs", proxy::kernelspecs, HandlerType.GET );
+
+        server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", proxy::createFile, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/sessions", proxy::createSession, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/interrupt", proxy::interruptKernel, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/restart", proxy::restartKernel, HandlerType.POST );
+
+        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", proxy::moveFile, HandlerType.PATCH );
+        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::patchSession, HandlerType.PATCH );
+
+        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", proxy::uploadFile, HandlerType.PUT );
+
+        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", proxy::deleteFile, HandlerType.DELETE );
+        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::deleteSession, HandlerType.DELETE );
+    }
+
+
     private boolean testConnection() {
-        JupyterClient client = null;
         if ( container == null ) {
             return false;
         }
@@ -110,7 +138,7 @@ public class JupyterPlugin extends Plugin {
         if ( host == null ) {
             return false;
         }
-        client = new JupyterClient( token );
+        JupyterClient client = new JupyterClient( token, host, PORT );
         return client.testConnection();
     }
 
@@ -124,71 +152,6 @@ public class JupyterPlugin extends Plugin {
             token.append( String.format( "%02x", i ) );
         }
         return token.toString();
-    }
-
-
-    private void testClient() {
-        log.error( "Testing the functionality of JuypterClient..." );
-
-        JupyterSessionManager jsm = JupyterSessionManager.getInstance();
-        connection.getKernelspecs();
-        connection.createDirectory( "work" );
-        connection.moveFile( "work/test", "work/Untitled Folder" );
-        connection.createFile( "work/test", ".txt" );
-        connection.moveFile( "work/test/text_file.txt", "work/test/Untitled.txt" );
-        connection.createNotebook( "work/test" );
-        connection.moveFile( "work/test/my_notebook.ipynb", "work/test/Untitled.ipynb" );
-        connection.getContents( "work/test" );
-
-        String imageB64 = "iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAIAAADZSiLoAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAbSURBVBhXY/j/ieF/vTqQBFFvZVSAJEzsEwMA8Q4PhqPP+LEAAAAASUVORK5CYII=";
-        connection.uploadFile( "work/test/uploaded.png", "uploaded.png", imageB64, "base64", "file" );
-        connection.saveFile( "work/test/text_file.txt", "Hello World!", "text", "file" );
-        connection.copyFile( "work/test", "work/test/uploaded.png" );
-        connection.deleteFile( "work/test/uploaded.png" );
-        connection.getContents( "work/test/text_file.txt", "text" );
-
-        String sessionId = connection.createSession( jsm.getDefaultKernel(), "my_notebook.ipynb", "work/test/my_notebook.ipynb" );
-        connection.getSessions();
-        log.error( jsm.getOverview() );
-
-        // Testing the interface
-        JupyterKernelSubscriber sub = new JupyterKernelSubscriber() {
-            @Override
-            public void onText( CharSequence data ) {
-                Gson gson = new Gson();
-                JsonObject json = gson.fromJson( data.toString(), JsonObject.class );
-                String msgType = json.get( "msg_type" ).getAsString();
-                if ( msgType.equals( "stream" ) ) {
-                    log.error( "Output ({}): {}",
-                            json.get( "content" ).getAsJsonObject().get( "name" ).getAsString(),
-                            json.get( "content" ).getAsJsonObject().get( "text" ).getAsString() );
-                }
-            }
-
-
-            @Override
-            public void onClose() {
-
-            }
-        };
-
-        JupyterKernel kernel = jsm.getKernelFromSession( sessionId );
-        kernel.subscribe( sub );
-        kernel.execute( "print('The answer is:', 6 * 7)" );
-
-        connection.createNotebook( "work/test" );
-        connection.moveFile( "work/test/another_notebook.ipynb", "work/test/Untitled.ipynb" );
-        connection.renameSession( sessionId, "another_notebook.ipynb", "work/test/another_notebook.ipynb" );
-
-        String sessionId2 = connection.createSession( jsm.getDefaultKernel(), "my_notebook.ipynb", "work/test/my_notebook.ipynb" );
-
-        connection.startKernel( jsm.getDefaultKernel() );
-        log.error( jsm.getOverview() );
-        connection.deleteSession( sessionId2 );
-        connection.getRunningKernels();
-        connection.getSessions();
-        log.error( jsm.getOverview() );
-
     }
 
 
@@ -207,10 +170,7 @@ public class JupyterPlugin extends Plugin {
         public void initExtension( TransactionManager manager, Authenticator authenticator ) {
             log.info( "Initializing Jupyter Extension" );
             plugin.startContainer();
-            JupyterClient client = new JupyterClient( plugin.token );
-            plugin.setConnection( client );
-
-            plugin.testClient();
+            plugin.onContainerRunning();
         }
 
     }

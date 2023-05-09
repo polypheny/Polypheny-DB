@@ -28,7 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.jupyter.JupyterClient;
 
 @Slf4j
 public class JupyterKernel {
@@ -39,12 +38,12 @@ public class JupyterKernel {
     private final Set<JupyterKernelSubscriber> subscribers = new HashSet<>();
 
 
-    public JupyterKernel( String kernelId, String name, WebSocket.Builder builder ) {
+    public JupyterKernel( String kernelId, String name, WebSocket.Builder builder, String host) {
         this.kernelId = kernelId;
         this.name = name;
         this.clientId = UUID.randomUUID().toString();
 
-        String url = "ws://" + JupyterClient.HOST + "/api/kernels/" + this.kernelId + "/channels?session_id=" + clientId;
+        String url = "ws://" + host + "/api/kernels/" + this.kernelId + "/channels?session_id=" + clientId;
 
         this.webSocket = builder.buildAsync( URI.create( url ), new WebSocketClient() ).join();
 
@@ -105,6 +104,10 @@ public class JupyterKernel {
         bb.put( byteMsg );
         bb.rewind();
         return bb;
+    }
+
+    public void close() {
+        webSocket.abort();
     }
 
 

@@ -377,6 +377,9 @@ public class HttpServer implements Runnable {
             case DELETE:
                 server.delete( route, r -> action.accept( r, crud ) );
                 break;
+            case PATCH:
+                server.patch( route, r -> action.accept( r, crud ) );
+                break;
         }
     }
 
@@ -460,7 +463,8 @@ public class HttpServer implements Runnable {
         POST,
         GET,
         PUT,
-        DELETE
+        DELETE,
+        PATCH
     }
 
 }
