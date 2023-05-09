@@ -176,7 +176,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     @Override
     public String getFullTypeString() {
-        return null;
+        return digest;
     }
 
 

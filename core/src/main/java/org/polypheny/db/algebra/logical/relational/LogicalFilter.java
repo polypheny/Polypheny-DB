@@ -50,6 +50,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.Litmus;
 
 
@@ -72,7 +73,7 @@ public final class LogicalFilter extends Filter {
      * @param variablesSet Correlation variables set by this relational expression to be used by nested expressions
      */
     public LogicalFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
-        super( cluster, traitSet, child, condition );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), child, condition );
         this.variablesSet = Objects.requireNonNull( variablesSet );
         assert isValid( Litmus.THROW, null );
     }

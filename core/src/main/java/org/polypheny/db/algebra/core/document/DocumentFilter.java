@@ -17,6 +17,9 @@
 package org.polypheny.db.algebra.core.document;
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -25,10 +28,12 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.schema.trait.ModelTrait;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
-    public final RexNode condition;
+    public RexNode condition;
 
 
     /**

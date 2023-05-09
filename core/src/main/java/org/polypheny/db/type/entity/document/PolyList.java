@@ -35,7 +35,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
+@Value(staticConstructor = "of")
 public class PolyList extends PolyValue implements List<PolyValue> {
 
 

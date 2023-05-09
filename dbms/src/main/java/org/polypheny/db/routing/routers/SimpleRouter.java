@@ -61,7 +61,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Only one builder available
         // builders.get( 0 ).addPhysicalInfo( placements );
-        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, entities ) );
+        super.handleRelScan( builders.get( 0 ), statement, entities.get( 0 ) );
 
         return builders;
     }

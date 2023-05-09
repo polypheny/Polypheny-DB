@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.ws.rs.NotSupportedException;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang.NotImplementedException;
@@ -73,6 +74,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.schema.document.DocumentUtil;
@@ -134,31 +136,59 @@ public class RelationalAdapterDelegate implements Modifiable {
         builder.clear();
 
         builder.push( modify.getInput() );
+
+        Pair<List<String>, List<RexNode>> updates = getRelationalDocumentModify( modify );
+
+        if ( updates.left != null ) {
+            // attach project and replace rexNodes with simple inputs
+            updates = replaceUpdates( updates, builder );
+        }
+
         if ( !modify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
             // push a transform under the modify for collector(right side of Streamer)
             builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
         }
 
-        Pair<List<String>, List<RexNode>> updates = getRelationalDocumentModify( modify );
-
-        RelModify<?> relModify = (RelModify<?>) table.unwrap( ModifiableEntity.class ).toModificationAlg(
-                modify.getCluster(),
-                modify.getTraitSet(),
-                table,
-                builder.build(),
-                modify.getOperation(),
-                updates.left,
-                updates.right );
-
-        if ( relModify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
+        if ( updates.left == null ) {
             // Values have already been replaced
-            builder.push( relModify );
-            return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
+            AlgNode node = table.unwrap( ModifiableEntity.class ).toModificationAlg(
+                    modify.getCluster(),
+                    modify.getTraitSet(),
+                    table,
+                    builder.build(),
+                    modify.getOperation(),
+                    null,
+                    null );
+            builder.push( node );
+        } else {
+            // left side
+            AlgNode provider = builder.build();
+            // build scan for right
+            builder.scan( table );
+            // attach filter for condition
+            LogicalStreamer.attachFilter( table, builder, provider.getCluster().getRexBuilder(), List.of( 0 ) );
+
+            AlgNode collector = builder.build();
+            collector = table.unwrap( ModifiableEntity.class ).toModificationAlg(
+                    modify.getCluster(),
+                    modify.getTraitSet(),
+                    table,
+                    collector,
+                    modify.getOperation(),
+                    updates.left,
+                    updates.right ).streamed( true );
+
+            builder.push( LogicalStreamer.create( provider, collector ) );
         }
 
-        builder.push( LogicalStreamer.create( relModify, builder ) );
-
         return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
+    }
+
+
+    private Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
+        builder.documentProject( updates.right, updates.left );
+
+        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFieldList().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
     }
 
 

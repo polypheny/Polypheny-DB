@@ -38,6 +38,7 @@ import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.util.Pair;
 
 
@@ -100,6 +101,11 @@ public class RexInputRef extends RexSlot {
      */
     public static RexInputRef of( int index, AlgDataType rowType ) {
         return of( index, rowType.getFieldList() );
+    }
+
+
+    public static RexInputRef of( int index, DocumentType rowType ) {
+        return new RexInputRef( index, rowType );
     }
 
 

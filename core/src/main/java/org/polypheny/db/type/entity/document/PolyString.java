@@ -24,6 +24,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -61,6 +62,31 @@ public class PolyString extends PolyValue {
         }
 
         return value.compareTo( o.asString().value );
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            if ( o instanceof String ) {
+                return Objects.equals( value, o );
+            }
+            return false;
+        }
+        if ( !super.equals( o ) ) {
+            return false;
+        }
+        PolyString that = (PolyString) o;
+        return Objects.equals( value, that.value );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

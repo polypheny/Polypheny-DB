@@ -68,7 +68,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -98,8 +97,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeDml( LogicalRelModify modify, Statement statement ) {
-        AlgOptCluster cluster = modify.getCluster();
-
         if ( modify.getEntity() == null ) {
             throw new RuntimeException( "Unexpected operator!" );
         }
@@ -121,35 +118,17 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             throw new RuntimeException( "Unknown table type: " + catalogTable.entityType.name() );
         }
 
-        long pkid = catalogTable.primaryKey;
-        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
-        LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
+        log.warn( "add more complex parts" );
 
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( catalogTable.id );
 
         AllocationEntity allocation = allocs.get( 0 );
-        ModifiableEntity modifiableTable = allocation.unwrap( ModifiableEntity.class );
 
-        AlgNode input = buildDmlNew(
-                super.recursiveCopy( modify.getInput( 0 ) ),
-                statement
-        ).build();
+        AlgNode input = buildDmlNew( super.recursiveCopy( modify.getInput( 0 ) ), statement, RoutedAlgBuilder.create( statement, modify.getCluster() ) ).build();
 
-        // Build DML
-
-        //List<String> updateColumnList = modify.getUpdateColumnList();
-        //List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
-
-        /*return modifiableTable.toModificationAlg(
-                cluster,
-                cluster.traitSet(),
-                physical,
-                input,
-                modify.getOperation(),
-                updateColumnList,
-                sourceExpressionList );*/
         Convention convention = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getCurrentSchema().getConvention();
         if ( convention != null ) {
+            // register the convention rules
             convention.register( modify.getCluster().getPlanner() );
         }
         return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumnList(), modify.getSourceExpressionList(), modify.isFlattened() );
@@ -726,7 +705,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( collection.id );
 
         for ( AllocationEntity allocation : allocs ) {
-            modifies.add( alg.toBuilder().entity( allocation ).input( buildDocumentDml( alg.getInput(), statement, queryInformation ) ).build() );
+            RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
+            modifies.add( alg.toBuilder().entity( allocation ).input( buildDmlNew( alg.getInput(), statement, algBuilder ).build() ).build() );
         }
 
         if ( modifies.size() == 1 ) {
@@ -782,9 +762,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         return new LogicalModifyCollect( modifies.get( 0 ).getCluster(), modifies.get( 0 ).getTraitSet(), modifies, true );
     }
 
+
     private AlgNode buildDocumentDml( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         if ( node instanceof DocumentScan ) {
-            return super.handleDocumentScan( (DocumentScan<?>) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), null ).build();
+            //return super.handleDocScan( (DocumentScan<?>) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), null ).build();
         }
         int i = 0;
         List<AlgNode> inputs = new ArrayList<>();
@@ -810,11 +791,30 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
+    private AlgBuilder buildDmlNew( AlgNode node, Statement statement, RoutedAlgBuilder builder ) {
+        for ( int i = 0; i < node.getInputs().size(); i++ ) {
+            buildDmlNew( node.getInput( i ), statement, builder );
+        }
 
+        if ( node instanceof LogicalDocumentScan ) {
+            return super.handleDocScan(
+                    builder,
+                    statement,
+                    node.getEntity() );
+        } else if ( node instanceof LogicalRelScan ) {
+            return super.handleRelScan(
+                    builder,
+                    statement,
+                    node.getEntity() );
+        } else if ( node instanceof LogicalValues ) {
+            LogicalValues values = (LogicalValues) node;
 
-    private AlgBuilder buildDmlNew( AlgNode algNode, Statement statement ) {
+            return super.handleValues( values, builder );
+        } else if ( node instanceof LogicalDocumentValues ) {
+            return builder.push( node );
+        }
 
-        return RoutedAlgBuilder.create( statement ).push( algNode );
+        return super.handleGeneric( node, builder );
     }
 
 
@@ -840,11 +840,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            builder = super.handleScan(
+            builder = super.handleRelScan(
                     builder,
                     statement,
-                    allocationTable
-            );
+                    null );
             LogicalRelScan scan = (LogicalRelScan) builder.build();
             builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
             return builder;
@@ -855,19 +854,18 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 return handleSelectFromOtherTable( builder, catalogTable, statement );
             }
 
-            builder = super.handleScan(
+            builder = super.handleRelScan(
                     builder,
                     statement,
-                    allocationTable
+                    null
             );
 
             return builder;
 
+        } else if ( node instanceof LogicalDocumentValues ) {
 
+            return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
-            if ( node.getModel() == NamespaceType.DOCUMENT ) {
-                return handleDocuments( (LogicalDocumentValues) node, builder );
-            }
 
             LogicalValues values = (LogicalValues) node;
 
@@ -958,11 +956,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             AllocationEntity alloc = snapshot.alloc().getAllocation( pkPlacement.adapterId, property.partitionIds.get( 0 ) );
 
-            nodes.add( super.handleScan(
+            nodes.add( super.handleRelScan(
                     builder,
                     statement,
-                    alloc
-            ).build() );
+                    fromTable ).build() );
 
         }
 

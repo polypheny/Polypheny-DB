@@ -22,10 +22,12 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
-import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
@@ -85,6 +87,8 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
+                    DocumentProjectToCalcRule.INSTANCE,
+                    DocumentFilterToCalcRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_RULE,
                     EnumerableRules.ENUMERABLE_AGGREGATE_RULE,
@@ -109,9 +113,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
-                    EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE,
-                    EnumerableRules.ENUMERABLE_DOCUMENT_PROJECT_RULE,
-                    EnumerableRules.ENUMERABLE_DOCUMENT_FILTER_RULE );
+                    EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(

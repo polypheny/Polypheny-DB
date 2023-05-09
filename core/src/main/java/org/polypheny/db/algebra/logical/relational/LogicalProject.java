@@ -70,7 +70,7 @@ public final class LogicalProject extends Project {
      * @param rowType Output row type
      */
     public LogicalProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
-        super( cluster, traitSet, input, projects, rowType );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), input, projects, rowType );
         assert traitSet.containsIfApplicable( Convention.NONE );
     }
 

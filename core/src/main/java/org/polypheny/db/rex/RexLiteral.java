@@ -62,6 +62,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -195,7 +196,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     /**
      * Creates a <code>RexLiteral</code>.
      */
-    public RexLiteral( Comparable value, AlgDataType type, PolyType typeName ) {
+    public RexLiteral( Comparable<?> value, AlgDataType type, PolyType typeName ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
         this.typeName = Objects.requireNonNull( typeName );
@@ -213,7 +214,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    public RexLiteral( Comparable value, AlgDataType type, PolyType typeName, boolean raw ) {
+    public RexLiteral( Comparable<?> value, AlgDataType type, PolyType typeName, boolean raw ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
         this.typeName = Objects.requireNonNull( typeName );
@@ -341,7 +342,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     /**
      * @return whether value is appropriate for its type (we have rules about these things)
      */
-    public static boolean valueMatchesType( Comparable value, PolyType typeName, boolean strict ) {
+    public static boolean valueMatchesType( Comparable<?> value, PolyType typeName, boolean strict ) {
         if ( value == null ) {
             return true;
         }
@@ -425,6 +426,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 return value instanceof PolyPath;
             case MAP:
                 return value instanceof Map;
+            case DOCUMENT:
+                return value instanceof PolyValue;
             default:
                 throw Util.unexpected( typeName );
         }
@@ -466,7 +469,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @return NO_TYPE when type can be omitted, ALWAYS otherwise
      * @see RexLiteral#computeDigest(RexDigestIncludeType)
      */
-    private static RexDigestIncludeType shouldIncludeType( Comparable value, AlgDataType type ) {
+    private static RexDigestIncludeType shouldIncludeType( Comparable<?> value, AlgDataType type ) {
         if ( type.isNullable() ) {
             // This means "null literal", so we require a type for it
             // There might be exceptions like AND(null, true) which are handled by RexCall#computeDigest
@@ -582,9 +585,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
     private static void pad( StringBuilder b, String s, int width ) {
         if ( width >= 0 ) {
-            for ( int i = s.length(); i < width; i++ ) {
-                b.append( '0' );
-            }
+            b.append( "0".repeat( Math.max( 0, width - s.length() ) ) );
         }
         b.append( s );
     }
@@ -756,6 +757,10 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case PATH:
                 assert value instanceof PolyPath;
                 pw.print( value );
+                break;
+            case DOCUMENT:
+                assert value instanceof PolyValue;
+                pw.println( value );
                 break;
             default:
                 assert valueMatchesType( value, typeName, true );

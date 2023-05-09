@@ -89,6 +89,13 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyBoolean;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyDouble;
+import org.polypheny.db.type.entity.document.PolyInteger;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -1319,52 +1326,31 @@ public class MqlToAlgConverter {
     }
 
 
-    private static Comparable<?> getComparable( BsonValue value ) {
+    private static PolyValue getPolyValue( BsonValue value ) {
         switch ( value.getBsonType() ) {
             case DOUBLE:
-                return value.asDouble().getValue();
+                return PolyDouble.of( value.asDouble().getValue() );
             case STRING:
-                return value.asString().getValue();
+                return PolyString.of( value.asString().getValue() );
             case DOCUMENT:
-                break;
+                Map<PolyString, PolyValue> map = new HashMap<>();
+                for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
+                    map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
+                }
+
+                return PolyDocument.of( map );
             case ARRAY:
-                break;
-            case BINARY:
-                return value.asBinary().toString();
-            case UNDEFINED:
-                break;
-            case OBJECT_ID:
-                break;
+                List<PolyValue> list = new ArrayList<>();
+                for ( BsonValue bson : value.asArray() ) {
+                    list.add( getPolyValue( bson ) );
+                }
+                return PolyList.of( list );
             case BOOLEAN:
-                return value.asBoolean().getValue();
-            case DATE_TIME:
-                break;
-            case NULL:
-                return null;
-            case REGULAR_EXPRESSION:
-                break;
-            case DB_POINTER:
-                break;
-            case JAVASCRIPT:
-                break;
-            case SYMBOL:
-                break;
-            case JAVASCRIPT_WITH_SCOPE:
-                break;
+                return new PolyBoolean( value.asBoolean().getValue() );
             case INT32:
-                return value.asInt32().getValue();
-            case TIMESTAMP:
-                return value.asTimestamp().getValue();
-            case INT64:
-                return value.asInt64().getValue();
-            case DECIMAL128:
-                return value.asDecimal128().decimal128Value().bigDecimalValue();
-            case MIN_KEY:
-                break;
-            case MAX_KEY:
-                break;
+                return new PolyInteger( value.asInt32().getValue() );
         }
-        throw new RuntimeException( "Not implemented Comparable transform" );
+        throw new RuntimeException( "Not implemented Comparable transform: " + value );
     }
 
 
@@ -1667,7 +1653,7 @@ public class MqlToAlgConverter {
 
     private RexNode getIdentifier( String parentKey, AlgDataType rowType, boolean useAccess ) {
         List<String> rowNames = rowType.getFieldNames();
-        if ( rowNames.contains( parentKey ) ) {
+        if ( rowNames.contains( parentKey ) && rowType.getPolyType() != PolyType.DOCUMENT ) {
             if ( useAccess ) {
                 return attachAccess( parentKey, rowType );
             } else {
@@ -1684,16 +1670,16 @@ public class MqlToAlgConverter {
             // we fix sub-documents in elemMatch queries by only passing the sub-key
             // that the replacing then only uses the array element and searches the sub-key there
             if ( !elemMatchActive || keys.length == 1 ) {
-                return translateJsonValue( rowNames.indexOf( keys[0] ), rowType, parentKey, useAccess );
+                return translateDocValue( rowNames.indexOf( keys[0] ), rowType, parentKey, useAccess );
             } else {
                 List<String> names = Arrays.asList( keys );
                 names.remove( 0 );
-                return translateJsonValue( rowNames.indexOf( keys[0] ), rowType, String.join( ".", names ), useAccess );
+                return translateDocValue( rowNames.indexOf( keys[0] ), rowType, String.join( ".", names ), useAccess );
             }
 
         } else if ( _dataExists ) {
             // the default _data field does still exist
-            return translateJsonValue( 0, rowType, parentKey, useAccess );
+            return translateDocValue( 0, rowType, parentKey, useAccess );
         } else {
             return null;
         }
@@ -2073,7 +2059,7 @@ public class MqlToAlgConverter {
      * @param useAccess if access or input operations should be used
      * @return the node, which defines the retrieval of the underlying key
      */
-    private RexNode translateJsonValue( int index, AlgDataType rowType, String key, boolean useAccess ) {
+    private RexNode translateDocValue( int index, AlgDataType rowType, String key, boolean useAccess ) {
         RexCall filter;
         List<String> names = Arrays.asList( key.split( "\\." ) );
         if ( elemMatchActive ) {
@@ -2082,12 +2068,10 @@ public class MqlToAlgConverter {
         filter = getStringArray( names );
 
         return new RexCall(
-                any,
+                new DocumentType(),
                 OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
                 Arrays.asList(
-                        /*useAccess
-                                ? attachAccess( index, rowType )
-                                : */RexInputRef.of( index, rowType ),
+                        RexInputRef.of( index, rowType ),
                         filter ) );
     }
 
@@ -2141,14 +2125,9 @@ public class MqlToAlgConverter {
 
 
     private RexNode convertLiteral( BsonValue bsonValue ) {
-        AlgDataType type = getRelDataType( bsonValue );
-        if ( bsonValue.isArray() ) {
-            List<RexNode> arr = bsonValue.asArray().stream().map( this::convertLiteral ).collect( Collectors.toList() );
-            return DocumentUtil.getArray( arr, any );
-        } else {
-            Pair<Comparable<?>, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue ), type );
-            return new RexLiteral( valuePair.left, type, valuePair.right );
-        }
+        Pair<Comparable<?>, PolyType> valuePair = RexLiteral.convertType( getPolyValue( bsonValue ), new DocumentType() );
+        return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
+
     }
 
 

@@ -64,7 +64,7 @@ public interface PolySerializable {
     static <T extends PolySerializable> String serialize( T document, Class<T> clazz ) {
         byte[] buffer = new byte[2000];
         int i = getOrAdd( clazz ).encode( buffer, 0, document );
-        return new String( buffer, StandardCharsets.UTF_8 );
+        return new String( buffer, 0, i );
     }
 
 

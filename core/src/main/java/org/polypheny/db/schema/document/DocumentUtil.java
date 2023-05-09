@@ -221,26 +221,30 @@ public class DocumentUtil {
      * @param node the transformed operation up to this step e.g. {@link RelScan} or {@link LogicalDocumentAggregate}
      * @return the unified UPDATE AlgNode
      */
-    public static Pair<List<String>, List<RexNode>> transformUpdateRelational( Map<String, RexNode> updates, List<String> removes, Map<String, String> renames, AlgDataType rowType, AlgNode node ) {
+    public static Pair<List<String>, List<RexNode>> transformUpdateRelational(
+            Map<String, RexNode> updates,
+            List<String> removes,
+            Map<String, String> renames,
+            AlgDataType rowType,
+            AlgNode node ) {
         AlgOptCluster cluster = node.getCluster();
-        AlgDataType docType = DocumentType.asRelational().getFieldList().get( 1 ).getType();
         RexNode updateChain = cluster.getRexBuilder().makeInputRef( rowType, 0 );
 
         // replace
         if ( !updates.isEmpty() ) {
             updateChain = new RexCall(
-                    docType,
+                    new DocumentType(),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ),
                     Arrays.asList(
                             updateChain,
                             getStringArray( List.copyOf( updates.keySet() ), cluster ),
-                            getArray( List.copyOf( updates.values() ), docType ) ) );
+                            getArray( List.copyOf( updates.values() ), new DocumentType() ) ) );
         }
 
         // rename
         if ( !renames.isEmpty() ) {
             updateChain = new RexCall(
-                    docType,
+                    new DocumentType(),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ),
                     Arrays.asList(
                             updateChain,
@@ -251,7 +255,7 @@ public class DocumentUtil {
         // remove
         if ( !removes.isEmpty() ) {
             updateChain = new RexCall(
-                    docType,
+                    new DocumentType(),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ),
                     Arrays.asList(
                             updateChain,
@@ -260,7 +264,7 @@ public class DocumentUtil {
 
         if ( !removes.isEmpty() ) {
             updateChain = new RexCall(
-                    docType,
+                    new DocumentType(),
                     OperatorRegistry.get(
                             QueryLanguage.from( "mongo" ),
                             OperatorName.MQL_UPDATE ),
@@ -271,7 +275,7 @@ public class DocumentUtil {
 
         return Pair.of(
                 List.of( DocumentType.DOCUMENT_DATA ),
-                List.of( createJsonify( updateChain, docType ) ) );
+                List.of( updateChain ) );
     }
 
 

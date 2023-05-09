@@ -92,14 +92,14 @@ public class DmlTest extends MqlTestTemplate {
     @Test
     @Category(FileExcluded.class)
     public void updateTest() {
-        List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
 
         update( "{\"test\": 3}", "{\"$set\":{\"test\": 5}}" );
 
         DocResult result = find( "{}", "{}" );
 
-        List<String> updated = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":5}" );
+        List<String> updated = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":5}" );
 
         assertTrue(
                 MongoConnection.checkDocResultSet(

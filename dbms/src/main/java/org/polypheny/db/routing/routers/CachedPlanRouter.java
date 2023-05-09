@@ -58,7 +58,7 @@ public class CachedPlanRouter extends BaseRouter {
         }
 
         if ( node instanceof DocumentScan ) {
-            return super.handleDocumentScan( (DocumentScan<?>) node, statement, builder, null );
+            return super.handleDocScan( builder, statement, node.getEntity() );
         }
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {

@@ -104,7 +104,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -1389,7 +1388,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documentScan( LogicalCollection collection ) {
+    public AlgBuilder documentScan( CatalogEntity collection ) {
         stack.add( new Frame( new LogicalDocumentScan( cluster, cluster.traitSet().replace( ModelTrait.DOCUMENT ), collection ) ) );
         return this;
     }
@@ -1457,6 +1456,11 @@ public class AlgBuilder {
             stack.push( new Frame( filter, frame.structured, null ) );
         }
         return this;
+    }
+
+
+    public AlgBuilder project() {
+        return project( ImmutableList.copyOf( fields() ) );
     }
 
 

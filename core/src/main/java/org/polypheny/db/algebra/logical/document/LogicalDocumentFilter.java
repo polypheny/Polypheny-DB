@@ -17,6 +17,8 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
@@ -24,7 +26,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class LogicalDocumentFilter extends DocumentFilter {
 
     /**

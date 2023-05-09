@@ -45,8 +45,10 @@ import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
@@ -102,6 +104,8 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
+                    DocumentProjectToCalcRule.INSTANCE,
+                    DocumentFilterToCalcRule.INSTANCE,
                     CalcMergeRule.INSTANCE,
                     FilterCalcMergeRule.INSTANCE,
                     ProjectCalcMergeRule.INSTANCE,
@@ -154,6 +158,8 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
+                    DocumentProjectToCalcRule.INSTANCE,
+                    DocumentFilterToCalcRule.INSTANCE,
                     SemiJoinRules.PROJECT,
                     SemiJoinRules.JOIN,
                     ScanRule.INSTANCE,

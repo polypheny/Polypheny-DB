@@ -146,8 +146,7 @@ public class RexCall extends RexNode {
     }
 
 
-    protected @Nonnull
-    String computeDigest( boolean withType ) {
+    protected @Nonnull String computeDigest( boolean withType ) {
         final StringBuilder sb = new StringBuilder( op.getName() );
         if ( (operands.size() == 0) && (op.getSyntax() == Syntax.FUNCTION_ID) ) {
             // Don't print params for empty arg list. For example, we want "SYSTEM_USER", not "SYSTEM_USER()".
@@ -166,8 +165,7 @@ public class RexCall extends RexNode {
 
 
     @Override
-    public final @Nonnull
-    String toString() {
+    public final @Nonnull String toString() {
         // This data race is intentional
         String localDigest = digest;
         if ( localDigest == null ) {

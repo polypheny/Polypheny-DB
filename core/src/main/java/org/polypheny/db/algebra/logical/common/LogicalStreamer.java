@@ -20,6 +20,7 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -137,7 +139,7 @@ public class LogicalStreamer extends Streamer {
 
 
     @NotNull
-    private static LogicalProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
+    public static LogicalProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
         return LogicalProject.create(
                 LogicalValues.createOneRow( input.getCluster() ),
                 input.getRowType()
@@ -161,13 +163,22 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static void attachFilter( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+    public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+        attachFilter( modify.getEntity(), algBuilder, rexBuilder, IntStream.range( 0, modify.getRowType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
+    }
+
+
+    public static void attachFilter( CatalogEntity entity, AlgBuilder algBuilder, RexBuilder rexBuilder, List<Integer> indexes ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
-        for ( AlgDataTypeField field : modify.getEntity().getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : entity.getRowType().getFieldList() ) {
+            if ( !indexes.contains( i ) ) {
+                i++;
+                continue;
+            }
             fields.add(
                     algBuilder.equals(
-                            rexBuilder.makeInputRef( modify.getEntity().getRowType(), i ),
+                            rexBuilder.makeInputRef( entity.getRowType(), i ),
                             rexBuilder.makeDynamicParam( field.getType(), i ) ) );
             i++;
         }

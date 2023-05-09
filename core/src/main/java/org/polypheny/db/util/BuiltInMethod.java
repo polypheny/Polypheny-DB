@@ -135,6 +135,7 @@ import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -445,14 +446,14 @@ public enum BuiltInMethod {
     DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
     DOC_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", Object.class, List.class ),
     DOC_SLICE( MqlFunctions.class, "docSlice", Object.class, int.class, int.class ),
-    DOC_QUERY_VALUE( MqlFunctions.class, "docQueryValue", Object.class, List.class ),
+    DOC_QUERY_VALUE( MqlFunctions.class, "docQueryValue", PolyValue.class, List.class ),
     DOC_QUERY_EXCLUDE( MqlFunctions.class, "docQueryExclude", Object.class, List.class ),
     DOC_ADD_FIELDS( MqlFunctions.class, "docAddFields", Object.class, String.class, Object.class ),
     DOC_UPDATE_MIN( MqlFunctions.class, "docUpdateMin", Object.class, Long.class ),
     DOC_UPDATE_MAX( MqlFunctions.class, "docUpdateMax", Object.class, Long.class ),
     DOC_UPDATE_ADD_TO_SET( MqlFunctions.class, "docAddToSet", Object.class, Object.class ),
     DOC_UPDATE_REMOVE( MqlFunctions.class, "docUpdateRemove", Object.class, List.class ),
-    DOC_UPDATE_REPLACE( MqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
+    DOC_UPDATE_REPLACE( MqlFunctions.class, "docUpdateReplace", PolyValue.class, List.class, List.class ),
     DOC_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
     DOC_JSONIZE( MqlFunctions.class, "docJsonify", Object.class ),

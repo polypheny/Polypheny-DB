@@ -30,9 +30,6 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
-import org.polypheny.db.algebra.core.document.DocumentAlg;
-import org.polypheny.db.algebra.core.document.DocumentAlg.DocType;
-import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgAlg.NodeType;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
@@ -159,24 +156,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     @Override
-    public <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement ) {
-        if ( alg.getInputs().size() == 1 ) {
-            routeDocument( builder, (AlgNode & DocumentAlg) alg.getInput( 0 ), statement );
-            if ( builder.stackSize() > 0 ) {
-                alg.replaceInput( 0, builder.build() );
-            }
-            return alg;
-        } else if ( alg.getDocType() == DocType.SCAN ) {
-            builder.push( handleDocumentScan( (DocumentScan<?>) alg, statement, builder, null ).build() );
-            return alg;
-        } else if ( alg.getDocType() == DocType.VALUES ) {
-            return alg;
-        }
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
     public void resetCaches() {
         joinedScanCache.invalidateAll();
     }
@@ -206,7 +185,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan<?>) node, statement, builders.get( 0 ), null ) );
+            return Lists.newArrayList( super.handleDocScan( builders.get( 0 ), statement, node.getEntity() ) );
         }
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
@@ -226,7 +205,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             if ( Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).size() > 1 ) {
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
-
             } else {
                 // At the moment multiple strategies
                 if ( Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).size() > 1 ) {

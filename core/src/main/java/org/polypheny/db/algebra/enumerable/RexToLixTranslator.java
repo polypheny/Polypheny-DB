@@ -67,6 +67,7 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -809,6 +810,8 @@ public class RexToLixTranslator {
                 return literal.getValueAs( PolyNode.class ).getAsExpression();
             case PATH:
                 return literal.getValueAs( PolyPath.class ).getAsExpression();
+            case DOCUMENT:
+                return ((PolyValue) literal.getValue()).asExpression();
             default:
                 final Primitive primitive = Primitive.ofBoxOr( javaClass );
                 final Comparable<?> value = literal.getValueAs( Comparable.class );

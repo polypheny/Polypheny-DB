@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -89,7 +90,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
             for ( RexLiteral value : values ) {
                 AlgDataTypeField field = rowType.getFieldList().get( pos );
 
-                if ( field.getName().equals( "_id" ) ) {
+                if ( field.getName().equals( DocumentType.DOCUMENT_ID ) ) {
                     String _id = value.getValueAs( String.class );
                     ObjectId objectId;
                     if ( _id.matches( "ObjectId\\([0-9abcdef]{24}\\)" ) ) {
@@ -97,7 +98,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
                     } else {
                         objectId = ObjectId.get();
                     }
-                    doc.put( "_id", new BsonObjectId( objectId ) );
+                    doc.put( DocumentType.DOCUMENT_ID, new BsonObjectId( objectId ) );
                 } else if ( field.getName().equals( "_data" ) ) {
                     BsonDocument docVal = new BsonDocument();
                     if ( !value.isNull() && value.getValueAs( String.class ).length() != 0 ) {
@@ -108,7 +109,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
                             throw new RuntimeException( "The inserted document is not valid." );
                         }
                     }
-                    doc.put( "_data", docVal );
+                    doc.put( DocumentType.DOCUMENT_DATA, docVal );
                 } else {
                     doc.put( field.getName(), BsonUtil.getAsBson( value, null ) );
                 }

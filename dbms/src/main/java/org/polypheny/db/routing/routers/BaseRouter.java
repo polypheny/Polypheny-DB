@@ -26,23 +26,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -65,7 +61,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -157,12 +152,35 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public RoutedAlgBuilder handleScan(
+    public RoutedAlgBuilder handleRelScan(
             RoutedAlgBuilder builder,
             Statement statement,
-            AllocationEntity allocation ) {
+            CatalogEntity entity ) {
 
-        return (RoutedAlgBuilder) builder.scan( allocation );
+        if ( entity.unwrap( LogicalTable.class ) != null ) {
+            List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
+
+            return (RoutedAlgBuilder) builder.scan( allocations.get( 0 ) );
+        }
+        if ( entity.unwrap( AllocationTable.class ) != null ) {
+            return (RoutedAlgBuilder) builder.scan( entity.unwrap( AllocationTable.class ) );
+        }
+        throw new NotImplementedException();
+
+    }
+
+
+    protected RoutedAlgBuilder handleDocScan(
+            RoutedAlgBuilder builder,
+            Statement statement,
+            CatalogEntity entity ) {
+        List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
+
+        if ( entity.unwrap( LogicalCollection.class ) == null ) {
+            throw new NotImplementedException();
+        }
+
+        return (RoutedAlgBuilder) builder.documentScan( allocations.get( 0 ) );
     }
 
 
@@ -191,16 +209,19 @@ public abstract class BaseRouter implements Router {
 
 
     protected List<RoutedAlgBuilder> handleGeneric( AlgNode node, List<RoutedAlgBuilder> builders ) {
-        if ( node.getInputs().size() == 1 ) {
-            builders.forEach(
-                    builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) )
-            );
-        } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
-            builders.forEach(
-                    builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ), 2 )
-            );
-        } else {
-            throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
+        switch ( node.getInputs().size() ) {
+            case 1:
+                builders.forEach(
+                        builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) )
+                );
+                break;
+            case 2:
+                builders.forEach(
+                        builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ), 2 )
+                );
+                break;
+            default:
+                throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
         }
         return builders;
     }
@@ -216,7 +237,7 @@ public abstract class BaseRouter implements Router {
             }
         }
         if ( allocationEntities.size() == 1 ) {
-            builder = handleScan(
+            builder = handleRelScan(
                     builder,
                     statement,
                     allocationEntities.get( 0 ) );
@@ -244,7 +265,7 @@ public abstract class BaseRouter implements Router {
                 // CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
                 partitionId = snapshot.alloc().getAllocation( partitionId, currentPlacements.get( 0 ).tableId ).id;
 
-                builder = handleScan(
+                builder = handleRelScan(
                         builder,
                         statement,
                         partitionId );
@@ -279,7 +300,7 @@ public abstract class BaseRouter implements Router {
                     CatalogColumnPlacement ccp = ccps.get( 0 );
                     CatalogPartitionPlacement cpp = Catalog.getInstance().getSnapshot().alloc().getPartitionPlacement( ccp.adapterId, partitionId );
 
-                    handleScan(
+                    handleRelScan(
                             builder,
                             statement,
                             cpp.partitionId
@@ -339,23 +360,6 @@ public abstract class BaseRouter implements Router {
         }
 
         return node;
-    }
-
-
-    private void buildFinalProject( RoutedAlgBuilder builder, AllocationTable entity ) {
-        List<RexNode> rexNodes = new ArrayList<>();
-        /*List<LogicalColumn> placementList = currentPlacements.stream()
-                .map( col -> snapshot.rel().namespaceId ).getColumn( col.columnId ) )
-                .sorted( Comparator.comparingInt( col -> col.position ) )
-                .collect( Collectors.toList() );
-        for ( LogicalColumn logicalColumn : placementList ) {
-            rexNodes.add( builder.field( logicalColumn.name ) );
-        }*/
-        for ( String name : entity.getColumnNames().values() ) {
-            rexNodes.add( builder.field( name ) );
-        }
-
-        builder.project( rexNodes );
     }
 
 
@@ -428,130 +432,6 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode getRelationalScan( LogicalLpgScan alg, long adapterId, Statement statement ) {
-        /*CatalogGraphMapping mapping = Catalog.getInstance().getLogicalGraph( alg.entity.namespaceId ).getGraphMapping( alg.entity.id );
-
-        PhysicalTable nodesTable = statement.getDataContext().getSnapshot().getTable( mapping.nodesId ).unwrap( PhysicalTable.class );
-        PhysicalTable nodePropertiesTable = statement.getDataContext().getSnapshot().getTable( mapping.nodesPropertyId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgesTable = statement.getDataContext().getSnapshot().getTable( mapping.edgesId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgePropertiesTable = statement.getDataContext().getSnapshot().getTable( mapping.edgesPropertyId ).unwrap( PhysicalTable.class );
-
-        AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );
-
-        AlgNode edge = buildSubstitutionJoin( alg, edgesTable, edgePropertiesTable );
-
-        return LogicalTransformer.create( List.of( node, edge ), alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, alg.getRowType() );
-        */ // todo dl
-        return null;
-    }
-
-
-    protected CatalogEntity getSubstitutionTable( Statement statement, long tableId, long columnId, long adapterId ) {
-        /*LogicalTable nodes = Catalog.getInstance().getTable( tableId );
-        CatalogColumnPlacement placement = Catalog.getInstance().getColumnFromLogical( adapterId, columnId );
-        List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        placement.adapterUniqueName,
-                        nodes.getNamespaceName(),
-                        placement.physicalSchemaName
-                ),
-                nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
-
-        return statement.getDataContext().getSnapshot().getTable( qualifiedTableName );
-        */ // todo dl
-        return null;
-    }
-
-
-    protected AlgNode buildSubstitutionJoin( AlgNode alg, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable ) {
-        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
-        LogicalRelScan nodes = new LogicalRelScan( alg.getCluster(), out, nodesTable );
-        LogicalRelScan nodesProperty = new LogicalRelScan( alg.getCluster(), out, nodePropertiesTable );
-
-        RexBuilder builder = alg.getCluster().getRexBuilder();
-
-        RexNode nodeCondition = builder.makeCall(
-                OperatorRegistry.get( OperatorName.EQUALS ),
-                builder.makeInputRef( nodes.getRowType().getFieldList().get( 0 ).getType(), 0 ),
-                builder.makeInputRef( nodesProperty.getRowType().getFieldList().get( 0 ).getType(), nodes.getRowType().getFieldList().size() ) );
-
-        return new LogicalJoin( alg.getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
-    }
-
-
-    protected RoutedAlgBuilder handleDocumentScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder, Long adapterId ) {
-        Snapshot snapshot = statement.getTransaction().getSnapshot();
-
-        if ( alg.entity.namespaceType != NamespaceType.DOCUMENT ) {
-            if ( alg.entity.namespaceType == NamespaceType.GRAPH ) {
-                return handleDocumentOnGraph( alg, statement, builder );
-            }
-
-            return handleTransformerDocScan( alg, statement, builder );
-        }
-
-        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
-
-        List<RoutedAlgBuilder> scans = new ArrayList<>();
-
-        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( collection.id );
-        if ( adapterId != null ) {
-            allocs = List.of( snapshot.alloc().getAllocation( adapterId, collection.id ) );
-        }
-
-        for ( AllocationEntity alloc : allocs ) {
-            // CatalogCollectionPlacement placement = catalog.getAllocDoc( alg.entity ).getCollectionPlacement( collection.id, placementId );
-            // String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
-            // String collectionName = collection.name + "_" + placement.id;
-            // we might previously have pushed the non-native transformer
-            builder.clear();
-            return builder.push( LogicalDocumentScan.create( alg.getCluster(), alloc ) );
-        }
-
-        if ( scans.size() < 1 ) {
-            throw new RuntimeException( "No placement found for the document." );
-        }
-
-        // rather basic selection for non-native
-        return scans.get( 0 );
-    }
-
-
-    private RoutedAlgBuilder handleTransformerDocScan( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder ) {
-        /*AlgNode scan = buildJoinedScan( statement, alg.getCluster(), selectPlacement( alg.entity  ) );
-
-        builder.push( scan );
-        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
-        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, alg.getRowType(), false ) );
-
-        return builder;
-         */// todo dl
-        return builder;
-    }
-
-
-    @NotNull
-    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan<LogicalTable> node, Long adapterId, Statement statement, RoutedAlgBuilder builder ) {
-        List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( node.entity.id );
-        AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
-        CatalogEntity subTable = getSubstitutionTable( statement, node.entity.id, columns.get( 0 ).id, adapterId );
-        builder.scan( subTable );
-        builder.project( node.getCluster().getRexBuilder().makeInputRef( subTable.getRowType().getFieldList().get( 1 ).getType(), 1 ) );
-        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false ) );
-        return builder;
-    }
-
-
-    private RoutedAlgBuilder handleDocumentOnGraph( DocumentScan<?> alg, Statement statement, RoutedAlgBuilder builder ) {
-        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.GRAPH );
-        builder.lpgScan( alg.entity.id );
-        builder.lpgMatch( List.of( builder.lpgNodeMatch( List.of( alg.entity.name ) ) ), List.of( "n" ) );
-        AlgNode unrouted = builder.build();
-        builder.push( new LogicalTransformer( builder.getCluster(), List.of( routeGraph( builder, (AlgNode & LpgAlg) unrouted, statement ) ), null, ModelTrait.GRAPH, ModelTrait.DOCUMENT, alg.getRowType(), true ) );
-        return builder;
-    }
-
-
     @Override
     public List<RoutedAlgBuilder> route( AlgRoot algRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         throw new UnsupportedOperationException();
@@ -571,8 +451,21 @@ public abstract class BaseRouter implements Router {
 
 
     @Override
-    public <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement ) {
+    public AlgNode routeDocument( RoutedAlgBuilder builder, AlgNode alg, Statement statement ) {
+        if ( alg.getInputs().size() == 1 ) {
+            routeDocument( builder, alg.getInput( 0 ), statement );
+            if ( builder.stackSize() > 0 ) {
+                alg.replaceInput( 0, builder.build() );
+            }
+            return alg;
+        } else if ( alg instanceof DocumentScan ) {
+            builder.push( handleDocScan( builder, statement, alg.getEntity() ).build() );
+            return alg;
+        } else if ( alg instanceof DocumentValues ) {
+            return alg;
+        }
         throw new UnsupportedOperationException();
     }
+
 
 }

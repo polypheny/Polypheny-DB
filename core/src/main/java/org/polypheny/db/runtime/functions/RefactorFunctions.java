@@ -55,6 +55,7 @@ public class RefactorFunctions {
     }
 
 
+    @SafeVarargs
     @SuppressWarnings("unused")
     public static PolyDocument mergeDocuments( PolyValue target, Pair<String, PolyValue>... additional ) {
         for ( Pair<String, PolyValue> pair : additional ) {

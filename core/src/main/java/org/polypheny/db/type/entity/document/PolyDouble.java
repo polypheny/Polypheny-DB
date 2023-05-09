@@ -34,7 +34,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
+@Value(staticConstructor = "of")
 public class PolyDouble extends PolyValue {
 
     @Serialize

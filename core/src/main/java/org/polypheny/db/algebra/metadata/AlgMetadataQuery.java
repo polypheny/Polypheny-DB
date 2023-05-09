@@ -50,7 +50,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
@@ -223,7 +222,7 @@ public class AlgMetadataQuery {
      * Returns the {@link BuiltInMetadata.RowCount#getRowCount()} statistic.
      *
      * @param alg the relational expression
-     * @return estimated row count, or null if no algiable estimate can be determined
+     * @return estimated row count, or null if no reliable estimate can be determined
      */
     public Double getRowCount( AlgNode alg ) {
         for ( ; ; ) {

@@ -33,6 +33,9 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.schema.document.DocumentUtil;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -91,7 +94,27 @@ public class MqlFunctions {
     }
 
 
-    public static Collection docUpdate( Collection sink ) {
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
+        if ( !input.isDocument() ) {
+            return null;
+        }
+        PolyValue temp = input;
+        for ( PolyString filter : filters ) {
+            if ( !temp.isDocument() ) {
+                return null;
+            }
+            temp = temp.asDocument().get( filter );
+            if ( temp == null ) {
+                return null;
+            }
+        }
+
+        return temp;
+    }
+
+
+    public static Collection<?> docUpdate( Collection<?> sink ) {
         return null;
     }
 
@@ -242,38 +265,30 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docUpdateReplace( Object input, List<String> names, List<?> values ) {
-        Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
-        int i = 0;
-        for ( String name : names ) {
-            updateValue( values.get( i ), initial, List.of( name.split( "\\." ) ) );
-            i++;
+    public static PolyDocument docUpdateReplace( PolyValue input, List<String> names, List<PolyValue> values ) {
+        if ( !input.isDocument() ) {
+            return new PolyDocument();
+        }
+        for ( Pair<String, PolyValue> pair : Pair.zip( names, values ) ) {
+            updateValue( pair.right, input.asDocument(), List.of( pair.left.split( "\\." ) ) );
         }
 
-        return docJsonify( initial );
+        return input.asDocument();
     }
 
 
-    private static void updateValue( Object value, Map<String, Object> doc, List<String> splitName ) {
-        String name;
-        Iterator<String> iter = splitName.iterator();
-        boolean isNew = false;
-        while ( iter.hasNext() && !isNew ) {
+    private static void updateValue( PolyValue value, PolyDocument doc, List<String> splitName ) {
+        PolyString name;
+        Iterator<PolyString> iter = splitName.stream().map( PolyString::of ).iterator();
+
+        while ( iter.hasNext() ) {
             name = iter.next();
             if ( doc.containsKey( name ) ) {
                 if ( !iter.hasNext() ) {
                     doc.put( name, value );
                 } else {
-                    if ( doc.get( name ) instanceof Map ) {
-                        doc = (Map<String, Object>) doc.get( name );
-                    } else {
-                        return;
-                    }
-
+                    doc = doc.get( name ).asDocument();
                 }
-            } else {
-                doc.put( name, value );
-                isNew = true;
             }
         }
     }
@@ -543,7 +558,7 @@ public class MqlFunctions {
             }
         }
 
-        return Functions.eqAny( b0, b1 );
+        return b0.equals( b1 );
     }
 
 

@@ -68,13 +68,15 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
-import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
-import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
+import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -215,8 +217,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
-                    EnumerableRules.ENUMERABLE_DOCUMENT_PROJECT_RULE,
-                    EnumerableRules.ENUMERABLE_DOCUMENT_FILTER_RULE
+                    DocumentProjectToCalcRule.INSTANCE,
+                    DocumentFilterToCalcRule.INSTANCE
             );
 
     public static final List<AlgOptRule> DEFAULT_RULES =

@@ -59,16 +59,17 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.runtime.functions.GeoFunctions;
-import org.polypheny.db.type.entity.graph.PolyEdge;
-import org.polypheny.db.type.entity.graph.PolyGraph;
-import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -257,6 +258,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return createSyntheticType( (AlgRecordType) type );
                 }
             case DOCUMENT:
+                return PolyValue.class;
             case MAP:
                 return Map.class;
             case ARRAY:

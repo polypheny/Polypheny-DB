@@ -85,6 +85,7 @@ public class SimpleSqlTest {
                 ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (15, 'Name2', 24)" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO TableA VALUES (99, 'Name3', 11)" ),
                 ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT * FROM TableA" ), data, true ),
+                ( c, s ) -> s.executeUpdate( "UPDATE TableA SET AGE = 13 WHERE AGE = 12" ),
                 ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
                 ( c, s ) -> c.commit()
         );

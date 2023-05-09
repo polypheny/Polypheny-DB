@@ -26,8 +26,6 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecuteTr
 import org.polypheny.db.algebra.enumerable.common.EnumerableConstraintEnforcerRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableContextSwitcherRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollectRule;
-import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentFilterRule;
-import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentProjectRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatchRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgTransformerRule;
@@ -117,10 +115,6 @@ public class EnumerableRules {
     public static final EnumerableUnwindRule ENUMERABLE_UNWIND_RULE = new EnumerableUnwindRule();
 
     public static final EnumerableLpgTransformerRule ENUMERABLE_GRAPH_TRANSFORMER_RULE = new EnumerableLpgTransformerRule();
-
-    public static final EnumerableDocumentFilterRule ENUMERABLE_DOCUMENT_FILTER_RULE = new EnumerableDocumentFilterRule();
-
-    public static final EnumerableDocumentProjectRule ENUMERABLE_DOCUMENT_PROJECT_RULE = new EnumerableDocumentProjectRule( AlgFactories.LOGICAL_BUILDER );
 
 
 }
