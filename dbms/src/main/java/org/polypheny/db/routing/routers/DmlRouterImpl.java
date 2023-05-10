@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +67,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.partition.PartitionManager;
@@ -83,7 +83,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.types.ModifiableEntity;
@@ -168,7 +167,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
 
         // Essentially gets a list of all stores where this table resides
-        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id );
+        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( catalogTable.id );//.getPartitionProperty( catalogTable.id );
         if ( !allocs.isEmpty() && log.isDebugEnabled() ) {
             log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, -1 );//property.partitionGroupIds );
@@ -213,7 +212,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
                         LogicalColumn logicalColumn = snapshot.rel().getColumn( catalogTable.id, columnName );
-                        if ( snapshot.alloc().getAllocation( pkPlacement.adapterId, logicalColumn.id ) == null ) {
+                        if ( snapshot.alloc().getEntity( pkPlacement.adapterId, logicalColumn.id ) == null ) {
                             updateColumnListIterator.remove();
                             sourceExpressionListIterator.remove();
                         }
@@ -390,6 +389,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             }
 
                             for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
+                                AllocationEntity allocation = snapshot.alloc().getEntity( currentPartitionId ).orElseThrow();
                                 LogicalValues newLogicalValues = new LogicalValues(
                                         cluster,
                                         cluster.traitSet(),
@@ -401,13 +401,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         RoutedAlgBuilder.create( statement, cluster ),
                                         catalogTable,
                                         placementsOnAdapter,
-                                        snapshot.alloc().getAllocation( pkPlacement.adapterId, currentPartitionId ),
+                                        allocation,
                                         statement,
                                         cluster,
                                         true,
                                         statement.getDataContext().getParameterValues() ).build();
 
-                                AllocationEntity allocation = snapshot.alloc().getAllocation( currentPartitionId );
                                 AlgNode node = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getScan( allocation.id, AlgBuilder.create( statement ) );
                                 ModifiableEntity modifiableTable = node.getEntity().unwrap( ModifiableEntity.class );
 
@@ -480,29 +479,21 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         // then we add a modification for each partition
                                         statement.getDataContext().setParameterValues( entry.getValue() );
 
+                                        AllocationEntity allocation = snapshot.alloc().getEntity( pkPlacement.adapterId, entry.getKey() ).orElseThrow();
+
                                         AlgNode input = buildDml(
                                                 super.recursiveCopy( modify.getInput( 0 ) ),
                                                 RoutedAlgBuilder.create( statement, cluster ),
                                                 catalogTable,
                                                 placementsOnAdapter,
-                                                snapshot.alloc().getAllocation( pkPlacement.adapterId, entry.getKey() ),
+                                                allocation,
                                                 statement,
                                                 cluster,
                                                 false,
                                                 entry.getValue() ).build();
 
-                                        PhysicalTable physical = input.getEntity().unwrap( PhysicalTable.class );
-                                        ModifiableEntity modifiableTable = physical.unwrap( ModifiableEntity.class );
-
                                         // Build DML
-                                        Modify<?> adjustedModify = modifiableTable.toModificationAlg(
-                                                cluster,
-                                                modify.getTraitSet(),
-                                                physical,
-                                                input,
-                                                modify.getOperation(),
-                                                updateColumnList,
-                                                sourceExpressionList );
+                                        Modify<?> adjustedModify = LogicalRelModify.create( allocation, input, modify.getOperation(), updateColumnList, sourceExpressionList, false );
 
                                         statement.getDataContext().addContext();
                                         modifies.add( new LogicalContextSwitcher( adjustedModify ) );
@@ -568,47 +559,35 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 for ( long partitionId : accessedPartitionList ) {
 
-                    if ( !snapshot.alloc().getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( partitionId ) ) {
+                    Optional<AllocationEntity> optionalAlloc = snapshot.alloc().getEntity( partitionId );
+                    if ( optionalAlloc.isEmpty() ) {
                         continue;
                     }
 
-                    AllocationEntity alloc = snapshot.alloc().getAllocation( partitionId );
+                    AllocationEntity allocation = optionalAlloc.get();
 
                     // Build DML
-                    Modify<?> adjustedModify;
+
                     AlgNode input = buildDml(
                             super.recursiveCopy( modify.getInput( 0 ) ),
                             RoutedAlgBuilder.create( statement, cluster ),
                             catalogTable,
                             placementsOnAdapter,
-                            alloc,
+                            allocation,
                             statement,
                             cluster,
                             false,
                             statement.getDataContext().getParameterValues() ).build();
 
-                    ModifiableEntity modifiableTable = input.getEntity().unwrap( ModifiableEntity.class );
+                    Modify<?> adjustedModify = LogicalRelModify.create(
+                            allocation,
+                            input,
+                            modify.getOperation(),
+                            updateColumnList,
+                            sourceExpressionList,
+                            modify.isFlattened()
+                    );
 
-                    if ( modifiableTable != null && modifiableTable == input.getEntity().unwrap( Entity.class ) ) {
-                        adjustedModify = modifiableTable.toModificationAlg(
-                                cluster,
-                                input.getTraitSet(),
-                                alloc,
-                                input,
-                                modify.getOperation(),
-                                updateColumnList,
-                                sourceExpressionList
-                        );
-                    } else {
-                        adjustedModify = LogicalRelModify.create(
-                                alloc,
-                                input,
-                                modify.getOperation(),
-                                updateColumnList,
-                                sourceExpressionList,
-                                modify.isFlattened()
-                        );
-                    }
                     modifies.add( adjustedModify );
                 }
             }
@@ -738,7 +717,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<AlgNode> modifies = new ArrayList<>();
 
         for ( long adapterId : placements ) {
-            AllocationEntity alloc = snapshot.alloc().getAllocation( catalogGraph.id, adapterId );
+            AllocationEntity alloc = snapshot.alloc().getEntity( catalogGraph.id, adapterId ).orElseThrow();
 
             if ( !(alloc instanceof ModifiableGraph) ) {
                 throw new RuntimeException( "Graph is not modifiable." );
@@ -945,22 +924,15 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         long pkid = fromTable.primaryKey;
         List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
-        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id );
+        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
 
         List<AlgNode> nodes = new ArrayList<>();
         for ( AllocationColumn pkPlacement : pkPlacements ) {
-
-            snapshot.alloc().getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, fromTable.id );
-
-            PartitionProperty property = snapshot.alloc().getPartitionProperty( fromTable.id );
-
-            AllocationEntity alloc = snapshot.alloc().getAllocation( pkPlacement.adapterId, property.partitionIds.get( 0 ) );
 
             nodes.add( super.handleRelScan(
                     builder,
                     statement,
                     fromTable ).build() );
-
         }
 
         if ( nodes.size() == 1 ) {
@@ -997,7 +969,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 throw new RuntimeException( "Invalid column name: " + field.getName() );
             }
             column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName );
-            if ( Catalog.snapshot().alloc().getAllocation( placements.get( 0 ).adapterId, column.id ) == null ) {
+            if ( Catalog.snapshot().alloc().getEntity( placements.get( 0 ).adapterId, column.id ) == null ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

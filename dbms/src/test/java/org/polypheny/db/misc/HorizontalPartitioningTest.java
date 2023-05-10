@@ -773,7 +773,7 @@ public class HorizontalPartitioningTest {
                     long targetId = partitionManager.getTargetPartitionId( table, partitionValue );
 
                     List<CatalogPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getAllocation( targetId ) ) );
+                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getEntity( targetId ) ) );
 
                     //Todo @Hennlo check number of access
                 } finally {

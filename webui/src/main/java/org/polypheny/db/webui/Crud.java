@@ -66,6 +66,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.servlet.MultipartConfigElement;
@@ -160,7 +161,6 @@ import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.FileInputHandle;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -1877,7 +1877,7 @@ public class Crud implements InformationObserver {
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) );
-            List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id );
+            List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
             for ( AllocationColumn placement : pkPlacements ) {
                 Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
@@ -2612,7 +2612,7 @@ public class Crud implements InformationObserver {
 
         // Wrap {@link AlgNode} into a RelRoot
         final AlgDataType rowType = result.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().collect( Collectors.toList() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 result instanceof Sort
                         ? ((Sort) result).collation
@@ -2620,7 +2620,7 @@ public class Crud implements InformationObserver {
         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
-        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
+        PolyImplementation<Object> polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -2630,7 +2630,7 @@ public class Crud implements InformationObserver {
 
             if ( request.freshness != null ) {
                 viewType = "Materialized View";
-                DataStore store = (DataStore) AdapterManager.getInstance().getAdapter( request.store );
+                DataStore<?> store = (DataStore<?>) AdapterManager.getInstance().getAdapter( request.store );
                 List<DataStore<?>> stores = new ArrayList<>();
                 stores.add( store );
 
@@ -2765,7 +2765,6 @@ public class Crud implements InformationObserver {
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-                //noinspection SuspiciousDateFormat
                 DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
                 String durationText = df.format( new Date( millis ) );
                 text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
@@ -2947,7 +2946,7 @@ public class Crud implements InformationObserver {
         for ( InformationPage page : pages ) {
             nodes.add( new SidebarElement( page.getId(), page.getName(), NamespaceType.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
         }
-        WebSocket.sendMessage( session, this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
+        WebSocket.sendMessage( session, gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }
 
 

@@ -20,7 +20,9 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -50,13 +52,13 @@ public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
 
     @Override
-    public LogicalGraph getGraph( long id ) {
-        return graphs.get( id );
+    public @NonNull Optional<LogicalGraph> getGraph( long id ) {
+        return Optional.ofNullable( graphs.get( id ) );
     }
 
 
     @Override
-    public List<LogicalGraph> getGraphs( Pattern graphName ) {
+    public @NonNull List<LogicalGraph> getGraphs( Pattern graphName ) {
         return graphNames.values().stream().filter( g -> g.caseSensitive ? g.name.matches( graphName.toRegex() ) : g.name.toLowerCase().matches( graphName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
     }
 

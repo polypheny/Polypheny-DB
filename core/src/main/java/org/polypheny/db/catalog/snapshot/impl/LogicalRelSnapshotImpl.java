@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -242,7 +243,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalTable> getTables( @Nullable Pattern namespaceName, Pattern name ) {
+    public @NonNull List<LogicalTable> getTables( @Nullable Pattern namespaceName, Pattern name ) {
         List<Long> namespaceIds = getNamespaces( namespaceName ).stream().map( n -> n.id ).collect( Collectors.toList() );
 
         List<LogicalTable> tables = this.tables.values().asList();
@@ -253,7 +254,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
                                     ? t.name.matches( name.toRegex() )
                                     : t.name.matches( name.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
         }
-        return tables.stream().filter( t -> namespaceIds.contains( t.namespaceId ) ).collect( Collectors.toList() );
+        return Optional.of( tables.stream().filter( t -> namespaceIds.contains( t.namespaceId ) ).collect( Collectors.toList() ) ).orElse( List.of() );
     }
 
 
@@ -267,14 +268,14 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
+    public @NotNull List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
         boolean caseSensitive = namespaces.get( namespaceId ).caseSensitive;
         return tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (e.name.matches( caseSensitive ? name.toRegex() : name.toRegex().toLowerCase() ))) ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public LogicalTable getTables( @Nullable String namespaceName, @NonNull String name ) {
+    public @NonNull LogicalTable getTables( @Nullable String namespaceName, @NonNull String name ) {
         LogicalNamespace namespace = namespaceNames.get( namespaceName );
 
         return tableNames.get( Pair.of( namespace.id, (namespace.caseSensitive ? name : name.toLowerCase()) ) );
@@ -282,37 +283,37 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalTable> getTablesFromNamespace( long namespace ) {
-        return tablesNamespace.get( namespace );
+    public @NonNull List<LogicalTable> getTablesFromNamespace( long namespace ) {
+        return Optional.ofNullable( tablesNamespace.get( namespace ) ).orElse( List.of() );
     }
 
 
     @Override
-    public LogicalTable getTable( long tableId ) {
-        return tables.get( tableId );
+    public @NonNull Optional<LogicalTable> getTable( long tableId ) {
+        return Optional.ofNullable( tables.get( tableId ) );
     }
 
 
     @Override
-    public List<LogicalKey> getKeys() {
+    public @NonNull List<LogicalKey> getKeys() {
         return keys.values().asList();
     }
 
 
     @Override
-    public List<LogicalKey> getTableKeys( long tableId ) {
-        return tableKeys.get( tableId );
+    public @NonNull List<LogicalKey> getTableKeys( long tableId ) {
+        return Optional.ofNullable( tableKeys.get( tableId ) ).orElse( List.of() );
     }
 
 
     @Override
-    public List<LogicalColumn> getColumns( long tableId ) {
-        return List.copyOf( tableColumns.get( tableId ) );
+    public @NonNull List<LogicalColumn> getColumns( long tableId ) {
+        return Optional.ofNullable( List.copyOf( tableColumns.get( tableId ) ) ).orElse( List.of() );
     }
 
 
     @Override
-    public List<LogicalColumn> getColumns( Pattern tableName, Pattern columnName ) {
+    public @NonNull List<LogicalColumn> getColumns( Pattern tableName, Pattern columnName ) {
         List<LogicalTable> tables = getTables( null, tableName );
         if ( columnName == null ) {
             return tables.stream().flatMap( t -> tableColumns.get( t.id ).stream() ).collect( Collectors.toList() );
@@ -456,33 +457,26 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public LogicalTable getTable( long namespaceId, String name ) {
+    public @NonNull Optional<LogicalTable> getTable( long namespaceId, String name ) {
         String adjustedName = name;
         if ( !namespaces.get( namespaceId ).caseSensitive ) {
             adjustedName = name.toLowerCase();
         }
-        return tableNames.get( Pair.of( namespaceId, adjustedName ) );
+        return Optional.ofNullable( tableNames.get( Pair.of( namespaceId, adjustedName ) ) );
     }
 
 
     @Override
-    public LogicalTable getTable( String namespaceName, String tableName ) {
+    public @NonNull Optional<LogicalTable> getTable( String namespaceName, String tableName ) {
         LogicalNamespace namespace = namespaceNames.get( namespaceName );
-        return tableNames.get( Pair.of( namespace.id, namespace.caseSensitive ? tableName : tableName.toLowerCase() ) );
+        return Optional.ofNullable( tableNames.get( Pair.of( namespace.id, namespace.caseSensitive ? tableName : tableName.toLowerCase() ) ) );
     }
 
 
     @Override
-    public LogicalColumn getColumn( long id ) {
-        return columns.get( id );
+    public @NonNull Optional<LogicalColumn> getColumn( long id ) {
+        return Optional.ofNullable( columns.get( id ) );
     }
-
-
-    @Override
-    public boolean checkIfExistsEntity( String newName ) {
-        return tableNames.containsKey( newName );
-    }
-
 
     @Override
     public AlgNode getNodeInfo( long id ) {

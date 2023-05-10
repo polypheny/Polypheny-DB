@@ -108,7 +108,7 @@ public abstract class BaseRouter implements Router {
         // Take the adapter with most placements as base and add missing column placements
         List<AllocationColumn> placementList = new LinkedList<>();
         for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( table.id ) ) {
-            placementList.add( Catalog.snapshot().alloc().getColumnFromLogical( column.id ).get( 0 ) );
+            placementList.add( Catalog.snapshot().alloc().getColumnFromLogical( column.id ).orElseThrow().get( 0 ) );
         }
 
         return new HashMap<>() {{
@@ -263,7 +263,7 @@ public abstract class BaseRouter implements Router {
                 // List<CatalogColumnPlacement> ccps = placementsByAdapter.values().iterator().next();
                 // CatalogColumnPlacement ccp = ccps.get( 0 );
                 // CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
-                partitionId = snapshot.alloc().getAllocation( partitionId, currentPlacements.get( 0 ).tableId ).id;
+                partitionId = snapshot.alloc().getEntity( partitionId, currentPlacements.get( 0 ).tableId ).id;
 
                 builder = handleRelScan(
                         builder,
@@ -385,7 +385,7 @@ public abstract class BaseRouter implements Router {
         }
 
         for ( long adapterId : placements ) {
-            AllocationEntity graph = snapshot.alloc().getAllocation( catalogGraph.id, adapterId );
+            AllocationEntity graph = snapshot.alloc().getEntity( catalogGraph.id, adapterId ).orElseThrow();
 
             // a native placement was used, we go with that
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), graph, alg.getRowType() );

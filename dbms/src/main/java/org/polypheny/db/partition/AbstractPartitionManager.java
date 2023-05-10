@@ -66,7 +66,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-                AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocation( partitionId );
+                AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( partitionId ).orElseThrow();
                 List<AllocationColumn> relevantCcps = new ArrayList<>();
 
                 for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {

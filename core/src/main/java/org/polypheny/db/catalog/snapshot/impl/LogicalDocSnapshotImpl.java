@@ -19,8 +19,11 @@ package org.polypheny.db.catalog.snapshot.impl;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -37,7 +40,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
 
     public LogicalDocSnapshotImpl( Map<Long, LogicalDocumentCatalog> catalogs ) {
-        this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( n -> n.getLogicalNamespace().id, n -> n.getLogicalNamespace() ) ) );
+        this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( n -> n.getLogicalNamespace().id, LogicalCatalog::getLogicalNamespace ) ) );
         this.collections = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getCollections().values().stream() ).collect( Collectors.toMap( c -> c.id, c -> c ) ) );
         this.collectionNames = ImmutableMap.copyOf( this.collections.values().stream().collect( Collectors.toMap( c -> c.name, c -> c ) ) );
         this.namespaceCollections = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( c -> c.getLogicalNamespace().id, c -> List.copyOf( c.getCollections().values() ) ) ) );
@@ -45,8 +48,8 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
 
     @Override
-    public LogicalCollection getCollection( long id ) {
-        return collections.get( id );
+    public @NonNull Optional<LogicalCollection> getCollection( long id ) {
+        return Optional.ofNullable( collections.get( id ) );
     }
 
 
@@ -65,12 +68,12 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
 
     @Override
-    public LogicalCollection getCollection( long namespaceId, String name ) {
+    public @NonNull Optional<LogicalCollection> getCollection( long namespaceId, String name ) {
         List<LogicalCollection> collections = namespaceCollections.get( namespaceId );
 
         return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
                 ? c.name.equals( name )
-                : c.name.equalsIgnoreCase( name ) ).findFirst().orElse( null );
+                : c.name.equalsIgnoreCase( name ) ).findFirst();
     }
 
 }

@@ -108,7 +108,7 @@ public class UiRoutingPageUtil {
             for ( Entry<Long, List<Pair<Long, Long>>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
                 Long k = entry.getKey();
                 List<Pair<Long, Long>> v = entry.getValue();
-                AllocationEntity alloc = snapshot.alloc().getAllocation( k );
+                AllocationEntity alloc = snapshot.alloc().getEntity( k ).orElseThrow();
                 LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId );
 
                 if ( alloc.unwrap( AllocationTable.class ) != null ) {

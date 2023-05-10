@@ -37,6 +37,7 @@ package org.polypheny.db.runtime;
 import java.util.List;
 import lombok.Value;
 import lombok.experimental.Delegate;
+import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -44,6 +45,7 @@ import org.jetbrains.annotations.NotNull;
  * Space-efficient, comparable, immutable lists.
  */
 @Value(staticConstructor = "of")
+@NonFinal // todo dl remove when own Immutable impls are completely removed...
 public class FlatList<T extends Comparable<T>> implements Comparable<FlatList<T>>, List<T> {
 
     @Delegate

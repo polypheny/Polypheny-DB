@@ -22,10 +22,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -236,36 +239,38 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<AllocationEntity> getAllocationsOnAdapter( long id ) {
-        return allocsOnAdapters.get( id );
+    public @NonNull Optional<List<AllocationEntity>> getEntitiesOnAdapter( long id ) {
+        return Optional.ofNullable( allocsOnAdapters.get( id ) );
     }
 
 
     @Override
-    public AllocationEntity getAllocation( long id ) {
-        return allocs.get( id );
+    public @NonNull Optional<AllocationEntity> getEntity( long id ) {
+        return Optional.ofNullable( allocs.get( id ) );
     }
 
 
     @Override
-    public AllocationColumn getColumn( long adapterId, long columnId ) {
-        return adapterColumnPlacement.get( Pair.of( adapterId, columnId ) );
-    }
-
-    @Override
-    public List<AllocationColumn> getColumnFromLogical( long columnId ) {
-        return logicalColumnToAlloc.get( columnId );
+    public @NonNull Optional<AllocationColumn> getColumn( long adapterId, long columnId ) {
+        return Optional.ofNullable( adapterColumnPlacement.get( Pair.of( adapterId, columnId ) ) );
     }
 
 
     @Override
-    public List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId ) {
-        return adapterLogicalTablePlacements.get( Pair.of( adapterId, tableId ) );
+    public @NonNull Optional<List<AllocationColumn>> getColumnFromLogical( long columnId ) {
+        return Optional.ofNullable( logicalColumnToAlloc.get( columnId ) );
     }
 
+
     @Override
-    public Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId ) {
-        return logicalTableAdapterColumns.get( tableId );
+    public @NonNull List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId ) {
+        return Optional.ofNullable( adapterLogicalTablePlacements.get( Pair.of( adapterId, tableId ) ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NonNull Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId ) {
+        return Optional.ofNullable( logicalTableAdapterColumns.get( tableId ) ).orElse( Map.of() );
     }
 
 
@@ -273,7 +278,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     public List<CatalogPartition> getPartitions( long partitionGroupId ) {
         return null;
     }
-
 
 
     @Override
@@ -325,13 +329,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public CatalogPartitionPlacement getPartitionPlacement( long adapterId, long partitionId ) {
-        return null;
-    }
-
-
-
-    @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
         return null;
     }
@@ -343,13 +340,11 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-
-
-
     @Override
-    public List<AllocationEntity> getFromLogical( long logicalId ) {
-        return logicalAllocs.get( logicalId );
+    public @NonNull List<AllocationEntity> getFromLogical( long logicalId ) {
+        return Optional.ofNullable( logicalAllocs.get( logicalId ) ).orElse( List.of() );
     }
+
 
     @Override
     public PartitionProperty getPartitionProperty( long id ) {
@@ -359,20 +354,14 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public boolean adapterHasPlacement( long adapterId, long logicalId ) {
-        return adapterLogicalTableAlloc.containsKey( Pair.of( adapterId, logicalId ) );
+    public @NotNull Optional<AllocationEntity> getEntity( long adapterId, long entityId ) {
+        return Optional.ofNullable( adapterLogicalTableAlloc.get( Pair.of( adapterId, entityId ) ) );
     }
 
 
     @Override
-    public AllocationEntity getAllocation( long adapterId, long entityId ) {
-        return adapterLogicalTableAlloc.get( Pair.of( adapterId, entityId ) );
-    }
-
-
-    @Override
-    public List<AllocationColumn> getColumns( long allocId ) {
-        return List.copyOf( allocColumns.get( allocId ) );
+    public @NonNull List<AllocationColumn> getColumns( long allocId ) {
+        return Optional.ofNullable( List.copyOf( allocColumns.get( allocId ) ) ).orElse( List.of() );
     }
 
 }

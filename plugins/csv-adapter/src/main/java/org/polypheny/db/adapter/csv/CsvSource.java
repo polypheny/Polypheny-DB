@@ -169,7 +169,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
 
-            List<AllocationEntity> placements = Catalog.snapshot().alloc().getAllocationsOnAdapter( getAdapterId() );
+            List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( getAdapterId() ).orElse( List.of() );
             fileNames = new HashSet<>();
             for ( AllocationEntity ccp : placements ) {
                 fileNames.add( ccp.getNamespaceName() );

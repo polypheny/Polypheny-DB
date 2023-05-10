@@ -228,12 +228,12 @@ public class VerticalPartitioningTest {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                             Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
-                            Assert.assertEquals( 1, Catalog.snapshot().alloc().getAllocationsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 1, Catalog.snapshot().alloc().getEntitiesOnAdapter( adapterId ).orElseThrow().size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                             Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
-                            Assert.assertEquals( 1, Catalog.snapshot().alloc().getAllocationsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 1, Catalog.snapshot().alloc().getEntitiesOnAdapter( adapterId ).orElseThrow().size() );
                         }
                     }
 

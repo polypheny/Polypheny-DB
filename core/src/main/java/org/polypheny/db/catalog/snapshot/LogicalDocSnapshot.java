@@ -17,11 +17,12 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import java.util.Optional;
+import lombok.NonNull;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.Pattern;
 
 public interface LogicalDocSnapshot {
-    //// DOCUMENT
 
     /**
      * Get the collection with the given id.
@@ -29,18 +30,19 @@ public interface LogicalDocSnapshot {
      * @param id The id of the collection
      * @return The requested collection
      */
-    LogicalCollection getCollection( long id );
+    @NonNull
+    Optional<LogicalCollection> getCollection( long id );
+
+    @NonNull
+    Optional<LogicalCollection> getCollection( long namespaceId, String name );
 
     /**
      * Get a collection of collections which match the given naming pattern.
      *
-     * @param namespaceId
      * @param namePattern The naming pattern of the collection itself, null if all are matched
      * @return collection of collections matching conditions
      */
     List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
 
-
-    LogicalCollection getCollection( long namespaceId, String name );
 
 }

@@ -388,7 +388,8 @@ public class LanguageCrud {
             p.addAdapter( new DocumentStore(
                     adapter.getUniqueName(),
                     adapter.getUniqueName(),
-                    catalog.getSnapshot().alloc().getAllocationsOnAdapter( allocation.adapterId ),
+                    catalog.getSnapshot().alloc().getEntitiesOnAdapter( allocation.adapterId )
+                            .orElse( List.of() ),
                     false ) );
         }
 

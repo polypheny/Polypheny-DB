@@ -978,7 +978,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
         Closure( SortedMap<Integer, ImmutableBitSet> equivalence ) {
             this.equivalence = equivalence;
-            final ImmutableIntList keys = ImmutableIntList.copyOf( equivalence.keySet() );
+            final ImmutableList<Integer> keys = ImmutableList.copyOf( equivalence.keySet() );
             for ( int pos : keys ) {
                 computeClosure( pos );
             }

@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
@@ -42,12 +43,16 @@ public interface LogicalRelSnapshot {
      * @param name Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
+    @NonNull
     List<LogicalTable> getTables( @Nullable Pattern namespace, @Nullable Pattern name );
 
+    @NonNull
     List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name );
 
+    @NonNull
     LogicalTable getTables( @Nullable String namespace, @NonNull String name );
 
+    @NonNull
     List<LogicalTable> getTablesFromNamespace( long namespace );
 
 
@@ -57,9 +62,11 @@ public interface LogicalRelSnapshot {
      * @param tableName The name of the table
      * @return The table
      */
-    LogicalTable getTable( long namespaceId, String tableName );
+    @NonNull
+    Optional<LogicalTable> getTable( long namespaceId, String tableName );
 
-    LogicalTable getTable( String namespaceName, String tableName );
+    @NonNull
+    Optional<LogicalTable> getTable( String namespaceName, String tableName );
 
 
     /**
@@ -67,6 +74,7 @@ public interface LogicalRelSnapshot {
      *
      * @return The keys
      */
+    @NonNull
     List<LogicalKey> getKeys();
 
 
@@ -76,6 +84,7 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table for which the keys are returned
      * @return The collection of keys
      */
+    @NonNull
     List<LogicalKey> getTableKeys( long tableId );
 
 
@@ -85,6 +94,7 @@ public interface LogicalRelSnapshot {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
+    @NonNull
     List<LogicalColumn> getColumns( long tableId );
 
     /**
@@ -95,6 +105,7 @@ public interface LogicalRelSnapshot {
      * @param columnName Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
+    @NonNull
     List<LogicalColumn> getColumns( @Nullable Pattern tableName, @Nullable Pattern columnName );
 
     /**
@@ -103,7 +114,8 @@ public interface LogicalRelSnapshot {
      * @param columnId The id of the column
      * @return A CatalogColumn
      */
-    LogicalColumn getColumn( long columnId );
+    @NonNull
+    Optional<LogicalColumn> getColumn( long columnId );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -276,11 +288,8 @@ public interface LogicalRelSnapshot {
      */
     LogicalIndex getIndex( long indexId );
 
-
-    LogicalTable getTable( long id );
-
-
-    boolean checkIfExistsEntity( String name );
+    @NonNull
+    Optional<LogicalTable> getTable( long id );
 
 
     AlgNode getNodeInfo( long id );

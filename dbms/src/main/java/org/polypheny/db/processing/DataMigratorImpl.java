@@ -33,15 +33,16 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -50,9 +51,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
@@ -69,14 +70,13 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.RoutingManager;
-import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.LimitIterator;
 
 
@@ -102,7 +102,7 @@ public class DataMigratorImpl implements DataMigrator {
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
-        PolyImplementation result = statement.getQueryProcessor().prepareQuery(
+        PolyImplementation<Object> result = statement.getQueryProcessor().prepareQuery(
                 algRoot,
                 algRoot.alg.getCluster().getTypeFactory().builder().build(),
                 true,
@@ -177,7 +177,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( store.id, logicalColumn.id ).orElseThrow() );
         }
 
         List<LogicalColumn> selectedColumns = new LinkedList<>( columns );
@@ -211,12 +211,13 @@ public class DataMigratorImpl implements DataMigrator {
             subDistribution.keySet().retainAll( List.of( partitionId ) );
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
             AlgRoot targetAlg;
-            if ( Catalog.getInstance().getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
+            AllocationTable allocation = snapshot.alloc().getEntity( store.id, table.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+            if ( allocation.getColumns().size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
-                targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, partitionId );
+                targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, allocation );
             } else {
                 // Build update statement
-                targetAlg = buildUpdateStatement( targetStatement, targetColumnPlacements, partitionId );
+                targetAlg = buildUpdateStatement( targetStatement, targetColumnPlacements, allocation );
             }
 
             // Execute Query
@@ -228,7 +229,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void executeQuery( List<AllocationColumn> selectedColumns, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
-            PolyImplementation result;
+            PolyImplementation<Object> result;
             if ( isMaterializedView ) {
                 result = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
@@ -245,7 +246,6 @@ public class DataMigratorImpl implements DataMigrator {
                         false );
             }
             final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
-            //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
@@ -321,11 +321,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, long partitionId ) {
-        AllocationEntity alloc = statement.getTransaction().getSnapshot().alloc().getAllocation( partitionId );
-        CatalogEntity entity = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getScan( partitionId, AlgBuilder.create( statement ) ).getEntity();
-        ModifiableEntity modifiableTable = entity.unwrap( ModifiableEntity.class );
-
+    public AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getTransaction().getSnapshot() );
@@ -342,24 +338,14 @@ public class DataMigratorImpl implements DataMigrator {
         builder.push( LogicalValues.createOneRow( cluster ) );
         builder.project( values, columnNames );
 
-        AlgNode node = modifiableTable.toModificationAlg(
-                cluster,
-                cluster.traitSet(),
-                entity,
-                builder.build(),
-                Modify.Operation.DELETE,
-                null,
-                null
-        );
+        AlgNode node = LogicalRelModify.create( allocation, builder.build(), Modify.Operation.DELETE, null, null, false );
 
         return AlgRoot.of( node, Kind.DELETE );
     }
 
 
     @Override
-    public AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long allocId ) {
-        AllocationEntity alloc = statement.getTransaction().getSnapshot().alloc().getAllocation( allocId );
-        ModifiableEntity modifiableTable = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getScan( allocId, AlgBuilder.create( statement ) ).getEntity().unwrap( ModifiableEntity.class );
+    public AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -381,31 +367,21 @@ public class DataMigratorImpl implements DataMigrator {
         builder.push( LogicalValues.createOneRow( cluster ) );
         builder.project( values, columnNames );
 
-        AlgNode node = modifiableTable.toModificationAlg(
-                cluster,
-                cluster.traitSet(),
-                alloc,
-                builder.build(),
-                Modify.Operation.INSERT,
-                null,
-                null
-        );
+        AlgNode node = LogicalRelModify.create( allocation, builder.build(), Operation.INSERT, null, null, false );
+
         return AlgRoot.of( node, Kind.INSERT );
     }
 
 
-    private AlgRoot buildUpdateStatement( Statement statement, List<AllocationColumn> to, long partitionId ) {
-        AllocationEntity alloc = statement.getTransaction().getSnapshot().alloc().getAllocation( partitionId );
-        AlgNode scan = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getScan( alloc.id, AlgBuilder.create( statement ) );
-        ModifiableEntity modifiableTable = scan.getEntity().unwrap( ModifiableEntity.class );
-
+    private AlgRoot buildUpdateStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
+
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.scan( alloc );
+        builder.scan( allocation );
 
         // build condition
         RexNode condition = null;
@@ -413,7 +389,7 @@ public class DataMigratorImpl implements DataMigrator {
         LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).tableId );
         LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey );
         for ( long cid : primaryKey.columnIds ) {
-            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).adapterId, cid );
+            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).adapterId, cid ).orElseThrow();
             LogicalColumn logicalColumn = snapshot.getColumn( cid );
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
@@ -437,15 +413,9 @@ public class DataMigratorImpl implements DataMigrator {
 
         builder.projectPlus( values );
 
-        AlgNode node = modifiableTable.toModificationAlg(
-                cluster,
-                cluster.traitSet(),
-                alloc,
-                builder.build(),
-                Modify.Operation.UPDATE,
-                columnNames,
-                values
-        );
+        AlgNode node = builder.push(
+                LogicalRelModify.create( allocation, builder.build(), Modify.Operation.UPDATE, columnNames, values, false )
+        ).build();
         AlgRoot algRoot = AlgRoot.of( node, Kind.UPDATE );
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                 AlgBuilder.create( statement, algRoot.alg.getCluster() ),
@@ -492,9 +462,9 @@ public class DataMigratorImpl implements DataMigrator {
         for ( LogicalColumn column : snapshot.rel().getColumns( table.id ) ) {
             if ( columnIds.contains( column.id ) ) {
                 if ( snapshot.alloc().getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
-                    placementList.add( snapshot.alloc().getColumn( adapterIdWithMostPlacements, column.id ) );
+                    placementList.add( snapshot.alloc().getColumn( adapterIdWithMostPlacements, column.id ).orElseThrow() );
                 } else {
-                    for ( AllocationColumn placement : snapshot.alloc().getColumnFromLogical( column.id ) ) {
+                    for ( AllocationColumn placement : snapshot.alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
                         if ( placement.adapterId != excludingAdapterId ) {
                             placementList.add( placement );
                             break;
@@ -528,7 +498,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( snapshot.getColumn( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( snapshot.getColumn( store.id, logicalColumn.id ).orElseThrow() );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
@@ -546,19 +516,19 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
         AlgRoot targetAlg;
-        if ( snapshot.getColumnPlacementsOnAdapterPerTable( store.id, targetTable.id ).size() == columns.size() ) {
+        AllocationTable allocation = snapshot.getEntity( targetPartitionIds.get( 0 ) ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+        if ( allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
-            targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
+            targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, allocation );
         } else {
             // Build update statement
-            targetAlg = buildUpdateStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
+            targetAlg = buildUpdateStatement( targetStatement, targetColumnPlacements, allocation );
         }
 
         // Execute Query
         try {
-            PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            PolyImplementation<Object> result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
             final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
-            //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
@@ -630,7 +600,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( snapshot.alloc().getColumn( store.id, logicalColumn.id ) );
+            targetColumnPlacements.add( snapshot.alloc().getColumn( store.id, logicalColumn.id ).orElseThrow() );
         }
 
         List<LogicalColumn> selectColumnList = new LinkedList<>( columns );
@@ -670,20 +640,20 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
-        if ( Catalog.getInstance().getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.id, sourceTable.id ).size() == columns.size() ) {
+        AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+        if ( allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
-            targetPartitionIds.forEach( id -> targetAlgs.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );
+            targetPartitionIds.forEach( id -> targetAlgs.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, allocation ) ) );
         } else {
             // Build update statement
-            targetPartitionIds.forEach( id -> targetAlgs.put( id, buildUpdateStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );
+            targetPartitionIds.forEach( id -> targetAlgs.put( id, buildUpdateStatement( targetStatements.get( id ), targetColumnPlacements, allocation ) ) );
         }
 
         // Execute Query
         try {
-            PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
-            final Enumerable<?> enumerable = result.enumerable( sourceStatement.getDataContext() );
-            //noinspection unchecked
-            Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
+            PolyImplementation<Object> result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
+            Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {
@@ -749,7 +719,7 @@ public class DataMigratorImpl implements DataMigrator {
                         currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), null, columnDataOnPartition.getValue() );
                     }
 
-                    Iterator iterator = currentTargetStatement.getQueryProcessor()
+                    Iterator<?> iterator = currentTargetStatement.getQueryProcessor()
                             .prepareQuery( targetAlgs.get( partitionId ), sourceAlg.validatedRowType, true, false, false )
                             .enumerable( currentTargetStatement.getDataContext() )
                             .iterator();

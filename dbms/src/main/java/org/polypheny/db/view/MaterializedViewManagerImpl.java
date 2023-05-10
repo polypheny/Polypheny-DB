@@ -314,7 +314,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
                 //columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumnPlacement( placement.adapterId, column.id ) ) );
                 // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
-                AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, allocColumns, allocation.id );
+                AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, allocColumns, allocation );
 
                 dataMigrator.executeQuery( allocColumns, algRoot, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
             } else {
@@ -353,7 +353,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 columns.put( placement.adapterId, logicalColumns );
             }*/
 
-            for ( AllocationEntity entity : transaction.getSnapshot().alloc().getFromLogical( materializedId ) ) {
+            for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedId ) ) {
                 Statement sourceStatement = transaction.createStatement();
                 Statement deleteStatement = transaction.createStatement();
                 Statement insertStatement = transaction.createStatement();
@@ -376,9 +376,9 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 AlgRoot targetRel = dataMigrator.buildDeleteStatement(
                         targetStatementDelete,
                         columnPlacements,
-                        entity.id );
+                        allocation );
                 dataMigrator.executeQuery(
-                        transaction.getSnapshot().alloc().getColumns( entity.id ),
+                        transaction.getSnapshot().alloc().getColumns( allocation.id ),
                         AlgRoot.of( deleteRel, Kind.SELECT ),
                         deleteStatement,
                         targetStatementDelete,
@@ -392,9 +392,9 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 targetRel = dataMigrator.buildInsertStatement(
                         targetStatementInsert,
                         columnPlacements,
-                        entity.id );
+                        allocation );
                 dataMigrator.executeQuery(
-                        transaction.getSnapshot().alloc().getColumns( entity.id ),
+                        transaction.getSnapshot().alloc().getColumns( allocation.id ),
                         AlgRoot.of( insertRel, Kind.SELECT ),
                         sourceStatement,
                         targetStatementInsert,

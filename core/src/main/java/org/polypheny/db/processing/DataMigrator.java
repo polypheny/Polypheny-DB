@@ -21,6 +21,7 @@ import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -76,12 +77,12 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
-    AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, long allocId );
+    AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
     //is used within copyData
     void executeQuery( List<AllocationColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
-    AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, long partitionId );
+    AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
     AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placementDistribution );
 

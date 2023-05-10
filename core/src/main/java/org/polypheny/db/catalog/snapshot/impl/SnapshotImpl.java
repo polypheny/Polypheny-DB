@@ -176,14 +176,13 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public CatalogEntity getEntity( long id ) {
-        CatalogEntity entity = rel.getTable( id );
-        if ( entity != null ) {
-            return entity;
+
+        if ( rel.getTable( id ).isPresent() ) {
+            return rel.getTable( id ).get();
         }
 
-        entity = doc.getCollection( id );
-        if ( entity != null ) {
-            return entity;
+        if ( doc.getCollection( id ).isPresent() ) {
+            return doc.getCollection( id ).get();
         }
 
         return graph.getGraph( id );
@@ -192,14 +191,12 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public LogicalEntity getLogicalEntity( long id ) {
-        LogicalEntity entity = rel.getTable( id );
-        if ( entity != null ) {
-            return entity;
+        if ( rel.getTable( id ).isPresent() ) {
+            return rel.getTable( id ).get();
         }
 
-        entity = doc.getCollection( id );
-        if ( entity != null ) {
-            return entity;
+        if ( doc.getCollection( id ).isPresent() ) {
+            return doc.getCollection( id ).get();
         }
 
         return graph.getGraph( id );

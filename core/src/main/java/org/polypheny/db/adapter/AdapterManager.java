@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
@@ -281,7 +282,7 @@ public class AdapterManager {
         CatalogAdapter catalogAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId );
 
         // Check if the store has any placements
-        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getAllocationsOnAdapter( catalogAdapter.id );
+        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( catalogAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( placements.size() != 0 ) {
             throw new RuntimeException( "There is still data placed on this data store" );
         }
