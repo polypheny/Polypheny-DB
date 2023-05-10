@@ -36,21 +36,22 @@ import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
-public class PolyList extends PolyValue implements List<PolyValue> {
+public class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
 
 
     @Delegate
     @Serialize
-    public List<PolyValue> value;
+    public List<E> value;
 
 
-    public PolyList( @Deserialize("value") List<PolyValue> value ) {
+    public PolyList( @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY, false );
         this.value = ImmutableList.copyOf( value );
     }
 
 
-    public PolyList( PolyValue... value ) {
+    @SafeVarargs
+    public PolyList( E... value ) {
         this( Arrays.asList( value ) );
     }
 
@@ -71,15 +72,14 @@ public class PolyList extends PolyValue implements List<PolyValue> {
             return value.size() - o.asList().value.size();
         }
 
-        for ( Pair<PolyValue, PolyValue> pair : Pair.zip( value, o.asList().value ) ) {
-            if ( pair.left.compareTo( pair.right ) != 0 ) {
-                return pair.left.compareTo( pair.right );
+        for ( Pair<E, ?> pair : Pair.zip( value, o.asList().value ) ) {
+            if ( pair.left.compareTo( (PolyValue) pair.right ) != 0 ) {
+                return pair.left.compareTo( (PolyValue) pair.right );
             }
         }
 
         return 0;
     }
-
 
 
     @Override

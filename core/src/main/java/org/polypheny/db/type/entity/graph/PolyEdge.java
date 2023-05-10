@@ -16,45 +16,48 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.google.gson.annotations.Expose;
-import java.util.List;
 import java.util.UUID;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.runtime.PolyCollections;
-import org.polypheny.db.tools.ExpressionTransformable;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
 
-@Getter
-public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge>, ExpressionTransformable {
+@EqualsAndHashCode(callSuper = true)
+@Value
+public class PolyEdge extends GraphPropertyHolder {
 
-    @Expose
-    public final String source;
-    @Expose
-    public final String target;
-    @Expose
-    public final EdgeDirection direction;
+    public String source;
+    public String target;
+    public EdgeDirection direction;
 
-    @Getter
     @Setter
+    @NonFinal
     @Accessors(fluent = true)
-    private Pair<Integer, Integer> fromTo;
+    public Pair<Integer, Integer> fromTo;
 
 
-    public PolyEdge( @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String source, String target, EdgeDirection direction, String variableName ) {
+    public PolyEdge( @NonNull PolyCollections.PolyDictionary properties, PolyList labels, String source, String target, EdgeDirection direction, String variableName ) {
         this( UUID.randomUUID().toString(), properties, labels, source, target, direction, variableName );
     }
 
 
-    public PolyEdge( String id, @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String source, String target, EdgeDirection direction, String variableName ) {
-        super( id, GraphObjectType.EDGE, properties, labels, variableName );
+    public PolyEdge( String id, @NonNull PolyCollections.PolyDictionary properties, PolyList labels, String source, String target, EdgeDirection direction, String variableName ) {
+        super( id, PolyType.EDGE, properties, labels, variableName );
         this.source = source;
         this.target = target;
         this.direction = direction;
@@ -69,43 +72,15 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     }
 
 
-    @Override
-    public int compareTo( PolyEdge other ) {
-        return id.compareTo( other.id );
-    }
-
-
     public PolyEdge from( String left, String right ) {
         return new PolyEdge( id, properties, labels, left == null ? this.source : left, right == null ? this.target : right, direction, null );
     }
 
 
     @Override
-    public void setLabels( List<String> labels ) {
+    public void setLabels( PolyList labels ) {
         this.labels.clear();
         this.labels.add( labels.get( 0 ) );
-    }
-
-
-    @Override
-    public Expression getAsExpression() {
-        Expression expression =
-                Expressions.convert_(
-                        Expressions.new_(
-                                PolyEdge.class,
-                                Expressions.constant( id ),
-                                properties.getAsExpression(),
-                                EnumUtils.constantArrayList( labels, String.class ),
-                                Expressions.constant( source ),
-                                Expressions.constant( target ),
-                                Expressions.constant( direction ),
-                                Expressions.constant( getVariableName(), String.class ) ),
-                        PolyEdge.class );
-        if ( fromTo != null ) {
-            expression = Expressions.call( expression, "fromTo",
-                    Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( fromTo.left ), Expressions.constant( fromTo.right ) ) );
-        }
-        return expression;
     }
 
 
@@ -154,6 +129,44 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
             return fromTo.left.toString();
         }
         return range;
+    }
+
+
+    @Override
+    public int compareTo( @NotNull PolyValue o ) {
+        if ( !this.isSameType( o ) ) {
+            return -1;
+        }
+        return this.equals( o.asEdge() ) ? 0 : -1;
+
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        Expression expression =
+                Expressions.convert_(
+                        Expressions.new_(
+                                PolyEdge.class,
+                                Expressions.constant( id ),
+                                properties.getAsExpression(),
+                                EnumUtils.constantArrayList( labels, String.class ),
+                                Expressions.constant( source ),
+                                Expressions.constant( target ),
+                                Expressions.constant( direction ),
+                                Expressions.constant( getVariableName(), String.class ) ),
+                        PolyEdge.class );
+        if ( fromTo != null ) {
+            expression = Expressions.call( expression, "fromTo",
+                    Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( fromTo.left ), Expressions.constant( fromTo.right ) ) );
+        }
+        return expression;
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), PolyLong.class );
     }
 
 

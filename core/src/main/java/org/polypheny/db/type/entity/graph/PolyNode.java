@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.tools.ExpressionTransformable;
+import org.polypheny.db.type.entity.document.PolyList;
 
 
 @Getter
@@ -85,7 +86,7 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
 
 
     @Override
-    public void setLabels( List<String> labels ) {
+    public void setLabels( PolyList labels ) {
         this.labels.addAll( labels );
     }
 

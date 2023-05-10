@@ -30,7 +30,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
@@ -42,19 +41,18 @@ public class DdlTest extends CypherTestTemplate {
 
     @Test
     public void addCollectionTest() {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
         execute( "CREATE DATABASE " + graphName );
 
-        assertNotNull( snapshot.getNamespace( graphName ) );
+        assertNotNull( Catalog.snapshot().getNamespace( graphName ) );
 
         execute( "DROP DATABASE " + graphName );
 
-        assertNull( snapshot.getNamespace( graphName ) );
+        assertNull( Catalog.snapshot().getNamespace( graphName ) );
 
         execute( "CREATE DATABASE " + graphName );
 
-        assertNotNull( snapshot.getNamespace( graphName ) );
+        assertNotNull( Catalog.snapshot().getNamespace( graphName ) );
 
         execute( "DROP DATABASE " + graphName );
     }

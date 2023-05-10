@@ -399,7 +399,7 @@ public abstract class DdlManager {
      */
     public abstract void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement );
 
-    public abstract void removeGraph( long graphId, boolean ifExists, Statement statement );
+    public abstract void dropGraph( long graphId, boolean ifExists, Statement statement );
 
     /**
      * Create a new table

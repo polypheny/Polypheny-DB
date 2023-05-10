@@ -59,10 +59,11 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyList;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -873,7 +874,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case DOUBLE:
                 return getValueAs( Double.class );
             case ARRAY:
-                return ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toCollection( PolyList::new ) );
+                return ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toCollection( FlatLists::of ) );
             case MAP:
                 return getValueAsPolyMap();
             /*case BINARY:

@@ -26,18 +26,22 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.tools.ExpressionTransformable;
+import org.polypheny.db.schema.types.Expressible;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.util.Pair;
 
 
 @Getter
-public class PolyPath extends GraphObject implements Comparable<PolyPath> {
+public class PolyPath extends GraphObject {
 
     private final List<PolyNode> nodes;
     private final List<PolyEdge> edges;
@@ -54,7 +58,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
     public PolyPath( String id, List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path, String variableName ) {
-        super( id, GraphObjectType.PATH, variableName );
+        super( id, PolyType.PATH, variableName, false );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();
         this.nodes = nodes;
@@ -103,7 +107,12 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
     @Override
-    public int compareTo( PolyPath other ) {
+    public int compareTo( PolyValue o ) {
+        if ( !isSameType( o ) ) {
+            return -1;
+        }
+        PolyPath other = o.asPath();
+
         if ( nodes.size() > other.nodes.size() ) {
             return 1;
         }
@@ -153,20 +162,6 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
         }
 
         return null;
-    }
-
-
-    @Override
-    public Expression getAsExpression() {
-        return Expressions.convert_(
-                Expressions.new_(
-                        PolyPath.class,
-                        EnumUtils.expressionList( nodes.stream().map( PolyNode::getAsExpression ).collect( Collectors.toList() ) ),
-                        EnumUtils.expressionList( edges.stream().map( PolyEdge::getAsExpression ).collect( Collectors.toList() ) ),
-                        EnumUtils.constantArrayList( names, String.class ),
-                        EnumUtils.expressionList( path.stream().map( ExpressionTransformable::getAsExpression ).collect( Collectors.toList() ) ),
-                        Expressions.constant( getVariableName(), String.class ) ),
-                PolyPath.class );
     }
 
 
@@ -250,6 +245,26 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
     }
 
 
+    @Override
+    public Expression asExpression() {
+        return Expressions.convert_(
+                Expressions.new_(
+                        PolyPath.class,
+                        EnumUtils.expressionList( nodes.stream().map( PolyNode::asExpression ).collect( Collectors.toList() ) ),
+                        EnumUtils.expressionList( edges.stream().map( PolyEdge::asExpression ).collect( Collectors.toList() ) ),
+                        EnumUtils.constantArrayList( names, String.class ),
+                        EnumUtils.expressionList( path.stream().map( Expressible::asExpression ).collect( Collectors.toList() ) ),
+                        Expressions.constant( getVariableName(), String.class ) ),
+                PolyPath.class );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return null;
+    }
+
+
     @Slf4j
     public static class PolySegment extends GraphObject {
 
@@ -265,7 +280,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
         protected PolySegment( String sourceId, String edgeId, String targetId, EdgeDirection direction ) {
-            super( null, GraphObjectType.SEGMENT, null );
+            super( null, null, null, false );
             this.sourceId = sourceId;
             this.edgeId = edgeId;
             this.targetId = targetId;
@@ -280,7 +295,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
         protected PolySegment( PolyNode source, PolyEdge edge, PolyNode target, EdgeDirection direction ) {
-            super( null, GraphObjectType.SEGMENT, null );
+            super( null, null, null, false );
             isRef = false;
             this.sourceId = source.id;
             this.edgeId = edge.id;
@@ -323,8 +338,24 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
         @Override
-        public Expression getAsExpression() {
+        public int compareTo( @NotNull PolyValue o ) {
+            if ( !isSameType( o ) ) {
+                return -1;
+            }
+
+            return 0;
+        }
+
+
+        @Override
+        public Expression asExpression() {
             throw new RuntimeException( "Cannot transform PolyPath." );
+        }
+
+
+        @Override
+        public PolySerializable copy() {
+            return PolySerializable.deserialize( serialize(), PolyPath.class );
         }
 
     }

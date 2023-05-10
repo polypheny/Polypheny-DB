@@ -17,13 +17,9 @@
 package org.polypheny.db.runtime;
 
 import com.drew.lang.annotations.NotNull;
-import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -39,72 +35,6 @@ public class PolyCollections {
 
     private static Gson gson = new GsonBuilder().serializeNulls().enableComplexMapKeySerialization().create();
 
-
-    public static class PolyList<T extends Comparable<?>> extends ArrayList<T> implements Comparable<PolyList<T>>, Collection<T>, ExpressionTransformable {
-
-
-        public PolyList( Collection<T> list ) {
-            super( list );
-        }
-
-
-        public PolyList() {
-            super();
-        }
-
-
-        public static PolyList<?> of( ImmutableList<RexLiteral> operands ) {
-            return new PolyList<>( operands );
-        }
-
-
-        public static PolyList<RexLiteral> ofArray( List<RexNode> operands ) {
-            List<RexLiteral> ops = operands.stream().filter( o -> o.isA( Kind.LITERAL ) ).map( o -> (RexLiteral) o ).collect( Collectors.toList() );
-            assert ops.size() == operands.size() : "Arrays are not nested for now.";
-
-            return new PolyList<>( ops );
-        }
-
-
-        /**
-         * If the size of left ( this ) is bigger return 1, if smaller return -1,
-         * if sum of compared values of left is bigger than right return 1 and vice-versa
-         */
-        @Override
-        public int compareTo( @NotNull PolyList<T> o ) {
-            if ( this.size() != o.size() ) {
-                return this.size() > o.size() ? 1 : 0;
-            }
-
-            long left = 0;
-            long right = 0;
-            int i = 0;
-            int temp;
-            for ( T t : this ) {
-                temp = ((Comparable) t).compareTo( o.get( i ) );
-                if ( temp < 0 ) {
-                    right++;
-                } else if ( temp > 0 ) {
-                    left++;
-                }
-                i++;
-            }
-
-            return left == 0 && right == 0 ? 0 : left > right ? 1 : -1;
-        }
-
-
-        public static <T extends Comparable<T>> PolyList<T> of( Collection<T> list ) {
-            return new PolyList<>( list );
-        }
-
-
-        @Override
-        public Expression getAsExpression() {
-            return EnumUtils.expressionList( stream().map( e -> EnumUtils.getExpression( e, Comparable.class ) ).collect( Collectors.toList() ) );
-        }
-
-    }
 
 
     public static class PolyDictionary extends HashMap<String, Object> implements Comparable<PolyDictionary>, ExpressionTransformable {
@@ -149,11 +79,6 @@ public class PolyCollections {
 
             return hashCode() >= directory.hashCode() ? 1 : -1;
 
-        }
-
-
-        public String toString() {
-            return gson.toJson( this );
         }
 
 

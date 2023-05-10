@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.type.entity.document.PolyList;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -326,8 +326,8 @@ public class EnumUtils {
     public static <T> Expression getExpression( T value, Class<T> clazz ) {
         if ( value instanceof PolyDictionary ) {
             return ((PolyDictionary) value).getAsExpression();
-        } else if ( value instanceof PolyList ) {
-            return ((PolyList<?>) value).getAsExpression();
+        } else if ( value instanceof PolyList<?> ) {
+            return ((PolyList<?>) value).asExpression();
         }
         return Expressions.constant( value, clazz );
     }

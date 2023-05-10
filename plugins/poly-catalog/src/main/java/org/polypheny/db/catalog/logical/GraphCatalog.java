@@ -101,7 +101,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
     @Override
     public void deleteGraph( long id ) {
-
+        graphs.remove( id );
     }
 
 }

@@ -1833,7 +1833,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void removeGraph( long graphId, boolean ifExists, Statement statement ) {
+    public void dropGraph( long graphId, boolean ifExists, Statement statement ) {
         LogicalGraph graph = catalog.getSnapshot().graph().getGraph( graphId );
 
         if ( graph == null ) {
@@ -1848,6 +1848,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         catalog.getLogicalGraph( graphId ).deleteGraph( graphId );
+
+        catalog.deleteNamespace( graphId );
     }
 
 
@@ -2054,8 +2056,7 @@ public class DdlManagerImpl extends DdlManager {
 
             int i = 0;
             for ( LogicalColumn column : ids.values() ) {
-                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, i ) );
-                i++;
+                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, i++ ) );
             }
             buildNamespace( namespaceId, logical, store );
 
@@ -2063,10 +2064,6 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         catalog.updateSnapshot();
-
-        // addPTable
-        // via update?
-
     }
 
 

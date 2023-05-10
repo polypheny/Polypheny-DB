@@ -25,6 +25,7 @@ import io.activej.serializer.SerializerBuilder;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -33,6 +34,7 @@ import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyBoolean;
+import org.polypheny.db.type.entity.document.PolyDate;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.document.PolyDouble;
@@ -42,8 +44,15 @@ import org.polypheny.db.type.entity.document.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.document.PolyInteger;
 import org.polypheny.db.type.entity.document.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyLong;
 import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.document.PolyString.PolyStringSerializerDef;
+import org.polypheny.db.type.entity.document.PolyTime;
+import org.polypheny.db.type.entity.document.PolyTimeStamp;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 
 @Value
 @EqualsAndHashCode
@@ -245,11 +254,22 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public boolean isNull() {
+        return type == PolyType.NULL;
+    }
+
+
+    public PolyNull asNull() {
+        return (PolyNull) this;
+    }
+
+
     public boolean isBoolean() {
         return type == PolyType.BOOLEAN;
     }
 
 
+    @Nullable
     public PolyBoolean asBoolean() {
         if ( isBoolean() ) {
             return (PolyBoolean) this;
@@ -263,6 +283,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @Nullable
     public PolyInteger asInteger() {
         if ( isInteger() ) {
             return (PolyInteger) this;
@@ -276,6 +297,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @Nullable
     public PolyDocument asDocument() {
         if ( isDocument() ) {
             return (PolyDocument) this;
@@ -289,9 +311,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    public PolyList asList() {
+    @Nullable
+    public PolyList<?> asList() {
         if ( isList() ) {
-            return (PolyList) this;
+            return (PolyList<?>) this;
         }
         return null;
     }
@@ -302,6 +325,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @Nullable
     public PolyString asString() {
         if ( isString() ) {
             return (PolyString) this;
@@ -315,6 +339,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @Nullable
     public PolyFloat asFloat() {
         if ( isFloat() ) {
             return (PolyFloat) this;
@@ -328,11 +353,121 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @Nullable
     public PolyDouble asDouble() {
         if ( isDouble() ) {
             return (PolyDouble) this;
         }
         return null;
+    }
+
+
+    public boolean isLong() {
+        return type == PolyType.BIGINT;
+    }
+
+
+    public PolyLong asLong() {
+        if ( !isLong() ) {
+            return null;
+        }
+        return (PolyLong) this;
+    }
+
+
+    public boolean isDate() {
+        return type == PolyType.DATE;
+    }
+
+
+    public PolyDate asDate() {
+        if ( !isDate() ) {
+            return null;
+        }
+        return (PolyDate) this;
+    }
+
+
+    public boolean isTime() {
+        return type == PolyType.TIME;
+    }
+
+
+    public PolyTime asTime() {
+        if ( !isTime() ) {
+            return null;
+        }
+
+        return (PolyTime) this;
+    }
+
+
+    public boolean isTimestamp() {
+        return type == PolyType.TIMESTAMP;
+    }
+
+
+    public PolyTimeStamp asTimeStamp() {
+        if ( !isTimestamp() ) {
+            return null;
+        }
+        return (PolyTimeStamp) this;
+    }
+
+
+    public boolean isEdge() {
+        return type == PolyType.EDGE;
+    }
+
+
+    @Nullable
+    public PolyEdge asEdge() {
+        if ( !isEdge() ) {
+            return null;
+        }
+        return (PolyEdge) this;
+    }
+
+
+    public boolean isNode() {
+        return type == PolyType.NODE;
+    }
+
+
+    @Nullable
+    public PolyNode asNode() {
+        if ( !isNode() ) {
+            return null;
+        }
+        return (PolyNode) this;
+    }
+
+
+    public boolean isPath() {
+        return type == PolyType.PATH;
+    }
+
+
+    @Nullable
+    public PolyPath asPath() {
+        if ( !isPath() ) {
+            return null;
+        }
+        return (PolyPath) this;
+    }
+
+
+    public boolean isGraph() {
+        return type == PolyType.GRAPH;
+    }
+
+
+    @Nullable
+    public PolyGraph asGraph() {
+        if ( !isGraph() ) {
+            return null;
+        }
+        return (PolyGraph) this;
     }
 
 

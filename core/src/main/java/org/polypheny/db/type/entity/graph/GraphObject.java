@@ -18,27 +18,31 @@ package org.polypheny.db.type.entity.graph;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
-import lombok.Getter;
-import org.polypheny.db.tools.ExpressionTransformable;
+import io.activej.serializer.annotations.Serialize;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
-@Getter
-public abstract class GraphObject implements ExpressionTransformable {
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
+public abstract class GraphObject extends PolyValue {
 
     private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().excludeFieldsWithoutExposeAnnotation().create();
 
-    @Expose
-    public final String id;
-    @Expose
-    public final GraphObjectType type;
+    @Serialize
+    public String id;
 
-    private final String variableName;
+    @Serialize
+    public String variableName;
 
 
-    protected GraphObject( String id, GraphObjectType type, String variableName ) {
+    protected GraphObject( String id, PolyType type, String variableName, boolean nullable ) {
+        super( type, nullable );
         this.id = id;
-        this.type = type;
         this.variableName = variableName;
     }
 

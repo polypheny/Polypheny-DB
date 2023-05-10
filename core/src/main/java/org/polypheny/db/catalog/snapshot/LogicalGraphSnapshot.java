@@ -41,13 +41,5 @@ public interface LogicalGraphSnapshot {
      */
     List<LogicalGraph> getGraphs( Pattern graphName );
 
-    @Deprecated
-    LogicalGraph getLogicalGraph( List<String> names );
-
-
-
-    LogicalGraph getLogicalGraph( long namespaceId, String name );
-
-    List<LogicalGraph> getLogicalGraphs( long namespaceId, Pattern name );
 
 }

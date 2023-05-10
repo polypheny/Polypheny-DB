@@ -16,8 +16,11 @@
 
 package org.polypheny.db.catalog.snapshot.impl;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -25,39 +28,36 @@ import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 
 public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
-    public LogicalGraphSnapshotImpl( Map<Long, LogicalGraphCatalog> value ) {
+    private final ImmutableMap<Long, LogicalGraph> graphs;
+
+    private final ImmutableMap<String, LogicalGraph> graphNames;
+
+
+    public LogicalGraphSnapshotImpl( Map<Long, LogicalGraphCatalog> namespaces ) {
+        this.graphs = buildGraphIds( namespaces );
+        this.graphNames = buildGraphNames( namespaces );
+    }
+
+
+    private ImmutableMap<String, LogicalGraph> buildGraphNames( Map<Long, LogicalGraphCatalog> namespaces ) {
+        return ImmutableMap.copyOf( graphs.values().stream().collect( Collectors.toMap( g -> g.name, g -> g ) ) );
+    }
+
+
+    private ImmutableMap<Long, LogicalGraph> buildGraphIds( Map<Long, LogicalGraphCatalog> namespaces ) {
+        return ImmutableMap.copyOf( namespaces.entrySet().stream().collect( Collectors.toMap( Entry::getKey, n -> n.getValue().getGraphs().get( n.getKey() ) ) ) );
     }
 
 
     @Override
     public LogicalGraph getGraph( long id ) {
-        return null;
+        return graphs.get( id );
     }
 
 
     @Override
     public List<LogicalGraph> getGraphs( Pattern graphName ) {
-        return null;
-    }
-
-
-    @Override
-    public LogicalGraph getLogicalGraph( List<String> names ) {
-        return null;
-    }
-
-
-
-
-    @Override
-    public LogicalGraph getLogicalGraph( long namespaceId, String name ) {
-        return null;
-    }
-
-
-    @Override
-    public List<LogicalGraph> getLogicalGraphs( long namespaceId, Pattern name ) {
-        return null;
+        return graphNames.values().stream().filter( g -> g.caseSensitive ? g.name.matches( graphName.toRegex() ) : g.name.toLowerCase().matches( graphName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
     }
 
 }
