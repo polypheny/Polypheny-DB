@@ -111,99 +111,83 @@ public class MqlToAlgConverter {
     private final Snapshot snapshot;
     private final AlgOptCluster cluster;
     private RexBuilder builder;
-    private final static Map<String, Operator> mappings;
-    private final static List<String> operators;
-    private final static Map<String, List<Operator>> gates;
-    private final static Map<String, Operator> mathOperators;
-    private static final Map<String, AggFunction> accumulators;
+    private final static Map<String, Operator> mappings = new HashMap<>() {{
+        put( "$lt", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LT ) );
+        put( "$gt", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GT ) );
+        put( "$lte", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ) );
+        put( "$gte", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ) );
+        put( "$eq", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ) );
+        put( "$ne", OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
+        put( "$in", OperatorRegistry.get( OperatorName.IN ) );
+        put( "$nin", OperatorRegistry.get( OperatorName.NOT_IN ) );
+        put( "$exists", OperatorRegistry.get( OperatorName.EXISTS ) );
+    }};
+    private final static List<String> operators = new ArrayList<>();
+    private final static Map<String, List<Operator>> gates = new HashMap<>() {{
+        put( "$and", Collections.singletonList( OperatorRegistry.get( OperatorName.AND ) ) );
+        put( "$or", Collections.singletonList( OperatorRegistry.get( OperatorName.OR ) ) );
+        put( "$nor", Arrays.asList( OperatorRegistry.get( OperatorName.AND ), OperatorRegistry.get( OperatorName.NOT ) ) );
+        put( "$not", Collections.singletonList( OperatorRegistry.get( OperatorName.NOT ) ) );
+    }};
+    private final static Map<String, Operator> mathOperators = new HashMap<>() {{
+        put( "$subtract", OperatorRegistry.get( OperatorName.MINUS ) );
+        put( "$add", OperatorRegistry.get( OperatorName.PLUS ) );
+        put( "$multiply", OperatorRegistry.get( OperatorName.MULTIPLY ) );
+        put( "$divide", OperatorRegistry.get( OperatorName.DIVIDE ) );
+        put( "$mod", OperatorRegistry.get( OperatorName.MOD ) );
+        put( "$pow", OperatorRegistry.get( OperatorName.POWER ) );
+        put( "$sum", OperatorRegistry.get( OperatorName.SUM ) );
+        put( "$literal", null );
+    }};
+    private static final Map<String, AggFunction> accumulators = new HashMap<>() {{
+        //$addToSet
+        put( "$avg", OperatorRegistry.getAgg( OperatorName.AVG ) );
+        put( "$count", OperatorRegistry.getAgg( OperatorName.COUNT ) );
+        put( "$first", OperatorRegistry.getAgg( OperatorName.FIRST_VALUE ) );
+        put( "$last", OperatorRegistry.getAgg( OperatorName.LAST_VALUE ) );
+        put( "$max", OperatorRegistry.getAgg( OperatorName.MAX ) );
+        //$mergeObjects
+        put( "$min", OperatorRegistry.getAgg( OperatorName.MIN ) );
+        //$push
+        put( "$stdDevPop", OperatorRegistry.getAgg( OperatorName.STDDEV_POP ) );
+        put( "$stdDevSamp", OperatorRegistry.getAgg( OperatorName.STDDEV_SAMP ) );
+        put( "$sum", OperatorRegistry.getAgg( OperatorName.SUM ) );
+    }};
     private final AlgDataType any;
     private final AlgDataType nullableAny;
 
     private final AlgDataType jsonType;
 
 
-    private static final HashMap<String, Operator> singleMathOperators;
-
-
-    private static final HashMap<String, Operator> mathComparators;
+    private static final Map<String, Operator> singleMathOperators = new HashMap<>() {{
+        put( "$abs", OperatorRegistry.get( OperatorName.ABS ) );
+        put( "$acos", OperatorRegistry.get( OperatorName.ACOS ) );
+        //singleMathOperators.put( "$acosh", StdOperatorRegistry.get( OperatorName.ACOSH ) );
+        put( "$asin", OperatorRegistry.get( OperatorName.ASIN ) );
+        put( "$atan", OperatorRegistry.get( OperatorName.ATAN ) );
+        put( "$atan2", OperatorRegistry.get( OperatorName.ATAN2 ) );
+        //singleMathOperators.put( "$atanh", StdOperatorRegistry.get( OperatorName.ATANH ) );
+        put( "$ceil", OperatorRegistry.get( OperatorName.CEIL ) );
+        put( "$cos", OperatorRegistry.get( OperatorName.COS ) );
+        //singleMathOperators.put( "$cosh", StdOperatorRegistry.get( OperatorName.COSH ) );
+        put( "$degreesToRadians", OperatorRegistry.get( OperatorName.DEGREES ) );
+        put( "$floor", OperatorRegistry.get( OperatorName.FLOOR ) );
+        put( "$ln", OperatorRegistry.get( OperatorName.LN ) );
+        put( "$log", OperatorRegistry.get( OperatorName.LN ) );
+        put( "$log10", OperatorRegistry.get( OperatorName.LOG10 ) );
+        put( "$sin", OperatorRegistry.get( OperatorName.SIN ) );
+        //singleMathOperators.put( "$sinh", StdOperatorRegistry.get( OperatorName.SINH ) );
+        put( "$sqrt", OperatorRegistry.get( OperatorName.SQRT ) );
+        put( "$tan", OperatorRegistry.get( OperatorName.TAN ) );
+        //singleMathOperators.put( "$tanh", StdOperatorRegistry.get( OperatorName.TANH ) );
+    }};
 
 
     static {
-        gates = new HashMap<>();
-        gates.put( "$and", Collections.singletonList( OperatorRegistry.get( OperatorName.AND ) ) );
-        gates.put( "$or", Collections.singletonList( OperatorRegistry.get( OperatorName.OR ) ) );
-        gates.put( "$nor", Arrays.asList( OperatorRegistry.get( OperatorName.AND ), OperatorRegistry.get( OperatorName.NOT ) ) );
-        gates.put( "$not", Collections.singletonList( OperatorRegistry.get( OperatorName.NOT ) ) );
-
-        mathComparators = new HashMap<>();
-
-        mappings = new HashMap<>();
-
-        mappings.put( "$lt", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LT ) );
-        mappings.put( "$gt", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GT ) );
-        mappings.put( "$lte", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ) );
-        mappings.put( "$gte", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ) );
-
-        mathComparators.putAll( mappings );
-
-        mappings.put( "$eq", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ) );
-        mappings.put( "$ne", OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
-        mappings.put( "$in", OperatorRegistry.get( OperatorName.IN ) );
-        mappings.put( "$nin", OperatorRegistry.get( OperatorName.NOT_IN ) );
-
-        mappings.put( "$exists", OperatorRegistry.get( OperatorName.EXISTS ) );
-
-        mathOperators = new HashMap<>();
-        mathOperators.put( "$subtract", OperatorRegistry.get( OperatorName.MINUS ) );
-        mathOperators.put( "$add", OperatorRegistry.get( OperatorName.PLUS ) );
-        mathOperators.put( "$multiply", OperatorRegistry.get( OperatorName.MULTIPLY ) );
-        mathOperators.put( "$divide", OperatorRegistry.get( OperatorName.DIVIDE ) );
-        mathOperators.put( "$mod", OperatorRegistry.get( OperatorName.MOD ) );
-        mathOperators.put( "$pow", OperatorRegistry.get( OperatorName.POWER ) );
-        mathOperators.put( "$sum", OperatorRegistry.get( OperatorName.SUM ) );
-        mathOperators.put( "$literal", null );
-
-        singleMathOperators = new HashMap<>();
-        singleMathOperators.put( "$abs", OperatorRegistry.get( OperatorName.ABS ) );
-        singleMathOperators.put( "$acos", OperatorRegistry.get( OperatorName.ACOS ) );
-        //singleMathOperators.put( "$acosh", StdOperatorRegistry.get( OperatorName.ACOSH ) );
-        singleMathOperators.put( "$asin", OperatorRegistry.get( OperatorName.ASIN ) );
-        singleMathOperators.put( "$atan", OperatorRegistry.get( OperatorName.ATAN ) );
-        singleMathOperators.put( "$atan2", OperatorRegistry.get( OperatorName.ATAN2 ) );
-        //singleMathOperators.put( "$atanh", StdOperatorRegistry.get( OperatorName.ATANH ) );
-        singleMathOperators.put( "$ceil", OperatorRegistry.get( OperatorName.CEIL ) );
-        singleMathOperators.put( "$cos", OperatorRegistry.get( OperatorName.COS ) );
-        //singleMathOperators.put( "$cosh", StdOperatorRegistry.get( OperatorName.COSH ) );
-        singleMathOperators.put( "$degreesToRadians", OperatorRegistry.get( OperatorName.DEGREES ) );
-        singleMathOperators.put( "$floor", OperatorRegistry.get( OperatorName.FLOOR ) );
-        singleMathOperators.put( "$ln", OperatorRegistry.get( OperatorName.LN ) );
-        singleMathOperators.put( "$log", OperatorRegistry.get( OperatorName.LN ) );
-        singleMathOperators.put( "$log10", OperatorRegistry.get( OperatorName.LOG10 ) );
-        singleMathOperators.put( "$sin", OperatorRegistry.get( OperatorName.SIN ) );
-        //singleMathOperators.put( "$sinh", StdOperatorRegistry.get( OperatorName.SINH ) );
-        singleMathOperators.put( "$sqrt", OperatorRegistry.get( OperatorName.SQRT ) );
-        singleMathOperators.put( "$tan", OperatorRegistry.get( OperatorName.TAN ) );
-        //singleMathOperators.put( "$tanh", StdOperatorRegistry.get( OperatorName.TANH ) );
-
-        operators = new ArrayList<>();
         operators.addAll( mappings.keySet() );
         operators.addAll( gates.keySet() );
         operators.addAll( mathOperators.keySet() );
         operators.addAll( singleMathOperators.keySet() );
-
-        accumulators = new HashMap<>();
-        //$addToSet
-        accumulators.put( "$avg", OperatorRegistry.getAgg( OperatorName.AVG ) );
-        accumulators.put( "$count", OperatorRegistry.getAgg( OperatorName.COUNT ) );
-        accumulators.put( "$first", OperatorRegistry.getAgg( OperatorName.FIRST_VALUE ) );
-        accumulators.put( "$last", OperatorRegistry.getAgg( OperatorName.LAST_VALUE ) );
-        accumulators.put( "$max", OperatorRegistry.getAgg( OperatorName.MAX ) );
-        //$mergeObjects
-        accumulators.put( "$min", OperatorRegistry.getAgg( OperatorName.MIN ) );
-        //$push
-        accumulators.put( "$stdDevPop", OperatorRegistry.getAgg( OperatorName.STDDEV_POP ) );
-        accumulators.put( "$stdDevSamp", OperatorRegistry.getAgg( OperatorName.STDDEV_SAMP ) );
-        accumulators.put( "$sum", OperatorRegistry.getAgg( OperatorName.SUM ) );
 
         // special cases
         operators.add( "$type" );
@@ -376,7 +360,7 @@ public class MqlToAlgConverter {
         Map<String, RexNode> removes = new HashMap<>();
         Map<String, String> renames = new HashMap<>();
 
-        UpdateOperation updateOp = null;
+        UpdateOperation updateOp;
         for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
             String op = entry.getKey();
             if ( !entry.getValue().isDocument() ) {

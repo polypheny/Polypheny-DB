@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -40,6 +41,12 @@ import org.polypheny.db.webui.models.DocResult;
  */
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class DmlTest extends MqlTestTemplate {
+
+    @After
+    public void deleteAll() {
+        deleteMany( "{}" );
+    }
+
 
     @Test
     public void emptyTest() {
@@ -143,8 +150,59 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    public void deleteTest() {
+    public void deleteSpecificTest() {
+        List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        insertMany( data );
+        DocResult result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        data,
+                        true,
+                        true ) );
+
+        deleteMany( "{\"test\":2}" );
+        data = List.of( "{\"test\":1}", "{\"test\":3}" );
+
+        result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        data,
+                        true,
+                        true ) );
+
+
+    }
+
+
+    @Test
+    public void deleteAllTest() {
+        List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        insertMany( data );
+        DocResult result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        data,
+                        true,
+                        true ) );
+
         deleteMany( "{}" );
+
+        result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        List.of(),
+                        true,
+                        true ) );
+
+
     }
 
 }

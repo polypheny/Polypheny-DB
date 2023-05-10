@@ -193,7 +193,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     private Pair<List<String>, List<RexNode>> getRelationalDocumentModify( DocumentModify<?> modify ) {
-        if ( modify.isInsert() ) {
+        if ( modify.isInsert() || modify.isDelete() ) {
             return Pair.of( null, null );
         }
 
