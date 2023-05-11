@@ -16,10 +16,11 @@
 
 package org.polypheny.db.jupyter.model;
 
-public interface JupyterKernelSubscriber {
+public class JupyterExecutionRequest {
 
-    void onText( CharSequence data );
+    public String uuid; // a unique identifier for the request
+    public String type;
 
-    void onClose();
+    public String content;
 
 }

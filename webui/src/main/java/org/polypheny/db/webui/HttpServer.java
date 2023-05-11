@@ -423,6 +423,11 @@ public class HttpServer implements Runnable {
     }
 
 
+    public void addWebsocket( String route, Consumer<WsConfig> handler ) {
+        server.ws( route, handler );
+    }
+
+
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
      * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf

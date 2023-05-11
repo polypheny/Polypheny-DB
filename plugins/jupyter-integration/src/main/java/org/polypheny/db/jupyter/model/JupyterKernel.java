@@ -17,6 +17,7 @@
 package org.polypheny.db.jupyter.model;
 
 import com.google.gson.JsonObject;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
 import java.net.http.WebSocket.Listener;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.websocket.api.Session;
 
 @Slf4j
 public class JupyterKernel {
@@ -35,10 +37,10 @@ public class JupyterKernel {
     @Getter
     private final String name, kernelId, clientId;
     private final WebSocket webSocket;
-    private final Set<JupyterKernelSubscriber> subscribers = new HashSet<>();
+    private final Set<Session> subscribers = new HashSet<>();
 
 
-    public JupyterKernel( String kernelId, String name, WebSocket.Builder builder, String host) {
+    public JupyterKernel( String kernelId, String name, WebSocket.Builder builder, String host ) {
         this.kernelId = kernelId;
         this.name = name;
         this.clientId = UUID.randomUUID().toString();
@@ -50,32 +52,39 @@ public class JupyterKernel {
     }
 
 
-    public void subscribe( JupyterKernelSubscriber session ) {
+    public void subscribe( Session session ) {
         subscribers.add( session );
     }
 
 
-    public void unsubscribe( JupyterKernelSubscriber session ) {
+    public void unsubscribe( Session session ) {
         subscribers.remove( session );
     }
 
 
     private void handleText( CharSequence data ) {
-        log.warn( "Received Text: {}", data );
-        subscribers.forEach( s -> s.onText( data ) );
+        log.info( "Received Text: {}", data );
+        String dataStr = data.toString();
+        subscribers.forEach( s -> {
+            try {
+                s.getRemote().sendString( dataStr );
+            } catch ( IOException e ) {
+                s.close();
+            }
+        } );
     }
 
 
-    public void execute( String code ) {
-        log.warn( "Sending code: {}", code );
-        ByteBuffer request = buildExecutionRequest( code, false, false, true );
+    public void execute( String code, String uuid ) {
+        log.info( "Sending code: {}", code );
+        ByteBuffer request = buildExecutionRequest( code, uuid, false, false, true );
         webSocket.sendBinary( request, true );
     }
 
 
-    private ByteBuffer buildExecutionRequest( String code, boolean silent, boolean allowStdin, boolean stopOnError ) {
+    private ByteBuffer buildExecutionRequest( String code, String uuid, boolean silent, boolean allowStdin, boolean stopOnError ) {
         JsonObject header = new JsonObject();
-        header.addProperty( "msg_id", UUID.randomUUID().toString() );
+        header.addProperty( "msg_id", uuid );
         header.addProperty( "msg_type", "execute_request" );
         header.addProperty( "version", "5.4" );
 
@@ -86,6 +95,11 @@ public class JupyterKernel {
         content.addProperty( "code", code );
 
         return buildMessage( "shell", header, new JsonObject(), new JsonObject(), content );
+    }
+
+
+    private ByteBuffer buildExecutionRequest( String code, boolean silent, boolean allowStdin, boolean stopOnError ) {
+        return buildExecutionRequest( code, UUID.randomUUID().toString(), silent, allowStdin, stopOnError );
     }
 
 
@@ -106,8 +120,17 @@ public class JupyterKernel {
         return bb;
     }
 
+
     public void close() {
+        subscribers.forEach( c -> c.close( 1000, "Websocket to Kernel was closed" ) );
         webSocket.abort();
+    }
+
+
+    public String getStatus() {
+        return "Input: " + !webSocket.isInputClosed() +
+                ", Output: " + !webSocket.isOutputClosed() +
+                ", Subscribers: " + subscribers.size();
     }
 
 
@@ -115,7 +138,6 @@ public class JupyterKernel {
 
         @Override
         public void onOpen( WebSocket webSocket ) {
-            log.warn( "Opened Websocket" );
             WebSocket.Listener.super.onOpen( webSocket );
         }
 
@@ -129,7 +151,7 @@ public class JupyterKernel {
 
         @Override
         public CompletionStage<?> onClose( WebSocket webSocket, int statusCode, String reason ) {
-            subscribers.forEach( JupyterKernelSubscriber::onClose );
+            log.error( "closed websocket to {}", kernelId );
             JupyterSessionManager.getInstance().removeKernel( kernelId );
             return Listener.super.onClose( webSocket, statusCode, reason );
         }
@@ -137,8 +159,12 @@ public class JupyterKernel {
 
         @Override
         public void onError( WebSocket webSocket, Throwable error ) {
+            log.error( "error in websocket to {}:\n{}", kernelId, error.getMessage() );
+            error.printStackTrace();
+            JupyterSessionManager.getInstance().removeKernel( kernelId );
             Listener.super.onError( webSocket, error );
         }
+
 
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jupyter.model;
+package org.polypheny.db.jupyter;
 
 import java.net.http.HttpResponse;
 import lombok.extern.slf4j.Slf4j;

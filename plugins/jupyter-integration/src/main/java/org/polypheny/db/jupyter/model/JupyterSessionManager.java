@@ -80,8 +80,17 @@ public class JupyterSessionManager {
         session.setKernel( kernel );
     }
 
-    public void removeSession( String sessionId ) {
-        sessions.remove( sessionId );
+
+    /**
+     * Removes the session with the given session id, its associated kernel and all other sessions using that kernel.
+     */
+    public void invalidateSession( String sessionId ) {
+        JupyterSession session = sessions.remove( sessionId );
+        if ( session != null ) {
+            removeKernel( session.getKernel().getKernelId() );
+            removeSessionsWithInvalidKernels();
+        }
+
     }
 
 
@@ -96,8 +105,11 @@ public class JupyterSessionManager {
 
 
     public void retainValidKernels( Set<String> validKernelIds ) {
-        kernels.keySet().retainAll( validKernelIds );
-        removeSessionsWithInvalidKernels();
+        for ( String id : kernels.keySet() ) {
+            if ( !validKernelIds.contains( id ) ) {
+                removeKernel( id );
+            }
+        }
     }
 
 
@@ -107,8 +119,10 @@ public class JupyterSessionManager {
 
 
     public void removeKernel( String kernelId ) {
-        sessions.entrySet().removeIf( entry -> entry.getValue().isKernel( kernelId ) );
-        kernels.remove( kernelId );
+        JupyterKernel kernel = kernels.remove( kernelId );
+        if ( kernel != null ) {
+            kernel.close();
+        }
     }
 
 
@@ -142,6 +156,7 @@ public class JupyterSessionManager {
             sb.append( "id: " ).append( kernel.getKernelId() )
                     .append( "    client_id: " ).append( kernel.getClientId() )
                     .append( "    name: " ).append( kernel.getName() )
+                    .append( "    status: " ).append( kernel.getStatus() )
                     .append( "\n\t" );
         }
         sb.append( "\nAvailable Kernels:\n\t" );

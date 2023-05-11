@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.jupyter.model.JupyterProxy;
 import org.polypheny.db.jupyter.model.JupyterSessionManager;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
@@ -46,6 +45,7 @@ public class JupyterPlugin extends Plugin {
     private final String UNIQUE_NAME = "jupyter-container";
     private final String SERVER_TARGET_PATH = "/home/jovyan/work";
     private final String REST_PATH = "/notebooks";
+    private final String WEBSOCKET_PATH = REST_PATH + "/webSocket";
     private DockerManager.Container container;
     private File rootPath;
     private JupyterProxy proxy;
@@ -108,6 +108,9 @@ public class JupyterPlugin extends Plugin {
 
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
+
+        server.addWebsocket( WEBSOCKET_PATH + "/{kernelId}", new JupyterWebSocket() );
+
         server.addSerializedRoute( REST_PATH + "/contents/<path>", proxy::contents, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/sessions", proxy::sessions, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::session, HandlerType.GET );

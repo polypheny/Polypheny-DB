@@ -89,6 +89,7 @@ public class JupyterClient {
         if ( response.statusCode() == 200 ) {
             updateSessions( gson.fromJson( response.body(), JsonArray.class ) );
         }
+        log.warn( sessionManager.getOverview() );
         return response;
     }
 
@@ -147,7 +148,7 @@ public class JupyterClient {
     public HttpResponse<String> deleteSession( String sessionId ) throws JupyterServerException {
         HttpResponse<String> response = sendDELETE( "sessions/" + sessionId );
         if ( response.statusCode() == 204 ) {
-            sessionManager.removeSession( sessionId );
+            sessionManager.invalidateSession( sessionId );
         }
         return response;
     }
