@@ -27,6 +27,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -44,9 +45,9 @@ public class CypherHasLabelOrTypes extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
 
-        Pair<String, RexNode> namedSubject = subject.getRex( context, type );
+        Pair<PolyString, RexNode> namedSubject = subject.getRex( context, type );
 
         RexNode hasLabels;
         if ( labels.size() == 1 ) {

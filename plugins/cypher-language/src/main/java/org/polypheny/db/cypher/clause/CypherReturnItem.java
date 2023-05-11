@@ -26,6 +26,7 @@ import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -61,7 +62,7 @@ public class CypherReturnItem extends CypherReturn {
 
     @Override
     @Nullable
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         if ( variable != null ) {
             // name -> aggregate
             // renaming of the field
@@ -69,7 +70,7 @@ public class CypherReturnItem extends CypherReturn {
             if ( expression.getType() == ExpressionType.AGGREGATE ) {
                 return ((CypherAggregate) expression).getAggregate( context, name );
             }
-            return Pair.of( name, expression.getRex( context, type ).right );
+            return Pair.of( PolyString.of( name ), expression.getRex( context, type ).right );
         } else {
             if ( expression.getType() == ExpressionType.AGGREGATE ) {
                 return ((CypherAggregate) expression).getAggregate( context, null );

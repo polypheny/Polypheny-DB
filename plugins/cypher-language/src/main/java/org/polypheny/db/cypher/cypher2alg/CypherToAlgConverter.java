@@ -255,11 +255,11 @@ public class CypherToAlgConverter {
 
     private AlgNode removeHiddenRows( CypherContext context, AlgNode node, List<String> missingNames ) {
         List<RexNode> nodes = new ArrayList<>();
-        List<String> names = new ArrayList<>();
+        List<PolyString> names = new ArrayList<>();
         node.getRowType().getFieldList().forEach( f -> {
             if ( !missingNames.contains( f.getName() ) ) {
                 nodes.add( context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) );
-                names.add( f.getName() );
+                names.add( PolyString.of( f.getName() ) );
             }
         } );
         return new LogicalLpgProject( node.getCluster(), cluster.traitSet(), node, nodes, names );
@@ -275,7 +275,7 @@ public class CypherToAlgConverter {
             input = node;
         }
 
-        List<Pair<String, RexNode>> additional = new ArrayList<>();
+        List<Pair<PolyString, RexNode>> additional = new ArrayList<>();
         for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
             for ( String name : missingNames ) {
                 String[] split = name.split( "\\." );
@@ -284,12 +284,12 @@ public class CypherToAlgConverter {
                     additional.add( context.getPropertyExtract( split[1], split[0], context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
                 } else if ( name.equals( field.getName() ) ) {
                     // missing field ( edge, node, string, etc )
-                    additional.add( Pair.of( name, context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
+                    additional.add( Pair.of( PolyString.of( name ), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
                 }
             }
         }
         List<RexNode> nodes;
-        List<String> names;
+        List<PolyString> names;
         if ( node instanceof LogicalLpgProject ) {
             // we can extend the Project
             LogicalLpgProject project = (LogicalLpgProject) node;
@@ -308,7 +308,7 @@ public class CypherToAlgConverter {
 
             node.getRowType().getFieldList().forEach( f -> {
                 nodes.add( context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) );
-                names.add( f.getName() );
+                names.add( PolyString.of( f.getName() ) );
             } );
 
             nodes.addAll( Pair.right( additional ) );
@@ -453,7 +453,7 @@ public class CypherToAlgConverter {
 
         public void combineMatch() {
             addDefaultScanIfNecessary();
-            List<Pair<String, RexNode>> matches = getMatches();
+            List<Pair<PolyString, RexNode>> matches = getMatches();
 
             List<RexCall> calls = Pair.right( matches ).stream().map( r -> (RexCall) r ).collect( Collectors.toList() );
 
@@ -468,8 +468,8 @@ public class CypherToAlgConverter {
         }
 
 
-        private List<Pair<String, RexNode>> getMatches() {
-            ArrayList<Pair<String, RexNode>> namedMatch = new ArrayList<>();
+        private List<Pair<PolyString, RexNode>> getMatches() {
+            ArrayList<Pair<PolyString, RexNode>> namedMatch = new ArrayList<>();
 
             while ( !rexQueue.isEmpty() ) {
                 namedMatch.add( rexQueue.remove() );
@@ -498,7 +498,7 @@ public class CypherToAlgConverter {
                         && node.getRowType().getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
                     node = stack.pop();
 
-                    List<Pair<String, RexNode>> rex = new ArrayList<>();
+                    List<Pair<PolyString, RexNode>> rex = new ArrayList<>();
                     rexQueue.iterator().forEachRemaining( rex::add );
                     stack.add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), node, Pair.right( rex ), Pair.left( rex ) ) );
                 }
@@ -509,7 +509,7 @@ public class CypherToAlgConverter {
         private RexNode getCondition() {
             List<RexNode> nodes = new ArrayList<>();
             while ( !rexQueue.isEmpty() ) {
-                Pair<String, RexNode> popped = rexQueue.remove();
+                Pair<PolyString, RexNode> popped = rexQueue.remove();
                 nodes.add( popped.right );
             }
 
@@ -527,27 +527,27 @@ public class CypherToAlgConverter {
         }
 
 
-        public void add( Pair<String, RexNode> namedNode ) {
+        public void add( Pair<PolyString, RexNode> namedNode ) {
             this.rexQueue.add( namedNode );
         }
 
 
         @Nullable
         public RexNode getRexNode( String key ) {
-            List<Pair<String, RexNode>> nodes = popNodes();
-            List<String> names = Pair.left( nodes );
-            int i = names.indexOf( key );
+            List<Pair<PolyString, RexNode>> nodes = popNodes();
+            List<PolyString> names = Pair.left( nodes );
+            int i = names.indexOf( PolyString.of( key ) );
             if ( i >= 0 ) {
-                Pair<String, RexNode> node = nodes.get( i );
+                Pair<PolyString, RexNode> node = nodes.get( i );
                 nodes.remove( i );
 
-                for ( Pair<String, RexNode> pair : nodes ) {
+                for ( Pair<PolyString, RexNode> pair : nodes ) {
                     add( pair );
                 }
 
                 return node.right;
             }
-            for ( Pair<String, RexNode> pair : nodes ) {
+            for ( Pair<PolyString, RexNode> pair : nodes ) {
                 add( pair );
             }
 
@@ -579,8 +579,8 @@ public class CypherToAlgConverter {
         }
 
 
-        public List<Pair<String, RexNode>> popNodes() {
-            List<Pair<String, RexNode>> namedNodes = new ArrayList<>( rexQueue );
+        public List<Pair<PolyString, RexNode>> popNodes() {
+            List<Pair<PolyString, RexNode>> namedNodes = new ArrayList<>( rexQueue );
             rexQueue.clear();
             return namedNodes;
         }
@@ -593,13 +593,13 @@ public class CypherToAlgConverter {
         }
 
 
-        public Pair<String, RexNode> getPropertyExtract( String key, String subject, RexNode field ) {
+        public Pair<PolyString, RexNode> getPropertyExtract( String key, String subject, RexNode field ) {
             RexNode extractedProperty = rexBuilder.makeCall(
                     typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
                     OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ),
                     List.of( field, rexBuilder.makeLiteral( key ) ) );
 
-            return Pair.of( subject + "." + key, extractedProperty );
+            return Pair.of( PolyString.of( subject + "." + key ), extractedProperty );
         }
 
 
@@ -635,12 +635,12 @@ public class CypherToAlgConverter {
         }
 
 
-        public AlgNode asValues( List<Pair<String, RexNode>> nameAndValues ) {
+        public AlgNode asValues( List<Pair<PolyString, RexNode>> nameAndValues ) {
             if ( nameAndValues.stream().allMatch( v -> v.right.isA( Kind.LITERAL ) ) ) {
                 List<AlgDataTypeField> fields = new ArrayList<>();
                 int i = 0;
-                for ( Pair<String, RexNode> nameAndValue : nameAndValues ) {
-                    fields.add( new AlgDataTypeFieldImpl( nameAndValue.left, i, nameAndValue.right.getType() ) );
+                for ( Pair<PolyString, RexNode> nameAndValue : nameAndValues ) {
+                    fields.add( new AlgDataTypeFieldImpl( nameAndValue.left.value, i, nameAndValue.right.getType() ) );
                     i++;
                 }
 
@@ -747,9 +747,10 @@ public class CypherToAlgConverter {
                 List<Pair<PolyString, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
 
                 AtomicLong id = new AtomicLong(); // todo dl maybe move into values
-                List<String> adjustedNames = Pair.left( nodesAndEdges ).stream()
+                List<PolyString> adjustedNames = Pair.left( nodesAndEdges ).stream()
                         .map( n -> Objects.requireNonNullElseGet( n, () -> "EXPR$" + id.getAndIncrement() ) )
                         .map( Object::toString )
+                        .map( PolyString::of )
                         .collect( Collectors.toList() );
 
                 add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), pop(), Pair.right( nodesAndEdges ), adjustedNames ) );
@@ -783,7 +784,7 @@ public class CypherToAlgConverter {
                 throw new RuntimeException( "Empty UPDATE is not possible" );
             }
 
-            List<Pair<String, RexNode>> updates = popNodes();
+            List<Pair<PolyString, RexNode>> updates = popNodes();
 
             add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
             clearVariables();
@@ -795,7 +796,7 @@ public class CypherToAlgConverter {
                 throw new RuntimeException( "Empty DELETE is not possible" );
             }
 
-            List<Pair<String, RexNode>> deletes = popNodes();
+            List<Pair<PolyString, RexNode>> deletes = popNodes();
 
             add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.DELETE, Pair.left( deletes ), Pair.right( deletes ) ) );
             clearVariables();
@@ -836,7 +837,7 @@ public class CypherToAlgConverter {
                 throw new RuntimeException( "Empty DELETE is not possible" );
             }
 
-            List<Pair<String, RexNode>> updates = popNodes();
+            List<Pair<PolyString, RexNode>> updates = popNodes();
 
             add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
             clearVariables();

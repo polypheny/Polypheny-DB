@@ -729,7 +729,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     alloc,
                     buildGraphDml( alg.getInput(), statement, adapterId ),
                     alg.operation,
-                    alg.ids,
+                    alg.ids.stream().map( id -> id.value ).collect( Collectors.toList() ),
                     alg.operations ) );
 
         }

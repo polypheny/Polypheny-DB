@@ -234,7 +234,7 @@ public class CypherFunctions {
      * @param variableName the name of the given variable
      */
     @SuppressWarnings("unused")
-    public static GraphObject extractFrom( PolyPath path, String variableName ) {
+    public static GraphObject extractFrom( PolyPath path, PolyString variableName ) {
         return path.get( variableName );
     }
 
@@ -332,8 +332,8 @@ public class CypherFunctions {
      * @return the adjusted graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setProperty( GraphPropertyHolder target, String key, PolyValue value ) {
-        target.properties.put( PolyString.of( key ), value );
+    public static GraphPropertyHolder setProperty( GraphPropertyHolder target, PolyString key, PolyValue value ) {
+        target.properties.put( key, value );
         return target;
     }
 
@@ -347,11 +347,11 @@ public class CypherFunctions {
      * @return the adjusted graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, PolyList<PolyString> labels, boolean replace ) {
+    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<PolyString> labels, boolean replace ) {
         if ( replace ) {
             target.labels.clear();
         }
-        target.setLabels( labels );
+        target.setLabels( PolyList.of( labels ) );
         return target;
     }
 

@@ -26,6 +26,7 @@ import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -62,7 +63,7 @@ public class CypherRemoveProperty extends CypherRemoveItem {
                         ref,
                         context.rexBuilder.makeLiteral( getProperty().getPropertyKey() ) ) );
 
-        context.add( Pair.of( nodeName, op ) );
+        context.add( Pair.of( PolyString.of( nodeName ), op ) );
     }
 
 }

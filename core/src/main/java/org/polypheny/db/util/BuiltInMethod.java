@@ -136,6 +136,7 @@ import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -457,31 +458,31 @@ public enum BuiltInMethod {
     DOC_JSONIZE( MqlFunctions.class, "docJsonify", Object.class ),
     DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class ),
     GRAPH_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
-    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, String.class ),
-    CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", PolyNode.class, String.class ),
+    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, PolyString.class ),
+    CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", PolyNode.class, PolyString.class ),
     GRAPH_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),
     GRAPH_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class ),
     GRAPH_MATCH_CTOR( MatchEnumerable.class, List.class ),
-    GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, String.class ),
-    CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", GraphPropertyHolder.class, String.class ),
+    GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, PolyString.class ),
+    CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", GraphPropertyHolder.class, PolyString.class ),
 
     CYPHER_EXTRACT_PROPERTIES( CypherFunctions.class, "extractProperties", GraphPropertyHolder.class ),
 
     CYPHER_EXTRACT_ID( CypherFunctions.class, "extractId", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
-    CYPHER_TO_LIST( CypherFunctions.class, "toList", Object.class ),
+    CYPHER_TO_LIST( CypherFunctions.class, "toList", PolyValue.class ),
     CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, PolyNode.class, PolyNode.class ),
-    CYPHER_SET_PROPERTY( CypherFunctions.class, "setProperty", GraphPropertyHolder.class, String.class, String.class ),
+    CYPHER_SET_PROPERTY( CypherFunctions.class, "setProperty", GraphPropertyHolder.class, PolyString.class, PolyValue.class ),
     CYPHER_SET_PROPERTIES( CypherFunctions.class, "setProperties", GraphPropertyHolder.class, List.class, List.class, boolean.class ),
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, boolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
     SPLIT_GRAPH_MODIFY( CrossModelFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class ),
 
-    X_MODEL_TABLE_TO_NODE( CrossModelFunctions.class, "tableToNodes", Enumerable.class, String.class, List.class ),
+    X_MODEL_TABLE_TO_NODE( CrossModelFunctions.class, "tableToNodes", Enumerable.class, PolyString.class, List.class ),
     X_MODEL_MERGE_NODE_COLLECTIONS( CrossModelFunctions.class, "mergeNodeCollections", List.class ),
-    X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, String.class ),
+    X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, PolyString.class ),
     X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class ),
 
     X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class );

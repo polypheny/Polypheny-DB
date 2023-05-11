@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -257,7 +256,7 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.TABLE_LIST_MALFORMED_TABLE, tableName );
         }
 
-        LogicalTable table = snapshop.rel().getTable( tableElements[1], tableElements[1] );
+        LogicalTable table = snapshop.rel().getTable( tableElements[1], tableElements[1] ).orElseThrow();
         if ( log.isDebugEnabled() ) {
             log.debug( "Finished parsing table \"{}\".", tableName );
         }
@@ -348,7 +347,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = snapshop.getNamespaces( null ).stream().map( n -> this.snapshop.rel().getColumn( columnId ) ).filter( Objects::nonNull ).findFirst().orElse( null );
+            LogicalColumn column = snapshop.getNamespaces( null ).stream().map( n -> this.snapshop.rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );

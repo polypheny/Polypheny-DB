@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.util.Arrays;
 import java.util.Collection;
@@ -161,7 +162,7 @@ public class ImmutableIntList extends FlatList<Integer> {
         if ( list instanceof Collection && ((Collection<?>) list).isEmpty() ) {
             return this;
         }
-        return new ImmutableIntList( ImmutableIntList.of( Iterables.concat( this, list ) ) );
+        return new ImmutableIntList( ImmutableList.copyOf( Iterables.concat( this, list ) ) );
     }
 
 

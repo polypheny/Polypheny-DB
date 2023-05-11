@@ -30,6 +30,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 public class CypherAggregate extends CypherExpression {
@@ -50,11 +51,11 @@ public class CypherAggregate extends CypherExpression {
     }
 
 
-    public Pair<String, RexNode> getAggregate( CypherContext context, String alias ) {
+    public Pair<PolyString, RexNode> getAggregate( CypherContext context, String alias ) {
         List<Integer> aggIndexes = new ArrayList<>();
 
-        String name = null;
-        Pair<String, RexNode> namedNode = null;
+        PolyString name = null;
+        Pair<PolyString, RexNode> namedNode = null;
         if ( target != null ) {
             namedNode = target.getRex( context, RexType.PROJECT );
             name = namedNode.left;
@@ -73,7 +74,7 @@ public class CypherAggregate extends CypherExpression {
                 alias != null ? alias : String.format( "%s(%s)", op.name(), name )
         );
 
-        context.addAgg( Pair.of( name, call ) );
+        context.addAgg( Pair.of( name.value, call ) );
 
         if ( namedNode != null ) {
             return Pair.of( namedNode.left, typeAndValue.left );
@@ -87,7 +88,7 @@ public class CypherAggregate extends CypherExpression {
     private Pair<RexNode, AlgDataType> getReturnType( CypherContext context, RexNode node ) {
         switch ( op ) {
             case COLLECT:
-                Pair<String, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
+                Pair<PolyString, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
                 return Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
             case AVG:
                 RexNode casted = context.rexBuilder.makeCast( context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ), node );

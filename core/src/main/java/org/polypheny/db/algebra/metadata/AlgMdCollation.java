@@ -363,20 +363,20 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         final int x = fieldCollation.getFieldIndex();
         switch ( fieldCollation.direction ) {
             case ASCENDING:
-                return new Ordering<List<RexLiteral>>() {
+                return new Ordering<>() {
                     @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
-                        final Comparable c1 = o1.get( x ).getValueAs( Comparable.class );
-                        final Comparable c2 = o2.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c1 = o1.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c2 = o2.get( x ).getValueAs( Comparable.class );
                         return AlgFieldCollation.compare( c1, c2, nullComparison );
                     }
                 };
             default:
-                return new Ordering<List<RexLiteral>>() {
+                return new Ordering<>() {
                     @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
-                        final Comparable c1 = o1.get( x ).getValueAs( Comparable.class );
-                        final Comparable c2 = o2.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c1 = o1.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c2 = o2.get( x ).getValueAs( Comparable.class );
                         return AlgFieldCollation.compare( c2, c1, -nullComparison );
                     }
                 };

@@ -34,6 +34,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -74,7 +75,7 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         OperatorName operatorName;
         switch ( this.type ) {
             case PATTERN:
@@ -106,7 +107,7 @@ public class CypherExpression extends CypherNode {
 
         String var = variable.getName();
 
-        return Pair.of( var, new RexCall(
+        return Pair.of( PolyString.of( var ), new RexCall(
                 context.booleanType,
                 OperatorRegistry.get( operatorName ),
                 List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRex( context, type ).right ) ) );
@@ -118,8 +119,8 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Pair<String, RexNode> getValues( CypherContext context, String name ) {
-        Pair<String, RexNode> namedNode = getRex( context, RexType.PROJECT );
+    public Pair<PolyString, RexNode> getValues( CypherContext context, String name ) {
+        Pair<PolyString, RexNode> namedNode = getRex( context, RexType.PROJECT );
         if ( namedNode.right.isA( Kind.LITERAL ) ) {
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( (RexLiteral) namedNode.right ) );
 

@@ -31,6 +31,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Pair;
 
@@ -88,7 +89,7 @@ public class CypherSetVariable extends CypherSetItem {
                                 ((PolyDictionary) value).values().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.ANY ), false ) ).collect( Collectors.toList() ) ),
                         context.rexBuilder.makeLiteral( !increment ) ) );
 
-        context.add( Pair.of( nodeName, op ) );
+        context.add( Pair.of( PolyString.of( nodeName ), op ) );
     }
 
 }

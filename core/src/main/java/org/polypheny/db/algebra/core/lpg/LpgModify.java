@@ -26,12 +26,14 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 public abstract class LpgModify<E extends CatalogEntity> extends Modify<E> implements LpgAlg {
+
     @Getter
     public final Operation operation;
-    public final List<String> ids;
+    public final List<PolyString> ids;
     public final List<? extends RexNode> operations;
 
 
@@ -39,7 +41,7 @@ public abstract class LpgModify<E extends CatalogEntity> extends Modify<E> imple
      * Creates a {@link LpgModify}.
      * {@link ModelTrait#GRAPH} node, which is able to modify an LPG graph.
      */
-    protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, E graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
+    protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, E graph, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
         super( cluster, traits.replace( ModelTrait.GRAPH ), graph, input );
         this.operation = operation;
         this.ids = ids;

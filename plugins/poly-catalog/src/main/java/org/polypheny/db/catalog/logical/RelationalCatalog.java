@@ -450,8 +450,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             }
             int i = 0;
             for ( long referencedColumnId : refKey.columnIds ) {
-                LogicalColumn referencingColumn = snapshot.rel().getColumn( columnIds.get( i++ ) );
-                LogicalColumn referencedColumn = snapshot.rel().getColumn( referencedColumnId );
+                LogicalColumn referencingColumn = snapshot.rel().getColumn( columnIds.get( i++ ) ).orElseThrow();
+                LogicalColumn referencedColumn = snapshot.rel().getColumn( referencedColumnId ).orElseThrow();
                 if ( referencedColumn.type != referencingColumn.type ) {
                     throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
                 }

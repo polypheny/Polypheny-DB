@@ -132,7 +132,7 @@ public class CypherLiteral extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         RexNode node;
         switch ( literalType ) {
             case TRUE:

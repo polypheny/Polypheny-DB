@@ -26,6 +26,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 @Getter
@@ -35,7 +36,7 @@ public class LogicalLpgProject extends LpgProject {
     /**
      * Subclass of {@link LpgProject} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
+    public LogicalLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<PolyString> names ) {
         super( cluster, traits.replace( Convention.NONE ), input, projects, names );
 
         assert (this.names == null || this.projects == null) || this.names.size() == this.projects.size();

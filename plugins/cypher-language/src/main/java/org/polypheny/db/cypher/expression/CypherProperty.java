@@ -26,6 +26,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -62,12 +63,12 @@ public class CypherProperty extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         String key = propKeyName.getImage();
         String subject = this.subject.getName();
 
-        Pair<String, RexNode> namedSubject = this.subject.getRex( context, type );
-        assert namedSubject.left.equals( subject );
+        Pair<PolyString, RexNode> namedSubject = this.subject.getRex( context, type );
+        assert namedSubject.left.equals( PolyString.of( subject ) );
 
         if ( type == RexType.FILTER ) {
             // first check if property even exist, this is use if it is used as filter
@@ -76,7 +77,7 @@ public class CypherProperty extends CypherExpression {
                     OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_PROPERTY ),
                     List.of( namedSubject.right, context.rexBuilder.makeLiteral( key ) ) );
 
-            context.add( Pair.of( subject + "." + key, hasProperty ) );
+            context.add( Pair.of( PolyString.of( subject + "." + key ), hasProperty ) );
         }
 
         return context.getPropertyExtract( key, subject, namedSubject.right );

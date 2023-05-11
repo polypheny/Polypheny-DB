@@ -122,7 +122,6 @@ import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AbstractConverter;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
@@ -144,8 +143,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
      * Cache of pre-generated handlers by provider and kind of metadata.
      * For the cache to be effective, providers should implement identity correctly.
      */
-    @SuppressWarnings("unchecked")
-    private static final LoadingCache<Key, MetadataHandler> HANDLERS =
+    private static final LoadingCache<Key, MetadataHandler<? extends Metadata>> HANDLERS =
             maxSize( CacheBuilder.newBuilder(), SaffronProperties.INSTANCE.metadataHandlerCacheMaximumSize().get() )
                     .build( CacheLoader.from( key -> load3( key.def, key.provider.handlers( key.def ), key.algClasses ) ) );
 
@@ -285,23 +283,23 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     private static <M extends Metadata> MetadataHandler<M> load3( MetadataDef<M> def, Multimap<Method, MetadataHandler<M>> map, ImmutableList<Class<? extends AlgNode>> algClasses ) {
         final StringBuilder buff = new StringBuilder();
         final String name = "GeneratedMetadataHandler_" + def.metadataClass.getSimpleName();
-        final Set<MetadataHandler> providerSet = new HashSet<>();
-        final List<Pair<String, MetadataHandler>> providerList = new ArrayList<>();
+        final Set<MetadataHandler<?>> providerSet = new HashSet<>();
+        final List<Pair<String, MetadataHandler<?>>> providerList = new ArrayList<>();
         //noinspection unchecked
         final ReflectiveAlgMetadataProvider.Space space = new ReflectiveAlgMetadataProvider.Space( (Multimap) map );
-        for ( MetadataHandler provider : space.providerMap.values() ) {
+        for ( MetadataHandler<?> provider : space.providerMap.values() ) {
             if ( providerSet.add( provider ) ) {
                 providerList.add( Pair.of( "provider" + (providerSet.size() - 1), provider ) );
             }
         }
 
         buff.append( "  private final java.util.List relClasses;\n" );
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             buff.append( "  public final " ).append( pair.right.getClass().getName() )
                     .append( ' ' ).append( pair.left ).append( ";\n" );
         }
         buff.append( "  public " ).append( name ).append( "(java.util.List relClasses" );
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             buff.append( ",\n" )
                     .append( "      " )
                     .append( pair.right.getClass().getName() )
@@ -311,7 +309,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         buff.append( ") {\n" )
                 .append( "    this.relClasses = relClasses;\n" );
 
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             buff.append( "    this." )
                     .append( pair.left )
                     .append( " = " )
@@ -341,7 +339,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             paramList( buff, method.e )
                     .append( ") {\n" );
             buff.append( "    final java.util.List key = " )
-                    .append( (method.e.getParameterTypes().length < 4 ? FlatList.class : ImmutableList.class).getName() )
+                    .append( ImmutableList.class.getName() ) // this should be re-evaluated, if it is even needed anymore
                     .append( ".of(" )
                     .append( def.metadataClass.getName() );
             if ( method.i == 0 ) {
@@ -465,8 +463,8 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     }
 
 
-    private static String findProvider( List<Pair<String, MetadataHandler>> providerList, Class<?> declaringClass ) {
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+    private static String findProvider( List<Pair<String, MetadataHandler<?>>> providerList, Class<?> declaringClass ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             if ( declaringClass.isInstance( pair.right ) ) {
                 return pair.left;
             }
@@ -547,7 +545,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         }
 
         compiler.cook( s );
-        final Constructor constructor;
+        final Constructor<?> constructor;
         final Object o;
         try {
             constructor = compiler.getClassLoader().loadClass( className ).getDeclaredConstructors()[0];
@@ -561,7 +559,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
     synchronized <M extends Metadata, H extends MetadataHandler<M>> H create( MetadataDef<M> def ) {
         try {
-            final Key key = new Key( (MetadataDef) def, provider, ImmutableList.copyOf( ALL_RELS ) );
+            final Key key = new Key( def, provider, ImmutableList.copyOf( ALL_RELS ) );
             //noinspection unchecked
             return (H) HANDLERS.get( key );
         } catch ( UncheckedExecutionException | ExecutionException e ) {
@@ -589,10 +587,10 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         final List<Class<? extends AlgNode>> list = Lists.newArrayList( classes );
         for ( int i = 0; i < list.size(); i++ ) {
             final Class<? extends AlgNode> c = list.get( i );
-            final Class s = c.getSuperclass();
+            final Class<?> s = c.getSuperclass();
             if ( s != null && AlgNode.class.isAssignableFrom( s ) ) {
                 //noinspection unchecked
-                list.add( s );
+                list.add( (Class<? extends AlgNode>) s );
             }
         }
         synchronized ( this ) {
@@ -621,14 +619,14 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     /**
      * Key for the cache.
      */
-    private static class Key {
+    private static class Key<M extends Metadata> {
 
-        public final MetadataDef def;
+        public final MetadataDef<M> def;
         public final AlgMetadataProvider provider;
         public final ImmutableList<Class<? extends AlgNode>> algClasses;
 
 
-        private Key( MetadataDef def, AlgMetadataProvider provider, ImmutableList<Class<? extends AlgNode>> algClassList ) {
+        private Key( MetadataDef<M> def, AlgMetadataProvider provider, ImmutableList<Class<? extends AlgNode>> algClassList ) {
             this.def = def;
             this.provider = provider;
             this.algClasses = algClassList;
@@ -645,9 +643,9 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         public boolean equals( Object obj ) {
             return this == obj
                     || obj instanceof Key
-                    && ((Key) obj).def.equals( def )
-                    && ((Key) obj).provider.equals( provider )
-                    && ((Key) obj).algClasses.equals( algClasses );
+                    && ((Key<?>) obj).def.equals( def )
+                    && ((Key<?>) obj).provider.equals( provider )
+                    && ((Key<?>) obj).algClasses.equals( algClasses );
         }
 
     }

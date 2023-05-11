@@ -83,7 +83,7 @@ public class AlgMetadataQuery {
     /**
      * Set of active metadata queries, and cache of previous results.
      */
-    public final Map<List, Object> map = new HashMap<>();
+    public final Map<List<?>, Object> map = new HashMap<>();
 
     public final JaninoRelMetadataProvider metadataProvider;
 

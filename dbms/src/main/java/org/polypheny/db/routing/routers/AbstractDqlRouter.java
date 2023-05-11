@@ -228,10 +228,10 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
         algBuilder.lpgScan( logicalTable.id );
-        algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( PolyString.of( logicalTable.name ) ) ) ), List.of( "n" ) );
+        algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( PolyString.of( logicalTable.name ) ) ) ), List.of( PolyString.of( "n" ) ) );
         algBuilder.lpgProject(
                 List.of( rexBuilder.makeLpgGetId(), rexBuilder.makeLpgPropertiesExtract(), rexBuilder.makeLpgLabels() ),
-                List.of( "id", "properties", "labels" ) );
+                List.of( PolyString.of( "id" ), PolyString.of( "properties" ), PolyString.of( "labels" ) ) );
 
         AlgNode built = routeGraph( RoutedAlgBuilder.create( statement, cluster ), (AlgNode & LpgAlg) algBuilder.build(), statement );
 

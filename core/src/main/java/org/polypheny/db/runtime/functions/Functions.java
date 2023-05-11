@@ -3310,7 +3310,7 @@ public class Functions {
                     Map<Comparable<Object>, Comparable<Object>> map = (Map<Comparable<Object>, Comparable<Object>>) inputObject;
                     Enumerator<Entry<Comparable<Object>, Comparable<Object>>> enumerator = Linq4j.enumerator( map.entrySet() );
 
-                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> FlatList.of( e.getKey(), e.getValue() ) );
+                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> FlatList.of( (Comparable) e.getKey(), (Comparable) e.getValue() ) );
                     enumerators.add( transformed );
                     break;
                 default:

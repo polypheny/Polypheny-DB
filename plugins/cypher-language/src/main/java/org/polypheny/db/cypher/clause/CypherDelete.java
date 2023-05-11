@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -49,7 +50,7 @@ public class CypherDelete extends CypherClause {
 
     public void getDelete( CypherContext context ) {
         for ( CypherExpression expression : expressions ) {
-            Pair<String, RexNode> pair = expression.getRex( context, RexType.PROJECT );
+            Pair<PolyString, RexNode> pair = expression.getRex( context, RexType.PROJECT );
             if ( detach ) {
                 throw new UnsupportedOperationException( "Detach is not supported" );
             }

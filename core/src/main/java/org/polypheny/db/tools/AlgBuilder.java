@@ -1406,13 +1406,13 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder lpgMatch( List<RexCall> matches, List<String> names ) {
+    public AlgBuilder lpgMatch( List<RexCall> matches, List<PolyString> names ) {
         stack.add( new Frame( new LogicalLpgMatch( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), matches, names ) ) );
         return this;
     }
 
 
-    public AlgBuilder lpgProject( List<? extends RexNode> projects, List<String> names ) {
+    public AlgBuilder lpgProject( List<? extends RexNode> projects, List<PolyString> names ) {
         stack.add( new Frame( new LogicalLpgProject( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), projects, names ) ) );
         return this;
     }

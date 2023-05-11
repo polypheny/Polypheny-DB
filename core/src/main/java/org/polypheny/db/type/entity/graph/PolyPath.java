@@ -152,7 +152,7 @@ public class PolyPath extends GraphObject {
     }
 
 
-    public GraphObject get( String name ) {
+    public GraphObject get( PolyString name ) {
         if ( name == null ) {
             throw new RuntimeException( "cannot retrieve name with value null from path." );
         }
@@ -330,10 +330,7 @@ public class PolyPath extends GraphObject {
                 return false;
             }
             assert this.target != null;
-            if ( !target.labelAndPropertyMatch( this.target ) ) {
-                return false;
-            }
-            return true;
+            return target.labelAndPropertyMatch( this.target );
 
         }
 

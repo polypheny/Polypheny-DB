@@ -154,7 +154,7 @@ public class Rest {
 
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        LogicalTable table = snapshot.rel().getTable( resourcePatchRequest.tables.get( 0 ).id );
+        LogicalTable table = snapshot.rel().getTable( resourcePatchRequest.tables.get( 0 ).id ).orElseThrow();
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -256,7 +256,7 @@ public class Rest {
 
 
     private static LogicalTable getLogicalTable( Snapshot snapshot, String namespaceName, String tableName ) {
-        return snapshot.rel().getTable( namespaceName, tableName );
+        return snapshot.rel().getTable( namespaceName, tableName ).orElseThrow();
     }
 
 

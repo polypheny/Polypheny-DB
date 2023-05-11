@@ -44,7 +44,7 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
 
         long namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
 
-        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() );
+        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() ).orElseThrow();
 
         if ( collection == null ) {
             throw new RuntimeException( "Error while adding new collection placement, collection not found." );

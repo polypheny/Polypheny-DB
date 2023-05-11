@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -41,11 +42,11 @@ public class CypherStarReturn extends CypherReturn {
 
     @Override
     @Nullable
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         AlgNode node = context.peek();
 
         for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
-            context.add( Pair.of( field.getName(), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
+            context.add( Pair.of( PolyString.of( field.getName() ), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
         }
 
         return null;

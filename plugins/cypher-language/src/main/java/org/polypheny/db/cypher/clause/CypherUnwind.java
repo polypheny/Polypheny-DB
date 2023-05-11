@@ -38,6 +38,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -62,7 +63,7 @@ public class CypherUnwind extends CypherClause {
 
 
     public void getUnwind( CypherContext context ) {
-        Pair<String, RexNode> namedNode;
+        Pair<PolyString, RexNode> namedNode;
         if ( expression.getType() == ExpressionType.LITERAL && ((CypherLiteral) expression).getLiteralType() == Literal.NULL ) {
             // special case, this is equal to empty list
             AlgDataType type = context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 );
@@ -73,7 +74,7 @@ public class CypherUnwind extends CypherClause {
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( emptyList ) );
             context.add( LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values ) );
 
-            namedNode = Pair.of( variable.getName(), context.rexBuilder.makeInputRef( context.typeFactory.createPolyType( PolyType.ANY ), 0 ) );
+            namedNode = Pair.of( PolyString.of( variable.getName() ), context.rexBuilder.makeInputRef( context.typeFactory.createPolyType( PolyType.ANY ), 0 ) );
 
         } else if ( expression.getType() == ExpressionType.LITERAL ) {
             // is values

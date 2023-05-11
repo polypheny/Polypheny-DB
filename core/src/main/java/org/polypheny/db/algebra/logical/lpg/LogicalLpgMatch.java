@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.core.lpg.LpgMatch;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 public class LogicalLpgMatch extends LpgMatch {
@@ -31,7 +32,7 @@ public class LogicalLpgMatch extends LpgMatch {
     /**
      * Subclass of {@link LpgMatch} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
+    public LogicalLpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<PolyString> names ) {
         super( cluster, traits, input, matches, names );
     }
 

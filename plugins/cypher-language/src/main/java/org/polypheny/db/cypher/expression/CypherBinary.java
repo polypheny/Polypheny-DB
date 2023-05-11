@@ -26,6 +26,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -45,10 +46,10 @@ public class CypherBinary extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
 
-        Pair<String, RexNode> left = this.left.getRex( context, type );
-        Pair<String, RexNode> right = this.right.getRex( context, type );
+        Pair<PolyString, RexNode> left = this.left.getRex( context, type );
+        Pair<PolyString, RexNode> right = this.right.getRex( context, type );
 
         if ( OperatorRegistry.get( op ) instanceof BinaryOperator ) {
             // when we have a binary comparison, we have to adjust potential mismatches

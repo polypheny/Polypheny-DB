@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -43,7 +44,7 @@ public class CypherSetLabels extends CypherSetItem {
         String nodeName = variable.getName();
         RexNode op = context.getLabelUpdate( labels.stream().map( StringPos::getImage ).collect( Collectors.toList() ), nodeName, false );
 
-        context.add( Pair.of( nodeName, op ) );
+        context.add( Pair.of( PolyString.of( nodeName ), op ) );
     }
 
 

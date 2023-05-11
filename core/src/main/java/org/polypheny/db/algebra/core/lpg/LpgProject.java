@@ -31,6 +31,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 public abstract class LpgProject extends SingleAlg implements LpgAlg {
@@ -38,14 +39,14 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
     @Getter
     protected final List<? extends RexNode> projects;
     @Getter
-    protected final List<String> names;
+    protected final List<PolyString> names;
 
 
     /**
      * Creates a {@link LpgProject}.
      * {@link ModelTrait#GRAPH} native node of a project.
      */
-    protected LpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
+    protected LpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<PolyString> names ) {
         super( cluster, traits, input );
         this.projects = projects;
         this.names = names;
@@ -72,9 +73,9 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
         if ( names != null && projects != null ) {
             int i = 0;
             int index = 0;
-            for ( String name : names ) {
+            for ( PolyString name : names ) {
                 if ( name != null ) {
-                    fields.add( new AlgDataTypeFieldImpl( name, index, projects.get( i ).getType() ) );
+                    fields.add( new AlgDataTypeFieldImpl( name.value, index, projects.get( i ).getType() ) );
                     index++;
                 }
                 i++;

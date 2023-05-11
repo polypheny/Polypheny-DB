@@ -29,6 +29,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PathType;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -50,7 +51,7 @@ public class CypherVariable extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         AlgNode node = context.peek();
 
         int index = node.getRowType().getFieldNames().indexOf( name );
@@ -58,7 +59,7 @@ public class CypherVariable extends CypherExpression {
         if ( index >= 0 ) {
             // search r  -> RowType(r:Edge)
             return Pair.of(
-                    name,
+                    PolyString.of( name ),
                     context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( index ).getType(), index ) );
         }
 
@@ -69,7 +70,7 @@ public class CypherVariable extends CypherExpression {
                         // search r -> RowType(Path(r:Edge, n:Node))
                         RexInputRef pathRef = context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( field.getIndex() ).getType(), field.getIndex() );
                         return Pair.of(
-                                name,
+                                PolyString.of( name ),
                                 context.rexBuilder.makeCall(
                                         pathField.getType(),
                                         OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ),

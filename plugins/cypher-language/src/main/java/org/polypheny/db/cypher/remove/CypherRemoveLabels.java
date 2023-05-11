@@ -29,6 +29,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -71,7 +72,7 @@ public class CypherRemoveLabels extends CypherRemoveItem {
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
                                 labels.stream().map( l -> (RexNode) context.rexBuilder.makeLiteral( l.getImage() ) ).collect( Collectors.toList() ) ) ) );
 
-        context.add( Pair.of( variable.getName(), op ) );
+        context.add( Pair.of( PolyString.of( variable.getName() ), op ) );
     }
 
 

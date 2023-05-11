@@ -30,6 +30,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 public class LogicalLpgModify extends LpgModify<CatalogEntity> implements RelationalTransformable {
@@ -38,7 +39,7 @@ public class LogicalLpgModify extends LpgModify<CatalogEntity> implements Relati
     /**
      * Subclass of {@link LpgModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, entity, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 

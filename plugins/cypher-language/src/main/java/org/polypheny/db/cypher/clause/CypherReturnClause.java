@@ -37,6 +37,7 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 
@@ -83,7 +84,7 @@ public class CypherReturnClause extends CypherClause {
 
 
     public AlgNode getGraphProject( CypherContext context ) {
-        List<Pair<String, RexNode>> nameAndProject = returnItems.stream()
+        List<Pair<PolyString, RexNode>> nameAndProject = returnItems.stream()
                 .map( i -> i.getRex( context, RexType.PROJECT ) )
                 .filter( Objects::nonNull )
                 .collect( Collectors.toCollection( ArrayList::new ) );
@@ -137,7 +138,7 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    private AlgNode getProject( CypherContext context, List<Pair<String, RexNode>> nameAndProject ) {
+    private AlgNode getProject( CypherContext context, List<Pair<PolyString, RexNode>> nameAndProject ) {
         AlgNode node = context.pop();
 
         if ( node == null ) {

@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.experimental.NonFinal;
 import org.apache.commons.compress.utils.Lists;
@@ -66,10 +65,6 @@ public class FlatList<T extends Comparable<T>> implements Comparable<FlatList<T>
         return new FlatList<>( Arrays.asList( elements ) );
     }
 
-
-    public static <T extends Comparable<T>> FlatList<T> of( Object... elements ) {
-        return FlatList.copyOf( Arrays.stream( elements ).map( e -> (T) e ).collect( Collectors.toList() ) );
-    }
 
 
     public static <T extends Comparable<T>> FlatList<T> copyOf( Iterator<T> list ) {
