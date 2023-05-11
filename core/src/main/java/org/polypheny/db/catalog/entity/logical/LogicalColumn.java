@@ -151,7 +151,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
 
     public String getTableName() {
-        return Catalog.snapshot().rel().getTable( tableId ).name;
+        return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
 

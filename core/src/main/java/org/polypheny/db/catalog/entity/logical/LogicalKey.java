@@ -73,7 +73,7 @@ public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
 
     @SneakyThrows
     public String getTableName() {
-        return Catalog.snapshot().rel().getTable( tableId ).name;
+        return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
 
@@ -82,7 +82,7 @@ public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
         Snapshot snapshot = Catalog.snapshot();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : columnIds ) {
-            columnNames.add( snapshot.rel().getColumn( columnId ).name );
+            columnNames.add( snapshot.rel().getColumn( columnId ).orElseThrow().name );
         }
         return columnNames;
     }

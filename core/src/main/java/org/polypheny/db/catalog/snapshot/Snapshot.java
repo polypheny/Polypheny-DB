@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -26,7 +27,6 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -157,10 +157,6 @@ public interface Snapshot extends OperatorTable {
 
     List<LogicalTable> getTablesForPeriodicProcessing();
 
-    //// ENTITIES
-
-    CatalogEntity getEntity( long id );
-
     //// OTHERS
 
     @Override
@@ -174,7 +170,7 @@ public interface Snapshot extends OperatorTable {
     }
 
 
-    LogicalEntity getLogicalEntity( long id );
+    Optional<? extends LogicalEntity> getLogicalEntity( long id );
 
 
     LogicalRelSnapshot rel();

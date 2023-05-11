@@ -54,7 +54,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
@@ -153,10 +152,10 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
                                     throw new AssertionError( "not handled: " + method + " for " + alg );
                                 }
                                 final Object[] args1;
-                                final List key1;
+                                final List<?> key1;
                                 if ( args == null ) {
                                     args1 = new Object[]{ alg, mq };
-                                    key1 = FlatLists.of( alg, method );
+                                    key1 = List.of( alg, method );
                                 } else {
                                     args1 = new Object[args.length + 2];
                                     args1[0] = alg;
@@ -173,7 +172,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
                                             args2[j] = args2[j].toString();
                                         }
                                     }
-                                    key1 = FlatLists.copyOf( args2 );
+                                    key1 = List.of( args2 );
                                 }
                                 if ( mq.map.put( key1, NullSentinel.INSTANCE ) != null ) {
                                     throw CyclicMetadataException.INSTANCE;

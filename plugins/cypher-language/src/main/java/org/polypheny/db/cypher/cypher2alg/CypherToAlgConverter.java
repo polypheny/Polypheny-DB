@@ -72,12 +72,14 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.type.entity.graph.PolyEdge;
-import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -107,7 +109,7 @@ public class CypherToAlgConverter {
             databaseId = parameters.getDatabaseId();
         }
 
-        LogicalGraph graph = this.snapshot.graph().getGraph( databaseId );
+        LogicalGraph graph = this.snapshot.graph().getGraph( databaseId ).orElseThrow();
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan
@@ -394,7 +396,7 @@ public class CypherToAlgConverter {
 
         private final Stack<AlgNode> stack = new Stack<>();
         // named projects, null if no name provided
-        private final Queue<Pair<String, RexNode>> rexQueue = new LinkedList<>();
+        private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
         private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
         public final CypherNode original;
         public final LogicalGraph graph;
@@ -409,8 +411,8 @@ public class CypherToAlgConverter {
         public final AlgDataTypeFactory typeFactory;
         public CypherNode active;
         public Kind kind;
-        private final Map<String, PolyNode> nodes = new HashMap<>();
-        private List<Pair<String, EdgeVariableHolder>> edges = new LinkedList<>();
+        private final Map<PolyString, PolyNode> nodes = new HashMap<>();
+        private List<Pair<PolyString, EdgeVariableHolder>> edges = new LinkedList<>();
 
 
         private CypherContext(
@@ -520,7 +522,7 @@ public class CypherToAlgConverter {
         }
 
 
-        public void add( String name, RexNode node ) {
+        public void add( PolyString name, RexNode node ) {
             this.rexQueue.add( Pair.of( name, node ) );
         }
 
@@ -655,8 +657,8 @@ public class CypherToAlgConverter {
         }
 
 
-        public void addNodes( List<Pair<String, PolyNode>> nodes ) {
-            for ( Pair<String, PolyNode> node : nodes ) {
+        public void addNodes( List<Pair<PolyString, PolyNode>> nodes ) {
+            for ( Pair<PolyString, PolyNode> node : nodes ) {
                 if ( !this.nodes.containsKey( node.left ) ) {
                     this.nodes.put( node.left, node.right );
                 } else if ( node.left == null ) {
@@ -667,13 +669,13 @@ public class CypherToAlgConverter {
         }
 
 
-        public void addEdges( List<Pair<String, EdgeVariableHolder>> edges ) {
+        public void addEdges( List<Pair<PolyString, EdgeVariableHolder>> edges ) {
             this.edges.addAll( edges );
         }
 
 
         @Nullable
-        public Pair<String, PolyNode> getNodeVariable( String name ) {
+        public Pair<PolyString, PolyNode> getNodeVariable( PolyString name ) {
             if ( name != null && this.nodes.containsKey( name ) ) {
                 return Pair.of( name, this.nodes.get( name ) );
             }
@@ -682,8 +684,8 @@ public class CypherToAlgConverter {
 
 
         public void combineValues() {
-            List<Pair<String, PolyNode>> nodes = popNodeValues();
-            List<Pair<String, EdgeVariableHolder>> edges = popEdgeValues();
+            List<Pair<PolyString, PolyNode>> nodes = popNodeValues();
+            List<Pair<PolyString, EdgeVariableHolder>> edges = popEdgeValues();
 
             if ( stack.isEmpty() ) {
                 // simple unfiltered insert
@@ -698,26 +700,26 @@ public class CypherToAlgConverter {
                 add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.INSERT, null, null ) );
             } else {
                 // filtered DML
-                List<Pair<String, RexNode>> newNodes = new LinkedList<>();
+                List<Pair<PolyString, RexNode>> newNodes = new LinkedList<>();
 
-                List<Pair<String, RexNode>> newEdges = new LinkedList<>();
+                List<Pair<PolyString, RexNode>> newEdges = new LinkedList<>();
 
                 AlgNode node = stack.peek();
                 List<String> names = node.getRowType().getFieldNames();
                 List<AlgDataTypeField> fields = node.getRowType().getFieldList();
 
                 // nodes can be added as literals
-                for ( Pair<String, PolyNode> namedNode : nodes ) {
-                    if ( !names.contains( namedNode.left ) ) {
+                for ( Pair<PolyString, PolyNode> namedNode : nodes ) {
+                    if ( !names.contains( namedNode.left.value ) ) {
                         newNodes.add( Pair.of( namedNode.left, rexBuilder.makeLiteral( namedNode.right, nodeType, false ) ) );
                     }
                 }
 
                 // edges need to be adjusted depending on the previous stage
-                for ( Pair<String, EdgeVariableHolder> namedEdge : edges ) {
+                for ( Pair<PolyString, EdgeVariableHolder> namedEdge : edges ) {
                     RexNode ref = rexBuilder.makeLiteral( namedEdge.right.edge, edgeType, false );
-                    int leftIndex = names.indexOf( namedEdge.right.left );
-                    int rightIndex = names.indexOf( namedEdge.right.right );
+                    int leftIndex = names.indexOf( namedEdge.right.left.value );
+                    int rightIndex = names.indexOf( namedEdge.right.right.value );
 
                     if ( leftIndex != -1 && rightIndex != -1 ) {
                         // both sides are retrieved from the previous stage (inputRef)-[]-(inputRef)
@@ -726,27 +728,28 @@ public class CypherToAlgConverter {
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, right ) ) ) );
                     } else if ( leftIndex == -1 && rightIndex == -1 ) {
                         // both sides are part of this stage (literal)
-                        RexNode stubL = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
-                        RexNode stubR = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
+                        RexNode stubL = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
+                        RexNode stubR = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, stubL, stubR ) ) ) );
                     } else if ( leftIndex != -1 ) {
                         // left is from previous stage, right is not (inputRef)-[]-()
                         RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
-                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
+                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, stub ) ) ) );
                     } else {
                         // right is from previous stage, left is not ()-[]-(inputRef)
                         RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
-                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
+                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, stub, right ) ) ) );
                     }
                 }
 
-                List<Pair<String, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
+                List<Pair<PolyString, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
 
                 AtomicLong id = new AtomicLong(); // todo dl maybe move into values
                 List<String> adjustedNames = Pair.left( nodesAndEdges ).stream()
                         .map( n -> Objects.requireNonNullElseGet( n, () -> "EXPR$" + id.getAndIncrement() ) )
+                        .map( Object::toString )
                         .collect( Collectors.toList() );
 
                 add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), pop(), Pair.right( nodesAndEdges ), adjustedNames ) );
@@ -757,15 +760,15 @@ public class CypherToAlgConverter {
         }
 
 
-        private List<Pair<String, EdgeVariableHolder>> popEdgeValues() {
-            List<Pair<String, EdgeVariableHolder>> edges = this.edges;
+        private List<Pair<PolyString, EdgeVariableHolder>> popEdgeValues() {
+            List<Pair<PolyString, EdgeVariableHolder>> edges = this.edges;
             this.edges = new LinkedList<>();
             return edges;
         }
 
 
-        private List<Pair<String, PolyNode>> popNodeValues() {
-            List<Pair<String, PolyNode>> nodes = this.nodes
+        private List<Pair<PolyString, PolyNode>> popNodeValues() {
+            List<Pair<PolyString, PolyNode>> nodes = this.nodes
                     .entrySet()
                     .stream()
                     .map( n -> Pair.of( n.getKey(), n.getValue() ) )
@@ -851,12 +854,12 @@ public class CypherToAlgConverter {
     public static class EdgeVariableHolder {
 
         public final PolyEdge edge;
-        public final String identifier;
-        public final String left;
-        public final String right;
+        public final PolyString identifier;
+        public final PolyString left;
+        public final PolyString right;
 
 
-        public EdgeVariableHolder( PolyEdge edge, String identifier, String left, String right ) {
+        public EdgeVariableHolder( PolyEdge edge, PolyString identifier, PolyString left, PolyString right ) {
             this.edge = edge;
             this.identifier = identifier;
             this.left = left;
@@ -864,7 +867,7 @@ public class CypherToAlgConverter {
         }
 
 
-        public Pair<String, PolyEdge> asNamedEdge() {
+        public Pair<PolyString, PolyEdge> asNamedEdge() {
             return Pair.of( identifier, edge );
         }
 

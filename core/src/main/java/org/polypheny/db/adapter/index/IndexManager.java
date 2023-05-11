@@ -168,7 +168,7 @@ public class IndexManager {
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final LogicalTable table = statement.getTransaction().getSnapshot().rel().getTable( key.tableId );
+        final LogicalTable table = statement.getTransaction().getSnapshot().rel().getTable( key.tableId ).orElseThrow();
         final LogicalPrimaryKey pk = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
@@ -182,18 +182,8 @@ public class IndexManager {
                 pk.getColumnNames() );
         indexById.put( id, index );
         indexByName.put( name, index );
-        final Transaction tx = statement != null
-                ? statement.getTransaction()
-                : transactionManager.startTransaction( Catalog.defaultUserId, false, "Index Manager" );
-        try {
-            index.rebuild( tx );
-            if ( statement == null ) {
-                tx.commit();
-            }
-        } catch ( TransactionException e ) {
-            tx.rollback();
-            throw e;
-        }
+        final Transaction tx = statement.getTransaction();
+        index.rebuild( tx );
     }
 
 

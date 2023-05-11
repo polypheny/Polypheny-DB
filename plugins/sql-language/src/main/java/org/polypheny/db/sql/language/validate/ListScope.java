@@ -116,9 +116,9 @@ public abstract class ListScope extends DelegatingScope {
 
     private LogicalEntity getEntity( List<String> names ) {
         if ( names.size() == 2 ) {
-            return validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
+            return validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
         } else if ( names.size() == 1 ) {
-            return validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) );
+            return validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) ).orElseThrow();
         } else {
             throw new GenericRuntimeException( "Table is not known" );
         }

@@ -84,7 +84,7 @@ class EmptyScope implements SqlValidatorScope {
 
     @Override
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
-        CatalogEntity table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
+        CatalogEntity table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
         return table != null
                 ? new EntityNamespace( validator, table )
                 : null;
@@ -98,9 +98,9 @@ class EmptyScope implements SqlValidatorScope {
 
         LogicalTable table;
         if ( names.size() >= 2 ) {
-            table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
+            table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
         } else if ( names.size() == 1 ) {
-            table = validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) );
+            table = validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) ).orElse( null );
         } else {
             throw new GenericRuntimeException( "Table is not known" );
         }

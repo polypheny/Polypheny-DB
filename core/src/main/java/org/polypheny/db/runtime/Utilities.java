@@ -52,9 +52,11 @@ public class Utilities {
         return v == null ? 0 : v.hashCode();
     }
 
+
     public static int hash( int h, boolean v ) {
         return h * 31 + Boolean.hashCode( v );
     }
+
 
     public static int hash( int h, byte v ) {
         return h * 31 + v;
@@ -196,7 +198,7 @@ public class Utilities {
     }
 
 
-    public static int compareNullsLast( List v0, List v1 ) {
+    public static <L extends Comparable<L>, R extends Comparable<R>> int compareNullsLast( FlatList<L> v0, FlatList<R> v1 ) {
         //noinspection unchecked
         return v0 == v1
                 ? 0
@@ -204,7 +206,8 @@ public class Utilities {
                         ? 1
                         : v1 == null
                                 ? -1
-                                : FlatLists.ComparableListImpl.compare( v0, v1 );
+                                : v0.compareTo( (FlatList<L>) v1 );
     }
+
 }
 

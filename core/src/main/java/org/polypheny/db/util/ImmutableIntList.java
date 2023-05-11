@@ -35,10 +35,8 @@ package org.polypheny.db.util;
 
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
@@ -76,11 +74,13 @@ public class ImmutableIntList extends FlatList<Integer> {
     }
 
 
-    /**
-     * Creates an ImmutableIntList from an array of {@code int}.
-     */
-    public static ImmutableIntList of( int... ints ) {
-        return new ImmutableIntList( ints.clone() );
+    public static ImmutableIntList of( Integer... integers ) {
+        return new ImmutableIntList( List.of( integers ) );
+    }
+
+
+    public static ImmutableIntList of( int... integers ) {
+        return new ImmutableIntList( integers );
     }
 
 
@@ -93,29 +93,6 @@ public class ImmutableIntList extends FlatList<Integer> {
             ints[i] = numbers[i].intValue();
         }
         return new ImmutableIntList( ints );
-    }
-
-
-    /**
-     * Creates an ImmutableIntList from an iterable of {@link Number}.
-     */
-    public static ImmutableIntList copyOf( Iterable<? extends Number> list ) {
-        if ( list instanceof ImmutableIntList ) {
-            return (ImmutableIntList) list;
-        }
-        @SuppressWarnings("unchecked") final Collection<? extends Number> collection =
-                list instanceof Collection
-                        ? (Collection<? extends Number>) list
-                        : Lists.newArrayList( list );
-        return copyFromCollection( collection );
-    }
-
-
-    /**
-     * Creates an ImmutableIntList from an iterator of {@link Number}.
-     */
-    public static ImmutableIntList copyOf( Iterator<? extends Number> list ) {
-        return copyFromCollection( Lists.newArrayList( list ) );
     }
 
 
@@ -184,7 +161,7 @@ public class ImmutableIntList extends FlatList<Integer> {
         if ( list instanceof Collection && ((Collection<?>) list).isEmpty() ) {
             return this;
         }
-        return ImmutableIntList.copyOf( Iterables.concat( this, list ) );
+        return new ImmutableIntList( ImmutableIntList.of( Iterables.concat( this, list ) ) );
     }
 
 

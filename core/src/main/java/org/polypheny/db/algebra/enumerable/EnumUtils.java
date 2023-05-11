@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -308,10 +308,9 @@ public class EnumUtils {
     }
 
 
-    public static MethodCallExpression expressionFlatList( List<Expression> expressions, Class<?> clazz ) {
+    public static Expression expressionFlatList( List<Expression> expressions, Class<?> clazz ) {
         List<Expression> list = new ArrayList<>( expressions );
-        list.add( 0, Expressions.constant( clazz ) );
-        return Expressions.call( BuiltInMethod.ARRAYS_AS_FLAT_LIST.method, list );
+        return Expressions.convert_( Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, list ), clazz );
     }
 
 
@@ -325,7 +324,7 @@ public class EnumUtils {
 
     public static <T> Expression getExpression( T value, Class<T> clazz ) {
         if ( value instanceof PolyDictionary ) {
-            return ((PolyDictionary) value).getAsExpression();
+            return ((PolyDictionary) value).asExpression();
         } else if ( value instanceof PolyList<?> ) {
             return ((PolyList<?>) value).asExpression();
         }
@@ -333,6 +332,7 @@ public class EnumUtils {
     }
 
 
+    @SuppressWarnings("unused")
     public static Map<Object, Object> ofEntries( Pair<Object, Object>... pairs ) {
         return new HashMap<>( Map.ofEntries( pairs ) );
     }

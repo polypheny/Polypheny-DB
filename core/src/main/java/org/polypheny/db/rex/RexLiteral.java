@@ -59,8 +59,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.FlatList;
+import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyList;
@@ -832,8 +832,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    private PolyMap<Comparable<?>, Comparable<?>> getValueAsPolyMap() {
-        return new PolyMap<Comparable<?>, Comparable<?>>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream()
+    private FlatMap<Comparable<?>, Comparable<?>> getValueAsPolyMap() {
+        return new FlatMap<Comparable<?>, Comparable<?>>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream()
                 .collect( Collectors.toMap( e -> e.getKey().getValueForQueryParameterizer(), e -> e.getValue().getValueForQueryParameterizer() ) ) );
     }
 
@@ -874,7 +874,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case DOUBLE:
                 return getValueAs( Double.class );
             case ARRAY:
-                return ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toCollection( FlatLists::of ) );
+                return ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toCollection( FlatList::of ) );
             case MAP:
                 return getValueAsPolyMap();
             /*case BINARY:

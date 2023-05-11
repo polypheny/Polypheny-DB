@@ -23,33 +23,36 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
-import lombok.experimental.Delegate;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 
+@Slf4j
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
-public class PolyDocument extends PolyValue implements Map<PolyString, PolyValue> {
-
-    @Delegate
-    @Serialize
-    public Map<PolyString, PolyValue> value;
+public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
-    public PolyDocument( @Deserialize("value") Map<PolyString, PolyValue> value ) {
-        super( PolyType.DOCUMENT, true );
-        this.value = new HashMap<>( value );
+    public PolyDocument( @Deserialize("map") Map<PolyString, PolyValue> value ) {
+        super( value, PolyType.DOCUMENT, true );
+    }
+
+
+    public PolyDocument( PolyString key, PolyValue value ) {
+        this( Map.of( key, value ) );
+    }
+
+
+    public static PolyDocument of( Map<PolyString, PolyValue> value ) {
+        return new PolyDocument( value );
     }
 
 
@@ -59,40 +62,21 @@ public class PolyDocument extends PolyValue implements Map<PolyString, PolyValue
     }
 
 
-    @Override
-    public Expression asExpression() {
-        return Expressions.new_( PolyDocument.class, value.entrySet().stream().map( e -> Expressions.call( Pair.class, "of", e.getKey().asExpression(), e.getValue().asExpression() ) ).collect( Collectors.toList() ) );
+    public static PolyDocument parse( String string ) {
+        log.warn( "todo wfwefcw" );
+        return null;
     }
 
 
     @Override
-    public int compareTo( @NotNull PolyValue o ) {
-        if ( !isSameType( o ) ) {
-            return -1;
-        }
-
-        if ( this.value.size() != o.asDocument().value.size() ) {
-            return -1;
-        }
-
-        for ( Pair<PolyString, PolyString> pair : Pair.zip( this.value.keySet(), o.asDocument().value.keySet() ) ) {
-            if ( pair.left.compareTo( pair.right ) != 0 ) {
-                return pair.left.compareTo( pair.right );
-            }
-        }
-
-        for ( Pair<PolyValue, PolyValue> pair : Pair.zip( this.value.values(), o.asDocument().value.values() ) ) {
-            if ( pair.left.compareTo( pair.right ) != 0 ) {
-                return pair.left.compareTo( pair.right );
-            }
-        }
-        return 0;
+    public Expression asExpression() {
+        return Expressions.convert_( super.asExpression(), PolyDocument.class );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return null;
+        return PolySerializable.deserialize( serialize(), PolyDocument.class );
     }
 
 
@@ -130,7 +114,7 @@ public class PolyDocument extends PolyValue implements Map<PolyString, PolyValue
 
     @Override
     public String toString() {
-        return "{" + value.entrySet().stream().map( e -> String.format( "%s:%s", e.getKey(), e.getValue() ) ).collect( Collectors.joining( "," ) ) + "}";
+        return "{" + map.entrySet().stream().map( e -> String.format( "%s:%s", e.getKey(), e.getValue() ) ).collect( Collectors.joining( "," ) ) + "}";
     }
 
 }

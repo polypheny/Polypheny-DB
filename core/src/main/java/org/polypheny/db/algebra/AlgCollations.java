@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
@@ -176,7 +175,7 @@ public class AlgCollations {
     /**
      * Returns whether one of a list of collations indicates that the collection is sorted on the given list of keys.
      */
-    public static boolean contains( List<AlgCollation> collations, ImmutableIntList keys ) {
+    public static boolean contains( List<AlgCollation> collations, ImmutableList<Integer> keys ) {
         final List<Integer> distinctKeys = Util.distinctList( keys );
         for ( AlgCollation collation : collations ) {
             if ( contains( collation, distinctKeys ) ) {

@@ -28,20 +28,19 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
-import org.bson.BsonDocument;
-import org.bson.BsonElement;
-import org.bson.BsonString;
-import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.util.BsonUtil;
 
 public class CrossModelFunctions {
 
@@ -110,41 +109,41 @@ public class CrossModelFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Enumerable<?> tableToNodes( Enumerable<?> enumerable, String label, List<String> keys ) {
+    public static Enumerable<?> tableToNodes( Enumerable<?> enumerable, PolyString label, List<PolyString> keys ) {
         return new AbstractEnumerable<PolyNode>() {
             @Override
             public Enumerator<PolyNode> enumerator() {
                 if ( keys.size() > 1 ) {
                     return Linq4j.transform( enumerable.enumerator(), r -> {
                         Object[] row = (Object[]) r;
-                        Map<String, Comparable<?>> map = new HashMap<>();
+                        Map<PolyString, PolyValue> map = new HashMap<>();
                         for ( int i = 0; i < row.length; i++ ) {
-                            map.put( keys.get( i ), row[i].toString() );
+                            map.put( keys.get( i ), (PolyValue) row[i] );
                         }
-                        return new PolyNode( new PolyDictionary( map ), List.of( label ), "n" );
+                        return new PolyNode( new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) );
                     } );
                 }
-                return Linq4j.transform( enumerable.enumerator(), r -> new PolyNode( new PolyDictionary( Map.of( keys.get( 0 ), r.toString() ) ), List.of( label ), "n" ) );
+                return Linq4j.transform( enumerable.enumerator(), r -> new PolyNode( new PolyDictionary( Map.of( keys.get( 0 ), PolyString.of( r.toString() ) ) ), PolyList.of( label ), PolyString.of( "n" ) ) );
             }
         };
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Enumerable<?> collectionToNodes( Enumerable<?> enumerable, String label ) {
+    public static Enumerable<?> collectionToNodes( Enumerable<?> enumerable, PolyString label ) {
         return new AbstractEnumerable<PolyNode>() {
             @Override
             public Enumerator<PolyNode> enumerator() {
                 return Linq4j.transform( enumerable.enumerator(), r -> {
-                    BsonDocument doc = BsonDocument.parse( r.toString() );
-                    Map<String, Comparable<?>> map = new HashMap<>();
-                    for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
-                        if ( entry.getKey().equals( "_id" ) ) {
+                    PolyDocument doc = PolyDocument.parse( r.toString() );
+                    Map<PolyString, PolyValue> map = new HashMap<>();
+                    for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
+                        if ( entry.getKey().equals( PolyString.of( "_id" ) ) ) {
                             continue;
                         }
-                        map.put( entry.getKey(), BsonUtil.getAsObject( entry.getValue() ) );
+                        map.put( entry.getKey(), entry.getValue() );
                     }
-                    return new PolyNode( doc.get( "_id" ).asString().getValue(), new PolyDictionary( map ), List.of( label ), "n" );
+                    return new PolyNode( doc.get( PolyString.of( "_id" ) ).asString(), new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) );
                 } );
             }
         };
@@ -152,16 +151,16 @@ public class CrossModelFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Enumerable<?> nodesToCollection( Enumerable<PolyNode> enumerable ) {
+    public static Enumerable<PolyDocument> nodesToCollection( Enumerable<PolyNode> enumerable ) {
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
+            public Enumerator<PolyDocument> enumerator() {
                 return Linq4j.transform(
                         enumerable.enumerator(),
                         r -> {
-                            BsonDocument doc = new BsonDocument( r.properties.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonString( e.getValue().toString() ) ) ).collect( Collectors.toList() ) );
-                            doc.put( "_id", new BsonString( r.id.substring( 0, 23 ) ) );
-                            return doc.toJson();
+                            PolyDocument doc = new PolyDocument( r.properties.entrySet().stream().collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+                            doc.put( PolyString.of( "_id" ), PolyString.of( r.id.value.substring( 0, 23 ) ) );
+                            return doc;
                         } );
             }
         };

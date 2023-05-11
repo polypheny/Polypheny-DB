@@ -112,13 +112,12 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.FlatLists.ComparableList;
+import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.runtime.Like;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Static;
@@ -146,7 +145,7 @@ public class Functions {
 
     private static final TimeZone LOCAL_TZ = TimeZone.getDefault();
 
-    private static final Function1<List<Object>, Enumerable<Object>> LIST_AS_ENUMERABLE = Linq4j::asEnumerable;
+    private static final Function1<List<?>, Enumerable<?>> LIST_AS_ENUMERABLE = Linq4j::asEnumerable;
 
     private static final Function1<Object[], Enumerable<Object[]>> ARRAY_CARTESIAN_PRODUCT =
             lists -> {
@@ -182,7 +181,7 @@ public class Functions {
 
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static double distance( List value, List target, String metric, List weights ) {
+    public static double distance( List<Number> value, List<Number> target, String metric, List<Number> weights ) {
         DistanceFunctions.verifyInputs( value, target, weights );
         if ( "L2".equals( metric ) ) {
             return DistanceFunctions.l2MetricWeighted( value, target, weights );
@@ -201,7 +200,7 @@ public class Functions {
 
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static double distance( List value, List target, String metric ) {
+    public static double distance( List<Number> value, List<Number> target, String metric ) {
         DistanceFunctions.verifyInputs( value, target, null );
         if ( "L2".equals( metric ) ) {
             return DistanceFunctions.l2Metric( value, target );
@@ -846,7 +845,7 @@ public class Functions {
     /**
      * Returns whether two objects can both be assigned to a given class.
      */
-    private static boolean allAssignable( Class clazz, Object o0, Object o1 ) {
+    private static boolean allAssignable( Class<Number> clazz, Object o0, Object o1 ) {
         return clazz.isInstance( o0 ) && clazz.isInstance( o1 );
     }
 
@@ -3256,31 +3255,30 @@ public class Functions {
     /**
      * Support the MULTISET UNION function.
      */
-    public static Collection multisetUnionDistinct( Collection collection1, Collection collection2 ) {
+    public static Collection<String> multisetUnionDistinct( Collection<String> collection1, Collection<String> collection2 ) {
         // capacity calculation is in the same way like for new HashSet(Collection)
-        Set resultCollection = new HashSet( Math.max( (int) ((collection1.size() + collection2.size()) / .75f) + 1, 16 ) );
+        Set<String> resultCollection = new HashSet<>( Math.max( (int) ((collection1.size() + collection2.size()) / .75f) + 1, 16 ) );
         resultCollection.addAll( collection1 );
         resultCollection.addAll( collection2 );
-        return new ArrayList( resultCollection );
+        return new ArrayList<String>( resultCollection );
     }
 
 
     /**
      * Support the MULTISET UNION ALL function.
      */
-    public static Collection multisetUnionAll( Collection collection1, Collection collection2 ) {
-        List resultCollection = new ArrayList( collection1.size() + collection2.size() );
+    public static Collection<String> multisetUnionAll( Collection<String> collection1, Collection<String> collection2 ) {
+        List<String> resultCollection = new ArrayList<>( collection1.size() + collection2.size() );
         resultCollection.addAll( collection1 );
         resultCollection.addAll( collection2 );
         return resultCollection;
     }
 
 
-    public static Function1<Object, Enumerable<ComparableList<Comparable>>> flatProduct( final int[] fieldCounts, final boolean withOrdinality, final FlatProductInputType[] inputTypes ) {
+    public static <T extends Comparable<T>> Function1<?, Enumerable<?>> flatProduct( final int[] fieldCounts, final boolean withOrdinality, final FlatProductInputType[] inputTypes ) {
         if ( fieldCounts.length == 1 ) {
             if ( !withOrdinality && inputTypes[0] == FlatProductInputType.SCALAR ) {
-                //noinspection unchecked
-                return (Function1) LIST_AS_ENUMERABLE;
+                return LIST_AS_ENUMERABLE;
             } else {
                 return row -> p2( new Object[]{ row }, fieldCounts, withOrdinality, inputTypes );
             }
@@ -3289,8 +3287,8 @@ public class Functions {
     }
 
 
-    private static Enumerable<ComparableList<Comparable>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
-        final List<Enumerator<List<Comparable>>> enumerators = new ArrayList<>();
+    private static <E extends Comparable<E>> Enumerable<FlatList<E>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
+        final List<Enumerator<List<E>>> enumerators = new ArrayList<>();
         int totalFieldCount = 0;
         for ( int i = 0; i < lists.length; i++ ) {
             int fieldCount = fieldCounts[i];
@@ -3298,18 +3296,21 @@ public class Functions {
             Object inputObject = lists[i];
             switch ( inputType ) {
                 case SCALAR:
-                    @SuppressWarnings("unchecked") List<Comparable> list = (List<Comparable>) inputObject;
-                    enumerators.add( Linq4j.transform( Linq4j.enumerator( list ), FlatLists::of ) );
+                    @SuppressWarnings("unchecked")
+                    List<E> list = (List<E>) inputObject;
+                    enumerators.add( Linq4j.transform( Linq4j.enumerator( list ), FlatList::of ) );
                     break;
                 case LIST:
-                    @SuppressWarnings("unchecked") List<List<Comparable>> listList = (List<List<Comparable>>) inputObject;
+                    @SuppressWarnings("unchecked")
+                    FlatList<FlatList<E>> listList = FlatList.copyOf( (List<FlatList<E>>) inputObject );
                     enumerators.add( Linq4j.enumerator( listList ) );
                     break;
                 case MAP:
-                    @SuppressWarnings("unchecked") Map<Comparable, Comparable> map = (Map<Comparable, Comparable>) inputObject;
-                    Enumerator<Entry<Comparable, Comparable>> enumerator = Linq4j.enumerator( map.entrySet() );
+                    @SuppressWarnings("unchecked")
+                    Map<Comparable<Object>, Comparable<Object>> map = (Map<Comparable<Object>, Comparable<Object>>) inputObject;
+                    Enumerator<Entry<Comparable<Object>, Comparable<Object>>> enumerator = Linq4j.enumerator( map.entrySet() );
 
-                    Enumerator<List<Comparable>> transformed = Linq4j.transform( enumerator, e -> FlatLists.of( e.getKey(), e.getValue() ) );
+                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> FlatList.of( e.getKey(), e.getValue() ) );
                     enumerators.add( transformed );
                     break;
                 default:
@@ -3334,12 +3335,12 @@ public class Functions {
 
 
     /**
-     * Similar to {@link Linq4j#product(Iterable)} but each resulting list implements {@link FlatLists.ComparableList}.
+     * Similar to {@link Linq4j#product(Iterable)} but each resulting list implements {@link FlatList}.
      */
-    public static <E extends Comparable> Enumerable<FlatLists.ComparableList<E>> product( final List<Enumerator<List<E>>> enumerators, final int fieldCount, final boolean withOrdinality ) {
-        return new AbstractEnumerable<FlatLists.ComparableList<E>>() {
+    public static <E extends Comparable<E>> Enumerable<FlatList<E>> product( final List<Enumerator<List<E>>> enumerators, final int fieldCount, final boolean withOrdinality ) {
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<FlatLists.ComparableList<E>> enumerator() {
+            public Enumerator<FlatList<E>> enumerator() {
                 return new ProductComparableListEnumerator<>( enumerators, fieldCount, withOrdinality );
             }
         };
@@ -3829,7 +3830,6 @@ public class Functions {
     }
 
 
-
     /**
      * Returned path context of JsonApiCommonSyntax, public for testing.
      */
@@ -3896,7 +3896,7 @@ public class Functions {
      *
      * @param <E> element type
      */
-    private static class ProductComparableListEnumerator<E extends Comparable> extends CartesianProductEnumerator<List<E>, FlatLists.ComparableList<E>> {
+    private static class ProductComparableListEnumerator<E extends Comparable<E>> extends CartesianProductEnumerator<List<E>, FlatList<E>> {
 
         final E[] flatElements;
         final List<E> list;
@@ -3913,10 +3913,10 @@ public class Functions {
 
 
         @Override
-        public FlatLists.ComparableList<E> current() {
+        public FlatList<E> current() {
             int i = 0;
-            for ( Object element : (Object[]) elements ) {
-                final List list2 = (List) element;
+            for ( Object element : elements ) {
+                final List<?> list2 = (List<E>) element;
                 Object[] a = list2.toArray();
                 System.arraycopy( a, 0, flatElements, i, a.length );
                 i += a.length;
@@ -3924,7 +3924,7 @@ public class Functions {
             if ( withOrdinality ) {
                 flatElements[i] = (E) Integer.valueOf( ++ordinality ); // 1-based
             }
-            return FlatLists.ofComparable( list );
+            return FlatList.copyOf( list.iterator() );
         }
 
     }

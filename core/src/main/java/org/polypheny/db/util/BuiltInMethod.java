@@ -118,7 +118,7 @@ import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Enumerables;
-import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
@@ -213,18 +213,16 @@ public enum BuiltInMethod {
     FUNCTION0_APPLY( Function0.class, "apply" ),
     FUNCTION1_APPLY( Function1.class, "apply", Object.class ),
     ARRAYS_AS_LIST( Arrays.class, "asList", Object[].class ),
-
-    ARRAYS_AS_FLAT_LIST( FlatLists.class, "ofNeutral", Class.class, Object[].class ),
     MAP_OF_ENTRIES( ImmutableMap.class, "copyOf", List.class ),
     ARRAY( Functions.class, "array", Object[].class ),
     FLAT_PRODUCT( Functions.class, "flatProduct", int[].class, boolean.class, FlatProductInputType[].class ),
-    LIST_N( FlatLists.class, "copyOf", Comparable[].class ),
-    LIST2( FlatLists.class, "of", Object.class, Object.class ),
-    LIST3( FlatLists.class, "of", Object.class, Object.class, Object.class ),
-    LIST4( FlatLists.class, "of", Object.class, Object.class, Object.class, Object.class ),
-    LIST5( FlatLists.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class ),
-    LIST6( FlatLists.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class, Object.class ),
-    COMPARABLE_EMPTY_LIST( FlatLists.class, "COMPARABLE_EMPTY_LIST", true ),
+    LIST_N( List.class, "of", Comparable[].class ),
+    LIST2( List.class, "of", Object.class, Object.class ),
+    LIST3( List.class, "of", Object.class, Object.class, Object.class ),
+    LIST4( List.class, "of", Object.class, Object.class, Object.class, Object.class ),
+    LIST5( List.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class ),
+    LIST6( List.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class, Object.class ),
+    COMPARABLE_EMPTY_LIST( FlatList.class, "of" ),
     IDENTITY_COMPARER( org.apache.calcite.linq4j.function.Functions.class, "identityComparer" ),
     IDENTITY_SELECTOR( org.apache.calcite.linq4j.function.Functions.class, "identitySelector" ),
     AS_ENUMERABLE( Linq4j.class, "asEnumerable", Object[].class ),

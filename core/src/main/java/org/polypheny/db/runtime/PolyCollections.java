@@ -22,105 +22,46 @@ import com.google.gson.GsonBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.ExpressionTransformable;
-import org.polypheny.db.util.BuiltInMethod;
 
 public class PolyCollections {
 
     private static Gson gson = new GsonBuilder().serializeNulls().enableComplexMapKeySerialization().create();
 
 
+    public static class FlatMap<K extends Comparable<?>, V extends Comparable<?>> extends HashMap<K, V> implements Comparable<FlatMap<K, V>> {
 
-    public static class PolyDictionary extends HashMap<String, Object> implements Comparable<PolyDictionary>, ExpressionTransformable {
 
-
-        public PolyDictionary( Map<String, Comparable<?>> map ) {
+        public FlatMap( Map<K, V> map ) {
             super( map );
         }
 
 
-        public PolyDictionary() {
+        public FlatMap() {
             super();
         }
 
 
-        @Override
-        public Expression getAsExpression() {
-            return Expressions.new_( PolyDictionary.class, Expressions.call(
-                    BuiltInMethod.MAP_OF_ENTRIES.method,
-                    EnumUtils.expressionList(
-                            entrySet()
-                                    .stream()
-                                    .map( p -> Expressions.call(
-                                            BuiltInMethod.PAIR_OF.method,
-                                            Expressions.constant( p.getKey(), String.class ),
-                                            EnumUtils.getExpression( p.getValue(), Object.class ) ) ).collect( Collectors.toList() ) ) ) );
-        }
-
-
-        @Override
-        public int compareTo( @NotNull PolyDictionary directory ) {
-            if ( size() > directory.size() ) {
-                return 1;
-            }
-            if ( size() < directory.size() ) {
-                return -1;
-            }
-
-            if ( this.equals( directory ) ) {
-                return 0;
-            }
-
-            return hashCode() >= directory.hashCode() ? 1 : -1;
-
-        }
-
-
-        public static PolyDictionary fromString( String json ) {
-            return gson.fromJson( json, PolyDictionary.class );
-        }
-
-
-    }
-
-
-    public static class PolyMap<K extends Comparable<?>, V extends Comparable<?>> extends HashMap<K, V> implements Comparable<PolyMap<K, V>> {
-
-
-        public PolyMap( Map<K, V> map ) {
-            super( map );
-        }
-
-
-        public PolyMap() {
-            super();
-        }
-
-
-        public static PolyMap<RexLiteral, RexLiteral> ofMap( Map<RexNode, RexNode> map ) {
+        public static FlatMap<RexLiteral, RexLiteral> ofMap( Map<RexNode, RexNode> map ) {
             Map<RexLiteral, RexLiteral> checked = map.entrySet()
                     .stream()
                     .filter( e -> e.getKey().isA( Kind.LITERAL ) && e.getValue().isA( Kind.LITERAL ) )
                     .collect( Collectors.toMap( o -> (RexLiteral) o.getKey(), o -> (RexLiteral) o.getValue() ) );
             assert map.keySet().size() == checked.size() : "Map keys and values need to be RexLiterals";
 
-            return PolyMap.of( checked );
+            return FlatMap.of( checked );
         }
 
 
-        public static <K extends Comparable<K>, V extends Comparable<V>> PolyMap<K, V> of( Map<K, V> map ) {
-            return new PolyMap<>( map );
+        public static <K extends Comparable<K>, V extends Comparable<V>> FlatMap<K, V> of( Map<K, V> map ) {
+            return new FlatMap<>( map );
         }
 
 
         @Override
-        public int compareTo( @NotNull PolyCollections.PolyMap<K, V> o ) {
+        public int compareTo( @NotNull FlatMap<K, V> o ) {
             if ( this.size() != o.size() ) {
                 return this.size() > o.size() ? 1 : 0;
             }

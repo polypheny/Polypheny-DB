@@ -53,6 +53,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 @Value
 @EqualsAndHashCode
@@ -312,9 +313,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     @Nullable
-    public PolyList<?> asList() {
+    public <T extends PolyValue> PolyList<T> asList() {
         if ( isList() ) {
-            return (PolyList<?>) this;
+            return (PolyList<T>) this;
         }
         return null;
     }
@@ -412,6 +413,19 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return null;
         }
         return (PolyTimeStamp) this;
+    }
+
+
+    public boolean isMap() {
+        return type == PolyType.MAP;
+    }
+
+
+    public PolyMap<PolyValue, PolyValue> asMap() {
+        if ( !isMap() ) {
+            return null;
+        }
+        return (PolyMap<PolyValue, PolyValue>) this;
     }
 
 

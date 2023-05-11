@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -152,7 +153,6 @@ import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.Litmus;
@@ -3390,8 +3390,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private @Nullable CatalogEntity findTable( String tableName, boolean caseSensitive ) {
-        return snapshot.rel().getTable( Catalog.defaultNamespaceId, tableName );
+    @Nullable
+    private CatalogEntity findTable( String tableName, boolean caseSensitive ) {
+        return snapshot.rel().getTable( Catalog.defaultNamespaceId, tableName ).orElse( null );
     }
 
 
@@ -6067,7 +6068,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      */
     private class Permute {
 
-        final List<ImmutableIntList> sources;
+        final List<ImmutableList<Integer>> sources;
         final AlgDataType rowType;
         final boolean trivial;
 
@@ -6080,18 +6081,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     final int fieldCount = getValidatedNodeType( join.getLeft() ).getFieldList().size();
                     final Permute right = new Permute( join.getRight(), offset + fieldCount );
                     final List<String> names = usingNames( join );
-                    final List<ImmutableIntList> sources = new ArrayList<>();
-                    final Set<ImmutableIntList> sourceSet = new HashSet<>();
+                    final List<ImmutableList<Integer>> sources = new ArrayList<>();
+                    final Set<ImmutableList<Integer>> sourceSet = new HashSet<>();
                     final AlgDataTypeFactory.Builder b = typeFactory.builder();
                     if ( names != null ) {
                         for ( String name : names ) {
                             final AlgDataTypeField f = left.field( name );
-                            final ImmutableIntList source = left.sources.get( f.getIndex() );
+                            final ImmutableList<Integer> source = left.sources.get( f.getIndex() );
                             sourceSet.add( source );
                             final AlgDataTypeField f2 = right.field( name );
-                            final ImmutableIntList source2 = right.sources.get( f2.getIndex() );
+                            final ImmutableList<Integer> source2 = right.sources.get( f2.getIndex() );
                             sourceSet.add( source2 );
-                            sources.add( source.appendAll( source2 ) );
+                            sources.add( ImmutableList.copyOf( Stream.concat( source.stream(), source2.stream() ).collect( Collectors.toList() ) ) );
                             final boolean nullable =
                                     (f.getType().isNullable()
                                             || join.getJoinType().generatesNullsOnLeft())
@@ -6101,14 +6102,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         }
                     }
                     for ( AlgDataTypeField f : left.rowType.getFieldList() ) {
-                        final ImmutableIntList source = left.sources.get( f.getIndex() );
+                        final ImmutableList<Integer> source = left.sources.get( f.getIndex() );
                         if ( sourceSet.add( source ) ) {
                             sources.add( source );
                             b.add( f );
                         }
                     }
                     for ( AlgDataTypeField f : right.rowType.getFieldList() ) {
-                        final ImmutableIntList source = right.sources.get( f.getIndex() );
+                        final ImmutableList<Integer> source = right.sources.get( f.getIndex() );
                         if ( sourceSet.add( source ) ) {
                             sources.add( source );
                             b.add( f );
@@ -6121,7 +6122,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
                 default:
                     rowType = getValidatedNodeType( from );
-                    this.sources = Functions.generate( rowType.getFieldCount(), i -> ImmutableIntList.of( offset + i ) );
+                    this.sources = Functions.generate( rowType.getFieldCount(), i -> ImmutableList.of( offset + i ) );
                     this.trivial = true;
             }
         }
@@ -6170,7 +6171,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             selectItems.clear();
             final List<Map.Entry<String, AlgDataType>> oldFields = ImmutableList.copyOf( fields );
             fields.clear();
-            for ( ImmutableIntList source : sources ) {
+            for ( ImmutableList<Integer> source : sources ) {
                 final int p0 = source.get( 0 );
                 Map.Entry<String, AlgDataType> field = oldFields.get( p0 );
                 final String name = field.getKey();

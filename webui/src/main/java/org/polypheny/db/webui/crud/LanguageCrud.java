@@ -188,7 +188,7 @@ public class LanguageCrud {
         LogicalTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
-            catalogTable = catalog.getSnapshot().rel().getTable( t[0], t[1] );
+            catalogTable = catalog.getSnapshot().rel().getTable( t[0], t[1] ).orElseThrow();
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();

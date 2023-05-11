@@ -93,7 +93,6 @@ import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -183,7 +182,7 @@ public class Bindables {
     public static class BindableScan extends RelScan<CatalogEntity> implements BindableAlg {
 
         public final ImmutableList<RexNode> filters;
-        public final ImmutableIntList projects;
+        public final ImmutableList<Integer> projects;
 
 
         /**
@@ -191,7 +190,7 @@ public class Bindables {
          *
          * Use {@link #create} unless you know what you are doing.
          */
-        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity entity, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
+        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity entity, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
             super( cluster, traitSet, entity );
             this.filters = Objects.requireNonNull( filters );
             this.projects = Objects.requireNonNull( projects );
@@ -215,7 +214,7 @@ public class Bindables {
                     cluster.traitSetOf( BindableConvention.INSTANCE )
                             .replace( entity.namespaceType.getModelTrait() )
                             .replaceIfs( AlgCollationTraitDef.INSTANCE, entity::getCollations );
-            return new BindableScan( cluster, traitSet, entity, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
+            return new BindableScan( cluster, traitSet, entity, ImmutableList.copyOf( filters ), ImmutableList.copyOf( projects ) );
         }
 
 

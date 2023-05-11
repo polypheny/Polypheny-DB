@@ -26,10 +26,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.PolyCollections.FlatMap;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -86,13 +89,13 @@ public class CypherFunctions {
      * @param edges collection of edges
      */
     @SuppressWarnings("unused")
-    public static Enumerable<?> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
-        PolyMap<String, PolyNode> ns = new PolyMap<>();
+    public static Enumerable<PolyGraph> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
+        FlatMap<PolyString, PolyNode> ns = new FlatMap<>();
         for ( PolyNode node : nodes ) {
             ns.put( node.id, node );
         }
 
-        PolyMap<String, PolyEdge> es = new PolyMap<>();
+        FlatMap<PolyString, PolyEdge> es = new FlatMap<>();
         for ( PolyEdge edge : edges ) {
             es.put( edge.id, edge );
         }
@@ -110,25 +113,25 @@ public class CypherFunctions {
     public static Enumerable<PolyEdge> toEdge( Enumerable<?> edge ) {
         List<PolyEdge> edges = new ArrayList<>();
 
-        String oldId = null;
-        String oldSourceId = null;
-        String oldTargetId = null;
-        Set<String> oldLabels = new HashSet<>();
-        Map<String, Comparable<?>> oldProps = new HashMap<>();
+        PolyString oldId = null;
+        PolyString oldSourceId = null;
+        PolyString oldTargetId = null;
+        Set<PolyString> oldLabels = new HashSet<>();
+        Map<PolyString, PolyValue> oldProps = new HashMap<>();
 
         for ( Object value : edge ) {
-            Object[] o = (Object[]) value;
-            String id = (String) o[0];
-            String label = (String) o[1];
-            String sourceId = (String) o[2];
-            String targetId = (String) o[3];
+            PolyValue[] o = (PolyValue[]) value;
+            PolyString id = (PolyString) o[0];
+            PolyString label = (PolyString) o[1];
+            PolyString sourceId = (PolyString) o[2];
+            PolyString targetId = (PolyString) o[3];
             // id is 4
-            String key = (String) o[5];
-            String val = (String) o[6];
+            PolyString key = (PolyString) o[5];
+            PolyString val = (PolyString) o[6];
 
             if ( id != null && !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
+                    edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -146,7 +149,7 @@ public class CypherFunctions {
         }
 
         if ( oldId != null ) {
-            edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
+            edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
         }
 
         return Linq4j.asEnumerable( edges );
@@ -162,27 +165,27 @@ public class CypherFunctions {
     public static Enumerable<PolyNode> toNode( Enumerable<?> node ) {
         List<PolyNode> nodes = new ArrayList<>();
 
-        String oldId = null;
-        Set<String> oldLabels = new HashSet<>();
-        Map<String, Comparable<?>> oldProps = new HashMap<>();
+        PolyString oldId = null;
+        Set<PolyString> oldLabels = new HashSet<>();
+        Map<PolyString, PolyValue> oldProps = new HashMap<>();
 
         for ( Object value : node ) {
             Object[] o = (Object[]) value;
-            String id = (String) o[0];
-            String label = (String) o[1];
+            PolyString id = (PolyString) o[0];
+            PolyString label = (PolyString) o[1];
             // id is 2
-            String key = (String) o[3];
-            String val = (String) o[4];
+            PolyString key = (PolyString) o[3];
+            PolyString val = (PolyString) o[4];
 
             if ( id != null && !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), null ) );
+                    nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
                 oldProps = new HashMap<>();
             }
-            if ( label != null && !label.equals( "$" ) ) {
+            if ( label != null && !label.value.equals( "$" ) ) {
                 // eventually no labels
                 oldLabels.add( label );
             }
@@ -193,7 +196,7 @@ public class CypherFunctions {
         }
 
         if ( oldId != null ) {
-            nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), null ) );
+            nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) );
         }
 
         return Linq4j.asEnumerable( nodes );
@@ -207,8 +210,8 @@ public class CypherFunctions {
      * @param property the key to check
      */
     @SuppressWarnings("unused")
-    public static boolean hasProperty( PolyNode node, String property ) {
-        return node.properties.containsKey( property );
+    public static boolean hasProperty( PolyNode node, PolyValue property ) {
+        return node.properties.containsKey( property.asString() );
     }
 
 
@@ -219,8 +222,8 @@ public class CypherFunctions {
      * @param label the label to check
      */
     @SuppressWarnings("unused")
-    public static boolean hasLabel( PolyNode node, String label ) {
-        return node.labels.contains( label );
+    public static boolean hasLabel( PolyNode node, PolyValue label ) {
+        return node.labels.contains( label.asString() );
     }
 
 
@@ -244,7 +247,7 @@ public class CypherFunctions {
      * @return the property value
      */
     @SuppressWarnings("unused")
-    public static String extractProperty( GraphPropertyHolder holder, String key ) {
+    public static String extractProperty( GraphPropertyHolder holder, PolyString key ) {
         if ( holder.getProperties().containsKey( key ) ) {
             return holder.getProperties().get( key ).toString();
         }
@@ -253,13 +256,13 @@ public class CypherFunctions {
 
 
     @SuppressWarnings("unused")
-    public static String extractProperties( GraphPropertyHolder holder ) {
-        return holder.getProperties().toString();
+    public static PolyValue extractProperties( GraphPropertyHolder holder ) {
+        return holder.getProperties();
     }
 
 
     @SuppressWarnings("unused")
-    public static String extractId( GraphPropertyHolder holder ) {
+    public static PolyString extractId( GraphPropertyHolder holder ) {
         return holder.getId();
     }
 
@@ -270,7 +273,7 @@ public class CypherFunctions {
      * @param holder the target from which the label is extracted
      */
     @SuppressWarnings("unused")
-    public static String extractLabel( GraphPropertyHolder holder ) {
+    public static PolyString extractLabel( GraphPropertyHolder holder ) {
         return holder.getLabels().get( 0 );
     }
 
@@ -281,7 +284,7 @@ public class CypherFunctions {
      * @param holder the target from which the labels are extracted
      */
     @SuppressWarnings("unused")
-    public static List<String> extractLabels( GraphPropertyHolder holder ) {
+    public static List<PolyString> extractLabels( GraphPropertyHolder holder ) {
         return holder.getLabels();
     }
 
@@ -292,14 +295,15 @@ public class CypherFunctions {
      * @param obj the object to transform
      */
     @SuppressWarnings("unused")
-    public static List<?> toList( Object obj ) {
+    public static PolyList<?> toList( PolyValue obj ) {
         if ( obj == null ) {
-            return List.of();
+            return PolyList.of();
         }
-        if ( obj instanceof List ) {
-            return (List<?>) obj;
+
+        if ( obj.isList() ) {
+            return obj.asList();
         }
-        return List.of( obj );
+        return PolyList.of( obj );
     }
 
 
@@ -328,8 +332,8 @@ public class CypherFunctions {
      * @return the adjusted graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setProperty( GraphPropertyHolder target, String key, Object value ) {
-        target.properties.put( key, value );
+    public static GraphPropertyHolder setProperty( GraphPropertyHolder target, String key, PolyValue value ) {
+        target.properties.put( PolyString.of( key ), value );
         return target;
     }
 
@@ -343,7 +347,7 @@ public class CypherFunctions {
      * @return the adjusted graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<String> labels, boolean replace ) {
+    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, PolyList<PolyString> labels, boolean replace ) {
         if ( replace ) {
             target.labels.clear();
         }
@@ -362,13 +366,13 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<String> keys, List<Object> values, boolean replace ) {
+    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<PolyString> keys, List<PolyValue> values, boolean replace ) {
         if ( replace ) {
             target.properties.clear();
         }
 
         int i = 0;
-        for ( String key : keys ) {
+        for ( PolyString key : keys ) {
             target.properties.put( key, values.get( i ) );
             i++;
         }

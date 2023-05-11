@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
@@ -53,7 +54,6 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ValidatorUtil;
 
@@ -101,7 +101,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
         // convert the semijoin condition to reflect the LHS with the project pulled up
         RexNode newCondition = adjustCondition( project, semiJoin );
 
-        SemiJoin newSemiJoin = SemiJoin.create( project.getInput(), semiJoin.getRight(), newCondition, ImmutableIntList.copyOf( newLeftKeys ), semiJoin.getRightKeys() );
+        SemiJoin newSemiJoin = SemiJoin.create( project.getInput(), semiJoin.getRight(), newCondition, ImmutableList.copyOf( newLeftKeys ), semiJoin.getRightKeys() );
 
         // Create the new projection.  Note that the projection expressions are the same as the original because they only reference the LHS of the semijoin and the semijoin only projects out the LHS
         final AlgBuilder algBuilder = call.builder();

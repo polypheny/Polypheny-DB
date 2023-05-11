@@ -39,7 +39,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -127,12 +127,12 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
         if ( el.getType().getPolyType() == PolyType.NODE ) {
             PolyNode node = (PolyNode) ((RexLiteral) el).getValue();
 
-            return node.getAsExpression();
+            return node.asExpression();
 
         } else if ( el.getType().getPolyType() == PolyType.PATH ) {
             PolyPath path = (PolyPath) ((RexLiteral) el).getValue();
 
-            return path.getAsExpression();
+            return path.asExpression();
         }
 
         throw new RuntimeException( "Could not generate expression for graph match." );
@@ -171,15 +171,15 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
                 if ( i == 0 ) {
                     enumerable = enumerable.hashJoin(
                             iter.next(),
-                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
-                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
+                            a0 -> FlatList.of(),
+                            a0 -> FlatList.of(),
                             ( a0, a1 ) -> new Object[]{ a0, a1 } );
                 } else {
                     int index = i;
                     enumerable = enumerable.hashJoin(
                             iter.next(),
-                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
-                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
+                            a0 -> FlatList.of(),
+                            a0 -> FlatList.of(),
                             ( a0, a1 ) -> asObjectArray( (Object[]) a0, a1, index ) );
                 }
                 i++;

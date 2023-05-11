@@ -69,12 +69,12 @@ public class AllocationColumn implements CatalogObject {
 
 
     public String getLogicalTableName() {
-        return Catalog.snapshot().rel().getTable( tableId ).name;
+        return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
 
     public String getLogicalColumnName() {
-        return Catalog.snapshot().rel().getColumn( columnId ).name;
+        return Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().name;
     }
 
 
@@ -89,7 +89,7 @@ public class AllocationColumn implements CatalogObject {
 
 
     public AlgDataType getAlgDataType() {
-        return Catalog.snapshot().rel().getColumn( columnId ).getAlgDataType( AlgDataTypeFactory.DEFAULT );
+        return Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().getAlgDataType( AlgDataTypeFactory.DEFAULT );
     }
 
 }

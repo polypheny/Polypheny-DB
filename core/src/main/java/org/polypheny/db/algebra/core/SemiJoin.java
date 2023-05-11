@@ -46,7 +46,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 
@@ -71,7 +70,7 @@ public class SemiJoin extends EquiJoin {
      * @param leftKeys left keys of the semijoin
      * @param rightKeys right keys of the semijoin
      */
-    public SemiJoin( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    public SemiJoin( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         super( cluster, traitSet, left, right, condition, leftKeys, rightKeys, ImmutableSet.of(), JoinAlgType.INNER );
     }
 
@@ -79,7 +78,7 @@ public class SemiJoin extends EquiJoin {
     /**
      * Creates a SemiJoin.
      */
-    public static SemiJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    public static SemiJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         final AlgOptCluster cluster = left.getCluster();
         return new SemiJoin( cluster, cluster.traitSetOf( Convention.NONE ), left, right, condition, leftKeys, rightKeys );
     }

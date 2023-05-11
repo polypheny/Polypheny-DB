@@ -33,6 +33,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -139,7 +140,7 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Comparable<?> getComparable() {
+    public PolyValue getComparable() {
         throw new UnsupportedOperationException();
     }
 

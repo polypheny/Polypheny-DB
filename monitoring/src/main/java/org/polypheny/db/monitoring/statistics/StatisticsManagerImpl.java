@@ -52,7 +52,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -185,7 +184,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private void resetAllIsFull() {
         this.statisticFields.values().forEach( c -> {
-            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.getInstance().getSnapshot().rel().getColumn( c.columnId ) ), NodeType.UNIQUE_VALUE ) );
+            assignUnique( c, this.prepareNode( QueryResult.fromCatalogColumn( Catalog.getInstance().getSnapshot().rel().getColumn( c.columnId ).orElseThrow() ), NodeType.UNIQUE_VALUE ) );
         } );
     }
 
@@ -226,7 +225,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         log.debug( "Reevaluate Row Count." );
 
         statisticQueryInterface.getAllTable().forEach( table -> {
-            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.getInstance().getSnapshot().getLogicalEntity( table.id ), null ), NodeType.ROW_COUNT_TABLE ) );
+            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.getInstance().getSnapshot().getLogicalEntity( table.id ).orElseThrow(), null ), NodeType.ROW_COUNT_TABLE ) );
             updateRowCountPerTable( table.id, rowCount, MonitoringType.SET_ROW_COUNT );
         } );
     }
@@ -246,19 +245,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         if ( statisticQueryInterface == null ) {
             return;
         }
-        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( tableId );
-        if ( entity != null && entity.unwrap( LogicalTable.class ) != null ) {
-            deleteTable( entity.unwrap( LogicalTable.class ) );
-
-            List<QueryResult> res = statisticQueryInterface.getAllColumns( tableId );
-
-            for ( QueryResult column : res ) {
-                StatisticColumn<?> col = reevaluateColumn( column );
-                if ( col != null ) {
-                    put( column, col );
-                }
-            }
-        }
+        // LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
         statisticQueryInterface.commitTransaction( transaction, statement );
     }
 
@@ -496,7 +483,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Gets a tableScan for a given table.
      */
     private LogicalRelScan getLogicalScan( long tableId, Snapshot snapshot, AlgOptCluster cluster ) {
-        return LogicalRelScan.create( cluster, snapshot.getEntity( tableId ) );
+        return LogicalRelScan.create( cluster, snapshot.getLogicalEntity( tableId ).orElseThrow() );
     }
 
 
@@ -835,7 +822,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleTruncate( long tableId, Snapshot snapshot ) {
-        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).unwrap( LogicalTable.class );
+        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
         for ( LogicalColumn column : catalogTable.getColumns() ) {
             PolyType polyType = column.type;
             QueryResult queryResult = new QueryResult( catalogTable, column );
@@ -864,7 +851,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleInsert( long tableId, Map<Long, List<?>> changedValues, Snapshot snapshot ) {
-        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).unwrap( LogicalTable.class );
+        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
         List<LogicalColumn> columns = catalogTable.getColumns();
         if ( changedValues.size() != columns.size() ) {
             log.warn( "non-matching statistics length" );
@@ -1126,7 +1113,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             } else if ( v.type.getFamily() == PolyTypeFamily.CHARACTER ) {
                 alphabeticInfo.add( (AlphabeticStatisticColumn) v );
                 statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot().rel().getColumn( k ).type ) ) {
+            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getSnapshot().rel().getColumn( k ).orElseThrow().type ) ) {
                 temporalInfo.add( (TemporalStatisticColumn<?>) v );
                 statisticTable.setTemporalColumn( (List) temporalInfo );
             }

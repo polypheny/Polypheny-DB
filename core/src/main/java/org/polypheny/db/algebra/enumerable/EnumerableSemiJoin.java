@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.enumerable;
 
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -34,7 +35,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
 
@@ -48,7 +48,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    EnumerableSemiJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) throws InvalidAlgException {
+    EnumerableSemiJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys );
     }
 
@@ -56,7 +56,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
     /**
      * Creates an EnumerableSemiJoin.
      */
-    public static EnumerableSemiJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    public static EnumerableSemiJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         final AlgOptCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableSemiJoin( mq, left, right ) );

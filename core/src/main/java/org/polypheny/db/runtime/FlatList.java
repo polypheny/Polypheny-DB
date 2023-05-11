@@ -34,17 +34,21 @@
 package org.polypheny.db.runtime;
 
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
-import lombok.Value;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.experimental.NonFinal;
+import org.apache.commons.compress.utils.Lists;
 import org.jetbrains.annotations.NotNull;
 
 
 /**
  * Space-efficient, comparable, immutable lists.
  */
-@Value(staticConstructor = "of")
 @NonFinal // todo dl remove when own Immutable impls are completely removed...
 public class FlatList<T extends Comparable<T>> implements Comparable<FlatList<T>>, List<T> {
 
@@ -57,10 +61,44 @@ public class FlatList<T extends Comparable<T>> implements Comparable<FlatList<T>
     }
 
 
+    @SafeVarargs
+    public static <T extends Comparable<T>> FlatList<T> of( T... elements ) {
+        return new FlatList<>( Arrays.asList( elements ) );
+    }
+
+
+    public static <T extends Comparable<T>> FlatList<T> of( Object... elements ) {
+        return FlatList.copyOf( Arrays.stream( elements ).map( e -> (T) e ).collect( Collectors.toList() ) );
+    }
+
+
+    public static <T extends Comparable<T>> FlatList<T> copyOf( Iterator<T> list ) {
+        return new FlatList<>( Lists.newArrayList( list ) );
+    }
+
+
+    public static <T extends Comparable<T>> FlatList<T> copyOf( Collection<T> list ) {
+        return FlatList.copyOf( list.iterator() );
+    }
+
+
     @Override
-    public int compareTo( @NotNull FlatList<T> o ) {
+    public int compareTo( @NotNull FlatList<T> other ) {
+        if ( size() != other.size() ) {
+            return size() > other.size() ? 1 : -1;
+        }
+        for ( int i = 0; i < size(); i++ ) {
+            Comparable<T> o0 = get( i );
+            Comparable<T> o1 = other.get( i );
+            int c = Objects.compare( o0, o1, ( a, b ) -> a.compareTo( (T) b ) );
+            if ( c != 0 ) {
+                return c;
+            }
+        }
+
         return 0;
     }
+
 
 }
 

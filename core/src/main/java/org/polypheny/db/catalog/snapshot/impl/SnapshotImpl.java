@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.snapshot.impl;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -27,7 +28,6 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -175,28 +175,13 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public CatalogEntity getEntity( long id ) {
-
+    public Optional<? extends LogicalEntity> getLogicalEntity( long id ) {
         if ( rel.getTable( id ).isPresent() ) {
-            return rel.getTable( id ).get();
+            return rel.getTable( id );
         }
 
         if ( doc.getCollection( id ).isPresent() ) {
-            return doc.getCollection( id ).get();
-        }
-
-        return graph.getGraph( id );
-    }
-
-
-    @Override
-    public LogicalEntity getLogicalEntity( long id ) {
-        if ( rel.getTable( id ).isPresent() ) {
-            return rel.getTable( id ).get();
-        }
-
-        if ( doc.getCollection( id ).isPresent() ) {
-            return doc.getCollection( id ).get();
+            return doc.getCollection( id );
         }
 
         return graph.getGraph( id );

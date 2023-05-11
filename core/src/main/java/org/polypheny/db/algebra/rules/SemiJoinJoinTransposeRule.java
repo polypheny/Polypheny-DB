@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
@@ -46,7 +47,6 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -82,8 +82,8 @@ public class SemiJoinJoinTransposeRule extends AlgOptRule {
         if ( join instanceof SemiJoin ) {
             return;
         }
-        final ImmutableIntList leftKeys = semiJoin.getLeftKeys();
-        final ImmutableIntList rightKeys = semiJoin.getRightKeys();
+        final ImmutableList<Integer> leftKeys = semiJoin.getLeftKeys();
+        final ImmutableList<Integer> rightKeys = semiJoin.getRightKeys();
 
         // X is the left child of the join below the semi-join
         // Y is the right child of the join below the semi-join
@@ -143,7 +143,7 @@ public class SemiJoinJoinTransposeRule extends AlgOptRule {
         } else {
             leftSemiJoinOp = join.getRight();
         }
-        SemiJoin newSemiJoin = SemiJoin.create( leftSemiJoinOp, semiJoin.getRight(), newSemiJoinFilter, ImmutableIntList.copyOf( newLeftKeys ), rightKeys );
+        SemiJoin newSemiJoin = SemiJoin.create( leftSemiJoinOp, semiJoin.getRight(), newSemiJoinFilter, ImmutableList.copyOf( newLeftKeys ), rightKeys );
 
         AlgNode leftJoinRel;
         AlgNode rightJoinRel;

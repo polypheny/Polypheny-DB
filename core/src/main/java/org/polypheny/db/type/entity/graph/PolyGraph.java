@@ -30,35 +30,45 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.PolyCollections;
+import org.polypheny.db.runtime.PolyCollections.FlatMap;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyPath.PolySegment;
 import org.polypheny.db.util.Pair;
 
 
 @Getter
-public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
+public class PolyGraph extends GraphObject {
 
     @Expose
-    private final PolyMap<String, PolyNode> nodes;
+    private final FlatMap<PolyString, PolyNode> nodes;
     @Expose
-    private final PolyMap<String, PolyEdge> edges;
+    private final FlatMap<PolyString, PolyEdge> edges;
 
 
-    public PolyGraph( @NonNull PolyMap<String, PolyNode> nodes, @NonNull PolyMap<String, PolyEdge> edges ) {
-        this( UUID.randomUUID().toString(), nodes, edges );
+    public PolyGraph( @NonNull PolyCollections.FlatMap<PolyString, PolyNode> nodes, @NonNull PolyCollections.FlatMap<PolyString, PolyEdge> edges ) {
+        this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges );
     }
 
 
-    public PolyGraph( String id, @NonNull PolyMap<String, PolyNode> nodes, @NonNull PolyMap<String, PolyEdge> edges ) {
-        super( id, GraphObjectType.GRAPH, null );
+    public PolyGraph( PolyString id, @NonNull PolyCollections.FlatMap<PolyString, PolyNode> nodes, @NonNull PolyCollections.FlatMap<PolyString, PolyEdge> edges ) {
+        super( id, PolyType.GRAPH, null, false );
         this.nodes = nodes;
         this.edges = edges;
     }
 
 
     @Override
-    public int compareTo( PolyGraph o ) {
+    public int compareTo( PolyValue other ) {
+        if ( !other.isGraph() ) {
+            return -1;
+        }
+        PolyGraph o = other.asGraph();
+
         if ( this.nodes.size() > o.nodes.size() ) {
             return 1;
         }
@@ -88,7 +98,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
         List<List<TreePart>> trees = segments.stream().map( this::buildMatchingTree ).collect( Collectors.toList() );
 
-        List<List<Pair<String, String>>> namedPathIds = buildIdPaths( trees );
+        List<List<Pair<PolyString, PolyString>>> namedPathIds = buildIdPaths( trees );
 
         // patterns like ()-[]-() match each edge twice, once in each direction ( analog to Neo4j )
         // if this is not desired this could be uncommented
@@ -123,18 +133,18 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
     }
 
 
-    private List<PolyPath> buildPaths( List<List<Pair<String, String>>> namedPathIds ) {
+    private List<PolyPath> buildPaths( List<List<Pair<PolyString, PolyString>>> namedPathIds ) {
         List<PolyPath> paths = new LinkedList<>();
 
-        for ( List<Pair<String, String>> namedPathId : namedPathIds ) {
+        for ( List<Pair<PolyString, PolyString>> namedPathId : namedPathIds ) {
             List<PolyNode> nodes = new LinkedList<>();
             List<PolyEdge> edges = new LinkedList<>();
             List<GraphPropertyHolder> path = new LinkedList<>();
-            List<String> names = new LinkedList<>();
+            List<PolyString> names = new LinkedList<>();
 
             int i = 0;
             GraphPropertyHolder element;
-            for ( Pair<String, String> namedId : namedPathId ) {
+            for ( Pair<PolyString, PolyString> namedId : namedPathId ) {
                 if ( i % 2 == 0 ) {
                     element = this.nodes.get( namedId.right ).copyNamed( namedId.left );
                     nodes.add( (PolyNode) element );
@@ -153,7 +163,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
     }
 
 
-    private List<List<Pair<String, String>>> buildIdPaths( List<List<TreePart>> trees ) {
+    private List<List<Pair<PolyString, PolyString>>> buildIdPaths( List<List<TreePart>> trees ) {
         return trees.stream().flatMap( tree -> tree.stream().map( t -> t.getPath( new LinkedList<>() ) ) ).collect( Collectors.toList() );
     }
 
@@ -212,7 +222,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
 
     private void attachEmptyStubs( PolySegment segment, List<TreePart> root ) {
-        Set<Pair<String, String>> usedIds = new HashSet<>();
+        Set<Pair<PolyString, PolyString>> usedIds = new HashSet<>();
         for ( PolyEdge edge : edges.values() ) {
             PolyNode left = nodes.get( edge.source );
             PolyNode right = nodes.get( edge.target );
@@ -249,8 +259,14 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
 
     @Override
-    public Expression getAsExpression() {
+    public Expression asExpression() {
         throw new RuntimeException( "Cannot express PolyGraph." );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), PolyGraph.class );
     }
 
 
@@ -263,17 +279,17 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
      */
     public static class TreePart {
 
-        public final String edgeId;
-        public final String targetId;
+        public final PolyString edgeId;
+        public final PolyString targetId;
         public final TreePart parent;
         public final Set<TreePart> connections = new HashSet<>();
         // LPG only matches relationship isomorphic
-        public final List<String> usedEdgesIds = new LinkedList<>();
-        private final String edgeVariable;
-        private final String targetVariable;
+        public final List<PolyString> usedEdgesIds = new LinkedList<>();
+        private final PolyString edgeVariable;
+        private final PolyString targetVariable;
 
 
-        public TreePart( TreePart parent, String edgeId, String targetId, String edgeVariable, String targetVariable ) {
+        public TreePart( TreePart parent, PolyString edgeId, PolyString targetId, PolyString edgeVariable, PolyString targetVariable ) {
             this.parent = parent;
             this.edgeId = edgeId;
             this.targetId = targetId;
@@ -289,7 +305,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         }
 
 
-        public List<Pair<String, String>> getPath( List<Pair<String, String>> namedIds ) {
+        public List<Pair<PolyString, PolyString>> getPath( List<Pair<PolyString, PolyString>> namedIds ) {
             namedIds.add( 0, Pair.of( targetVariable, targetId ) );
 
             if ( parent != null ) {

@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -229,8 +230,8 @@ public final class BitSets {
      */
     public static BitSet of( ImmutableIntList bits ) {
         final BitSet bitSet = new BitSet();
-        for ( int i = 0, n = bits.size(); i < n; i++ ) {
-            bitSet.set( bits.getInt( i ) );
+        for ( Integer bit : bits ) {
+            bitSet.set( bit );
         }
         return bitSet;
     }
@@ -347,8 +348,8 @@ public final class BitSets {
      * Populates a {@link BitSet} from an {@link ImmutableIntList}.
      */
     public static void populate( BitSet bitSet, ImmutableIntList list ) {
-        for ( int i = 0; i < list.size(); i++ ) {
-            bitSet.set( list.getInt( i ) );
+        for ( Integer integer : list ) {
+            bitSet.set( integer );
         }
     }
 
@@ -367,7 +368,7 @@ public final class BitSets {
 
         Closure( SortedMap<Integer, BitSet> equivalence ) {
             this.equivalence = equivalence;
-            final ImmutableIntList keys = ImmutableIntList.copyOf( equivalence.keySet() );
+            final ImmutableList<Integer> keys = ImmutableList.copyOf( equivalence.keySet() );
             for ( int pos : keys ) {
                 computeClosure( pos );
             }

@@ -327,7 +327,7 @@ public class ConstraintEnforceAttacher {
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final LogicalForeignKey foreignKey : foreignKeys ) {
 
-                final LogicalTable entity = statement.getDataContext().getSnapshot().rel().getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable entity = statement.getDataContext().getSnapshot().rel().getTable( foreignKey.referencedKeyTableId ).orElseThrow();
                 final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), entity );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
@@ -479,7 +479,7 @@ public class ConstraintEnforceAttacher {
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final LogicalTable foreignTable = snapshot.getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable foreignTable = snapshot.getTable( foreignKey.referencedKeyTableId ).orElseThrow();
                 builder.push( input );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
@@ -551,7 +551,7 @@ public class ConstraintEnforceAttacher {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final LogicalTable foreignTable = snapshot.getTable( foreignKey.tableId );
+                final LogicalTable foreignTable = snapshot.getTable( foreignKey.tableId ).orElseThrow();
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );

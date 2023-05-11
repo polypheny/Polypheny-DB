@@ -171,7 +171,7 @@ public class DataMigratorImpl implements DataMigrator {
     public void copyData( Transaction transaction, CatalogAdapter store, List<LogicalColumn> columns, List<Long> partitionIds ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         LogicalRelSnapshot relSnapshot = snapshot.rel();
-        LogicalTable table = relSnapshot.getTable( columns.get( 0 ).tableId );
+        LogicalTable table = relSnapshot.getTable( columns.get( 0 ).tableId ).orElseThrow();
         LogicalPrimaryKey primaryKey = relSnapshot.getPrimaryKey( table.primaryKey );
 
         // Check Lists
@@ -184,7 +184,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            LogicalColumn logicalColumn = relSnapshot.getColumn( cid );
+            LogicalColumn logicalColumn = relSnapshot.getColumn( cid ).orElseThrow();
             if ( !selectedColumns.contains( logicalColumn ) ) {
                 selectedColumns.add( logicalColumn );
             }
@@ -330,7 +330,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( AllocationColumn ccp : to ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -359,7 +359,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( AllocationColumn ccp : placements ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId );
+            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -386,11 +386,11 @@ public class DataMigratorImpl implements DataMigrator {
         // build condition
         RexNode condition = null;
         LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
-        LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).tableId );
+        LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).tableId ).orElseThrow();
         LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey );
         for ( long cid : primaryKey.columnIds ) {
             AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).adapterId, cid ).orElseThrow();
-            LogicalColumn logicalColumn = snapshot.getColumn( cid );
+            LogicalColumn logicalColumn = snapshot.getColumn( cid ).orElseThrow();
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
                     new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id )
@@ -406,7 +406,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( AllocationColumn ccp : to ) {
-            LogicalColumn logicalColumn = snapshot.getColumn( ccp.columnId );
+            LogicalColumn logicalColumn = snapshot.getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
@@ -505,7 +505,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : sourcePrimaryKey.columnIds ) {
-            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( cid );
+            LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( cid ).orElseThrow();
             if ( !selectColumnList.contains( logicalColumn ) ) {
                 selectColumnList.add( logicalColumn );
             }
@@ -607,7 +607,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            LogicalColumn logicalColumn = snapshot.rel().getColumn( cid );
+            LogicalColumn logicalColumn = snapshot.rel().getColumn( cid ).orElseThrow();
             if ( !selectColumnList.contains( logicalColumn ) ) {
                 selectColumnList.add( logicalColumn );
             }
@@ -616,7 +616,7 @@ public class DataMigratorImpl implements DataMigrator {
         PartitionProperty targetProperty = snapshot.alloc().getPartitionProperty( targetTable.id );
         // Add partition columns to select column list
         long partitionColumnId = targetProperty.partitionColumnId;
-        LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionColumnId );
+        LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionColumnId ).orElseThrow();
         if ( !selectColumnList.contains( partitionColumn ) ) {
             selectColumnList.add( partitionColumn );
         }

@@ -19,29 +19,31 @@ package org.polypheny.db.type.entity.graph;
 import com.google.gson.annotations.Expose;
 import java.util.Map.Entry;
 import lombok.Getter;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 @Getter
 public abstract class GraphPropertyHolder extends GraphObject {
 
+    // every parameter in a PolyValue, which is used during quering needs to be wrapped
     @Expose
     public final PolyDictionary properties;
     @Expose
-    public final PolyList labels;
+    public final PolyList<PolyString> labels;
 
 
-    public GraphPropertyHolder( String id, PolyType type, PolyDictionary properties, PolyList labels, String variableName ) {
+    public GraphPropertyHolder( PolyString id, PolyType type, PolyDictionary properties, PolyList<PolyString> labels, PolyString variableName ) {
         super( id, type, variableName, false );
         this.properties = properties;
-        this.labels = new PolyList( labels );
+        this.labels = labels;
     }
 
 
     public boolean matchesProperties( PolyDictionary properties ) {
-        for ( Entry<String, Object> entry : properties.entrySet() ) {
+        for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
             if ( !this.properties.containsKey( entry.getKey() ) ) {
                 return false;
             }
@@ -53,7 +55,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
     }
 
 
-    public boolean matchesLabels( PolyList labels ) {
+    public boolean matchesLabels( PolyList<PolyString> labels ) {
         return this.labels.equals( labels );
     }
 
@@ -73,6 +75,6 @@ public abstract class GraphPropertyHolder extends GraphObject {
     }
 
 
-    public abstract void setLabels( PolyList labels );
+    public abstract void setLabels( PolyList<PolyString> labels );
 
 }

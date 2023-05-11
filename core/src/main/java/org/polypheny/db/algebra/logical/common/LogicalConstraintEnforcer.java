@@ -163,8 +163,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
                 builder.clear();
-                final LogicalTable scanOptTable = snapshot.getTable( foreignKey.tableId );
-                final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyTableId );
+                final LogicalTable scanOptTable = snapshot.getTable( foreignKey.tableId ).orElseThrow();
+                final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyTableId ).orElseThrow();
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
                 final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 
@@ -378,7 +378,6 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             return new LogicalConstraintEnforcer( node.getCluster(), node.getTraitSet(), node, information.getControl(), information.getErrorClasses(), information.getErrorMessages() );
         }
     }
-
 
 
     @Override

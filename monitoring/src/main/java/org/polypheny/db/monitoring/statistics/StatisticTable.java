@@ -75,7 +75,7 @@ public class StatisticTable<T extends Comparable<T>> {
 
         Catalog catalog = Catalog.getInstance();
         if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
-            LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).unwrap( LogicalTable.class );
+            LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
             this.table = catalogTable.name;
             this.namespaceType = catalogTable.namespaceType;
             //this.dataPlacements = ImmutableList.copyOf( catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).stream().map( c -> c.adapterId ).collect( Collectors.toList() ) );

@@ -28,7 +28,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -111,7 +111,7 @@ public enum JavaRowFormat {
     LIST {
         @Override
         Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
-            return FlatLists.ComparableList.class;
+            return FlatList.class;
         }
 
 
@@ -127,7 +127,7 @@ public enum JavaRowFormat {
                 case 0:
                     return Expressions.field(
                             null,
-                            FlatLists.class,
+                            FlatList.class,
                             "COMPARABLE_EMPTY_LIST" );
                 case 2:
                     return Expressions.convert_(

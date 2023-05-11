@@ -34,11 +34,11 @@
 package org.polypheny.db.algebra.mutable;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -47,11 +47,11 @@ import org.polypheny.db.util.ImmutableIntList;
 public class MutableSemiJoin extends MutableBiAlg {
 
     public final RexNode condition;
-    public final ImmutableIntList leftKeys;
-    public final ImmutableIntList rightKeys;
+    public final ImmutableList<Integer> leftKeys;
+    public final ImmutableList<Integer> rightKeys;
 
 
-    private MutableSemiJoin( AlgDataType rowType, MutableAlg left, MutableAlg right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    private MutableSemiJoin( AlgDataType rowType, MutableAlg left, MutableAlg right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         super( MutableAlgType.SEMIJOIN, left.cluster, rowType, left, right );
         this.condition = condition;
         this.leftKeys = leftKeys;
@@ -69,7 +69,7 @@ public class MutableSemiJoin extends MutableBiAlg {
      * @param leftKeys Left join keys
      * @param rightKeys Right join keys
      */
-    public static MutableSemiJoin of( AlgDataType rowType, MutableAlg left, MutableAlg right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    public static MutableSemiJoin of( AlgDataType rowType, MutableAlg left, MutableAlg right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         return new MutableSemiJoin( rowType, left, right, condition, leftKeys, rightKeys );
     }
 

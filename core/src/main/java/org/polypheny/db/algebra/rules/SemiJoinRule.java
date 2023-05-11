@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -52,7 +53,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -131,7 +131,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
                 for ( int key : joinInfo.rightKeys ) {
                     newRightKeyBuilder.add( aggregateKeys.get( key ) );
                 }
-                final ImmutableIntList newRightKeys = ImmutableIntList.copyOf( newRightKeyBuilder );
+                final ImmutableList<Integer> newRightKeys = ImmutableList.copyOf( newRightKeyBuilder );
                 algBuilder.push( aggregate.getInput() );
                 final RexNode newCondition = AlgOptUtil.createEquiJoinCondition( algBuilder.peek( 2, 0 ), joinInfo.leftKeys, algBuilder.peek( 2, 1 ), newRightKeys, rexBuilder );
                 algBuilder.semiJoin( newCondition );

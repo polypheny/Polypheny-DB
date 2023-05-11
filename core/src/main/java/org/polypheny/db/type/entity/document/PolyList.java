@@ -20,6 +20,7 @@ import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -35,7 +36,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
+@Value(staticConstructor = "copyOf")
 public class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
 
 
@@ -53,6 +54,17 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     @SafeVarargs
     public PolyList( E... value ) {
         this( Arrays.asList( value ) );
+    }
+
+
+    public static <E extends PolyValue> PolyList<E> of( Collection<E> value ) {
+        return PolyList.of( value );
+    }
+
+
+    @SafeVarargs
+    public static <E extends PolyValue> PolyList<E> of( E... values ) {
+        return new PolyList<>( values );
     }
 
 

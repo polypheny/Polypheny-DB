@@ -42,6 +42,7 @@ import javax.annotation.Nonnull;
 import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mapping;
@@ -85,8 +86,8 @@ public class AlgDistributions {
     /**
      * Creates a hash distribution.
      */
-    public static AlgDistribution hash( Collection<? extends Number> numbers ) {
-        ImmutableIntList list = ImmutableIntList.copyOf( numbers );
+    public static AlgDistribution hash( Collection<Integer> numbers ) {
+        FlatList<Integer> list = FlatList.copyOf( numbers );
         if ( numbers.size() > 1 && !Ordering.natural().isOrdered( list ) ) {
             list = ImmutableIntList.copyOf( Ordering.natural().sortedCopy( list ) );
         }
@@ -98,8 +99,8 @@ public class AlgDistributions {
     /**
      * Creates a range distribution.
      */
-    public static AlgDistribution range( Collection<? extends Number> numbers ) {
-        ImmutableIntList list = ImmutableIntList.copyOf( numbers );
+    public static AlgDistribution range( Collection<Integer> numbers ) {
+        FlatList<Integer> list = FlatList.copyOf( numbers );
         AlgDistributionImpl trait = new AlgDistributionImpl( AlgDistribution.Type.RANGE_DISTRIBUTED, list );
         return AlgDistributionTraitDef.INSTANCE.canonize( trait );
     }
@@ -112,12 +113,12 @@ public class AlgDistributions {
 
         private static final Ordering<Iterable<Integer>> ORDERING = Ordering.<Integer>natural().lexicographical();
         private final Type type;
-        private final ImmutableIntList keys;
+        private final FlatList<Integer> keys;
 
 
-        private AlgDistributionImpl( Type type, ImmutableIntList keys ) {
+        private AlgDistributionImpl( Type type, FlatList<Integer> keys ) {
             this.type = Objects.requireNonNull( type );
-            this.keys = ImmutableIntList.copyOf( keys );
+            this.keys = FlatList.copyOf( keys );
             assert type != Type.HASH_DISTRIBUTED || keys.size() < 2 || Ordering.natural().isOrdered( keys ) : "key columns of hash distribution must be in order";
             assert type == Type.HASH_DISTRIBUTED || type == Type.RANDOM_DISTRIBUTED || keys.isEmpty();
         }
@@ -173,7 +174,7 @@ public class AlgDistributions {
             if ( keys.isEmpty() ) {
                 return this;
             }
-            return getTraitDef().canonize( new AlgDistributionImpl( type, ImmutableIntList.copyOf( Mappings.apply( (Mapping) mapping, keys ) ) ) );
+            return getTraitDef().canonize( new AlgDistributionImpl( type, FlatList.copyOf( Mappings.apply( (Mapping) mapping, keys ) ) ) );
         }
 
 

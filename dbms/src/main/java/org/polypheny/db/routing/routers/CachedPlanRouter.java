@@ -69,7 +69,7 @@ public class CachedPlanRouter extends BaseRouter {
             for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
                     List<AllocationColumn> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream()
-                            .map( placementInfo -> catalog.getSnapshot().alloc().getColumn( placementInfo.left, placementInfo.right ) )
+                            .map( placementInfo -> catalog.getSnapshot().alloc().getColumn( placementInfo.left, placementInfo.right ).orElseThrow() )
                             .collect( Collectors.toList() );
                     placement.put( partition, colPlacements );
                 }

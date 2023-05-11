@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
@@ -67,15 +68,13 @@ import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.SpecialOperator;
-import org.polypheny.db.runtime.FlatList;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.type.entity.document.PolyList;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
@@ -92,6 +91,7 @@ import org.polypheny.db.util.Util;
  *
  * Some common literal values (NULL, TRUE, FALSE, 0, 1, '') are cached.
  */
+@Slf4j
 public class RexBuilder {
 
     /**
@@ -1002,9 +1002,8 @@ public class RexBuilder {
         // Special handling for arrays
         if ( node instanceof RexCall && ((RexCall) node).op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             ArrayType arrayType = (ArrayType) node.getType();
-
-            return new RexLiteral( FlatList.of( ((RexCall) node).operands ), arrayType, arrayType.getPolyType() );
-            //return new RexCall( ((RexCall) node).type, ((RexCall) node).op, newRexNodes );
+            log.warn( "why" );
+            return new RexLiteral( (Comparable<?>) List.of( ((RexCall) node).operands ), arrayType, arrayType.getPolyType() );
         } else if ( !node.getType().equals( targetType ) ) {
             return makeCast( targetType, node );
         }
@@ -1290,7 +1289,6 @@ public class RexBuilder {
                 return makeMap( (Map<Object, Object>) value, type, allowCast );
             case ARRAY:
                 return makeArray( (List<Object>) value, type, allowCast );
-            //return makeCall( OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), operands );
             case MULTISET:
                 final MultisetPolyType multisetType = (MultisetPolyType) type;
                 operands = new ArrayList<>();
@@ -1304,7 +1302,8 @@ public class RexBuilder {
                 if ( allowCast ) {
                     return makeCall( OperatorRegistry.get( OperatorName.MULTISET_VALUE ), operands );
                 } else {
-                    return new RexLiteral( (Comparable<?>) FlatList.of( operands ), type, type.getPolyType() );
+                    log.warn( "this will not work anyway" );
+                    return new RexLiteral( (Comparable<?>) List.of( operands ), type, type.getPolyType() );
                 }
             case ROW:
                 operands = new ArrayList<>();
@@ -1316,7 +1315,8 @@ public class RexBuilder {
                                     : makeLiteral( pair.right, pair.left.getType(), allowCast );
                     operands.add( e );
                 }
-                return new RexLiteral( (Comparable<?>) FlatList.of( operands ), type, type.getPolyType() );
+                log.warn( "this will not work anyway" );
+                return new RexLiteral( (Comparable<?>) List.of( operands ), type, type.getPolyType() );
             case NODE:
             case EDGE:
                 return new RexLiteral( (Comparable<?>) value, type, type.getPolyType() );
@@ -1514,18 +1514,19 @@ public class RexBuilder {
 
 
     public RexLiteral makeArray( AlgDataType type, List<RexNode> operands ) {
-        return new RexLiteral( PolyList.ofArray( operands ), type, type.getPolyType() );
+        log.warn( "why" );
+        return new RexLiteral( (Comparable<?>) List.of( operands ), type, type.getPolyType() );
     }
 
 
     public RexLiteral makeMap( AlgDataType type, Map<RexNode, RexNode> operands ) {
-        return new RexLiteral( PolyMap.ofMap( operands ), type, type.getPolyType() );
+        return new RexLiteral( FlatMap.ofMap( operands ), type, type.getPolyType() );
     }
 
 
     public RexLiteral makeMapFromBson( AlgDataType type, Map<String, BsonValue> bson ) {
         @SuppressWarnings("RedundantCast") // seems necessary
-        PolyMap<RexLiteral, RexLiteral> map = PolyMap.of( (Map<RexLiteral, RexLiteral>) bson.entrySet().stream().collect( Collectors.toMap( e -> makeLiteral( e.getKey() ), e -> BsonUtil.getAsLiteral( e.getValue(), this ) ) ) );
+        FlatMap<RexLiteral, RexLiteral> map = FlatMap.of( (Map<RexLiteral, RexLiteral>) bson.entrySet().stream().collect( Collectors.toMap( e -> makeLiteral( e.getKey() ), e -> BsonUtil.getAsLiteral( e.getValue(), this ) ) ) );
         return new RexLiteral( map, type, PolyType.CHAR );
     }
 

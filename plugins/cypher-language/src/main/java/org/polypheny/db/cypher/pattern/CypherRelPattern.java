@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.pattern;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -26,7 +25,9 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.util.Pair;
@@ -69,22 +70,22 @@ public class CypherRelPattern extends CypherPattern {
     }
 
 
-    public Pair<String, PolyEdge> getPolyEdge( String leftId, String rightId ) {
+    public Pair<PolyString, PolyEdge> getPolyEdge( PolyString leftId, PolyString rightId ) {
         PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
         EdgeDirection direction = left == right ? EdgeDirection.NONE : right ? EdgeDirection.LEFT_TO_RIGHT : EdgeDirection.RIGHT_TO_LEFT;
-        List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+        List<PolyString> labels = relTypes.stream().map( StringPos::getImage ).map( PolyString::of ).collect( Collectors.toList() );
 
         String name = null;
         if ( variable != null ) {
             name = variable.getName();
         }
 
-        PolyEdge edge = new PolyEdge( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction, name );
+        PolyEdge edge = new PolyEdge( properties, PolyList.copyOf( labels ), leftId, rightId, direction, PolyString.of( name ) );
         if ( pathLength != null ) {
             edge.fromTo( Pair.of( Integer.parseInt( pathLength.getFrom() ), Integer.parseInt( pathLength.getTo() ) ) );
         }
 
-        return Pair.of( name, edge );
+        return Pair.of( PolyString.of( name ), edge );
     }
 
 }

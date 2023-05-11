@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import java.util.ArrayList;
@@ -64,7 +65,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
 
@@ -284,8 +284,8 @@ public class LoptSemiJoinOptimizer {
                 factRel,
                 dimRel,
                 semiJoinCondition,
-                ImmutableIntList.copyOf( truncatedLeftKeys ),
-                ImmutableIntList.copyOf( truncatedRightKeys ) );
+                ImmutableList.copyOf( truncatedLeftKeys ),
+                ImmutableList.copyOf( truncatedRightKeys ) );
     }
 
 

@@ -83,7 +83,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -390,7 +389,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
      *
      * If the inputs are sorted on other keys <em>in addition to</em> the join key, the result preserves those collations too.
      */
-    public static List<AlgCollation> mergeJoin( AlgMetadataQuery mq, AlgNode left, AlgNode right, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    public static List<AlgCollation> mergeJoin( AlgMetadataQuery mq, AlgNode left, AlgNode right, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         final ImmutableList.Builder<AlgCollation> builder = ImmutableList.builder();
 
         final ImmutableList<AlgCollation> leftCollations = mq.collations( left );

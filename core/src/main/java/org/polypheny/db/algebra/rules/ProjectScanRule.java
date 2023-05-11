@@ -47,7 +47,6 @@ import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
@@ -121,7 +120,7 @@ public abstract class ProjectScanRule extends AlgOptRule {
             return;
         }
 
-        final ImmutableIntList projects;
+        final ImmutableList<Integer> projects;
         final ImmutableList<RexNode> filters;
         if ( scan instanceof BindableScan ) {
             final BindableScan bindableScan = (BindableScan) scan;

@@ -34,16 +34,16 @@
 package org.polypheny.db.algebra.core;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.IntPair;
 
 
@@ -59,14 +59,14 @@ import org.polypheny.db.util.mapping.IntPair;
  */
 public abstract class JoinInfo {
 
-    public final ImmutableIntList leftKeys;
-    public final ImmutableIntList rightKeys;
+    public final ImmutableList<Integer> leftKeys;
+    public final ImmutableList<Integer> rightKeys;
 
 
     /**
      * Creates a JoinInfo.
      */
-    protected JoinInfo( ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    protected JoinInfo( ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         this.leftKeys = Objects.requireNonNull( leftKeys );
         this.rightKeys = Objects.requireNonNull( rightKeys );
         assert leftKeys.size() == rightKeys.size();
@@ -82,9 +82,9 @@ public abstract class JoinInfo {
         final List<Boolean> filterNulls = new ArrayList<>();
         RexNode remaining = AlgOptUtil.splitJoinCondition( left, right, condition, leftKeys, rightKeys, filterNulls );
         if ( remaining.isAlwaysTrue() ) {
-            return new EquiJoinInfo( ImmutableIntList.copyOf( leftKeys ), ImmutableIntList.copyOf( rightKeys ) );
+            return new EquiJoinInfo( ImmutableList.copyOf( leftKeys ), ImmutableList.copyOf( rightKeys ) );
         } else {
-            return new NonEquiJoinInfo( ImmutableIntList.copyOf( leftKeys ), ImmutableIntList.copyOf( rightKeys ), remaining );
+            return new NonEquiJoinInfo( ImmutableList.copyOf( leftKeys ), ImmutableList.copyOf( rightKeys ), remaining );
         }
     }
 
@@ -92,7 +92,7 @@ public abstract class JoinInfo {
     /**
      * Creates an equi-join.
      */
-    public static JoinInfo of( ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    public static JoinInfo of( ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         return new EquiJoinInfo( leftKeys, rightKeys );
     }
 
@@ -129,8 +129,8 @@ public abstract class JoinInfo {
     }
 
 
-    public List<ImmutableIntList> keys() {
-        return FlatLists.of( leftKeys, rightKeys );
+    public List<ImmutableList<Integer>> keys() {
+        return List.of( leftKeys, rightKeys );
     }
 
 
@@ -139,7 +139,7 @@ public abstract class JoinInfo {
      */
     private static class EquiJoinInfo extends JoinInfo {
 
-        protected EquiJoinInfo( ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+        protected EquiJoinInfo( ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
             super( leftKeys, rightKeys );
         }
 
@@ -166,9 +166,9 @@ public abstract class JoinInfo {
         public final RexNode remaining;
 
 
-        protected NonEquiJoinInfo( ImmutableIntList leftKeys, ImmutableIntList rightKeys, RexNode remaining ) {
+        protected NonEquiJoinInfo( ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, @NonNull RexNode remaining ) {
             super( leftKeys, rightKeys );
-            this.remaining = Objects.requireNonNull( remaining );
+            this.remaining = remaining;
             assert !remaining.isAlwaysTrue();
         }
 

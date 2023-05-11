@@ -35,7 +35,7 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
     @Override
     public List<DataStore<?>> getDataStoresForNewColumn( LogicalColumn addedColumn ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        LogicalTable catalogTable = snapshot.rel().getTable( addedColumn.tableId );
+        LogicalTable catalogTable = snapshot.rel().getTable( addedColumn.tableId ).orElseThrow();
         List<CatalogDataPlacement> dataPlacements = snapshot.alloc().getDataPlacements( catalogTable.id );
         return dataPlacements.stream()
                 .map( elem -> AdapterManager.getInstance().getStore( elem.adapterId ) )

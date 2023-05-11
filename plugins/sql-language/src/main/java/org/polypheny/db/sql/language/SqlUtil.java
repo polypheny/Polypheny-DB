@@ -607,7 +607,7 @@ public abstract class SqlUtil {
 
     public static AlgDataType getNamedType( Identifier node, Snapshot snapshot ) {
         ;
-        LogicalTable table = snapshot.rel().getTable( node.getNames().get( 0 ), node.getNames().get( 1 ) );
+        LogicalTable table = snapshot.rel().getTable( node.getNames().get( 0 ), node.getNames().get( 1 ) ).orElse( null );
         if ( table != null ) {
             return table.getRowType();
         } else {

@@ -63,8 +63,8 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.FlatList;
+import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyBoolean;
@@ -741,7 +741,7 @@ public class BsonUtil {
     }
 
 
-    private static Comparable<?> getUnderlyingValue( BsonValue value ) {
+    private static <T extends Comparable<T>> Comparable<?> getUnderlyingValue( BsonValue value ) {
         switch ( value.getBsonType() ) {
             case NULL:
                 return null;
@@ -758,9 +758,9 @@ public class BsonUtil {
             case BOOLEAN:
                 return value.asBoolean().getValue();
             case ARRAY:
-                return value.asArray().stream().map( BsonUtil::getUnderlyingValue ).collect( Collectors.toCollection( PolyList::new ) );
+                return FlatList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).collect( Collectors.toList() ).listIterator() );
             case DOCUMENT:
-                PolyMap<String, Comparable<?>> map = new PolyMap<>();
+                FlatMap<String, Comparable<?>> map = new FlatMap<>();
                 value.asDocument().forEach( ( key, val ) -> map.put( key, getUnderlyingValue( val ) ) );
                 return map;
             case DATE_TIME:

@@ -129,12 +129,14 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Holder;
@@ -937,7 +939,7 @@ public class AlgBuilder {
     /**
      * Creates a group key of fields identified by ordinal.
      */
-    public GroupKey groupKey( int... fieldOrdinals ) {
+    public GroupKey groupKey( Integer... fieldOrdinals ) {
         return groupKey( fields( ImmutableIntList.of( fieldOrdinals ) ) );
     }
 
@@ -1005,8 +1007,8 @@ public class AlgBuilder {
             throw new IllegalArgumentException( "out of bounds: " + groupSet );
         }
         Objects.requireNonNull( groupSets );
-        final ImmutableList<RexNode> nodes = fields( ImmutableIntList.of( groupSet.toArray() ) );
-        final List<ImmutableList<RexNode>> nodeLists = Util.transform( groupSets, bitSet -> fields( ImmutableIntList.of( bitSet.toArray() ) ) );
+        final ImmutableList<RexNode> nodes = fields( groupSet.toList() );
+        final List<ImmutableList<RexNode>> nodeLists = Util.transform( groupSets, bitSet -> fields( bitSet.toList() ) );
         return groupKey_( nodes, indicator, nodeLists );
     }
 
@@ -1333,10 +1335,7 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final LogicalTable entity = snapshot.rel().getTable( tableNames.get( 0 ), names.get( 1 ) );
-        if ( entity == null ) {
-            throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
-        }
+        final LogicalTable entity = snapshot.rel().getTable( tableNames.get( 0 ), names.get( 1 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
         rename( entity.getRowType().getFieldNames() );
@@ -1401,7 +1400,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder lpgScan( long id ) {
-        LogicalGraph graph = snapshot.graph().getGraph( id );
+        LogicalGraph graph = snapshot.graph().getGraph( id ).orElseThrow();
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
         return this;
     }
@@ -1419,11 +1418,11 @@ public class AlgBuilder {
     }
 
 
-    public RexCall lpgNodeMatch( List<String> labels ) {
+    public RexCall lpgNodeMatch( List<PolyString> labels ) {
         RexBuilder rexBuilder = getRexBuilder();
         Operator op = OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_MATCH );
         AlgDataType nodeType = getTypeFactory().createPolyType( PolyType.NODE );
-        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getRowType().getFieldList().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), labels, null ), nodeType, PolyType.NODE ) ) );
+        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getRowType().getFieldList().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), PolyList.copyOf( labels ), null ), nodeType, PolyType.NODE ) ) );
     }
 
 

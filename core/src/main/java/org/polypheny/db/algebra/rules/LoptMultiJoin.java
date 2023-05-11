@@ -58,7 +58,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -548,7 +547,7 @@ public class LoptMultiJoin {
                 setFactorWeight( weight, leftFactor, rightFactor );
             } else {
                 // multiple factor references -- set a weight for each combination of factors referenced within the filter
-                final List<Integer> list = ImmutableIntList.copyOf( factorRefs );
+                final List<Integer> list = ImmutableList.copyOf( factorRefs );
                 for ( int outer : list ) {
                     for ( int inner : list ) {
                         if ( outer != inner ) {

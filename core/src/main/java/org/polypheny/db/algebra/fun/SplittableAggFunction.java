@@ -226,7 +226,7 @@ public interface SplittableAggFunction {
             assert (leftSubTotal >= 0) != (rightSubTotal >= 0);
             assert aggregateCall.collation.getFieldCollations().isEmpty();
             final int arg = leftSubTotal >= 0 ? leftSubTotal : rightSubTotal;
-            return aggregateCall.copy( ImmutableIntList.of( arg ), -1, AlgCollations.EMPTY );
+            return aggregateCall.copy( ImmutableIntList.copyOf( arg ), -1, AlgCollations.EMPTY );
         }
 
     }

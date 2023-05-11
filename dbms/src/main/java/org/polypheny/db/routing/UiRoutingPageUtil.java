@@ -109,14 +109,14 @@ public class UiRoutingPageUtil {
                 Long k = entry.getKey();
                 List<Pair<Long, Long>> v = entry.getValue();
                 AllocationEntity alloc = snapshot.alloc().getEntity( k ).orElseThrow();
-                LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId );
+                LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId ).orElseThrow();
 
                 if ( alloc.unwrap( AllocationTable.class ) != null ) {
                     AllocationTable allocTable = alloc.unwrap( AllocationTable.class );
                     List<AllocationColumn> columns = snapshot.alloc().getColumns( allocTable.id );
 
                     for ( AllocationColumn column : columns ) {
-                        LogicalColumn logical = snapshot.rel().getColumn( column.columnId );
+                        LogicalColumn logical = snapshot.rel().getColumn( column.columnId ).orElseThrow();
                         table.addRow(
                                 entity.getNamespaceName() + "." + entity.name,
                                 logical.name,

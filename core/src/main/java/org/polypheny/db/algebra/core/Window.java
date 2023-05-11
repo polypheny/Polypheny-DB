@@ -62,8 +62,8 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot;
 import org.polypheny.db.rex.RexWindowBound;
+import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -153,8 +153,8 @@ public abstract class Window extends SingleAlg {
     }
 
 
-    public static ImmutableIntList getProjectOrdinals( final List<RexNode> exprs ) {
-        return ImmutableIntList.copyOf(
+    public static FlatList<Integer> getProjectOrdinals( final List<RexNode> exprs ) {
+        return FlatList.copyOf(
                 new AbstractList<Integer>() {
                     @Override
                     public Integer get( int index ) {
@@ -172,7 +172,7 @@ public abstract class Window extends SingleAlg {
 
     public static AlgCollation getCollation( final List<RexFieldCollation> collations ) {
         return AlgCollations.of(
-                new AbstractList<AlgFieldCollation>() {
+                new AbstractList<>() {
                     @Override
                     public AlgFieldCollation get( int index ) {
                         final RexFieldCollation collation = collations.get( index );

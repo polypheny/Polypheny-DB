@@ -74,7 +74,7 @@ public final class LogicalForeignKey extends LogicalKey {
 
     @SneakyThrows
     public String getReferencedKeyTableName() {
-        return Catalog.snapshot().rel().getTable( referencedKeyTableId ).name;
+        return Catalog.snapshot().rel().getTable( referencedKeyTableId ).orElseThrow().name;
     }
 
 
@@ -83,7 +83,7 @@ public final class LogicalForeignKey extends LogicalKey {
         Snapshot snapshot = Catalog.snapshot();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : referencedKeyColumnIds ) {
-            columnNames.add( snapshot.rel().getColumn( columnId ).name );
+            columnNames.add( snapshot.rel().getColumn( columnId ).orElseThrow().name );
         }
         return columnNames;
     }

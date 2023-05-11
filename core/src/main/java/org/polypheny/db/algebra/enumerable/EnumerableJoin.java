@@ -39,7 +39,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
 
@@ -53,7 +52,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    protected EnumerableJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    protected EnumerableJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
     }
 
@@ -61,7 +60,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
     /**
      * Creates an EnumerableJoin.
      */
-    public static EnumerableJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    public static EnumerableJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         final AlgOptCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE )

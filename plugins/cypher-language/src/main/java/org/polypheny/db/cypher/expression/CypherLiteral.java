@@ -30,10 +30,15 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyBoolean;
+import org.polypheny.db.type.entity.document.PolyDouble;
+import org.polypheny.db.type.entity.document.PolyInteger;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -96,31 +101,29 @@ public class CypherLiteral extends CypherExpression {
 
 
     @Override
-    public Comparable<?> getComparable() {
+    public PolyValue getComparable() {
 
         switch ( literalType ) {
             case TRUE:
-                return true;
+                return PolyBoolean.of( true );
             case FALSE:
-                return false;
+                return PolyBoolean.of( false );
             case NULL:
                 return null;
             case LIST:
-                List<Comparable<?>> list = listValue.stream().map( CypherExpression::getComparable ).collect( Collectors.toList() );
+                List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).collect( Collectors.toList() );
                 return new PolyList<>( list );
             case MAP:
-                Map<String, Comparable<?>> map = mapValue.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getComparable() ) );
+                Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> e.getValue().getComparable() ) );
                 return new PolyDictionary( map );
             case STRING:
-                return (String) value;
-            case DOUBLE:
-                return (Double) value;
-            case DECIMAL:
-                return (Integer) value;
             case HEX:
-                return (String) value;
             case OCTAL:
-                return (String) value;
+                return PolyString.of( (String) value );
+            case DOUBLE:
+                return PolyDouble.of( (Double) value );
+            case DECIMAL:
+                return PolyInteger.of( (Integer) value );
             case STAR:
                 throw new UnsupportedOperationException();
         }

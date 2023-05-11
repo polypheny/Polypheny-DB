@@ -24,6 +24,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -34,13 +35,13 @@ public abstract class GraphObject extends PolyValue {
     private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().excludeFieldsWithoutExposeAnnotation().create();
 
     @Serialize
-    public String id;
+    public PolyString id;
 
     @Serialize
-    public String variableName;
+    public PolyString variableName;
 
 
-    protected GraphObject( String id, PolyType type, String variableName, boolean nullable ) {
+    protected GraphObject( PolyString id, PolyType type, PolyString variableName, boolean nullable ) {
         super( type, nullable );
         this.id = id;
         this.variableName = variableName;

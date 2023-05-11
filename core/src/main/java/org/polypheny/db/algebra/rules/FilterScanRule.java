@@ -48,7 +48,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -121,7 +120,7 @@ public abstract class FilterScanRule extends AlgOptRule {
 
 
     protected void apply( AlgOptRuleCall call, Filter filter, RelScan<?> scan ) {
-        final ImmutableIntList projects;
+        final ImmutableList<Integer> projects;
         final ImmutableList.Builder<RexNode> filters = ImmutableList.builder();
         if ( scan instanceof BindableScan ) {
             final BindableScan bindableScan = (BindableScan) scan;

@@ -19,7 +19,6 @@ package org.polypheny.db.cql;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.cql.exception.UnknownIndexException;
 
 
 /**
@@ -42,11 +41,11 @@ public class TableIndex {
     }
 
 
-    public static TableIndex createIndex( String schemaName, String tableName ) throws UnknownIndexException {
+    public static TableIndex createIndex( String namespaceName, String tableName ) {
         log.debug( "Creating TableIndex." );
         Catalog catalog = Catalog.getInstance();
-        LogicalTable table = catalog.getSnapshot().rel().getTable( schemaName, tableName );
-        return new TableIndex( table, schemaName, tableName );
+        LogicalTable table = catalog.getSnapshot().rel().getTable( namespaceName, tableName ).orElseThrow();
+        return new TableIndex( table, namespaceName, tableName );
     }
 
 

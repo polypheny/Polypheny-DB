@@ -65,15 +65,15 @@ import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
-import org.polypheny.db.algebra.enumerable.common.EnumerableBatchIterator;
-import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecute;
 import org.polypheny.db.algebra.enumerable.EnumerableFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableJoin;
-import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
 import org.polypheny.db.algebra.enumerable.EnumerableUnwind;
+import org.polypheny.db.algebra.enumerable.common.EnumerableBatchIterator;
+import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecute;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
@@ -122,6 +122,7 @@ import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AbstractConverter;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
@@ -340,7 +341,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             paramList( buff, method.e )
                     .append( ") {\n" );
             buff.append( "    final java.util.List key = " )
-                    .append( (method.e.getParameterTypes().length < 4 ? org.polypheny.db.runtime.FlatLists.class : ImmutableList.class).getName() )
+                    .append( (method.e.getParameterTypes().length < 4 ? FlatList.class : ImmutableList.class).getName() )
                     .append( ".of(" )
                     .append( def.metadataClass.getName() );
             if ( method.i == 0 ) {

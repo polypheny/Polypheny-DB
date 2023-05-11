@@ -27,12 +27,12 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
-import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyList;
 import org.polypheny.db.type.entity.document.PolyLong;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -41,8 +41,8 @@ import org.polypheny.db.util.Pair;
 @Value
 public class PolyEdge extends GraphPropertyHolder {
 
-    public String source;
-    public String target;
+    public PolyString source;
+    public PolyString target;
     public EdgeDirection direction;
 
     @Setter
@@ -51,12 +51,12 @@ public class PolyEdge extends GraphPropertyHolder {
     public Pair<Integer, Integer> fromTo;
 
 
-    public PolyEdge( @NonNull PolyCollections.PolyDictionary properties, PolyList labels, String source, String target, EdgeDirection direction, String variableName ) {
-        this( UUID.randomUUID().toString(), properties, labels, source, target, direction, variableName );
+    public PolyEdge( @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
+        this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, source, target, direction, variableName );
     }
 
 
-    public PolyEdge( String id, @NonNull PolyCollections.PolyDictionary properties, PolyList labels, String source, String target, EdgeDirection direction, String variableName ) {
+    public PolyEdge( PolyString id, @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
         super( id, PolyType.EDGE, properties, labels, variableName );
         this.source = source;
         this.target = target;
@@ -72,19 +72,19 @@ public class PolyEdge extends GraphPropertyHolder {
     }
 
 
-    public PolyEdge from( String left, String right ) {
+    public PolyEdge from( PolyString left, PolyString right ) {
         return new PolyEdge( id, properties, labels, left == null ? this.source : left, right == null ? this.target : right, direction, null );
     }
 
 
     @Override
-    public void setLabels( PolyList labels ) {
+    public void setLabels( PolyList<PolyString> labels ) {
         this.labels.clear();
         this.labels.add( labels.get( 0 ) );
     }
 
 
-    public PolyEdge copyNamed( String newName ) {
+    public PolyEdge copyNamed( PolyString newName ) {
         if ( newName == null ) {
             // no copy needed
             return this;
@@ -149,7 +149,7 @@ public class PolyEdge extends GraphPropertyHolder {
                         Expressions.new_(
                                 PolyEdge.class,
                                 Expressions.constant( id ),
-                                properties.getAsExpression(),
+                                properties.asExpression(),
                                 EnumUtils.constantArrayList( labels, String.class ),
                                 Expressions.constant( source ),
                                 Expressions.constant( target ),

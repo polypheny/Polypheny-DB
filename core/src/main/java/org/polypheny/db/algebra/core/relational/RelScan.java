@@ -17,9 +17,12 @@
 package org.polypheny.db.algebra.core.relational;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
@@ -40,7 +43,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -85,15 +87,15 @@ public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
     /**
      * Returns an identity projection for the given table.
      */
-    public static ImmutableIntList identity( CatalogEntity entity ) {
-        return ImmutableIntList.identity( entity.getRowType().getFieldCount() );
+    public static ImmutableList<Integer> identity( CatalogEntity entity ) {
+        return ImmutableList.copyOf( IntStream.range( 0, entity.getRowType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
     }
 
 
     /**
      * Returns an identity projection.
      */
-    public ImmutableIntList identity() {
+    public ImmutableList<Integer> identity() {
         return identity( entity );
     }
 

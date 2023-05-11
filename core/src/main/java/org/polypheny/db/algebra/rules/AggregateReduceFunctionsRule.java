@@ -278,7 +278,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                 aggFunction,
                 oldCall.isDistinct(),
                 oldCall.isApproximate(),
-                ImmutableIntList.of( argOrdinal ),
+                ImmutableIntList.copyOf( argOrdinal ),
                 filter,
                 oldCall.collation,
                 aggFunction.inferReturnType( binding ),
@@ -452,7 +452,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         OperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
-                        ImmutableIntList.of( argOrdinal ),
+                        ImmutableIntList.copyOf( argOrdinal ),
                         oldCall.filterArg,
                         oldCall.collation,
                         oldAggRel.getGroupCount(),
@@ -526,7 +526,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         OperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
-                        ImmutableIntList.of( argOrdinal ),
+                        ImmutableIntList.copyOf( argOrdinal ),
                         filterArg,
                         oldCall.collation,
                         oldAggRel.getGroupCount(),
@@ -615,7 +615,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
         final RexNode sumXSumY = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), sumX, sumY );
 
-        final RexNode countArg = getRegrCountRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, ImmutableIntList.of( xIndex ), ImmutableList.of( argXType ), argXAndYNotNullFilterOrdinal );
+        final RexNode countArg = getRegrCountRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, ImmutableIntList.copyOf( xIndex ), ImmutableList.of( argXType ), argXAndYNotNullFilterOrdinal );
 
         RexLiteral zero = rexBuilder.makeExactLiteral( BigDecimal.ZERO );
         RexNode nul = rexBuilder.constantNull();
@@ -662,7 +662,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                 oldCall,
                 newCalls,
                 aggCallMapping,
-                ImmutableIntList.of( argXOrdinal, argYOrdinal ),
+                ImmutableIntList.copyOf( argXOrdinal, argYOrdinal ),
                 ImmutableList.of( argXOrdinalType, argYOrdinalType ),
                 argXAndYNotNullFilterOrdinal );
         final RexNode avgSumSquaredArg = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DIVIDE ), sumXSumY, countArg );

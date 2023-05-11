@@ -31,11 +31,12 @@ import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.util.Pair;
 
@@ -45,19 +46,19 @@ public class PolyPath extends GraphObject {
 
     private final List<PolyNode> nodes;
     private final List<PolyEdge> edges;
-    private final List<String> names;
+    private final List<PolyString> names;
     @Expose
     private final List<GraphPropertyHolder> path;
     @Getter
     private final List<PolySegment> segments;
 
 
-    public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path, String variableName ) {
-        this( UUID.randomUUID().toString(), nodes, edges, names, path, variableName );
+    public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path, PolyString variableName ) {
+        this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges, names, path, variableName );
     }
 
 
-    public PolyPath( String id, List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path, String variableName ) {
+    public PolyPath( PolyString id, List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path, PolyString variableName ) {
         super( id, PolyType.PATH, variableName, false );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();
@@ -83,19 +84,19 @@ public class PolyPath extends GraphObject {
     }
 
 
-    public static PolyPath create( List<Pair<String, PolyNode>> polyNodes, List<Pair<String, PolyEdge>> polyEdges ) {
-        List<String> names = new ArrayList<>();
+    public static PolyPath create( List<Pair<PolyString, PolyNode>> polyNodes, List<Pair<PolyString, PolyEdge>> polyEdges ) {
+        List<PolyString> names = new ArrayList<>();
         List<GraphPropertyHolder> path = new ArrayList<>();
 
-        Iterator<Pair<String, PolyNode>> nodeIter = polyNodes.iterator();
-        Iterator<Pair<String, PolyEdge>> edgeIter = polyEdges.iterator();
+        Iterator<Pair<PolyString, PolyNode>> nodeIter = polyNodes.iterator();
+        Iterator<Pair<PolyString, PolyEdge>> edgeIter = polyEdges.iterator();
 
         while ( nodeIter.hasNext() ) {
-            Pair<String, PolyNode> node = nodeIter.next();
+            Pair<PolyString, PolyNode> node = nodeIter.next();
             names.add( node.left );
             path.add( node.right );
             if ( edgeIter.hasNext() ) {
-                Pair<String, PolyEdge> edge = edgeIter.next();
+                Pair<PolyString, PolyEdge> edge = edgeIter.next();
                 names.add( edge.left );
                 path.add( edge.right );
             }
@@ -130,7 +131,7 @@ public class PolyPath extends GraphObject {
         List<AlgDataTypeField> pathType = new ArrayList<>();
 
         int i = 0;
-        for ( String name : names ) {
+        for ( PolyString name : names ) {
             AlgDataType type;
             if ( i % 2 == 0 ) {
                 // node
@@ -141,7 +142,7 @@ public class PolyPath extends GraphObject {
             }
 
             if ( name != null ) {
-                pathType.add( new AlgDataTypeFieldImpl( name, i, type ) );
+                pathType.add( new AlgDataTypeFieldImpl( name.value, i, type ) );
             }
 
             i++;
@@ -169,7 +170,7 @@ public class PolyPath extends GraphObject {
         List<List<List<PolySegment>>> segments = new ArrayList<>();
         int i = 0;
 
-        PolyNode empty = new PolyNode( new PolyDictionary(), List.of(), null );
+        PolyNode empty = new PolyNode( new PolyDictionary(), PolyList.of(), null );
 
         for ( PolyEdge edge : edges ) {
             PolyNode node = nodes.get( i );
@@ -268,9 +269,9 @@ public class PolyPath extends GraphObject {
     @Slf4j
     public static class PolySegment extends GraphObject {
 
-        public final String sourceId;
-        public final String edgeId;
-        public final String targetId;
+        public final PolyString sourceId;
+        public final PolyString edgeId;
+        public final PolyString targetId;
         public final PolyNode source;
         public final PolyEdge edge;
         public final PolyNode target;
@@ -279,7 +280,7 @@ public class PolyPath extends GraphObject {
         public final EdgeDirection direction;
 
 
-        protected PolySegment( String sourceId, String edgeId, String targetId, EdgeDirection direction ) {
+        protected PolySegment( PolyString sourceId, PolyString edgeId, PolyString targetId, EdgeDirection direction ) {
             super( null, null, null, false );
             this.sourceId = sourceId;
             this.edgeId = edgeId;

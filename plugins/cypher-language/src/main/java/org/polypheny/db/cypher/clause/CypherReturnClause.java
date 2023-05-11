@@ -177,12 +177,12 @@ public class CypherReturnClause extends CypherClause {
 
         Integer skip = null;
         if ( this.skip != null ) {
-            skip = (Integer) this.skip.getComparable();
+            skip = this.skip.getComparable().asInteger().value;
         }
 
         Integer limit = null;
         if ( this.limit != null ) {
-            limit = (Integer) this.limit.getComparable();
+            limit = this.limit.getComparable().asInteger().value;
         }
 
         AlgTraitSet traitSet = node.getTraitSet().replace( collation );

@@ -348,7 +348,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
 
         final Map<ImmutableBitSet, Integer> filters = new LinkedHashMap<>();
         final int z = groupCount + distinctAggCalls.size();
-        distinctAggCalls.add( AggregateCall.create( (Operator & AggFunction) OperatorRegistry.getAgg( OperatorName.GROUPING ), false, false, ImmutableIntList.copyOf( fullGroupSet ), -1, AlgCollations.EMPTY, groupSets.size(), algBuilder.peek(), null, "$g" ) );
+        distinctAggCalls.add( AggregateCall.create( OperatorRegistry.getAgg( OperatorName.GROUPING ), false, false, ImmutableList.copyOf( fullGroupSet ), -1, AlgCollations.EMPTY, groupSets.size(), algBuilder.peek(), null, "$g" ) );
         for ( Ord<ImmutableBitSet> groupSet : Ord.zip( groupSets ) ) {
             filters.put( groupSet.e, z + groupSet.i );
         }
@@ -375,7 +375,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
             final AggFunction aggregation;
             if ( !aggCall.isDistinct() ) {
                 aggregation = OperatorRegistry.getAgg( OperatorName.MIN );
-                newArgList = ImmutableIntList.of( x++ );
+                newArgList = ImmutableIntList.copyOf( x++ );
                 newFilterArg = filters.get( aggregate.getGroupSet() );
             } else {
                 aggregation = aggCall.getAggregation();

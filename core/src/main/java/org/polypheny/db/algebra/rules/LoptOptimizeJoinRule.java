@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -72,7 +73,6 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.IntPair;
 
@@ -676,7 +676,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                     joinTree,
                     -1,
                     factorToAdd,
-                    ImmutableIntList.of(),
+                    ImmutableList.of(),
                     null,
                     filtersToAdd );
         }
@@ -1199,8 +1199,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         int nDimFields = dimFields.size();
         Integer[] replacementKeys = new Integer[nDimFields];
         SemiJoin semiJoin = multiJoin.getJoinRemovalSemiJoin( dimIdx );
-        ImmutableIntList dimKeys = semiJoin.getRightKeys();
-        ImmutableIntList factKeys = semiJoin.getLeftKeys();
+        ImmutableList<Integer> dimKeys = semiJoin.getRightKeys();
+        ImmutableList<Integer> factKeys = semiJoin.getLeftKeys();
         for ( int i = 0; i < dimKeys.size(); i++ ) {
             replacementKeys[dimKeys.get( i )] = factKeys.get( i ) + adjustment;
         }
@@ -1232,7 +1232,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * @param filtersToAdd filters remaining to be added; filters added to the new join tree are removed from the list
      * @return created join tree with an appropriate projection for the factor that can be removed
      */
-    private LoptJoinTree createReplacementJoin( AlgBuilder algBuilder, LoptMultiJoin multiJoin, LoptSemiJoinOptimizer semiJoinOpt, LoptJoinTree currJoinTree, int leftIdx, int factorToAdd, ImmutableIntList newKeys, Integer[] replacementKeys, List<RexNode> filtersToAdd ) {
+    private LoptJoinTree createReplacementJoin( AlgBuilder algBuilder, LoptMultiJoin multiJoin, LoptSemiJoinOptimizer semiJoinOpt, LoptJoinTree currJoinTree, int leftIdx, int factorToAdd, ImmutableList<Integer> newKeys, Integer[] replacementKeys, List<RexNode> filtersToAdd ) {
         // Create a projection, projecting the fields from the join tree containing the current joinRel and the new factor; for fields corresponding to join keys, replace them with the corresponding
         // key from the replacementKeys passed in; for other fields, just create a null expression as a placeholder for the column; this is done so we don't have to adjust the offsets of other
         // expressions that reference the new factor; the placeholder expression values should never be referenced, so that's why it's ok to create these possibly invalid expressions

@@ -370,7 +370,7 @@ public class SqlProcessorImpl extends Processor {
             namespaceId = snapshot.getNamespace( transaction.getDefaultSchema().name ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        catalogTable = snapshot.rel().getTable( namespaceId, tableOldName );
+        catalogTable = snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow();
         return catalogTable;
     }
 

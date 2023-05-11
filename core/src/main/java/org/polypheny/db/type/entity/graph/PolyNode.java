@@ -16,7 +16,6 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
@@ -24,14 +23,17 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
-import org.polypheny.db.runtime.PolyCollections;
-import org.polypheny.db.tools.ExpressionTransformable;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
 
 
 @Getter
-public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode>, ExpressionTransformable {
+public class PolyNode extends GraphPropertyHolder {
 
     @Getter
     @Setter
@@ -39,19 +41,13 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
     private boolean isVariable = false;
 
 
-    public PolyNode( @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String variableName ) {
-        this( UUID.randomUUID().toString(), properties, labels, variableName );
+    public PolyNode( @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString variableName ) {
+        this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, variableName );
     }
 
 
-    public PolyNode( String id, @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String variableName ) {
-        super( id, GraphObjectType.NODE, properties, labels, variableName );
-    }
-
-
-    @Override
-    public int compareTo( PolyNode o ) {
-        return id.compareTo( o.id );
+    public PolyNode( PolyString id, @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString variableName ) {
+        super( id, PolyType.NODE, properties, labels, variableName );
     }
 
 
@@ -72,12 +68,12 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
 
 
     @Override
-    public Expression getAsExpression() {
+    public Expression asExpression() {
         return Expressions.call( Expressions.convert_(
                 Expressions.new_(
                         PolyNode.class,
                         Expressions.constant( id ),
-                        properties.getAsExpression(),
+                        properties.asExpression(),
                         EnumUtils.constantArrayList( labels, String.class ),
                         Expressions.constant( getVariableName(), String.class ) ),
                 PolyNode.class
@@ -86,18 +82,34 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
 
 
     @Override
-    public void setLabels( PolyList labels ) {
+    public void setLabels( PolyList<PolyString> labels ) {
         this.labels.addAll( labels );
     }
 
 
-    public PolyNode copyNamed( String variableName ) {
+    public PolyNode copyNamed( PolyString variableName ) {
         if ( variableName == null ) {
             // no copy needed
             return this;
         }
         return new PolyNode( id, properties, labels, variableName );
 
+    }
+
+
+    @Override
+    public int compareTo( @NotNull PolyValue o ) {
+        if ( !isNode() ) {
+            return -1;
+        }
+
+        return id.compareTo( o.asNode().id );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), PolyNode.class );
     }
 
 }

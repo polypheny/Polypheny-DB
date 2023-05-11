@@ -61,7 +61,7 @@ public class BatchUpdateRequest {
                 Catalog catalog = Catalog.getInstance();
                 String[] split = tableId.split( "\\." );
                 LogicalColumn logicalColumn;
-                LogicalTable table = catalog.getSnapshot().rel().getTable( split[0], split[1] );
+                LogicalTable table = catalog.getSnapshot().rel().getTable( split[0], split[1] ).orElseThrow();
                 logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, entry.getKey() );
                 if ( fileName == null && value == null ) {
                     setClauses.add( String.format( "\"%s\"=NULL", entry.getKey() ) );

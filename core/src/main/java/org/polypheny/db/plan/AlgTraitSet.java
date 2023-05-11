@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.util.Pair;
 
 
@@ -487,10 +486,10 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
                 newTraits = ImmutableList.of( canonizedTrait );
                 break;
             case 1:
-                newTraits = FlatLists.of( traits[0], canonizedTrait );
+                newTraits = List.of( traits[0], canonizedTrait );
                 break;
             case 2:
-                newTraits = FlatLists.of( traits[0], traits[1], canonizedTrait );
+                newTraits = List.of( traits[0], traits[1], canonizedTrait );
                 break;
             default:
                 newTraits = ImmutableList.<AlgTrait>builder().add( traits ).add( canonizedTrait ).build();

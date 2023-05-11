@@ -41,7 +41,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.runtime.FlatLists;
 
 
 /**
@@ -78,7 +77,7 @@ public abstract class BiAlg extends AbstractAlgNode {
 
     @Override
     public List<AlgNode> getInputs() {
-        return FlatLists.of( left, right );
+        return List.of( left, right );
     }
 
 

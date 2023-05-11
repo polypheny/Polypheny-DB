@@ -801,15 +801,15 @@ public class RexToLixTranslator {
                 } else {
                     componentType = type;
                 }
-                value2 = ((List<RexLiteral>) literal.getValueAs( List.class )).stream().map( e -> translateLiteral( e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
+                value2 = literal.getValueAs( List.class ).stream().map( e -> translateLiteral( (RexLiteral) e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
                 javaClass = List.class;
                 break;
             case EDGE:
-                return literal.getValueAs( PolyEdge.class ).getAsExpression();
+                return literal.getValueAs( PolyEdge.class ).asExpression();
             case NODE:
-                return literal.getValueAs( PolyNode.class ).getAsExpression();
+                return literal.getValueAs( PolyNode.class ).asExpression();
             case PATH:
-                return literal.getValueAs( PolyPath.class ).getAsExpression();
+                return literal.getValueAs( PolyPath.class ).asExpression();
             case DOCUMENT:
                 return ((PolyValue) literal.getValue()).asExpression();
             default:

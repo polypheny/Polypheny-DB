@@ -74,7 +74,7 @@ public abstract class SqlDdl extends SqlCall {
             schemaId = context.getSnapshot().getNamespace( context.getDefaultSchemaName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        return context.getSnapshot().rel().getTable( schemaId, tableOldName );
+        return context.getSnapshot().rel().getTable( schemaId, tableOldName ).orElseThrow();
     }
 
 
@@ -83,14 +83,14 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected DataStore getDataStoreInstance( SqlIdentifier storeName ) {
-        Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
+    protected DataStore<?> getDataStoreInstance( SqlIdentifier storeName ) {
+        Adapter<?> adapterInstance = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
         if ( adapterInstance == null ) {
             throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
         // Make sure it is a data store instance
         if ( adapterInstance instanceof DataStore ) {
-            return (DataStore) adapterInstance;
+            return (DataStore<?>) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {
             throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
         } else {
@@ -99,14 +99,14 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected DataStore getDataStoreInstance( long storeId ) {
-        Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
+    protected DataStore<?> getDataStoreInstance( long storeId ) {
+        Adapter<?> adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
         if ( adapterInstance == null ) {
             throw new RuntimeException( "Unknown store id: " + storeId );
         }
         // Make sure it is a data store instance
         if ( adapterInstance instanceof DataStore ) {
-            return (DataStore) adapterInstance;
+            return (DataStore<?>) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {
             throw CoreUtil.newContextException( pos, RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
         } else {

@@ -49,7 +49,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 
 
@@ -58,14 +57,14 @@ import org.polypheny.db.util.Pair;
  */
 public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
-    EnumerableMergeJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    EnumerableMergeJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
         final List<AlgCollation> collations = traits.getTraits( AlgCollationTraitDef.INSTANCE );
         assert collations == null || AlgCollations.contains( collations, leftKeys );
     }
 
 
-    public static EnumerableMergeJoin create( AlgNode left, AlgNode right, RexLiteral condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinAlgType joinType ) throws InvalidAlgException {
+    public static EnumerableMergeJoin create( AlgNode left, AlgNode right, RexLiteral condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, JoinAlgType joinType ) throws InvalidAlgException {
         final AlgOptCluster cluster = right.getCluster();
         AlgTraitSet traitSet = cluster.traitSet();
         if ( traitSet.isEnabled( AlgCollationTraitDef.INSTANCE ) ) {

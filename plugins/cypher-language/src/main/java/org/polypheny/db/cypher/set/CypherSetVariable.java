@@ -30,8 +30,8 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Pair;
 
 @Getter
