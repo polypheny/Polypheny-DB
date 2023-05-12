@@ -23,11 +23,20 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+<<<<<<<< HEAD:core/src/main/java/org/polypheny/db/type/entity/PolyStream.java
 import org.polypheny.db.type.entity.category.PolyBlob;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
 public class PolyStream extends PolyBlob {
+========
+
+@EqualsAndHashCode(callSuper = true)
+@Value(staticConstructor = "of")
+public class PolyTime extends PolyValue {
+
+    long value;
+>>>>>>>> 6f52d9c23 (adjusting type handling during querying):core/src/main/java/org/polypheny/db/type/entity/PolyTime.java
 
 
     public InputStream value;
