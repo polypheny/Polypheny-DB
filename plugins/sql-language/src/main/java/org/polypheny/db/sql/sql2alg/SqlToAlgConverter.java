@@ -59,6 +59,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
@@ -227,7 +228,6 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.type.inference.TableFunctionReturnTypeInference;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.Litmus;
@@ -1045,7 +1045,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     final AlgDataType longType = typeFactory.createPolyType( PolyType.BIGINT );
                     final AlgNode seek = converted.r.getInput( 0 ); // fragile
                     final int keyCount = leftKeys.size();
-                    final List<Integer> args = ImmutableIntList.range( 0, keyCount );
+                    final List<Integer> args = IntStream.range( 0, keyCount ).boxed().collect( Collectors.toList() );
                     LogicalAggregate aggregate =
                             LogicalAggregate.create( seek, ImmutableBitSet.of(), null,
                                     ImmutableList.of(

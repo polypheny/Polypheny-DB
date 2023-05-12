@@ -108,7 +108,6 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
-import org.polypheny.db.catalog.snapshot.PhysicalSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
@@ -117,8 +116,8 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Enumerables;
-import org.polypheny.db.runtime.FlatList;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
@@ -129,9 +128,6 @@ import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.functions.MqlFunctions;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
@@ -167,14 +163,12 @@ public enum BuiltInMethod {
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
     SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
 
-    SNAPSHOT_GET_NAMESPACE( PhysicalSnapshot.class, "getNamespace", long.class, long.class ),
-
     SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrap", Class.class ),
-    SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),
+    /*SCHEMAS_ENUMERABLE_SCANNABLE( Schemas.class, "enumerable", ScannableEntity.class, DataContext.class ),
     SCHEMAS_ENUMERABLE_FILTERABLE( Schemas.class, "enumerable", FilterableEntity.class, DataContext.class ),
     SCHEMAS_ENUMERABLE_PROJECTABLE_FILTERABLE( Schemas.class, "enumerable", ProjectableFilterableEntity.class, DataContext.class ),
-    SCHEMAS_QUERYABLE( Schemas.class, "queryable", DataContext.class, Snapshot.class, Class.class, String.class ),
+    SCHEMAS_QUERYABLE( Schemas.class, "queryable", DataContext.class, Snapshot.class, Class.class, String.class ),*/
     REFLECTIVE_SCHEMA_GET_TARGET( ReflectiveSchema.class, "getTarget" ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
     DATA_CONTEXT_GET_PARAMETER_VALUE( DataContext.class, "getParameterValue", long.class ),
@@ -223,7 +217,7 @@ public enum BuiltInMethod {
     LIST4( List.class, "of", Object.class, Object.class, Object.class, Object.class ),
     LIST5( List.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class ),
     LIST6( List.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class, Object.class ),
-    COMPARABLE_EMPTY_LIST( FlatList.class, "of" ),
+    COMPARABLE_EMPTY_LIST( ComparableList.class, "of" ),
     IDENTITY_COMPARER( org.apache.calcite.linq4j.function.Functions.class, "identityComparer" ),
     IDENTITY_SELECTOR( org.apache.calcite.linq4j.function.Functions.class, "identitySelector" ),
     AS_ENUMERABLE( Linq4j.class, "asEnumerable", Object[].class ),

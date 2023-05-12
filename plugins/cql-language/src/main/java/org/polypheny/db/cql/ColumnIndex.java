@@ -48,11 +48,11 @@ public class ColumnIndex {
     }
 
 
-    public static ColumnIndex createIndex( String inDatabase, String schemaName, String tableName, String columnName ) {
+    public static ColumnIndex createIndex( String schemaName, String tableName, String columnName ) {
         log.debug( "Creating ColumnIndex." );
         Catalog catalog = Catalog.getInstance();
         LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
-        LogicalColumn column = catalog.getSnapshot().rel().getColumn( tableName, columnName );
+        LogicalColumn column = catalog.getSnapshot().rel().getColumn( namespace.id, tableName, columnName ).orElseThrow();
         return new ColumnIndex( column, schemaName, tableName, columnName );
     }
 

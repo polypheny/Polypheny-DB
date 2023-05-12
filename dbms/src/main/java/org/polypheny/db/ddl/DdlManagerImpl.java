@@ -52,8 +52,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -168,11 +168,6 @@ public class DdlManagerImpl extends DdlManager {
         } else {
             throw new GenericRuntimeException( "Unknown kind of adapter: %s", adapterInstance.getClass().getName() );
         }
-    }
-
-
-    private LogicalColumn getCatalogColumn( long tableId, String columnName ) {
-        return catalog.getSnapshot().rel().getColumn( tableId, columnName );
     }
 
 
@@ -345,12 +340,14 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addColumnToSourceTable( LogicalTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement ) {
 
-        if ( catalog.getSnapshot().rel().checkIfExistsColumn( catalogTable.id, columnLogicalName ) ) {
+        if ( catalog.getSnapshot().rel().getColumn( catalogTable.id, columnLogicalName ).isEmpty() ) {
             throw new GenericRuntimeException( "There exist already a column with name %s on table %s", columnLogicalName, catalogTable.name );
         }
 
-        LogicalColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.id, beforeColumnName );
-        LogicalColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
+        LogicalColumn beforeColumn;
+        beforeColumn = beforeColumnName == null ? null : catalog.getSnapshot().rel().getColumn( catalogTable.id, beforeColumnName ).orElseThrow();
+        LogicalColumn afterColumn;
+        afterColumn = afterColumnName == null ? null : catalog.getSnapshot().rel().getColumn( catalogTable.id, afterColumnName ).orElseThrow();
 
         // Make sure that the table is of table type SOURCE
         if ( catalogTable.entityType != EntityType.SOURCE ) {
@@ -450,12 +447,14 @@ public class DdlManagerImpl extends DdlManager {
             throw new GenericRuntimeException( "Column is not nullable and does not have a default value defined." );
         }
 
-        if ( catalog.getSnapshot().rel().checkIfExistsColumn( catalogTable.id, columnName ) ) {
+        if ( catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).isEmpty() ) {
             throw new GenericRuntimeException( "There already exists a column with name %s on table %s", columnName, catalogTable.name );
         }
         //
-        LogicalColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.id, beforeColumnName );
-        LogicalColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
+        LogicalColumn beforeColumn;
+        beforeColumn = beforeColumnName == null ? null : catalog.getSnapshot().rel().getColumn( catalogTable.id, beforeColumnName ).orElseThrow();
+        LogicalColumn afterColumn;
+        afterColumn = afterColumnName == null ? null : catalog.getSnapshot().rel().getColumn( catalogTable.id, afterColumnName ).orElseThrow();
 
         int position = updateAdjacentPositions( catalogTable, beforeColumn, afterColumn );
 
@@ -504,12 +503,12 @@ public class DdlManagerImpl extends DdlManager {
 
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
         List<Long> referencesIds = new LinkedList<>();
         for ( String columnName : refColumnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( refTable.id, columnName );
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( refTable.id, columnName ).orElseThrow();
             referencesIds.add( logicalColumn.id );
         }
         catalog.getLogicalRel( catalogTable.namespaceId ).addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
@@ -520,7 +519,7 @@ public class DdlManagerImpl extends DdlManager {
     public void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException {
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
 
@@ -532,7 +531,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check if there is already an index with this name for this table
-        if ( catalog.getSnapshot().rel().checkIfExistsIndex( catalogTable.id, indexName ) ) {
+        if ( catalog.getSnapshot().rel().getIndex( catalogTable.id, indexName ).isPresent() ) {
             throw new GenericRuntimeException( "There exist already an index with the name %s", indexName );
         }
 
@@ -580,7 +579,7 @@ public class DdlManagerImpl extends DdlManager {
                             String name = indexName + "_" + loc.getUniqueName();
                             String nameSuffix = "";
                             int counter = 0;
-                            while ( catalog.getSnapshot().rel().checkIfExistsIndex( catalogTable.id, name + nameSuffix ) ) {
+                            while ( catalog.getSnapshot().rel().getIndex( catalogTable.id, name + nameSuffix ).isPresent() ) {
                                 nameSuffix = counter++ + "";
                             }
                             addDataStoreIndex( catalogTable, indexMethodName, name + nameSuffix, isUnique, loc, statement, columnIds, type );
@@ -647,7 +646,7 @@ public class DdlManagerImpl extends DdlManager {
         indexName = indexName.toLowerCase();
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
 
@@ -659,7 +658,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check if there is already an index with this name for this table
-        if ( catalog.getSnapshot().rel().checkIfExistsIndex( catalogTable.id, indexName ) ) {
+        if ( catalog.getSnapshot().rel().getIndex( catalogTable.id, indexName ).isPresent() ) {
             throw new GenericRuntimeException( "The already exists an index with this name %s", indexName );
         }
 
@@ -798,7 +797,7 @@ public class DdlManagerImpl extends DdlManager {
             addedColumns.add( catalog.getSnapshot().rel().getColumn( cid ).orElseThrow() );
         }
         // Check if placement includes primary key columns
-        LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+        LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
         for ( long cid : primaryKey.columnIds ) {
             if ( !columnIds.contains( cid ) ) {
                 catalog.getAllocRel( catalogTable.namespaceId ).addColumn(
@@ -841,11 +840,11 @@ public class DdlManagerImpl extends DdlManager {
 
         checkModelLogic( catalogTable );
 
-        LogicalPrimaryKey oldPk = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+        LogicalPrimaryKey oldPk = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElse( null );
 
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
         catalog.getLogicalRel( catalogTable.namespaceId ).addPrimaryKey( catalogTable.id, columnIds );
@@ -882,7 +881,7 @@ public class DdlManagerImpl extends DdlManager {
 
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
         catalog.getLogicalRel( catalogTable.namespaceId ).addUniqueConstraint( catalogTable.id, constraintName, columnIds );
@@ -903,7 +902,7 @@ public class DdlManagerImpl extends DdlManager {
         //check if views are dependent from this table
         checkViewDependencies( catalogTable );
 
-        LogicalColumn column = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn column = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         LogicalRelSnapshot snapshot = catalog.getSnapshot().rel();
 
@@ -967,7 +966,7 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
-        CatalogConstraint constraint = catalog.getSnapshot().rel().getConstraint( catalogTable.id, constraintName );
+        LogicalConstraint constraint = catalog.getSnapshot().rel().getConstraint( catalogTable.id, constraintName ).orElseThrow();
         catalog.getLogicalRel( catalogTable.namespaceId ).deleteConstraint( constraint.id );
     }
 
@@ -981,7 +980,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", catalogTable.name );
         }
 
-        LogicalForeignKey foreignKey = catalog.getSnapshot().rel().getForeignKey( catalogTable.id, foreignKeyName );
+        LogicalForeignKey foreignKey = catalog.getSnapshot().rel().getForeignKey( catalogTable.id, foreignKeyName ).orElseThrow();
         catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
     }
 
@@ -991,7 +990,7 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
 
-        LogicalIndex index = catalog.getSnapshot().rel().getIndex( catalogTable.id, indexName );
+        LogicalIndex index = catalog.getSnapshot().rel().getIndex( catalogTable.id, indexName ).orElseThrow();
 
         if ( index.location == 0 ) {
             IndexManager.getInstance().deleteIndex( index );
@@ -1064,7 +1063,7 @@ public class DdlManagerImpl extends DdlManager {
         // check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         catalog.getLogicalRel( catalogTable.namespaceId ).setColumnType(
                 logicalColumn.id,
@@ -1089,7 +1088,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnNullable( LogicalTable catalogTable, String columnName, boolean nullable, Statement statement ) {
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.entityType );
@@ -1109,15 +1108,15 @@ public class DdlManagerImpl extends DdlManager {
         // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         int targetPosition;
         LogicalColumn refColumn;
         if ( beforeColumnName != null ) {
-            refColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
+            refColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, beforeColumnName ).orElseThrow();
             targetPosition = refColumn.position;
         } else {
-            refColumn = getCatalogColumn( catalogTable.id, afterColumnName );
+            refColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, afterColumnName ).orElseThrow();
             targetPosition = refColumn.position + 1;
         }
         if ( logicalColumn.id == refColumn.id ) {
@@ -1157,7 +1156,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnCollation( LogicalTable catalogTable, String columnName, Collation collation, Statement statement ) {
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
@@ -1174,7 +1173,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setDefaultValue( LogicalTable catalogTable, String columnName, String defaultValue, Statement statement ) {
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = (LogicalColumn) catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
@@ -1188,7 +1187,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropDefaultValue( LogicalTable catalogTable, String columnName, Statement statement ) {
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = (LogicalColumn) catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         // check if model permits operation
         checkModelLogic( catalogTable, columnName );
@@ -1226,7 +1225,7 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
                 // Check whether the column is a primary key column
-                LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey );
+                LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
                 if ( primaryKey.columnIds.contains( placement.columnId ) ) {
                     // Check if the placement type is manual. If so, change to automatic
                     if ( placement.placementType == PlacementType.MANUAL ) {
@@ -1458,7 +1457,7 @@ public class DdlManagerImpl extends DdlManager {
                 .getEntity( storeInstance.getAdapterId(), catalogTable.id )
                 .orElseThrow( () -> new GenericRuntimeException( "The requested placement does not exist" ) );
 
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         // Make sure that this store does not contain a placement of this column
         if ( catalog.getSnapshot().alloc().getColumn( storeInstance.getAdapterId(), logicalColumn.id ).isPresent() ) {
@@ -1503,7 +1502,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new GenericRuntimeException( "The placement already exists" );
         }
 
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
         // Check whether this store actually contains a placement of this column
         if ( catalog.getSnapshot().alloc().getColumn( storeInstance.getAdapterId(), logicalColumn.id ).isEmpty() ) {
@@ -1521,7 +1520,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check whether the column to drop is a primary key
-        LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+        LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
         if ( primaryKey.columnIds.contains( logicalColumn.id ) ) {
             throw new GenericRuntimeException( "Cannot drop primary key" );
         }
@@ -1564,9 +1563,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement ) {
-        LogicalColumn logicalColumn = getCatalogColumn( catalogTable.id, columnName );
+        LogicalColumn logicalColumn = (LogicalColumn) catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
 
-        if ( catalog.getSnapshot().rel().checkIfExistsColumn( logicalColumn.tableId, newColumnName ) ) {
+        if ( catalog.getSnapshot().rel().getColumn( logicalColumn.tableId, newColumnName ).isEmpty() ) {
             throw new GenericRuntimeException( "There already exists a column with name %s on table %s", newColumnName, logicalColumn.getTableName() );
         }
         // Check if views are dependent from this view
@@ -2222,7 +2221,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addPartitioning( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
-        LogicalColumn logicalColumn = snapshot.rel().getColumn( partitionInfo.table.id, partitionInfo.columnName );
+        LogicalColumn logicalColumn = snapshot.rel().getColumn( partitionInfo.table.id, partitionInfo.columnName ).orElseThrow();
 
         PartitionType actualPartitionType = PartitionType.getByName( partitionInfo.typeName );
 
@@ -2413,7 +2412,7 @@ public class DdlManagerImpl extends DdlManager {
         // Get primary key of table and use PK to find all DataPlacements of table
         long pkid = partitionInfo.table.primaryKey;
         LogicalRelSnapshot relSnapshot = catalog.getSnapshot().rel();
-        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).columnIds;
+        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().columnIds;
         // Basically get first part of PK even if its compound of PK it is sufficient
         LogicalColumn pkColumn = relSnapshot.getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
         // This gets us only one ccp per store (first part of PK)
@@ -2534,7 +2533,7 @@ public class DdlManagerImpl extends DdlManager {
         List<DataStore<?>> stores = new ArrayList<>();
         // Get primary key of table and use PK to find all DataPlacements of table
         long pkid = partitionedTable.primaryKey;
-        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).columnIds;
+        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().columnIds;
         // Basically get first part of PK even if its compound of PK it is sufficient
         LogicalColumn pkColumn = relSnapshot.getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
         // This gets us only one ccp per store (first part of PK)
@@ -2847,7 +2846,7 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getLogicalRel( catalogTable.namespaceId ).deleteForeignKey( foreignKey.id );
         }
         // Delete all constraints of the table
-        for ( CatalogConstraint constraint : relSnapshot.getConstraints( catalogTable.id ) ) {
+        for ( LogicalConstraint constraint : relSnapshot.getConstraints( catalogTable.id ) ) {
             catalog.getLogicalRel( catalogTable.namespaceId ).deleteConstraint( constraint.id );
         }
 
@@ -2905,7 +2904,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // delete constraints
-        for ( CatalogConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
+        for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
             catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
         }
 

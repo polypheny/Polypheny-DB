@@ -194,7 +194,7 @@ public class CqlQueryBuilder {
 
         String fullyQualifiedColumnName = schemaName + "." + tableName + "." + columnName;
         if ( !columnIndexMapping.containsKey( fullyQualifiedColumnName ) ) {
-            ColumnIndex columnIndex = ColumnIndex.createIndex( databaseName, schemaName, tableName, columnName );
+            ColumnIndex columnIndex = ColumnIndex.createIndex( schemaName, tableName, columnName );
             columnIndexMapping.put( columnIndex.fullyQualifiedName, columnIndex );
         }
 

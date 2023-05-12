@@ -529,7 +529,7 @@ public class DbmsMeta implements ProtobufMeta {
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey );
+                    final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }

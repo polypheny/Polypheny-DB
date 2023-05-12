@@ -42,12 +42,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -75,6 +74,8 @@ import org.polypheny.db.util.Pair;
 /**
  * Utility functions for schemas.
  */
+@Slf4j
+@Deprecated
 public final class Schemas {
 
     private Schemas() {
@@ -116,7 +117,7 @@ public final class Schemas {
      */
     public static Expression subSchemaExpression( StoreCatalog snapshot, long id, Long adapterId, Class<?> type ) {
         // (Type) schemaExpression.getSubSchema("name")
-        final Expression schemaExpression = expression( snapshot );
+        /*final Expression schemaExpression = expression( snapshot );
         Expression call =
                 Expressions.call(
                         schemaExpression,
@@ -125,7 +126,9 @@ public final class Schemas {
         if ( type != null && !type.isAssignableFrom( Namespace.class ) ) {
             return unwrap( call, type );
         }
-        return call;
+        return call;*/
+        log.warn( "should not longer be used" );
+        return null;
     }
 
 
@@ -141,7 +144,7 @@ public final class Schemas {
      * Returns the expression to access a table within a schema.
      */
     public static Expression tableExpression( RelStoreCatalog snapshot, Type elementType, String tableName, Class<?> clazz ) {
-        final MethodCallExpression expression;
+        /*final MethodCallExpression expression;
         if ( Entity.class.isAssignableFrom( clazz ) ) {
             expression = Expressions.call(
                     expression( snapshot ),
@@ -173,7 +176,8 @@ public final class Schemas {
                     Expressions.constant( elementType ),
                     Expressions.constant( tableName ) );
         }
-        return Types.castIfNecessary( clazz, expression );
+        return Types.castIfNecessary( clazz, expression );*/
+        return null;
     }
 
 

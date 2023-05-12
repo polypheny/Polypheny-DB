@@ -228,7 +228,7 @@ public final class BitSets {
      * @param bits Collection of bits to set
      * @return Bit set
      */
-    public static BitSet of( ImmutableIntList bits ) {
+    public static BitSet of( ImmutableList<Integer> bits ) {
         final BitSet bitSet = new BitSet();
         for ( Integer bit : bits ) {
             bitSet.set( bit );
@@ -345,9 +345,9 @@ public final class BitSets {
 
 
     /**
-     * Populates a {@link BitSet} from an {@link ImmutableIntList}.
+     * Populates a {@link BitSet} from an .
      */
-    public static void populate( BitSet bitSet, ImmutableIntList list ) {
+    public static void populate( BitSet bitSet, ImmutableList<Integer> list ) {
         for ( Integer integer : list ) {
             bitSet.set( integer );
         }

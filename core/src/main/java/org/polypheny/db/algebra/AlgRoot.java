@@ -45,7 +45,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
-import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -134,7 +134,7 @@ public class AlgRoot {
      * Creates a simple RelRoot.
      */
     public static AlgRoot of( AlgNode alg, AlgDataType rowType, Kind kind ) {
-        final ImmutableIntList refs = ImmutableIntList.identity( rowType.getFieldCount() );
+        final ImmutableList<Integer> refs = PolyTypeUtil.identity( rowType.getFieldCount() );
         final List<String> names = rowType.getFieldNames();
         return new AlgRoot( alg, rowType, kind, Pair.zip( refs, names ),
                 AlgCollations.EMPTY );

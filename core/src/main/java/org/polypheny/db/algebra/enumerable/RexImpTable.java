@@ -94,7 +94,6 @@ import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
 
@@ -1242,7 +1241,7 @@ public class RexImpTable {
                 case GROUP_ID: // "GROUP_ID()"
                     // We don't implement GROUP_ID properly. In most circumstances, it returns 0, so we always return 0. Logged
                     // [POLYPHENYDB-1824] GROUP_ID returns wrong result
-                    keys = ImmutableIntList.of();
+                    keys = ImmutableList.of();
                     break;
                 default:
                     throw new AssertionError();

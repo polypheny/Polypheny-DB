@@ -56,7 +56,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -72,7 +71,7 @@ public final class MultiJoin extends AbstractAlgNode {
     private final List<RexNode> outerJoinConditions;
     private final ImmutableList<JoinAlgType> joinTypes;
     private final List<ImmutableBitSet> projFields;
-    public final ImmutableMap<Integer, ImmutableIntList> joinFieldRefCountsMap;
+    public final ImmutableMap<Integer, ImmutableList<Integer>> joinFieldRefCountsMap;
     private final RexNode postJoinFilter;
 
 
@@ -90,7 +89,7 @@ public final class MultiJoin extends AbstractAlgNode {
      * @param joinFieldRefCountsMap counters of the number of times each field is referenced in join conditions, indexed by the input #
      * @param postJoinFilter filter to be applied after the joins are
      */
-    public MultiJoin( AlgOptCluster cluster, List<AlgNode> inputs, RexNode joinFilter, AlgDataType rowType, boolean isFullOuterJoin, List<RexNode> outerJoinConditions, List<JoinAlgType> joinTypes, List<ImmutableBitSet> projFields, ImmutableMap<Integer, ImmutableIntList> joinFieldRefCountsMap, RexNode postJoinFilter ) {
+    public MultiJoin( AlgOptCluster cluster, List<AlgNode> inputs, RexNode joinFilter, AlgDataType rowType, boolean isFullOuterJoin, List<RexNode> outerJoinConditions, List<JoinAlgType> joinTypes, List<ImmutableBitSet> projFields, ImmutableMap<Integer, ImmutableList<Integer>> joinFieldRefCountsMap, RexNode postJoinFilter ) {
         super( cluster, cluster.traitSetOf( Convention.NONE ) );
         this.inputs = Lists.newArrayList( inputs );
         this.joinFilter = joinFilter;
@@ -134,7 +133,7 @@ public final class MultiJoin extends AbstractAlgNode {
     private Map<Integer, int[]> cloneJoinFieldRefCountsMap() {
         Map<Integer, int[]> clonedMap = new HashMap<>();
         for ( int i = 0; i < inputs.size(); i++ ) {
-            clonedMap.put( i, joinFieldRefCountsMap.get( i ).toIntArray() );
+            clonedMap.put( i, joinFieldRefCountsMap.get( i ).stream().mapToInt( j -> j ).toArray() );
         }
         return clonedMap;
     }
@@ -273,7 +272,7 @@ public final class MultiJoin extends AbstractAlgNode {
     /**
      * @return the map of reference counts for each input, representing the fields accessed in join conditions
      */
-    public ImmutableMap<Integer, ImmutableIntList> getJoinFieldRefCountsMap() {
+    public ImmutableMap<Integer, ImmutableList<Integer>> getJoinFieldRefCountsMap() {
         return joinFieldRefCountsMap;
     }
 

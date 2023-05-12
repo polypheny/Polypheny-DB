@@ -485,6 +485,11 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public boolean isNumber() {
+        return PolyType.NUMERIC_TYPES.contains( type );
+    }
+
+
     public static class PolyValueSerializerDef extends SimpleSerializerDef<PolyValue> {
 
         @Override

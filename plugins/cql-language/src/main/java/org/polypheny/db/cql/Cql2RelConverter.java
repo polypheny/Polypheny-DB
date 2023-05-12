@@ -43,7 +43,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 
 
@@ -105,7 +105,7 @@ public class Cql2RelConverter {
 
         final AlgDataType rowType = algNode.getRowType();
         final List<Pair<Integer, String>> fields =
-                Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+                Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation

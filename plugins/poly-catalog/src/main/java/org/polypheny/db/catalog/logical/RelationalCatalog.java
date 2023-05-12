@@ -40,8 +40,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
@@ -100,7 +100,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Serialize
     @Getter
-    public Map<Long, CatalogConstraint> constraints;
+    public Map<Long, LogicalConstraint> constraints;
 
 
     public IdBuilder idBuilder = IdBuilder.getInstance();
@@ -119,7 +119,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             @Deserialize("columns") Map<Long, LogicalColumn> columns,
             @Deserialize("indexes") Map<Long, LogicalIndex> indexes,
             @Deserialize("keys") Map<Long, LogicalKey> keys,
-            @Deserialize("constraints") Map<Long, CatalogConstraint> constraints,
+            @Deserialize("constraints") Map<Long, LogicalConstraint> constraints,
             @Deserialize("nodes") Map<Long, AlgNode> nodes ) {
         this.logicalNamespace = logicalNamespace;
 
@@ -249,11 +249,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     private long getOrAddKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
-        LogicalKey key = Catalog.snapshot().rel().getKeys( columnIds.stream().mapToLong( Long::longValue ).toArray() );
-        if ( key != null ) {
-            return key.id;
-        }
-        return addKey( tableId, columnIds, enforcementTime );
+        return Catalog.snapshot()
+                .rel()
+                .getKeys( columnIds.stream().mapToLong( Long::longValue ).toArray() )
+                .map( k -> k.id )
+                .orElse( addKey( tableId, columnIds, enforcementTime ) );
     }
 
 
@@ -416,13 +416,13 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     private int getKeyUniqueCount( long keyId ) {
-        LogicalKey key = Catalog.snapshot().rel().getKey( keyId );
+        //LogicalKey key = Catalog.snapshot().rel().getKey( keyId );
         int count = 0;
-        if ( Catalog.snapshot().rel().getPrimaryKey( keyId ) != null ) {
+        if ( Catalog.snapshot().rel().getPrimaryKey( keyId ).isPresent() ) {
             count++;
         }
 
-        for ( CatalogConstraint constraint : constraints.values().stream().filter( c -> c.keyId == keyId ).collect( Collectors.toList() ) ) {
+        for ( LogicalConstraint constraint : constraints.values().stream().filter( c -> c.keyId == keyId ).collect( Collectors.toList() ) ) {
             if ( constraint.type == ConstraintType.UNIQUE ) {
                 count++;
             }
@@ -488,15 +488,15 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         // Check if there is already a unique constraint
-        List<CatalogConstraint> catalogConstraints = constraints.values().stream()
+        List<LogicalConstraint> logicalConstraints = constraints.values().stream()
                 .filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE )
                 .collect( Collectors.toList() );
-        if ( catalogConstraints.size() > 0 ) {
+        if ( logicalConstraints.size() > 0 ) {
             throw new GenericRuntimeException( "There is already a unique constraint!" );
         }
         long id = idBuilder.getNewConstraintId();
         synchronized ( this ) {
-            constraints.put( id, new CatalogConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
+            constraints.put( id, new LogicalConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
         }
     }
 
@@ -533,17 +533,17 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void deleteConstraint( long constraintId ) {
-        CatalogConstraint catalogConstraint = Objects.requireNonNull( constraints.get( constraintId ) );
+        LogicalConstraint logicalConstraint = Objects.requireNonNull( constraints.get( constraintId ) );
         //CatalogCombinedKey key = getCombinedKey( catalogConstraint.keyId );
-        if ( catalogConstraint.type == ConstraintType.UNIQUE && isForeignKey( catalogConstraint.keyId ) ) {
-            if ( getKeyUniqueCount( catalogConstraint.keyId ) < 2 ) {
+        if ( logicalConstraint.type == ConstraintType.UNIQUE && isForeignKey( logicalConstraint.keyId ) ) {
+            if ( getKeyUniqueCount( logicalConstraint.keyId ) < 2 ) {
                 throw new GenericRuntimeException( "This key is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
             }
         }
         synchronized ( this ) {
-            constraints.remove( catalogConstraint.id );
+            constraints.remove( logicalConstraint.id );
         }
-        deleteKeyIfNoLongerUsed( catalogConstraint.keyId );
+        deleteKeyIfNoLongerUsed( logicalConstraint.keyId );
 
     }
 

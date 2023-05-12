@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -66,7 +67,6 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.DefaultDirectedGraph;
 import org.polypheny.db.util.graph.DefaultEdge;
@@ -365,7 +365,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
             for ( int i : TopologicalOrderIterator.of( graph ) ) {
                 rankArr[i] = rank++;
             }
-            return ImmutableIntList.of( rankArr );
+            return Arrays.stream( rankArr ).boxed().collect( Collectors.toCollection( ImmutableList::of ) );
         }
 
 

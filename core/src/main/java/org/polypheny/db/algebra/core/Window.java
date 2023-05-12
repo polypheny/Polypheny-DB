@@ -62,7 +62,7 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot;
 import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.runtime.FlatList;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
@@ -153,8 +153,8 @@ public abstract class Window extends SingleAlg {
     }
 
 
-    public static FlatList<Integer> getProjectOrdinals( final List<RexNode> exprs ) {
-        return FlatList.copyOf(
+    public static ComparableList<Integer> getProjectOrdinals( final List<RexNode> exprs ) {
+        return ComparableList.copyOf(
                 new AbstractList<Integer>() {
                     @Override
                     public Integer get( int index ) {

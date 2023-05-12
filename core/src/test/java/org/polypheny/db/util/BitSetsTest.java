@@ -41,12 +41,15 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.junit.Test;
+import org.polypheny.db.runtime.ComparableList;
 
 
 /**
@@ -184,14 +187,14 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link org.polypheny.db.util.BitSets#of(ImmutableIntList)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#of()}.
      */
     @Test
     public void testBitSetOfImmutableIntList() {
-        ImmutableIntList list = ImmutableIntList.of();
+        List<Integer> list = ImmutableList.of();
         assertThat( BitSets.of( list ), equalTo( new BitSet() ) );
 
-        list = ImmutableIntList.of( 2, 70, 5, 0 );
+        list = ComparableList.of( 2, 70, 5, 0 );
         assertThat( BitSets.of( list ), equalTo( BitSets.of( 0, 2, 5, 70 ) ) );
     }
 

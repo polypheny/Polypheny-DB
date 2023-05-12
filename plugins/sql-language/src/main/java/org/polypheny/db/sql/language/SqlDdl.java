@@ -79,7 +79,7 @@ public abstract class SqlDdl extends SqlCall {
 
 
     protected LogicalColumn getCatalogColumn( Context context, long tableId, SqlIdentifier columnName ) {
-        return context.getSnapshot().rel().getColumn( tableId, columnName.getSimple() );
+        return context.getSnapshot().rel().getColumn( tableId, columnName.getSimple() ).orElseThrow();
     }
 
 

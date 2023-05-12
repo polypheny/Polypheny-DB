@@ -159,7 +159,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
      * @param bits Collection of bits to set
      * @return Bit set
      */
-    public static ImmutableBitSet of( ImmutableIntList bits ) {
+    public static ImmutableBitSet of( ImmutableList<Integer> bits ) {
         return builder().addAll( bits ).build();
     }
 
@@ -1142,8 +1142,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
         /**
          * Sets all bits in a given list of {@code int}s.
          */
-        public Builder addAll( ImmutableIntList integers ) {
-            //noinspection ForLoopReplaceableByForEach
+        public Builder addAll( ImmutableList<Integer> integers ) {
             for ( int i = 0; i < integers.size(); i++ ) {
                 set( integers.get( i ) );
             }

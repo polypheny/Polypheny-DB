@@ -53,9 +53,9 @@ public class FilterTest extends AlgBuildTestHelper {
     @Test(expected = RuntimeException.class)
     public void testColumnFilterThrowsNotImplementedRuntimeException() throws UnknownIndexException {
         ColumnFilter columnFilter = new ColumnFilter(
-                ColumnIndex.createIndex( "APP", "test", "dept", "deptno" ),
+                ColumnIndex.createIndex( "test", "dept", "deptno" ),
                 new Relation( Comparator.EQUALS ),
-                ColumnIndex.createIndex( "APP", "test", "employee", "deptno" )
+                ColumnIndex.createIndex( "test", "employee", "deptno" )
         );
         columnFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
     }
@@ -64,7 +64,7 @@ public class FilterTest extends AlgBuildTestHelper {
     @Test
     public void testLiteralFilter() throws UnknownIndexException {
         LiteralFilter literalFilter = new LiteralFilter(
-                ColumnIndex.createIndex( "APP", "test", "employee", "deptno" ),
+                ColumnIndex.createIndex( "test", "employee", "deptno" ),
                 new Relation( Comparator.EQUALS ),
                 "1"
         );

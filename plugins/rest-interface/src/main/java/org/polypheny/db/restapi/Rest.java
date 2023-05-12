@@ -71,10 +71,10 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -133,7 +133,7 @@ public class Rest {
 
         // Wrap {@link AlgNode} into a RelRoot
         final AlgDataType rowType = algNode.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
@@ -192,7 +192,7 @@ public class Rest {
 
         // Wrap {@link AlgNode} into a RelRoot
         final AlgDataType rowType = modify.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
@@ -243,7 +243,7 @@ public class Rest {
 
         // Wrap {@link AlgNode} into a RelRoot
         final AlgDataType rowType = modify.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
@@ -298,7 +298,7 @@ public class Rest {
 
         // Wrap {@link AlgNode} into a RelRoot
         final AlgDataType rowType = modify.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation

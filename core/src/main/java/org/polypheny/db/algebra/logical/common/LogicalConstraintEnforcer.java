@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
@@ -97,7 +97,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
 
         EnforcementTime enforcementTime = EnforcementTime.ON_QUERY;
-        final List<CatalogConstraint> constraints = new ArrayList<>( snapshot.getConstraints( table.id ) )
+        final List<LogicalConstraint> constraints = new ArrayList<>( snapshot.getConstraints( table.id ) )
                 .stream()
                 .filter( f -> f.key.enforcementTime == enforcementTime )
                 .collect( Collectors.toCollection( ArrayList::new ) );
@@ -113,9 +113,9 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 .collect( Collectors.toList() );
 
         // Turn primary key into an artificial unique constraint
-        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
+        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
         if ( pk.enforcementTime == enforcementTime ) {
-            final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+            final LogicalConstraint pkc = new LogicalConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
         }
 
@@ -130,7 +130,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( (modify.isInsert() || modify.isMerge() || modify.isUpdate()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             //builder.scan( table.getNamespaceName(), table.name );
-            for ( CatalogConstraint constraint : constraints ) {
+            for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
                 builder.push( scan );
@@ -225,7 +225,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         final RexBuilder rexBuilder = builder.getRexBuilder();
         LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
 
-        final List<CatalogConstraint> constraints = snapshot
+        final List<LogicalConstraint> constraints = snapshot
                 .getConstraints( table.id )
                 .stream()
                 .filter( c -> c.key.enforcementTime == enforcementTime )
@@ -240,9 +240,9 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 .collect( Collectors.toCollection( ArrayList::new ) );
 
         // Turn primary key into an artificial unique constraint
-        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
+        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
         if ( pk.enforcementTime == enforcementTime ) {
-            final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+            final LogicalConstraint pkc = new LogicalConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
         }
 
@@ -257,7 +257,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             //builder.scan( table.getNamespaceName(), table.name );
-            for ( CatalogConstraint constraint : constraints ) {
+            for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
                 builder.scan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
                 // Enforce uniqueness between the already existing values and the new values

@@ -63,7 +63,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatList;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -758,7 +758,7 @@ public class BsonUtil {
             case BOOLEAN:
                 return value.asBoolean().getValue();
             case ARRAY:
-                return FlatList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).collect( Collectors.toList() ).listIterator() );
+                return ComparableList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).collect( Collectors.toList() ).listIterator() );
             case DOCUMENT:
                 FlatMap<String, Comparable<?>> map = new FlatMap<>();
                 value.asDocument().forEach( ( key, val ) -> map.put( key, getUnderlyingValue( val ) ) );

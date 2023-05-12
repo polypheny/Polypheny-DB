@@ -16,10 +16,8 @@
 
 package org.polypheny.db.cypher.helper;
 
-import static org.junit.Assert.fail;
 import static org.polypheny.db.runtime.functions.Functions.toBigDecimal;
 
-import com.google.gson.Gson;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +25,9 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.util.Pair;
 
@@ -35,19 +36,19 @@ public class TestGraphObject implements TestObject {
     public static double EPSILON = 0.2;
 
     @Nullable
-    final String id;
+    final PolyString id;
 
     @Nullable
-    final Map<String, Object> properties;
+    final Map<PolyString, PolyValue> properties;
 
     @Nullable
-    final List<String> labels;
+    final PolyList<PolyString> labels;
 
 
-    public TestGraphObject( @Nullable String id, @Nullable Map<String, Object> properties, @Nullable List<String> labels ) {
-        this.id = id;
+    public TestGraphObject( @Nullable String id, @Nullable Map<PolyString, PolyValue> properties, @Nullable List<PolyString> labels ) {
+        this.id = PolyString.of( id );
         this.properties = properties;
-        this.labels = labels;
+        this.labels = PolyList.of( labels );
     }
 
 
@@ -84,27 +85,18 @@ public class TestGraphObject implements TestObject {
             if ( exclusive ) {
                 matches &= properties.size() == other.properties.size();
             }
-            for ( Entry<String, Object> entry : properties.entrySet() ) {
+            for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
                 if ( other.properties.containsKey( entry.getKey() ) ) {
-                    if ( entry.getValue() instanceof List ) {
+                    if ( entry.getValue().isList() ) {
                         int i = 0;
-                        List<?> list;
-                        Object property = other.properties.get( entry.getKey() );
+                        PolyList<PolyString> list = entry.getValue().asList();
+                        PolyValue property = other.properties.get( entry.getKey() );
 
-                        if ( property instanceof List ) {
-                            list = (List<?>) property;
-                        } else if ( property instanceof String ) {
-                            list = new Gson().fromJson( (String) other.properties.get( entry.getKey() ), List.class );
-                        } else {
-                            fail( "comparison with list is not possible" );
-                            throw new RuntimeException();
-                        }
-
-                        for ( Object o : list ) {
+                        for ( PolyValue o : list ) {
                             matches &= o.equals( ((List<?>) properties.get( entry.getKey() )).get( i ) );
                             i++;
                         }
-                    } else if ( entry.getValue() instanceof Number || other.properties.get( entry.getKey() ) instanceof Number ) {
+                    } else if ( entry.getValue().isNumber() || other.properties.get( entry.getKey() ).isNumber() ) {
                         matches &=
                                 toBigDecimal( other.properties.get( entry.getKey() ).toString() ).doubleValue()
                                         - toBigDecimal( entry.getValue().toString() ).doubleValue() < EPSILON;

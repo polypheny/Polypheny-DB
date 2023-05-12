@@ -141,6 +141,7 @@ public final class LogicalForeignKey extends LogicalKey {
             return Catalog.snapshot()
                     .rel()
                     .getForeignKey( tableId, foreignKeyName )
+                    .orElseThrow()
                     .getParameterArray( referencedKeyColumnName, foreignKeyColumnName, keySeq );
         }
 

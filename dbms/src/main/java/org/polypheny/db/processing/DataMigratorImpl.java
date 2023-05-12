@@ -172,7 +172,7 @@ public class DataMigratorImpl implements DataMigrator {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         LogicalRelSnapshot relSnapshot = snapshot.rel();
         LogicalTable table = relSnapshot.getTable( columns.get( 0 ).tableId ).orElseThrow();
-        LogicalPrimaryKey primaryKey = relSnapshot.getPrimaryKey( table.primaryKey );
+        LogicalPrimaryKey primaryKey = relSnapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
 
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
@@ -387,7 +387,7 @@ public class DataMigratorImpl implements DataMigrator {
         RexNode condition = null;
         LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
         LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).tableId ).orElseThrow();
-        LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey );
+        LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
         for ( long cid : primaryKey.columnIds ) {
             AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).adapterId, cid ).orElseThrow();
             LogicalColumn logicalColumn = snapshot.getColumn( cid ).orElseThrow();
@@ -492,7 +492,7 @@ public class DataMigratorImpl implements DataMigrator {
      */
     @Override
     public void copySelectiveData( Transaction transaction, CatalogAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, Map<Long, List<AllocationColumn>> placementDistribution, List<Long> targetPartitionIds ) {
-        LogicalPrimaryKey sourcePrimaryKey = Catalog.getInstance().getSnapshot().rel().getPrimaryKey( sourceTable.primaryKey );
+        LogicalPrimaryKey sourcePrimaryKey = Catalog.getInstance().getSnapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElseThrow();
         AllocSnapshot snapshot = Catalog.getInstance().getSnapshot().alloc();
 
         // Check Lists
@@ -595,7 +595,7 @@ public class DataMigratorImpl implements DataMigrator {
             throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        LogicalPrimaryKey primaryKey = snapshot.rel().getPrimaryKey( sourceTable.primaryKey );
+        LogicalPrimaryKey primaryKey = snapshot.rel().getPrimaryKey( sourceTable.primaryKey ).orElseThrow();
 
         // Check Lists
         List<AllocationColumn> targetColumnPlacements = new LinkedList<>();

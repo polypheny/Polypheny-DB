@@ -24,16 +24,13 @@ import org.polypheny.db.catalog.logistic.Pattern;
 
 public interface LogicalGraphSnapshot {
 
-    //// GRAPH
-
     /**
      * Returns an existing graph.
      *
      * @param id The id of the graph to return
      * @return The graph entity with the provided id
      */
-    @NonNull
-    Optional<LogicalGraph> getGraph( long id );
+    @NonNull Optional<LogicalGraph> getGraph( long id );
 
 
     /**
@@ -42,8 +39,7 @@ public interface LogicalGraphSnapshot {
      * @param graphName The pattern to which the name has to match, null if every name is matched
      * @return A collection of all graphs matching
      */
-    @NonNull
-    List<LogicalGraph> getGraphs( Pattern graphName );
+    @NonNull List<LogicalGraph> getGraphs( Pattern graphName );
 
 
 }

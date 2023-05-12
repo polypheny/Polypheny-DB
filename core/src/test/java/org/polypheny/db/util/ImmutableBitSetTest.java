@@ -46,6 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -296,14 +297,14 @@ public class ImmutableBitSetTest {
 
 
     /**
-     * Tests the method {@link ImmutableBitSet#of(ImmutableIntList)}.
+     * Tests the method {@link ImmutableBitSet#of()}.
      */
     @Test
     public void testBitSetOfImmutableIntList() {
-        ImmutableIntList list = ImmutableIntList.of();
+        ImmutableList<Integer> list = ImmutableList.of();
         assertThat( ImmutableBitSet.of( list ), equalTo( ImmutableBitSet.of() ) );
 
-        list = ImmutableIntList.of( 2, 70, 5, 0 );
+        list = ImmutableList.of( 2, 70, 5, 0 );
         assertThat( ImmutableBitSet.of( list ), equalTo( ImmutableBitSet.of( 0, 2, 5, 70 ) ) );
     }
 

@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
@@ -192,21 +192,15 @@ public class ConstraintEnforceAttacher {
         }
         final RelModify<?> root = (RelModify<?>) logicalRoot.alg;
 
-        final Catalog catalog = Catalog.getInstance();
-        final LogicalTable table;
-        final LogicalPrimaryKey primaryKey;
-        final List<CatalogConstraint> constraints;
-        final List<LogicalForeignKey> foreignKeys;
-        final List<LogicalForeignKey> exportedKeys;
-        table = root.getEntity().unwrap( LogicalTable.class );
+        final LogicalTable table = root.getEntity().unwrap( LogicalTable.class );
         LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
-        primaryKey = snapshot.getPrimaryKey( table.primaryKey );
-        constraints = new ArrayList<>( snapshot.getConstraints( table.id ) );
-        foreignKeys = snapshot.getForeignKeys( table.id );
-        exportedKeys = snapshot.getExportedKeys( table.id );
+        final LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
+        final List<LogicalConstraint> constraints = new ArrayList<>( snapshot.getConstraints( table.id ) );
+        final List<LogicalForeignKey> foreignKeys = snapshot.getForeignKeys( table.id );
+        final List<LogicalForeignKey> exportedKeys = snapshot.getExportedKeys( table.id );
         // Turn primary key into an artificial unique constraint
-        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey );
-        final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
+        final LogicalConstraint pkc = new LogicalConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
         constraints.add( pkc );
 
         AlgNode lceRoot = root;
@@ -218,7 +212,7 @@ public class ConstraintEnforceAttacher {
             AlgBuilder builder = AlgBuilder.create( statement );
             final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
-            for ( final CatalogConstraint constraint : constraints ) {
+            for ( final LogicalConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
                     log.warn( "Unknown constraint type: {}", constraint.type );
                     continue;
@@ -360,7 +354,7 @@ public class ConstraintEnforceAttacher {
         if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
             RexBuilder rexBuilder = builder.getRexBuilder();
-            for ( final CatalogConstraint constraint : constraints ) {
+            for ( final LogicalConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
                     log.warn( "Unknown constraint type: {}", constraint.type );
                     continue;
@@ -484,8 +478,7 @@ public class ConstraintEnforceAttacher {
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
-                    final LogicalColumn foreignColumn;
-                    foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName );
+                    final LogicalColumn foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName ).orElseThrow();
                     RexNode newValue;
                     int targetIndex;
                     if ( root.isUpdate() ) {
@@ -555,9 +548,8 @@ public class ConstraintEnforceAttacher {
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
-                    final LogicalColumn column, foreignColumn;
-                    column = snapshot.getColumn( table.id, columnName );
-                    foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName );
+                    final LogicalColumn column = snapshot.getColumn( table.id, columnName ).orElseThrow();
+                    final LogicalColumn foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName ).orElseThrow();
                     final RexNode inputRef = new RexInputRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
                     final RexNode foreignInputRef = new RexInputRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
                     projects.add( inputRef );

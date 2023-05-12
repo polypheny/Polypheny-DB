@@ -28,14 +28,14 @@ public class IndexTest extends CqlTestHelper {
 
     @Test
     public void testCreateColumnIndex() throws UnknownIndexException {
-        ColumnIndex index = ColumnIndex.createIndex( "APP", "test", "testtable", "tbigint" );
+        ColumnIndex index = ColumnIndex.createIndex( "test", "testtable", "tbigint" );
         Assert.assertEquals( index.fullyQualifiedName, "test.testtable.tbigint" );
     }
 
 
     @Test(expected = UnknownIndexException.class)
     public void testCreateColumnIndexThrowsUnknownIndexException() throws UnknownIndexException {
-        ColumnIndex.createIndex( "APP", "hello", "world", "!" );
+        ColumnIndex.createIndex( "hello", "world", "!" );
     }
 
 

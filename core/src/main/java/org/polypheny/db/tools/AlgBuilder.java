@@ -46,6 +46,7 @@ import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
@@ -141,7 +142,6 @@ import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
@@ -940,7 +940,7 @@ public class AlgBuilder {
      * Creates a group key of fields identified by ordinal.
      */
     public GroupKey groupKey( Integer... fieldOrdinals ) {
-        return groupKey( fields( ImmutableIntList.of( fieldOrdinals ) ) );
+        return groupKey( fields( Arrays.asList( fieldOrdinals ) ) );
     }
 
 

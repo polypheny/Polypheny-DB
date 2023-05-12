@@ -163,7 +163,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = catalogTable.primaryKey;
-        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
+        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
 
         // Essentially gets a list of all stores where this table resides
@@ -211,8 +211,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     while ( updateColumnListIterator.hasNext() ) {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
-                        LogicalColumn logicalColumn = snapshot.rel().getColumn( catalogTable.id, columnName );
-                        if ( snapshot.alloc().getEntity( pkPlacement.adapterId, logicalColumn.id ) == null ) {
+                        LogicalColumn logicalColumn = snapshot.rel().getColumn( catalogTable.id, columnName ).orElseThrow();
+                        if ( snapshot.alloc().getEntity( pkPlacement.adapterId, logicalColumn.id ).isEmpty() ) {
                             updateColumnListIterator.remove();
                             sourceExpressionListIterator.remove();
                         }
@@ -274,7 +274,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     int index = 0;
 
                     for ( String cn : updateColumnList ) {
-                        if ( snapshot.rel().getColumn( catalogTable.id, cn ).id == -1 ) {//property.partitionColumnId ) {
+                        if ( snapshot.rel().getColumn( catalogTable.id, cn ).orElseThrow().id == -1 ) {//property.partitionColumnId ) {
                             if ( log.isDebugEnabled() ) {
                                 log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", -1, index );//property.partitionColumnId, index );
                             }
@@ -922,7 +922,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = fromTable.primaryKey;
-        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).columnIds;
+        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
         List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
 
@@ -968,8 +968,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             } else {
                 throw new RuntimeException( "Invalid column name: " + field.getName() );
             }
-            column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName );
-            if ( Catalog.snapshot().alloc().getEntity( placements.get( 0 ).adapterId, column.id ) == null ) {
+            column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
+            if ( Catalog.snapshot().alloc().getEntity( placements.get( 0 ).adapterId, column.id ).isEmpty() ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

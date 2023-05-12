@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -209,10 +210,10 @@ public class LanguageCrud {
 
             // Get column default values
             if ( catalogTable != null ) {
-                LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
-                if ( logicalColumn != null ) {
-                    if ( logicalColumn.defaultValue != null ) {
-                        dbCol.defaultValue = logicalColumn.defaultValue.value;
+                Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+                if ( optional.isPresent() ) {
+                    if ( optional.get().defaultValue != null ) {
+                        dbCol.defaultValue = optional.get().defaultValue.value;
                     }
                 }
             }

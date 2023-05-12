@@ -72,7 +72,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -375,7 +374,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
             final AggFunction aggregation;
             if ( !aggCall.isDistinct() ) {
                 aggregation = OperatorRegistry.getAgg( OperatorName.MIN );
-                newArgList = ImmutableIntList.copyOf( x++ );
+                newArgList = ImmutableList.of( x++ );
                 newFilterArg = filters.get( aggregate.getGroupSet() );
             } else {
                 aggregation = aggCall.getAggregation();
@@ -386,7 +385,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                                         .setIf( aggCall.filterArg, aggCall.filterArg >= 0 )
                                         .union( aggregate.getGroupSet() ) );
             }
-            final AggregateCall newCall = AggregateCall.create( (Operator & AggFunction) aggregation, false, aggCall.isApproximate(), newArgList, newFilterArg, aggCall.collation, aggregate.getGroupCount(), distinct, null, aggCall.name );
+            final AggregateCall newCall = AggregateCall.create( aggregation, false, aggCall.isApproximate(), newArgList, newFilterArg, aggCall.collation, aggregate.getGroupCount(), distinct, null, aggCall.name );
             newCalls.add( newCall );
         }
 
@@ -429,11 +428,11 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
 
 
     private static List<Integer> remap( ImmutableBitSet groupSet, List<Integer> argList ) {
-        ImmutableIntList list = ImmutableIntList.of();
+        List<Integer> list = new ArrayList<>();
         for ( int arg : argList ) {
-            list = list.append( remap( groupSet, arg ) );
+            list.add( remap( groupSet, arg ) );
         }
-        return list;
+        return ImmutableList.copyOf( list );
     }
 
 

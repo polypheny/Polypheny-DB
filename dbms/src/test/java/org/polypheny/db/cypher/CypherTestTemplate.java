@@ -43,6 +43,9 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.GraphObject.GraphObjectType;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -373,12 +376,12 @@ public class CypherTestTemplate {
 
         @Override
         public GraphPropertyHolder read( JsonReader in ) throws IOException {
-            String id = null;
-            Map<String, Comparable<?>> properties = null;
+            PolyString id = null;
+            Map<PolyString, PolyValue> properties = null;
             GraphObjectType type = null;
-            String source = null;
-            String target = null;
-            List<String> labels = null;
+            PolyString source = null;
+            PolyString target = null;
+            PolyList<PolyString> labels = null;
             EdgeDirection direction = null;
 
             in.beginObject();
@@ -387,7 +390,7 @@ public class CypherTestTemplate {
                 String name = in.nextName();
                 switch ( name ) {
                     case "id":
-                        id = in.nextString();
+                        id = PolyString.of( in.nextString() );
                         break;
                     case "properties":
                         properties = GSON.fromJson( in, Map.class );
@@ -396,10 +399,10 @@ public class CypherTestTemplate {
                         type = GraphObjectType.valueOf( in.nextString() );
                         break;
                     case "source":
-                        source = in.nextString();
+                        source = PolyString.of( in.nextString() );
                         break;
                     case "target":
-                        target = in.nextString();
+                        target = PolyString.of( in.nextString() );
                         break;
                     case "labels":
                         labels = GSON.fromJson( in, List.class );

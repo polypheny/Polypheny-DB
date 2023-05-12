@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 
 @EqualsAndHashCode
 @Value
-public class CatalogConstraint implements Serializable {
+public class LogicalConstraint implements Serializable {
 
     @Serialize
     public long id;
@@ -43,7 +43,7 @@ public class CatalogConstraint implements Serializable {
     public LogicalKey key;
 
 
-    public CatalogConstraint(
+    public LogicalConstraint(
             @Deserialize("id") final long id,
             @Deserialize("keyId") final long keyId,
             @Deserialize("type") @NonNull final ConstraintType constraintType,

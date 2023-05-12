@@ -65,7 +65,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "CREATE DATABASE " + graphName );
 
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName );
-            LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id );
+            LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
             assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
@@ -74,7 +74,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
             namespace = catalog.getSnapshot().getNamespace( graphName );
-            graph = catalog.getSnapshot().graph().getGraph( namespace.id );
+            graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
             assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
@@ -96,14 +96,14 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( String.format( "CREATE DATABASE %s ON STORE %s", graphName, "store1" ) );
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName );
-            LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id );
+            LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
             assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
 
             namespace = catalog.getSnapshot().getNamespace( graphName );
-            graph = catalog.getSnapshot().graph().getGraph( namespace.id );
+            graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
             assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
             assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
@@ -126,7 +126,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "CREATE DATABASE " + graphName );
 
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName );
-            LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id );
+            LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
             assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
@@ -135,7 +135,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
             namespace = catalog.getSnapshot().getNamespace( graphName );
-            graph = catalog.getSnapshot().graph().getGraph( namespace.id );
+            graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
             assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
@@ -186,8 +186,8 @@ public class DdlTest extends CypherTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
-                        + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                statement.executeUpdate( String.format( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'"
+                        + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'", name ) );
 
             }
         }
@@ -199,7 +199,7 @@ public class DdlTest extends CypherTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( "ALTER ADAPTERS DROP \"" + name + "\"" );
+                statement.executeUpdate( String.format( "ALTER ADAPTERS DROP \"%s\"", name ) );
 
             }
         }

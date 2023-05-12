@@ -21,7 +21,7 @@ import java.util.Map;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -308,7 +308,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
 
     Map<Long, LogicalKey> getKeys();
 
-    Map<Long, CatalogConstraint> getConstraints();
+    Map<Long, LogicalConstraint> getConstraints();
 
     Map<Long, AlgNode> getNodes();
 

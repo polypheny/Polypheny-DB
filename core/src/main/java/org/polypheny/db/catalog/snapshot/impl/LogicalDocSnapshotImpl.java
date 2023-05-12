@@ -54,8 +54,8 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
 
     @Override
-    public List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
-        List<LogicalCollection> collections = namespaceCollections.get( namespaceId );
+    public @NonNull List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
+        List<LogicalCollection> collections = Optional.ofNullable( namespaceCollections.get( namespaceId ) ).orElse( List.of() );
 
         if ( namePattern == null ) {
             return collections;

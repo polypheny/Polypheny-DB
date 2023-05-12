@@ -30,11 +30,9 @@ public interface LogicalDocSnapshot {
      * @param id The id of the collection
      * @return The requested collection
      */
-    @NonNull
-    Optional<LogicalCollection> getCollection( long id );
+    @NonNull Optional<LogicalCollection> getCollection( long id );
 
-    @NonNull
-    Optional<LogicalCollection> getCollection( long namespaceId, String name );
+    @NonNull Optional<LogicalCollection> getCollection( long namespaceId, String name );
 
     /**
      * Get a collection of collections which match the given naming pattern.
@@ -42,7 +40,7 @@ public interface LogicalDocSnapshot {
      * @param namePattern The naming pattern of the collection itself, null if all are matched
      * @return collection of collections matching conditions
      */
-    List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
+    @NonNull List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
 
 
 }

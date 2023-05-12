@@ -198,7 +198,7 @@ public class Utilities {
     }
 
 
-    public static <L extends Comparable<L>, R extends Comparable<R>> int compareNullsLast( FlatList<L> v0, FlatList<R> v1 ) {
+    public static <L extends Comparable<L>, R extends Comparable<R>> int compareNullsLast( ComparableList<L> v0, ComparableList<R> v1 ) {
         //noinspection unchecked
         return v0 == v1
                 ? 0
@@ -206,7 +206,7 @@ public class Utilities {
                         ? 1
                         : v1 == null
                                 ? -1
-                                : v0.compareTo( (FlatList<L>) v1 );
+                                : v0.compareTo( (ComparableList<L>) v1 );
     }
 
 }

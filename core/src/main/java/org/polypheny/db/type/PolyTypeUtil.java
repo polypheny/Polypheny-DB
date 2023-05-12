@@ -33,33 +33,57 @@
 
 package org.polypheny.db.type;
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
-import org.apache.commons.lang3.reflect.TypeUtils;
-import org.polypheny.db.algebra.type.*;
-import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.util.*;
-
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.*;
-
-import static org.polypheny.db.util.Static.RESOURCE;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.NumberUtil;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
  * Contains utility methods used during SQL validation or type derivation.
  */
 public abstract class PolyTypeUtil {
+
+    /**
+     * Returns the identity list [0, ..., count - 1].
+     *
+     * @see Mappings#isIdentity(List, int)
+     */
+    public static ImmutableList<Integer> identity( int count ) {
+        return IntStream.range( 0, count ).boxed().collect( Collectors.toCollection( ImmutableList::of ) );
+    }
+
 
     /**
      * Checks whether two types or more are char comparable.

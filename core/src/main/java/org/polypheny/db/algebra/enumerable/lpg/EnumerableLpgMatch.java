@@ -39,7 +39,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatList;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -172,15 +172,15 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
                 if ( i == 0 ) {
                     enumerable = enumerable.hashJoin(
                             iter.next(),
-                            a0 -> FlatList.of(),
-                            a0 -> FlatList.of(),
+                            a0 -> ComparableList.of(),
+                            a0 -> ComparableList.of(),
                             ( a0, a1 ) -> new Object[]{ a0, a1 } );
                 } else {
                     int index = i;
                     enumerable = enumerable.hashJoin(
                             iter.next(),
-                            a0 -> FlatList.of(),
-                            a0 -> FlatList.of(),
+                            a0 -> ComparableList.of(),
+                            a0 -> ComparableList.of(),
                             ( a0, a1 ) -> asObjectArray( (Object[]) a0, a1, index ) );
                 }
                 i++;

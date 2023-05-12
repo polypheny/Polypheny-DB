@@ -36,7 +36,7 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatList;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
@@ -69,7 +69,7 @@ public class CypherUnwind extends CypherClause {
             AlgDataType type = context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 );
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( variable.getName(), 0, type ) ) );
 
-            RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( FlatList.of(), type, false );
+            RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( ComparableList.of(), type, false );
 
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( emptyList ) );
             context.add( LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values ) );

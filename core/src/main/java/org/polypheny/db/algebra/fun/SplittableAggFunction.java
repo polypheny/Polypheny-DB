@@ -33,7 +33,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
@@ -121,7 +120,7 @@ public interface SplittableAggFunction {
                     OperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
-                    ImmutableIntList.of(),
+                    ImmutableList.of(),
                     -1,
                     AlgCollations.EMPTY,
                     typeFactory.createPolyType( PolyType.BIGINT ),
@@ -226,7 +225,7 @@ public interface SplittableAggFunction {
             assert (leftSubTotal >= 0) != (rightSubTotal >= 0);
             assert aggregateCall.collation.getFieldCollations().isEmpty();
             final int arg = leftSubTotal >= 0 ? leftSubTotal : rightSubTotal;
-            return aggregateCall.copy( ImmutableIntList.copyOf( arg ), -1, AlgCollations.EMPTY );
+            return aggregateCall.copy( ImmutableList.of( arg ), -1, AlgCollations.EMPTY );
         }
 
     }
@@ -257,7 +256,7 @@ public interface SplittableAggFunction {
                     OperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
-                    ImmutableIntList.of(),
+                    ImmutableList.of(),
                     -1,
                     AlgCollations.EMPTY,
                     typeFactory.createPolyType( PolyType.BIGINT ),

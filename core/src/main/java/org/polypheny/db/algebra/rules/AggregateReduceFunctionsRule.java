@@ -64,7 +64,6 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.CompositeList;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
 
@@ -278,7 +277,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                 aggFunction,
                 oldCall.isDistinct(),
                 oldCall.isApproximate(),
-                ImmutableIntList.copyOf( argOrdinal ),
+                ImmutableList.of( argOrdinal ),
                 filter,
                 oldCall.collation,
                 aggFunction.inferReturnType( binding ),
@@ -452,7 +451,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         OperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
-                        ImmutableIntList.copyOf( argOrdinal ),
+                        ImmutableList.of( argOrdinal ),
                         oldCall.filterArg,
                         oldCall.collation,
                         oldAggRel.getGroupCount(),
@@ -526,7 +525,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         OperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
-                        ImmutableIntList.copyOf( argOrdinal ),
+                        ImmutableList.of( argOrdinal ),
                         filterArg,
                         oldCall.collation,
                         oldAggRel.getGroupCount(),
@@ -551,7 +550,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
     }
 
 
-    private RexNode getRegrCountRexNode( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, ImmutableIntList argOrdinals, ImmutableList<AlgDataType> operandTypes, int filterArg ) {
+    private RexNode getRegrCountRexNode( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, ImmutableList<Integer> argOrdinals, ImmutableList<AlgDataType> operandTypes, int filterArg ) {
         final AggregateCall countArgAggCall =
                 AggregateCall.create(
                         OperatorRegistry.getAgg( OperatorName.REGR_COUNT ),
@@ -615,7 +614,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
         final RexNode sumXSumY = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), sumX, sumY );
 
-        final RexNode countArg = getRegrCountRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, ImmutableIntList.copyOf( xIndex ), ImmutableList.of( argXType ), argXAndYNotNullFilterOrdinal );
+        final RexNode countArg = getRegrCountRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, ImmutableList.of( xIndex ), ImmutableList.of( argXType ), argXAndYNotNullFilterOrdinal );
 
         RexLiteral zero = rexBuilder.makeExactLiteral( BigDecimal.ZERO );
         RexNode nul = rexBuilder.constantNull();
@@ -662,7 +661,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                 oldCall,
                 newCalls,
                 aggCallMapping,
-                ImmutableIntList.copyOf( argXOrdinal, argYOrdinal ),
+                ImmutableList.of( argXOrdinal, argYOrdinal ),
                 ImmutableList.of( argXOrdinalType, argYOrdinalType ),
                 argXAndYNotNullFilterOrdinal );
         final RexNode avgSumSquaredArg = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DIVIDE ), sumXSumY, countArg );

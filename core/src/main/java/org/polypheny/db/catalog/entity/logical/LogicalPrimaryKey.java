@@ -78,7 +78,7 @@ public final class LogicalPrimaryKey extends LogicalKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return Catalog.snapshot().rel().getPrimaryKey( pkId ).getParameterArray( columnName, keySeq );
+            return Catalog.snapshot().rel().getPrimaryKey( pkId ).orElseThrow().getParameterArray( columnName, keySeq );
         }
 
 

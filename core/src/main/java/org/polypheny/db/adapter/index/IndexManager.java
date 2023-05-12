@@ -169,7 +169,7 @@ public class IndexManager {
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
         final LogicalTable table = statement.getTransaction().getSnapshot().rel().getTable( key.tableId ).orElseThrow();
-        final LogicalPrimaryKey pk = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey );
+        final LogicalPrimaryKey pk = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
         final Index index = factory.create(
                 id,
                 name,

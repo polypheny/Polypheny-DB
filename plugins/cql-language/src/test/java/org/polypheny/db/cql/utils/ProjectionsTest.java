@@ -44,8 +44,8 @@ public class ProjectionsTest extends AlgBuildTestHelper {
     public ProjectionsTest() throws UnknownIndexException {
         super( AlgBuildLevel.INITIAL_PROJECTION );
         projections = new Projections();
-        empname = ColumnIndex.createIndex( "APP", "test", "employee", "empname" );
-        deptname = ColumnIndex.createIndex( "APP", "test", "dept", "deptname" );
+        empname = ColumnIndex.createIndex( "test", "employee", "empname" );
+        deptname = ColumnIndex.createIndex( "test", "dept", "deptname" );
     }
 
 
@@ -60,7 +60,7 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         testCases.put( "", null );
         testCases.put( "abc", null );
 
-        ColumnIndex columnIndex = ColumnIndex.createIndex( "APP", "test", "employee", "empname" );
+        ColumnIndex columnIndex = ColumnIndex.createIndex( "test", "employee", "empname" );
 
         testCases.forEach( ( modifierName, expected ) ->
                 testGetAggregateFunctionHelper( columnIndex, modifierName, expected ) );

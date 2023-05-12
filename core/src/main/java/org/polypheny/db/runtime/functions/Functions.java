@@ -112,7 +112,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.runtime.FlatList;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -3287,7 +3287,7 @@ public class Functions {
     }
 
 
-    private static <E extends Comparable<E>> Enumerable<FlatList<E>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
+    private static <E extends Comparable<E>> Enumerable<ComparableList<E>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
         final List<Enumerator<List<E>>> enumerators = new ArrayList<>();
         int totalFieldCount = 0;
         for ( int i = 0; i < lists.length; i++ ) {
@@ -3298,11 +3298,11 @@ public class Functions {
                 case SCALAR:
                     @SuppressWarnings("unchecked")
                     List<E> list = (List<E>) inputObject;
-                    enumerators.add( Linq4j.transform( Linq4j.enumerator( list ), FlatList::of ) );
+                    enumerators.add( Linq4j.transform( Linq4j.enumerator( list ), ComparableList::of ) );
                     break;
                 case LIST:
                     @SuppressWarnings("unchecked")
-                    FlatList<FlatList<E>> listList = FlatList.copyOf( (List<FlatList<E>>) inputObject );
+                    ComparableList<ComparableList<E>> listList = ComparableList.copyOf( (List<ComparableList<E>>) inputObject );
                     enumerators.add( Linq4j.enumerator( listList ) );
                     break;
                 case MAP:
@@ -3310,7 +3310,7 @@ public class Functions {
                     Map<Comparable<Object>, Comparable<Object>> map = (Map<Comparable<Object>, Comparable<Object>>) inputObject;
                     Enumerator<Entry<Comparable<Object>, Comparable<Object>>> enumerator = Linq4j.enumerator( map.entrySet() );
 
-                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> FlatList.of( (Comparable) e.getKey(), (Comparable) e.getValue() ) );
+                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> ComparableList.of( (Comparable) e.getKey(), (Comparable) e.getValue() ) );
                     enumerators.add( transformed );
                     break;
                 default:
@@ -3335,12 +3335,12 @@ public class Functions {
 
 
     /**
-     * Similar to {@link Linq4j#product(Iterable)} but each resulting list implements {@link FlatList}.
+     * Similar to {@link Linq4j#product(Iterable)} but each resulting list implements {@link ComparableList}.
      */
-    public static <E extends Comparable<E>> Enumerable<FlatList<E>> product( final List<Enumerator<List<E>>> enumerators, final int fieldCount, final boolean withOrdinality ) {
+    public static <E extends Comparable<E>> Enumerable<ComparableList<E>> product( final List<Enumerator<List<E>>> enumerators, final int fieldCount, final boolean withOrdinality ) {
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<FlatList<E>> enumerator() {
+            public Enumerator<ComparableList<E>> enumerator() {
                 return new ProductComparableListEnumerator<>( enumerators, fieldCount, withOrdinality );
             }
         };
@@ -3896,7 +3896,7 @@ public class Functions {
      *
      * @param <E> element type
      */
-    private static class ProductComparableListEnumerator<E extends Comparable<E>> extends CartesianProductEnumerator<List<E>, FlatList<E>> {
+    private static class ProductComparableListEnumerator<E extends Comparable<E>> extends CartesianProductEnumerator<List<E>, ComparableList<E>> {
 
         final E[] flatElements;
         final List<E> list;
@@ -3913,7 +3913,7 @@ public class Functions {
 
 
         @Override
-        public FlatList<E> current() {
+        public ComparableList<E> current() {
             int i = 0;
             for ( Object element : elements ) {
                 final List<?> list2 = (List<E>) element;
@@ -3924,7 +3924,7 @@ public class Functions {
             if ( withOrdinality ) {
                 flatElements[i] = (E) Integer.valueOf( ++ordinality ); // 1-based
             }
-            return FlatList.copyOf( list.iterator() );
+            return ComparableList.copyOf( list.iterator() );
         }
 
     }

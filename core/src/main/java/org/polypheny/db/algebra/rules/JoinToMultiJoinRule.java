@@ -34,11 +34,14 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
@@ -55,7 +58,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 
 
@@ -131,7 +133,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
         List<RexNode> newJoinFilters = combineJoinFilters( origJoin, left, right );
 
         // add on the join field reference counts for the join condition associated with this LogicalJoin
-        final ImmutableMap<Integer, ImmutableIntList> newJoinFieldRefCountsMap =
+        final ImmutableMap<Integer, ImmutableList<Integer>> newJoinFieldRefCountsMap =
                 addOnJoinFieldRefCounts(
                         newInputs,
                         origJoin.getRowType().getFieldCount(),
@@ -177,7 +179,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             for ( int i = 0; i < left.getInputs().size(); i++ ) {
                 newInputs.add( leftMultiJoin.getInput( i ) );
                 projFieldsList.add( leftMultiJoin.getProjFields().get( i ) );
-                joinFieldRefCountsList.add( leftMultiJoin.getJoinFieldRefCountsMap().get( i ).toIntArray() );
+                joinFieldRefCountsList.add( leftMultiJoin.getJoinFieldRefCountsMap().get( i ).stream().mapToInt( j -> j ).toArray() );
             }
         } else {
             newInputs.add( left );
@@ -190,7 +192,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             for ( int i = 0; i < right.getInputs().size(); i++ ) {
                 newInputs.add( rightMultiJoin.getInput( i ) );
                 projFieldsList.add( rightMultiJoin.getProjFields().get( i ) );
-                joinFieldRefCountsList.add( rightMultiJoin.getJoinFieldRefCountsMap().get( i ).toIntArray() );
+                joinFieldRefCountsList.add( rightMultiJoin.getJoinFieldRefCountsMap().get( i ).stream().mapToInt( j -> j ).toArray() );
             }
         } else {
             newInputs.add( right );
@@ -390,7 +392,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
      * @param origJoinFieldRefCounts existing join condition reference counts
      * @return Map containing the new join condition
      */
-    private ImmutableMap<Integer, ImmutableIntList> addOnJoinFieldRefCounts( List<AlgNode> multiJoinInputs, int nTotalFields, RexNode joinCondition, List<int[]> origJoinFieldRefCounts ) {
+    private ImmutableMap<Integer, ImmutableList<Integer>> addOnJoinFieldRefCounts( List<AlgNode> multiJoinInputs, int nTotalFields, RexNode joinCondition, List<int[]> origJoinFieldRefCounts ) {
         // count the input references in the join condition
         int[] joinCondRefCounts = new int[nTotalFields];
         joinCondition.accept( new InputReferenceCounter( joinCondRefCounts ) );
@@ -422,9 +424,9 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             refCounts[i - startField] += joinCondRefCounts[i];
         }
 
-        final ImmutableMap.Builder<Integer, ImmutableIntList> builder = ImmutableMap.builder();
+        final ImmutableMap.Builder<Integer, ImmutableList<Integer>> builder = ImmutableMap.builder();
         for ( Map.Entry<Integer, int[]> entry : refCountsMap.entrySet() ) {
-            builder.put( entry.getKey(), ImmutableIntList.of( entry.getValue() ) );
+            builder.put( entry.getKey(), ImmutableList.copyOf( Arrays.stream( entry.getValue() ).boxed().collect( Collectors.toList() ) ) );
         }
         return builder.build();
     }

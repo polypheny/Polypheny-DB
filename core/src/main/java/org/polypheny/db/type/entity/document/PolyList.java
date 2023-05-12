@@ -58,7 +58,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
 
     public static <E extends PolyValue> PolyList<E> of( Collection<E> value ) {
-        return PolyList.of( value );
+        return new PolyList<>( List.copyOf( value ) );
     }
 
 

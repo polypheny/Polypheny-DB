@@ -49,36 +49,35 @@ import org.jetbrains.annotations.NotNull;
  * Space-efficient, comparable, immutable lists.
  */
 @NonFinal // todo dl remove when own Immutable impls are completely removed...
-public class FlatList<T extends Comparable<T>> implements Comparable<FlatList<T>>, List<T> {
+public class ComparableList<T extends Comparable<T>> implements Comparable<ComparableList<T>>, List<T> {
 
     @Delegate
     List<T> list;
 
 
-    public FlatList( List<T> list ) {
+    public ComparableList( List<T> list ) {
         this.list = list;
     }
 
 
     @SafeVarargs
-    public static <T extends Comparable<T>> FlatList<T> of( T... elements ) {
-        return new FlatList<>( Arrays.asList( elements ) );
+    public static <T extends Comparable<T>> ComparableList<T> of( T... elements ) {
+        return new ComparableList<>( Arrays.asList( elements ) );
     }
 
 
-
-    public static <T extends Comparable<T>> FlatList<T> copyOf( Iterator<T> list ) {
-        return new FlatList<>( Lists.newArrayList( list ) );
+    public static <T extends Comparable<T>> ComparableList<T> copyOf( Iterator<T> list ) {
+        return new ComparableList<>( Lists.newArrayList( list ) );
     }
 
 
-    public static <T extends Comparable<T>> FlatList<T> copyOf( Collection<T> list ) {
-        return FlatList.copyOf( list.iterator() );
+    public static <T extends Comparable<T>> ComparableList<T> copyOf( Collection<T> list ) {
+        return ComparableList.copyOf( list.iterator() );
     }
 
 
     @Override
-    public int compareTo( @NotNull FlatList<T> other ) {
+    public int compareTo( @NotNull ComparableList<T> other ) {
         if ( size() != other.size() ) {
             return size() > other.size() ? 1 : -1;
         }

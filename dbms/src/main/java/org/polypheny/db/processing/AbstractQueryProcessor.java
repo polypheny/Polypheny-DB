@@ -139,9 +139,9 @@ import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManager.TableUpdateVisitor;
@@ -527,7 +527,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
 
             final AlgDataType rowType = parameterizedRoot.alg.getRowType();
-            final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+            final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
             AlgRoot optimalRoot = new AlgRoot( optimalNode, rowType, parameterizedRoot.kind, fields, algCollation( parameterizedRoot.alg ) );
 
             PreparedResult preparedResult = implement( optimalRoot, parameterRowType );

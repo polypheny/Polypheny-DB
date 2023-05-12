@@ -32,7 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -72,7 +72,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Long, LogicalIndex> index;
 
-    ImmutableMap<Long, CatalogConstraint> constraints;
+    ImmutableMap<Long, LogicalConstraint> constraints;
 
     ImmutableMap<Long, LogicalForeignKey> foreignKeys;
     ImmutableMap<Long, LogicalPrimaryKey> primaryKeys;
@@ -81,10 +81,10 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Pair<Long, Long>, LogicalColumn> tableColumnIdColumn;
 
-    ImmutableMap<Pair<String, String>, LogicalColumn> tableColumnNameColumn;
+    ImmutableMap<Pair<Long, Pair<String, String>>, LogicalColumn> tableColumnNameColumn;
 
     ImmutableMap<Pair<Long, String>, LogicalColumn> tableIdColumnNameColumn;
-    ImmutableMap<Long, List<CatalogConstraint>> tableConstraints;
+    ImmutableMap<Long, List<LogicalConstraint>> tableConstraints;
     ImmutableMap<Long, List<LogicalForeignKey>> tableForeignKeys;
     ImmutableMap<Long, AlgNode> nodes;
     ImmutableMap<Long, List<LogicalView>> connectedViews;
@@ -106,7 +106,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         this.tableColumns = buildTableColumns();
 
         this.tableColumnIdColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().id ), Entry::getValue ) ) );
-        this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( tables.get( c.getValue().tableId ).name, c.getValue().name ), Entry::getValue ) ) );
+        this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().namespaceId, Pair.of( tables.get( c.getValue().tableId ).name, c.getValue().name ) ), Entry::getValue ) ) );
         this.tableIdColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().name ), Entry::getValue ) ) );
 
         //// KEYS
@@ -180,8 +180,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @NotNull
-    private ImmutableMap<Long, List<CatalogConstraint>> buildTableConstraints() {
-        Map<Long, List<CatalogConstraint>> map = new HashMap<>();
+    private ImmutableMap<Long, List<LogicalConstraint>> buildTableConstraints() {
+        Map<Long, List<LogicalConstraint>> map = new HashMap<>();
 
         tables.values().forEach( t -> map.put( t.id, new ArrayList<>() ) );
         constraints.forEach( ( k, v ) -> map.get( v.key.tableId ).add( v ) );
@@ -270,15 +270,15 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public @NotNull List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
         boolean caseSensitive = namespaces.get( namespaceId ).caseSensitive;
-        return tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (e.name.matches( caseSensitive ? name.toRegex() : name.toRegex().toLowerCase() ))) ).collect( Collectors.toList() );
+        return Optional.of( tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (e.name.matches( caseSensitive ? name.toRegex() : name.toRegex().toLowerCase() ))) ).collect( Collectors.toList() ) ).orElse( List.of() );
     }
 
 
     @Override
-    public @NonNull LogicalTable getTables( @Nullable String namespaceName, @NonNull String name ) {
+    public @NonNull Optional<LogicalTable> getTables( @Nullable String namespaceName, @NonNull String name ) {
         LogicalNamespace namespace = namespaceNames.get( namespaceName );
 
-        return tableNames.get( Pair.of( namespace.id, (namespace.caseSensitive ? name : name.toLowerCase()) ) );
+        return Optional.ofNullable( tableNames.get( Pair.of( namespace.id, (namespace.caseSensitive ? name : name.toLowerCase()) ) ) );
     }
 
 
@@ -330,26 +330,20 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public LogicalColumn getColumn( long tableId, String columnName ) {
-        return tableIdColumnNameColumn.get( Pair.of( tableId, columnName ) );
+    public @NotNull Optional<LogicalColumn> getColumn( long tableId, String columnName ) {
+        return Optional.ofNullable( tableIdColumnNameColumn.get( Pair.of( tableId, columnName ) ) );
     }
 
 
     @Override
-    public LogicalColumn getColumn( String tableName, String columnName ) {
-        return tableIdColumnNameColumn.get( Pair.of( tableName, columnName ) );
+    public @NotNull Optional<LogicalColumn> getColumn( long namespace, String tableName, String columnName ) {
+        return Optional.ofNullable( tableIdColumnNameColumn.get( Pair.of( namespace, Pair.of( tableName, columnName ) ) ) );
     }
 
 
     @Override
-    public boolean checkIfExistsColumn( long tableId, String columnName ) {
-        return tableIdColumnNameColumn.containsKey( Pair.of( tableId, columnName ) );
-    }
-
-
-    @Override
-    public LogicalPrimaryKey getPrimaryKey( long key ) {
-        return primaryKeys.get( key );
+    public @NonNull Optional<LogicalPrimaryKey> getPrimaryKey( long key ) {
+        return Optional.ofNullable( primaryKeys.get( key ) );
     }
 
 
@@ -378,39 +372,39 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalForeignKey> getForeignKeys( long tableId ) {
+    public @NotNull List<LogicalForeignKey> getForeignKeys( long tableId ) {
         return foreignKeys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public List<LogicalForeignKey> getExportedKeys( long tableId ) {
+    public @NonNull List<LogicalForeignKey> getExportedKeys( long tableId ) {
         return foreignKeys.values().stream().filter( k -> k.referencedKeyTableId == tableId ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public List<CatalogConstraint> getConstraints( long tableId ) {
+    public @NonNull List<LogicalConstraint> getConstraints( long tableId ) {
         List<Long> keysOfTable = getTableKeys( tableId ).stream().map( t -> t.id ).collect( Collectors.toList() );
         return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public List<CatalogConstraint> getConstraints( LogicalKey key ) {
+    public @NotNull List<LogicalConstraint> getConstraints( LogicalKey key ) {
         return constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public CatalogConstraint getConstraint( long tableId, String constraintName ) {
-        return tableConstraints.get( tableId ).stream().filter( c -> c.name.equals( constraintName ) ).findFirst().orElse( null );
+    public @NonNull Optional<LogicalConstraint> getConstraint( long tableId, String constraintName ) {
+        return tableConstraints.get( tableId ).stream().filter( c -> c.name.equals( constraintName ) ).findFirst();
     }
 
 
     @Override
-    public LogicalForeignKey getForeignKey( long tableId, String foreignKeyName ) {
-        return tableForeignKeys.get( tableId ).stream().filter( e -> e.name.equals( foreignKeyName ) ).findFirst().orElse( null );
+    public @NonNull Optional<LogicalForeignKey> getForeignKey( long tableId, String foreignKeyName ) {
+        return tableForeignKeys.get( tableId ).stream().filter( e -> e.name.equals( foreignKeyName ) ).findFirst();
     }
 
 
@@ -421,38 +415,32 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public List<LogicalIndex> getIndexes( LogicalKey key ) {
-        return keyToIndexes.get( key.id );
+    public @NonNull List<LogicalIndex> getIndexes( LogicalKey key ) {
+        return Optional.ofNullable( keyToIndexes.get( key.id ) ).orElse( List.of() );
     }
 
 
     @Override
-    public List<LogicalIndex> getForeignKeys( LogicalKey key ) {
-        return keyToIndexes.get( key.id );
+    public @NotNull List<LogicalIndex> getForeignKeys( LogicalKey key ) {
+        return Optional.ofNullable( keyToIndexes.get( key.id ) ).orElse( List.of() );
     }
 
 
     @Override
-    public List<LogicalIndex> getIndexes( long tableId, boolean onlyUnique ) {
+    public @NonNull List<LogicalIndex> getIndexes( long tableId, boolean onlyUnique ) {
         return index.values().stream().filter( i -> i.key.tableId == tableId && (!onlyUnique || i.unique) ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public LogicalIndex getIndex( long tableId, String indexName ) {
-        return getIndex().values().stream().filter( i -> i.getKey().tableId == tableId && i.name.equals( indexName ) ).findFirst().orElse( null );
+    public @NotNull Optional<LogicalIndex> getIndex( long tableId, String indexName ) {
+        return getIndex().values().stream().filter( i -> i.getKey().tableId == tableId && i.name.equals( indexName ) ).findFirst();
     }
 
 
     @Override
-    public boolean checkIfExistsIndex( long tableId, String indexName ) {
-        return getIndex( tableId, indexName ) != null;
-    }
-
-
-    @Override
-    public LogicalIndex getIndex( long indexId ) {
-        return index.get( indexId );
+    public @NonNull Optional<LogicalIndex> getIndex( long indexId ) {
+        return Optional.ofNullable( index.get( indexId ) );
     }
 
 
@@ -478,6 +466,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         return Optional.ofNullable( columns.get( id ) );
     }
 
+
     @Override
     public AlgNode getNodeInfo( long id ) {
         return nodes.get( id );
@@ -491,14 +480,14 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public LogicalKey getKeys( long[] columnIds ) {
-        return columnsKey.get( columnIds );
+    public @NonNull Optional<LogicalKey> getKeys( long[] columnIds ) {
+        return Optional.ofNullable( columnsKey.get( columnIds ) );
     }
 
 
     @Override
-    public LogicalKey getKey( long id ) {
-        return keys.get( id );
+    public @NonNull Optional<LogicalKey> getKey( long id ) {
+        return Optional.ofNullable( keys.get( id ) );
     }
 
 

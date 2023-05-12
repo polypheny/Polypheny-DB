@@ -406,7 +406,7 @@ public class RequestParser {
 
         LogicalNamespace namespace = snapshop.getNamespace( splitString[0] );
 
-        return snapshop.rel().getColumn( splitString[1], splitString[2] );
+        return snapshop.rel().getColumn( namespace.id, splitString[1], splitString[2] ).orElseThrow();
 
     }
 
