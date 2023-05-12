@@ -27,9 +27,9 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyList;
-import org.polypheny.db.type.entity.document.PolyString;
 
 
 @Getter

@@ -91,7 +91,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
                 AlgDataTypeField field = rowType.getFieldList().get( pos );
 
                 if ( field.getName().equals( DocumentType.DOCUMENT_ID ) ) {
-                    String _id = value.getValueAs( String.class );
+                    String _id = value.value.asString().value;
                     ObjectId objectId;
                     if ( _id.matches( "ObjectId\\([0-9abcdef]{24}\\)" ) ) {
                         objectId = new ObjectId( _id.substring( 9, 33 ) );
@@ -101,8 +101,8 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
                     doc.put( DocumentType.DOCUMENT_ID, new BsonObjectId( objectId ) );
                 } else if ( field.getName().equals( "_data" ) ) {
                     BsonDocument docVal = new BsonDocument();
-                    if ( !value.isNull() && value.getValueAs( String.class ).length() != 0 ) {
-                        String data = BsonUtil.fixBson( value.getValueAs( String.class ) );
+                    if ( !value.isNull() && value.value.asString().value.length() != 0 ) {
+                        String data = BsonUtil.fixBson( value.value.asString().value );
                         if ( data.matches( "[{].*[}]" ) ) {
                             docVal = BsonDocument.parse( data );
                         } else {

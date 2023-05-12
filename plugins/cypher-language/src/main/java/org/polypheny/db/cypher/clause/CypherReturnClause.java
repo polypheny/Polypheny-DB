@@ -37,7 +37,7 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 

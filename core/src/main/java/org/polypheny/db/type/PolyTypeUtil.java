@@ -81,7 +81,7 @@ public abstract class PolyTypeUtil {
      * @see Mappings#isIdentity(List, int)
      */
     public static ImmutableList<Integer> identity( int count ) {
-        return IntStream.range( 0, count ).boxed().collect( Collectors.toCollection( ImmutableList::of ) );
+        return ImmutableList.copyOf( IntStream.range( 0, count ).boxed().collect( Collectors.toList() ) );
     }
 
 

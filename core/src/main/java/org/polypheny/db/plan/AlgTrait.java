@@ -44,14 +44,14 @@ package org.polypheny.db.plan;
  * and {@link #equals(Object)}. If, however, new RelTrait instances are generated at runtime (e.g. based on state external to the planner), you must implement {@link #hashCode()} and
  * {@link #equals(Object)} for proper {@link AlgTraitDef#canonize canonization} of your RelTrait objects.
  */
-public interface AlgTrait {
+public interface AlgTrait<T extends AlgTraitDef<?>> {
 
     /**
      * Returns the RelTraitDef that defines this RelTrait.
      *
      * @return the RelTraitDef that defines this RelTrait
      */
-    AlgTraitDef getTraitDef();
+    T getTraitDef();
 
     /**
      * See <a href="#EqualsHashCodeNote">note about equals() and hashCode()</a>.
@@ -76,7 +76,7 @@ public interface AlgTrait {
      * @param trait Given trait
      * @return Whether this trait subsumes a given trait
      */
-    boolean satisfies( AlgTrait trait );
+    boolean satisfies( AlgTrait<?> trait );
 
     /**
      * Returns a succinct name for this trait. The planner may use this String to describe the trait.

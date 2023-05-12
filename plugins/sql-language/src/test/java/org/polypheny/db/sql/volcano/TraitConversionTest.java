@@ -232,13 +232,13 @@ public class TraitConversionTest {
 
 
         @Override
-        public AlgTraitDef getTraitDef() {
+        public AlgTraitDef<?> getTraitDef() {
             return NEW_TRAIT_DEF_INSTANCE;
         }
 
 
         @Override
-        public boolean satisfies( AlgTrait trait ) {
+        public boolean satisfies( AlgTrait<?> trait ) {
             return trait == this || trait == SIMPLE_DISTRIBUTION_ANY;
         }
 

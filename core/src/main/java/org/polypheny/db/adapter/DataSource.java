@@ -84,7 +84,7 @@ public abstract class DataSource<S extends StoreCatalog> extends Adapter<S> impl
     }
 
 
-    public static JsonSerializer<DataSource> getSerializer() {
+    public static JsonSerializer<DataSource<?>> getSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonSource = new JsonObject();

@@ -165,13 +165,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     private void addNamespaceIfNecessary( AllocationEntity entity ) {
         Adapter adapter = AdapterManager.getInstance().getAdapter( entity.adapterId );
 
-        if ( adapter.getCurrentSchema() == null || adapter.getCurrentSchema().getId() != entity.namespaceId ) {
+        if ( adapter.getCurrentNamespace() == null || adapter.getCurrentNamespace().getId() != entity.namespaceId ) {
             adapter.updateNamespace( entity.name, entity.namespaceId );
         }
 
         // re-add physical namespace, we could check first, but not necessary
 
-        getStoreSnapshot( entity.adapterId ).addNamespace( entity.namespaceId, adapter.getCurrentSchema() );
+        getStoreSnapshot( entity.adapterId ).addNamespace( entity.namespaceId, adapter.getCurrentNamespace() );
     }
 
 

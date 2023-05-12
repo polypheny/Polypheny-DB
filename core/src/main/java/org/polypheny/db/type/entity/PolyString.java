@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -31,25 +31,25 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
-public class PolyInteger extends PolyValue {
+public class PolyString extends PolyValue {
+
 
     @Serialize
-    public Integer value;
+    public String value;
 
 
-    public PolyInteger( @Deserialize("value") Integer value ) {
-        super( PolyType.INTEGER, true );
+    public PolyString( @Deserialize("value") String value ) {
+        super( PolyType.VARCHAR, true );
         this.value = value;
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyInteger.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyString.class, Expressions.constant( value ) );
     }
 
 
@@ -59,40 +59,40 @@ public class PolyInteger extends PolyValue {
             return -1;
         }
 
-        return this.value.compareTo( o.asInteger().value );
+        return value.compareTo( o.asString().value );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolyInteger.class );
+        return null;
+    }
+
+
+    public static class PolyStringSerializerDef extends SimpleSerializerDef<PolyString> {
+
+        @Override
+        protected BinarySerializer<PolyString> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyString item ) {
+                    out.writeUTF8( item.value );
+                }
+
+
+                @Override
+                public PolyString decode( BinaryInput in ) throws CorruptedDataException {
+                    return PolyString.of( in.readUTF8() );
+                }
+            };
+        }
+
     }
 
 
     @Override
     public String toString() {
-        return value.toString();
-    }
-
-
-    public static class PolyIntegerSerializerDef extends SimpleSerializerDef<PolyInteger> {
-
-        @Override
-        protected BinarySerializer<PolyInteger> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
-            return new BinarySerializer<>() {
-                @Override
-                public void encode( BinaryOutput out, PolyInteger item ) {
-                    out.writeInt( item.value );
-                }
-
-
-                @Override
-                public PolyInteger decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyInteger( in.readInt() );
-                }
-            };
-        }
-
+        return "\"" + value + "\"";
     }
 
 }

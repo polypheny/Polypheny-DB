@@ -66,13 +66,13 @@ public class ComparableList<T extends Comparable<T>> implements Comparable<Compa
     }
 
 
-    public static <T extends Comparable<T>> ComparableList<T> copyOf( Iterator<T> list ) {
+    public static <T extends Comparable<T>> ComparableList<T> copyOf( Iterator<? extends T> list ) {
         return new ComparableList<>( Lists.newArrayList( list ) );
     }
 
 
-    public static <T extends Comparable<T>> ComparableList<T> copyOf( Collection<T> list ) {
-        return ComparableList.copyOf( list.iterator() );
+    public static <T extends Comparable<T>> ComparableList<T> copyOf( Collection<? extends T> list ) {
+        return new ComparableList<>( List.copyOf( list ) );
     }
 
 

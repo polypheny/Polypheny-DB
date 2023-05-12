@@ -22,12 +22,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyList;
-import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.util.Pair;
 
@@ -53,13 +55,18 @@ public class TestGraphObject implements TestObject {
 
 
     @NotNull
-    public static Map<String, Object> getProps( Pair<String, Object>[] properties ) {
-        Map<String, Object> props = new HashMap<>();
+    public static Map<PolyString, PolyValue> getProps( Pair<String, Object>[] properties ) {
+        Map<PolyString, PolyValue> props = new HashMap<>();
 
         for ( Pair<String, Object> property : properties ) {
-            props.put( property.left, property.right );
+            props.put( PolyString.of( property.left ), TestHelper.toPolyValue( property.right ) );
         }
         return props;
+    }
+
+
+    static List<PolyString> getLabels( List<String> labels ) {
+        return labels.stream().map( PolyString::of ).collect( Collectors.toList() );
     }
 
 

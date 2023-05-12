@@ -34,7 +34,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 
 
 public abstract class LpgUnwind extends SingleAlg implements LpgAlg {

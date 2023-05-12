@@ -44,7 +44,7 @@ import org.polypheny.db.plan.AlgMultipleTrait;
  *
  * An ordering consists of a list of one or more column ordinals and the direction of the ordering.
  */
-public interface AlgCollation extends AlgMultipleTrait, Serializable {
+public interface AlgCollation extends AlgMultipleTrait<AlgCollationTraitDef>, Serializable {
 
     /**
      * Returns the ordinals and directions of the columns in this ordering.

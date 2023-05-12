@@ -19,7 +19,9 @@ package org.polypheny.db.adapter.java;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Value;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.AdapterManager.Function4;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
@@ -32,13 +34,15 @@ public class AdapterTemplate {
     public Class<?> clazz;
     public String adapterName;
     public AdapterType adapterType;
+    Function4<Long, String, Map<String, String>, Adapter<?>> deployer;
 
 
-    public AdapterTemplate( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
+    public AdapterTemplate( Class<?> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         this.adapterName = adapterName;
         this.clazz = clazz;
         this.defaultSettings = defaultSettings;
         this.adapterType = getAdapterType( clazz );
+        this.deployer = deployer;
     }
 
 
@@ -48,7 +52,7 @@ public class AdapterTemplate {
 
 
     public static AdapterTemplate fromString( String adapterName, AdapterType adapterType ) {
-        return AdapterManager.getAdapterType( adapterName.toUpperCase().split( "-DB" )[0] + "_" + adapterType );// todo dl fix on UI layer
+        return AdapterManager.getAdapterType( adapterName, adapterType );
     }
 
 

@@ -37,10 +37,8 @@ package org.polypheny.db.interpreter;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
 
 
 /**
@@ -59,7 +57,7 @@ public enum InterpretableConvention implements Convention {
 
 
     @Override
-    public Class getInterface() {
+    public Class<?> getInterface() {
         return EnumerableAlg.class;
     }
 
@@ -71,13 +69,7 @@ public enum InterpretableConvention implements Convention {
 
 
     @Override
-    public AlgTraitDef getTraitDef() {
-        return ConventionTraitDef.INSTANCE;
-    }
-
-
-    @Override
-    public boolean satisfies( AlgTrait trait ) {
+    public boolean satisfies( AlgTrait<?> trait ) {
         return this == trait;
     }
 

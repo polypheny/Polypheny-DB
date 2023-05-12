@@ -178,7 +178,7 @@ public class AlgDistributions {
 
 
         @Override
-        public boolean satisfies( AlgTrait trait ) {
+        public boolean satisfies( AlgTrait<?> trait ) {
             if ( trait == this || trait == ANY ) {
                 return true;
             }

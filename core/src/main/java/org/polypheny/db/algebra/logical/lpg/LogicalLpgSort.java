@@ -51,8 +51,8 @@ public class LogicalLpgSort extends LpgSort {
     @Override
     public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
         return new LogicalLpgSort( newInput.getCluster(), traitSet, collation, newInput,
-                offset == null ? null : ((RexLiteral) offset).getValueAs( Integer.class ),
-                fetch == null ? null : ((RexLiteral) fetch).getValueAs( Integer.class ) );
+                offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
+                fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );
     }
 
 

@@ -30,7 +30,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 public class CypherAggregate extends CypherExpression {

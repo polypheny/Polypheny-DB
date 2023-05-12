@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.core.lpg.LpgMatch;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 
 
 public class LogicalLpgMatch extends LpgMatch {

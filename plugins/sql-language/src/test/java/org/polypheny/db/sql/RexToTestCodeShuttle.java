@@ -121,7 +121,7 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
                 return "nullVarchar";
             }
         }
-        return "/*" + literal.getTypeName().getName() + "*/" + literal.toString();
+        return "/*" + literal.getPolyType().getName() + "*/" + literal.toString();
     }
 
 

@@ -1204,7 +1204,7 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
 
                     // Check if we now have two  dataPlacements in table
-                    table = Catalog.snapshot().rel().getTable( table.id );
+                    table = Catalog.snapshot().rel().getTable( table.id ).orElseThrow();
                     Assert.assertEquals( 2, Catalog.snapshot().alloc().getDataPlacements( table.id ).size() );
 
                     // Modify partitions on second store

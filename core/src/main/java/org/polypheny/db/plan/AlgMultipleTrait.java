@@ -39,7 +39,7 @@ package org.polypheny.db.plan;
  *
  * The most common example is sorted-ness (collation). The TIME dimension table might be sorted by [year, month, date] and also by [time_id].
  */
-public interface AlgMultipleTrait extends AlgTrait, Comparable<AlgMultipleTrait> {
+public interface AlgMultipleTrait<T extends AlgTraitDef<?>> extends AlgTrait<T>, Comparable<AlgMultipleTrait<T>> {
 
     /**
      * Returns whether this trait is satisfied by every instance of the trait (including itself).

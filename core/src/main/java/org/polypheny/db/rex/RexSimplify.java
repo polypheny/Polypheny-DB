@@ -70,6 +70,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -311,8 +312,8 @@ public class RexSimplify {
         // "1 != NULL" becomes UNKNOWN (or FALSE if unknownAsFalse);
         // "1 != '1'" is unchanged because the types are not the same.
         if ( o0.isA( Kind.LITERAL ) && o1.isA( Kind.LITERAL ) && PolyTypeUtil.equalSansNullability( rexBuilder.getTypeFactory(), o0.getType(), o1.getType() ) ) {
-            final C v0 = ((RexLiteral) o0).getValueAs( clazz );
-            final C v1 = ((RexLiteral) o1).getValueAs( clazz );
+            final PolyValue v0 = ((RexLiteral) o0).value;
+            final PolyValue v1 = ((RexLiteral) o1).value;
             if ( v0 == null || v1 == null ) {
                 return unknownAs == FALSE
                         ? rexBuilder.makeLiteral( false )
@@ -1113,7 +1114,7 @@ public class RexSimplify {
         }
         // Try to simplify the expression
         final Multimap<RexNode, Pair<RexNode, RexNode>> equalityTerms = ArrayListMultimap.create();
-        final Map<RexNode, Pair<Range<C>, List<RexNode>>> rangeTerms = new HashMap<>();
+        final Map<RexNode, Pair<Range<PolyValue>, List<RexNode>>> rangeTerms = new HashMap<>();
         final Map<RexNode, RexLiteral> equalityConstantTerms = new HashMap<>();
         final Set<RexNode> negatedTerms = new HashSet<>();
         final Set<RexNode> nullOperands = new HashSet<>();
@@ -1124,7 +1125,7 @@ public class RexSimplify {
         for ( RexNode predicate : predicates.pulledUpPredicates ) {
             final Comparison comparison = Comparison.of( predicate );
             if ( comparison != null && comparison.kind != Kind.NOT_EQUALS ) { // not supported yet
-                final C v0 = comparison.literal.getValueAs( clazz );
+                final PolyValue v0 = comparison.literal.getValueAs( clazz );
                 if ( v0 != null ) {
                     final RexNode result = processRange( rexBuilder, terms, rangeTerms, predicate, comparison.ref, v0, comparison.kind );
                     if ( result != null ) {
@@ -1214,7 +1215,7 @@ public class RexSimplify {
                     }
                     // Range
                     if ( comparison != null && comparison.kind != Kind.NOT_EQUALS ) { // not supported yet
-                        final C constant = comparison.literal.getValueAs( clazz );
+                        final PolyValue constant = comparison.literal.getValueAs( clazz );
                         final RexNode result = processRange( rexBuilder, terms, rangeTerms, term, comparison.ref, constant, comparison.kind );
                         if ( result != null ) {
                             // Not satisfiable
@@ -1311,9 +1312,9 @@ public class RexSimplify {
                 || comparison.literal.getValue() == null ) {
             return e;
         }
-        final C v0 = comparison.literal.getValueAs( clazz );
-        final Range<C> range = range( comparison.kind, v0 );
-        final Range<C> range2 = residue( comparison.ref, range, predicates.pulledUpPredicates, clazz );
+        final PolyValue v0 = comparison.literal.getValueAs( clazz );
+        final Range<PolyValue> range = range( comparison.kind, v0 );
+        final Range<PolyValue> range2 = residue( comparison.ref, range, predicates.pulledUpPredicates, clazz );
         if ( range2 == null ) {
             // Term is impossible to satisfy given these predicates
             return rexBuilder.makeLiteral( false );
@@ -1335,7 +1336,7 @@ public class RexSimplify {
             return rexBuilder.makeCall(
                     OperatorRegistry.get( OperatorName.EQUALS ),
                     comparison.ref,
-                    rexBuilder.makeLiteral( range2.lowerEndpoint(), comparison.literal.getType(), comparison.literal.getTypeName() ) );
+                    rexBuilder.makeLiteral( range2.lowerEndpoint(), comparison.literal.getType(), comparison.literal.getPolyType() ) );
         } else {
             // range has been reduced but it's not worth simplifying
             return e;
@@ -1354,7 +1355,7 @@ public class RexSimplify {
      * <li>{@code residue($0 < 10, [$0 < 20, $0 > 0])} returns {@code $0 < 10}</li>
      * </ul>
      */
-    private <C extends Comparable<C>> Range<C> residue( RexNode ref, Range<C> r0, List<RexNode> predicates, Class<C> clazz ) {
+    private <C extends Comparable<C>> Range<PolyValue> residue( RexNode ref, Range<PolyValue> r0, List<RexNode> predicates, Class<C> clazz ) {
         for ( RexNode predicate : predicates ) {
             switch ( predicate.getKind() ) {
                 case EQUALS:
@@ -1365,8 +1366,8 @@ public class RexSimplify {
                     final RexCall call = (RexCall) predicate;
                     if ( call.operands.get( 0 ).equals( ref ) && call.operands.get( 1 ) instanceof RexLiteral ) {
                         final RexLiteral literal = (RexLiteral) call.operands.get( 1 );
-                        final C c1 = literal.getValueAs( clazz );
-                        final Range<C> r1 = range( predicate.getKind(), c1 );
+                        final PolyValue c1 = literal.getValueAs( clazz );
+                        final Range<PolyValue> r1 = range( predicate.getKind(), c1 );
                         if ( r0.encloses( r1 ) ) {
                             // Given these predicates, term is always satisfied. e.g. r0 is "$0 < 10", r1 is "$0 < 5"
                             return Range.all();
@@ -1511,7 +1512,7 @@ public class RexSimplify {
             case LITERAL:
                 final RexLiteral literal = (RexLiteral) operand;
                 final Comparable value = literal.getValueAs( Comparable.class );
-                final PolyType typeName = literal.getTypeName();
+                final PolyType typeName = literal.getPolyType();
 
                 // First, try to remove the cast without changing the value.
                 // makeCast and canRemoveCastFromLiteral have the same logic, so we are sure to be able to remove the cast.
@@ -1520,7 +1521,7 @@ public class RexSimplify {
                 }
 
                 // Next, try to convert the value to a different type, e.g. CAST('123' as integer)
-                switch ( literal.getTypeName() ) {
+                switch ( literal.getPolyType() ) {
                     case TIME:
                         switch ( e.getType().getPolyType() ) {
                             case TIMESTAMP:
@@ -1639,18 +1640,18 @@ public class RexSimplify {
     private static <C extends Comparable<C>> RexNode processRange(
             RexBuilder rexBuilder,
             List<RexNode> terms,
-            Map<RexNode, Pair<Range<C>, List<RexNode>>> rangeTerms,
+            Map<RexNode, Pair<Range<PolyValue>, List<RexNode>>> rangeTerms,
             RexNode term,
             RexNode ref,
-            C v0, Kind comparison ) {
-        Pair<Range<C>, List<RexNode>> p = rangeTerms.get( ref );
+            PolyValue v0, Kind comparison ) {
+        Pair<Range<PolyValue>, List<RexNode>> p = rangeTerms.get( ref );
         if ( p == null ) {
             rangeTerms.put( ref, Pair.of( range( comparison, v0 ), (List<RexNode>) ImmutableList.of( term ) ) );
         } else {
             // Exists
             boolean removeUpperBound = false;
             boolean removeLowerBound = false;
-            Range<C> r = p.left;
+            Range<PolyValue> r = p.left;
             final RexLiteral trueLiteral = rexBuilder.makeLiteral( true );
             switch ( comparison ) {
                 case EQUALS:

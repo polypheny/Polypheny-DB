@@ -36,14 +36,14 @@ public class CsvPlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        Map<String, String> settings = ImmutableMap.of(
+        Map<String, String> defaults = ImmutableMap.of(
                 "mode", "embedded",
                 "method", "upload",
                 "directory", "classpath://hr",
                 "maxStringLength", "255"
         );
 
-        AdapterManager.addAdapterTemplate( CsvSource.class, "CSV", settings );
+        AdapterManager.addAdapterDeploy( CsvSource.class, "CSV", defaults, CsvSource::new );
     }
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -24,6 +24,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -31,18 +32,17 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
-public class PolyFloat extends PolyValue {
+@Value(staticConstructor = "of")
+public class PolyDouble extends PolyNumber {
 
     @Serialize
-    public Float value;
+    public Double value;
 
 
-    public PolyFloat( @Deserialize("value") Float value ) {
-        super( PolyType.FLOAT, false );
+    public PolyDouble( @Deserialize("value") Double value ) {
+        super( PolyType.DOUBLE, false );
         this.value = value;
     }
 
@@ -52,36 +52,61 @@ public class PolyFloat extends PolyValue {
         if ( !isSameType( o ) ) {
             return -1;
         }
-        return value.compareTo( o.asFloat().value );
+
+        return this.value.compareTo( o.asDouble().value );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyFloat.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyDouble.class, Expressions.constant( value ) );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolyFloat.class );
+        return PolySerializable.deserialize( serialize(), PolyDouble.class );
     }
 
 
-    public static class PolyFloatSerializerDef extends SimpleSerializerDef<PolyFloat> {
+    @Override
+    public int intValue() {
+        return value.intValue();
+    }
+
+
+    @Override
+    public long longValue() {
+        return value.longValue();
+    }
+
+
+    @Override
+    public double doubleValue() {
+        return value;
+    }
+
+
+    @Override
+    public BigDecimal bigDecimalValue() {
+        return BigDecimal.valueOf( value );
+    }
+
+
+    public static class PolyDoubleSerializerDef extends SimpleSerializerDef<PolyDouble> {
 
         @Override
-        protected BinarySerializer<PolyFloat> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+        protected BinarySerializer<PolyDouble> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
             return new BinarySerializer<>() {
                 @Override
-                public void encode( BinaryOutput out, PolyFloat item ) {
-                    out.writeFloat( item.value );
+                public void encode( BinaryOutput out, PolyDouble item ) {
+                    out.writeDouble( item.value );
                 }
 
 
                 @Override
-                public PolyFloat decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyFloat( in.readFloat() );
+                public PolyDouble decode( BinaryInput in ) throws CorruptedDataException {
+                    return new PolyDouble( in.readDouble() );
                 }
             };
         }

@@ -20,9 +20,9 @@ import com.google.gson.annotations.Expose;
 import java.util.Map.Entry;
 import lombok.Getter;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyList;
-import org.polypheny.db.type.entity.document.PolyString;
 
 
 @Getter

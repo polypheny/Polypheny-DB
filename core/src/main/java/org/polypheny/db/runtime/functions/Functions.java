@@ -117,6 +117,9 @@ import org.polypheny.db.runtime.Like;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyNumber;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
@@ -2203,42 +2206,49 @@ public class Functions {
 
 
     public static int greater( int b0, int b1 ) {
-        return b0 > b1 ? b0 : b1;
+        return Math.max( b0, b1 );
     }
 
 
     public static int lesser( int b0, int b1 ) {
-        return b0 > b1 ? b1 : b0;
+        return Math.min( b0, b1 );
     }
 
 
     public static long greater( long b0, long b1 ) {
-        return b0 > b1 ? b0 : b1;
+        return Math.max( b0, b1 );
     }
 
 
     public static long lesser( long b0, long b1 ) {
-        return b0 > b1 ? b1 : b0;
+        return Math.min( b0, b1 );
     }
 
 
     public static float greater( float b0, float b1 ) {
-        return b0 > b1 ? b0 : b1;
+        return Math.max( b0, b1 );
     }
 
 
     public static float lesser( float b0, float b1 ) {
-        return b0 > b1 ? b1 : b0;
+        return Math.min( b0, b1 );
     }
 
 
     public static double greater( double b0, double b1 ) {
-        return b0 > b1 ? b0 : b1;
+        return Math.max( b0, b1 );
     }
 
 
     public static double lesser( double b0, double b1 ) {
-        return b0 > b1 ? b1 : b0;
+        return Math.min( b0, b1 );
+    }
+
+
+    public static PolyNumber lesser( PolyNumber b0, PolyNumber b1 ) {
+        return b0 == null ? b1
+                : b1 == null ? null
+                        : b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) < 0 ? b0 : b1;
     }
 
 
@@ -2451,14 +2461,16 @@ public class Functions {
     }
 
 
-    public static int toInt( Object o ) {
-        return o instanceof Integer ? (Integer) o
-                : o instanceof Number ? toInt( (Number) o )
-                        : o instanceof String ? toInt( (String) o )
-                                : o instanceof java.util.Date ? toInt( (java.util.Date) o )
-                                        : o instanceof java.util.GregorianCalendar ? toInt( ((java.util.GregorianCalendar) o).getTime() ) // hack for views for now
-                                                : o instanceof org.polypheny.db.util.DateString ? toInt( new Date( ((org.polypheny.db.util.DateString) o).getMillisSinceEpoch() ) ) // hack for views for now
-                                                        : (Integer) cannotConvert( o, int.class );
+    @SuppressWarnings("unused")
+    public static Object toInt( Object o ) {
+        return o instanceof PolyValue ? (PolyInteger) o
+                : o instanceof Integer ? (Integer) o
+                        : o instanceof Number ? toInt( (Number) o )
+                                : o instanceof String ? toInt( (String) o )
+                                        : o instanceof java.util.Date ? toInt( (java.util.Date) o )
+                                                : o instanceof java.util.GregorianCalendar ? toInt( ((java.util.GregorianCalendar) o).getTime() ) // hack for views for now
+                                                        : o instanceof org.polypheny.db.util.DateString ? toInt( new Date( ((org.polypheny.db.util.DateString) o).getMillisSinceEpoch() ) ) // hack for views for now
+                                                                : (Integer) cannotConvert( o, int.class );
     }
 
 

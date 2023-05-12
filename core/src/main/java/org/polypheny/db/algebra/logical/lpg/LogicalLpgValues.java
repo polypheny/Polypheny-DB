@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.logical.lpg;
 
 import com.google.common.collect.ImmutableList;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,13 +43,11 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
 
@@ -179,7 +176,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     private static RexLiteral getNls( String value, BasicPolyType type ) {
-        return new RexLiteral( new NlsString( value, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), type, PolyType.CHAR );
+        return new RexLiteral( PolyString.of( value ), type, PolyType.CHAR );
     }
 
 

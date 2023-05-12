@@ -30,7 +30,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 
 
 public class LogicalLpgModify extends LpgModify<CatalogEntity> implements RelationalTransformable {

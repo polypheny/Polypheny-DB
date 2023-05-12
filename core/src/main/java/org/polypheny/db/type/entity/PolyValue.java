@@ -25,30 +25,21 @@ import io.activej.serializer.SerializerBuilder;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.document.PolyBoolean;
-import org.polypheny.db.type.entity.document.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
+import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
+import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
+import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
-import org.polypheny.db.type.entity.document.PolyDouble;
-import org.polypheny.db.type.entity.document.PolyDouble.PolyDoubleSerializerDef;
-import org.polypheny.db.type.entity.document.PolyFloat;
-import org.polypheny.db.type.entity.document.PolyFloat.PolyFloatSerializerDef;
-import org.polypheny.db.type.entity.document.PolyInteger;
-import org.polypheny.db.type.entity.document.PolyInteger.PolyIntegerSerializerDef;
-import org.polypheny.db.type.entity.document.PolyList;
-import org.polypheny.db.type.entity.document.PolyLong;
-import org.polypheny.db.type.entity.document.PolyString;
-import org.polypheny.db.type.entity.document.PolyString.PolyStringSerializerDef;
-import org.polypheny.db.type.entity.document.PolyTime;
-import org.polypheny.db.type.entity.document.PolyTimeStamp;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -270,12 +261,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyBoolean asBoolean() {
         if ( isBoolean() ) {
             return (PolyBoolean) this;
         }
-        return null;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -284,12 +275,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyInteger asInteger() {
         if ( isInteger() ) {
             return (PolyInteger) this;
         }
-        return null;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -298,12 +289,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyDocument asDocument() {
         if ( isDocument() ) {
             return (PolyDocument) this;
         }
-        return null;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -312,12 +303,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public <T extends PolyValue> PolyList<T> asList() {
         if ( isList() ) {
             return (PolyList<T>) this;
         }
-        return null;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -326,12 +317,26 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyString asString() {
         if ( isString() ) {
             return (PolyString) this;
         }
-        return null;
+        throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
+    public boolean isBigDecimal() {
+        return type == PolyType.DECIMAL;
+    }
+
+
+    @NonNull
+    public PolyBigDecimal asPolyBigDecimal() {
+        if ( isBigDecimal() ) {
+            return (PolyBigDecimal) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -340,12 +345,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyFloat asFloat() {
         if ( isFloat() ) {
             return (PolyFloat) this;
         }
-        return null;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -354,12 +359,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyDouble asDouble() {
         if ( isDouble() ) {
             return (PolyDouble) this;
         }
-        return null;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -368,11 +373,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NonNull
     public PolyLong asLong() {
-        if ( !isLong() ) {
-            return null;
+        if ( isLong() ) {
+            return (PolyLong) this;
         }
-        return (PolyLong) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -381,11 +387,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NonNull
     public PolyDate asDate() {
-        if ( !isDate() ) {
-            return null;
+        if ( isDate() ) {
+            return (PolyDate) this;
         }
-        return (PolyDate) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -394,12 +401,13 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NonNull
     public PolyTime asTime() {
-        if ( !isTime() ) {
-            return null;
+        if ( isTime() ) {
+            return (PolyTime) this;
         }
 
-        return (PolyTime) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -408,11 +416,13 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NonNull
     public PolyTimeStamp asTimeStamp() {
-        if ( !isTimestamp() ) {
-            return null;
+        if ( isTimestamp() ) {
+            return (PolyTimeStamp) this;
         }
-        return (PolyTimeStamp) this;
+
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -421,11 +431,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NonNull
     public PolyMap<PolyValue, PolyValue> asMap() {
-        if ( !isMap() ) {
-            return null;
+        if ( isMap() ) {
+            return (PolyMap<PolyValue, PolyValue>) this;
         }
-        return (PolyMap<PolyValue, PolyValue>) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -434,12 +445,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyEdge asEdge() {
-        if ( !isEdge() ) {
-            return null;
+        if ( isEdge() ) {
+            return (PolyEdge) this;
         }
-        return (PolyEdge) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -448,12 +459,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyNode asNode() {
-        if ( !isNode() ) {
-            return null;
+        if ( isNode() ) {
+            return (PolyNode) this;
         }
-        return (PolyNode) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -462,12 +473,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyPath asPath() {
-        if ( !isPath() ) {
-            return null;
+        if ( isPath() ) {
+            return (PolyPath) this;
         }
-        return (PolyPath) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
@@ -476,17 +487,38 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Nullable
+    @NonNull
     public PolyGraph asGraph() {
-        if ( !isGraph() ) {
-            return null;
+        if ( isGraph() ) {
+            return (PolyGraph) this;
         }
-        return (PolyGraph) this;
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 
     public boolean isNumber() {
         return PolyType.NUMERIC_TYPES.contains( type );
+    }
+
+
+    public PolyNumber asNumber() {
+        if ( isNumber() ) {
+            return (PolyNumber) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
+    public boolean isInterval() {
+        return PolyType.INTERVAL_TYPES.contains( type );
+    }
+
+
+    public PolyInterval asInterval() {
+        if ( isInterval() ) {
+            return (PolyInterval) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
 

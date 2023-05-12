@@ -55,6 +55,7 @@ public class CollationConversionTest {
 
     private static final TestRelCollationImpl ROOT_COLLATION = new TestRelCollationImpl( ImmutableList.of( new AlgFieldCollation( 0 ) ) );
 
+    @lombok.Getter
     private static final TestRelCollationTraitDef COLLATION_TRAIT_DEF = new TestRelCollationTraitDef();
 
 
@@ -243,18 +244,13 @@ public class CollationConversionTest {
         }
 
 
-        @Override
-        public AlgTraitDef getTraitDef() {
-            return COLLATION_TRAIT_DEF;
-        }
-
     }
 
 
     /**
      * Dummy collation trait def implementation for the test (uses {@link PhysicalSort} below).
      */
-    private static class TestRelCollationTraitDef extends AlgTraitDef<AlgCollation> {
+    static class TestRelCollationTraitDef extends AlgTraitDef<AlgCollation> {
 
         @Override
         public Class<AlgCollation> getTraitClass() {

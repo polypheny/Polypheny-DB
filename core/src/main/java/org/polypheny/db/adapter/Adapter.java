@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
@@ -47,11 +49,12 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.transaction.PolyXid;
 
 @Getter
 @Slf4j
-public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modifiable {
+public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modifiable, Expressible {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
@@ -104,9 +107,15 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modi
     }
 
 
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( AdapterManager.ADAPTER_MANAGER_EXPRESSION, "getAdapter", Expressions.constant( adapterId ) );
+    }
+
+
     public abstract void updateNamespace( String name, long id );
 
-    public abstract Namespace getCurrentSchema();
+    public abstract Namespace getCurrentNamespace();
 
     public abstract void truncate( Context context, long allocId );
 

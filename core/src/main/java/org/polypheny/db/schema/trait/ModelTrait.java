@@ -21,7 +21,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.Convention;
 
 
@@ -29,7 +28,7 @@ import org.polypheny.db.plan.Convention;
  * Model trait models the different possible "schema", also namespace models,
  * this is on purpose different to the {@link Convention} trait to preserve the model information on push-down of each {@link AlgNode}
  */
-public class ModelTrait implements AlgTrait {
+public class ModelTrait implements AlgTrait<ModelTraitDef> {
 
     public static final ModelTrait RELATIONAL = new ModelTrait( NamespaceType.RELATIONAL );
 
@@ -47,13 +46,13 @@ public class ModelTrait implements AlgTrait {
 
 
     @Override
-    public AlgTraitDef getTraitDef() {
+    public ModelTraitDef getTraitDef() {
         return ModelTraitDef.INSTANCE;
     }
 
 
     @Override
-    public boolean satisfies( AlgTrait trait ) {
+    public boolean satisfies( AlgTrait<?> trait ) {
         return this == trait
                 || (trait instanceof ModelTrait && ((ModelTrait) trait).dataModel == this.dataModel);
     }

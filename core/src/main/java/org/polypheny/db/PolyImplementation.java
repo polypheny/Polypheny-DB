@@ -211,8 +211,7 @@ public class PolyImplementation<T> {
             if ( size != -1 ) {
                 res = MetaImpl.collect( cursorFactory, (Iterator<Object>) LimitIterator.of( iterator, size ), new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
             } else {
-                res = (List<List<T>>) MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator, new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
-                ;
+                res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator, new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
             }
             this.hasMoreRows = iterator.hasNext();
             if ( isTimed ) {

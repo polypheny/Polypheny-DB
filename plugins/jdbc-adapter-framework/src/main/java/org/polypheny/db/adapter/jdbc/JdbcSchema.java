@@ -46,6 +46,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -66,6 +67,7 @@ import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TableType;
+import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
@@ -78,7 +80,7 @@ import org.polypheny.db.type.PolyType;
  * against those tables, pushing down as much as possible of the query logic to SQL.
  */
 @Slf4j
-public class JdbcSchema implements Namespace, Schema {
+public class JdbcSchema implements Namespace, Schema, Expressible {
 
     final ConnectionFactory connectionFactory;
     public final SqlDialect dialect;
@@ -87,7 +89,6 @@ public class JdbcSchema implements Namespace, Schema {
     private final JdbcConvention convention;
 
     private final Map<String, JdbcEntity> tableMap;
-    private final Map<String, String> physicalToLogicalTableNameMap;
 
     public final Adapter<?> adapter;
     @Getter
@@ -100,14 +101,12 @@ public class JdbcSchema implements Namespace, Schema {
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
             Map<String, JdbcEntity> tableMap,
-            Map<String, String> physicalToLogicalTableNameMap,
-            Adapter adapter ) {
+            Adapter<?> adapter ) {
         this.id = id;
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         this.convention = convention;
         this.tableMap = tableMap;
-        this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
         this.adapter = adapter;
     }
 
@@ -131,7 +130,6 @@ public class JdbcSchema implements Namespace, Schema {
         convention.setJdbcSchema( this );
         this.convention = convention;
         this.tableMap = new HashMap<>();
-        this.physicalToLogicalTableNameMap = new HashMap<>();
         this.adapter = adapter;
     }
 
@@ -154,12 +152,12 @@ public class JdbcSchema implements Namespace, Schema {
 
     public static JdbcSchema create(
             Long id,
-            RelStoreCatalog snapshot,
+            RelStoreCatalog storeCatalog,
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
             Adapter<?> adapter ) {
-        final Expression expression = Schemas.subSchemaExpression( snapshot, id, adapter.getAdapterId(), JdbcSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( storeCatalog, id, adapter.getAdapterId(), JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
         return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
     }
@@ -187,7 +185,6 @@ public class JdbcSchema implements Namespace, Schema {
                 dialect,
                 convention,
                 tableMap,
-                physicalToLogicalTableNameMap,
                 adapter );
     }
 
@@ -309,6 +306,12 @@ public class JdbcSchema implements Namespace, Schema {
     @Override
     public Set<String> getSubNamespaceNames() {
         return ImmutableSet.of();
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call( adapter.asExpression(), "getCurrentNamespace" ); //todo change
     }
 
 }

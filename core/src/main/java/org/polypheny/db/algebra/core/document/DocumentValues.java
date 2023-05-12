@@ -32,8 +32,8 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.document.PolyString;
 
 
 public abstract class DocumentValues extends AbstractAlgNode implements DocumentAlg {

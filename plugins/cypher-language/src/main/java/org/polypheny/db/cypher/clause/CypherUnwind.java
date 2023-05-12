@@ -38,7 +38,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 

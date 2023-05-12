@@ -103,9 +103,7 @@ public abstract class AlgTraitDef<T extends AlgTrait> {
      * @return a canonical RelTrait.
      */
     public final T canonize( T trait ) {
-        if ( !(trait instanceof AlgCompositeTrait) ) {
-            assert getTraitClass().isInstance( trait ) : getClass().getName() + " cannot canonize a " + trait.getClass().getName();
-        }
+        assert trait instanceof AlgCompositeTrait || getTraitClass().isInstance( trait ) : getClass().getName() + " cannot canonize a " + trait.getClass().getName();
         return interner.intern( trait );
     }
 

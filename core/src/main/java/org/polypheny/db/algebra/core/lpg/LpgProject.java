@@ -31,7 +31,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 
 
 public abstract class LpgProject extends SingleAlg implements LpgAlg {

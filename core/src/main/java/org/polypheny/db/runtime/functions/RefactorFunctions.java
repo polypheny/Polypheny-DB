@@ -17,9 +17,9 @@
 package org.polypheny.db.runtime.functions;
 
 import java.util.List;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.util.Pair;
 
 

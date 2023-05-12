@@ -14,49 +14,43 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
-public class PolyDate extends PolyValue {
+@Value(staticConstructor = "of")
+public class PolySymbol extends PolyValue {
 
-    public long value;
+    public Enum<?> value;
 
 
-    public PolyDate( long sinceEpoch, boolean nullable ) {
-        super( PolyType.DATE, nullable );
-        this.value = sinceEpoch;
+    public PolySymbol( Enum<?> value ) {
+        super( PolyType.SYMBOL, false );
+        this.value = value;
     }
 
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isDate() ) {
-            return -1;
-        }
-
-        return Long.compare( value, o.asDate().value );
+        return 0;
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyLong.class, Expressions.constant( value ) );
+        return null;
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolyDate.class );
+        return null;
     }
 
 }

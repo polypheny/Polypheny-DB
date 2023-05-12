@@ -47,6 +47,7 @@ import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -57,6 +58,12 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.DocResult;
 import org.polypheny.db.webui.models.Result;
@@ -122,6 +129,24 @@ public class TestHelper {
         } catch ( NoSuchFieldException | IllegalAccessException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    public static PolyValue toPolyValue( Object value ) {
+
+        if ( value instanceof Integer ) {
+            return PolyInteger.of( (Integer) value );
+        } else if ( value instanceof Long ) {
+            return PolyLong.of( (Long) value );
+        } else if ( value instanceof Float ) {
+            return PolyFloat.of( (Float) value );
+        } else if ( value instanceof Double ) {
+            return PolyDouble.of( (Double) value );
+        } else if ( value instanceof String ) {
+            return PolyString.of( (String) value );
+        }
+
+        throw new NotImplementedException();
     }
 
 

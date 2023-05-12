@@ -38,6 +38,7 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -252,7 +253,7 @@ public abstract class Index {
      */
 
 
-    protected ImmutableList<RexLiteral> makeRexRow( final AlgDataType rowType, final RexBuilder rexBuilder, final List<Object> tuple ) {
+    protected ImmutableList<RexLiteral> makeRexRow( final AlgDataType rowType, final RexBuilder rexBuilder, final List<PolyValue> tuple ) {
         assert rowType.getFieldCount() == tuple.size();
         List<RexLiteral> row = new ArrayList<>( tuple.size() );
         for ( int i = 0; i < tuple.size(); ++i ) {

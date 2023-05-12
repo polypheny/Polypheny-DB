@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 /**
  * Calling convention trait.
  */
-public interface Convention extends AlgTrait, Serializable {
+public interface Convention extends AlgTrait<ConventionTraitDef>, Serializable {
 
     /**
      * Convention that for a relational expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
@@ -52,7 +52,7 @@ public interface Convention extends AlgTrait, Serializable {
      */
     Convention NONE = new Impl( "NONE", AlgNode.class );
 
-    Class getInterface();
+    Class<?> getInterface();
 
     String getName();
 
@@ -75,6 +75,11 @@ public interface Convention extends AlgTrait, Serializable {
      * @return Whether we should add converters
      */
     boolean useAbstractConvertersForConversion( AlgTraitSet fromTraits, AlgTraitSet toTraits );
+
+    @Override
+    default ConventionTraitDef getTraitDef() {
+        return ConventionTraitDef.INSTANCE;
+    }
 
     /**
      * Default implementation.
@@ -103,7 +108,7 @@ public interface Convention extends AlgTrait, Serializable {
 
 
         @Override
-        public boolean satisfies( AlgTrait trait ) {
+        public boolean satisfies( AlgTrait<?> trait ) {
             return this == trait;
         }
 
@@ -120,10 +125,6 @@ public interface Convention extends AlgTrait, Serializable {
         }
 
 
-        @Override
-        public AlgTraitDef<?> getTraitDef() {
-            return ConventionTraitDef.INSTANCE;
-        }
 
 
         @Override

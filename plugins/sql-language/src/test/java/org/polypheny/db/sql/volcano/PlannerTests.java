@@ -52,7 +52,7 @@ class PlannerTests {
      */
     static final Convention PHYS_CALLING_CONVENTION = new Convention.Impl( "PHYS", AlgNode.class ) {
         @Override
-        public boolean canConvertConvention( Convention toConvention ) {
+        public boolean canConvertConvention( Convention<?> toConvention ) {
             return true;
         }
 

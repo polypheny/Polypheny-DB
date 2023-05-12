@@ -66,11 +66,12 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyBoolean;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.document.PolyInteger;
-import org.polypheny.db.type.entity.document.PolyString;
 
 
 public class BsonUtil {
@@ -811,7 +812,7 @@ public class BsonUtil {
         Document doc = new Document();
 
         for ( Entry<RexLiteral, RexLiteral> entry : map.entrySet() ) {
-            assert entry.getKey().getTypeName() == PolyType.CHAR;
+            assert entry.getKey().getPolyType() == PolyType.CHAR;
             doc.put( entry.getKey().getValueAs( String.class ), getAsBson( entry.getValue(), null ) );
         }
         return doc;
@@ -943,7 +944,7 @@ public class BsonUtil {
 
                 return new PolyDocument( document );
             case ARRAY:
-                org.polypheny.db.type.entity.document.PolyList list = new org.polypheny.db.type.entity.document.PolyList();
+                PolyList list = new PolyList();
 
                 for ( BsonValue value : input.asArray() ) {
                     if ( !value.isDocument() ) {

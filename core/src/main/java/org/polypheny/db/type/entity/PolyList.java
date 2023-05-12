@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
@@ -32,7 +32,6 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)

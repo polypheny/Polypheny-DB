@@ -41,7 +41,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.AbstractList;
 import java.util.AbstractMap;
@@ -51,6 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -59,11 +59,10 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyList;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -169,6 +168,7 @@ import org.polypheny.db.util.Util;
  * </tr>
  * </table>
  */
+@Value
 public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
     private static final Gson gson = new Gson();
@@ -177,19 +177,19 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * The value of this literal. Must be consistent with its type, as per {@link #valueMatchesType}. For example, you can't store an {@link Integer} value here just because you feel like it -- all numbers are
      * represented by a {@link BigDecimal}. But since this field is private, it doesn't really matter how the values are stored.
      */
-    private final Comparable value;
+    public PolyValue value;
 
     /**
      * The real type of this literal, as reported by {@link #getType}.
      */
-    private final AlgDataType type;
+    public AlgDataType type;
 
     // TODO jvs: Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading PolyType).
     /**
      * An indication of the broad type of this literal -- even if its type isn't a SQL type. Sometimes this will be different than the SQL type; for example, all exact numbers, including integers have typeName
      * {@link PolyType#DECIMAL}. See {@link #valueMatchesType} for the definitive story.
      */
-    private final PolyType typeName;
+    public PolyType polyType;
 
     private static final ImmutableList<TimeUnit> TIME_UNITS = ImmutableList.copyOf( TimeUnit.values() );
 
@@ -197,28 +197,28 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     /**
      * Creates a <code>RexLiteral</code>.
      */
-    public RexLiteral( Comparable<?> value, AlgDataType type, PolyType typeName ) {
+    public RexLiteral( PolyValue value, AlgDataType type, PolyType polyType ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
-        this.typeName = Objects.requireNonNull( typeName );
-        if ( !valueMatchesType( value, typeName, true ) ) {
+        this.polyType = Objects.requireNonNull( polyType );
+        if ( !valueMatchesType( value, polyType, true ) ) {
             System.err.println( value );
             System.err.println( value.getClass().getCanonicalName() );
             System.err.println( type );
-            System.err.println( typeName );
+            System.err.println( polyType );
             throw new IllegalArgumentException();
         }
 //        Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
         Preconditions.checkArgument( (value != null) || type.isNullable() );
-        Preconditions.checkArgument( typeName != PolyType.ANY );
+        Preconditions.checkArgument( polyType != PolyType.ANY );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
     }
 
 
-    public RexLiteral( Comparable<?> value, AlgDataType type, PolyType typeName, boolean raw ) {
+    public RexLiteral( PolyValue value, AlgDataType type, PolyType polyType, boolean raw ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
-        this.typeName = Objects.requireNonNull( typeName );
+        this.polyType = Objects.requireNonNull( polyType );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
     }
 
@@ -260,7 +260,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             return digest;
         }
 
-        return toJavaString( value, typeName, type, includeType );
+        return toJavaString( value, polyType, type, includeType );
     }
 
 
@@ -275,7 +275,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    public static Pair<Comparable<?>, PolyType> convertType( Comparable<?> value, AlgDataType typeName ) {
+    public static Pair<PolyValue, PolyType> convertType( PolyValue value, AlgDataType typeName ) {
         switch ( typeName.getPolyType() ) {
             case INTEGER:
             case BIGINT:
@@ -610,7 +610,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * Prints the value this literal as a Java string constant.
      */
     public void printAsJava( PrintWriter pw ) {
-        printAsJava( value, pw, typeName, true, RexDigestIncludeType.NO_TYPE );
+        printAsJava( value, pw, polyType, true, RexDigestIncludeType.NO_TYPE );
     }
 
 
@@ -784,8 +784,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    public PolyType getTypeName() {
-        return typeName;
+    public PolyType getPolyType() {
+        return polyType;
     }
 
 
@@ -814,12 +814,12 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      *
      * For backwards compatibility, returns DATE. TIME and TIMESTAMP as a {@link Calendar} value in UTC time zone.
      */
-    public Comparable getValue() {
-        assert valueMatchesType( value, typeName, true ) : value;
+    public Comparable<?> getValue() {
+        assert valueMatchesType( value, polyType, true ) : value;
         if ( value == null ) {
             return null;
         }
-        switch ( typeName ) {
+        switch ( polyType ) {
             case TIME:
             case DATE:
             case TIMESTAMP:
@@ -833,7 +833,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
 
     private FlatMap<Comparable<?>, Comparable<?>> getValueAsPolyMap() {
-        return new FlatMap<Comparable<?>, Comparable<?>>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream()
+        return new FlatMap<>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream()
                 .collect( Collectors.toMap( e -> e.getKey().getValueForQueryParameterizer(), e -> e.getValue().getValueForQueryParameterizer() ) ) );
     }
 
@@ -841,12 +841,12 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     /**
      * Returns the value of this literal as required by the query parameterizer.
      */
-    public Comparable getValueForQueryParameterizer() {
-        assert valueMatchesType( value, typeName, true ) : value;
+    public PolyValue getValueForQueryParameterizer() {
+        assert valueMatchesType( value, polyType, true ) : value;
         if ( value == null ) {
             return null;
         }
-        switch ( type.getPolyType() ) {
+        /*switch ( type.getPolyType() ) {
             case TIME:
                 return getValueAs( TimeString.class );
             case DATE:
@@ -874,18 +874,20 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case DOUBLE:
                 return getValueAs( Double.class );
             case ARRAY:
-                return ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toCollection( ComparableList::of ) );
+                return  ComparableList.copyOf( ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).map( v -> (T)v ).collect( Collectors.toList() ) );
             case MAP:
                 return getValueAsPolyMap();
-            /*case BINARY:
+            case BINARY:
             case VARBINARY:
                 break;
             case ARRAY:
-                break;*/
+                break;
 
             default:
                 return value;
-        }
+        }*/
+        return value;
+
     }
 
 
@@ -896,7 +898,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         if ( value == null ) {
             return null;
         }
-        switch ( typeName ) {
+        switch ( polyType ) {
             case CHAR:
                 return getValueAs( String.class );
             case DECIMAL:
@@ -920,24 +922,24 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         if ( value == null ) {
             return null;
         }
-        switch ( typeName ) {
-            case DECIMAL:
-                assert value instanceof BigDecimal;
-                return value;
-            default:
-                return getValue2();
+        /*
+        if ( Objects.requireNonNull( polyType ) == PolyType.DECIMAL ) {
+            assert value instanceof BigDecimal;
+            return value;
         }
+        return getValue2();*/
+        return null;
     }
 
 
     /**
      * Returns the value of this literal, in the form that {@link RexInterpreter} wants it.
      */
-    public Comparable getValue4() {
+    public Comparable<?> getValue4() {
         if ( value == null ) {
             return null;
         }
-        switch ( typeName ) {
+        switch ( polyType ) {
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return getValueAs( Long.class );
@@ -970,11 +972,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @param <T> Return type
      * @return Value of this literal in the desired type
      */
-    public <T> T getValueAs( Class<T> clazz ) {
-        if ( value == null || clazz.isInstance( value ) ) {
-            return clazz.cast( value );
+    public <T> PolyValue getValueAs( Class<T> clazz ) {
+        if ( value == null ) {//|| clazz.isInstance( value ) ) {
+            return value;//clazz.cast( value );
         }
-        switch ( typeName ) {
+        /*switch ( polyType ) {
             case BINARY:
                 if ( clazz == byte[].class ) {
                     return clazz.cast( ((ByteString) value).getBytes() );
@@ -1109,7 +1111,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 }
                 break;
         }
-        throw new AssertionError( "cannot convert " + typeName + " literal to " + clazz );
+        throw new AssertionError( "cannot convert " + polyType + " literal to " + clazz );*/
+        return value;
     }
 
 
@@ -1117,7 +1120,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         if ( value == null ) {
             return null;
         }
-        switch ( typeName ) {
+        /*switch ( polyType ) {
             case VARCHAR:
             case CHAR:
                 return ((NlsString) value).getValue();
@@ -1134,34 +1137,19 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 return new String( getValueAs( byte[].class ), StandardCharsets.UTF_8 );
             default:
                 return value.toString();
-        }
-    }
-
-
-    /**
-     * see {@code org.polypheny.db.adapter.file.Condition}
-     */
-    public Comparable getValueForFileCondition() {
-        switch ( typeName ) {
-            case TIME:
-            case DATE:
-                return getValueAs( Integer.class );
-            case TIMESTAMP:
-                return getValueAs( Long.class );
-            default:
-                return getValueForQueryParameterizer();
-        }
+        }*/
+        return value.toString();
     }
 
 
     public static boolean booleanValue( RexNode node ) {
-        return (Boolean) ((RexLiteral) node).value;
+        return ((RexLiteral) node).value.isBoolean() ? ((RexLiteral) node).value.asBoolean().value : false;
     }
 
 
     @Override
     public boolean isAlwaysTrue() {
-        if ( typeName != PolyType.BOOLEAN ) {
+        if ( polyType != PolyType.BOOLEAN ) {
             return false;
         }
         return booleanValue( this );
@@ -1170,7 +1158,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
     @Override
     public boolean isAlwaysFalse() {
-        if ( typeName != PolyType.BOOLEAN ) {
+        if ( polyType != PolyType.BOOLEAN ) {
             return false;
         }
         return !booleanValue( this );

@@ -32,12 +32,12 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyBoolean;
-import org.polypheny.db.type.entity.document.PolyDouble;
-import org.polypheny.db.type.entity.document.PolyInteger;
-import org.polypheny.db.type.entity.document.PolyList;
-import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Pair;
 

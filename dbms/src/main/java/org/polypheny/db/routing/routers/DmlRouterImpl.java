@@ -125,7 +125,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         AlgNode input = buildDmlNew( super.recursiveCopy( modify.getInput( 0 ) ), statement, RoutedAlgBuilder.create( statement, modify.getCluster() ) ).build();
 
-        Convention convention = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getCurrentSchema().getConvention();
+        Convention convention = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getCurrentNamespace().getConvention();
         if ( convention != null ) {
             // register the convention rules
             convention.register( modify.getCluster().getPlanner() );

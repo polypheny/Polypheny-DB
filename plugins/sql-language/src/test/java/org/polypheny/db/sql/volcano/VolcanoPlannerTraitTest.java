@@ -222,7 +222,7 @@ public class VolcanoPlannerTraitTest {
     /**
      * Implementation of {@link AlgTrait} for testing.
      */
-    private static class AltTrait implements AlgTrait {
+    private static class AltTrait<T extends AlgTraitDef<?>> implements AlgTrait<T> {
 
         private final AltTraitDef traitDef;
         private final int ordinal;
@@ -242,10 +242,9 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public AlgTraitDef getTraitDef() {
-            return traitDef;
+        public T getTraitDef() {
+            return (T) traitDef;
         }
-
 
         public boolean equals( Object other ) {
             if ( other == this ) {
@@ -265,7 +264,7 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public boolean satisfies( AlgTrait trait ) {
+        public boolean satisfies( AlgTrait<?> trait ) {
             return trait.equals( ALT_EMPTY_TRAIT ) || equals( trait );
         }
 

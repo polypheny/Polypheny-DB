@@ -173,7 +173,7 @@ public class RexUtil {
     public static boolean isNullLiteral( RexNode node, boolean allowCast ) {
         if ( node instanceof RexLiteral ) {
             RexLiteral literal = (RexLiteral) node;
-            if ( literal.getTypeName() == PolyType.NULL ) {
+            if ( literal.getPolyType() == PolyType.NULL ) {
                 assert null == literal.getValue();
                 return true;
             } else {

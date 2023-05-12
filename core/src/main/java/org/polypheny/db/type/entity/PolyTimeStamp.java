@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
+import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -23,40 +24,44 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
-public class PolyTime extends PolyValue {
+@Value(staticConstructor = "of")
+public class PolyTimeStamp extends PolyValue {
 
-    long value;
+    public long value;
 
 
-    public PolyTime( long value ) {
-        super( PolyType.TIME, false );
-        this.value = value;
+    public PolyTimeStamp( long sinceEpoch ) {
+        super( PolyType.TIMESTAMP, true );
+        this.value = sinceEpoch;
+    }
+
+
+    public static PolyTimeStamp of( Date date ) {
+        return new PolyTimeStamp( date.getTime() );
     }
 
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isTime() ) {
+        if ( !isSameType( o ) ) {
             return -1;
         }
 
-        return Long.compare( value, o.asTime().value );
+        return Long.compare( value, o.asTimeStamp().value );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyTime.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( value ) );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolyTime.class );
+        return PolySerializable.deserialize( serialize(), PolyTimeStamp.class );
     }
 
 }

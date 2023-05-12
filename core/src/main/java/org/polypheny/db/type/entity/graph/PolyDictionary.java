@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyString;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BuiltInMethod;
 

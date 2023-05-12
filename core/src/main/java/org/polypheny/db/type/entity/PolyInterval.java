@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
-import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
+import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -25,40 +24,44 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
-public class PolyBoolean extends PolyValue {
-
-    @Serialize
-    public Boolean value;
+@Value
+public class PolyInterval extends PolyValue {
 
 
-    public PolyBoolean( @Deserialize("value") Boolean value ) {
-        super( PolyType.BOOLEAN, true );
+    public BigDecimal value;
+
+
+    public PolyInterval( BigDecimal value, PolyType type ) {
+        super( type, false );
         this.value = value;
     }
 
 
-    @Override
-    public Expression asExpression() {
-        return Expressions.new_( PolyBoolean.class, Expressions.constant( value ) );
+    public static PolyInterval of( BigDecimal value, PolyType type ) {
+        return new PolyInterval( value, type );
     }
 
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( isSameType( o ) ) {
-            return this.value.compareTo( o.asBoolean().value );
+        if ( !isSameType( o ) ) {
+            return -1;
         }
-        return -1;
+        return 0;
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.new_( PolyBigDecimal.class, Expressions.constant( value ) );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return null;
+        return PolySerializable.deserialize( serialize(), PolyInterval.class );
     }
 
 }

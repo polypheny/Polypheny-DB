@@ -1803,7 +1803,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
         final Multimap<PolyType, RexLiteral> map = LinkedHashMultimap.create();
         for ( RexLiteral literal : literals ) {
-            map.put( literal.getTypeName(), literal );
+            map.put( literal.getPolyType(), literal );
         }
 
         final List<AlgDataType> types = new ArrayList<>();
@@ -1834,11 +1834,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
                         }
                         final RexNode simplified = simplify.simplifyUnknownAs( cast, RexUnknownAs.UNKNOWN );
                         boolean expectedSimplify =
-                                literal.getTypeName() != toType.getPolyType()
-                                        || (literal.getTypeName() == PolyType.CHAR
+                                literal.getPolyType() != toType.getPolyType()
+                                        || (literal.getPolyType() == PolyType.CHAR
                                         && ((NlsString) literal.getValue()).getValue().length()
                                         > toType.getPrecision())
-                                        || (literal.getTypeName() == PolyType.BINARY
+                                        || (literal.getPolyType() == PolyType.BINARY
                                         && ((ByteString) literal.getValue()).length()
                                         > toType.getPrecision());
                         boolean couldSimplify = !cast.equals( simplified );

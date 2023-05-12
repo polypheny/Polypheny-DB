@@ -50,7 +50,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 
 
 /**

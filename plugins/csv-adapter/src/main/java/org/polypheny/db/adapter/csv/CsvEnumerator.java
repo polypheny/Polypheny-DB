@@ -43,12 +43,20 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
 
@@ -283,7 +291,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Boolean.parseBoolean( string );
+                    return PolyBoolean.of( Boolean.parseBoolean( string ) );
                 case BYTE:
                     if ( string.length() == 0 ) {
                         return null;
@@ -298,29 +306,28 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Integer.parseInt( string );
+                    return PolyInteger.of( Integer.parseInt( string ) );
                 case LONG:
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Long.parseLong( string );
+                    return PolyLong.of( Long.parseLong( string ) );
                 case FLOAT:
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Float.parseFloat( string );
+                    return PolyFloat.of( Float.parseFloat( string ) );
                 case DOUBLE:
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Double.parseDouble( string );
+                    return PolyDouble.of( Double.parseDouble( string ) );
                 case DATE:
                     if ( string.length() == 0 ) {
                         return null;
                     }
                     try {
-                        Date date = TIME_FORMAT_DATE.parse( string );
-                        return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+                        return PolyDate.of( TIME_FORMAT_DATE.parse( string ) );
                     } catch ( ParseException e ) {
                         return null;
                     }
@@ -330,7 +337,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     }
                     try {
                         Date date = TIME_FORMAT_TIME.parse( string );
-                        return (int) date.getTime();
+                        return PolyTime.of( (int) date.getTime() );
                     } catch ( ParseException e ) {
                         return null;
                     }
@@ -339,14 +346,13 @@ class CsvEnumerator<E> implements Enumerator<E> {
                         return null;
                     }
                     try {
-                        Date date = TIME_FORMAT_TIMESTAMP.parse( string );
-                        return date.getTime();
+                        return PolyTimeStamp.of( TIME_FORMAT_TIMESTAMP.parse( string ) );
                     } catch ( ParseException e ) {
                         return null;
                     }
                 case STRING:
                 default:
-                    return string;
+                    return PolyString.of( string );
             }
         }
 

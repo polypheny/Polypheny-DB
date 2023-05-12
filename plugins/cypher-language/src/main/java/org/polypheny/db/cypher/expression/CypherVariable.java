@@ -29,7 +29,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PathType;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter

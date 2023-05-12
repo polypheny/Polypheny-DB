@@ -602,7 +602,7 @@ public abstract class DateRangeRules {
 
 
         private Calendar timestampValue( RexLiteral timeLiteral ) {
-            switch ( timeLiteral.getTypeName() ) {
+            switch ( timeLiteral.getPolyType() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
                     return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.getValueAs( Long.class ), tz ) );
@@ -613,7 +613,7 @@ public abstract class DateRangeRules {
                     final DateString d = timeLiteral.getValueAs( DateString.class );
                     return Util.calendar( d.getMillisSinceEpoch() );
                 default:
-                    throw Util.unexpected( timeLiteral.getTypeName() );
+                    throw Util.unexpected( timeLiteral.getPolyType() );
             }
         }
 

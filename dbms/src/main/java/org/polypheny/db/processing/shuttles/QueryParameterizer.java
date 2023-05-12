@@ -476,7 +476,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         } else {
             List<RexNode> newOperands = new LinkedList<>();
             for ( RexNode operand : call.operands ) {
-                if ( operand instanceof RexLiteral && ((RexLiteral) operand).getTypeName() == PolyType.SYMBOL ) {
+                if ( operand instanceof RexLiteral && ((RexLiteral) operand).getPolyType() == PolyType.SYMBOL ) {
                     // Do not replace with dynamic param
                     newOperands.add( operand );
                 } else {

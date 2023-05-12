@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -31,26 +31,18 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
-public class PolyString extends PolyValue {
-
+public class PolyFloat extends PolyValue {
 
     @Serialize
-    public String value;
+    public Float value;
 
 
-    public PolyString( @Deserialize("value") String value ) {
-        super( PolyType.VARCHAR, true );
+    public PolyFloat( @Deserialize("value") Float value ) {
+        super( PolyType.FLOAT, false );
         this.value = value;
-    }
-
-
-    @Override
-    public Expression asExpression() {
-        return Expressions.new_( PolyString.class, Expressions.constant( value ) );
     }
 
 
@@ -59,41 +51,40 @@ public class PolyString extends PolyValue {
         if ( !isSameType( o ) ) {
             return -1;
         }
+        return value.compareTo( o.asFloat().value );
+    }
 
-        return value.compareTo( o.asString().value );
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.new_( PolyFloat.class, Expressions.constant( value ) );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return null;
+        return PolySerializable.deserialize( serialize(), PolyFloat.class );
     }
 
 
-    public static class PolyStringSerializerDef extends SimpleSerializerDef<PolyString> {
+    public static class PolyFloatSerializerDef extends SimpleSerializerDef<PolyFloat> {
 
         @Override
-        protected BinarySerializer<PolyString> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+        protected BinarySerializer<PolyFloat> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
             return new BinarySerializer<>() {
                 @Override
-                public void encode( BinaryOutput out, PolyString item ) {
-                    out.writeUTF8( item.value );
+                public void encode( BinaryOutput out, PolyFloat item ) {
+                    out.writeFloat( item.value );
                 }
 
 
                 @Override
-                public PolyString decode( BinaryInput in ) throws CorruptedDataException {
-                    return PolyString.of( in.readUTF8() );
+                public PolyFloat decode( BinaryInput in ) throws CorruptedDataException {
+                    return new PolyFloat( in.readFloat() );
                 }
             };
         }
 
-    }
-
-
-    @Override
-    public String toString() {
-        return "\"" + value + "\"";
     }
 
 }

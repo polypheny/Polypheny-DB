@@ -43,7 +43,6 @@ import lombok.Getter;
 import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.util.Util;
 
@@ -64,7 +63,7 @@ public class AlgCollationImpl implements AlgCollation {
 
 
     @Override
-    public AlgTraitDef<?> getTraitDef() {
+    public AlgCollationTraitDef getTraitDef() {
         return AlgCollationTraitDef.INSTANCE;
     }
 
@@ -116,7 +115,7 @@ public class AlgCollationImpl implements AlgCollation {
 
 
     @Override
-    public boolean satisfies( AlgTrait trait ) {
+    public boolean satisfies( AlgTrait<?> trait ) {
         return this == trait
                 || trait instanceof AlgCollationImpl
                 && Util.startsWith(
@@ -148,6 +147,7 @@ public class AlgCollationImpl implements AlgCollation {
             sb.append( ',' ).append( ' ' );
         }
     }
+
 
 }
 

@@ -14,50 +14,48 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.document;
+package org.polypheny.db.type.entity;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
-public class PolyLong extends PolyValue {
+@EqualsAndHashCode(callSuper = true)
+@Value(staticConstructor = "of")
+public class PolyTime extends PolyValue {
 
-    private final Long value;
-
-
-    public PolyLong( Long value ) {
-        super( PolyType.BIGINT, true );
-        this.value = value;
-    }
+    long value;
 
 
-    public PolyLong( long value ) {
-        super( PolyType.BIGINT, false );
+    public PolyTime( long value ) {
+        super( PolyType.TIME, false );
         this.value = value;
     }
 
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isSameType( o ) ) {
+        if ( !isTime() ) {
             return -1;
         }
-        return value.compareTo( o.asLong().value );
+
+        return Long.compare( value, o.asTime().value );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyLong.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyTime.class, Expressions.constant( value ) );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolyLong.class );
+        return PolySerializable.deserialize( serialize(), PolyTime.class );
     }
 
 }

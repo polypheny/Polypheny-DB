@@ -339,7 +339,7 @@ public class AlgJson {
                     // Special treatment for null literal because (1) we wouldn't want 'null' to be confused as an empty expression and (2) for null literals we need an explicit type.
                     map = jsonBuilder.map();
                     map.put( "literal", null );
-                    map.put( "type", literal.getTypeName().name() );
+                    map.put( "type", literal.getPolyType().name() );
                     return map;
                 }
                 return value2;

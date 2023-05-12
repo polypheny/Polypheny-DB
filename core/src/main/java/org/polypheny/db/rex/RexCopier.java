@@ -112,7 +112,7 @@ class RexCopier extends RexShuttle {
     @Override
     public RexNode visitLiteral( RexLiteral literal ) {
         // Get the value as is
-        return new RexLiteral( RexLiteral.value( literal ), copy( literal.getType() ), literal.getTypeName() );
+        return new RexLiteral( RexLiteral.value( literal ), copy( literal.getType() ), literal.getPolyType() );
     }
 
 

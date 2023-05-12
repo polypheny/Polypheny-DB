@@ -33,6 +33,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
@@ -43,10 +45,13 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.Pair;
 
 public class AdapterManager {
 
-    private static final Map<String, AdapterTemplate> REGISTER = new ConcurrentHashMap<>();
+    public static Expression ADAPTER_MANAGER_EXPRESSION = Expressions.call( AdapterManager.class, "getInstance" );
+
+    private static final Map<Pair<String, AdapterType>, AdapterTemplate> REGISTER = new ConcurrentHashMap<>();
 
     private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
     private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
@@ -65,8 +70,8 @@ public class AdapterManager {
     }
 
 
-    public static void addAdapterTemplate( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
-        REGISTER.put( getKey( clazz, adapterName ), new AdapterTemplate( clazz, adapterName.toUpperCase(), defaultSettings ) );
+    public static void addAdapterDeploy( Class<?> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+        REGISTER.put( Pair.of( adapterName.toLowerCase(), AdapterTemplate.getAdapterType( clazz ) ), new AdapterTemplate( clazz, adapterName, defaultSettings, deployer ) );
     }
 
 
@@ -74,12 +79,7 @@ public class AdapterManager {
         if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( adapterName ) ) ) {
             throw new RuntimeException( "Adapter is still deployed!" );
         }
-        REGISTER.remove( getKey( clazz, adapterName ) );
-    }
-
-
-    private static String getKey( Class<?> clazz, String adapterName ) {
-        return adapterName.toUpperCase() + "_" + AdapterTemplate.getAdapterType( clazz );
+        REGISTER.remove( Pair.of( adapterName.toLowerCase(), AdapterTemplate.getAdapterType( clazz ) ) );
     }
 
 
@@ -88,8 +88,8 @@ public class AdapterManager {
     }
 
 
-    public static AdapterTemplate getAdapterType( String name ) {
-        return REGISTER.get( name );
+    public static AdapterTemplate getAdapterType( String name, AdapterType adapterType ) {
+        return REGISTER.get( Pair.of( name.toLowerCase(), adapterType ) );
     }
 
 
@@ -242,35 +242,19 @@ public class AdapterManager {
             throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
-        Constructor<?> ctor;
-        try {
-            AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
-            ctor = adapterTemplate.getClazz().getConstructor( long.class, String.class, Map.class );
-        } catch ( NoSuchMethodException e ) {
-            throw new RuntimeException( "Something went wrong while adding a new adapter", e );
-        }
+        AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
         long adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
-        Adapter<?> instance;
         try {
-            adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
-            instance = instantiate( adapterId, adapterName, uniqueName, adapterType, settings );
+            Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
+            adapterByName.put( adapter.getUniqueName(), adapter );
+            adapterById.put( adapter.getAdapterId(), adapter );
+            return adapter;
+
         } catch ( Exception e ) {
-            if ( adapterId != null ) {
-                Catalog.getInstance().deleteAdapter( adapterId );
-            }
-            if ( e instanceof InvocationTargetException ) {
-                Throwable t = ((InvocationTargetException) e).getTargetException();
-                if ( t instanceof RuntimeException ) {
-                    throw (RuntimeException) t;
-                }
-            }
+            Catalog.getInstance().deleteAdapter( adapterId );
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
-        adapterByName.put( instance.getUniqueName(), instance );
-        adapterById.put( instance.getAdapterId(), instance );
-
-        return instance;
     }
 
 
@@ -346,6 +330,14 @@ public class AdapterManager {
                 return jsonStore;
             };
         }
+
+    }
+
+
+    @FunctionalInterface
+    public interface Function4<P1, P2, P3, R> {
+
+        R get( P1 p1, P2 p2, P3 p3 );
 
     }
 

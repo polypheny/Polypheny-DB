@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.experimental.Delegate;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.DataSource;
@@ -47,7 +48,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -73,7 +73,8 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
     private final ConnectionMethod connectionMethod;
 
     private URL csvDir;
-    private CsvSchema currentSchema;
+    @Getter
+    private CsvSchema currentNamespace;
     private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
 
@@ -102,7 +103,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentSchema = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
+        currentNamespace = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
     }
 
 
@@ -125,7 +126,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
             log.warn( "todo" );
             return;
         }
-        storeCatalog.addTable( currentSchema.createCsvTable( table.id, table, this ) );
+        storeCatalog.addTable( currentNamespace.createCsvTable( table.id, table, this ) );
     }
 
 
@@ -144,12 +145,6 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
                 throw new RuntimeException( e );
             }
         }
-    }
-
-
-    @Override
-    public Namespace getCurrentSchema() {
-        return currentSchema;
     }
 
 

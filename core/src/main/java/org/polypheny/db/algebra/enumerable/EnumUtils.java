@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.entity.document.PolyList;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;

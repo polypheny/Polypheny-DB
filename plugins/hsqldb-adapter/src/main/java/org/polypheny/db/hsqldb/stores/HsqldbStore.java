@@ -100,7 +100,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Namespace getCurrentSchema() {
+    public Namespace getCurrentNamespace() {
         return currentJdbcSchema;
     }
 

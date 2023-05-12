@@ -26,7 +26,7 @@ import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.entity.document.PolyString;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 

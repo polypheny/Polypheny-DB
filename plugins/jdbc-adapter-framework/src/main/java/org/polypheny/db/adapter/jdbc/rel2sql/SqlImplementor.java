@@ -544,14 +544,14 @@ public abstract class SqlImplementor {
 
                 case LITERAL:
                     final RexLiteral literal = (RexLiteral) rex;
-                    if ( literal.getTypeName() == PolyType.SYMBOL ) {
+                    if ( literal.getPolyType() == PolyType.SYMBOL ) {
                         final Enum symbol = (Enum) literal.getValue();
                         return SqlLiteral.createSymbol( symbol, POS );
                     }
                     if ( RexLiteral.isNullLiteral( literal ) ) {
                         return SqlLiteral.createNull( POS );
                     }
-                    switch ( literal.getTypeName().getFamily() ) {
+                    switch ( literal.getPolyType().getFamily() ) {
                         case CHARACTER:
                             return SqlLiteral.createCharString( (String) literal.getValue2(), POS );
                         case NUMERIC:
@@ -585,13 +585,13 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createCharString( new ByteString( literal.getValueAs( byte[].class ) ).toBase64String(), POS );
                         case ANY:
                         case NULL:
-                            switch ( literal.getTypeName() ) {
+                            switch ( literal.getPolyType() ) {
                                 case NULL:
                                     return SqlLiteral.createNull( POS );
                                 // fall through
                             }
                         default:
-                            throw new AssertionError( literal + ": " + literal.getTypeName() );
+                            throw new AssertionError( literal + ": " + literal.getPolyType() );
                     }
 
                 case CASE:
@@ -1027,7 +1027,7 @@ public abstract class SqlImplementor {
         public SqlNode toSql( RexProgram program, RexNode rex ) {
             if ( rex.getKind() == Kind.LITERAL ) {
                 final RexLiteral literal = (RexLiteral) rex;
-                if ( literal.getTypeName().getFamily() == PolyTypeFamily.CHARACTER ) {
+                if ( literal.getPolyType().getFamily() == PolyTypeFamily.CHARACTER ) {
                     return new SqlIdentifier( RexLiteral.stringValue( literal ), POS );
                 }
             }
