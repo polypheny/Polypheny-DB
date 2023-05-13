@@ -80,7 +80,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
     @Override
     public Node implement( final InterpreterImplementor implementor ) {
-        final Bindable bindable = toBindable(
+        final Bindable<?> bindable = toBindable(
                 implementor.internalParameters,
                 (EnumerableAlg) getInput(),
                 Prefer.ARRAY,

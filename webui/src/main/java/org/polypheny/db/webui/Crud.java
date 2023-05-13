@@ -33,19 +33,15 @@ import io.javalin.http.Context;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PushbackInputStream;
 import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Array;
-import java.sql.Blob;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.DateFormat;
@@ -79,7 +75,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -158,9 +153,9 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.util.BsonUtil;
-import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -2619,7 +2614,7 @@ public class Crud implements InformationObserver {
         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
-        PolyImplementation<Object> polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
+        PolyImplementation<PolyValue> polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -2715,7 +2710,7 @@ public class Crud implements InformationObserver {
             return Result.builder().generatedQuery( "Created " + viewType + " \"" + viewName + "\" from logical query plan" ).build();
         }
 
-        List<List<Object>> rows;
+        List<List<PolyValue>> rows;
         try {
             rows = polyImplementation.getRows( statement, getPageSize(), true, false );
         } catch ( Exception e ) {
@@ -3091,8 +3086,8 @@ public class Crud implements InformationObserver {
 
 
     public static ResultBuilder<?, ?> executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
-        PolyImplementation result;
-        List<List<Object>> rows;
+        PolyImplementation<PolyValue> result;
+        List<List<PolyValue>> rows;
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
@@ -3158,7 +3153,7 @@ public class Crud implements InformationObserver {
             header.add( dbCol );
         }
 
-        ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
+        List<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
         return Result.builder().header( header.toArray( new DbColumn[0] ) ).data( data.toArray( new String[0][] ) ).namespaceType( result.getNamespaceType() ).language( QueryLanguage.from( "sql" ) ).affectedRows( data.size() ).hasMoreRows( hasMoreRows );
     }
@@ -3170,16 +3165,16 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    public static <T> ArrayList<String[]> computeResultData( final List<List<T>> rows, final List<DbColumn> header, final Transaction transaction ) {
+    public static ArrayList<String[]> computeResultData( final List<List<PolyValue>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
-        for ( List<T> row : rows ) {
+        for ( List<PolyValue> row : rows ) {
             String[] temp = new String[row.size()];
             int counter = 0;
-            for ( Object o : row ) {
+            for ( PolyValue o : row ) {
                 if ( o == null ) {
                     temp[counter] = null;
                 } else {
-                    switch ( header.get( counter ).dataType ) {
+                    /*switch ( header.get( counter ).dataType ) {
                         case "TIMESTAMP":
                             if ( o instanceof Long ) {
                                 temp[counter] = DateTimeStringUtils.longToAdjustedString( (long) o, PolyType.TIMESTAMP );// TimestampString.fromMillisSinceEpoch( (long) o ).toString();
@@ -3306,7 +3301,8 @@ public class Crud implements InformationObserver {
                             //fall through
                         default:
                             temp[counter] = o.toString();
-                    }
+                    }*/
+                    temp[counter] = o.toString();
                     if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
                         if ( o instanceof Array ) {
                             try {
@@ -3333,8 +3329,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyImplementation<?> processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyImplementation<?> result;
+    private <T> PolyImplementation<T> processQuery( Statement statement, String sql, boolean isAnalyze ) {
+        PolyImplementation<T> result;
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }

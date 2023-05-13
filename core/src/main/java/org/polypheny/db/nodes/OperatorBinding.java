@@ -25,6 +25,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.NlsString;
 
 public abstract class OperatorBinding {
@@ -177,10 +179,10 @@ public abstract class OperatorBinding {
      * </ul>
      *
      * @param ordinal zero-based ordinal of operand of interest
-     * @param clazz Desired valued type
+     * @param type
      * @return value of operand
      */
-    public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
+    public PolyValue getOperandLiteralValue( int ordinal, PolyType type ) {
         throw new UnsupportedOperationException();
     }
 

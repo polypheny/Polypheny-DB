@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -41,6 +42,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
@@ -929,6 +931,14 @@ public class SqlLiteral extends SqlNode implements Literal {
         }
         ns = new NlsString( sb.toString(), ns.getCharsetName(), ns.getCollation() );
         return new SqlCharStringLiteral( ns, getPos() );
+    }
+
+
+    public PolyValue getPolyValue() {
+        if ( value instanceof PolyValue ) {
+            return (PolyValue) value;
+        }
+        throw new NotImplementedException();
     }
 
 }

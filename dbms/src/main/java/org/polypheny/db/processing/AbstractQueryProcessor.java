@@ -32,6 +32,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -140,6 +144,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -150,6 +155,13 @@ import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 @Slf4j
 public abstract class AbstractQueryProcessor implements QueryProcessor, ExecutionTimeObserver {
+
+    BlockingQueue<Runnable> eventQueue = new LinkedBlockingQueue<>();
+    ThreadPoolExecutor executor = new ThreadPoolExecutor( 3,
+            3,
+            3000000,
+            TimeUnit.SECONDS,
+            eventQueue );
 
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
@@ -629,21 +641,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
                             final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new DeepCopyShuttle() );
                             for ( final Index index : indices ) {
-                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lvalues.tuples.size() );
+                                final Set<Pair<List<PolyValue>, List<PolyValue>>> tuplesToInsert = new HashSet<>( lvalues.tuples.size() );
                                 for ( final ImmutableList<RexLiteral> row : lvalues.getTuples() ) {
-                                    final List<Object> rowValues = new ArrayList<>();
-                                    final List<Object> targetRowValues = new ArrayList<>();
+                                    final List<PolyValue> rowValues = new ArrayList<>();
+                                    final List<PolyValue> targetRowValues = new ArrayList<>();
                                     for ( final String column : index.getColumns() ) {
                                         final RexLiteral fieldValue = row.get(
                                                 lvalues.getRowType().getField( column, false, false ).getIndex()
                                         );
-                                        rowValues.add( fieldValue.getValue2() );
+                                        rowValues.add( fieldValue.value );
                                     }
                                     for ( final String column : index.getTargetColumns() ) {
                                         final RexLiteral fieldValue = row.get(
                                                 lvalues.getRowType().getField( column, false, false ).getIndex()
                                         );
-                                        targetRowValues.add( fieldValue.getValue2() );
+                                        targetRowValues.add( fieldValue.value );
                                     }
                                     tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
                                 }
@@ -652,15 +664,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                             final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new DeepCopyShuttle() );
                             for ( final Index index : indices ) {
-                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
-                                final List<Object> rowValues = new ArrayList<>();
-                                final List<Object> targetRowValues = new ArrayList<>();
+                                final Set<Pair<List<PolyValue>, List<PolyValue>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
+                                final List<PolyValue> rowValues = new ArrayList<>();
+                                final List<PolyValue> targetRowValues = new ArrayList<>();
                                 for ( final String column : index.getColumns() ) {
                                     final RexNode fieldValue = lproject.getProjects().get(
                                             lproject.getRowType().getField( column, false, false ).getIndex()
                                     );
                                     if ( fieldValue instanceof RexLiteral ) {
-                                        rowValues.add( ((RexLiteral) fieldValue).getValue2() );
+                                        rowValues.add( ((RexLiteral) fieldValue).value );
                                     } else if ( fieldValue instanceof RexDynamicParam ) {
                                         //
                                         // TODO: This is dynamic parameter. We need to do the index update in the generated code!
@@ -675,7 +687,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                             lproject.getRowType().getField( column, false, false ).getIndex()
                                     );
                                     if ( fieldValue instanceof RexLiteral ) {
-                                        targetRowValues.add( ((RexLiteral) fieldValue).getValue2() );
+                                        targetRowValues.add( ((RexLiteral) fieldValue).value );
                                     } else if ( fieldValue instanceof RexDynamicParam ) {
                                         //
                                         // TODO: This is dynamic parameter. We need to do the index update in the generated code!
@@ -740,15 +752,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                                originalProject = LogicalProject.create( originalProject, expr, type );
 //                            }
                             AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
-                            final PolyImplementation<Object> scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
-                            final List<List<Object>> rows = scanSig.getRows( statement, -1 );
+                            final PolyImplementation<PolyValue> scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
+                            final List<List<PolyValue>> rows = scanSig.getRows( statement, -1 );
                             // Build new query tree
                             final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
-                            for ( final List<Object> row : rows ) {
+                            for ( final List<PolyValue> row : rows ) {
                                 final List<RexLiteral> record = new ArrayList<>();
                                 for ( int i = 0; i < row.size(); ++i ) {
                                     AlgDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
-                                    Pair<Comparable<?>, PolyType> converted = RexLiteral.convertType( (Comparable<?>) row.get( i ), fieldType );
+                                    Pair<PolyValue, PolyType> converted = RexLiteral.convertType( row.get( i ), fieldType );
                                     record.add( new RexLiteral(
                                             converted.left,
                                             fieldType,
@@ -786,10 +798,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                             continue;
                                         }
                                     }
-                                    final Set<Pair<List<Object>, List<Object>>> rowsToDelete = new HashSet<>( rows.size() );
-                                    for ( List<Object> row : rows ) {
-                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
-                                        final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
+                                    final Set<Pair<List<PolyValue>, List<PolyValue>>> rowsToDelete = new HashSet<>( rows.size() );
+                                    for ( List<PolyValue> row : rows ) {
+                                        final List<PolyValue> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<PolyValue> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
                                         for ( final String column : index.getColumns() ) {
                                             rowProjection.add( row.get( nameMap.get( column ) ) );
                                         }
@@ -811,10 +823,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     if ( ltm.isInsert() && index.getColumns().stream().noneMatch( ltm.getInput().getRowType().getFieldNames()::contains ) ) {
                                         continue;
                                     }
-                                    final Set<Pair<List<Object>, List<Object>>> rowsToReinsert = new HashSet<>( rows.size() );
-                                    for ( List<Object> row : rows ) {
-                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
-                                        final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
+                                    final Set<Pair<List<PolyValue>, List<PolyValue>>> rowsToReinsert = new HashSet<>( rows.size() );
+                                    for ( List<PolyValue> row : rows ) {
+                                        final List<PolyValue> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<PolyValue> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
                                         for ( final String column : index.getColumns() ) {
                                             if ( newValueMap.containsKey( column ) ) {
                                                 rowProjection.add( row.get( newValueMap.get( column ) ) );
@@ -1507,11 +1519,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     statement );
 
             int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
-            if ( statement.getTransaction().isAnalyze() ) {
-                AlgNode optimalNode = optimalAlgs.get( index );
-                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
-                addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
-            }
+
+            executor.execute( () -> {
+                if ( statement.getTransaction().isAnalyze() ) {
+                    AlgNode optimalNode = optimalAlgs.get( index );
+                    UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
+                    addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
+                }
+            } );
+
             return new Pair<>( proposedImplementations.getResults().get( index ), (ProposedRoutingPlan) routingPlan );
         }
     }

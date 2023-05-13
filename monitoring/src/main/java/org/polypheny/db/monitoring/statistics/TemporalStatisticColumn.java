@@ -18,17 +18,14 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 
 
 /**
@@ -36,7 +33,7 @@ import org.polypheny.db.util.TimestampString;
  * Responsible to validate if data should be changed.
  */
 @Slf4j
-public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
+public class TemporalStatisticColumn extends StatisticColumn {
 
     public void setMin( T min ) {
         this.min = min;
@@ -52,13 +49,13 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
     @Expose
     @Getter
-    private T min;
+    private PolyTemporal min;
 
     private Long minSinceEpoch;
 
     @Expose
     @Getter
-    private T max;
+    private PolyTemporal max;
 
     private Long maxSinceEpoch;
 
@@ -68,9 +65,9 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
     private String temporalType;
 
     @Getter
-    public TreeSet<T> minCache = new TreeSet<>();
+    public TreeSet<PolyTemporal> minCache = new TreeSet<>();
     @Getter
-    public TreeSet<T> maxCache = new TreeSet<>();
+    public TreeSet<PolyTemporal> maxCache = new TreeSet<>();
 
 
     public TemporalStatisticColumn( QueryResult column ) {
@@ -80,14 +77,13 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
 
     @Override
-    public void insert( T original ) {
-
+    public void insert( PolyValue val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
-            if ( !uniqueValues.contains( original ) ) {
-                uniqueValues.add( original );
-                if ( original != null ) {
-                    minCache.add( original );
-                    maxCache.add( original );
+            if ( !uniqueValues.contains( val ) ) {
+                uniqueValues.add( val );
+                if ( val != null ) {
+                    minCache.add( val.asTemporal() );
+                    maxCache.add( val.asTemporal() );
                 }
             }
         } else {
@@ -101,26 +97,26 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
         long val = getSinceEpoch( original );
 
         if ( min == null ) {
-            setMin( original );
-            setMax( original );
-        } else if ( val < minSinceEpoch ) {
-            setMin( original );
-        } else if ( val > maxSinceEpoch ) {
-            setMax( original );
+            min = val.asTemporal();
+            max = val.asTemporal();
+        } else if ( val.compareTo( min ) < 0 ) {
+            this.min = val.asTemporal();
+        } else if ( val.compareTo( max ) > 0 ) {
+            this.max = val.asTemporal();
         }
 
         if ( getSinceEpoch( minCache.last() ) > val ) {
             if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 minCache.remove( minCache.last() );
             }
-            minCache.add( original );
+            minCache.add( val.asTemporal() );
         }
 
         if ( getSinceEpoch( maxCache.first() ) < val ) {
             if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }
-            maxCache.add( original );
+            maxCache.add( val.asTemporal() );
         }
     }
 
@@ -145,9 +141,9 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
 
     @Override
-    public void insert( List<T> values ) {
-        if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
-            for ( T val : values ) {
+    public void insert( List<PolyValue> values ) {
+        if ( values != null ) {
+            for ( PolyValue val : values ) {
                 insert( val );
             }
         }

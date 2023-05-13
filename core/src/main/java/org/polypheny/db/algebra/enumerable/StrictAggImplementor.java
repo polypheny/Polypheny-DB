@@ -140,8 +140,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
     public final void implementAdd( AggContext info, final AggAddContext add ) {
         final List<RexNode> args = add.rexArguments();
         final RexToLixTranslator translator = add.rowTranslator();
-        final List<Expression> conditions = new ArrayList<>();
-        conditions.addAll( translator.translateList( args, RexImpTable.NullAs.IS_NOT_NULL ) );
+        final List<Expression> conditions = new ArrayList<>( translator.translateList( args, RexImpTable.NullAs.IS_NOT_NULL ) );
         if ( add.rexFilterArgument() != null ) {
             conditions.add(
                     translator.translate(

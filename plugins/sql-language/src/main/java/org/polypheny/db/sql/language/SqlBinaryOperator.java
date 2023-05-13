@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.language;
 
 
-import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
@@ -29,6 +28,7 @@ import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.language.validate.SqlValidator;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -169,7 +169,7 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
             final Monotonicity mono1 = call.getOperandMonotonicity( 1 );
             if ( mono1 == Monotonicity.CONSTANT ) {
                 if ( call.isOperandLiteral( 1, false ) ) {
-                    switch ( ((SqlOperatorBinding) call).getOperandLiteralValue( 1, BigDecimal.class ).signum() ) {
+                    switch ( call.getOperandLiteralValue( 1, PolyType.DECIMAL ).asBigDecimal().value.signum() ) {
                         case -1:
                             // mono / -ve constant --> reverse mono, unstrict
                             return mono0.reverse().unstrict();

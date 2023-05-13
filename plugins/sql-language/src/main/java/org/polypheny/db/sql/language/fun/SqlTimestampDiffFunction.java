@@ -62,7 +62,7 @@ public class SqlTimestampDiffFunction extends SqlFunction {
             opBinding -> {
                 final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 PolyType polyType =
-                        opBinding.getOperandLiteralValue( 0, TimeUnit.class ) == TimeUnit.NANOSECOND
+                        opBinding.getOperandLiteralValue( 0, PolyType.TIME ).asTime().timeUnit == TimeUnit.NANOSECOND
                                 ? PolyType.BIGINT
                                 : PolyType.INTEGER;
                 return typeFactory.createTypeWithNullability(

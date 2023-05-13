@@ -36,17 +36,18 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
 public class CowMultiHashIndex extends Index {
 
-    private Map<List<Object>, Set<List<Object>>> index = new HashMap<>();
+    private Map<List<PolyValue>, Set<List<PolyValue>>> index = new HashMap<>();
     private boolean initialized = false;
 
-    private Map<PolyXid, Map<List<Object>, Set<List<Object>>>> cowIndex = new HashMap<>();
+    private Map<PolyXid, Map<List<PolyValue>, Set<List<PolyValue>>>> cowIndex = new HashMap<>();
     private Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
-    private Map<PolyXid, List<Triple<List<Object>, List<Object>, Boolean>>> barrierIndex = new HashMap<>();
+    private Map<PolyXid, List<Triple<List<PolyValue>, List<PolyValue>, Boolean>>> barrierIndex = new HashMap<>();
 
 
     public CowMultiHashIndex( long id, String name, LogicalNamespace schema, LogicalTable table, List<String> columns, List<String> targetColumns ) {
@@ -95,7 +96,7 @@ public class CowMultiHashIndex extends Index {
     @Override
     public void barrier( PolyXid xid ) {
         begin( xid );
-        for ( final Triple<List<Object>, List<Object>, Boolean> tuple : barrierIndex.get( xid ) ) {
+        for ( final Triple<List<PolyValue>, List<PolyValue>, Boolean> tuple : barrierIndex.get( xid ) ) {
             postBarrier( xid, tuple.getLeft(), tuple.getMiddle(), tuple.getRight() );
         }
         barrierIndex.get( xid ).clear();
@@ -148,8 +149,8 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public boolean contains( PolyXid xid, List<Object> value ) {
-        Map<List<Object>, Set<List<Object>>> idx;
+    public boolean contains( PolyXid xid, List<PolyValue> value ) {
+        Map<List<PolyValue>, Set<List<PolyValue>>> idx;
         if ( (idx = cowIndex.get( xid )) != null ) {
             if ( idx.containsKey( value ) ) {
                 return idx.get( value ).size() > 0;
@@ -160,8 +161,8 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public boolean containsAny( PolyXid xid, Iterable<List<Object>> values ) {
-        for ( final List<Object> tuple : values ) {
+    public boolean containsAny( PolyXid xid, Iterable<List<PolyValue>> values ) {
+        for ( final List<PolyValue> tuple : values ) {
             if ( contains( xid, tuple ) ) {
                 return true;
             }
@@ -171,8 +172,8 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public boolean containsAll( PolyXid xid, Iterable<List<Object>> values ) {
-        for ( final List<Object> tuple : values ) {
+    public boolean containsAll( PolyXid xid, Iterable<List<PolyValue>> values ) {
+        for ( final List<PolyValue> tuple : values ) {
             if ( !contains( xid, tuple ) ) {
                 return false;
             }
@@ -183,10 +184,10 @@ public class CowMultiHashIndex extends Index {
 
     @Override
     public Values getAsValues( PolyXid xid, AlgBuilder builder, AlgDataType rowType ) {
-        final Map<List<Object>, Set<List<Object>>> ci = cowIndex.get( xid );
+        final Map<List<PolyValue>, Set<List<PolyValue>>> ci = cowIndex.get( xid );
         final RexBuilder rexBuilder = builder.getRexBuilder();
         final List<ImmutableList<RexLiteral>> tuples = new ArrayList<>( index.size() + (ci != null ? ci.size() : 0) );
-        for ( List<Object> tuple : index.keySet() ) {
+        for ( List<PolyValue> tuple : index.keySet() ) {
             if ( ci != null && ci.containsKey( tuple ) ) {
                 // Tuple was modified in CoW index
                 continue;
@@ -194,7 +195,7 @@ public class CowMultiHashIndex extends Index {
             tuples.add( makeRexRow( rowType, rexBuilder, tuple ) );
         }
         if ( ci != null ) {
-            for ( Map.Entry<List<Object>, Set<List<Object>>> tuple : ci.entrySet() ) {
+            for ( Map.Entry<List<PolyValue>, Set<List<PolyValue>>> tuple : ci.entrySet() ) {
                 for ( int c = 0; c < tuple.getValue().size(); ++c ) {
                     // Tuple was added in CoW index
                     tuples.add( makeRexRow( rowType, rexBuilder, tuple.getKey() ) );
@@ -206,11 +207,11 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public Values getAsValues( PolyXid xid, AlgBuilder builder, AlgDataType rowType, List<Object> key ) {
-        final Map<List<Object>, Set<List<Object>>> ci = cowIndex.get( xid );
+    public Values getAsValues( PolyXid xid, AlgBuilder builder, AlgDataType rowType, List<PolyValue> key ) {
+        final Map<List<PolyValue>, Set<List<PolyValue>>> ci = cowIndex.get( xid );
         final RexBuilder rexBuilder = builder.getRexBuilder();
         final List<ImmutableList<RexLiteral>> tuples = new ArrayList<>();
-        Set<List<Object>> raw = index.get( key );
+        Set<List<PolyValue>> raw = index.get( key );
         if ( ci != null && ci.containsKey( key ) ) {
             raw = ci.get( key );
         }
@@ -225,16 +226,16 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    Map<List<Object>, Set<List<Object>>> getRaw() {
+    Object getRaw() {
         return index;
     }
 
 
     @Override
-    public void insertAll( PolyXid xid, final Iterable<Pair<List<Object>, List<Object>>> values ) {
+    public void insertAll( PolyXid xid, final Iterable<Pair<List<PolyValue>, List<PolyValue>>> values ) {
         begin( xid );
         List<DeferredIndexUpdate> log = cowOpLog.get( xid );
-        for ( final Pair<List<Object>, List<Object>> row : values ) {
+        for ( final Pair<List<PolyValue>, List<PolyValue>> row : values ) {
             _insert( xid, row.getKey(), row.getValue() );
         }
         log.add( DeferredIndexUpdate.createInsert( values ) );
@@ -242,7 +243,7 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public void insert( PolyXid xid, List<Object> key, List<Object> primary ) {
+    public void insert( PolyXid xid, List<PolyValue> key, List<PolyValue> primary ) {
         begin( xid );
         List<DeferredIndexUpdate> log = cowOpLog.get( xid );
         _insert( xid, key, primary );
@@ -250,14 +251,14 @@ public class CowMultiHashIndex extends Index {
     }
 
 
-    protected void _insert( PolyXid xid, List<Object> key, List<Object> primary ) {
-        List<Triple<List<Object>, List<Object>, Boolean>> idx = barrierIndex.get( xid );
+    protected void _insert( PolyXid xid, List<PolyValue> key, List<PolyValue> primary ) {
+        List<Triple<List<PolyValue>, List<PolyValue>, Boolean>> idx = barrierIndex.get( xid );
         idx.add( new ImmutableTriple<>( key, primary, true ) );
     }
 
 
-    protected void postBarrier( PolyXid xid, List<Object> key, List<Object> primary, boolean insert ) {
-        Map<List<Object>, Set<List<Object>>> idx = cowIndex.get( xid );
+    protected void postBarrier( PolyXid xid, List<PolyValue> key, List<PolyValue> primary, boolean insert ) {
+        Map<List<PolyValue>, Set<List<PolyValue>>> idx = cowIndex.get( xid );
 
         if ( !idx.containsKey( key ) ) {
             if ( index.containsKey( key ) ) {
@@ -279,7 +280,7 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    void insert( List<Object> key, List<Object> primary ) {
+    void insert( List<PolyValue> key, List<PolyValue> primary ) {
         if ( !index.containsKey( key ) ) {
             index.put( key, new HashSet<>() );
         }
@@ -288,7 +289,7 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public void delete( PolyXid xid, List<Object> key ) {
+    public void delete( PolyXid xid, List<PolyValue> key ) {
         begin( xid );
         List<DeferredIndexUpdate> log = cowOpLog.get( xid );
 
@@ -298,7 +299,7 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public void deletePrimary( PolyXid xid, List<Object> key, List<Object> primary ) {
+    public void deletePrimary( PolyXid xid, List<PolyValue> key, List<PolyValue> primary ) {
         begin( xid );
         List<DeferredIndexUpdate> log = cowOpLog.get( xid );
 
@@ -307,18 +308,18 @@ public class CowMultiHashIndex extends Index {
     }
 
 
-    protected void _delete( PolyXid xid, List<Object> key, List<Object> primary ) {
-        List<Triple<List<Object>, List<Object>, Boolean>> idx = barrierIndex.get( xid );
+    protected void _delete( PolyXid xid, List<PolyValue> key, List<PolyValue> primary ) {
+        List<Triple<List<PolyValue>, List<PolyValue>, Boolean>> idx = barrierIndex.get( xid );
         idx.add( new ImmutableTriple<>( key, primary, false ) );
     }
 
 
     @Override
-    public void deleteAllPrimary( PolyXid xid, final Iterable<Pair<List<Object>, List<Object>>> values ) {
+    public void deleteAllPrimary( PolyXid xid, final Iterable<Pair<List<PolyValue>, List<PolyValue>>> values ) {
         begin( xid );
         List<DeferredIndexUpdate> log = cowOpLog.get( xid );
 
-        for ( final Pair<List<Object>, List<Object>> value : values ) {
+        for ( final Pair<List<PolyValue>, List<PolyValue>> value : values ) {
             _delete( xid, value.left, value.right );
         }
         log.add( DeferredIndexUpdate.createDeletePrimary( values ) );
@@ -326,11 +327,11 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public void deleteAll( PolyXid xid, final Iterable<List<Object>> values ) {
+    public void deleteAll( PolyXid xid, final Iterable<List<PolyValue>> values ) {
         begin( xid );
         List<DeferredIndexUpdate> log = cowOpLog.get( xid );
 
-        for ( final List<Object> value : values ) {
+        for ( final List<PolyValue> value : values ) {
             _delete( xid, value, null );
         }
         log.add( DeferredIndexUpdate.createDelete( values ) );
@@ -338,14 +339,14 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    void delete( List<Object> key ) {
+    void delete( List<PolyValue> key ) {
         index.remove( key );
     }
 
 
     @Override
-    void deletePrimary( List<Object> key, List<Object> primary ) {
-        final Set<List<Object>> primaries = index.get( key );
+    void deletePrimary( List<PolyValue> key, List<PolyValue> primary ) {
+        final Set<List<PolyValue>> primaries = index.get( key );
         if ( primaries != null ) {
             primaries.remove( primary );
         }

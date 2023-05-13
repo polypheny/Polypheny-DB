@@ -35,6 +35,7 @@ import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.GenericResult;
@@ -142,7 +143,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
                     }
 
                     // Prepare
-                    PolyImplementation<?> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+                    PolyImplementation<PolyValue> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );

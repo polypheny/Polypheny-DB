@@ -54,6 +54,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
@@ -175,14 +176,14 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static <T> GenericResult<?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation<T> implementation, Transaction transaction, final boolean noLimit ) {
+    public static GenericResult<?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         if ( language == QueryLanguage.from( "mql" ) ) {
             return getDocResult( statement, request, query, implementation, transaction, noLimit );
         }
 
-        List<List<T>> rows = implementation.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        List<List<PolyValue>> rows = implementation.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
 
         boolean hasMoreRows = implementation.hasMoreRows();
 

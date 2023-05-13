@@ -89,6 +89,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -1296,7 +1297,7 @@ public class MqlToAlgConverter {
                 collation,
                 null,
                 new RexLiteral(
-                        new BigDecimal( limit ),
+                        PolyBigDecimal.of( new BigDecimal( limit ) ),
                         cluster.getTypeFactory()
                                 .createPolyType( PolyType.INTEGER ), PolyType.DECIMAL )
         );
@@ -2109,7 +2110,7 @@ public class MqlToAlgConverter {
 
 
     private RexNode convertLiteral( BsonValue bsonValue ) {
-        Pair<Comparable<?>, PolyType> valuePair = RexLiteral.convertType( getPolyValue( bsonValue ), new DocumentType() );
+        Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( getPolyValue( bsonValue ), new DocumentType() );
         return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
 
     }

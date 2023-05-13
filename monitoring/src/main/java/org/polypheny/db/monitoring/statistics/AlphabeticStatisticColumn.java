@@ -22,6 +22,8 @@ import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -29,10 +31,10 @@ import org.polypheny.db.config.RuntimeConfig;
  * Responsible to validate if data should be changed
  */
 @Slf4j
-public class AlphabeticStatisticColumn extends StatisticColumn<String> {
+public class AlphabeticStatisticColumn extends StatisticColumn {
 
     @Getter
-    public List<String> uniqueValuesCache = new ArrayList<>();
+    public List<PolyString> uniqueValuesCache = new ArrayList<>();
     boolean cacheFull;
 
 
@@ -42,7 +44,7 @@ public class AlphabeticStatisticColumn extends StatisticColumn<String> {
 
 
     @Override
-    public void insert( String val ) {
+    public void insert( PolyValue val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
@@ -50,7 +52,7 @@ public class AlphabeticStatisticColumn extends StatisticColumn<String> {
         } else {
             full = true;
             if ( uniqueValuesCache.size() < (RuntimeConfig.STATISTIC_BUFFER.getInteger() * 2) ) {
-                uniqueValuesCache.add( val );
+                uniqueValuesCache.add( val.asString() );
             } else {
                 cacheFull = true;
             }
@@ -59,13 +61,13 @@ public class AlphabeticStatisticColumn extends StatisticColumn<String> {
 
 
     @Override
-    public void insert( List<String> values ) {
+    public void insert( List<PolyValue> values ) {
         if ( values == null ) {
             return;
         }
 
-        for ( String val : values ) {
-            insert( val );
+        for ( PolyValue val : values ) {
+            insert( val.asString() );
         }
     }
 

@@ -578,7 +578,7 @@ public class BsonUtil {
             case IMAGE:
             case VIDEO:
             case AUDIO:
-                return el.getValueAs( ByteString.class ).toBase64String();
+                return el.value.asBinary().value.toBase64String();
             default:
                 return el.getValue();
         }
@@ -813,7 +813,7 @@ public class BsonUtil {
 
         for ( Entry<RexLiteral, RexLiteral> entry : map.entrySet() ) {
             assert entry.getKey().getPolyType() == PolyType.CHAR;
-            doc.put( entry.getKey().getValueAs( String.class ), getAsBson( entry.getValue(), null ) );
+            doc.put( entry.getKey().value.asString().value, getAsBson( entry.getValue(), null ) );
         }
         return doc;
 

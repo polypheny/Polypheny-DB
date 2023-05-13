@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.index;
 
 
 import java.util.List;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -30,14 +31,14 @@ public class DeferredIndexUpdate {
 
 
     private final Operation operation;
-    private final Iterable<Pair<List<Object>, List<Object>>> insertTuples;
-    private final Iterable<List<Object>> deleteTuples;
+    private final Iterable<Pair<List<PolyValue>, List<PolyValue>>> insertTuples;
+    private final Iterable<List<PolyValue>> deleteTuples;
 
 
     private DeferredIndexUpdate(
             final Operation operation,
-            final Iterable<Pair<List<Object>, List<Object>>> insertTuples,
-            final Iterable<List<Object>> deleteTuples ) {
+            final Iterable<Pair<List<PolyValue>, List<PolyValue>>> insertTuples,
+            final Iterable<List<PolyValue>> deleteTuples ) {
         this.operation = operation;
         this.insertTuples = insertTuples;
         this.deleteTuples = deleteTuples;
@@ -60,17 +61,17 @@ public class DeferredIndexUpdate {
     }
 
 
-    public static DeferredIndexUpdate createInsert( final Iterable<Pair<List<Object>, List<Object>>> tuples ) {
+    public static DeferredIndexUpdate createInsert( final Iterable<Pair<List<PolyValue>, List<PolyValue>>> tuples ) {
         return new DeferredIndexUpdate( Operation.INSERT, tuples, null );
     }
 
 
-    public static DeferredIndexUpdate createDelete( final Iterable<List<Object>> tuples ) {
+    public static DeferredIndexUpdate createDelete( final Iterable<List<PolyValue>> tuples ) {
         return new DeferredIndexUpdate( Operation.DELETE, null, tuples );
     }
 
 
-    public static DeferredIndexUpdate createDeletePrimary( final Iterable<Pair<List<Object>, List<Object>>> tuples ) {
+    public static DeferredIndexUpdate createDeletePrimary( final Iterable<Pair<List<PolyValue>, List<PolyValue>>> tuples ) {
         return new DeferredIndexUpdate( Operation.DELETE, tuples, null );
     }
 

@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import lombok.Getter;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -29,7 +30,7 @@ public class StatisticQueryResult extends QueryResult {
      * All specified statistics for a column identified by their keys
      */
     @Getter
-    private Comparable<?>[] data;
+    private PolyValue[] data;
 
 
     /**
@@ -37,7 +38,7 @@ public class StatisticQueryResult extends QueryResult {
      *
      * @param data map consisting of different values to a given statistic
      */
-    public StatisticQueryResult( QueryResult queryResult, final Comparable<?>[] data ) {
+    public StatisticQueryResult( QueryResult queryResult, final PolyValue[] data ) {
         super( queryResult.getEntity(), queryResult.getColumn() );
         this.data = data;
     }

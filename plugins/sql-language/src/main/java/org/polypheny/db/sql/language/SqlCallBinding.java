@@ -40,6 +40,8 @@ import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.CoreUtil;
 
 
@@ -180,15 +182,15 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
     @Override
     public Monotonicity getOperandMonotonicity( int ordinal ) {
-        return ((SqlNode) call.getSqlOperandList().get( ordinal )).getMonotonicity( scope );
+        return call.getSqlOperandList().get( ordinal ).getMonotonicity( scope );
     }
 
 
     @Override
-    public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
+    public PolyValue getOperandLiteralValue( int ordinal, PolyType type ) {
         try {
             final SqlNode node = call.operand( ordinal );
-            return SqlLiteral.unchain( node ).getValueAs( clazz );
+            return SqlLiteral.unchain( node ).getPolyValue();
         } catch ( IllegalArgumentException e ) {
             return null;
         }

@@ -605,13 +605,13 @@ public abstract class DateRangeRules {
             switch ( timeLiteral.getPolyType() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.getValueAs( Long.class ), tz ) );
+                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimeStamp().value, tz ) );
                 case TIMESTAMP:
-                    return Util.calendar( timeLiteral.getValueAs( Long.class ) );
+                    return Util.calendar( timeLiteral.value.asTimeStamp().value );
                 case DATE:
                     // Cast date to timestamp with local time zone
-                    final DateString d = timeLiteral.getValueAs( DateString.class );
-                    return Util.calendar( d.getMillisSinceEpoch() );
+                    //final DateString d = timeLiteral.getValueAs( DateString.class );
+                    return Util.calendar( timeLiteral.value.asDate().value );
                 default:
                     throw Util.unexpected( timeLiteral.getPolyType() );
             }

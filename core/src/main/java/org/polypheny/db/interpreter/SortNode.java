@@ -59,11 +59,11 @@ public class SortNode extends AbstractSingleNode<Sort> {
         final int offset =
                 alg.offset == null
                         ? 0
-                        : ((RexLiteral) alg.offset).getValueAs( Integer.class );
+                        : ((RexLiteral) alg.offset).value.asInteger().value;
         final int fetch =
                 alg.fetch == null
                         ? -1
-                        : ((RexLiteral) alg.fetch).getValueAs( Integer.class );
+                        : ((RexLiteral) alg.fetch).value.asInteger().value;
         // In pure limit mode. No sort required.
         Row row;
         loop:

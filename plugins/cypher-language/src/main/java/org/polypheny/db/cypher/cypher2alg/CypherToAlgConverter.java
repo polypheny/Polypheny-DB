@@ -622,7 +622,7 @@ public class CypherToAlgConverter {
 
         private RexNode getLikeOperator( RexNode left, RexNode right, Function<String, String> adjustingFunction ) {
             assert right.isA( Kind.LITERAL );
-            String adjustedRight = adjustingFunction.apply( ((RexLiteral) right).getValueAs( String.class ) );
+            String adjustedRight = adjustingFunction.apply( ((RexLiteral) right).value.asString().value );
             return rexBuilder.makeCall(
                     booleanType,
                     OperatorRegistry.get( OperatorName.LIKE ),

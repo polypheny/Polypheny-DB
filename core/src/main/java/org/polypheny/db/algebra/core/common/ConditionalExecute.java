@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 public abstract class ConditionalExecute extends BiAlg {
@@ -54,7 +55,7 @@ public abstract class ConditionalExecute extends BiAlg {
     protected List<String> catalogColumns = null;
     @Getter
     @Setter
-    protected Set<List<Object>> values = null;
+    protected Set<List<PolyValue>> values = null;
 
 
     public ConditionalExecute(

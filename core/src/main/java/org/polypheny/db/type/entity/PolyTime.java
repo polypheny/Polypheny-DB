@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -25,15 +26,23 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
+@Value
 public class PolyTime extends PolyValue {
 
-    long value;
+    public long value;
+
+    public TimeUnit timeUnit;
 
 
-    public PolyTime( long value ) {
+    public PolyTime( long value, TimeUnit timeUnit ) {
         super( PolyType.TIME, false );
         this.value = value;
+        this.timeUnit = timeUnit;
+    }
+
+
+    public static PolyTime of( long value ) {
+        return new PolyTime( value, TimeUnit.MILLISECOND );
     }
 
 

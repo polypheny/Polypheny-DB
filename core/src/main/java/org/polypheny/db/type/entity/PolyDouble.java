@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.category.PolyNumber;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
@@ -111,6 +112,12 @@ public class PolyDouble extends PolyNumber {
             };
         }
 
+    }
+
+
+    @Override
+    public String toString() {
+        return value.toString();
     }
 
 }

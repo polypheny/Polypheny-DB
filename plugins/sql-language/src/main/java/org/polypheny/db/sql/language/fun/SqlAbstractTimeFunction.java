@@ -23,7 +23,6 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.sql.language.SqlFunction;
-import org.polypheny.db.sql.language.SqlOperatorBinding;
 import org.polypheny.db.sql.language.SqlSyntax;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -61,7 +60,7 @@ public class SqlAbstractTimeFunction extends SqlFunction {
         if ( opBinding.getOperandCount() == 1 ) {
             AlgDataType type = opBinding.getOperandType( 0 );
             if ( PolyTypeUtil.isNumeric( type ) ) {
-                precision = ((SqlOperatorBinding) opBinding).getOperandLiteralValue( 0, Integer.class );
+                precision = opBinding.getOperandLiteralValue( 0, PolyType.INTEGER ).asInteger().value;
             }
         }
         assert precision >= 0;

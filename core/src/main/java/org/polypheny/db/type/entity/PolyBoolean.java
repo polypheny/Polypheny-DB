@@ -60,4 +60,10 @@ public class PolyBoolean extends PolyValue {
         return null;
     }
 
+
+    @Override
+    public String toString() {
+        return value.toString();
+    }
+
 }

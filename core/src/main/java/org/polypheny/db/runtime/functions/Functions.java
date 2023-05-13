@@ -118,8 +118,8 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyInteger;
-import org.polypheny.db.type.entity.PolyNumber;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
@@ -2157,6 +2157,16 @@ public class Functions {
     }
 
 
+    public static PolyValue lesser( int number, PolyInteger poly ) {
+        return number < poly.asNumber().intValue() ? PolyInteger.of( number ) : poly;
+    }
+
+
+    public static PolyValue lesser( PolyInteger poly, int number ) {
+        return poly.asNumber().intValue() < number ? poly : PolyInteger.of( number );
+    }
+
+
     /**
      * LEAST operator.
      */
@@ -2462,15 +2472,14 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Object toInt( Object o ) {
-        return o instanceof PolyValue ? (PolyInteger) o
-                : o instanceof Integer ? (Integer) o
-                        : o instanceof Number ? toInt( (Number) o )
-                                : o instanceof String ? toInt( (String) o )
-                                        : o instanceof java.util.Date ? toInt( (java.util.Date) o )
-                                                : o instanceof java.util.GregorianCalendar ? toInt( ((java.util.GregorianCalendar) o).getTime() ) // hack for views for now
-                                                        : o instanceof org.polypheny.db.util.DateString ? toInt( new Date( ((org.polypheny.db.util.DateString) o).getMillisSinceEpoch() ) ) // hack for views for now
-                                                                : (Integer) cannotConvert( o, int.class );
+    public static int toInt( Object o ) {
+        return o instanceof Integer ? (Integer) o
+                : o instanceof Number ? toInt( (Number) o )
+                        : o instanceof String ? toInt( (String) o )
+                                : o instanceof java.util.Date ? toInt( (java.util.Date) o )
+                                        : o instanceof java.util.GregorianCalendar ? toInt( ((java.util.GregorianCalendar) o).getTime() ) // hack for views for now
+                                                : o instanceof org.polypheny.db.util.DateString ? toInt( new Date( ((org.polypheny.db.util.DateString) o).getMillisSinceEpoch() ) ) // hack for views for now
+                                                        : (Integer) cannotConvert( o, int.class );
     }
 
 

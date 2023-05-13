@@ -30,8 +30,10 @@ import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.category.PolyNumber;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
@@ -44,6 +46,11 @@ public class PolyInteger extends PolyNumber {
     public PolyInteger( @Deserialize("value") Integer value ) {
         super( PolyType.INTEGER, true );
         this.value = value;
+    }
+
+
+    public static PolyInteger of( short value ) {
+        return new PolyInteger( (int) value );
     }
 
 
@@ -78,6 +85,15 @@ public class PolyInteger extends PolyNumber {
     @Override
     public int intValue() {
         return value;
+    }
+
+
+    public static PolyValue from( PolyValue value ) {
+        if ( PolyType.NUMERIC_TYPES.contains( value.type ) ) {
+            return PolyInteger.of( value.asNumber().intValue() );
+        }
+
+        throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, value.type ) );
     }
 
 

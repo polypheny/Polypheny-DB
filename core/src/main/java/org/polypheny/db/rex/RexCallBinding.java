@@ -49,6 +49,8 @@ import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.CoreUtil;
 
 
@@ -82,12 +84,12 @@ public class RexCallBinding extends OperatorBinding {
 
 
     @Override
-    public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
+    public PolyValue getOperandLiteralValue( int ordinal, PolyType type ) {
         final RexNode node = operands.get( ordinal );
         if ( node instanceof RexLiteral ) {
-            return ((RexLiteral) node).getValueAs( clazz );
+            return ((RexLiteral) node).value;
         }
-        return clazz.cast( RexLiteral.value( node ) );
+        return RexLiteral.value( node );
     }
 
 

@@ -92,7 +92,7 @@ public class PolyString extends PolyValue {
 
     @Override
     public String toString() {
-        return "\"" + value + "\"";
+        return value;
     }
 
 }

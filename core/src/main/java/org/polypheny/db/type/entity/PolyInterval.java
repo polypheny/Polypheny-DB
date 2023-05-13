@@ -19,6 +19,7 @@ package org.polypheny.db.type.entity;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -32,10 +33,13 @@ public class PolyInterval extends PolyValue {
 
     public BigDecimal value;
 
+    public TimeUnitRange unitRange;
+
 
     public PolyInterval( BigDecimal value, PolyType type ) {
         super( type, false );
         this.value = value;
+        this.unitRange = TimeUnitRange.DAY; // todo adjust
     }
 
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 import lombok.Getter;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -42,13 +43,13 @@ public class StatisticResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatisticResult( QueryResult queryResult, Comparable<?>[][] data ) {
+    public StatisticResult( QueryResult queryResult, PolyValue[][] data ) {
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryResult[0];
         } else {
             this.columns = new StatisticQueryResult[data[0].length];
 
-            Comparable<?>[][] rotated = rotate2dArray( data );
+            PolyValue[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
                 this.columns[i] = new StatisticQueryResult( queryResult, rotated[i] );
@@ -61,11 +62,11 @@ public class StatisticResult {
      * Rotates a 2d array counterclockwise
      * Assumes 2d array is equally long in all "sub"arrays
      */
-    private Comparable<?>[][] rotate2dArray( Comparable<?>[][] data ) {
+    private PolyValue[][] rotate2dArray( PolyValue[][] data ) {
         int width = data[0].length;
         int height = data.length;
 
-        Comparable<?>[][] rotated = new Comparable<?>[width][height];
+        PolyValue[][] rotated = new PolyValue[width][height];
 
         for ( int x = 0; x < width; x++ ) {
             for ( int y = 0; y < height; y++ ) {

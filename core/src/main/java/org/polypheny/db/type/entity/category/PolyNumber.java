@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity;
+package org.polypheny.db.type.entity.category;
 
 import java.math.BigDecimal;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 public abstract class PolyNumber extends PolyValue {
 

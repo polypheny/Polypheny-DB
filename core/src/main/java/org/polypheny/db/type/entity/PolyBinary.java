@@ -54,4 +54,10 @@ public class PolyBinary extends PolyValue {
         return null;
     }
 
+
+    @Override
+    public String toString() {
+        return value.toBase64String();
+    }
+
 }

@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
@@ -65,11 +64,20 @@ import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -174,8 +182,112 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
     }
 
+    /*@Override
+    public Type getJavaClass( AlgDataType type ) {
+        if( type.getPolyType() == PolyType.ROW ){
+            return PolyValue[].class;
+        }
+
+        return PolyValue.classFrom( type.getPolyType() );
+    }*/
+
 
     @Override
+    public Type getJavaClass( AlgDataType type ) {
+        if ( type instanceof JavaType ) {
+            JavaType javaType = (JavaType) type;
+            return javaType.getJavaClass();
+        }
+        if ( type.isStruct() && type.getFieldCount() == 1 && type.getPolyType() != PolyType.PATH ) {
+            return getJavaClass( type.getFieldList().get( 0 ).getType() );
+        }
+        if ( type instanceof BasicPolyType || type instanceof IntervalPolyType || type instanceof PathType ) {
+            switch ( type.getPolyType() ) {
+                case JSON:
+                case VARCHAR:
+                case CHAR:
+                case DOCUMENT:
+                    return PolyString.class;
+                case DATE:
+                case TIME:
+                case TIME_WITH_LOCAL_TIME_ZONE:
+                case INTEGER:
+                case INTERVAL_YEAR:
+                case INTERVAL_YEAR_MONTH:
+                case INTERVAL_MONTH:
+                    return type.isNullable() ? PolyInteger.class : PolyInteger.class;
+                case TIMESTAMP:
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                case BIGINT:
+                case INTERVAL_DAY:
+                case INTERVAL_DAY_HOUR:
+                case INTERVAL_DAY_MINUTE:
+                case INTERVAL_DAY_SECOND:
+                case INTERVAL_HOUR:
+                case INTERVAL_HOUR_MINUTE:
+                case INTERVAL_HOUR_SECOND:
+                case INTERVAL_MINUTE:
+                case INTERVAL_MINUTE_SECOND:
+                case INTERVAL_SECOND:
+                    return type.isNullable() ? PolyLong.class : long.class;
+                case SMALLINT:
+                    return type.isNullable() ? PolyInteger.class : short.class;
+                case TINYINT:
+                    return type.isNullable() ? PolyInteger.class : byte.class;
+                case DECIMAL:
+                    return BigDecimal.class;
+                case BOOLEAN:
+                    return type.isNullable() ? PolyBoolean.class : boolean.class;
+                case DOUBLE:
+                    return type.isNullable() ? PolyDouble.class : double.class;
+                case FLOAT: // sic
+                    return type.isNullable() ? PolyFloat.class : float.class;
+                case REAL:
+                    return type.isNullable() ? PolyFloat.class : float.class;
+                case BINARY:
+                case VARBINARY:
+                    return PolyBinary.class;
+                case GEOMETRY:
+                    return GeoFunctions.Geom.class;
+                case SYMBOL:
+                    return Enum.class;
+                case GRAPH:
+                    return PolyGraph.class;
+                case EDGE:
+                    return PolyEdge.class;
+                case NODE:
+                    return PolyNode.class;
+                case PATH:
+                    return PolyPath.class;
+                case FILE:
+                case IMAGE:
+                case VIDEO:
+                case AUDIO:
+                case ANY:
+                    return PolyValue.class;
+            }
+        }
+        switch ( type.getPolyType() ) {
+            case ROW:
+                assert type instanceof AlgRecordType;
+                if ( type instanceof JavaRecordType ) {
+                    return ((JavaRecordType) type).clazz;
+                } else {
+                    return createSyntheticType( (AlgRecordType) type );
+                }
+            case DOCUMENT:
+                return PolyValue.class;
+            case MAP:
+                return PolyMap.class;
+            case ARRAY:
+            case MULTISET:
+                return PolyList.class;
+        }
+        return null;
+    }
+
+
+    /*@Override
     public Type getJavaClass( AlgDataType type ) {
         if ( type instanceof JavaType ) {
             JavaType javaType = (JavaType) type;
@@ -266,7 +378,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 return List.class;
         }
         return null;
-    }
+    }*/
 
 
     @Override
@@ -308,7 +420,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
     private SyntheticRecordType register( final SyntheticRecordType syntheticType ) {
         final List<Pair<Type, Boolean>> key =
-                new AbstractList<Pair<Type, Boolean>>() {
+                new AbstractList<>() {
                     @Override
                     public Pair<Type, Boolean> get( int index ) {
                         final Types.RecordField field = syntheticType.getRecordFields().get( index );

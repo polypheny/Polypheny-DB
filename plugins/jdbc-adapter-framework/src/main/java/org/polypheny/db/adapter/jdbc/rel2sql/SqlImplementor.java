@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -57,7 +56,6 @@ import java.util.Set;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.jdbc.JdbcEntity;
@@ -95,7 +93,9 @@ import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
+import org.polypheny.db.sql.language.SqlBinaryStringLiteral;
 import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlDateLiteral;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.sql.language.SqlDynamicParam;
@@ -545,7 +545,7 @@ public abstract class SqlImplementor {
                 case LITERAL:
                     final RexLiteral literal = (RexLiteral) rex;
                     if ( literal.getPolyType() == PolyType.SYMBOL ) {
-                        final Enum symbol = (Enum) literal.getValue();
+                        final Enum<?> symbol = (Enum<?>) literal.getValue();
                         return SqlLiteral.createSymbol( symbol, POS );
                     }
                     if ( RexLiteral.isNullLiteral( literal ) ) {
@@ -556,40 +556,39 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createCharString( (String) literal.getValue2(), POS );
                         case NUMERIC:
                         case EXACT_NUMERIC:
-                            return SqlLiteral.createExactNumeric( literal.getValueAs( BigDecimal.class ).toString(), POS );
+                            return SqlLiteral.createExactNumeric( literal.value.asBigDecimal().value.toString(), POS );
                         case APPROXIMATE_NUMERIC:
-                            return SqlLiteral.createApproxNumeric( literal.getValueAs( BigDecimal.class ).toString(), POS );
+                            return SqlLiteral.createApproxNumeric( literal.value.asBigDecimal().value.toString(), POS );
                         case BOOLEAN:
-                            return SqlLiteral.createBoolean( literal.getValueAs( Boolean.class ), POS );
+                            return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:
                         case INTERVAL_DAY_TIME:
-                            final boolean negative = literal.getValueAs( Boolean.class );
-                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.getValueAs( String.class ), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
+                            final boolean negative = literal.getValueAs( Boolean.class ).asBoolean().value;
+                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.value.asString().value, SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
                         case DATE:
-                            return SqlLiteral.createDate( literal.getValueAs( DateString.class ), POS );
+                            return SqlDateLiteral.createDate( DateString.fromDaysSinceEpoch( (int) literal.value.asDate().value ), POS );
                         case TIME:
-                            return SqlLiteral.createTime( literal.getValueAs( TimeString.class ), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTime( TimeString.fromMillisOfDay( (int) literal.value.asTime().value ), literal.getType().getPrecision(), POS );
                         case TIMESTAMP:
-                            return SqlLiteral.createTimestamp( literal.getValueAs( TimestampString.class ), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTimestamp( TimestampString.fromMillisSinceEpoch( literal.value.asTimeStamp().value ), literal.getType().getPrecision(), POS );
                         case BINARY:
-                            return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
+                            return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary().toString(), POS );
                         case ARRAY:
                             if ( dialect.supportsNestedArrays() ) {
                                 List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
-                                return SqlLiteral.createCharString( literal.getValueAs( String.class ), POS );
+                                return SqlLiteral.createCharString( literal.value.serialize(), POS );
                             }
                         case GRAPH:
                             // node or edge
-                            return SqlLiteral.createCharString( new ByteString( literal.getValueAs( byte[].class ) ).toBase64String(), POS );
+                            return SqlLiteral.createCharString( literal.value.serialize(), POS );
                         case ANY:
                         case NULL:
-                            switch ( literal.getPolyType() ) {
-                                case NULL:
-                                    return SqlLiteral.createNull( POS );
-                                // fall through
+                            if ( literal.getPolyType() == PolyType.NULL ) {
+                                return SqlLiteral.createNull( POS );
                             }
+                            // fall through
                         default:
                             throw new AssertionError( literal + ": " + literal.getPolyType() );
                     }
@@ -1028,7 +1027,7 @@ public abstract class SqlImplementor {
             if ( rex.getKind() == Kind.LITERAL ) {
                 final RexLiteral literal = (RexLiteral) rex;
                 if ( literal.getPolyType().getFamily() == PolyTypeFamily.CHARACTER ) {
-                    return new SqlIdentifier( RexLiteral.stringValue( literal ), POS );
+                    return new SqlIdentifier( RexLiteral.stringValue( literal ).value, POS );
                 }
             }
             return super.toSql( program, rex );

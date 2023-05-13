@@ -568,7 +568,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
             after = SqlLiteral.createSymbol( value, POS );
         } else {
             RexCall call = (RexCall) e.getAfter();
-            String operand = RexLiteral.stringValue( call.getOperands().get( 0 ) );
+            String operand = RexLiteral.stringValue( call.getOperands().get( 0 ) ).value;
             after = (SqlNode) call.getOperator().createCall( POS, new SqlIdentifier( operand, POS ) );
         }
 

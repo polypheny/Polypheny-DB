@@ -24,13 +24,15 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
  * Stores the available statistic data of a specific column
  */
 
-public abstract class StatisticColumn<T> {
+public abstract class StatisticColumn {
 
 
     public final long columnId;
@@ -46,12 +48,12 @@ public abstract class StatisticColumn<T> {
     @Expose
     @Getter
     @Setter
-    protected List<T> uniqueValues = new ArrayList<>();
+    protected List<PolyValue> uniqueValues = new ArrayList<>();
 
     @Expose
     @Getter
     @Setter
-    protected Integer count;
+    protected PolyInteger count;
 
 
     public StatisticColumn( long columnId, PolyType type ) {
@@ -60,10 +62,9 @@ public abstract class StatisticColumn<T> {
     }
 
 
+    public abstract void insert( PolyValue val );
 
-    public abstract void insert( T val );
-
-    public abstract void insert( List<T> values );
+    public abstract void insert( List<PolyValue> values );
 
     public abstract String toString();
 

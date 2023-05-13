@@ -1111,7 +1111,7 @@ public class RexBuilder {
      */
     public RexLiteral makeIntervalLiteral( BigDecimal v, IntervalQualifier intervalQualifier ) {
         return makeLiteral(
-                PolyInterval.of( v ),
+                PolyInterval.of( v, intervalQualifier.typeName() ),
                 typeFactory.createIntervalType( intervalQualifier ),
                 intervalQualifier.typeName() );
     }

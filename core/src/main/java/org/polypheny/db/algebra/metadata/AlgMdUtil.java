@@ -106,7 +106,7 @@ public class AlgMdUtil {
         RexCall call = (RexCall) artificialSelectivityFuncNode;
         assert call.getOperator().equals( ARTIFICIAL_SELECTIVITY_FUNC );
         RexNode operand = call.getOperands().get( 0 );
-        return ((RexLiteral) operand).getValueAs( Double.class );
+        return ((RexLiteral) operand).value.asDouble().value;//.getValueAs( Double.class );
     }
 
 

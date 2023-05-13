@@ -38,6 +38,8 @@ import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -91,7 +93,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case INTEGER:
                 return PolyInteger.class;
             case BIGINT:
-                break;
+                return PolyBigDecimal.class;
             case DECIMAL:
                 break;
             case FLOAT:
@@ -326,13 +328,27 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public boolean isBinary() {
+        return type == PolyType.BINARY;
+    }
+
+
+    @NonNull
+    public PolyBinary asBinary() {
+        if ( isBinary() ) {
+            return (PolyBinary) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
     public boolean isBigDecimal() {
         return type == PolyType.DECIMAL;
     }
 
 
     @NonNull
-    public PolyBigDecimal asPolyBigDecimal() {
+    public PolyBigDecimal asBigDecimal() {
         if ( isBigDecimal() ) {
             return (PolyBigDecimal) this;
         }
@@ -377,6 +393,19 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyLong asLong() {
         if ( isLong() ) {
             return (PolyLong) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
+    public boolean isTemporal() {
+        return PolyType.DATETIME_TYPES.contains( type );
+    }
+
+
+    public PolyTemporal asTemporal() {
+        if ( isTemporal() ) {
+            return (PolyTemporal) this;
         }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }
@@ -519,6 +548,16 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyInterval) this;
         }
         throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
+    public static PolyValue convert( PolyValue value, PolyType type ) {
+        switch ( type ) {
+            case INTEGER:
+                return PolyInteger.from( value );
+        }
+
+        throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, type ) );
     }
 
 

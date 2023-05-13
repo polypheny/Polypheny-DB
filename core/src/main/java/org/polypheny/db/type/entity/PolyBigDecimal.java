@@ -24,6 +24,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.category.PolyNumber;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -73,7 +74,7 @@ public class PolyBigDecimal extends PolyNumber {
             return -1;
         }
 
-        return value.compareTo( o.asPolyBigDecimal().value );
+        return value.compareTo( o.asBigDecimal().value );
     }
 
 

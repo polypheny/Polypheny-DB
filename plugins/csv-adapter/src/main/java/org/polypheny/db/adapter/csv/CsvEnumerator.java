@@ -57,6 +57,7 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
 
@@ -282,9 +283,9 @@ class CsvEnumerator<E> implements Enumerator<E> {
         abstract E convertRow( String[] rows );
 
 
-        protected Object convert( CsvFieldType fieldType, String string ) {
+        protected PolyValue convert( CsvFieldType fieldType, String string ) {
             if ( fieldType == null ) {
-                return string;
+                return PolyString.of( string );
             }
             switch ( fieldType ) {
                 case BOOLEAN:
@@ -296,12 +297,12 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Byte.parseByte( string );
+                    return PolyInteger.of( Byte.parseByte( string ) );
                 case SHORT:
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Short.parseShort( string );
+                    return PolyInteger.of( Short.parseShort( string ) );
                 case INT:
                     if ( string.length() == 0 ) {
                         return null;

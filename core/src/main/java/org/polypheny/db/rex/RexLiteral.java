@@ -41,14 +41,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.time.LocalDateTime;
-import java.util.AbstractList;
-import java.util.AbstractMap;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
@@ -61,8 +57,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -73,7 +72,6 @@ import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Unsafe;
@@ -201,13 +199,13 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         this.value = value;
         this.type = Objects.requireNonNull( type );
         this.polyType = Objects.requireNonNull( polyType );
-        if ( !valueMatchesType( value, polyType, true ) ) {
+        /*if ( !valueMatchesType( value, polyType, true ) ) {
             System.err.println( value );
             System.err.println( value.getClass().getCanonicalName() );
             System.err.println( type );
             System.err.println( polyType );
             throw new IllegalArgumentException();
-        }
+        }*/
 //        Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
         Preconditions.checkArgument( (value != null) || type.isNullable() );
         Preconditions.checkArgument( polyType != PolyType.ANY );
@@ -276,7 +274,10 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
 
     public static Pair<PolyValue, PolyType> convertType( PolyValue value, AlgDataType typeName ) {
-        switch ( typeName.getPolyType() ) {
+        PolyValue converted = PolyValue.convert( value, typeName.getPolyType() );
+
+
+        /*switch ( typeName.getPolyType() ) {
             case INTEGER:
             case BIGINT:
             case TINYINT:
@@ -335,8 +336,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                     );
                     return new Pair<>( ts, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
                 }
-        }
-        return new Pair<>( value, typeName.getPolyType() );
+        }*/
+        return new Pair<>( converted, typeName.getPolyType() );
     }
 
 
@@ -435,7 +436,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    private static String toJavaString( Comparable<?> value, PolyType typeName, AlgDataType type, RexDigestIncludeType includeType ) {
+    private static String toJavaString( PolyValue value, PolyType typeName, AlgDataType type, RexDigestIncludeType includeType ) {
         assert includeType != RexDigestIncludeType.OPTIONAL : "toJavaString must not be called with includeType=OPTIONAL";
         String fullTypeString = type.getFullTypeString();
         if ( value == null ) {
@@ -632,12 +633,12 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @param typeName Type family
      * @param includeType if representation should include data type
      */
-    private static void printAsJava( Comparable<?> value, PrintWriter pw, PolyType typeName, boolean java, RexDigestIncludeType includeType ) {
-        switch ( typeName ) {
+    private static void printAsJava( PolyValue value, PrintWriter pw, PolyType typeName, boolean java, RexDigestIncludeType includeType ) {
+        /*switch ( typeName ) {
             case CHAR:
-                NlsString nlsString = (NlsString) value;
+                NlsString nlsString = new NlsString( value.asString().value,Charsets.UTF_8.name() , Collation.COERCIBLE  );
                 if ( java ) {
-                    Util.printJavaString( pw, nlsString.getValue(), true );
+                    Util.printJavaString( pw, value.asString().getValue(), true );
                 } else {
                     boolean includeCharset = (nlsString.getCharsetName() != null) && !nlsString.getCharsetName().equals( SaffronProperties.INSTANCE.defaultCharset().get() );
                     pw.print( nlsString.asSql( includeCharset, false ) );
@@ -766,7 +767,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             default:
                 assert valueMatchesType( value, typeName, true );
                 throw Util.needToImplement( typeName );
-        }
+        }*/
+        pw.println( value.asExpression() );
     }
 
 
@@ -1177,24 +1179,24 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    public static Comparable value( RexNode node ) {
+    public static PolyValue value( RexNode node ) {
         return findValue( node );
     }
 
 
     public static int intValue( RexNode node ) {
-        final Comparable value = findValue( node );
-        return ((Number) value).intValue();
+        final PolyValue value = findValue( node );
+        return value.asNumber().intValue();
     }
 
 
-    public static String stringValue( RexNode node ) {
-        final Comparable value = findValue( node );
-        return (value == null) ? null : ((NlsString) value).getValue();
+    public static PolyString stringValue( RexNode node ) {
+        final PolyValue value = findValue( node );
+        return (value == null) ? null : value.asString();
     }
 
 
-    private static Comparable findValue( RexNode node ) {
+    private static PolyValue findValue( RexNode node ) {
         if ( node instanceof RexLiteral ) {
             return ((RexLiteral) node).value;
         }
@@ -1205,8 +1207,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 return findValue( call.getOperands().get( 0 ) );
             }
             if ( operator.getOperatorName() == OperatorName.UNARY_MINUS ) {
-                final BigDecimal value = (BigDecimal) findValue( call.getOperands().get( 0 ) );
-                return value.negate();
+                final PolyNumber value = findValue( call.getOperands().get( 0 ) ).asNumber();
+                return PolyBigDecimal.of( value.asBigDecimal().bigDecimalValue().negate() );
             }
         }
         throw new AssertionError( "not a literal: " + node );

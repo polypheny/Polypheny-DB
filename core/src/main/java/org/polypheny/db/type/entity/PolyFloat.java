@@ -87,4 +87,10 @@ public class PolyFloat extends PolyValue {
 
     }
 
+
+    @Override
+    public String toString() {
+        return value.toString();
+    }
+
 }

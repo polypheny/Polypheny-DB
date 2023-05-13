@@ -2883,7 +2883,7 @@ public class AlgBuilder {
                 case AS:
                     final List<RexNode> operands = ((RexCall) node).operands;
                     int i = registerExpression( operands.get( 0 ) );
-                    names.set( i, RexLiteral.stringValue( operands.get( 1 ) ) );
+                    names.set( i, ((RexLiteral) operands.get( 1 )).value.asString().value );
                     return i;
             }
             int i = extraNodes.indexOf( node );

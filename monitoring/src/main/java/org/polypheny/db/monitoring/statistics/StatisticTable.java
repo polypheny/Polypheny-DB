@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 /**
  * Stores the available statistic data of a specific table.
  */
-public class StatisticTable<T extends Comparable<T>> {
+public class StatisticTable {
 
     @Getter
     private String table;
@@ -67,7 +67,7 @@ public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
     @Setter
-    private List<TemporalStatisticColumn<T>> temporalColumn;
+    private List<TemporalStatisticColumn> temporalColumn;
 
 
     public StatisticTable( Long tableId ) {

@@ -39,6 +39,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 @Slf4j
@@ -158,8 +159,8 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeColStat( Statement statement, AlgNode node, QueryResult queryResult ) throws QueryExecutionException {
-        PolyImplementation<Object> result;
-        List<List<Object>> rows;
+        PolyImplementation<PolyValue> result;
+        List<List<PolyValue>> rows;
 
         try {
             result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
@@ -168,23 +169,18 @@ public class StatisticQueryProcessor {
             throw new QueryExecutionException( t );
         }
 
-        List<Comparable<?>[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
-            Comparable<?>[] temp = new Comparable<?>[row.size()];
+        List<PolyValue[]> data = new ArrayList<>();
+        for ( List<PolyValue> row : rows ) {
+            PolyValue[] temp = new PolyValue[row.size()];
             int counter = 0;
-            for ( Object o : row ) {
-                if ( o == null ) {
-                    temp[counter] = null;
-                } else {
-                    assert o instanceof Comparable<?>;
-                    temp[counter] = (Comparable<?>) o;
-                }
+            for ( PolyValue o : row ) {
+                temp[counter] = o;
                 counter++;
             }
             data.add( temp );
         }
 
-        Comparable<?>[][] d = data.toArray( new Comparable<?>[0][] );
+        PolyValue[][] d = data.toArray( new PolyValue[0][] );
 
         return new StatisticResult( queryResult, d );
     }
