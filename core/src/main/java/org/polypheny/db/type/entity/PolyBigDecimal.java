@@ -112,6 +112,11 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+    public static PolyBigDecimal of( long value ) {
+        return new PolyBigDecimal( BigDecimal.valueOf( value ), false );
+    }
+
+
     @Override
     public int intValue() {
         return value.intValue();
