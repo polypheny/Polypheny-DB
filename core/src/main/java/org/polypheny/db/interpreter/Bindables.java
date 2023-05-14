@@ -308,7 +308,7 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableFilterRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalFilter.class, (Predicate<LogicalFilter>) AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableFilterRule" );
+            super( LogicalFilter.class, AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableFilterRule" );
         }
 
 

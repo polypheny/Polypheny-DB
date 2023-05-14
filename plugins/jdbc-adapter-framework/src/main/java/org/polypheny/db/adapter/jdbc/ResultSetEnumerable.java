@@ -34,32 +34,13 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.NClob;
 import java.sql.PreparedStatement;
-import java.sql.Ref;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLXML;
 import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -68,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -79,15 +59,8 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.sql.language.SqlDialect.IntervalParameterStrategy;
-import org.polypheny.db.type.IntervalPolyType;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.FileInputHandle;
-import org.polypheny.db.util.NlsString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Static;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 
 
 /**
@@ -276,7 +249,18 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
             preparedStatement.setNull( i, SqlType.NULL.id );
-        } else if ( type instanceof IntervalPolyType && connectionHandler.getDialect().getIntervalParameterStrategy() != IntervalParameterStrategy.NONE ) {
+        }
+
+        switch ( type.getPolyType() ) {
+            case BIGINT:
+                preparedStatement.setBigDecimal( i, ((PolyValue) value).asBigDecimal().value );
+                break;
+            default:
+                preparedStatement.setObject( i, value );
+        }
+
+
+        /*else if ( type instanceof IntervalPolyType && connectionHandler.getDialect().getIntervalParameterStrategy() != IntervalParameterStrategy.NONE ) {
             if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
                 preparedStatement.setInt( i, ((BigDecimal) value).intValue() );
             } else if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
@@ -422,7 +406,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setTime( i, new java.sql.Time( ((TimeString) value).getMillisOfDay() ), ((TimeString) value).toCalendar() );
         } else {
             preparedStatement.setObject( i, value );
-        }
+        }*/
     }
 
 

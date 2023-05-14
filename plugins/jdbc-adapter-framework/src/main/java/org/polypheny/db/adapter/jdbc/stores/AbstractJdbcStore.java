@@ -118,6 +118,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     @Override
     public void updateNamespace( String name, long id ) {
         currentJdbcSchema = JdbcSchema.create( id, storeCatalog, name, connectionFactory, dialect, this );
+        putNamespace( currentJdbcSchema );
     }
 
 

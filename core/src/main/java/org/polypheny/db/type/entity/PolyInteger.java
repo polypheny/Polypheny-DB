@@ -36,7 +36,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
+@Value
 public class PolyInteger extends PolyNumber {
 
     @Serialize
@@ -51,6 +51,11 @@ public class PolyInteger extends PolyNumber {
 
     public static PolyInteger of( short value ) {
         return new PolyInteger( (int) value );
+    }
+
+
+    public static PolyInteger of( int value ) {
+        return new PolyInteger( value );
     }
 
 

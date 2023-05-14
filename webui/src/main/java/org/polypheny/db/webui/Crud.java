@@ -2729,7 +2729,7 @@ public class Crud implements InformationObserver {
                             .getPrecision() ).build();
         }
 
-        ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
+        List<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
 
         try {
             executionTime += System.nanoTime() - temp;
@@ -3165,7 +3165,7 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    public static ArrayList<String[]> computeResultData( final List<List<PolyValue>> rows, final List<DbColumn> header, final Transaction transaction ) {
+    public static List<String[]> computeResultData( final List<List<PolyValue>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<PolyValue> row : rows ) {
             String[] temp = new String[row.size()];

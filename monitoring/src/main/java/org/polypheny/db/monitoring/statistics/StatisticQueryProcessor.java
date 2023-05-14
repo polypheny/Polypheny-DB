@@ -79,7 +79,6 @@ public class StatisticQueryProcessor {
     }
 
 
-
     /**
      * Gets all columns in the database
      *
@@ -192,6 +191,7 @@ public class StatisticQueryProcessor {
     private int getPageSize() {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
+
 
     static class QueryExecutionException extends Exception {
 

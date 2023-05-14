@@ -134,7 +134,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         registerIsFullTracking();
 
         if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
-            this.asyncReevaluateAllStatistics();
+            // this.asyncReevaluateAllStatistics();
         }
     }
 
@@ -299,11 +299,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
         PolyInteger count = getNumberColumnCount( this.prepareNode( column, NodeType.ROW_COUNT_COLUMN ) );
         NumericalStatisticColumn statisticColumn = new NumericalStatisticColumn( column );
         if ( min != null ) {
-            //noinspection unchecked
             statisticColumn.setMin( min.getData()[0].asNumber() );
         }
         if ( max != null ) {
-            //noinspection unchecked
             statisticColumn.setMax( max.getData()[0].asNumber() );
         }
 

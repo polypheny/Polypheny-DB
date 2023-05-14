@@ -437,12 +437,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             final SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) right;
             if ( left instanceof SqlIntervalLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = (BigDecimal) sourceInterval.getValue();
+                BigDecimal sourceValue = sourceInterval.value.asInterval().value;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
             } else if ( left instanceof SqlNumericLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = (BigDecimal) sourceInterval.getValue();
+                BigDecimal sourceValue = sourceInterval.getValue().asNumber().bigDecimalValue();
                 final BigDecimal multiplier = intervalQualifier.getUnit().multiplier;
                 sourceValue = sourceValue.multiply( multiplier );
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );

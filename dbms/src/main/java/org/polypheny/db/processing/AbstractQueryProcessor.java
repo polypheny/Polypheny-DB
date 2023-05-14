@@ -34,8 +34,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -157,11 +155,6 @@ import org.polypheny.db.view.ViewManager.ViewVisitor;
 public abstract class AbstractQueryProcessor implements QueryProcessor, ExecutionTimeObserver {
 
     BlockingQueue<Runnable> eventQueue = new LinkedBlockingQueue<>();
-    ThreadPoolExecutor executor = new ThreadPoolExecutor( 3,
-            3,
-            3000000,
-            TimeUnit.SECONDS,
-            eventQueue );
 
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
@@ -1520,13 +1513,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
 
-            executor.execute( () -> {
-                if ( statement.getTransaction().isAnalyze() ) {
-                    AlgNode optimalNode = optimalAlgs.get( index );
-                    UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
-                    addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
-                }
-            } );
+            if ( statement.getTransaction().isAnalyze() ) {
+                AlgNode optimalNode = optimalAlgs.get( index );
+                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
+                addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
+            }
 
             return new Pair<>( proposedImplementations.getResults().get( index ), (ProposedRoutingPlan) routingPlan );
         }

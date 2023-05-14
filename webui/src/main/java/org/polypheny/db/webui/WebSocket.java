@@ -171,8 +171,8 @@ public class WebSocket implements Consumer<WsConfig> {
                         return;
                     }
                 }
-                if ( ((Result) result).xid != null ) {
-                    xIds.add( ((Result) result).xid );
+                if ( result.xid != null ) {
+                    xIds.add( result.xid );
                 }
                 ctx.send( result );
                 break;

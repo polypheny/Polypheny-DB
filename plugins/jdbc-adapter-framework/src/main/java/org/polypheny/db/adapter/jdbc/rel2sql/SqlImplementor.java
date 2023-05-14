@@ -545,7 +545,7 @@ public abstract class SqlImplementor {
                 case LITERAL:
                     final RexLiteral literal = (RexLiteral) rex;
                     if ( literal.getPolyType() == PolyType.SYMBOL ) {
-                        final Enum<?> symbol = (Enum<?>) literal.getValue();
+                        final Enum<?> symbol = literal.value.asSymbol().value;
                         return SqlLiteral.createSymbol( symbol, POS );
                     }
                     if ( RexLiteral.isNullLiteral( literal ) ) {

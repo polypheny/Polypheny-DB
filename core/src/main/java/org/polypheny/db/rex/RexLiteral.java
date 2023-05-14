@@ -816,7 +816,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      *
      * For backwards compatibility, returns DATE. TIME and TIMESTAMP as a {@link Calendar} value in UTC time zone.
      */
-    public Comparable<?> getValue() {
+    public PolyValue getValue() {
         assert valueMatchesType( value, polyType, true ) : value;
         if ( value == null ) {
             return null;
@@ -827,7 +827,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case TIMESTAMP:
                 return getValueAs( Calendar.class );
             case MAP:
-                return getValueAsPolyMap();
+                //return getValueAsPolyMap();
+                return null; // todo fix
             default:
                 return value;
         }

@@ -99,8 +99,8 @@ public class ImplementationCache {
         im.registerInformation( generalKv );
         generalGroup.setRefreshFunction( () -> {
             generalKv.putPair( "Status", RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() ? "Active" : "Disabled" );
-            generalKv.putPair( "Current Cache Size", implementationCache.size() + "" );
-            generalKv.putPair( "Maximum Cache Size", RuntimeConfig.IMPLEMENTATION_CACHING_SIZE.getInteger() + "" );
+            generalKv.putPair( "Current Cache Size", String.valueOf( implementationCache.size() ) );
+            generalKv.putPair( "Maximum Cache Size", String.valueOf( RuntimeConfig.IMPLEMENTATION_CACHING_SIZE.getInteger() ) );
         } );
 
         // Hit ratio

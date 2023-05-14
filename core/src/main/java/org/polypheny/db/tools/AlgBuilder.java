@@ -144,7 +144,6 @@ import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Permutation;
 import org.polypheny.db.util.TimeString;
@@ -1758,7 +1757,7 @@ public class AlgBuilder {
                 if ( i >= 0 ) {
                     exprList.set( i, call.getOperands().get( 0 ) );
                 }
-                return ((NlsString) ((RexLiteral) call.getOperands().get( 1 )).getValue()).getValue();
+                return ((RexLiteral) call.getOperands().get( 1 )).getValue().asString().value;
             default:
                 return null;
         }

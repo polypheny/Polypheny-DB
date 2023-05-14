@@ -46,7 +46,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -55,7 +54,6 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -65,7 +63,6 @@ import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaVersion;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -108,6 +105,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
         this.convention = convention;
         this.tableMap = tableMap;
         this.adapter = adapter;
+
     }
 
 
@@ -151,13 +149,13 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
 
 
     public static JdbcSchema create(
-            Long id,
+            long id,
             RelStoreCatalog storeCatalog,
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
             Adapter<?> adapter ) {
-        final Expression expression = Schemas.subSchemaExpression( storeCatalog, id, adapter.getAdapterId(), JdbcSchema.class );
+        final Expression expression = adapter.getNamespaceAsExpression( id );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
         return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
     }
@@ -202,7 +200,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
 
     @Override
     public Expression getExpression( Snapshot snapshot, long id ) {
-        return Schemas.subSchemaExpression( Catalog.getInstance().getStoreSnapshot( getAdapterId() ), id, getAdapterId(), JdbcSchema.class );
+        return asExpression();//Schemas.subSchemaExpression( Catalog.getInstance().getStoreSnapshot( getAdapterId() ), id, getAdapterId(), JdbcSchema.class );
     }
 
 
@@ -311,7 +309,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( adapter.asExpression(), "getCurrentNamespace" ); //todo change
+        return this.adapter.getNamespaceAsExpression( id ); //todo change
     }
 
 }

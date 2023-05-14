@@ -61,6 +61,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
+import kotlin.text.Charsets;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
@@ -224,8 +225,11 @@ import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.type.inference.TableFunctionReturnTypeInference;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerContext;
@@ -1534,21 +1538,21 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         RexLiteral literal = (RexLiteral) literalExpr;
 
-        Comparable value = literal.getValue();
+        PolyValue value = literal.getValue();
 
         if ( PolyTypeUtil.isExactNumeric( type ) && PolyTypeUtil.hasScale( type ) ) {
-            BigDecimal roundedValue = NumberUtil.rescaleBigDecimal( (BigDecimal) value, type.getScale() );
+            BigDecimal roundedValue = NumberUtil.rescaleBigDecimal( value.asBigDecimal().value, type.getScale() );
             return rexBuilder.makeExactLiteral( roundedValue, type );
         }
 
-        if ( (value instanceof NlsString) && (type.getPolyType() == PolyType.CHAR) ) {
+        if ( type.getPolyType() == PolyType.CHAR ) {
             // pad fixed character type
-            NlsString unpadded = (NlsString) value;
+            PolyString unpadded = value.asString();
             return rexBuilder.makeCharLiteral(
                     new NlsString(
-                            Spaces.padRight( unpadded.getValue(), type.getPrecision() ),
-                            unpadded.getCharsetName(),
-                            unpadded.getCollation() ) );
+                            Spaces.padRight( unpadded.value, type.getPrecision() ),
+                            String.valueOf( Charsets.UTF_8 ),
+                            Collation.COERCIBLE ) );
         }
         return literal;
     }

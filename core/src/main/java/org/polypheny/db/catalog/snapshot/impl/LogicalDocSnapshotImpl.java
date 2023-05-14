@@ -69,7 +69,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     @Override
     public @NonNull Optional<LogicalCollection> getCollection( long namespaceId, String name ) {
-        List<LogicalCollection> collections = namespaceCollections.get( namespaceId );
+        List<LogicalCollection> collections = Optional.ofNullable( namespaceCollections.get( namespaceId ) ).orElse( List.of() );
 
         return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
                 ? c.name.equals( name )

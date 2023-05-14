@@ -221,7 +221,7 @@ public class LanguageCrud {
             header.add( dbCol );
         }
 
-        ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
+        List<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
         return Result
                 .builder()

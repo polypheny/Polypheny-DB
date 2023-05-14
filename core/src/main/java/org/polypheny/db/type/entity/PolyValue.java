@@ -54,8 +54,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
     @NonFinal
-    @EqualsAndHashCode.Exclude
-    public BinarySerializer<PolyValue> serializer = PolyValue.getAbstractBuilder().build( PolyValue.class );
+    public static BinarySerializer<PolyValue> serializer = PolyValue.getAbstractBuilder().build( PolyValue.class );
 
     @Serialize
     public boolean nullable;
@@ -78,6 +77,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyValue( @Deserialize("type") PolyType type, @Deserialize("nullable") boolean nullable ) {
         this.type = type;
         this.nullable = nullable;
+    }
+
+
+    @Override
+    public <T extends PolySerializable> BinarySerializer<T> getSerializer() {
+        return null;
     }
 
 
@@ -546,6 +551,19 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyInterval asInterval() {
         if ( isInterval() ) {
             return (PolyInterval) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
+    public boolean isSymbol() {
+        return type == PolyType.SYMBOL;
+    }
+
+
+    public PolySymbol asSymbol() {
+        if ( isSymbol() ) {
+            return (PolySymbol) this;
         }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }

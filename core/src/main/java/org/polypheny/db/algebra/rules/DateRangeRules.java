@@ -43,7 +43,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
-import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -231,7 +230,7 @@ public abstract class DateRangeRules {
             switch ( call.getKind() ) {
                 case EXTRACT:
                     final RexLiteral operand = (RexLiteral) call.getOperands().get( 0 );
-                    timeUnits.add( (TimeUnitRange) operand.getValue() );
+                    timeUnits.add( operand.value.asInterval().unitRange );
                     break;
                 case FLOOR:
                 case CEIL:
@@ -304,7 +303,7 @@ public abstract class DateRangeRules {
                                 assert op1 instanceof RexCall;
                                 final RexCall subCall = (RexCall) op1;
                                 final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                                final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
+                                final TimeUnitRange timeUnit = flag.value.asInterval().unitRange;
                                 return compareFloorCeil( call.getKind().reverse(), subCall.getOperands().get( 0 ), (RexLiteral) op0, timeUnit, op1.getKind() == Kind.FLOOR );
                             }
                     }
@@ -322,7 +321,7 @@ public abstract class DateRangeRules {
                             if ( isFloorCeilCall( op0 ) ) {
                                 final RexCall subCall = (RexCall) op0;
                                 final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                                final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
+                                final TimeUnitRange timeUnit = flag.value.asInterval().unitRange;
                                 return compareFloorCeil( call.getKind(), subCall.getOperands().get( 0 ), (RexLiteral) op1, timeUnit, op0.getKind() == Kind.FLOOR );
                             }
                     }
@@ -404,7 +403,7 @@ public abstract class DateRangeRules {
                 case EXTRACT:
                     final RexCall call = (RexCall) e;
                     final RexLiteral flag = (RexLiteral) call.operands.get( 0 );
-                    final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
+                    final TimeUnitRange timeUnit = flag.value.asInterval().unitRange;
                     return timeUnit == this.timeUnit;
                 default:
                     return false;
@@ -419,7 +418,7 @@ public abstract class DateRangeRules {
             }
             final RangeSet<Calendar> s2 = TreeRangeSet.create();
             // Calendar.MONTH is 0-based
-            final int v = ((BigDecimal) literal.getValue()).intValue() - (timeUnit == TimeUnitRange.MONTH ? 1 : 0);
+            final int v = literal.value.asInterval().value.intValue() - (timeUnit == TimeUnitRange.MONTH ? 1 : 0);
 
             if ( !isValid( v, timeUnit ) ) {
                 // Comparison with an invalid value for timeUnit, always false.

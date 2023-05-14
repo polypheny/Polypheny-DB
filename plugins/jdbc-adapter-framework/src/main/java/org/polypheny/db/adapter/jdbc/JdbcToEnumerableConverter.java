@@ -85,6 +85,7 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -134,8 +135,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        AlgOptCost cost = super.computeSelfCost( planner, mq ).multiplyBy( .1 );
-        return cost;
+        return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
 
@@ -367,9 +367,18 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
                 }
         }
+        final Expression poly;
+        switch ( fieldType.getPolyType() ) {
+            case BIGINT:
+                poly = Expressions.call( PolyBigDecimal.class, "of", source );
+                break;
+            default:
+                poly = source;
+        }
+
         //source is null if an expression was already added to the builder.
-        if ( source != null ) {
-            builder.add( Expressions.statement( Expressions.assign( target, source ) ) );
+        if ( poly != null ) {
+            builder.add( Expressions.statement( Expressions.assign( target, poly ) ) );
         }
 
         // [POLYPHENYDB-596] If primitive type columns contain null value, returns null object
@@ -379,6 +388,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.call( resultSet_, "wasNull" ),
                             Expressions.statement( Expressions.assign( target, Expressions.constant( null ) ) ) ) );
         }
+
+
     }
 
 

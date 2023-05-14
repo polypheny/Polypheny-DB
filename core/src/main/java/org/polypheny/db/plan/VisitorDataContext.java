@@ -53,7 +53,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
 
@@ -226,8 +225,8 @@ public class VisitorDataContext implements DataContext {
                 default:
                     // TODO: Support few more supported cases
                     log.warn( "{} for value of class {} is being handled in default way", type.getPolyType(), rexLiteral.getValue().getClass() );
-                    if ( rexLiteral.getValue() instanceof NlsString ) {
-                        return Pair.of( index, ((NlsString) rexLiteral.getValue()).getValue() );
+                    if ( rexLiteral.getValue().isString() ) {
+                        return Pair.of( index, rexLiteral.getValue().asString().value );
                     } else {
                         return Pair.of( index, rexLiteral.getValue() );
                     }

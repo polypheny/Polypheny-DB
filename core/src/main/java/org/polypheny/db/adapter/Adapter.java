@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +76,8 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modi
     protected final List<Information> informationElements;
     private ConfigListener listener;
 
+    private final Map<Long, Namespace> namespaces = new ConcurrentHashMap<>();
+
 
     public Adapter( long adapterId, String uniqueName, Map<String, String> settings, S catalog ) {
         this.storeCatalog = catalog;
@@ -110,6 +113,21 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modi
     @Override
     public Expression asExpression() {
         return Expressions.call( AdapterManager.ADAPTER_MANAGER_EXPRESSION, "getAdapter", Expressions.constant( adapterId ) );
+    }
+
+
+    public Namespace getNamespace( long id ) {
+        return namespaces.get( id );
+    }
+
+
+    public void putNamespace( Namespace namespace ) {
+        this.namespaces.put( namespace.getId(), namespace );
+    }
+
+
+    public Expression getNamespaceAsExpression( long id ) {
+        return Expressions.call( asExpression(), "getNamespace", Expressions.constant( id ) );
     }
 
 

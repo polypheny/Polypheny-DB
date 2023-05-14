@@ -28,8 +28,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.StatusService;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
@@ -131,9 +129,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
      */
     @Override
     public <T extends MonitoringDataPoint> void removeAllDataPointsOfSpecificClass( Class<T> dataPointClass ) {
-        if ( data.containsKey( dataPointClass ) ) {
-            data.remove( dataPointClass );
-        }
+        data.remove( dataPointClass );
     }
 
 
@@ -150,7 +146,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
     }
 
 
-    private List<Class> getAllDataPointClasses() {
+    private List<Class<?>> getAllDataPointClasses() {
         return data.keySet().stream().collect( Collectors.toList() );
     }
 
@@ -194,7 +190,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             queryPostCosts.replace( physicalQueryClass, new QueryPostCostImpl( physicalQueryClass, newTime, samples ) );
         }
 
-        // this.simpleBackendDb.commit();
+        //this.simpleBackendDb.commit();
     }
 
 
@@ -204,25 +200,25 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             return;
         }
         queryPostCosts.clear();
-        // this.simpleBackendDb.commit();
+        //this.simpleBackendDb.commit();
     }
 
 
     protected void initialize( String filePath, String folderName, boolean resetRepository ) {
-        /* if ( simpleBackendDb != null ) {
+        /*if ( simpleBackendDb != null ) {
             simpleBackendDb.close();
         }*/
 
         synchronized ( this ) {
             File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( folderName );
 
-            if ( Catalog.resetCatalog ) {
+            /*if ( Catalog.resetCatalog ) {
                 StatusService.printInfo( "Resetting monitoring repository on startup." );
 
                 if ( new File( folder, filePath ).exists() ) {
                     new File( folder, filePath ).delete();
                 }
-            }
+            }*/
 
             // Assume that file is locked
             boolean fileLocked = true;
@@ -246,7 +242,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
                     log.warn( "Monitoring Repository is currently locked by another process. Waiting..." );
                 }
                 finish = System.currentTimeMillis();
-            }
+            }*/
             // Exceeded threshold
             if ( (finish - start) >= timeThreshold ) {
                 throw new RuntimeException( "Initializing Monitoring Repository took too long...\nMake sure that no other "
@@ -254,7 +250,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
                         + "Wait a few seconds or stop the locking process and try again. " );
             }
 
-            simpleBackendDb.getStore().fileLoad();*/
+            // simpleBackendDb.getStore().fileLoad();
         }
     }
 

@@ -2109,14 +2109,14 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalNamespace namespace = snapshot.getNamespace( namespaceId );
         // Check if there is already an entity with this name
-        if ( (namespace.namespaceType == NamespaceType.RELATIONAL && snapshot.rel().getTable( namespaceId, name ) != null)
-                || (namespace.namespaceType == NamespaceType.DOCUMENT && snapshot.doc().getCollection( namespaceId, name ).isPresent())
-                || (namespace.namespaceType == NamespaceType.GRAPH && snapshot.graph().getGraph( namespaceId ) != null) ) {
+        if ( snapshot.rel().getTable( namespaceId, name ).isPresent()
+                || snapshot.doc().getCollection( namespaceId, name ).isPresent()
+                || snapshot.graph().getGraph( namespaceId ).isPresent() ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return true;
             } else {
-                throw new GenericRuntimeException( "There already exists a entity with the name %s", name );
+                throw new GenericRuntimeException( "There already exists an entity with the name %s", name );
             }
         }
         return false;

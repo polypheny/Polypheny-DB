@@ -164,7 +164,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
         public void addRoute( QueryLanguage language ) {
             for ( String route : language.getOtherNames() ) {
-                log.info( "Added HTTP route: /{}", route );
+                log.info( "Added HTTP Route: /{}", route );
                 server.post( route, ctx -> anyQuery( language, ctx ) );
             }
         }

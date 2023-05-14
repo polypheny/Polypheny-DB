@@ -680,7 +680,7 @@ public class MqlToAlgConverter {
         Pair<List<String>, List<RexNode>> adjusted = DocumentUtil.transformUpdateRelational(
                 Pair.toMap( mergedUpdates.get( UpdateOperation.REPLACE ) ),
                 Pair.left( mergedUpdates.get( UpdateOperation.REMOVE ) ),
-                mergedUpdates.get( UpdateOperation.REPLACE ).stream().collect( Collectors.toMap( u -> u.left, u -> (String) ((RexLiteral) u.right).getValue() ) ), // todo change
+                mergedUpdates.get( UpdateOperation.REPLACE ).stream().collect( Collectors.toMap( u -> u.left, u -> ((RexLiteral) u.right).value.asString().value ) ), // todo change
                 rowType,
                 node );
 
