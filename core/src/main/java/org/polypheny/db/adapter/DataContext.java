@@ -34,6 +34,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Advisor;
 
 
@@ -70,19 +71,19 @@ public interface DataContext {
      */
     Object get( String name );
 
-    void addAll( Map<String, Object> map );
+    void addAll( Map<String, PolyValue> map );
 
 
     Statement getStatement();
 
 
-    void addParameterValues( long index, AlgDataType type, List<Object> data );
+    void addParameterValues( long index, AlgDataType type, List<PolyValue> data );
 
     AlgDataType getParameterType( long index );
 
-    List<Map<Long, Object>> getParameterValues();
+    List<Map<Long, PolyValue>> getParameterValues();
 
-    void setParameterValues( List<Map<Long, Object>> values );
+    void setParameterValues( List<Map<Long, PolyValue>> values );
 
     Map<Long, AlgDataType> getParameterTypes();
 
@@ -124,7 +125,7 @@ public interface DataContext {
 
         private final long index;
         private final AlgDataType type;
-        private final Object value;
+        private final PolyValue value;
 
     }
 
@@ -233,7 +234,7 @@ public interface DataContext {
 
 
         @Override
-        public void addAll( Map<String, Object> map ) {
+        public void addAll( Map<String, PolyValue> map ) {
 
         }
 
@@ -245,7 +246,7 @@ public interface DataContext {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
 
         }
 
@@ -257,13 +258,13 @@ public interface DataContext {
 
 
         @Override
-        public List<Map<Long, Object>> getParameterValues() {
+        public List<Map<Long, PolyValue>> getParameterValues() {
             return null;
         }
 
 
         @Override
-        public void setParameterValues( List<Map<Long, Object>> values ) {
+        public void setParameterValues( List<Map<Long, PolyValue>> values ) {
 
         }
 

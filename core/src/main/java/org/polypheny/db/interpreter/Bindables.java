@@ -92,6 +92,7 @@ import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -144,7 +145,7 @@ public class Bindables {
      *
      * Any bindable can be compiled; if its input is also bindable, it becomes part of the same compilation unit.
      */
-    private static Enumerable<Object[]> help( DataContext dataContext, BindableAlg alg ) {
+    private static Enumerable<PolyValue[]> help( DataContext dataContext, BindableAlg alg ) {
         return new Interpreter( dataContext, alg );
     }
 
@@ -230,8 +231,8 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
@@ -274,7 +275,7 @@ public class Bindables {
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
             return entity.unwrap( ScannableEntity.class ).scan( dataContext );
         }
@@ -350,13 +351,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -416,13 +417,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -479,13 +480,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -551,13 +552,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -613,13 +614,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -650,13 +651,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -726,13 +727,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -801,13 +802,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 

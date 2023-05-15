@@ -53,6 +53,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -99,7 +100,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public void addAll( Map<String, Object> map ) {
+    public void addAll( Map<String, PolyValue> map ) {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
@@ -111,7 +112,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+    public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
@@ -123,13 +124,13 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public List<Map<Long, Object>> getParameterValues() {
+    public List<Map<Long, PolyValue>> getParameterValues() {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
-    public void setParameterValues( List<Map<Long, Object>> values ) {
+    public void setParameterValues( List<Map<Long, PolyValue>> values ) {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 

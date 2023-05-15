@@ -222,7 +222,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     public static PreparedStatementEnricher createEnricher( Integer[] indexes, DataContext context ) {
         return ( preparedStatement, connectionHandler ) -> {
             boolean batch = context.getParameterValues().size() > 1;
-            for ( Map<Long, Object> values : context.getParameterValues() ) {
+            for ( Map<Long, PolyValue> values : context.getParameterValues() ) {
                 for ( int i = 0; i < indexes.length; i++ ) {
                     final long index = indexes[i];
                     setDynamicParam(
@@ -246,7 +246,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
             preparedStatement.setNull( i, SqlType.NULL.id );
         }

@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Holder;
 
 
@@ -41,7 +42,7 @@ import org.polypheny.db.util.Holder;
  */
 public class DataContextImpl implements DataContext {
 
-    private final Map<String, Object> map;
+    private final Map<String, PolyValue> map;
 
     @Getter
     private final Snapshot snapshot;
@@ -58,9 +59,9 @@ public class DataContextImpl implements DataContext {
     private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data ExpressionType
     @Getter
     @Setter
-    private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
+    private List<Map<Long, PolyValue>> parameterValues; // List of ( ParameterIndex -> Value )
 
-    private final Map<Integer, List<Map<Long, Object>>> otherParameterValues;
+    private final Map<Integer, List<Map<Long, PolyValue>>> otherParameterValues;
 
     int i = 0;
 
@@ -69,7 +70,7 @@ public class DataContextImpl implements DataContext {
     private boolean isMixedModel = false;
 
 
-    private DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, Object>> parameterValues ) {
+    private DataContextImpl( QueryProvider queryProvider, Map<String, PolyValue> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, PolyValue>> parameterValues ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
         this.snapshot = snapshot;
@@ -81,13 +82,13 @@ public class DataContextImpl implements DataContext {
     }
 
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
+    public DataContextImpl( QueryProvider queryProvider, Map<String, PolyValue> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
         this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
     }
 
 
     @NotNull
-    private Map<String, Object> getMedaInfo( Map<String, Object> parameters ) {
+    private Map<String, PolyValue> getMedaInfo( Map<String, PolyValue> parameters ) {
         // Store the time at which the query started executing. The SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the query.
         final Holder<Long> timeHolder = Holder.of( System.currentTimeMillis() );
 
@@ -101,18 +102,18 @@ public class DataContextImpl implements DataContext {
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
-        Map<String, Object> map = new HashMap<>();
-        map.put( Variable.UTC_TIMESTAMP.camelName, time );
+        Map<String, PolyValue> map = new HashMap<>();
+        /*map.put( Variable.UTC_TIMESTAMP.camelName, time );
         map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
         map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
         map.put( Variable.TIME_ZONE.camelName, timeZone );
         map.put( Variable.STDIN.camelName, streamHolder.get()[0] );
         map.put( Variable.STDOUT.camelName, streamHolder.get()[1] );
-        map.put( Variable.STDERR.camelName, streamHolder.get()[2] );
-        for ( Map.Entry<String, Object> entry : parameters.entrySet() ) {
-            Object e = entry.getValue();
+        map.put( Variable.STDERR.camelName, streamHolder.get()[2] );*/
+        for ( Map.Entry<String, PolyValue> entry : parameters.entrySet() ) {
+            PolyValue e = entry.getValue();
             if ( e == null ) {
-                e = AvaticaSite.DUMMY_VALUE;
+                //e = AvaticaSite.DUMMY_VALUE;
             }
             map.put( entry.getKey(), e );
         }
@@ -134,13 +135,13 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void addAll( Map<String, Object> map ) {
+    public void addAll( Map<String, PolyValue> map ) {
         this.map.putAll( map );
     }
 
 
     @Override
-    public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+    public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
         if ( parameterTypes.containsKey( index ) ) {
             throw new RuntimeException( "There are already values assigned to this index" );
         }
@@ -154,7 +155,7 @@ public class DataContextImpl implements DataContext {
         }
         parameterTypes.put( index, type );
         int i = 0;
-        for ( Object d : data ) {
+        for ( PolyValue d : data ) {
             parameterValues.get( i++ ).put( index, d );
         }
     }

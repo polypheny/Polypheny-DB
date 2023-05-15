@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.webui.Crud;
 
 
@@ -70,7 +71,7 @@ public class BatchUpdateRequest {
                 } else if ( value == null ) {// && fileName != null
                     if ( logicalColumn.type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                         setClauses.add( String.format( "\"%s\"=?", entry.getKey() ) );
-                        statement.getDataContext().addParameterValues( counter++, null, ImmutableList.of( httpRequest.getPart( fileName ).getInputStream() ) );
+                        statement.getDataContext().addParameterValues( counter++, null, ImmutableList.of( PolyStream.of( httpRequest.getPart( fileName ).getInputStream() ) ) );
                     } else {
                         String data = IOUtils.toString( httpRequest.getPart( fileName ).getInputStream(), StandardCharsets.UTF_8 );
                         setClauses.add( String.format( "\"%s\"=%s", entry.getKey(), Crud.uiValueToSql( data, logicalColumn.type, logicalColumn.collectionsType ) ) );

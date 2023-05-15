@@ -20,9 +20,10 @@ import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 
 public interface FilterableEntity extends Typed {
 
-    Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters );
+    Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters );
 
 }

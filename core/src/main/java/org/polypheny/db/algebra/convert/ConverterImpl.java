@@ -50,7 +50,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 public abstract class ConverterImpl extends SingleAlg implements Converter {
 
     protected AlgTraitSet inTraits;
-    protected final AlgTraitDef traitDef;
+    protected final AlgTraitDef<?> traitDef;
 
 
     /**
@@ -61,7 +61,7 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
      * @param traits the output traits of this converter
      * @param child child alg (provides input traits)
      */
-    protected ConverterImpl( AlgOptCluster cluster, AlgTraitDef traitDef, AlgTraitSet traits, AlgNode child ) {
+    protected ConverterImpl( AlgOptCluster cluster, AlgTraitDef<?> traitDef, AlgTraitSet traits, AlgNode child ) {
         super( cluster, traits, child );
         this.inTraits = child.getTraitSet();
         this.traitDef = traitDef;
@@ -84,7 +84,7 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
 
 
     @Override
-    public AlgTraitDef getTraitDef() {
+    public AlgTraitDef<?> getTraitDef() {
         return traitDef;
     }
 

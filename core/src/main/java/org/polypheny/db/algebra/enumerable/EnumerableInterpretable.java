@@ -54,6 +54,7 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -85,14 +86,14 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 (EnumerableAlg) getInput(),
                 Prefer.ARRAY,
                 implementor.dataContext.getStatement() ).left;
-        final ArrayBindable arrayBindable = box( bindable );
-        final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
+        final ArrayBindable arrayBindable = box( (Bindable<PolyValue>) bindable );
+        final Enumerable<PolyValue[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
-    public static Pair<Bindable<Object[]>, String> toBindable(
-            Map<String, Object> parameters,
+    public static Pair<Bindable<PolyValue[]>, String> toBindable(
+            Map<String, PolyValue> parameters,
             EnumerableAlg alg,
             EnumerableAlg.Prefer prefer,
             Statement statement ) {
@@ -108,7 +109,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         Hook.JAVA_PLAN.run( s );
 
         try {
-            return new Pair<Bindable<Object[]>, String>( (Bindable) getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
+            return new Pair<Bindable<PolyValue[]>, String>( (Bindable) getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
         }
@@ -116,12 +117,12 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
 
     static ArrayBindable getArrayBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
-        Bindable<?> bindable = getBindable( expr, s, fieldCount );
+        Bindable<PolyValue> bindable = getBindable( expr, s, fieldCount );
         return box( bindable );
     }
 
 
-    static Bindable<?> getBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
+    static Bindable<PolyValue> getBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
         ICompilerFactory compilerFactory;
         try {
             compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
@@ -141,7 +142,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation( true, true, true );
         }
-        return (Bindable<?>) cbe.createInstance( new StringReader( s ) );
+        return (Bindable<PolyValue>) cbe.createInstance( new StringReader( s ) );
     }
 
 
@@ -154,22 +155,22 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         }
         return new ArrayBindable() {
             @Override
-            public Class<Object[]> getElementType() {
-                return Object[].class;
+            public Class<PolyValue[]> getElementType() {
+                return PolyValue[].class;
             }
 
 
             @Override
-            public Enumerable<Object[]> bind( DataContext dataContext ) {
-                final Enumerable<?> enumerable = bindable.bind( dataContext );
+            public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
+                final Enumerable<PolyValue> enumerable = (Enumerable<PolyValue>) bindable.bind( dataContext );
                 return new AbstractEnumerable<>() {
                     @Override
-                    public Enumerator<Object[]> enumerator() {
-                        final Enumerator<?> enumerator = enumerable.enumerator();
+                    public Enumerator<PolyValue[]> enumerator() {
+                        final Enumerator<PolyValue> enumerator = enumerable.enumerator();
                         return new Enumerator<>() {
                             @Override
-                            public Object[] current() {
-                                return new Object[]{ enumerator.current() };
+                            public PolyValue[] current() {
+                                return new PolyValue[]{ enumerator.current() };
                             }
 
 
@@ -204,11 +205,11 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
      */
     private static class EnumerableNode implements Node {
 
-        private final Enumerable<Object[]> enumerable;
+        private final Enumerable<PolyValue[]> enumerable;
         private final Sink sink;
 
 
-        EnumerableNode( Enumerable<Object[]> enumerable, Compiler compiler, EnumerableInterpretable alg ) {
+        EnumerableNode( Enumerable<PolyValue[]> enumerable, Compiler compiler, EnumerableInterpretable alg ) {
             this.enumerable = enumerable;
             this.sink = compiler.sink( alg );
         }
@@ -216,9 +217,9 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
         @Override
         public void run() throws InterruptedException {
-            final Enumerator<Object[]> enumerator = enumerable.enumerator();
+            final Enumerator<PolyValue[]> enumerator = enumerable.enumerator();
             while ( enumerator.moveNext() ) {
-                Object[] values = enumerator.current();
+                PolyValue[] values = enumerator.current();
                 sink.send( Row.of( values ) );
             }
         }

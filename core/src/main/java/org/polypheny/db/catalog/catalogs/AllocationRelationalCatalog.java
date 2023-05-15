@@ -193,6 +193,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
     Map<Long, AllocationTable> getTables();
 
-    Map<Pair<Long, Long>, AllocationColumn> getAllocColumns();
+    Map<Pair<Long, Long>, AllocationColumn> getColumns();
 
 }

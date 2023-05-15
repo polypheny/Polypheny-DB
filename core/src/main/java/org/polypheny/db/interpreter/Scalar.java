@@ -34,13 +34,16 @@
 package org.polypheny.db.interpreter;
 
 
+import org.polypheny.db.type.entity.PolyValue;
+
 /**
  * Compiled scalar expression.
  */
 public interface Scalar {
 
-    Object execute( Context context );
+    PolyValue execute( Context context );
 
-    void execute( Context context, Object[] results );
+    void execute( Context context, PolyValue[] results );
+
 }
 

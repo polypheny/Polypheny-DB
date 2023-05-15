@@ -64,6 +64,7 @@ import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
@@ -139,11 +140,11 @@ public class ScanNode implements Node {
             }
             final List<Field> fields = fieldBuilder.build();
             rowEnumerable = queryable.select( o -> {
-                final Object[] values = new Object[fields.size()];
+                final PolyValue[] values = new PolyValue[fields.size()];
                 for ( int i = 0; i < fields.size(); i++ ) {
                     Field field = fields.get( i );
                     try {
-                        values[i] = field.get( o );
+                        values[i] = (PolyValue) field.get( o );
                     } catch ( IllegalAccessException e ) {
                         throw new RuntimeException( e );
                     }
@@ -160,7 +161,7 @@ public class ScanNode implements Node {
     private static ScanNode createFilterable( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableList<Integer> projects, FilterableEntity filterableTable ) {
         final DataContext root = compiler.getDataContext();
         final List<RexNode> mutableFilters = Lists.newArrayList( filters );
-        final Enumerable<Object[]> enumerable = filterableTable.scan( root, mutableFilters );
+        final Enumerable<PolyValue[]> enumerable = filterableTable.scan( root, mutableFilters );
         for ( RexNode filter : mutableFilters ) {
             if ( !filters.contains( filter ) ) {
                 throw RESOURCE.filterableTableInventedFilter( filter.toString() ).ex();
@@ -182,7 +183,7 @@ public class ScanNode implements Node {
             } else {
                 projectInts = projects.stream().mapToInt( i -> i ).toArray();
             }
-            final Enumerable<Object[]> enumerable1 = pfTable.scan( root, mutableFilters, projectInts );
+            final Enumerable<PolyValue[]> enumerable1 = pfTable.scan( root, mutableFilters, projectInts );
             for ( RexNode filter : mutableFilters ) {
                 if ( !filters.contains( filter ) ) {
                     throw RESOURCE.filterableTableInventedFilter( filter.toString() ).ex();
@@ -239,19 +240,19 @@ public class ScanNode implements Node {
             final Context context = compiler.createContext();
             enumerable = enumerable.where( row -> {
                 context.values = row.getValues();
-                Boolean b = (Boolean) condition.execute( context );
+                Boolean b = condition.execute( context ).asBoolean().value;
                 return b != null && b;
             } );
         }
         if ( rejectedProjects != null ) {
             enumerable = enumerable.select(
                     new Function1<>() {
-                        final Object[] values = new Object[rejectedProjects.size()];
+                        final PolyValue[] values = new PolyValue[rejectedProjects.size()];
 
 
                         @Override
                         public Row apply( Row row ) {
-                            final Object[] inValues = row.getValues();
+                            final PolyValue[] inValues = row.getValues();
                             for ( int i = 0; i < rejectedProjects.size(); i++ ) {
                                 values[i] = inValues[rejectedProjects.get( i )];
                             }

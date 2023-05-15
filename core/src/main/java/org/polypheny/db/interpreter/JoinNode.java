@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -69,7 +70,7 @@ public class JoinNode implements Node {
         List<Row> rightList = null;
         final int leftCount = alg.getLeft().getRowType().getFieldCount();
         final int rightCount = alg.getRight().getRowType().getFieldCount();
-        context.values = new Object[alg.getRowType().getFieldCount()];
+        context.values = new PolyValue[alg.getRowType().getFieldCount()];
         Row left;
         Row right;
         while ( (left = leftSource.receive()) != null ) {
@@ -82,7 +83,7 @@ public class JoinNode implements Node {
             }
             for ( Row right2 : rightList ) {
                 System.arraycopy( right2.getValues(), 0, context.values, leftCount, rightCount );
-                final Boolean execute = (Boolean) condition.execute( context );
+                final Boolean execute = condition.execute( context ).asBoolean().value;
                 if ( execute != null && execute ) {
                     sink.send( Row.asCopy( context.values ) );
                 }

@@ -34,14 +34,17 @@
 package org.polypheny.db.runtime;
 
 
+import org.polypheny.db.type.entity.PolyValue;
+
 /**
  * Extension to {@link Bindable} that returns rows that are arrays of objects.
  *
  * It also implements {@link Typed}; the {@link #getElementType()} method must return {@code Object[].class}.
  */
-public interface ArrayBindable extends Bindable<Object[]>, Typed {
+public interface ArrayBindable extends Bindable<PolyValue[]>, Typed {
 
     @Override
-    Class<Object[]> getElementType();
+    Class<PolyValue[]> getElementType();
+
 }
 

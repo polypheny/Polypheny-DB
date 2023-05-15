@@ -76,6 +76,8 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.LimitIterator;
 
@@ -270,17 +272,17 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
-                Map<Long, List<Object>> values = new HashMap<>();
+                List<List<PolyValue>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( o -> o.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                Map<Long, List<PolyValue>> values = new HashMap<>();
 
-                for ( List<Object> list : rows ) {
+                for ( List<PolyValue> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
                         if ( !values.containsKey( entry.getKey() ) ) {
                             values.put( entry.getKey(), new LinkedList<>() );
                         }
                         if ( isMaterializedView ) {
                             if ( entry.getValue() > list.size() - 1 ) {
-                                values.get( entry.getKey() ).add( i );
+                                values.get( entry.getKey() ).add( PolyInteger.of( i ) );
                                 i++;
                             } else {
                                 values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
@@ -297,7 +299,7 @@ public class DataMigratorImpl implements DataMigrator {
                     fields = sourceAlg.validatedRowType.getFieldList();
                 }
 
-                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                for ( Map.Entry<Long, List<PolyValue>> v : values.entrySet() ) {
                     targetStatement.getDataContext().addParameterValues(
                             v.getKey(),
                             fields.get( resultColMapping.get( v.getKey() ) ).getType(),
@@ -544,12 +546,12 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect(
+                List<List<PolyValue>> rows = MetaImpl.collect(
                         result.getCursorFactory(),
                         LimitIterator.of( sourceIterator, batchSize ),
-                        new ArrayList<>() );
-                Map<Long, List<Object>> values = new HashMap<>();
-                for ( List<Object> list : rows ) {
+                        new ArrayList<>() ).stream().map( o -> o.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                Map<Long, List<PolyValue>> values = new HashMap<>();
+                for ( List<PolyValue> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
                         if ( !values.containsKey( entry.getKey() ) ) {
                             values.put( entry.getKey(), new LinkedList<>() );
@@ -557,7 +559,7 @@ public class DataMigratorImpl implements DataMigrator {
                         values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
                     }
                 }
-                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                for ( Map.Entry<Long, List<PolyValue>> v : values.entrySet() ) {
                     targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
                 }
                 Iterator<?> iterator = targetStatement.getQueryProcessor()
@@ -679,11 +681,11 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                List<List<PolyValue>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
 
-                Map<Long, Map<Long, List<Object>>> partitionValues = new HashMap<>();
+                Map<Long, Map<Long, List<PolyValue>>> partitionValues = new HashMap<>();
 
-                for ( List<Object> row : rows ) {
+                for ( List<PolyValue> row : rows ) {
                     long currentPartitionId = -1;
                     if ( partitionColumnIndex >= 0 ) {
                         parsedValue = nullifiedPartitionValue;
@@ -709,12 +711,12 @@ public class DataMigratorImpl implements DataMigrator {
                 }
 
                 // Iterate over partitionValues in that way we don't even execute a statement which has no rows
-                for ( Map.Entry<Long, Map<Long, List<Object>>> dataOnPartition : partitionValues.entrySet() ) {
+                for ( Map.Entry<Long, Map<Long, List<PolyValue>>> dataOnPartition : partitionValues.entrySet() ) {
                     long partitionId = dataOnPartition.getKey();
-                    Map<Long, List<Object>> values = dataOnPartition.getValue();
+                    Map<Long, List<PolyValue>> values = dataOnPartition.getValue();
                     Statement currentTargetStatement = targetStatements.get( partitionId );
 
-                    for ( Map.Entry<Long, List<Object>> columnDataOnPartition : values.entrySet() ) {
+                    for ( Map.Entry<Long, List<PolyValue>> columnDataOnPartition : values.entrySet() ) {
                         // Check partitionValue
                         currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), null, columnDataOnPartition.getValue() );
                     }

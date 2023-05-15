@@ -62,6 +62,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -141,7 +142,7 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public void addAll( Map<String, Object> map ) {
+        public void addAll( Map<String, PolyValue> map ) {
             throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 
@@ -153,7 +154,7 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
             throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 

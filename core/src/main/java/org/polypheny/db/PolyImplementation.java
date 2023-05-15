@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
@@ -52,6 +51,7 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 
 
@@ -67,7 +67,7 @@ public class PolyImplementation<T> {
     private CursorFactory cursorFactory;
     private final Convention resultConvention;
     private List<ColumnMetaData> columns;
-    private final PreparedResult preparedResult;
+    private final PreparedResult<T> preparedResult;
     private final Statement statement;
     @Accessors(fluent = true)
     private boolean hasMoreRows;
@@ -92,7 +92,7 @@ public class PolyImplementation<T> {
             @Nullable AlgDataType rowType,
             NamespaceType namespaceType,
             ExecutionTimeMonitor executionTimeMonitor,
-            @Nullable PreparedResult preparedResult,
+            @Nullable PreparedResult<T> preparedResult,
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
@@ -342,16 +342,16 @@ public class PolyImplementation<T> {
         }
         if ( MonitoringType.INSERT == kind || MonitoringType.DELETE == kind ) {
 
-            HashMap<Long, List<Object>> ordered = new HashMap<>();
+            Map<Long, List<PolyValue>> ordered = new HashMap<>();
 
-            List<Map<Long, Object>> values = statement.getDataContext().getParameterValues();
+            List<Map<Long, PolyValue>> values = statement.getDataContext().getParameterValues();
             if ( values.size() > 0 ) {
                 for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
                     ordered.put( i, new ArrayList<>() );
                 }
             }
 
-            for ( Map<Long, Object> longObjectMap : statement.getDataContext().getParameterValues() ) {
+            for ( Map<Long, PolyValue> longObjectMap : statement.getDataContext().getParameterValues() ) {
                 longObjectMap.forEach( ( k, v ) -> {
                     ordered.get( k ).add( v );
                 } );
@@ -369,8 +369,7 @@ public class PolyImplementation<T> {
 
     public List<T> getDocRows( Statement statement, boolean noLimit ) {
         cursorFactory = CursorFactory.OBJECT;
-        Function<Object, T> transformer = o -> (T) o;
-        bindable = (Bindable<T>) preparedResult.getBindable( CursorFactory.OBJECT );
+        bindable = preparedResult.getBindable( CursorFactory.OBJECT );
 
         Iterator<T> iterator = createIterator( bindable, statement, true );
 
@@ -378,7 +377,6 @@ public class PolyImplementation<T> {
 
         return StreamSupport
                 .stream( iterable.spliterator(), false )
-                .map( transformer )
                 .collect( Collectors.toList() );
 
     }

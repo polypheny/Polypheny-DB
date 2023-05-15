@@ -43,7 +43,7 @@ import org.polypheny.db.schema.ColumnStrategy;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public class LogicalTable extends LogicalEntity implements Comparable<LogicalTable> {
+public class LogicalTable extends LogicalEntity {
 
     private static final long serialVersionUID = 4653390333258552102L;
 
@@ -89,19 +89,6 @@ public class LogicalTable extends LogicalEntity implements Comparable<LogicalTab
         };
     }
 
-
-    @Override
-    public int compareTo( LogicalTable o ) {
-        if ( o != null ) {
-            int comp = (int) (this.namespaceId - o.namespaceId);
-            if ( comp == 0 ) {
-                return (int) (this.id - o.id);
-            } else {
-                return comp;
-            }
-        }
-        return -1;
-    }
 
 
     @Override

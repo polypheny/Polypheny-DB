@@ -35,6 +35,7 @@ package org.polypheny.db.interpreter;
 
 
 import java.util.Arrays;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -42,14 +43,14 @@ import java.util.Arrays;
  */
 public class Row {
 
-    private final Object[] values;
+    private final PolyValue[] values;
 
 
     /**
      * Creates a Row.
      */
     // must stay package-protected, because does not copy
-    Row( Object[] values ) {
+    Row( PolyValue[] values ) {
         this.values = values;
     }
 
@@ -57,9 +58,9 @@ public class Row {
     /**
      * Creates a Row.
      *
-     * Makes a defensive copy of the array, so the Row is immutable. (If you're worried about the extra copy, call {@link #of(Object)}. But the JIT probably avoids the copy.)
+     * Makes a defensive copy of the array, so the Row is immutable. (If you're worried about the extra copy, call {@link #of(PolyValue)}. But the JIT probably avoids the copy.)
      */
-    public static Row asCopy( Object... values ) {
+    public static Row asCopy( PolyValue... values ) {
         return new Row( values.clone() );
     }
 
@@ -67,31 +68,31 @@ public class Row {
     /**
      * Creates a Row with one column value.
      */
-    public static Row of( Object value0 ) {
-        return new Row( new Object[]{ value0 } );
+    public static Row of( PolyValue value0 ) {
+        return new Row( new PolyValue[]{ value0 } );
     }
 
 
     /**
      * Creates a Row with two column values.
      */
-    public static Row of( Object value0, Object value1 ) {
-        return new Row( new Object[]{ value0, value1 } );
+    public static Row of( PolyValue value0, PolyValue value1 ) {
+        return new Row( new PolyValue[]{ value0, value1 } );
     }
 
 
     /**
      * Creates a Row with three column values.
      */
-    public static Row of( Object value0, Object value1, Object value2 ) {
-        return new Row( new Object[]{ value0, value1, value2 } );
+    public static Row of( PolyValue value0, PolyValue value1, PolyValue value2 ) {
+        return new Row( new PolyValue[]{ value0, value1, value2 } );
     }
 
 
     /**
      * Creates a Row with variable number of values.
      */
-    public static Row of( Object... values ) {
+    public static Row of( PolyValue... values ) {
         return new Row( values );
     }
 
@@ -116,13 +117,13 @@ public class Row {
     }
 
 
-    public Object getObject( int index ) {
+    public PolyValue getObject( int index ) {
         return values[index];
     }
 
 
     // must stay package-protected
-    Object[] getValues() {
+    PolyValue[] getValues() {
         return values;
     }
 
@@ -156,11 +157,11 @@ public class Row {
      */
     public static class RowBuilder {
 
-        Object[] values;
+        PolyValue[] values;
 
 
         private RowBuilder( int size ) {
-            values = new Object[size];
+            values = new PolyValue[size];
         }
 
 
@@ -170,7 +171,7 @@ public class Row {
          * @param index Zero-indexed position of value.
          * @param value Desired column value.
          */
-        public void set( int index, Object value ) {
+        public void set( int index, PolyValue value ) {
             values[index] = value;
         }
 
@@ -187,7 +188,7 @@ public class Row {
          * Allocates a new internal array.
          */
         public void reset() {
-            values = new Object[values.length];
+            values = new PolyValue[values.length];
         }
 
 

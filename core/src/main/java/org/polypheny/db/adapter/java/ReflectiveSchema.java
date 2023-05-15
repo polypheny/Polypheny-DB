@@ -43,6 +43,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
@@ -65,6 +66,7 @@ import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -223,13 +225,14 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Table that is implemented by reading from a Java object.
      */
+    @Slf4j
     private static class ReflectiveEntity extends LogicalTable implements ScannableEntity {
 
         private final Type elementType;
-        private final Enumerable enumerable;
+        private final Enumerable<PolyValue[]> enumerable;
 
 
-        ReflectiveEntity( Type elementType, Enumerable<?> enumerable, Long id, Long partitionId, Long adapterId ) {
+        ReflectiveEntity( Type elementType, Enumerable<PolyValue[]> enumerable, Long id, Long partitionId, Long adapterId ) {
             super( id, "test", -1, EntityType.ENTITY, null, false );
             this.elementType = elementType;
             this.enumerable = enumerable;
@@ -244,13 +247,15 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
         @Override
-        public Enumerable<Object[]> scan( DataContext root ) {
-            if ( elementType == Object[].class ) {
-                //noinspection unchecked
+        public Enumerable<PolyValue[]> scan( DataContext root ) {
+            if ( elementType == PolyValue[].class ) {
                 return enumerable;
             } else {
                 //noinspection unchecked
-                return enumerable.select( new FieldSelector( (Class<?>) elementType ) );
+                //return enumerable.select( new FieldSelector( (Class<?>) elementType ) );
+
+                log.warn( "todo 23f23" );
+                return null;
             }
         }
 
@@ -313,18 +318,18 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
      *
      * @param <T> element type
      */
-    private static class FieldEntity<T> extends ReflectiveEntity {
+    private static class FieldEntity<T extends PolyValue> extends ReflectiveEntity {
 
         private final Field field;
         private Statistic statistic;
 
 
-        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable, Long id, Long partitionId, Long adapterId ) {
+        FieldEntity( Field field, Type elementType, Enumerable<PolyValue[]> enumerable, Long id, Long partitionId, Long adapterId ) {
             this( field, elementType, enumerable, Statistics.UNKNOWN, id, partitionId, adapterId );
         }
 
 
-        FieldEntity( Field field, Type elementType, Enumerable<T> enumerable, Statistic statistic, Long id, Long partitionId, Long adapterId ) {
+        FieldEntity( Field field, Type elementType, Enumerable<PolyValue[]> enumerable, Statistic statistic, Long id, Long partitionId, Long adapterId ) {
             super( elementType, enumerable, id, partitionId, adapterId );
             this.field = field;
             this.statistic = statistic;

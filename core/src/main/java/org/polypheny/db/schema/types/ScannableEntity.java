@@ -18,9 +18,10 @@ package org.polypheny.db.schema.types;
 
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.type.entity.PolyValue;
 
 public interface ScannableEntity extends Typed {
 
-    Enumerable<Object[]> scan( DataContext dataContext );
+    Enumerable<PolyValue[]> scan( DataContext dataContext );
 
 }

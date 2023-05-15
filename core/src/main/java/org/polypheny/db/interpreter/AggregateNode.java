@@ -66,6 +66,9 @@ import org.polypheny.db.interpreter.Row.RowBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -284,8 +287,8 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
 
         @Override
-        public Object end() {
-            return cnt;
+        public PolyValue end() {
+            return PolyLong.of( cnt );
         }
 
     }
@@ -320,15 +323,15 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             this.accumulatorLength = accumulatorLength;
             this.rowLength = rowLength;
             this.sendContext = new Context( root );
-            this.sendContext.values = new Object[rowLength + accumulatorLength];
+            this.sendContext.values = new PolyValue[rowLength + accumulatorLength];
             this.endContext = new Context( root );
-            this.endContext.values = new Object[accumulatorLength];
+            this.endContext.values = new PolyValue[accumulatorLength];
         }
 
 
         @Override
         public Accumulator get() {
-            return new ScalarAccumulator( this, new Object[accumulatorLength] );
+            return new ScalarAccumulator( this, new PolyValue[accumulatorLength] );
         }
 
     }
@@ -340,10 +343,10 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     private static class ScalarAccumulator implements Accumulator {
 
         final ScalarAccumulatorDef def;
-        final Object[] values;
+        final PolyValue[] values;
 
 
-        private ScalarAccumulator( ScalarAccumulatorDef def, Object[] values ) {
+        private ScalarAccumulator( ScalarAccumulatorDef def, PolyValue[] values ) {
             this.def = def;
             this.values = values;
         }
@@ -358,7 +361,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
 
         @Override
-        public Object end() {
+        public PolyValue end() {
             System.arraycopy( values, 0, def.endContext.values, 0, values.length );
             return def.endScalar.execute( def.endContext );
         }
@@ -412,7 +415,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                     if ( grouping.get( groupPos ) ) {
                         rb.set( index, key.getObject( index ) );
                         if ( alg.indicator ) {
-                            rb.set( unionGroups.cardinality() + index, true );
+                            rb.set( unionGroups.cardinality() + index, PolyBoolean.of( true ) );
                         }
                     }
                     // need to set false when not part of grouping set.
@@ -456,7 +459,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
         void send( Row row );
 
-        Object end();
+        PolyValue end();
 
     }
 
@@ -767,13 +770,13 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
 
         @Override
-        public Object end() {
+        public PolyValue end() {
             if ( factory.nullIfEmpty && empty ) {
                 return null;
             }
             final Object[] args = { value };
             try {
-                return factory.aggFunction.resultMethod.invoke( factory.instance, args );
+                return (PolyValue) factory.aggFunction.resultMethod.invoke( factory.instance, args );
             } catch ( IllegalAccessException | InvocationTargetException e ) {
                 throw new RuntimeException( e );
             }
@@ -799,14 +802,14 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
         @Override
         public void send( Row row ) {
-            if ( row.getValues()[filterArg] == Boolean.TRUE ) {
+            if ( row.getValues()[filterArg].asBoolean().value == Boolean.TRUE ) {
                 accumulator.send( row );
             }
         }
 
 
         @Override
-        public Object end() {
+        public PolyValue end() {
             return accumulator.end();
         }
 

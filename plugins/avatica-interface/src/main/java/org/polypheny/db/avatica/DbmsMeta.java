@@ -107,6 +107,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
@@ -885,7 +886,7 @@ public class DbmsMeta implements ProtobufMeta {
             final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
             long[] updateCounts = new long[parameterValues.size()];
-            Map<Long, List<Object>> values = new HashMap<>();
+            Map<Long, List<PolyValue>> values = new HashMap<>();
             for ( UpdateBatch updateBatch : parameterValues ) {
                 List<Common.TypedValue> list = updateBatch.getParameterValuesList();
                 long index = 0;
@@ -895,9 +896,9 @@ public class DbmsMeta implements ProtobufMeta {
                         values.put( i, new LinkedList<>() );
                     }
                     if ( "ARRAY".equals( v.getType().name() ) ) {
-                        values.get( i ).add( convertList( (List<Object>) TypedValue.fromProto( v ).toLocal() ) );
+                        values.get( i ).add( (PolyValue) convertList( (List<PolyValue>) TypedValue.fromProto( v ).toLocal() ) );
                     } else {
-                        values.get( i ).add( TypedValue.fromProto( v ).toJdbc( calendar ) );
+                        values.get( i ).add( (PolyValue) TypedValue.fromProto( v ).toJdbc( calendar ) );
                     }
                 }
             }
@@ -908,7 +909,7 @@ public class DbmsMeta implements ProtobufMeta {
                     return new ExecuteBatchResult( new long[0] );
                 }
                 statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
-                for ( Entry<Long, List<Object>> valuesList : values.entrySet() ) {
+                for ( Entry<Long, List<PolyValue>> valuesList : values.entrySet() ) {
                     statementHandle.getStatement().getDataContext().addParameterValues( valuesList.getKey(), null, valuesList.getValue() );
                 }
                 prepare( h, statementHandle.getPreparedQuery() );
@@ -1197,13 +1198,13 @@ public class DbmsMeta implements ProtobufMeta {
         long index = 0;
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {
-                Object o;
+                PolyValue o;
                 if ( "ARRAY".equals( v.type.name() ) ) {
-                    o = convertList( (List<Object>) v.toLocal() );
+                    o = (PolyValue) convertList( (List<PolyValue>) v.toLocal() );
                 } else {
-                    o = v.toJdbc( calendar );
+                    o = (PolyValue) v.toJdbc( calendar );
                 }
-                List<Object> list = new LinkedList<>();
+                List<PolyValue> list = new LinkedList<>();
                 list.add( o );
                 statementHandle.getStatement().getDataContext().addParameterValues( index++, null, list );
             }
@@ -1231,7 +1232,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private List<Object> convertList( List<Object> list ) {
+    private List<Object> convertList( List<PolyValue> list ) {
         List<Object> newList = new LinkedList<>();
         for ( Object o : list ) {
             if ( o instanceof List ) {

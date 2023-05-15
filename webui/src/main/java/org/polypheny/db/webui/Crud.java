@@ -153,6 +153,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.util.BsonUtil;
@@ -648,7 +649,7 @@ public class Crud implements InformationObserver {
                     } else {
                         values.add( "?" );
                         FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( fih ) );
+                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyStream.of( fih.getData() ) ) );
                     }
                 }
             }
@@ -1006,7 +1007,7 @@ public class Crud implements InformationObserver {
             } else {
                 setStatements.add( String.format( "\"%s\" = ?", logicalColumn.name ) );
                 FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( fih ) );
+                statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( PolyStream.of( fih.getData() ) ) );
             }
         }
 
@@ -3108,7 +3109,6 @@ public class Crud implements InformationObserver {
             }
             throw new QueryExecutionException( t );
         }
-
 
         LogicalTable catalogTable = null;
         if ( request.tableId != null ) {

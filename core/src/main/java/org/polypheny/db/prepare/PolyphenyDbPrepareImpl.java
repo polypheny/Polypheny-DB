@@ -144,6 +144,8 @@ import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -482,7 +484,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Holds state for the process of preparing a SQL statement.
      */
-    public static class PolyphenyDbPreparingStmt extends Prepare {
+    public static class PolyphenyDbPreparingStmt extends Prepare<Object> {
 
         protected final AlgOptPlanner planner;
         protected final RexBuilder rexBuilder;
@@ -491,7 +493,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         protected final AlgDataTypeFactory typeFactory;
         protected final RexConvertletTable convertletTable;
         private final Prefer prefer;
-        private final Map<String, Object> internalParameters = new LinkedHashMap<>();
+        private final Map<String, PolyValue> internalParameters = new LinkedHashMap<>();
         private int expansionDepth;
         private Validator sqlValidator;
 
@@ -583,8 +585,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 try {
                     CatalogReader.THREAD_LOCAL.set( snapshot );
                     final Conformance conformance = context.config().conformance();
-                    internalParameters.put( "_conformance", conformance );
-                    Pair<Bindable<Object[]>, String> implementationPair = EnumerableInterpretable.toBindable(
+                    internalParameters.put( "_conformance", PolyString.of( conformance.toString() ) );
+                    Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
                             internalParameters,
                             enumerable,
                             prefer,
@@ -604,7 +606,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 timingTracer.traceTime( "end compilation" );
             }
 
-            return new PreparedResultImpl(
+            return new PreparedResultImpl<>(
                     resultType,
                     parameterRowType,
                     fieldOrigins,
@@ -621,7 +623,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
                 @Override
-                public Bindable<?> getBindable( CursorFactory cursorFactory ) {
+                public Bindable<Object> getBindable( CursorFactory cursorFactory ) {
                     return bindable;
                 }
 
@@ -647,7 +649,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        public Bindable<?> getBindable( final CursorFactory cursorFactory ) {
+        public Bindable<Object> getBindable( final CursorFactory cursorFactory ) {
             final String explanation = getCode();
             return dataContext -> {
                 switch ( cursorFactory.style ) {

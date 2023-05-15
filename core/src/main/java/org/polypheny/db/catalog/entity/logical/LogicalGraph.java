@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
-import com.drew.lang.annotations.NotNull;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
@@ -30,7 +29,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGraph> {
+public class LogicalGraph extends LogicalEntity {
 
     private static final long serialVersionUID = 7343856827901459672L;
 
@@ -58,14 +57,6 @@ public class LogicalGraph extends LogicalEntity implements Comparable<LogicalGra
         return new Serializable[0];
     }
 
-
-    @Override
-    public int compareTo( @NotNull LogicalGraph o ) {
-        if ( o != null ) {
-            return (int) (this.id - o.id);
-        }
-        return -1;
-    }
 
 
     @Override

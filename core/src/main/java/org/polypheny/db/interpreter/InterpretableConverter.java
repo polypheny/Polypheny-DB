@@ -44,6 +44,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.ArrayBindable;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -63,13 +64,13 @@ public class InterpretableConverter extends ConverterImpl implements ArrayBindab
 
 
     @Override
-    public Class<Object[]> getElementType() {
-        return Object[].class;
+    public Class<PolyValue[]> getElementType() {
+        return PolyValue[].class;
     }
 
 
     @Override
-    public Enumerable<Object[]> bind( DataContext dataContext ) {
+    public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
         return new Interpreter( dataContext, getInput() );
     }
 

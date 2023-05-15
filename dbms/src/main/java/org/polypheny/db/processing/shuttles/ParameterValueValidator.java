@@ -24,9 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
@@ -39,6 +36,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.FileInputHandle;
 
 
@@ -88,9 +86,9 @@ public class ParameterValueValidator extends AlgShuttleImpl {
             }
             PolyType polyType = dataContext.getParameterType( index ).getPolyType();
             //PolyType polyType = dynamicParam.getType().getPolyType();//is not always correct
-            Object o = null;
+            PolyValue o = null;
             boolean valid = true;
-            for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
+            for ( Map<Long, PolyValue> map : dataContext.getParameterValues() ) {
                 o = map.get( index );
                 if ( o == null ) {
                     break;
@@ -105,22 +103,22 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                     //case ANY:
                     //break;
                     case CHARACTER:
-                        valid = o instanceof String || o instanceof Character || o instanceof Character[];
+                        valid = o.isString();
                         break;
                     case NUMERIC:
-                        valid = o instanceof Number;
+                        valid = o.isNumber();
                         break;
                     case DATE:
-                        valid = o instanceof Date || o instanceof Integer;
+                        valid = o.isDate();
                         break;
                     case TIME:
-                        valid = o instanceof Time || o instanceof Integer;
+                        valid = o.isTime();
                         break;
                     case TIMESTAMP:
-                        valid = o instanceof Timestamp || o instanceof Long;
+                        valid = o.isTimestamp();
                         break;
                     case BOOLEAN:
-                        valid = o instanceof Boolean;
+                        valid = o.isBoolean();
                         break;
                     case MULTIMEDIA:
                         if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {

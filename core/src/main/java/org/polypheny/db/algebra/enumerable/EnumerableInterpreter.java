@@ -36,8 +36,8 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Relational expression that executes its children using an interpreter.
  *
- * Although quite a few kinds of {@link AlgNode} can be interpreted, this is only created by default for {@link FilterableEntity} and
- * {@link ProjectableFilterableEntity}.
+ * Although quite a few kinds of {@link AlgNode} can be interpreted, this is only created by default for {@link org.polypheny.db.schema.types.FilterableEntity} and
+ * {@link org.polypheny.db.schema.types.ProjectableFilterableEntity}.
  */
 public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 

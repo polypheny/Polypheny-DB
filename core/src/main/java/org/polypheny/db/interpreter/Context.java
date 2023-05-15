@@ -35,6 +35,7 @@ package org.polypheny.db.interpreter;
 
 
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -47,7 +48,7 @@ public class Context {
     /**
      * Values of incoming columns from all inputs.
      */
-    public Object[] values;
+    public PolyValue[] values;
 
 
     Context( DataContext root ) {

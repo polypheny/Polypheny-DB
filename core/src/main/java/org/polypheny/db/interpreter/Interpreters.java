@@ -39,6 +39,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -60,14 +61,14 @@ public class Interpreters {
         }
         return new ArrayBindable() {
             @Override
-            public Enumerable<Object[]> bind( DataContext dataContext ) {
+            public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
                 return new Interpreter( dataContext, alg );
             }
 
 
             @Override
-            public Class<Object[]> getElementType() {
-                return Object[].class;
+            public Class<PolyValue[]> getElementType() {
+                return PolyValue[].class;
             }
         };
     }

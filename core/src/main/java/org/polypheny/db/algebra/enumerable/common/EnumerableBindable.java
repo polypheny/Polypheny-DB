@@ -43,6 +43,7 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -71,16 +72,16 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
 
 
     @Override
-    public Class<Object[]> getElementType() {
-        return Object[].class;
+    public Class<PolyValue[]> getElementType() {
+        return PolyValue[].class;
     }
 
 
     @Override
-    public Enumerable<Object[]> bind( DataContext dataContext ) {
-        final Map<String, Object> map = new HashMap<>();
-        final Bindable bindable = EnumerableInterpretable.toBindable( map, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
-        final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
+    public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
+        final Map<String, PolyValue> map = new HashMap<>();
+        final Bindable<?> bindable = EnumerableInterpretable.toBindable( map, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
+        final ArrayBindable arrayBindable = EnumerableInterpretable.box( (Bindable<PolyValue>) bindable );
         dataContext.addAll( map );
         return arrayBindable.bind( dataContext );
     }
@@ -90,8 +91,8 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
     public Node implement( final InterpreterImplementor implementor ) {
         return () -> {
             final Sink sink = implementor.algSinks.get( EnumerableBindable.this ).get( 0 );
-            final Enumerable<Object[]> enumerable = bind( implementor.dataContext );
-            final Enumerator<Object[]> enumerator = enumerable.enumerator();
+            final Enumerable<PolyValue[]> enumerable = bind( implementor.dataContext );
+            final Enumerator<PolyValue[]> enumerator = enumerable.enumerator();
             while ( enumerator.moveNext() ) {
                 sink.send( Row.asCopy( enumerator.current() ) );
             }

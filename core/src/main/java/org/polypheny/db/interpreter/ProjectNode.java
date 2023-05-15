@@ -35,6 +35,7 @@ package org.polypheny.db.interpreter;
 
 
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -60,7 +61,7 @@ public class ProjectNode extends AbstractSingleNode<Project> {
         Row row;
         while ( (row = source.receive()) != null ) {
             context.values = row.getValues();
-            Object[] values = new Object[projectCount];
+            PolyValue[] values = new PolyValue[projectCount];
             scalar.execute( context, values );
             sink.send( new Row( values ) );
         }

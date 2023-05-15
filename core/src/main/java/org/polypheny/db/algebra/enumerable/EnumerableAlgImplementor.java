@@ -68,6 +68,9 @@ import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolySymbol;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 
@@ -77,7 +80,7 @@ import org.polypheny.db.util.Conformance;
  */
 public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
-    public final Map<String, Object> map;
+    public final Map<String, PolyValue> map;
     private final Map<String, RexToLixTranslator.InputGetter> corrVars = new HashMap<>();
     private final Map<Object, ParameterExpression> stashedParameters = new IdentityHashMap<>();
     @Getter
@@ -88,7 +91,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
     private int contextCounter = -1;
 
 
-    public EnumerableAlgImplementor( RexBuilder rexBuilder, Map<String, Object> internalParameters ) {
+    public EnumerableAlgImplementor( RexBuilder rexBuilder, Map<String, PolyValue> internalParameters ) {
         super( rexBuilder );
         this.map = internalParameters;
     }
@@ -383,18 +386,10 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
      * @param <T> Java class type of the value when it is used
      * @return Expression that will represent {@code input} in runtime
      */
-    public <T> Expression stash( T input, Class<? super T> clazz ) {
+    public <T> Expression stash( Object input, Class<? super T> clazz ) {
         // Well-known final classes that can be used as literals
-        if ( input == null
-                || input instanceof String
-                || input instanceof Boolean
-                || input instanceof Byte
-                || input instanceof Short
-                || input instanceof Integer
-                || input instanceof Long
-                || input instanceof Float
-                || input instanceof Double ) {
-            return Expressions.constant( input, clazz );
+        if ( input == null ) {
+            return Expressions.constant( null, clazz );
         }
         ParameterExpression cached = stashedParameters.get( input );
         if ( cached != null ) {
@@ -403,7 +398,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
         // "stashed" avoids name clash since this name will be used as the variable name at the very start of the method.
         final String name = "v" + map.size() + "stashed";
         final ParameterExpression x = Expressions.variable( clazz, name );
-        map.put( name, input );
+        map.put( name, PolyString.of( input.toString() ) );
         stashedParameters.put( input, x );
         return x;
     }
@@ -436,7 +431,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
     @Override
     public Conformance getConformance() {
-        return (Conformance) map.getOrDefault( "_conformance", ConformanceEnum.DEFAULT );
+        return (Conformance) map.getOrDefault( "_conformance", PolySymbol.of( ConformanceEnum.DEFAULT ) );
     }
 
 

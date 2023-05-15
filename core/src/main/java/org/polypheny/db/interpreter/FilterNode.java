@@ -59,7 +59,7 @@ public class FilterNode extends AbstractSingleNode<Filter> {
         Row row;
         while ( (row = source.receive()) != null ) {
             context.values = row.getValues();
-            Boolean b = (Boolean) condition.execute( context );
+            Boolean b = condition.execute( context ).asBoolean().value;
             if ( b != null && b ) {
                 sink.send( row );
             }

@@ -71,6 +71,7 @@ import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.ReflectiveVisitDispatcher;
@@ -84,7 +85,7 @@ import org.polypheny.db.util.Util;
  * Contains the context for interpreting relational expressions. In particular it holds working state while the data flow graph is being assembled.
  */
 @Slf4j
-public class Interpreter extends AbstractEnumerable<Object[]> implements AutoCloseable {
+public class Interpreter extends AbstractEnumerable<PolyValue[]> implements AutoCloseable {
 
     private final Map<AlgNode, NodeInfo> nodes;
     private final DataContext dataContext;
@@ -121,7 +122,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
 
     @Override
-    public Enumerator<Object[]> enumerator() {
+    public Enumerator<PolyValue[]> enumerator() {
         start();
         final NodeInfo nodeInfo = nodes.get( rootRel );
         final Enumerator<Row> rows;
@@ -132,9 +133,9 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             rows = Linq4j.iterableEnumerator( queue );
         }
 
-        return new TransformedEnumerator<Row, Object[]>( rows ) {
+        return new TransformedEnumerator<Row, PolyValue[]>( rows ) {
             @Override
-            protected Object[] transform( Row row ) {
+            protected PolyValue[] transform( Row row ) {
                 return row.getValues();
             }
         };

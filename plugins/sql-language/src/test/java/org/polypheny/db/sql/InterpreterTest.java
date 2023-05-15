@@ -52,6 +52,7 @@ import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -102,7 +103,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
 
         @Override
-        public void addAll( Map<String, Object> map ) {
+        public void addAll( Map<String, PolyValue> map ) {
             throw new UnsupportedOperationException();
         }
 
@@ -114,7 +115,7 @@ public class InterpreterTest extends SqlLanguageDependent {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
             throw new UnsupportedOperationException();
         }
 

@@ -68,7 +68,7 @@ public class CrossModelFunctions {
         }
 
         int i = 0;
-        Map<Long, Object> values = context.getParameterValues().get( 0 );
+        Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
@@ -178,7 +178,7 @@ public class CrossModelFunctions {
         if ( !edge.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( edge.properties.size(), edge.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( edge.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( Object::toString ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).collect( Collectors.toList() ) ) );
             drainInserts( enumerables.get( i ), edge.labels.size() );
             context.resetParameterValues();
         }
@@ -215,7 +215,7 @@ public class CrossModelFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( Object::toString ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).collect( Collectors.toList() ) ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }
@@ -230,7 +230,7 @@ public class CrossModelFunctions {
      * @param node the edge for which the properties are inserted
      */
     private static void nodeTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, PolyNode node ) {
-        List<Object> labels = new ArrayList<>( node.labels );
+        List<PolyValue> labels = new ArrayList<>( node.labels );
         labels.add( 0, null ); // id + key (null ) is required for each node to enable label-less nodes
         context.addParameterValues( 0, idType, Collections.nCopies( labels.size(), node.id ) );
         context.addParameterValues( 1, labelType, labels );
@@ -248,7 +248,7 @@ public class CrossModelFunctions {
      */
     private static Enumerable<?> sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         int i = 0;
-        Map<Long, Object> values = context.getParameterValues().get( 0 );
+        Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
@@ -364,7 +364,7 @@ public class CrossModelFunctions {
      */
     private static Enumerable<?> sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         int i = 0;
-        Map<Long, Object> values = context.getParameterValues().get( 0 );
+        Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );

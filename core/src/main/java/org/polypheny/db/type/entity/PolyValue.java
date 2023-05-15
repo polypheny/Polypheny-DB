@@ -92,103 +92,103 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case BOOLEAN:
                 return PolyBoolean.class;
             case TINYINT:
-                break;
+                return PolyInteger.class;
             case SMALLINT:
-                break;
+                return PolyInteger.class;
             case INTEGER:
                 return PolyInteger.class;
             case BIGINT:
                 return PolyBigDecimal.class;
             case DECIMAL:
-                break;
+                return PolyBigDecimal.class;
             case FLOAT:
                 return PolyFloat.class;
             case REAL:
-                break;
+                return PolyFloat.class;
             case DOUBLE:
                 return PolyDouble.class;
             case DATE:
-                break;
+                return PolyDate.class;
             case TIME:
-                break;
+                return PolyTime.class;
             case TIME_WITH_LOCAL_TIME_ZONE:
-                break;
+                return PolyTime.class;
             case TIMESTAMP:
-                break;
+                return PolyTimeStamp.class;
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                break;
+                return PolyTimeStamp.class;
             case INTERVAL_YEAR:
-                break;
+                return PolyInterval.class;
             case INTERVAL_YEAR_MONTH:
-                break;
+                return PolyInterval.class;
             case INTERVAL_MONTH:
-                break;
+                return PolyInterval.class;
             case INTERVAL_DAY:
-                break;
+                return PolyInterval.class;
             case INTERVAL_DAY_HOUR:
-                break;
+                return PolyInterval.class;
             case INTERVAL_DAY_MINUTE:
-                break;
+                return PolyInterval.class;
             case INTERVAL_DAY_SECOND:
-                break;
+                return PolyInterval.class;
             case INTERVAL_HOUR:
-                break;
+                return PolyInterval.class;
             case INTERVAL_HOUR_MINUTE:
-                break;
+                return PolyInterval.class;
             case INTERVAL_HOUR_SECOND:
-                break;
+                return PolyInterval.class;
             case INTERVAL_MINUTE:
-                break;
+                return PolyInterval.class;
             case INTERVAL_MINUTE_SECOND:
-                break;
+                return PolyInterval.class;
             case INTERVAL_SECOND:
-                break;
+                return PolyInterval.class;
             case CHAR:
-                break;
+                return PolyString.class;
             case VARCHAR:
                 return PolyString.class;
             case BINARY:
-                break;
+                return PolyBinary.class;
             case VARBINARY:
-                break;
+                return PolyBinary.class;
             case NULL:
-                break;
+                return PolyNull.class;
             case ANY:
-                break;
+                return PolyValue.class;
             case SYMBOL:
-                break;
+                return PolySymbol.class;
             case MULTISET:
-                break;
+                return PolyList.class;
             case ARRAY:
-                break;
+                return PolyList.class;
             case MAP:
-                break;
+                return PolyMap.class;
             case DOCUMENT:
-                break;
+                return PolyDocument.class;
             case GRAPH:
-                break;
+                return PolyGraph.class;
             case NODE:
-                break;
+                return PolyNode.class;
             case EDGE:
-                break;
+                return PolyEdge.class;
             case PATH:
-                break;
+                return PolyPath.class;
             case DISTINCT:
-                break;
+                return PolyValue.class;
             case STRUCTURED:
-                break;
+                return PolyValue.class;
             case ROW:
-                break;
+                return PolyList.class;
             case OTHER:
-                break;
+                return PolyValue.class;
             case CURSOR:
-                break;
+                return PolyValue.class;
             case COLUMN_LIST:
-                break;
+                return PolyList.class;
             case DYNAMIC_STAR:
-                break;
+                return PolyValue.class;
             case GEOMETRY:
-                break;
+                return PolyValue.class;
             case FILE:
                 break;
             case IMAGE:
@@ -198,7 +198,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case AUDIO:
                 break;
             case JSON:
-                break;
+                return PolyString.class;
         }
         throw new NotImplementedException();
     }

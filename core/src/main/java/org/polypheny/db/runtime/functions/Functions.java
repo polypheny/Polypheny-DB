@@ -283,10 +283,10 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> batch( final DataContext context, final Enumerable<Object> baz ) {
+    public static Enumerable<?> batch( final DataContext context, final Enumerable<PolyValue> baz ) {
         List<Object> results = new ArrayList<>();
 
-        List<Map<Long, Object>> values = new ArrayList<>( context.getParameterValues() );
+        List<Map<Long, PolyValue>> values = new ArrayList<>( context.getParameterValues() );
 
         if ( values.size() == 0 ) {
             return baz;
@@ -298,11 +298,11 @@ public class Functions {
         Map<Long, AlgDataType> types = new HashMap<>();
         keys.forEach( k -> types.put( k, context.getParameterType( k ) ) );
 
-        for ( Map<Long, Object> value : values ) {
+        for ( Map<Long, PolyValue> value : values ) {
             context.resetParameterValues();
             value.forEach( ( k, v ) -> context.addParameterValues( k, types.get( k ), Collections.singletonList( v ) ) );
 
-            Iterator<Object> iter = baz.iterator();
+            Iterator<PolyValue> iter = baz.iterator();
             results.add( iter.next() );
         }
         return Linq4j.asEnumerable( results );
@@ -310,18 +310,18 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<Object> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
+    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<PolyValue> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
         boolean single = polyTypes.size() == 1;
 
-        List<Object[]> values = new ArrayList<>();
+        List<PolyValue[]> values = new ArrayList<>();
         for ( Object o : baz ) {
             if ( single ) {
-                values.add( new Object[]{ o } );
+                values.add( new PolyValue[]{ (PolyValue) o } );
             } else {
-                values.add( (Object[]) o );
+                values.add( (PolyValue[]) o );
             }
         }
         if ( values.isEmpty() ) {
@@ -329,17 +329,17 @@ public class Functions {
             return Linq4j.asEnumerable( List.of( 0 ) );
         }
 
-        List<Map<Long, Object>> valuesBackup = context.getParameterValues();
+        List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
         Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
 
         context.resetParameterValues();
-        Map<Integer, List<Object>> vals = new HashMap<>();
+        Map<Integer, List<PolyValue>> vals = new HashMap<>();
         for ( int i = 0; i < values.get( 0 ).length; i++ ) {
             vals.put( i, new ArrayList<>() );
         }
-        for ( Object[] value : values ) {
+        for ( PolyValue[] value : values ) {
             int i = 0;
-            for ( Object o1 : value ) {
+            for ( PolyValue o1 : value ) {
                 vals.get( i ).add( o1 );
                 i++;
             }

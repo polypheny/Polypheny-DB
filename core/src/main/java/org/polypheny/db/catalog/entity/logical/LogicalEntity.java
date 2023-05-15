@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class LogicalEntity extends CatalogEntity implements Comparable<LogicalEntity> {
+public abstract class LogicalEntity extends CatalogEntity {
 
 
     public LogicalEntity(

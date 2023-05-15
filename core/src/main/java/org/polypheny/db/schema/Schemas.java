@@ -67,6 +67,7 @@ import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -218,7 +219,7 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, representing each row as an object array.
      */
-    public static Enumerable<Object[]> enumerable( final ScannableEntity table, final DataContext root ) {
+    public static Enumerable<PolyValue[]> enumerable( final ScannableEntity table, final DataContext root ) {
         return table.scan( root );
     }
 
@@ -226,7 +227,7 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, not applying any filters, representing each row as an object array.
      */
-    public static Enumerable<Object[]> enumerable( final FilterableEntity table, final DataContext root ) {
+    public static Enumerable<PolyValue[]> enumerable( final FilterableEntity table, final DataContext root ) {
         return table.scan( root, ImmutableList.of() );
     }
 
@@ -234,7 +235,7 @@ public final class Schemas {
     /**
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, not applying any filters and projecting all columns, representing each row as an object array.
      */
-    public static Enumerable<Object[]> enumerable( final ProjectableFilterableEntity table, final DataContext root ) {
+    public static Enumerable<PolyValue[]> enumerable( final ProjectableFilterableEntity table, final DataContext root ) {
         return table.scan( root, ImmutableList.of(), identity( table.getRowType( root.getTypeFactory() ).getFieldCount() ) );
     }
 

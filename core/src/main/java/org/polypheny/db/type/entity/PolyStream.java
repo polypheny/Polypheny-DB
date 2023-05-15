@@ -16,46 +16,43 @@
 
 package org.polypheny.db.type.entity;
 
+import java.io.InputStream;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
-public class PolySymbol extends PolyValue {
-
-    public Enum<?> value;
+public class PolyStream extends PolyValue {
 
 
-    public PolySymbol( Enum<?> value ) {
-        super( PolyType.SYMBOL, false );
-        this.value = value;
+    public InputStream value;
+
+
+    public PolyStream( InputStream stream ) {
+        super( PolyType.FILE, false );
+        this.value = stream;
     }
 
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isSameType( o ) ) {
-            return -1;
-        }
-
-        return ((Enum) value).compareTo( (Enum) o.asSymbol().value );
+        return 0;
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( PolySymbol.class, "of", Expressions.constant( value ) );
+        return null;
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolySymbol.class );
+        return null;
     }
 
 }

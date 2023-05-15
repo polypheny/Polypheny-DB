@@ -142,6 +142,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -1084,7 +1085,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             for ( Map<Integer, List<ParameterValue>> value : queryParameterizer.getDocs().values() ) {
                 // Add values to data context
                 for ( List<DataContext.ParameterValue> values : value.values() ) {
-                    List<Object> o = new ArrayList<>();
+                    List<PolyValue> o = new ArrayList<>();
                     for ( ParameterValue v : values ) {
                         o.add( v.getValue() );
                     }
@@ -1097,7 +1098,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             // Add values to data context
             for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
-                List<Object> o = new ArrayList<>();
+                List<PolyValue> o = new ArrayList<>();
                 for ( ParameterValue v : values ) {
                     o.add( v.getValue() );
                 }
@@ -1108,7 +1109,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // parameterRowType
         AlgDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
                 types,
-                new AbstractList<String>() {
+                new AbstractList<>() {
                     @Override
                     public String get( int index ) {
                         return "?" + index;
@@ -1141,7 +1142,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PreparedResult implement( AlgRoot root, AlgDataType parameterRowType ) {
+    private PreparedResult<PolyValue> implement( AlgRoot root, AlgDataType parameterRowType ) {
         if ( log.isTraceEnabled() ) {
             log.trace( "Physical query plan: [{}]", AlgOptUtil.dumpPlan( "-- Physical Plan", root.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
@@ -1155,7 +1156,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        final Bindable<Object[]> bindable;
+        final Bindable<PolyValue[]> bindable;
         final String generatedCode;
         if ( resultConvention == BindableConvention.INSTANCE ) {
             bindable = Interpreters.bindable( root.alg );
@@ -1176,10 +1177,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 CatalogReader.THREAD_LOCAL.set( statement.getTransaction().getSnapshot() );
                 final Conformance conformance = statement.getPrepareContext().config().conformance();
 
-                final Map<String, Object> internalParameters = new LinkedHashMap<>();
-                internalParameters.put( "_conformance", conformance );
+                final Map<String, PolyValue> internalParameters = new LinkedHashMap<>();
+                internalParameters.put( "_conformance", PolyString.of( conformance.toString() ) );
 
-                Pair<Bindable<Object[]>, String> implementationPair = EnumerableInterpretable.toBindable(
+                Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
                         internalParameters,
                         enumerable,
                         prefer,

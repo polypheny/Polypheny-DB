@@ -43,6 +43,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     IdBuilder idBuilder = IdBuilder.getInstance();
+
     @Getter
     @Serialize
     public LogicalNamespace namespace;
@@ -50,27 +51,35 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Getter
     public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.builder.get().build( PolyAllocRelCatalog.class );
 
+
+    @Serialize
+    @Getter
+    public ConcurrentHashMap<Long, List<Long>> groups;
+
+
     @Serialize
     @Getter
     public ConcurrentHashMap<Long, AllocationTable> tables;
 
     @Serialize
     @Getter
-    public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> allocColumns;
+    public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns;
 
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
-        this( namespace, new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
+        this( namespace, new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
     }
 
 
     public PolyAllocRelCatalog(
             @Deserialize("namespace") LogicalNamespace namespace,
             @Deserialize("tables") Map<Long, AllocationTable> tables,
-            @Deserialize("allocColumns") Map<Pair<Long, Long>, AllocationColumn> allocColumns ) {
-        this.tables = new ConcurrentHashMap<>( tables );
+            @Deserialize("columns") Map<Pair<Long, Long>, AllocationColumn> columns,
+            @Deserialize("group") Map<Long, List<Long>> groups ) {
         this.namespace = namespace;
-        this.allocColumns = new ConcurrentHashMap<>( allocColumns );
+        this.tables = new ConcurrentHashMap<>( tables );
+        this.columns = new ConcurrentHashMap<>( columns );
+        this.groups = new ConcurrentHashMap<>( groups );
     }
 
 
@@ -85,14 +94,14 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Override
     public AllocationColumn addColumn( long allocationId, long columnId, PlacementType placementType, int position ) {
         AllocationColumn column = new AllocationColumn( namespace.id, allocationId, columnId, placementType, position, tables.get( allocationId ).adapterId );
-        allocColumns.put( Pair.of( allocationId, columnId ), column );
+        columns.put( Pair.of( allocationId, columnId ), column );
         return column;
     }
 
 
     @Override
     public void deleteColumn( long allocationId, long columnId ) {
-        allocColumns.remove( Pair.of( allocationId, columnId ) );
+        columns.remove( Pair.of( allocationId, columnId ) );
     }
 
 
@@ -169,7 +178,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         tables.put( id, table );
         return table;
     }
-
 
 
     @Override

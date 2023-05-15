@@ -83,6 +83,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class ConstraintEnforceAttacher {
@@ -253,16 +254,16 @@ public class ConstraintEnforceAttacher {
                     //noinspection StatementWithEmptyBody
                     if ( statement.getDataContext().getParameterValues().size() > 0 ) {
                         LogicalProject project = (LogicalProject) input;
-                        List<Map<Long, Object>> parameterValues = statement.getDataContext().getParameterValues();
-                        final Set<List<Object>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
+                        List<Map<Long, PolyValue>> parameterValues = statement.getDataContext().getParameterValues();
+                        final Set<List<PolyValue>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
                         final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
                         for ( final String columnName : constraint.key.getColumnNames() ) {
                             int i = project.getRowType().getField( columnName, true, false ).getIndex();
                             columnMap.put( columnName, i );
                         }
                         for ( Integer index : columnMap.values() ) {
-                            for ( Map<Long, Object> entry : parameterValues ) {
-                                List<Object> list = new LinkedList<>();
+                            for ( Map<Long, PolyValue> entry : parameterValues ) {
+                                List<PolyValue> list = new LinkedList<>();
                                 if ( project.getProjects().get( index ) instanceof RexDynamicParam ) {
                                     list.add( entry.get( ((RexDynamicParam) project.getProjects().get( index )).getIndex() ) );
                                 } else {

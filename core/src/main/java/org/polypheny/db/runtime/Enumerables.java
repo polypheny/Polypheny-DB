@@ -38,6 +38,7 @@ import java.util.function.Supplier;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -62,15 +63,15 @@ public class Enumerables {
     /**
      * Converts an {@link Enumerable} over object arrays into an {@link Enumerable} over {@link Row} objects.
      */
-    public static Enumerable<Row> toRow( final Enumerable<Object[]> enumerable ) {
-        return enumerable.select( (Function1<Object[], Row>) Row::asCopy );
+    public static Enumerable<Row> toRow( final Enumerable<PolyValue[]> enumerable ) {
+        return enumerable.select( (Function1<PolyValue[], Row>) Row::asCopy );
     }
 
 
     /**
      * Converts a supplier of an {@link Enumerable} over object arrays into a supplier of an {@link Enumerable} over {@link Row} objects.
      */
-    public static Supplier<Enumerable<Row>> toRow( final Supplier<Enumerable<Object[]>> supplier ) {
+    public static Supplier<Enumerable<Row>> toRow( final Supplier<Enumerable<PolyValue[]>> supplier ) {
         return () -> toRow( supplier.get() );
     }
 
