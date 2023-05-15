@@ -94,7 +94,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final Set<LogicalTable> catalogTables = new TreeSet<>();
+    private final Set<LogicalTable> logicalTables = new TreeSet<>();
 
     @Getter
     private final List<Adapter<?>> involvedAdapters = new CopyOnWriteArrayList<>();
@@ -163,11 +163,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
         }
 
-        if ( !catalogTables.isEmpty() ) {
+        if ( !logicalTables.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
             List<EnforcementInformation> infos = ConstraintEnforceAttacher
-                    .getConstraintAlg( catalogTables, statement, EnforcementTime.ON_COMMIT );
+                    .getConstraintAlg( logicalTables, statement, EnforcementTime.ON_COMMIT );
             List<PolyImplementation<?>> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );

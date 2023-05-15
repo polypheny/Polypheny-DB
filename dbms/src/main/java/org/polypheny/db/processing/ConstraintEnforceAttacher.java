@@ -127,7 +127,7 @@ public class ConstraintEnforceAttacher {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        statement.getTransaction().getCatalogTables().add( modify.entity.unwrap( LogicalTable.class ) );
+        statement.getTransaction().getLogicalTables().add( modify.entity.unwrap( LogicalTable.class ) );
     }
 
 

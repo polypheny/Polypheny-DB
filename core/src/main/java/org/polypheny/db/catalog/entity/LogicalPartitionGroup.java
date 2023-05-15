@@ -25,7 +25,7 @@ import org.apache.commons.lang.NotImplementedException;
 
 
 @EqualsAndHashCode
-public final class CatalogPartitionGroup implements CatalogObject {
+public final class LogicalPartitionGroup implements CatalogObject {
 
     private static final long serialVersionUID = 6229244317971622972L;
 
@@ -40,7 +40,7 @@ public final class CatalogPartitionGroup implements CatalogObject {
     public final long partitionKey;
 
 
-    public CatalogPartitionGroup(
+    public LogicalPartitionGroup(
             final long id,
             final String partitionGroupName,
             final long tableId,

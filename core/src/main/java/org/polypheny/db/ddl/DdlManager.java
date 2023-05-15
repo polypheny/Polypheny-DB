@@ -121,20 +121,20 @@ public abstract class DdlManager {
     /**
      * Adds a column to an existing source table
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnPhysicalName the physical name of the new column
      * @param columnLogicalName the name of the new column
      * @param beforeColumnName the name of the column before the column which is inserted; can be null
      * @param afterColumnName the name of the column after the column, which is inserted; can be null
      * @param defaultValue the default value of the inserted column
      */
-    public abstract void addColumnToSourceTable( LogicalTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement );
+    public abstract void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement );
 
     /**
      * Add a column to an existing table
      *
      * @param columnName the name of the new column
-     * @param catalogTable the table
+     * @param table the table
      * @param beforeColumnName the column before which the new column should be positioned; can be null
      * @param afterColumnName the column after which the new column should be positioned; can be null
      * @param type the SQL data type specification of the new column
@@ -142,12 +142,12 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void addColumn( String columnName, LogicalTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement );
+    public abstract void addColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement );
 
     /**
      * Add a foreign key to a table
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param refTable the table being referenced
      * @param columnNames the names of the columns
      * @param refColumnNames the names of the columns which are referenced
@@ -155,12 +155,12 @@ public abstract class DdlManager {
      * @param onUpdate how to enforce the constraint on updated
      * @param onDelete how to enforce the constraint on delete
      */
-    public abstract void addForeignKey( LogicalTable catalogTable, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
+    public abstract void addForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
 
     /**
      * Adds an index to a table
      *
-     * @param catalogTable the table to which an index should be added
+     * @param table the table to which an index should be added
      * @param indexMethodName name of the indexMethod; can be null
      * @param columnNames logical names of all columns on which to create the index
      * @param indexName name of the index
@@ -168,159 +168,159 @@ public abstract class DdlManager {
      * @param location instance of the data store on which to create the index; if null, default strategy is being used
      * @param statement the initial query statement
      */
-    public abstract void addIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException;
+    public abstract void addIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException;
 
     /**
      * Adds an index located in Polypheny to a table
      *
-     * @param catalogTable the table to which an index should be added
+     * @param table the table to which an index should be added
      * @param indexMethodName name of the indexMethod; can be null
      * @param columnNames logical names of all columns on which to create the index
      * @param indexName name of the index
      * @param isUnique whether the index is unique
      * @param statement the initial query statement
      */
-    public abstract void addPolyphenyIndex( LogicalTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException;
+    public abstract void addPolyphenyIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException;
 
     /**
      * Adds new column placements to a table
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnIds the ids of the columns for which to create a new placement
      * @param partitionGroupIds the ids of the partitions of the column
      * @param partitionGroupNames the name for these partition
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
+    public abstract void addDataPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
 
     /**
      * Adds a new primary key to a table
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnNames the names of all columns in the primary key
      * @param statement the query statement
      */
-    public abstract void addPrimaryKey( LogicalTable catalogTable, List<String> columnNames, Statement statement );
+    public abstract void addPrimaryKey( LogicalTable table, List<String> columnNames, Statement statement );
 
     /**
      * Adds a unique constraint to a table
      *
-     * @param catalogTable the target table
+     * @param table the target table
      * @param columnNames the names of the columns which are part of the constraint
      * @param constraintName the name of the unique constraint
      */
-    public abstract void addUniqueConstraint( LogicalTable catalogTable, List<String> columnNames, String constraintName );
+    public abstract void addUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName );
 
     /**
      * Drop a specific column in a table
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of column which is dropped
      * @param statement the query statement
      */
-    public abstract void dropColumn( LogicalTable catalogTable, String columnName, Statement statement );
+    public abstract void dropColumn( LogicalTable table, String columnName, Statement statement );
 
     /**
      * Drop a specific constraint from a table
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param constraintName the name of the constraint to be dropped
      */
-    public abstract void dropConstraint( LogicalTable catalogTable, String constraintName );
+    public abstract void dropConstraint( LogicalTable table, String constraintName );
 
     /**
      * Drop a foreign key of a table
      *
-     * @param catalogTable the table the foreign key belongs to
+     * @param table the table the foreign key belongs to
      * @param foreignKeyName the name of the foreign key to drop
      */
-    public abstract void dropForeignKey( LogicalTable catalogTable, String foreignKeyName );
+    public abstract void dropForeignKey( LogicalTable table, String foreignKeyName );
 
     /**
      * Drop an indexes
      *
-     * @param catalogTable the table the index belongs to
+     * @param table the table the index belongs to
      * @param indexName the name of the index to drop
      * @param statement the query statement
      */
-    public abstract void dropIndex( LogicalTable catalogTable, String indexName, Statement statement );
+    public abstract void dropIndex( LogicalTable table, String indexName, Statement statement );
 
     /**
      * Drop the data placement of a table on a specified data store
      *
-     * @param catalogTable the table for which to drop a placement
+     * @param table the table for which to drop a placement
      * @param storeInstance the data store from which to drop the placement
      * @param statement the query statement
      */
-    public abstract void dropTableAllocation( LogicalTable catalogTable, DataStore<?> storeInstance, Statement statement );
+    public abstract void dropTableAllocation( LogicalTable table, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Drop the primary key of a table
      *
-     * @param catalogTable the table
+     * @param table the table
      */
-    public abstract void dropPrimaryKey( LogicalTable catalogTable );
+    public abstract void dropPrimaryKey( LogicalTable table );
 
     /**
      * Set the type of the column
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of the column to be modified
      * @param typeInformation the new type of the column
      * @param statement the used statement
      */
-    public abstract void setColumnType( LogicalTable catalogTable, String columnName, ColumnTypeInformation typeInformation, Statement statement );
+    public abstract void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation typeInformation, Statement statement );
 
     /**
      * Set if the column can hold the value NULL or not
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of the column to be modified
      * @param nullable if the column should be nullable
      * @param statement the used statement
      */
-    public abstract void setColumnNullable( LogicalTable catalogTable, String columnName, boolean nullable, Statement statement );
+    public abstract void setColumnNullable( LogicalTable table, String columnName, boolean nullable, Statement statement );
 
     /**
      * Changes the position of the column and places it before or after the provided columns
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of the column to be modified
      * @param beforeColumnName change position of the column and place it before this column; nullable
      * @param afterColumnName change position of the column and place it after this column; nullable
      * @param statement the used statement
      */
-    public abstract void setColumnPosition( LogicalTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement );
+    public abstract void setColumnPosition( LogicalTable table, String columnName, String beforeColumnName, String afterColumnName, Statement statement );
 
     /**
      * Set the collation to the column
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of the column to be modified
      * @param collation the new collation of the column
      * @param statement the used statement
      */
-    public abstract void setColumnCollation( LogicalTable catalogTable, String columnName, Collation collation, Statement statement );
+    public abstract void setColumnCollation( LogicalTable table, String columnName, Collation collation, Statement statement );
 
     /**
      * Set the default value of the column
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of the column to be modified
      * @param defaultValue the new default value of the column
      * @param statement the used statement
      */
-    public abstract void setDefaultValue( LogicalTable catalogTable, String columnName, String defaultValue, Statement statement );
+    public abstract void setDefaultValue( LogicalTable table, String columnName, String defaultValue, Statement statement );
 
     /**
      * Drop the default value of the column
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of the column to be modified
      * @param statement the used statement
      */
-    public abstract void dropDefaultValue( LogicalTable catalogTable, String columnName, Statement statement );
+    public abstract void dropDefaultValue( LogicalTable table, String columnName, Statement statement );
 
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with
@@ -330,74 +330,74 @@ public abstract class DdlManager {
      * data store a column placement is created. In case there is already a column placement of type automatic, the type is
      * changed to manual.
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnIds which columns should be placed on the specified data store
      * @param partitionGroupIds the ids of the partitions of this column
      * @param partitionGroupNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyDataPlacement( LogicalTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyDataPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
      * Which consequently alters the Partition Placements.
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param partitionGroupIds the desired target state of partition groups which should remain on this store
      * @param storeInstance the data store on which the partition placements should be altered
      * @param statement the used statement
      */
-    public abstract void modifyPartitionPlacement( LogicalTable catalogTable, List<Long> partitionGroupIds, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyPartitionPlacement( LogicalTable table, List<Long> partitionGroupIds, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
      * the column with type automatic, the placement type is changed to manual.
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the column name for which to add a placement
      * @param storeInstance the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( LogicalTable catalogTable, String columnName, DataStore<?> storeInstance, Statement statement );
+    public abstract void addColumnPlacement( LogicalTable table, String columnName, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
      * is changed to automatic.
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param columnName the name of the column for which to drop a placement
      * @param storeInstance the data store from which to remove the placement
      * @param statement the used statement
      */
-    public abstract void dropColumnPlacement( LogicalTable catalogTable, String columnName, DataStore<?> storeInstance, Statement statement );
+    public abstract void dropColumnPlacement( LogicalTable table, String columnName, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Change the owner of a table
      *
-     * @param catalogTable the table
+     * @param table the table
      * @param newOwnerName the name of the new owner
      */
-    public abstract void alterTableOwner( LogicalTable catalogTable, String newOwnerName );
+    public abstract void alterTableOwner( LogicalTable table, String newOwnerName );
 
     /**
      * Rename a table (changing the logical name of the table)
      *
-     * @param catalogTable the table to be renamed
+     * @param tble the table to be renamed
      * @param newTableName the new name for the table
      * @param statement the used statement
      */
-    public abstract void renameTable( LogicalTable catalogTable, String newTableName, Statement statement );
+    public abstract void renameTable( LogicalTable tble, String newTableName, Statement statement );
 
     /**
      * Rename a column of a table (changing the logical name of the column)
      *
-     * @param catalogTable the table in which the column resides
+     * @param table the table in which the column resides
      * @param columnName the old name of the column to be renamed
      * @param newColumnName the new name for the column
      * @param statement the used statement
      */
-    public abstract void renameColumn( LogicalTable catalogTable, String columnName, String newColumnName, Statement statement );
+    public abstract void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement );
 
     public abstract void dropGraph( long graphId, boolean ifExists, Statement statement );
 
@@ -478,15 +478,15 @@ public abstract class DdlManager {
     /**
      * Drop a table
      *
-     * @param catalogTable the table to be dropped
+     * @param table the table to be dropped
      * @param statement the used statement
      */
-    public abstract void dropTable( LogicalTable catalogTable, Statement statement );
+    public abstract void dropTable( LogicalTable table, Statement statement );
 
     /**
      * Drop View
      */
-    public abstract void dropView( LogicalTable catalogTable, Statement statement );
+    public abstract void dropView( LogicalTable view, Statement statement );
 
 
     /**
@@ -498,10 +498,10 @@ public abstract class DdlManager {
     /**
      * Truncate a table
      *
-     * @param catalogTable the table to be truncated
+     * @param table the table to be truncated
      * @param statement the used statement
      */
-    public abstract void truncate( LogicalTable catalogTable, Statement statement );
+    public abstract void truncate( LogicalTable table, Statement statement );
 
     /**
      * Create a new type

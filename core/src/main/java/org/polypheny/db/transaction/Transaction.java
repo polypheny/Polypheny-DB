@@ -79,7 +79,7 @@ public interface Transaction {
 
     boolean getUseCache();
 
-    Set<LogicalTable> getCatalogTables();
+    Set<LogicalTable> getLogicalTables();
 
     void setAcceptsOutdated( boolean acceptsOutdated );
 

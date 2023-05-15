@@ -110,27 +110,27 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getFromCatalog( context, table );
+        LogicalTable table = getFromCatalog( context, this.table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for un-partitioned table '" + catalogTable.name + "'" );
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+            throw new RuntimeException( "Partition Placement is not allowed for un-partitioned table '" + table.name + "'" );
         }
 
         // Check if all columns exist
         for ( SqlNode node : columnList.getSqlList() ) {
-            getCatalogColumn( context, catalogTable.id, (SqlIdentifier) node );
+            getCatalogColumn( context, table.id, (SqlIdentifier) node );
         }
 
         DataStore<?> storeInstance = getDataStoreInstance( storeName );
         DdlManager.getInstance().modifyDataPlacement(
-                catalogTable,
+                table,
                 columnList.getList().stream()
-                        .map( c -> getCatalogColumn( context, catalogTable.id, (SqlIdentifier) c ).id )
+                        .map( c -> getCatalogColumn( context, table.id, (SqlIdentifier) c ).id )
                         .collect( Collectors.toList() ),
                 partitionGroupList,
                 partitionGroupNamesList.stream()

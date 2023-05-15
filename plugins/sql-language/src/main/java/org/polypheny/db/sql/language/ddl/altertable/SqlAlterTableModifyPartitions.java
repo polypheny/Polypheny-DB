@@ -114,7 +114,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             throw new RuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + catalogTable.name + "'" );
         }
 
-        DataStore storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
+        DataStore<?> storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),

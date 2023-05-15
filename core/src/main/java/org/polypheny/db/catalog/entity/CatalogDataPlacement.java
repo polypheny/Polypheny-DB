@@ -60,7 +60,7 @@ public class CatalogDataPlacement implements CatalogObject {
 
 
     // The newest commit timestamp when any partitions inside this placement has been updated or refreshed
-    // Equals the newest timestamp ony any of the CatalogPartitionPlacements.
+    // Equals the newest timestamp ony any of the LogicalPartitionPlacements.
     // Technically other  linked attachments could still have older update timestamps.
     // This should help to quickly identify placements that can fulfil certain conditions.
     // Without having to traverse all partition placements one-by-one

@@ -49,10 +49,10 @@ public class SqlDropView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final LogicalTable catalogTable;
+        final LogicalTable table;
 
         try {
-            catalogTable = getFromCatalog( context, name );
+            table = getFromCatalog( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
@@ -62,11 +62,11 @@ public class SqlDropView extends SqlDropObject {
             }
         }
 
-        if ( catalogTable.entityType != EntityType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use DROP VIEW because " + catalogTable.name + " is not a View." );
+        if ( table.entityType != EntityType.VIEW ) {
+            throw new RuntimeException( "Not Possible to use DROP VIEW because " + table.name + " is not a View." );
         }
 
-        DdlManager.getInstance().dropView( catalogTable, statement );
+        DdlManager.getInstance().dropView( table, statement );
 
 
     }
