@@ -46,6 +46,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
 
@@ -70,14 +71,14 @@ public class CsvFilterableTable extends CsvTable implements FilterableEntity {
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters ) {
+    public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
+            public Enumerator<PolyValue[]> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, false, filterValues, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
             }
         };

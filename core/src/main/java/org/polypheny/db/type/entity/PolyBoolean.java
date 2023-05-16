@@ -30,6 +30,9 @@ import org.polypheny.db.type.PolyType;
 @Value(staticConstructor = "of")
 public class PolyBoolean extends PolyValue {
 
+    public static final PolyValue TRUE = PolyBoolean.of( true );
+    public static final PolyValue FALSE = PolyBoolean.of( false );
+
     @Serialize
     public Boolean value;
 

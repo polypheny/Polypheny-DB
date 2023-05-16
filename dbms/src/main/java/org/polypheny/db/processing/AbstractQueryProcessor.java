@@ -142,7 +142,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -1177,8 +1176,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 CatalogReader.THREAD_LOCAL.set( statement.getTransaction().getSnapshot() );
                 final Conformance conformance = statement.getPrepareContext().config().conformance();
 
-                final Map<String, PolyValue> internalParameters = new LinkedHashMap<>();
-                internalParameters.put( "_conformance", PolyString.of( conformance.toString() ) );
+                final Map<String, Object> internalParameters = new LinkedHashMap<>();
+                internalParameters.put( "_conformance", conformance );
 
                 Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
                         internalParameters,

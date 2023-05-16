@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -60,10 +61,18 @@ import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 
 
 @Slf4j
@@ -523,7 +532,7 @@ public class RequestParser {
 
     @VisibleForTesting
     Filters parseFilters( Map<String, String[]> filterMap, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
-        Map<RequestColumn, List<Pair<Operator, Object>>> literalFilters = new HashMap<>();
+        Map<RequestColumn, List<Pair<Operator, PolyValue>>> literalFilters = new HashMap<>();
         Map<RequestColumn, List<Pair<Operator, RequestColumn>>> columnFilters = new HashMap<>();
 
         for ( String possibleFilterKey : filterMap.keySet() ) {
@@ -544,12 +553,12 @@ public class RequestParser {
                 throw new ParserException( ParserErrorCode.FILTER_UNKNOWN_COLUMN, possibleFilterKey );
             }
 
-            List<Pair<Operator, Object>> literalFilterOperators = new ArrayList<>();
+            List<Pair<Operator, PolyValue>> literalFilterOperators = new ArrayList<>();
             List<Pair<Operator, RequestColumn>> columnFilterOperators = new ArrayList<>();
 
             for ( String filterString : filterMap.get( possibleFilterKey ) ) {
                 Pair<Operator, String> rightHandSide = this.parseFilterOperation( filterString );
-                Object literal = this.parseLiteralValue( catalogColumn.getColumn().type, rightHandSide.right );
+                PolyValue literal = this.parseLiteralValue( catalogColumn.getColumn().type, rightHandSide.right );
                 // TODO: add column filters here
                 literalFilterOperators.add( new Pair<>( rightHandSide.left, literal ) );
             }
@@ -619,42 +628,40 @@ public class RequestParser {
 
     // TODO: REWRITE THIS METHOD
     @VisibleForTesting
-    Object parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
+    PolyValue parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
         if ( !(objectLiteral instanceof String) ) {
             if ( objectLiteral instanceof Double && type == PolyType.DECIMAL ) {
-                return BigDecimal.valueOf( (Double) objectLiteral );
+                return PolyBigDecimal.of( BigDecimal.valueOf( (Double) objectLiteral ) );
             }
-            return objectLiteral;
+            throw new NotImplementedException();
+            //return objectLiteral;
         } else {
-            Object parsedLiteral;
+            PolyValue parsedLiteral;
             String literal = (String) objectLiteral;
             if ( PolyType.BOOLEAN_TYPES.contains( type ) ) {
-                parsedLiteral = Boolean.valueOf( literal );
+                parsedLiteral = PolyBoolean.of( Boolean.valueOf( literal ) );
             } else if ( PolyType.INT_TYPES.contains( type ) ) {
-                parsedLiteral = Long.valueOf( literal );
+                parsedLiteral = PolyLong.of( Long.valueOf( literal ) );
             } else if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
                 if ( type == PolyType.DECIMAL ) {
-                    parsedLiteral = new BigDecimal( literal );
+                    parsedLiteral = PolyBigDecimal.of( new BigDecimal( literal ) );
                 } else {
-                    parsedLiteral = Double.valueOf( literal );
+                    parsedLiteral = PolyDouble.of( Double.valueOf( literal ) );
                 }
             } else if ( PolyType.CHAR_TYPES.contains( type ) ) {
-                parsedLiteral = literal;
+                parsedLiteral = PolyString.of( literal );
             } else if ( PolyType.DATETIME_TYPES.contains( type ) ) {
                 switch ( type ) {
                     case DATE:
-                        DateString dateString = new DateString( literal );
-                        parsedLiteral = dateString;
+                        parsedLiteral = PolyDate.of( new DateString( literal ).getMillisSinceEpoch() );
                         break;
                     case TIMESTAMP:
                         Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
                         long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
-                        TimestampString timestampString = TimestampString.fromMillisSinceEpoch( millisecondsSinceEpoch );
-                        parsedLiteral = timestampString;
+                        parsedLiteral = PolyTimeStamp.of( millisecondsSinceEpoch );
                         break;
                     case TIME:
-                        TimeString timeString = new TimeString( literal );
-                        parsedLiteral = timeString;
+                        parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() );
                         break;
                     default:
                         return null;
@@ -746,7 +753,7 @@ public class RequestParser {
     @AllArgsConstructor
     public static class Filters {
 
-        public final Map<RequestColumn, List<Pair<Operator, Object>>> literalFilters;
+        public final Map<RequestColumn, List<Pair<Operator, PolyValue>>> literalFilters;
         public final Map<RequestColumn, List<Pair<Operator, RequestColumn>>> columnFilters;
 
     }

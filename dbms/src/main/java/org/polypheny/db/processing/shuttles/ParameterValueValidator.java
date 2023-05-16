@@ -17,27 +17,17 @@
 package org.polypheny.db.processing.shuttles;
 
 
-import com.j256.simplemagic.ContentInfo;
-import com.j256.simplemagic.ContentInfoUtil;
-import com.j256.simplemagic.ContentType;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PushbackInputStream;
-import java.util.Arrays;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.FileInputHandle;
 
 
 public class ParameterValueValidator extends AlgShuttleImpl {
@@ -121,14 +111,15 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                         valid = o.isBoolean();
                         break;
                     case MULTIMEDIA:
-                        if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {
-                            if ( o instanceof byte[] || o instanceof InputStream || o instanceof File || o instanceof FileInputHandle ) {
+                        return super.visitDynamicParam( dynamicParam );
+                        /*if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {
+                            if ( o.isBlob() )//instanceof byte[] || o instanceof InputStream || o instanceof File || o instanceof FileInputHandle ) {
                                 return super.visitDynamicParam( dynamicParam );
                             } else {
                                 throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ) );
                             }
                         }
-                        ContentInfoUtil util = new ContentInfoUtil();
+                        /*ContentInfoUtil util = new ContentInfoUtil();
                         ContentInfo info;
                         if ( o instanceof byte[] ) {
                             info = util.findMatch( (byte[]) o );
@@ -178,9 +169,9 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                             //break;
                         }
                         if ( !valid ) {
-                            throw new InvalidParameterValueException( String.format( "The %s file has the content type '%s' which is not valid for the %s PolyType", polyType.toString().toLowerCase(), info.getName(), polyType ) );
+                            throw new InvalidParameterValueException( String.format( "The %s file has the content type '%s' which is not valid for the %s PolyType", polyType.toString().toLowerCase(), polyType ) );
                         }
-                        break;
+                        break;*/
                 }
                 if ( !valid ) {
                     break;

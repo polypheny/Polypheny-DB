@@ -72,12 +72,11 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.util.DateString;
+import org.polypheny.db.type.entity.PolyStream;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 
 
 @Slf4j
@@ -341,17 +340,17 @@ public class Rest {
             filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
             int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
-                for ( Pair<Operator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
+                for ( Pair<Operator, PolyValue> filterOperationPair : filters.literalFilters.get( column ) ) {
                     AlgDataTypeField typeField = filterMap.get( column.getColumn().name );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
-                    Object param = filterOperationPair.right;
-                    if ( param instanceof TimestampString ) {
-                        param = ((TimestampString) param).toCalendar();
+                    PolyValue param = filterOperationPair.right;
+                    /*if ( param instanceof TimestampString ) {
+                        param = PolyTimeStamp.of( ((TimestampString) param).getMillisSinceEpoch() );
                     } else if ( param instanceof TimeString ) {
-                        param = ((TimeString) param).toCalendar();
+                        param = PolyTime.of( ((TimeString) param).getMillisOfDay() );
                     } else if ( param instanceof DateString ) {
-                        param = ((DateString) param).toCalendar();
-                    }
+                        param = PolyDate.of( ((DateString) param).toCalendar().getTime() );
+                    }*/
                     statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( param ) );
                     RexNode rightHandSide = rexBuilder.makeDynamicParam( typeField.getType(), index );
                     index++;
@@ -399,7 +398,7 @@ public class Rest {
                 AlgDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     FileInputHandle fih = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
-                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( fih ) );
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( PolyStream.of( fih.getData() ) ) );
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;
                 } else {

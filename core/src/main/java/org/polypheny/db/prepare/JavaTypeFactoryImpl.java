@@ -34,7 +34,6 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.collect.Lists;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -45,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
@@ -103,7 +103,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
 
     @Override
-    public AlgDataType createStructType( Class type ) {
+    public AlgDataType createStructType( Class<?> type ) {
         final List<AlgDataTypeField> list = new ArrayList<>();
         for ( Field field : type.getFields() ) {
             if ( !Modifier.isStatic( field.getModifiers() ) ) {
@@ -160,12 +160,12 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         if ( !(type instanceof Class) ) {
             throw new UnsupportedOperationException( "TODO: implement " + type );
         }
-        final Class clazz = (Class) type;
+        final Class<?> clazz = (Class<?>) type;
         switch ( Primitive.flavor( clazz ) ) {
             case PRIMITIVE:
                 return createJavaType( clazz );
             case BOX:
-                return createJavaType( Primitive.ofBox( clazz ).boxClass );
+                return createJavaType( Objects.requireNonNull( Primitive.ofBox( clazz ) ).boxClass );
         }
         if ( JavaToPolyTypeConversionRules.instance().lookup( clazz ) != null ) {
             return createJavaType( clazz );
@@ -229,21 +229,21 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case INTERVAL_MINUTE:
                 case INTERVAL_MINUTE_SECOND:
                 case INTERVAL_SECOND:
-                    return type.isNullable() ? PolyLong.class : long.class;
+                    return type.isNullable() ? PolyLong.class : PolyLong.class;
                 case SMALLINT:
-                    return type.isNullable() ? PolyInteger.class : short.class;
+                    return type.isNullable() ? PolyInteger.class : PolyInteger.class;
                 case TINYINT:
-                    return type.isNullable() ? PolyInteger.class : byte.class;
+                    return type.isNullable() ? PolyInteger.class : PolyInteger.class;
                 case DECIMAL:
                     return BigDecimal.class;
                 case BOOLEAN:
-                    return type.isNullable() ? PolyBoolean.class : boolean.class;
+                    return type.isNullable() ? PolyBoolean.class : PolyBoolean.class;
                 case DOUBLE:
-                    return type.isNullable() ? PolyDouble.class : double.class;
+                    return type.isNullable() ? PolyDouble.class : PolyDouble.class;
                 case FLOAT: // sic
-                    return type.isNullable() ? PolyFloat.class : float.class;
+                    return type.isNullable() ? PolyFloat.class : PolyFloat.class;
                 case REAL:
-                    return type.isNullable() ? PolyFloat.class : float.class;
+                    return type.isNullable() ? PolyFloat.class : PolyFloat.class;
                 case BINARY:
                 case VARBINARY:
                     return PolyBinary.class;
@@ -393,7 +393,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     public static AlgDataType toSql( final AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type instanceof AlgRecordType ) {
             return typeFactory.createStructType(
-                    Lists.transform( type.getFieldList(), field -> toSql( typeFactory, field.getType() ) ),
+                    type.getFieldList().stream().map( field -> toSql( typeFactory, field.getType() ) ).collect( Collectors.toList() ),
                     type.getFieldNames() );
         }
         if ( type instanceof JavaType ) {

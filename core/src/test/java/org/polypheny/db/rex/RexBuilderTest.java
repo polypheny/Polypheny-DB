@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
@@ -75,7 +76,7 @@ public class RexBuilderTest {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
-        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
+        RexNode node = new RexLiteral( PolyBoolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
         RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.ANY ), node, true );
 
         assertEquals( node, ensuredNode );
@@ -90,7 +91,7 @@ public class RexBuilderTest {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
-        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
+        RexNode node = new RexLiteral( PolyBoolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
         RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.BOOLEAN ), node, true );
 
         assertEquals( node, ensuredNode );
@@ -170,7 +171,7 @@ public class RexBuilderTest {
     private void checkTimestamp( RexNode node ) {
         assertThat( node.toString(), is( "1969-07-21 02:56:15" ) );
         RexLiteral literal = (RexLiteral) node;
-        assertThat( literal.getValue() instanceof Calendar, is( true ) );
+        assertThat( literal.getValue().isDate(), is( true ) );
         assertThat( literal.getValue2() instanceof Long, is( true ) );
         assertThat( literal.getValue3() instanceof Long, is( true ) );
         assertThat( (Long) literal.getValue2(), is( MOON ) );
@@ -235,7 +236,7 @@ public class RexBuilderTest {
     private void checkTimestampWithLocalTimeZone( RexNode node ) {
         assertThat( node.toString(), is( "1969-07-21 02:56:15:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" ) );
         RexLiteral literal = (RexLiteral) node;
-        assertThat( literal.getValue() instanceof TimestampString, is( true ) );
+        assertThat( literal.getValue().isTimestamp(), is( true ) );
         assertThat( literal.getValue2() instanceof Long, is( true ) );
         assertThat( literal.getValue3() instanceof Long, is( true ) );
     }
@@ -308,7 +309,7 @@ public class RexBuilderTest {
     private void checkTime( RexNode node ) {
         assertThat( node.toString(), is( "02:56:15" ) );
         RexLiteral literal = (RexLiteral) node;
-        assertThat( literal.getValue() instanceof Calendar, is( true ) );
+        assertThat( literal.getValue().isTime(), is( true ) );
         assertThat( literal.getValue2() instanceof Integer, is( true ) );
         assertThat( literal.getValue3() instanceof Integer, is( true ) );
         assertThat( (Integer) literal.getValue2(), is( MOON_TIME ) );
@@ -344,7 +345,7 @@ public class RexBuilderTest {
     private void checkDate( RexNode node ) {
         assertThat( node.toString(), is( "1969-07-21" ) );
         RexLiteral literal = (RexLiteral) node;
-        assertThat( literal.getValue() instanceof Calendar, is( true ) );
+        assertThat( literal.getValue().isDate(), is( true ) );
         assertThat( literal.getValue2() instanceof Integer, is( true ) );
         assertThat( literal.getValue3() instanceof Integer, is( true ) );
         assertThat( (Integer) literal.getValue2(), is( MOON_DAY ) );

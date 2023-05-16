@@ -51,7 +51,7 @@ public interface JavaTypeFactory extends AlgDataTypeFactory {
      * @param clazz Java class
      * @return Record type that remembers its Java class
      */
-    AlgDataType createStructType( Class clazz );
+    AlgDataType createStructType( Class<?> clazz );
 
     /**
      * Creates a type, deducing whether a record, scalar or primitive type is needed.

@@ -413,7 +413,7 @@ public enum BuiltInMethod {
     ALL_PREDICATES( AllPredicates.class, "getAllPredicates" ),
     EXPLAIN_VISIBILITY( ExplainVisibility.class, "isVisibleInExplain", ExplainLevel.class ),
     SCALAR_EXECUTE1( Scalar.class, "execute", Context.class ),
-    SCALAR_EXECUTE2( Scalar.class, "execute", Context.class, Object[].class ),
+    SCALAR_EXECUTE2( Scalar.class, "execute", Context.class, PolyValue[].class ),
     CONTEXT_VALUES( Context.class, "values", true ),
     CONTEXT_ROOT( Context.class, "root", true ),
     DATA_CONTEXT_GET_QUERY_PROVIDER( DataContext.class, "getQueryProvider" ),

@@ -71,7 +71,7 @@ public interface DataContext {
      */
     Object get( String name );
 
-    void addAll( Map<String, PolyValue> map );
+    void addAll( Map<String, Object> map );
 
 
     Statement getStatement();
@@ -234,7 +234,7 @@ public interface DataContext {
 
 
         @Override
-        public void addAll( Map<String, PolyValue> map ) {
+        public void addAll( Map<String, Object> map ) {
 
         }
 

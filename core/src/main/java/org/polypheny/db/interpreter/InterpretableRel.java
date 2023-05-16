@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -59,7 +58,7 @@ public interface InterpretableRel extends AlgNode {
     class InterpreterImplementor {
 
         public final Compiler compiler;
-        public final Map<String, PolyValue> internalParameters = new LinkedHashMap<>();
+        public final Map<String, Object> internalParameters = new LinkedHashMap<>();
         public final DataContext dataContext;
         public final Map<AlgNode, List<Sink>> algSinks = new HashMap<>();
 

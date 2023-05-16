@@ -50,6 +50,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -199,7 +200,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                 }
                 Type type = state.get( i );
                 ParameterExpression pe = Expressions.parameter( type, initBlock.newName( aggName + "s" + i ) );
-                initBlock.add( Expressions.declare( 0, pe, null ) );
+                initBlock.add( Expressions.declare( 0, pe, PolyLong.of( 0L ).asExpression() ) );
                 decls.add( pe );
             }
             agg.state = decls;

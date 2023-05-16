@@ -68,8 +68,6 @@ import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
@@ -80,7 +78,7 @@ import org.polypheny.db.util.Conformance;
  */
 public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
-    public final Map<String, PolyValue> map;
+    public final Map<String, Object> map;
     private final Map<String, RexToLixTranslator.InputGetter> corrVars = new HashMap<>();
     private final Map<Object, ParameterExpression> stashedParameters = new IdentityHashMap<>();
     @Getter
@@ -91,7 +89,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
     private int contextCounter = -1;
 
 
-    public EnumerableAlgImplementor( RexBuilder rexBuilder, Map<String, PolyValue> internalParameters ) {
+    public EnumerableAlgImplementor( RexBuilder rexBuilder, Map<String, Object> internalParameters ) {
         super( rexBuilder );
         this.map = internalParameters;
     }
@@ -194,7 +192,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                     Expressions.fieldDecl(
                             field.getModifiers(),
                             Expressions.parameter( field.getType(), field.getName() ),
-                            null ) );
+                            PolyValue.getInitial( field.getType() ).asExpression() ) );
         }
 
         // Constructor:
@@ -398,7 +396,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
         // "stashed" avoids name clash since this name will be used as the variable name at the very start of the method.
         final String name = "v" + map.size() + "stashed";
         final ParameterExpression x = Expressions.variable( clazz, name );
-        map.put( name, PolyString.of( input.toString() ) );
+        map.put( name, input );
         stashedParameters.put( input, x );
         return x;
     }
@@ -431,7 +429,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
     @Override
     public Conformance getConformance() {
-        return (Conformance) map.getOrDefault( "_conformance", PolySymbol.of( ConformanceEnum.DEFAULT ) );
+        return ConformanceEnum.DEFAULT;//(Conformance) map.getOrDefault( "_conformance", PolySymbol.of( ConformanceEnum.DEFAULT ) );
     }
 
 

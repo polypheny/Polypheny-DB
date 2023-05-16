@@ -451,7 +451,7 @@ public enum PolyType {
 
     public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
 
-    public static final List<PolyType> OBJECT_TYPES = ImmutableList.of( MAP, GRAPH, NODE, EDGE );
+    public static final List<PolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
 
     public static final Set<PolyType> YEAR_INTERVAL_TYPES =
             Sets.immutableEnumSet(

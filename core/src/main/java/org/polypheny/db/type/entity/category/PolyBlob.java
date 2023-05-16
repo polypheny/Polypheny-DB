@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity;
+package org.polypheny.db.type.entity.category;
 
-import java.io.InputStream;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.PolyValue;
 
-@EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
-public class PolyStream extends PolyBlob {
+public class PolyBlob extends PolyValue {
 
-
-    public InputStream value;
-
-
-    public PolyStream( InputStream stream ) {
-        super( PolyType.FILE, false );
-        this.value = stream;
+    public PolyBlob( PolyType type, boolean nullable ) {
+        super( type, nullable );
     }
 
 

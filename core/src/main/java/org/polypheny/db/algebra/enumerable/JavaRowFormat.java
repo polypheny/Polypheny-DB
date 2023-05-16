@@ -25,13 +25,11 @@ import org.apache.calcite.linq4j.tree.IndexExpression;
 import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
-import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Unit;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -97,9 +95,9 @@ public enum JavaRowFormat {
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
             assert expressions.size() == 1;
 
-            if ( !TypeUtils.isAssignable( javaRowClass, PolyValue.class ) ) {
+            /*if ( !TypeUtils.isAssignable( javaRowClass, PolyValue.class ) ) {
                 return Expressions.call( PolyLong.class, "of", expressions.get( 0 ) );
-            }
+            }*/
 
             return expressions.get( 0 );
         }

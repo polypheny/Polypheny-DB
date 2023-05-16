@@ -37,7 +37,6 @@ package org.polypheny.db.schemas;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -56,6 +55,7 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -69,7 +69,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
     public HrClusteredSchema( long id ) {
         super( id );
-        tables = ImmutableMap.<String, CatalogEntity>builder()
+        tables = /*ImmutableMap.<String, CatalogEntity>builder()
                 .put(
                         "emps",
                         new PkClusteredEntity(
@@ -101,7 +101,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
                                         new Object[]{ 10, "Sales" },
                                         new Object[]{ 30, "Marketing" },
                                         new Object[]{ 40, "HR" } )
-                        ) ).build();
+                        ) ).build();*/null;
     }
 
 
@@ -117,11 +117,11 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
     private static class PkClusteredEntity extends LogicalTable implements ScannableEntity {
 
         private final ImmutableBitSet pkColumns;
-        private final List<Object[]> data;
+        private final List<PolyValue[]> data;
         private final Function<AlgDataTypeFactory, AlgDataType> typeBuilder;
 
 
-        PkClusteredEntity( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
+        PkClusteredEntity( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<PolyValue[]> data ) {
             super( -1, "", -1, EntityType.ENTITY, null, false );
             this.data = data;
             this.typeBuilder = dataTypeBuilder;
@@ -140,7 +140,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
 
         @Override
-        public Enumerable<Object[]> scan( final DataContext root ) {
+        public Enumerable<PolyValue[]> scan( final DataContext root ) {
             return Linq4j.asEnumerable( data );
         }
 

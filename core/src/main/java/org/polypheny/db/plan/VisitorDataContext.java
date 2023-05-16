@@ -100,7 +100,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public void addAll( Map<String, PolyValue> map ) {
+    public void addAll( Map<String, Object> map ) {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 

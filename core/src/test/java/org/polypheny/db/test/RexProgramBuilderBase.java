@@ -166,13 +166,13 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public List<Map<Long, Object>> getParameterValues() {
+        public List<Map<Long, PolyValue>> getParameterValues() {
             throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 
 
         @Override
-        public void setParameterValues( List<Map<Long, Object>> values ) {
+        public void setParameterValues( List<Map<Long, PolyValue>> values ) {
             throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 

@@ -38,7 +38,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -61,6 +60,9 @@ import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -70,7 +72,7 @@ public class ScannableEntityTest {
 
     @Test
     public void testTens() throws SQLException {
-        final Enumerator<Object[]> cursor = tens();
+        final Enumerator<PolyValue[]> cursor = tens();
         assertTrue( cursor.moveNext() );
         Assert.assertThat( cursor.current()[0], equalTo( (Object) 0 ) );
         Assert.assertThat( cursor.current().length, equalTo( 1 ) );
@@ -424,7 +426,7 @@ public class ScannableEntityTest {
                     && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ) {
                 final RexNode op1 = ((RexCall) node).getOperands().get( 1 );
                 filterIter.remove();
-                return ((BigDecimal) ((RexLiteral) op1).getValue()).intValue();
+                return ((RexLiteral) op1).getValue().asBigDecimal().intValue();
             }
         }
         return null;
@@ -448,10 +450,10 @@ public class ScannableEntityTest {
 
 
         @Override
-        public Enumerable<Object[]> scan( DataContext root ) {
+        public Enumerable<PolyValue[]> scan( DataContext root ) {
             return new AbstractEnumerable<>() {
                 @Override
-                public Enumerator<Object[]> enumerator() {
+                public Enumerator<PolyValue[]> enumerator() {
                     return tens();
                 }
             };
@@ -480,10 +482,10 @@ public class ScannableEntityTest {
 
 
         @Override
-        public Enumerable<Object[]> scan( DataContext root ) {
-            return new AbstractEnumerable<Object[]>() {
+        public Enumerable<PolyValue[]> scan( DataContext root ) {
+            return new AbstractEnumerable<PolyValue[]>() {
                 @Override
-                public Enumerator<Object[]> enumerator() {
+                public Enumerator<PolyValue[]> enumerator() {
                     return beatles( new StringBuilder(), null, null );
                 }
             };
@@ -519,11 +521,11 @@ public class ScannableEntityTest {
 
 
         @Override
-        public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters ) {
+        public Enumerable<PolyValue[]> scan( DataContext root, List<RexNode> filters ) {
             final Integer filter = getFilter( cooperative, filters );
             return new AbstractEnumerable<>() {
                 @Override
-                public Enumerator<Object[]> enumerator() {
+                public Enumerator<PolyValue[]> enumerator() {
                     return beatles( buf, filter, null );
                 }
             };
@@ -559,11 +561,11 @@ public class ScannableEntityTest {
 
 
         @Override
-        public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters, final int[] projects ) {
+        public Enumerable<PolyValue[]> scan( DataContext root, List<RexNode> filters, final int[] projects ) {
             final Integer filter = getFilter( cooperative, filters );
-            return new AbstractEnumerable<Object[]>() {
+            return new AbstractEnumerable<PolyValue[]>() {
                 @Override
-                public Enumerator<Object[]> enumerator() {
+                public Enumerator<PolyValue[]> enumerator() {
                     return beatles( buf, filter, projects );
                 }
             };
@@ -572,14 +574,14 @@ public class ScannableEntityTest {
     }
 
 
-    private static Enumerator<Object[]> tens() {
-        return new Enumerator<Object[]>() {
+    private static Enumerator<PolyValue[]> tens() {
+        return new Enumerator<>() {
             int row = -1;
-            Object[] current;
+            PolyValue[] current;
 
 
             @Override
-            public Object[] current() {
+            public PolyValue[] current() {
                 return current;
             }
 
@@ -587,7 +589,7 @@ public class ScannableEntityTest {
             @Override
             public boolean moveNext() {
                 if ( ++row < 4 ) {
-                    current = new Object[]{ row * 10 };
+                    current = new PolyValue[]{ PolyInteger.of( row * 10 ) };
                     return true;
                 } else {
                     return false;
@@ -609,23 +611,23 @@ public class ScannableEntityTest {
     }
 
 
-    private static final Object[][] BEATLES = {
-            { 4, "John", 1940 },
-            { 4, "Paul", 1942 },
-            { 6, "George", 1943 },
-            { 5, "Ringo", 1940 }
+    private static final PolyValue[][] BEATLES = {
+            { PolyInteger.of( 4 ), PolyString.of( "John" ), PolyInteger.of( 1940 ) },
+            { PolyInteger.of( 4 ), PolyString.of( "Paul" ), PolyInteger.of( 1942 ) },
+            { PolyInteger.of( 6 ), PolyString.of( "George" ), PolyInteger.of( 1943 ) },
+            { PolyInteger.of( 5 ), PolyString.of( "Ringo" ), PolyInteger.of( 1940 ) }
     };
 
 
-    private static Enumerator<Object[]> beatles( final StringBuilder buf, final Integer filter, final int[] projects ) {
-        return new Enumerator<Object[]>() {
+    private static Enumerator<PolyValue[]> beatles( final StringBuilder buf, final Integer filter, final int[] projects ) {
+        return new Enumerator<PolyValue[]>() {
             int row = -1;
             int returnCount = 0;
-            Object[] current;
+            PolyValue[] current;
 
 
             @Override
-            public Object[] current() {
+            public PolyValue[] current() {
                 return current;
             }
 
@@ -633,12 +635,12 @@ public class ScannableEntityTest {
             @Override
             public boolean moveNext() {
                 while ( ++row < 4 ) {
-                    Object[] current = BEATLES[row % 4];
+                    PolyValue[] current = BEATLES[row % 4];
                     if ( filter == null || filter.equals( current[0] ) ) {
                         if ( projects == null ) {
                             this.current = current;
                         } else {
-                            Object[] newCurrent = new Object[projects.length];
+                            PolyValue[] newCurrent = new PolyValue[projects.length];
                             for ( int i = 0; i < projects.length; i++ ) {
                                 newCurrent[i] = current[projects[i]];
                             }

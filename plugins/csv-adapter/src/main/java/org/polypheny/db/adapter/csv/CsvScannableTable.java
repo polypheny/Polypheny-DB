@@ -41,6 +41,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
 
@@ -66,12 +67,12 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext dataContext ) {
+    public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
+            public Enumerator<PolyValue[]> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, false, null, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
             }
         };

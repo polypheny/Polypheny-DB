@@ -95,6 +95,11 @@ public class PolyLong extends PolyNumber {
     }
 
 
+    public PolyLong increment() {
+        return PolyLong.of( value + 1 );
+    }
+
+
     @Override
     public String toString() {
         return value.toString();

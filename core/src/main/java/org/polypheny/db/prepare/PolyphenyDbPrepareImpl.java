@@ -493,7 +493,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         protected final AlgDataTypeFactory typeFactory;
         protected final RexConvertletTable convertletTable;
         private final Prefer prefer;
-        private final Map<String, PolyValue> internalParameters = new LinkedHashMap<>();
+        private final Map<String, Object> internalParameters = new LinkedHashMap<>();
         private int expansionDepth;
         private Validator sqlValidator;
 

@@ -42,7 +42,7 @@ import org.polypheny.db.util.Holder;
  */
 public class DataContextImpl implements DataContext {
 
-    private final Map<String, PolyValue> map;
+    private final Map<String, Object> map;
 
     @Getter
     private final Snapshot snapshot;
@@ -70,7 +70,7 @@ public class DataContextImpl implements DataContext {
     private boolean isMixedModel = false;
 
 
-    private DataContextImpl( QueryProvider queryProvider, Map<String, PolyValue> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, PolyValue>> parameterValues ) {
+    private DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, PolyValue>> parameterValues ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
         this.snapshot = snapshot;
@@ -82,13 +82,13 @@ public class DataContextImpl implements DataContext {
     }
 
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, PolyValue> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
+    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
         this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
     }
 
 
     @NotNull
-    private Map<String, PolyValue> getMedaInfo( Map<String, PolyValue> parameters ) {
+    private Map<String, Object> getMedaInfo( Map<String, Object> parameters ) {
         // Store the time at which the query started executing. The SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the query.
         final Holder<Long> timeHolder = Holder.of( System.currentTimeMillis() );
 
@@ -102,7 +102,7 @@ public class DataContextImpl implements DataContext {
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
-        Map<String, PolyValue> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         /*map.put( Variable.UTC_TIMESTAMP.camelName, time );
         map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
         map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
@@ -110,8 +110,8 @@ public class DataContextImpl implements DataContext {
         map.put( Variable.STDIN.camelName, streamHolder.get()[0] );
         map.put( Variable.STDOUT.camelName, streamHolder.get()[1] );
         map.put( Variable.STDERR.camelName, streamHolder.get()[2] );*/
-        for ( Map.Entry<String, PolyValue> entry : parameters.entrySet() ) {
-            PolyValue e = entry.getValue();
+        for ( Map.Entry<String, Object> entry : parameters.entrySet() ) {
+            Object e = entry.getValue();
             if ( e == null ) {
                 //e = AvaticaSite.DUMMY_VALUE;
             }
@@ -135,7 +135,7 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void addAll( Map<String, PolyValue> map ) {
+    public void addAll( Map<String, Object> map ) {
         this.map.putAll( map );
     }
 

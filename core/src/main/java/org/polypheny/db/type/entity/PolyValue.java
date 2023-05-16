@@ -25,10 +25,12 @@ import io.activej.serializer.SerializerBuilder;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.lang.reflect.Type;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
@@ -38,6 +40,7 @@ import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -77,6 +80,15 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyValue( @Deserialize("type") PolyType type, @Deserialize("nullable") boolean nullable ) {
         this.type = type;
         this.nullable = nullable;
+    }
+
+
+    public static PolyValue getInitial( Type type ) {
+
+        if ( Types.isAssignableFrom( type, PolyLong.class ) ) {
+            return PolyLong.of( 0 );
+        }
+        return null;
     }
 
 
@@ -564,6 +576,19 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolySymbol asSymbol() {
         if ( isSymbol() ) {
             return (PolySymbol) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
+    public boolean isBlob() {
+        return PolyType.BLOB_TYPES.contains( type );
+    }
+
+
+    public PolyBlob asBlob() {
+        if ( isBlob() ) {
+            return (PolyBlob) this;
         }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }

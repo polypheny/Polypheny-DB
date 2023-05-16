@@ -63,6 +63,7 @@ import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
@@ -469,7 +470,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return call;
         } else if ( call.op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             int i = index.getAndIncrement();
-            List<Object> list = createListForArrays( call.operands );
+            PolyList<PolyValue> list = createListForArrays( call.operands );
             values.put( i, Collections.singletonList( new ParameterValue( i, call.type, list ) ) );
             types.add( call.type );
             return new RexDynamicParam( call.type, i );
@@ -488,8 +489,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     }
 
 
-    private List<Object> createListForArrays( List<RexNode> operands ) {
-        List<Object> list = new ArrayList<>( operands.size() );
+    private PolyList<PolyValue> createListForArrays( List<RexNode> operands ) {
+        PolyList<PolyValue> list = new PolyList<>();
         for ( RexNode node : operands ) {
             if ( node instanceof RexLiteral ) {
                 list.add( ((RexLiteral) node).getValueForQueryParameterizer() );

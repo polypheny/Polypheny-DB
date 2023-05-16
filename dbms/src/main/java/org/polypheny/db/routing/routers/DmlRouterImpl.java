@@ -89,6 +89,7 @@ import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -189,9 +190,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<Map<Long, Object>> tempParamValues = null;
 
         Map<Long, AlgDataType> types = statement.getDataContext().getParameterTypes();
-        List<Map<Long, Object>> allValues = statement.getDataContext().getParameterValues();
+        List<Map<Long, PolyValue>> allValues = statement.getDataContext().getParameterValues();
 
-        Map<Long, Object> newParameterValues = new HashMap<>();
+        Map<Long, PolyValue> newParameterValues = new HashMap<>();
         for ( AllocationColumn pkPlacement : pkPlacements ) {
 
             // Get placements on store
@@ -451,9 +452,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     // Get partitionValue per row/tuple to be inserted
                                     // Create as many independent TableModifies as there are entries in getParameterValues
 
-                                    Map<Long, List<Map<Long, Object>>> tempValues = new HashMap<>();
+                                    Map<Long, List<Map<Long, PolyValue>>> tempValues = new HashMap<>();
                                     statement.getDataContext().resetContext();
-                                    for ( Map<Long, Object> currentRow : allValues ) {
+                                    for ( Map<Long, PolyValue> currentRow : allValues ) {
                                         // first we sort the values to insert according to the partitionManager and their partitionId
 
                                         tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
@@ -475,7 +476,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         tempValues.get( tempPartitionId ).add( currentRow );
                                     }
 
-                                    for ( Entry<Long, List<Map<Long, Object>>> entry : tempValues.entrySet() ) {
+                                    for ( Entry<Long, List<Map<Long, PolyValue>>> entry : tempValues.entrySet() ) {
                                         // then we add a modification for each partition
                                         statement.getDataContext().setParameterValues( entry.getValue() );
 
@@ -597,7 +598,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( !newParameterValues.isEmpty() ) {
             statement.getDataContext().resetParameterValues();
             int idx = 0;
-            for ( Map.Entry<Long, Object> entry : newParameterValues.entrySet() ) {
+            for ( Map.Entry<Long, PolyValue> entry : newParameterValues.entrySet() ) {
                 statement.getDataContext().addParameterValues(
                         entry.getKey(),
                         statement.getDataContext().getParameterType( idx++ ),
@@ -806,7 +807,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             Statement statement,
             AlgOptCluster cluster,
             boolean remapParameterValues,
-            List<Map<Long, Object>> parameterValues ) {
+            List<Map<Long, PolyValue>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             buildDml( node.getInput( i ), builder, catalogTable, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
         }
@@ -982,7 +983,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private RoutedAlgBuilder remapParameterizedDml( AlgNode node, RoutedAlgBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
+    private RoutedAlgBuilder remapParameterizedDml( AlgNode node, RoutedAlgBuilder builder, Statement statement, List<Map<Long, PolyValue>> parameterValues ) {
         if ( parameterValues.size() <= 1 ) {
             // changed for now, this should not be a problem
             throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );
@@ -997,7 +998,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( type == null ) {
                     type = project.getType();
                 }
-                Object value = parameterValues.get( 0 ).get( oldIndex );
+                PolyValue value = parameterValues.get( 0 ).get( oldIndex );
                 projects.add( new RexDynamicParam( type, newIndex ) );
                 parameterValues.get( 0 ).put( newIndex, value );
             }

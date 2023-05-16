@@ -75,7 +75,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
             @Deserialize("namespace") LogicalNamespace namespace,
             @Deserialize("tables") Map<Long, AllocationTable> tables,
             @Deserialize("columns") Map<Pair<Long, Long>, AllocationColumn> columns,
-            @Deserialize("group") Map<Long, List<Long>> groups ) {
+            @Deserialize("groups") Map<Long, List<Long>> groups ) {
         this.namespace = namespace;
         this.tables = new ConcurrentHashMap<>( tables );
         this.columns = new ConcurrentHashMap<>( columns );

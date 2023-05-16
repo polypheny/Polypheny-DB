@@ -49,7 +49,6 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.trait.ModelTraitDef;
-import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
@@ -146,7 +145,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         }
 
         final BlockBuilder builder3 = new BlockBuilder();
-        final Conformance conformance = (Conformance) implementor.map.getOrDefault( "_conformance", PolySymbol.of( ConformanceEnum.DEFAULT ) );
+        final Conformance conformance = ConformanceEnum.DEFAULT;//(Conformance) implementor.map.getOrDefault( "_conformance", PolySymbol.of( ConformanceEnum.DEFAULT ) );
         UnwindContext unwindContext = new UnwindContext();
         List<Expression> expressions =
                 RexToLixTranslator.translateProjects(

@@ -35,6 +35,7 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
@@ -80,7 +81,7 @@ public class StatementImpl implements Statement {
             // Avoid overflow
             int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
             if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
-                map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
+                map.put( DataContext.Variable.TIMEOUT.camelName, PolyLong.of( queryTimeout * 1000L ) );
             }
 
             final AtomicBoolean cancelFlag;

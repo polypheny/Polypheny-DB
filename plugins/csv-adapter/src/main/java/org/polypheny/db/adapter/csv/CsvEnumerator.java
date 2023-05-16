@@ -363,7 +363,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
     /**
      * Array row converter.
      */
-    static class ArrayRowConverter extends RowConverter<Object[]> {
+    static class ArrayRowConverter extends RowConverter<PolyValue[]> {
 
         private final CsvFieldType[] fieldTypes;
         private final int[] fields;
@@ -386,7 +386,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
 
 
         @Override
-        public Object[] convertRow( String[] strings ) {
+        public PolyValue[] convertRow( String[] strings ) {
             if ( stream ) {
                 return convertStreamRow( strings );
             } else {
@@ -395,8 +395,8 @@ class CsvEnumerator<E> implements Enumerator<E> {
         }
 
 
-        public Object[] convertNormalRow( String[] strings ) {
-            final Object[] objects = new Object[fields.length];
+        public PolyValue[] convertNormalRow( String[] strings ) {
+            final PolyValue[] objects = new PolyValue[fields.length];
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
                 objects[i] = convert( fieldTypes[i], strings[field - 1] );
@@ -405,9 +405,9 @@ class CsvEnumerator<E> implements Enumerator<E> {
         }
 
 
-        public Object[] convertStreamRow( String[] strings ) {
-            final Object[] objects = new Object[fields.length + 1];
-            objects[0] = System.currentTimeMillis();
+        public PolyValue[] convertStreamRow( String[] strings ) {
+            final PolyValue[] objects = new PolyValue[fields.length + 1];
+            objects[0] = PolyLong.of( System.currentTimeMillis() );
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
                 objects[i + 1] = convert( fieldTypes[i], strings[field - 1] );

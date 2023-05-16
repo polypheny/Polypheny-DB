@@ -961,7 +961,7 @@ public class RexImpTable {
 
         @Override
         public void implementNotNullAdd( AggContext info, AggAddContext add ) {
-            add.currentBlock().add( Expressions.statement( Expressions.postIncrementAssign( add.accumulator().get( 0 ) ) ) );
+            add.currentBlock().add( Expressions.statement( Expressions.assign( add.accumulator().get( 0 ), Expressions.call( add.accumulator().get( 0 ), "increment" ) ) ) );
         }
 
     }

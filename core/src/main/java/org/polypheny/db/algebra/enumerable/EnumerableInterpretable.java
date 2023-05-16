@@ -86,14 +86,14 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 (EnumerableAlg) getInput(),
                 Prefer.ARRAY,
                 implementor.dataContext.getStatement() ).left;
-        final ArrayBindable arrayBindable = box( (Bindable<PolyValue>) bindable );
+        final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<PolyValue[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
     public static Pair<Bindable<PolyValue[]>, String> toBindable(
-            Map<String, PolyValue> parameters,
+            Map<String, Object> parameters,
             EnumerableAlg alg,
             EnumerableAlg.Prefer prefer,
             Statement statement ) {

@@ -249,11 +249,12 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
             preparedStatement.setNull( i, SqlType.NULL.id );
+            return;
         }
 
         switch ( type.getPolyType() ) {
             case BIGINT:
-                preparedStatement.setBigDecimal( i, ((PolyValue) value).asBigDecimal().value );
+                preparedStatement.setBigDecimal( i, value.asBigDecimal().value );
                 break;
             default:
                 preparedStatement.setObject( i, value );

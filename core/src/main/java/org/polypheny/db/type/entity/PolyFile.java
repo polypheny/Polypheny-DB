@@ -16,44 +16,17 @@
 
 package org.polypheny.db.type.entity;
 
-import java.io.InputStream;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyBlob;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
-public class PolyStream extends PolyBlob {
+@Value
+public class PolyFile extends PolyBlob {
 
-
-    public InputStream value;
-
-
-    public PolyStream( InputStream stream ) {
-        super( PolyType.FILE, false );
-        this.value = stream;
-    }
-
-
-    @Override
-    public int compareTo( @NotNull PolyValue o ) {
-        return 0;
-    }
-
-
-    @Override
-    public Expression asExpression() {
-        return null;
-    }
-
-
-    @Override
-    public PolySerializable copy() {
-        return null;
+    public PolyFile( PolyType type, boolean nullable ) {
+        super( type, nullable );
     }
 
 }
