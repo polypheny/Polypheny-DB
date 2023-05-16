@@ -64,3 +64,11 @@ include 'plugins:excel-adapter'
 
 // other plugins
 include 'plugins:notebooks'
+
+include 'plugins:pqi'
+findProject(':plugins:pqi')?.name = 'pqi'
+include 'plugins:proto-interface'
+findProject(':plugins:proto-interface')?.name = 'proto-interface'
+include 'plugins:proto-interface'
+findProject(':plugins:proto-interface')?.name = 'proto-interface'
+
