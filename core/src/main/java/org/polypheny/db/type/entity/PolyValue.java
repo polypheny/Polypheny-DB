@@ -30,7 +30,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.apache.calcite.linq4j.tree.Types;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
@@ -52,6 +52,7 @@ import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 @Value
+@Slf4j
 @EqualsAndHashCode
 @NonFinal
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
@@ -84,11 +85,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static PolyValue getInitial( Type type ) {
+        return PolyDefaults.DEFAULTS.get( type );
+    }
 
-        if ( Types.isAssignableFrom( type, PolyLong.class ) ) {
-            return PolyLong.of( 0 );
-        }
-        return null;
+
+    public static Type ofPrimitive( Type type ) {
+        return PolyDefaults.PRIMITIVES.get( type );
     }
 
 
@@ -396,6 +398,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyDouble asDouble() {
         if ( isDouble() ) {
             return (PolyDouble) this;
+        }
+        if ( isNumber() ) {
+            log.warn( "still not sure about this" );
+            return PolyDouble.of( this.asNumber().doubleValue() );
         }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }

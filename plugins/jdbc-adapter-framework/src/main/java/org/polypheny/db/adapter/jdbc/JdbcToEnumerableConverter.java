@@ -85,7 +85,8 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -283,7 +284,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             Expression calendar_,
             CalendarPolicy calendarPolicy,
             SqlDialect dialect ) {
-        final Primitive primitive = Primitive.ofBoxOr( physType.fieldClass( i ) );
+        final Primitive primitive = Primitive.ofBoxOr( PolyValue.ofPrimitive( physType.fieldClass( i ) ) );
         final AlgDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
         dateTimeArgs.add( Expressions.constant( i + 1 ) );
@@ -370,7 +371,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
-                poly = Expressions.call( PolyBigDecimal.class, "of", source );
+                poly = Expressions.call( PolyLong.class, "of", source );
                 break;
             default:
                 poly = source;

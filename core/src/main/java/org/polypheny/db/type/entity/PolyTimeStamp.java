@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -40,6 +41,11 @@ public class PolyTimeStamp extends PolyValue {
 
     public static PolyTimeStamp of( Date date ) {
         return new PolyTimeStamp( date.getTime() );
+    }
+
+
+    public Timestamp asSqlTimestamp() {
+        return new Timestamp( value );
     }
 
 

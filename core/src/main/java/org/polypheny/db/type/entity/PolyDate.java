@@ -40,6 +40,16 @@ public class PolyDate extends PolyValue {
     }
 
 
+    public Date asDefaultDate() {
+        return new Date( value );
+    }
+
+
+    public java.sql.Date asSqlDate() {
+        return new java.sql.Date( value );
+    }
+
+
     public static PolyDate of( Date date ) {
         return new PolyDate( (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY) );
     }

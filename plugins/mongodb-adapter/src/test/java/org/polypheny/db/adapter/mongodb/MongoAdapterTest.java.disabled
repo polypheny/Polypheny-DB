@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapterTemplate.mongodb;
+package org.polypheny.db.adapter.mongodb;
 
 
 import org.polypheny.db.schema.Namespaceema;
@@ -762,7 +762,7 @@ public class MongoAdapterTest implements SchemaFactory {
                 + "     {\n"
                 + "       type: 'custom',\n"
                 + "       name: 'test',\n"
-                + "       factory: 'org.polypheny.db.adapterTemplate.mongodb.MongoSchemaFactory',\n"
+                + "       factory: 'org.polypheny.db.adapter.mongodb.MongoSchemaFactory',\n"
                 + "       operand: {\n"
                 + "         host: 'localhost',\n"
                 + "         database: 'test'\n"

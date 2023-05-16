@@ -93,6 +93,7 @@ import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 
@@ -923,6 +924,9 @@ public class RexImpTable {
         if ( Primitive.is( type ) ) {
             Primitive p = Primitive.of( type );
             return Expressions.constant( p.defaultValue, type );
+        }
+        if ( Types.isAssignableFrom( PolyValue.class, type ) ) {
+            return PolyValue.getInitial( type ).asExpression();
         }
         return Expressions.constant( null, type );
     }

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import java.sql.Time;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -43,6 +44,11 @@ public class PolyTime extends PolyValue {
 
     public static PolyTime of( long value ) {
         return new PolyTime( value, TimeUnit.MILLISECOND );
+    }
+
+
+    public Time asSqlTime() {
+        return new Time( value );
     }
 
 

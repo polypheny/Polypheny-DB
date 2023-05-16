@@ -256,6 +256,33 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             case BIGINT:
                 preparedStatement.setBigDecimal( i, value.asBigDecimal().value );
                 break;
+            case VARCHAR:
+                preparedStatement.setString( i, value.asString().value );
+                break;
+            case FLOAT:
+                preparedStatement.setFloat( i, value.asFloat().value );
+                break;
+            case DOUBLE:
+                preparedStatement.setDouble( i, value.asDouble().value );
+                break;
+            case INTEGER:
+                preparedStatement.setInt( i, value.asInteger().value );
+                break;
+            case BOOLEAN:
+                preparedStatement.setBoolean( i, value.asBoolean().value );
+                break;
+            case DECIMAL:
+                preparedStatement.setBigDecimal( i, value.asBigDecimal().value );
+                break;
+            case DATE:
+                preparedStatement.setDate( i, value.asDate().asSqlDate() );
+                break;
+            case TIME:
+                preparedStatement.setTime( 0, value.asTime().asSqlTime() );
+                break;
+            case TIMESTAMP:
+                preparedStatement.setTimestamp( 0, value.asTimeStamp().asSqlTimestamp() );
+                break;
             default:
                 preparedStatement.setObject( i, value );
         }

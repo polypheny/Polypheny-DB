@@ -2914,7 +2914,7 @@ public class DdlManagerImpl extends DdlManager {
         prepareMonitoring( statement, Kind.DROP_TABLE, table );
 
         // ON_COMMIT constraint needs no longer to be enforced if entity does no longer exist
-        statement.getTransaction().getLogicalTables().remove( table );
+        // statement.getTransaction().getLogicalTables().remove( table );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
