@@ -1,10 +1,3 @@
-plugins {
-    id 'java'
-    id "com.google.protobuf" version "0.9.3"
-}
-
-apply plugin: "com.google.protobuf"
-
 group "org.polypheny"
 
 configurations {
@@ -13,64 +6,29 @@ configurations {
     }
 }
 
-repositories {
-    mavenCentral()
-}
 
 dependencies {
-
-    compileOnly project(path: ':core')
-    compileOnly project(path: ':dbms')
-    compileOnly project(path: ':plugins:sql-language')
-    compileOnly project(path: ':plugins:mql-language')
-    testImplementation project(path: ':plugins:mql-language')
-    testImplementation project(path: ":dbms", configuration: "test")
-    testImplementation project(path: ':dbms')
-    testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ':core')
-
+    compileOnly project(":core")
     compileOnly project(":monitoring")
-    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.21.12'
 
-    // https://mvnrepository.com/artifact/io.grpc/grpc-all
-    implementation group: 'io.grpc', name: 'grpc-all', version: '1.55.1'
+    ////// BYTE UNITS
+    implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version  // Apache 2.0
 
-    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+    ////// APACHE CALCITE AVATICA
+    implementation(group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version) {
+        exclude(group: "org.slf4j")
+    }  // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
 }
 
-def generatedDirName = "${project.buildDir}/generated"
-
-// compile protos on build
-compileJava.dependsOn(generateProto)
-
-
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.21.12"
-    }
-    plugins {
-
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.55.1'
-        }
-    }
-    generateProtoTasks {
-        all()*.plugins {
-            grpc {}
-        }
-    }
-    generatedFilesBaseDir = "${generatedDirName}/proto"
-}
 
 sourceSets {
     main {
-        proto {
-            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/grpc"
-            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/java"
-        }
         java {
-            srcDirs = ["src/main/java", "build/generated-sources", 'build/generated/source/proto/main/grpc', 'build/generated/source/proto/main/java']
+            srcDirs = ["src/main/java"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -84,7 +42,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
         resources {
-            srcDirs = ["src/test/resources", "src/main/resources"]
+            srcDirs = ["src/test/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
@@ -116,16 +74,24 @@ jar {
         attributes "Version": "$project.version"
     }
 }
-
 java {
     withJavadocJar()
     withSourcesJar()
 }
 
-
 /**
  * LICENSEE
  */
+
 licensee {
     allow('Apache-2.0')
+    allow('BSD-3-Clause')
+
+    // Category B
+    allow('EPL-1.0')
+
+    allowDependency('javax.servlet', 'javax.servlet-api', '4.0.1') {
+        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
+    }
 }
+
