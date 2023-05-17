@@ -27,19 +27,6 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-
-
-}
-
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        // ASSUMES GRADLE 2.12 OR HIGHER. Use plugin version 0.7.5 with earlier
-        // gradle versions
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.3'
-    }
 }
 
 protobuf {
@@ -95,12 +82,14 @@ compileJava {
     dependsOn(":monitoring:processResources")
 }
 
+
 /**
  * Tests
  */
 test {
     maxHeapSize = "2g" // Increase heap size (default is 512MB)
 }
+
 
 /**
  * JARs
@@ -118,19 +107,10 @@ java {
     withSourcesJar()
 }
 
+
 /**
  * LICENSEE
  */
-
 licensee {
     allow('Apache-2.0')
-    allow('BSD-3-Clause')
-
-    // Category B
-    allow('EPL-1.0')
-
-    allowDependency('javax.servlet', 'javax.servlet-api', '4.0.1') {
-        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
-    }
 }
-
