@@ -31,6 +31,7 @@ include 'plugins:jdbc-adapter-framework'
 include 'plugins:avatica-interface'
 include 'plugins:rest-interface'
 include 'plugins:http-interface'
+include 'plugins:proto-interface'
 
 // adapters plugins
 include 'plugins:hsqldb-adapter'
@@ -56,10 +57,4 @@ include 'plugins:explore-by-example'
 //include 'plugins:druid-adapter'
 //include 'plugins:elasticsearch-adapter'
 //include 'plugins:geode-adapter'
-include 'plugins:pqi'
-findProject(':plugins:pqi')?.name = 'pqi'
-include 'plugins:proto-interface'
-findProject(':plugins:proto-interface')?.name = 'proto-interface'
-include 'plugins:proto-interface'
-findProject(':plugins:proto-interface')?.name = 'proto-interface'
 
