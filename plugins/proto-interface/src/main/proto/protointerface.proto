@@ -5,7 +5,7 @@ option java_package = "org.polypheny.db.protointerface";
 option java_outer_classname = "ProtoInterface";
 option objc_class_prefix = "PI";
 
-package protointerface;
+package org.polypheny.db.protointerface;
 
 service ProtoInterface {
   // Connect to server by sending a ConnectionRequest..
