@@ -132,4 +132,69 @@ public class ProtoInterfacePlugin extends PolyPlugin {
             }
         }
     }
+import lombok.extern.slf4j.Slf4j;
+import org.pf4j.Extension;
+import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.transaction.TransactionManager;
+
+import java.util.List;
+import java.util.Map;
+
+public class ProtoInterfacePlugin extends PolyPlugin {
+    protected ProtoInterfacePlugin(PluginContext context) {
+        super(context);
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void stop() {
+
+    }
+
+    @Slf4j
+    @Extension
+    public static class ProtoInterface extends QueryInterface {
+
+
+        public ProtoInterface(TransactionManager transactionManager, Authenticator authenticator, long queryInterfaceId, String uniqueName, Map<String, String> settings, boolean supportsDml, boolean supportsDdl) {
+            super(transactionManager, authenticator, queryInterfaceId, uniqueName, settings, supportsDml, supportsDdl);
+        }
+
+        @Override
+        public List<QueryInterfaceSetting> getAvailableSettings() {
+            return null;
+        }
+
+        @Override
+        public void shutdown() {
+
+        }
+
+        @Override
+        public String getInterfaceType() {
+            return null;
+        }
+
+        @Override
+        protected void reloadSettings(List<String> updatedSettings) {
+
+        }
+
+        @Override
+        public void languageChange() {
+
+        }
+
+        @Override
+        public void run() {
+
+        }
+    }
 }
