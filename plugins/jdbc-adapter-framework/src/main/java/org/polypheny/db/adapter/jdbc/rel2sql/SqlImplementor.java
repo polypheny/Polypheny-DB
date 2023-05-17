@@ -553,7 +553,7 @@ public abstract class SqlImplementor {
                     }
                     switch ( literal.getPolyType().getFamily() ) {
                         case CHARACTER:
-                            return SqlLiteral.createCharString( (String) literal.getValue2(), POS );
+                            return SqlLiteral.createCharString( literal.value.asString().value, POS );
                         case NUMERIC:
                         case EXACT_NUMERIC:
                             return SqlLiteral.createExactNumeric( literal.value.asBigDecimal().value.toString(), POS );

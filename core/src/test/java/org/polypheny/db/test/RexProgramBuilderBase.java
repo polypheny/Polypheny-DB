@@ -142,7 +142,7 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public void addAll( Map<String, PolyValue> map ) {
+        public void addAll( Map<String, Object> map ) {
             throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 

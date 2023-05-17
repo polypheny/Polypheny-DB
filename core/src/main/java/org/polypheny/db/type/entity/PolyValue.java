@@ -301,6 +301,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isInteger() ) {
             return (PolyInteger) this;
         }
+        if ( isNumber() ) {
+            log.warn( "still not sure about this" );
+            return PolyInteger.of( this.asNumber().intValue() );
+        }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
@@ -371,6 +375,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isBigDecimal() ) {
             return (PolyBigDecimal) this;
         }
+        if ( isNumber() ) {
+            log.warn( "still not sure about this" );
+            return PolyBigDecimal.of( this.asNumber().bigDecimalValue() );
+        }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }
 
@@ -384,6 +392,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyFloat asFloat() {
         if ( isFloat() ) {
             return (PolyFloat) this;
+        }
+        if ( isNumber() ) {
+            log.warn( "still not sure about this" );
+            return PolyFloat.of( (float) this.asNumber().doubleValue() );
         }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }
@@ -417,6 +429,11 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isLong() ) {
             return (PolyLong) this;
         }
+        if ( isNumber() ) {
+            log.warn( "still not sure about this" );
+            return PolyLong.of( this.asNumber().longValue() );
+        }
+
         throw new GenericRuntimeException( "Cannot parse " + this );
     }
 

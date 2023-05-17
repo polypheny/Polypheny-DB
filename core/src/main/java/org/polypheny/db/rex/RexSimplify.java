@@ -1511,7 +1511,7 @@ public class RexSimplify {
         switch ( operand.getKind() ) {
             case LITERAL:
                 final RexLiteral literal = (RexLiteral) operand;
-                final Comparable value = literal.getValueAs( Comparable.class );
+                final PolyValue value = literal.getValueAs( Comparable.class );
                 final PolyType typeName = literal.getPolyType();
 
                 // First, try to remove the cast without changing the value.

@@ -819,7 +819,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             if ( statisticFields.get( column.id ) == null ) {
                 continue;
             }
-            StatisticColumn statisticColumn = createNewStatisticColumns( polyType, queryResult );
+            StatisticColumn statisticColumn = createStatisticColumn( polyType, queryResult );
             if ( statisticColumn != null ) {
                 put( queryResult, statisticColumn );
             }
@@ -827,7 +827,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private <T extends Comparable<?>> StatisticColumn createNewStatisticColumns( PolyType polyType, QueryResult queryResult ) {
+    private <T extends Comparable<?>> StatisticColumn createStatisticColumn( PolyType polyType, QueryResult queryResult ) {
         StatisticColumn statisticColumn = null;
         if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
             statisticColumn = new NumericalStatisticColumn( queryResult );
@@ -873,7 +873,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void addNewColumnStatistics( Map<Long, List<?>> changedValues, long i, PolyType polyType, QueryResult queryResult ) {
-        StatisticColumn statisticColumn = createNewStatisticColumns( polyType, queryResult );
+        StatisticColumn statisticColumn = createStatisticColumn( polyType, queryResult );
         if ( statisticColumn != null ) {
             statisticColumn.insert( (List) changedValues.get( i ) );
             put( queryResult, statisticColumn );

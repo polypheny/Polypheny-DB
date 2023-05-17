@@ -541,7 +541,10 @@ public class RexBuilder {
     }
 
 
-    boolean canRemoveCastFromLiteral( AlgDataType toType, Comparable<?> value, PolyType fromTypeName ) {
+    boolean canRemoveCastFromLiteral( AlgDataType toType, PolyValue value, PolyType fromTypeName ) {
+        if ( value == null ) {
+            return true;
+        }
         final PolyType sqlType = toType.getPolyType();
         if ( !RexLiteral.valueMatchesType( value, sqlType, false ) ) {
             return false;
@@ -549,8 +552,8 @@ public class RexBuilder {
         if ( toType.getPolyType() != fromTypeName && PolyTypeFamily.DATETIME.getTypeNames().contains( fromTypeName ) ) {
             return false;
         }
-        if ( value instanceof NlsString ) {
-            final int length = ((NlsString) value).getValue().length();
+        if ( value.isString() ) {
+            final int length = value.asString().getValue().length();
             switch ( toType.getPolyType() ) {
                 case CHAR:
                     return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
@@ -561,8 +564,8 @@ public class RexBuilder {
                     throw new AssertionError( toType );
             }
         }
-        if ( value instanceof ByteString ) {
-            final int length = ((ByteString) value).length();
+        if ( value.isBinary() ) {
+            final int length = value.asBinary().value.length();
             switch ( toType.getPolyType() ) {
                 case BINARY:
                     return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;

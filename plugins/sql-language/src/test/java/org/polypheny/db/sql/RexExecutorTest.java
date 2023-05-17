@@ -42,10 +42,10 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
@@ -56,8 +56,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot.SelfPopulatingList;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
 import org.polypheny.db.sql.language.fun.SqlMonotonicBinaryOperator;
@@ -84,11 +82,10 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
     protected void check( final Action action ) throws Exception {
-        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createSnapshot( "" );
+        Snapshot snapshot = Catalog.snapshot();
         FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( rootSchema.plus() )
                 .prepareContext( new ContextImpl(
-                        rootSchema,
+                        snapshot,
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -97,15 +94,14 @@ public class RexExecutorTest extends SqlLanguageDependent {
                         },
                         "",
                         0,
-                        0,
                         null ) )
                 .build();
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, Snapshot snapshot ) {
                         final RexBuilder rexBuilder = cluster.getRexBuilder();
-                        DataContext dataContext = Schemas.createDataContext( rootSchema );
+                        DataContext dataContext = Schemas.createDataContext( snapshot );
                         final RexExecutorImpl executor = new RexExecutorImpl( dataContext );
                         action.check( rexBuilder, executor );
                         return null;
@@ -380,7 +376,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
         @Override
-        public void addAll( Map<String, PolyValue> map ) {
+        public void addAll( Map<String, Object> map ) {
             throw new UnsupportedOperationException();
         }
 
@@ -404,13 +400,13 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
         @Override
-        public List<Map<Long, Object>> getParameterValues() {
+        public List<Map<Long, PolyValue>> getParameterValues() {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
-        public void setParameterValues( List<Map<Long, Object>> values ) {
+        public void setParameterValues( List<Map<Long, PolyValue>> values ) {
 
         }
 

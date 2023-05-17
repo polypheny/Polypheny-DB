@@ -62,10 +62,6 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
-import org.polypheny.db.type.entity.graph.PolyEdge;
-import org.polypheny.db.type.entity.graph.PolyGraph;
-import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.DateString;
@@ -344,14 +340,14 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     /**
      * @return whether value is appropriate for its type (we have rules about these things)
      */
-    public static boolean valueMatchesType( Comparable<?> value, PolyType typeName, boolean strict ) {
+    public static boolean valueMatchesType( PolyValue value, PolyType typeName, boolean strict ) {
         if ( value == null ) {
             return true;
         }
         switch ( typeName ) {
             case BOOLEAN:
                 // Unlike SqlLiteral, we do not allow boolean null.
-                return value instanceof Boolean;
+                return value.isBoolean();
             case NULL:
                 return false; // value should have been null
             case INTEGER: // not allowed -- use Decimal
@@ -366,17 +362,17 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case FLOAT:
             case REAL:
             case BIGINT:
-                return value instanceof BigDecimal;
+                return value.isNumber();
             case DATE:
-                return value instanceof DateString;
+                return value.isDate();
             case TIME:
-                return value instanceof TimeString;
+                return value.isTime();
             case TIME_WITH_LOCAL_TIME_ZONE:
-                return value instanceof TimeString;
+                return value.isTime();
             case TIMESTAMP:
-                return value instanceof TimestampString;
+                return value.isTimestamp();
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return value instanceof TimestampString;
+                return value.isTimestamp();
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
@@ -391,14 +387,14 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
                 // The value of a DAY-TIME interval (whatever the start and end units, even say HOUR TO MINUTE) is in milliseconds (perhaps fractional milliseconds). The value of a YEAR-MONTH interval is in months.
-                return value instanceof BigDecimal;
+                return value.isInterval();
             case VARBINARY: // not allowed -- use Binary
                 if ( strict ) {
                     throw Util.unexpected( typeName );
                 }
                 // fall through
             case BINARY:
-                return value instanceof ByteString;
+                return value.isBinary();
             case VARCHAR: // not allowed -- use Char
                 if ( strict ) {
                     throw Util.unexpected( typeName );
@@ -406,30 +402,28 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 // fall through
             case CHAR:
                 // A SqlLiteral's charset and collation are optional; not so a RexLiteral.
-                return (value instanceof NlsString)
-                        && (((NlsString) value).getCharset() != null)
-                        && (((NlsString) value).getCollation() != null);
+                return value.isString();
             case SYMBOL:
-                return value instanceof Enum;
+                return value.isSymbol();
             case ROW:
             case MULTISET:
             case ARRAY:
-                return value instanceof PolyList;
+                return value.isList();
             case ANY:
                 // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains an integer literal surrounded by a cast function.
                 return false;
             case GRAPH:
-                return value instanceof PolyGraph;
+                return value.isGraph();
             case NODE:
-                return value instanceof PolyNode;
+                return value.isNode();
             case EDGE:
-                return value instanceof PolyEdge;
+                return value.isEdge();
             case PATH:
-                return value instanceof PolyPath;
+                return value.isPath();
             case MAP:
-                return value instanceof Map;
+                return value.isMap();
             case DOCUMENT:
-                return value instanceof PolyValue;
+                return value.isDocument();
             default:
                 throw Util.unexpected( typeName );
         }
