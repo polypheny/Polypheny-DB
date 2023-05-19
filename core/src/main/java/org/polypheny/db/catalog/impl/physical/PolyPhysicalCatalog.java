@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.physical;
+package org.polypheny.db.catalog.impl.physical;
 
 import java.util.HashMap;
 import java.util.Map;

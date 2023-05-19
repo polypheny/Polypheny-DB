@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical;
+package org.polypheny.db.catalog.impl.logical;
 
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog;
+package org.polypheny.db.catalog.impl;
 
 import io.activej.serializer.annotations.SerializeClass;
-import org.polypheny.db.catalog.logical.DocumentCatalog;
-import org.polypheny.db.catalog.logical.GraphCatalog;
-import org.polypheny.db.catalog.logical.RelationalCatalog;
+import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
+import org.polypheny.db.catalog.impl.logical.GraphCatalog;
+import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @SerializeClass(subclasses = { GraphCatalog.class, RelationalCatalog.class, DocumentCatalog.class }) // required for deserialization

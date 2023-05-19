@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog;
+package org.polypheny.db.catalog.impl;
 
 import org.apache.calcite.linq4j.tree.Expression;
 

@@ -25,6 +25,7 @@ import io.activej.serializer.SerializerBuilder;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.lang.reflect.Type;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -55,10 +56,22 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 @Slf4j
 @EqualsAndHashCode
 @NonFinal
+@SerializeClass(subclasses = {
+        PolyInteger.class,
+        PolyFloat.class,
+        PolyDouble.class,
+        PolyBigDecimal.class,
+        PolyTimeStamp.class,
+        PolyTime.class,
+        PolyLong.class,
+        PolyBinary.class,
+        PolyNode.class,
+        PolyEdge.class,
+        PolyPath.class })
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
     @NonFinal
-    public static BinarySerializer<PolyValue> serializer = PolyValue.getAbstractBuilder().build( PolyValue.class );
+    public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get().build( PolyValue.class );
 
     @Serialize
     public boolean nullable;
@@ -78,7 +91,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    public PolyValue( @Deserialize("type") PolyType type, @Deserialize("nullable") boolean nullable ) {
+    public PolyValue(
+            @Deserialize("type") PolyType type,
+            @Deserialize("nullable") boolean nullable ) {
         this.type = type;
         this.nullable = nullable;
     }

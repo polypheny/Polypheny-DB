@@ -16,9 +16,12 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import io.activej.serializer.annotations.SerializeClass;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.impl.logical.GraphCatalog;
 
+@SerializeClass(subclasses = { GraphCatalog.class })
 public interface LogicalGraphCatalog extends LogicalCatalog {
 
     /**

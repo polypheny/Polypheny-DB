@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog;
+package org.polypheny.db.catalog.impl;
 
 import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
@@ -28,9 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.allocation.PolyAllocDocCatalog;
-import org.polypheny.db.catalog.allocation.PolyAllocGraphCatalog;
-import org.polypheny.db.catalog.allocation.PolyAllocRelCatalog;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -46,9 +45,12 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.logical.DocumentCatalog;
-import org.polypheny.db.catalog.logical.GraphCatalog;
-import org.polypheny.db.catalog.logical.RelationalCatalog;
+import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
+import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
+import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
+import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
+import org.polypheny.db.catalog.impl.logical.GraphCatalog;
+import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;

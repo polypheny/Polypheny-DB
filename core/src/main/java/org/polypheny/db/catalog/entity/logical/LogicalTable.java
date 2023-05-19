@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity.logical;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
@@ -49,6 +50,7 @@ public class LogicalTable extends LogicalEntity {
 
 
     @Serialize
+    @SerializeNullable
     public Long primaryKey;
 
 

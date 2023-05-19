@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical;
+package org.polypheny.db.catalog.impl.logical;
 
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -72,6 +72,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Getter
     public BinarySerializer<RelationalCatalog> serializer = PolySerializable.builder.get().build( RelationalCatalog.class );
 
+    public IdBuilder idBuilder = IdBuilder.getInstance();
+
     @Serialize
     @Getter
     public Map<Long, LogicalTable> tables;
@@ -80,7 +82,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Getter
     public Map<Long, LogicalColumn> columns;
 
-    @Serialize
     @Getter
     public Map<Long, AlgNode> nodes;
 
@@ -103,8 +104,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     public Map<Long, LogicalConstraint> constraints;
 
 
-    public IdBuilder idBuilder = IdBuilder.getInstance();
-
     @NonFinal
     @Builder.Default
     boolean openChanges = false;
@@ -119,8 +118,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             @Deserialize("columns") Map<Long, LogicalColumn> columns,
             @Deserialize("indexes") Map<Long, LogicalIndex> indexes,
             @Deserialize("keys") Map<Long, LogicalKey> keys,
-            @Deserialize("constraints") Map<Long, LogicalConstraint> constraints,
-            @Deserialize("nodes") Map<Long, AlgNode> nodes ) {
+            @Deserialize("constraints") Map<Long, LogicalConstraint> constraints ) {
         this.logicalNamespace = logicalNamespace;
 
         this.tables = tables;
@@ -128,12 +126,12 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         this.indexes = indexes;
         this.keys = keys;
         this.constraints = constraints;
-        this.nodes = nodes;
+        this.nodes = new HashMap<>();
     }
 
 
     public RelationalCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 

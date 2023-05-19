@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import io.activej.serializer.annotations.SerializeClass;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgCollation;
@@ -27,9 +28,9 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
@@ -37,6 +38,7 @@ import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.PolyType;
 
+@SerializeClass(subclasses = { RelationalCatalog.class })
 public interface LogicalRelationalCatalog extends LogicalCatalog {
 
     /**
@@ -240,7 +242,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     void deleteConstraint( long constraintId );
 
 
-
     /**
      * Updates the last time a materialized view has been refreshed.
      *
@@ -301,8 +302,6 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     Map<Long, LogicalTable> getTables();
 
     Map<Long, LogicalColumn> getColumns();
-
-    LogicalNamespace getLogicalNamespace();
 
     Map<Long, LogicalIndex> getIndexes();
 

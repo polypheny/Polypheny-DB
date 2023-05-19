@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog;
+package org.polypheny.db.catalog.impl;
 
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;

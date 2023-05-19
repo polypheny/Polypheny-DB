@@ -16,10 +16,13 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import io.activej.serializer.annotations.SerializeClass;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logistic.EntityType;
 
+@SerializeClass(subclasses = { DocumentCatalog.class })
 public interface LogicalDocumentCatalog extends LogicalCatalog {
 
     /**

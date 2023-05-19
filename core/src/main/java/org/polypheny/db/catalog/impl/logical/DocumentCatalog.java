@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.logical;
+package org.polypheny.db.catalog.impl.logical;
 
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
@@ -27,7 +27,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.PusherMap;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -45,7 +44,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     IdBuilder idBuilder = IdBuilder.getInstance();
     @Serialize
     @Getter
-    public PusherMap<Long, LogicalCollection> collections;
+    public Map<Long, LogicalCollection> collections;
     @Getter
     @Serialize
     public LogicalNamespace logicalNamespace;
@@ -60,7 +59,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
             @Deserialize("logicalNamespace") LogicalNamespace logicalNamespace,
             @Deserialize("collections") Map<Long, LogicalCollection> collections ) {
         this.logicalNamespace = logicalNamespace;
-        this.collections = new PusherMap<>( collections );
+        this.collections = new ConcurrentHashMap<>( collections );
 
     }
 

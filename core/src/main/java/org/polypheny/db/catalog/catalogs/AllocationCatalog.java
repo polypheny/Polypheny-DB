@@ -16,8 +16,13 @@
 
 package org.polypheny.db.catalog.catalogs;
 
+import io.activej.serializer.annotations.SerializeClass;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
+import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
+import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
 
+@SerializeClass(subclasses = { PolyAllocDocCatalog.class, PolyAllocGraphCatalog.class, PolyAllocRelCatalog.class })
 public interface AllocationCatalog {
 
     LogicalNamespace getNamespace();
