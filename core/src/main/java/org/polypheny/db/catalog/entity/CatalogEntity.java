@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
 import java.util.List;
 import lombok.Getter;
@@ -48,14 +49,20 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
     @Serialize
     public long id;
+
     @Serialize
     public EntityType entityType;
+
     @Serialize
     public NamespaceType namespaceType;
+
     @Serialize
+    @SerializeNullable
     public String name;
+
     @Serialize
     public long namespaceId;
+
     @Serialize
     public boolean modifiable;
 

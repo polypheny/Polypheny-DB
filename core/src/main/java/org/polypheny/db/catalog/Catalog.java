@@ -20,6 +20,7 @@ package org.polypheny.db.catalog;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -106,7 +107,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
-    public abstract <S extends StoreCatalog> S getStoreSnapshot( long id );
+    public abstract <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id );
 
     public abstract void addStoreSnapshot( StoreCatalog snapshot );
 

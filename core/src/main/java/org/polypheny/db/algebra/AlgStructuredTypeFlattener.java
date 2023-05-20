@@ -872,7 +872,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         }
 
         AllocationEntity alloc = alg.entity.unwrap( AllocationEntity.class );
-        Convention convention = Catalog.getInstance().getStoreSnapshot( alloc.namespaceId ).getNamespace( alloc.id ).getConvention();
+        Convention convention = Catalog.getInstance().getStoreSnapshot( alloc.namespaceId ).orElseThrow().getNamespace( alloc.id ).getConvention();
         if ( convention != null ) {
             // else we rely on BindableScan
             convention.register( alg.getCluster().getPlanner() );

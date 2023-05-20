@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -27,19 +28,25 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
+@Value
 public class PolyBoolean extends PolyValue {
 
-    public static final PolyValue TRUE = PolyBoolean.of( true );
-    public static final PolyValue FALSE = PolyBoolean.of( false );
+    public static final PolyBoolean TRUE = PolyBoolean.of( true );
+    public static final PolyBoolean FALSE = PolyBoolean.of( false );
 
     @Serialize
+    @SerializeNullable
     public Boolean value;
 
 
     public PolyBoolean( @Deserialize("value") Boolean value ) {
         super( PolyType.BOOLEAN, true );
         this.value = value;
+    }
+
+
+    public static PolyBoolean of( Boolean value ) {
+        return new PolyBoolean( value );
     }
 
 

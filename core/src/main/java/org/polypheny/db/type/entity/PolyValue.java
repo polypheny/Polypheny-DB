@@ -21,12 +21,11 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SerializerBuilder;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import io.activej.serializer.annotations.SerializeClass;
 import java.lang.reflect.Type;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
@@ -37,15 +36,10 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
-import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
-import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
-import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -56,39 +50,42 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 @Slf4j
 @EqualsAndHashCode
 @NonFinal
-@SerializeClass(subclasses = {
+/*@SerializeClass( subclasses = {
         PolyInteger.class,
         PolyFloat.class,
         PolyDouble.class,
         PolyBigDecimal.class,
         PolyTimeStamp.class,
+        PolyBoolean.class,
         PolyTime.class,
+        PolyString.class,
         PolyLong.class,
         PolyBinary.class,
         PolyNode.class,
         PolyEdge.class,
-        PolyPath.class })
+        PolyPath.class })*/ // add on Constructor already exists exception
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
-    @NonFinal
-    public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get().build( PolyValue.class );
+    public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get().with( PolyValue.class, ctx -> new PolyValueSerializerDef() ).withSubclasses( PolyValue.class, List.of(
+            PolyInteger.class,
+            PolyFloat.class,
+            PolyDouble.class,
+            PolyBigDecimal.class,
+            PolyTimeStamp.class,
+            PolyBoolean.class,
+            PolyTime.class,
+            PolyString.class,
+            PolyLong.class,
+            PolyBinary.class,
+            PolyNode.class,
+            PolyEdge.class,
+            PolyPath.class
+    ) ).build( PolyValue.class );
 
     @Serialize
     public boolean nullable;
     @Serialize
     public PolyType type;
-
-
-    public static SerializerBuilder getAbstractBuilder() {
-
-        return PolySerializable.builder.get()
-                .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
-                .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
-                .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
-                .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
-                .with( PolyDouble.class, ctx -> new PolyDoubleSerializerDef() )
-                .with( PolyFloat.class, ctx -> new PolyFloatSerializerDef() );
-    }
 
 
     public PolyValue(
@@ -235,45 +232,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static PolyValue deserialize( String json ) {
         return PolySerializable.deserialize( json, PolyValue.class );
-    }
-
-
-    public static PolyValue deserialize( PolyType type, String json ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyBoolean.class ) );
-            case VARCHAR:
-                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyString.class ) );
-            case DOCUMENT:
-                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyDocument.class ) );
-            case FLOAT:
-                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyFloat.class ) );
-            case DOUBLE:
-                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyDouble.class ) );
-            case INTEGER:
-                return PolySerializable.deserialize( json, getAbstractBuilder().build( PolyInteger.class ) );
-        }
-        throw new NotImplementedException();
-    }
-
-
-    public static String serialize( PolyValue value ) {
-        switch ( value.type ) {
-            case BOOLEAN:
-                return PolySerializable.serialize( getAbstractBuilder().build( PolyBoolean.class ), (PolyBoolean) value );
-            case VARCHAR:
-                return PolySerializable.serialize( getAbstractBuilder().build( PolyString.class ), (PolyString) value );
-            case DOCUMENT:
-                return PolySerializable.serialize( getAbstractBuilder().build( PolyDocument.class ), (PolyDocument) value );
-            case FLOAT:
-                return PolySerializable.serialize( getAbstractBuilder().build( PolyFloat.class ), (PolyFloat) value );
-            case DOUBLE:
-                return PolySerializable.serialize( getAbstractBuilder().build( PolyDouble.class ), (PolyDouble) value );
-            case INTEGER:
-                return PolySerializable.serialize( getAbstractBuilder().build( PolyInteger.class ), (PolyInteger) value );
-        }
-
-        throw new NotImplementedException();
     }
 
 
@@ -650,13 +608,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 @Override
                 public void encode( BinaryOutput out, PolyValue item ) {
                     out.writeUTF8( item.type.getTypeName() );
-                    out.writeUTF8( PolyValue.serialize( item ) );
+                    out.writeUTF8( item.serialize() );
                 }
 
 
                 @Override
                 public PolyValue decode( BinaryInput in ) throws CorruptedDataException {
-                    return PolyValue.deserialize( PolyType.valueOf( in.readUTF8() ), in.readUTF8() );
+                    PolyType type = PolyType.valueOf( in.readUTF8() );
+                    return PolySerializable.deserialize( in.readUTF8(), PolySerializable.builder.get().build( PolyValue.classFrom( type ) ) );
                 }
             };
         }

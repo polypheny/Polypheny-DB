@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
@@ -423,7 +424,7 @@ public class PolyphenyDb {
         Catalog.resetDocker = resetDocker;
         Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
         Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
-        Catalog catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
+        Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
         if ( catalog == null ) {
             throw new RuntimeException( "There was no catalog submitted, aborting." );
         }

@@ -23,7 +23,7 @@ public enum Collation {
     CASE_SENSITIVE( 1 ),
     CASE_INSENSITIVE( 2 );
 
-    private final int id;
+    public final int id;
 
 
     Collation( int id ) {

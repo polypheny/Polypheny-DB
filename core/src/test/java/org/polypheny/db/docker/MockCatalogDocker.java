@@ -19,6 +19,7 @@ package org.polypheny.db.docker;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -36,8 +37,8 @@ public class MockCatalogDocker extends MockCatalog {
 
 
     @Override
-    public <S extends StoreCatalog> S getStoreSnapshot( long id ) {
-        return null;
+    public <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id ) {
+        return Optional.empty();
     }
 
 

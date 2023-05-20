@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Getter;
@@ -121,12 +122,12 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             @Deserialize("constraints") Map<Long, LogicalConstraint> constraints ) {
         this.logicalNamespace = logicalNamespace;
 
-        this.tables = tables;
-        this.columns = columns;
-        this.indexes = indexes;
-        this.keys = keys;
-        this.constraints = constraints;
-        this.nodes = new HashMap<>();
+        this.tables = new ConcurrentHashMap<>( tables );
+        this.columns = new ConcurrentHashMap<>( columns );
+        this.indexes = new ConcurrentHashMap<>( indexes );
+        this.keys = new ConcurrentHashMap<>( keys );
+        this.constraints = new ConcurrentHashMap<>( constraints );
+        this.nodes = new ConcurrentHashMap<>();
     }
 
 

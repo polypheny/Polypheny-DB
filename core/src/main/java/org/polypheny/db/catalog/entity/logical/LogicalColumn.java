@@ -92,7 +92,6 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
     @SerializeNullable
     public CatalogDefaultValue defaultValue;
 
-    @Serialize
     @EqualsAndHashCode.Exclude
     // lombok uses getter methods to compare objects
     // and this method depends on the catalog, which can lead to nullpointers -> doNotUseGetters

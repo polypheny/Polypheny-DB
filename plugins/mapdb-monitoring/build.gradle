@@ -10,7 +10,10 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
 
-    implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
+    implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
+    implementation(group: "org.mapdb", name: "mapdb", version: mapdb_version) {
+        exclude group: "com.google.guava"
+    }  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

@@ -23,6 +23,7 @@ import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
@@ -85,9 +86,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Getter
     public final Map<Long, CatalogQueryInterface> interfaces;
 
-    @Serialize
     @Getter
-    public final Map<Long, StoreCatalog> snapshots;
+    public final Map<Long, StoreCatalog> storeCatalogs;
 
     private final IdBuilder idBuilder = IdBuilder.getInstance();
 
@@ -95,11 +95,11 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Getter
     private Snapshot snapshot;
+    private String backup;
 
 
     public PolyCatalog() {
         this(
-                new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
@@ -113,7 +113,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("users") Map<Long, CatalogUser> users,
             @Deserialize("logicalCatalogs") Map<Long, LogicalCatalog> logicalCatalogs,
             @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
-            @Deserialize("snapshots") Map<Long, StoreCatalog> snapshots,
             @Deserialize("adapters") Map<Long, CatalogAdapter> adapters,
             @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
 
@@ -122,7 +121,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.allocationCatalogs = allocationCatalogs;
         this.adapters = adapters;
         this.interfaces = interfaces;
-        this.snapshots = snapshots;
+        this.storeCatalogs = new HashMap<>();
         updateSnapshot();
     }
 
@@ -165,7 +164,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     private void addNamespaceIfNecessary( AllocationEntity entity ) {
-        Adapter adapter = AdapterManager.getInstance().getAdapter( entity.adapterId );
+        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( entity.adapterId );
 
         if ( adapter.getCurrentNamespace() == null || adapter.getCurrentNamespace().getId() != entity.namespaceId ) {
             adapter.updateNamespace( entity.name, entity.namespaceId );
@@ -173,7 +172,10 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // re-add physical namespace, we could check first, but not necessary
 
-        getStoreSnapshot( entity.adapterId ).addNamespace( entity.namespaceId, adapter.getCurrentNamespace() );
+        if ( getStoreSnapshot( entity.adapterId ).isPresent() ) {
+            getStoreSnapshot( entity.adapterId ).get().addNamespace( entity.namespaceId, adapter.getCurrentNamespace() );
+        }
+
     }
 
 
@@ -184,12 +186,30 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     public void commit() {
         log.debug( "commit" );
+        this.backup = serialize();
+
         updateSnapshot();
     }
 
 
     public void rollback() {
+        PolyCatalog old = PolySerializable.deserialize( backup, getSerializer() );
+
+        users.clear();
+        users.putAll( old.users );
+        logicalCatalogs.clear();
+        logicalCatalogs.putAll( old.logicalCatalogs );
+        allocationCatalogs.clear();
+        allocationCatalogs.putAll( old.allocationCatalogs );
+        adapters.clear();
+        adapters.putAll( old.adapters );
+        interfaces.clear();
+        interfaces.putAll( old.interfaces );
+
         log.debug( "rollback" );
+
+        updateSnapshot();
+
     }
 
 
@@ -250,14 +270,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public StoreCatalog getStoreSnapshot( long id ) {
-        return snapshots.get( id );
+    public <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id ) {
+        return Optional.ofNullable( (S) storeCatalogs.get( id ) );
     }
 
 
     @Override
     public void addStoreSnapshot( StoreCatalog snapshot ) {
-        snapshots.put( snapshot.adapterId, snapshot );
+        storeCatalogs.put( snapshot.adapterId, snapshot );
     }
 
 

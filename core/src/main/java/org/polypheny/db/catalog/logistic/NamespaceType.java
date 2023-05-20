@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.logistic;
 
 import com.google.gson.annotations.SerializedName;
-import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 public enum NamespaceType {
@@ -30,7 +29,7 @@ public enum NamespaceType {
 
     // GRAPH, DOCUMENT, ...
 
-    private final int id;
+    public final int id;
 
 
     NamespaceType( int id ) {
@@ -69,7 +68,7 @@ public enum NamespaceType {
     }
 
 
-    public AlgTrait getModelTrait() {
+    public ModelTrait getModelTrait() {
         if ( this == NamespaceType.RELATIONAL ) {
             return ModelTrait.RELATIONAL;
         } else if ( this == NamespaceType.DOCUMENT ) {
