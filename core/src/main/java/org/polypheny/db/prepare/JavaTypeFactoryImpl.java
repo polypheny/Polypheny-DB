@@ -37,7 +37,6 @@ package org.polypheny.db.prepare;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,15 +63,14 @@ import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -215,7 +213,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case INTERVAL_YEAR:
                 case INTERVAL_YEAR_MONTH:
                 case INTERVAL_MONTH:
-                    return type.isNullable() ? PolyInteger.class : PolyInteger.class;
+                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
                 case TIMESTAMP:
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 case BIGINT:
@@ -229,28 +227,28 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case INTERVAL_MINUTE:
                 case INTERVAL_MINUTE_SECOND:
                 case INTERVAL_SECOND:
-                    return type.isNullable() ? PolyLong.class : PolyLong.class;
+                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
                 case SMALLINT:
-                    return type.isNullable() ? PolyInteger.class : PolyInteger.class;
+                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
                 case TINYINT:
-                    return type.isNullable() ? PolyInteger.class : PolyInteger.class;
+                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
                 case DECIMAL:
-                    return BigDecimal.class;
+                    return PolyBigDecimal.class;
                 case BOOLEAN:
                     return type.isNullable() ? PolyBoolean.class : PolyBoolean.class;
                 case DOUBLE:
-                    return type.isNullable() ? PolyDouble.class : PolyDouble.class;
+                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
                 case FLOAT: // sic
-                    return type.isNullable() ? PolyFloat.class : PolyFloat.class;
+                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
                 case REAL:
-                    return type.isNullable() ? PolyFloat.class : PolyFloat.class;
+                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
                 case BINARY:
                 case VARBINARY:
                     return PolyBinary.class;
                 case GEOMETRY:
                     return GeoFunctions.Geom.class;
                 case SYMBOL:
-                    return Enum.class;
+                    return PolySymbol.class;
                 case GRAPH:
                     return PolyGraph.class;
                 case EDGE:

@@ -28,7 +28,7 @@ import org.polypheny.db.plugins.PolyPluginManager;
 
 public interface PolySerializable {
 
-    Supplier<SerializerBuilder> builder = () -> SerializerBuilder.create( DefiningClassLoader.create( PolyPluginManager.getMainClassLoader() ) );
+    Supplier<SerializerBuilder> builder = () -> SerializerBuilder.create( DefiningClassLoader.create( PolyPluginManager.getMainClassLoader() == null ? ClassLoader.getPlatformClassLoader() : PolyPluginManager.getMainClassLoader() ) );
 
 
     Map<Class<?>, BinarySerializer<?>> cache = new HashMap<>();

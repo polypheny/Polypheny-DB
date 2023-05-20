@@ -87,7 +87,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     }
 
 
-    public static <T> PolyphenyDbSignature<T> from( PolyImplementation prepareQuery ) {
+    public static <T> PolyphenyDbSignature<T> from( PolyImplementation<T> prepareQuery ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         if ( prepareQuery.rowType != null ) {
             for ( AlgDataTypeField field : prepareQuery.rowType.getFieldList() ) {
@@ -113,7 +113,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
                 null,
                 ImmutableList.of(),
                 prepareQuery.getMaxRowCount(),
-                (Bindable<T>) prepareQuery.getBindable(),
+                prepareQuery.getBindable(),
                 prepareQuery.getStatementType(),
                 prepareQuery.getExecutionTimeMonitor(),
                 prepareQuery.getNamespaceType()

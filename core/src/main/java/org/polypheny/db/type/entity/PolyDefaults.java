@@ -35,6 +35,7 @@ public interface PolyDefaults {
         put( PolyFloat.class, float.class );
         put( PolyDouble.class, double.class );
         put( PolyString.class, String.class );
+        put( PolyBigDecimal.class, long.class );
     }};
 
 }

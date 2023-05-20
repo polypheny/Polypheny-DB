@@ -535,7 +535,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
             AlgRoot optimalRoot = new AlgRoot( optimalNode, rowType, parameterizedRoot.kind, fields, algCollation( parameterizedRoot.alg ) );
 
-            PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
+            PreparedResult<?> preparedResult = implement( optimalRoot, parameterRowType );
 
             // Cache implementation
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {

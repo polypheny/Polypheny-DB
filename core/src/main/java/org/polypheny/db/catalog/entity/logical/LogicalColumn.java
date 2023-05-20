@@ -86,6 +86,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
     public boolean nullable;
 
     @Serialize
+    @SerializeNullable
     public Collation collation;
 
     @Serialize

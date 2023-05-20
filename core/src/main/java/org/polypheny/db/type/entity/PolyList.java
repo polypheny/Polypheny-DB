@@ -17,8 +17,15 @@
 package org.polypheny.db.type.entity;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -96,6 +103,35 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     @Override
     public PolySerializable copy() {
         return null;
+    }
+
+
+    public static class PolyListSerializerDef extends SimpleSerializerDef<PolyList<?>> {
+
+        @Override
+        protected BinarySerializer<PolyList<?>> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyList<?> item ) {
+                    out.writeLong( item.size() );
+                    for ( PolyValue entry : item ) {
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry ) );
+                    }
+                }
+
+
+                @Override
+                public PolyList<?> decode( BinaryInput in ) throws CorruptedDataException {
+                    List<PolyValue> list = new ArrayList<>();
+                    long size = in.readLong();
+                    for ( long i = 0; i < size; i++ ) {
+                        list.add( PolySerializable.deserialize( in.readUTF8(), serializer ) );
+                    }
+                    return PolyList.of( list );
+                }
+            };
+        }
+
     }
 
 }

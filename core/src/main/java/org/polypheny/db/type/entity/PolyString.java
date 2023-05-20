@@ -33,7 +33,7 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
+@Value
 public class PolyString extends PolyValue {
 
 
@@ -44,6 +44,11 @@ public class PolyString extends PolyValue {
     public PolyString( @Deserialize("value") String value ) {
         super( PolyType.VARCHAR, true );
         this.value = value;
+    }
+
+
+    public static PolyString of( String value ) {
+        return new PolyString( value );
     }
 
 

@@ -24,8 +24,8 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.lang.reflect.Type;
-import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
@@ -36,10 +36,17 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
+import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
+import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
+import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
+import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
+import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -50,12 +57,15 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 @Slf4j
 @EqualsAndHashCode
 @NonFinal
-/*@SerializeClass( subclasses = {
+@SerializeClass(subclasses = {
         PolyInteger.class,
         PolyFloat.class,
         PolyDouble.class,
         PolyBigDecimal.class,
         PolyTimeStamp.class,
+        PolyDocument.class,
+        PolyMap.class,
+        PolyList.class,
         PolyBoolean.class,
         PolyTime.class,
         PolyString.class,
@@ -63,27 +73,24 @@ import org.polypheny.db.type.entity.relational.PolyMap;
         PolyBinary.class,
         PolyNode.class,
         PolyEdge.class,
-        PolyPath.class })*/ // add on Constructor already exists exception
+        PolyPath.class }) // add on Constructor already exists exception
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
-    public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get().with( PolyValue.class, ctx -> new PolyValueSerializerDef() ).withSubclasses( PolyValue.class, List.of(
-            PolyInteger.class,
-            PolyFloat.class,
-            PolyDouble.class,
-            PolyBigDecimal.class,
-            PolyTimeStamp.class,
-            PolyBoolean.class,
-            PolyTime.class,
-            PolyString.class,
-            PolyLong.class,
-            PolyBinary.class,
-            PolyNode.class,
-            PolyEdge.class,
-            PolyPath.class
-    ) ).build( PolyValue.class );
+    public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get()
+            .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
+            .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
+            .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
+            .with( PolyFloat.class, ctx -> new PolyFloatSerializerDef() )
+            .with( PolyDouble.class, ctx -> new PolyDoubleSerializerDef() )
+            .with( PolyMap.class, ctx -> new PolyMap.PolyDocumentSerializerDef() )
+            .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
+            .with( PolyList.class, ctx -> new PolyListSerializerDef() )
+            .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
+            .build( PolyValue.class );
 
     @Serialize
     public boolean nullable;
+
     @Serialize
     public PolyType type;
 
@@ -101,8 +108,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    public static Type ofPrimitive( Type type ) {
-        return PolyDefaults.PRIMITIVES.get( type );
+    public static Type ofPrimitive( Type input, PolyType polyType ) {
+        Type type = PolyDefaults.PRIMITIVES.get( input );
+
+        if ( type != null ) {
+            return type;
+        }
+
+        return PolyDefaults.PRIMITIVES.get( PolyValue.classFrom( polyType ) );
     }
 
 
@@ -475,7 +488,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     @NonNull
     public PolyMap<PolyValue, PolyValue> asMap() {
-        if ( isMap() ) {
+        if ( isMap() || isDocument() ) {
             return (PolyMap<PolyValue, PolyValue>) this;
         }
         throw new GenericRuntimeException( "Cannot parse " + this );

@@ -1323,7 +1323,7 @@ public class MqlToAlgConverter {
                     map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
                 }
 
-                return PolyDocument.of( map );
+                return PolyDocument.ofDocument( map );
             case ARRAY:
                 List<PolyValue> list = new ArrayList<>();
                 for ( BsonValue bson : value.asArray() ) {

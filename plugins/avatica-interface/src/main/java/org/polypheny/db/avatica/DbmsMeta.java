@@ -196,10 +196,10 @@ public class DbmsMeta implements ProtobufMeta {
                         StatementType.SELECT,
                         new ExecutionTimeMonitor(),
                         NamespaceType.RELATIONAL ) {
-                    /*@Override
+                    @Override
                     public Enumerable<Object> enumerable( DataContext dataContext ) {
                         return Linq4j.asEnumerable( firstFrame.rows );
-                    }*/
+                    }
                 };
         return MetaResultSet.create( ch.id, statementHandle.id, true, signature, firstFrame );
     }
@@ -1143,7 +1143,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private Iterable<Object> createIterable( DataContext dataContext, PolyphenyDbSignature signature ) {
+    private Iterable<Object> createIterable( DataContext dataContext, PolyphenyDbSignature<?> signature ) {
         //noinspection unchecked
         final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
         return polyphenyDbSignature.enumerable( dataContext );
@@ -1299,7 +1299,7 @@ public class DbmsMeta implements ProtobufMeta {
                         // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
                         //  Remember that fetch is synchronized
                         maxRowsInFirstFrame != 0 && SEND_FIRST_FRAME_WITH_RESPONSE
-                                ? fetch( h, 0, Math.min( Math.max( statementHandle.getMaxRowCount(), maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                ? fetch( h, 0, Math.max( statementHandle.getMaxRowCount(), maxRowsInFirstFrame ) )
                                 : null //Frame.MORE // Send first frame to together with the response to save a fetch call
                 ) );
             } catch ( NoSuchStatementException e ) {
@@ -1487,8 +1487,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     private PolyphenyDbStatementHandle getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
         final PolyphenyDbStatementHandle statement;
-        if ( openStatements.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-            statement = openStatements.get( h.connectionId + "::" + Integer.toString( h.id ) );
+        if ( openStatements.containsKey( h.connectionId + "::" + h.id ) ) {
+            statement = openStatements.get( h.connectionId + "::" + h.id );
         } else {
             throw new NoSuchStatementException( h );
         }

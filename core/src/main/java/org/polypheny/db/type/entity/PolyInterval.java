@@ -59,7 +59,7 @@ public class PolyInterval extends PolyValue {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyBigDecimal.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyInterval.class, Expressions.constant( value ) );
     }
 
 

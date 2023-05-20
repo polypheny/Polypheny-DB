@@ -68,7 +68,7 @@ dependencies {
         exclude group: "com.github.spotbugs"
     }
 
-    api group: 'io.activej', name: 'activej-serializer', version: '5.5-rc3' // Apache 2.0
+    api group: 'io.activej', name: 'activej-serializer', version: activej_serializer_version // Apache 2.0
 
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version

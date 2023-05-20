@@ -74,7 +74,7 @@ public class StatisticTable {
         this.tableId = tableId;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
+        if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
             LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
             this.table = catalogTable.name;
             this.namespaceType = catalogTable.namespaceType;

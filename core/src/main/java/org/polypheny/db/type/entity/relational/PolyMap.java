@@ -16,7 +16,14 @@
 
 package org.polypheny.db.type.entity.relational;
 
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Serialize;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -34,7 +41,7 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
+@Value(staticConstructor = "of")
 @NonFinal
 public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue implements Map<K, V> {
 
@@ -99,6 +106,38 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyMap.class );
+    }
+
+
+    public static class PolyDocumentSerializerDef extends SimpleSerializerDef<PolyMap<?, ?>> {
+
+        @Override
+        protected BinarySerializer<PolyMap<? extends PolyValue, ? extends PolyValue>> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyMap<? extends PolyValue, ? extends PolyValue> item ) {
+                    out.writeLong( item.size() );
+                    for ( Entry<? extends PolyValue, ? extends PolyValue> entry : item.entrySet() ) {
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getKey() ) );
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getValue() ) );
+                    }
+                }
+
+
+                @Override
+                public PolyMap<? extends PolyValue, ? extends PolyValue> decode( BinaryInput in ) throws CorruptedDataException {
+                    Map<PolyValue, PolyValue> map = new HashMap<>();
+                    long size = in.readLong();
+                    for ( long i = 0; i < size; i++ ) {
+                        map.put(
+                                PolySerializable.deserialize( in.readUTF8(), serializer ),
+                                PolySerializable.deserialize( in.readUTF8(), serializer ) );
+                    }
+                    return PolyMap.of( map );
+                }
+            };
+        }
+
     }
 
 }

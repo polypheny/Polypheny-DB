@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -84,7 +85,7 @@ public class PhysicalTable extends PhysicalEntity {
     @Override
     public Expression asExpression() {
         //return Expressions.call( Catalog.PHYSICAL_EXPRESSION, "getPhysicalTable", Expressions.constant( id ) );
-        return Expressions.call( Catalog.PHYSICAL_EXPRESSION.apply( adapterId ), "getPhysical", Expressions.constant( id ) );
+        return Expressions.call( Expressions.convert_( Expressions.call( Catalog.PHYSICAL_EXPRESSION.apply( adapterId ), "get" ), StoreCatalog.class ), "getPhysical", Expressions.constant( id ) );
     }
 
 }

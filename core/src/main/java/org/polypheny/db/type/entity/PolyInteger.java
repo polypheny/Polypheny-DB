@@ -82,12 +82,6 @@ public class PolyInteger extends PolyNumber {
 
 
     @Override
-    public String toString() {
-        return value.toString();
-    }
-
-
-    @Override
     public int intValue() {
         return value;
     }
@@ -138,6 +132,12 @@ public class PolyInteger extends PolyNumber {
             };
         }
 
+    }
+
+
+    @Override
+    public String toString() {
+        return value.toString();
     }
 
 }

@@ -16,6 +16,12 @@
 
 package org.polypheny.db.type.entity;
 
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -92,6 +98,27 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyBigDecimal.class );
+    }
+
+
+    public static class PolyBigDecimalSerializerDef extends SimpleSerializerDef<PolyBigDecimal> {
+
+        @Override
+        protected BinarySerializer<PolyBigDecimal> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyBigDecimal item ) {
+                    out.writeUTF8( item.value.toString() );
+                }
+
+
+                @Override
+                public PolyBigDecimal decode( BinaryInput in ) throws CorruptedDataException {
+                    return new PolyBigDecimal( new BigDecimal( in.readUTF8() ), false );
+                }
+            };
+        }
+
     }
 
 }

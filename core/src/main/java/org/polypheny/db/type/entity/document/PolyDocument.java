@@ -52,7 +52,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    public static PolyDocument of( Map<PolyString, PolyValue> value ) {
+    public static PolyDocument ofDocument( Map<PolyString, PolyValue> value ) {
         return new PolyDocument( value );
     }
 
@@ -90,8 +90,8 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
                 public void encode( BinaryOutput out, PolyDocument item ) {
                     out.writeLong( item.size() );
                     for ( Entry<PolyString, PolyValue> entry : item.entrySet() ) {
-                        out.writeUTF8( entry.getKey().serialize() );
-                        out.writeUTF8( entry.getValue().serialize() );
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getKey() ) );
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getValue() ) );
                     }
                 }
 
@@ -102,10 +102,10 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
                     long size = in.readLong();
                     for ( long i = 0; i < size; i++ ) {
                         map.put(
-                                PolyValue.deserialize( in.readUTF8() ).asString(),
-                                PolyValue.deserialize( in.readUTF8() ) );
+                                PolySerializable.deserialize( in.readUTF8(), serializer ).asString(),
+                                PolySerializable.deserialize( in.readUTF8(), serializer ) );
                     }
-                    return PolyDocument.of( map );
+                    return PolyDocument.ofDocument( map );
                 }
             };
         }
