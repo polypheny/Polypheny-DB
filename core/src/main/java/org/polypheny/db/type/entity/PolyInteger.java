@@ -114,6 +114,24 @@ public class PolyInteger extends PolyNumber {
     }
 
 
+    @Override
+    public PolyInteger increment() {
+        return PolyInteger.of( value + 1 );
+    }
+
+
+    @Override
+    public PolyInteger divide( PolyNumber other ) {
+        return PolyInteger.of( value / other.intValue() );
+    }
+
+
+    @Override
+    public PolyInteger multiply( PolyNumber other ) {
+        return PolyInteger.of( value * other.intValue() );
+    }
+
+
     public static class PolyIntegerSerializerDef extends SimpleSerializerDef<PolyInteger> {
 
         @Override

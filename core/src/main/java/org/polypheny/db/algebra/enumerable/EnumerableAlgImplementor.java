@@ -192,7 +192,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                     Expressions.fieldDecl(
                             field.getModifiers(),
                             Expressions.parameter( field.getType(), field.getName() ),
-                            PolyValue.getInitial( field.getType() ).asExpression() ) );
+                            PolyValue.getInitialExpression( field.getType() ) ) );
         }
 
         // Constructor:

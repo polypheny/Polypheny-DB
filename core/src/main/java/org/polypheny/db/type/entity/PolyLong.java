@@ -95,8 +95,21 @@ public class PolyLong extends PolyNumber {
     }
 
 
+    @Override
     public PolyLong increment() {
         return PolyLong.of( value + 1 );
+    }
+
+
+    @Override
+    public PolyLong divide( PolyNumber other ) {
+        return PolyLong.of( value / other.longValue() );
+    }
+
+
+    @Override
+    public PolyLong multiply( PolyNumber other ) {
+        return PolyLong.of( value * other.longValue() );
     }
 
 

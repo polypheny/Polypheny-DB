@@ -94,6 +94,24 @@ public class PolyDouble extends PolyNumber {
     }
 
 
+    @Override
+    public PolyDouble increment() {
+        return PolyDouble.of( value + 1 );
+    }
+
+
+    @Override
+    public PolyDouble divide( PolyNumber other ) {
+        return PolyDouble.of( value / other.doubleValue() );
+    }
+
+
+    @Override
+    public PolyDouble multiply( PolyNumber other ) {
+        return PolyDouble.of( value * other.doubleValue() );
+    }
+
+
     public static class PolyDoubleSerializerDef extends SimpleSerializerDef<PolyDouble> {
 
         @Override

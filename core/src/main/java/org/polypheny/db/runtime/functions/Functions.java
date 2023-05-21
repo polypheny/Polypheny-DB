@@ -117,6 +117,7 @@ import org.polypheny.db.runtime.Like;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -157,7 +158,7 @@ public class Functions {
                     enumerators.add( Linq4j.enumerator( (List) list ) );
                 }
                 final Enumerator<List<Object>> product = Linq4j.product( enumerators );
-                return new AbstractEnumerable<Object[]>() {
+                return new AbstractEnumerable<>() {
                     @Override
                     public Enumerator<Object[]> enumerator() {
                         return Linq4j.transform( product, List::toArray );
@@ -1334,7 +1335,10 @@ public class Functions {
                 .divide( b1, RoundingMode.HALF_DOWN ).longValue();
     }
 
-    // *
+
+    public static PolyNumber divide( PolyNumber b0, PolyNumber b1 ) {
+        return b0.divide( b1 );
+    }
 
 
     /**
@@ -1410,6 +1414,11 @@ public class Functions {
         }
 
         throw notArithmetic( "*", b0, b1 );
+    }
+
+
+    public static PolyNumber multiply( PolyNumber b0, PolyNumber b1 ) {
+        return b0.multiply( b1 );
     }
 
 
@@ -3082,6 +3091,11 @@ public class Functions {
      */
     public static boolean isNotFalse( Boolean b ) {
         return b == null || b;
+    }
+
+
+    public static boolean isNotFalse( PolyBoolean b ) {
+        return b == null || b.value;
     }
 
 

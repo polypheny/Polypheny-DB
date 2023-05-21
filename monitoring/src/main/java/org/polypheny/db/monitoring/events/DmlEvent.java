@@ -16,7 +16,6 @@
 
 package org.polypheny.db.monitoring.events;
 
-import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,13 +29,13 @@ public class DmlEvent extends StatementEvent {
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) DmlDataPoint.class );
+        return List.of( (Class<T>) DmlDataPoint.class );
     }
 
 
     @Override
     public List<MonitoringDataPoint> analyze() {
-        return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
+        return List.of( DmlEventAnalyzer.analyze( this ) );
     }
 
 }

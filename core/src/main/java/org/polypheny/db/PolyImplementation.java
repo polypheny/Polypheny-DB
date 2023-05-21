@@ -34,7 +34,11 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
@@ -120,6 +124,16 @@ public class PolyImplementation<T> {
     }
 
 
+    public static <T> Enumerable<Object> enumerable( Bindable<T> bindable, DataContext dataContext, Function1<T, Object> rowTransform ) {
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<Object> enumerator() {
+                return Linq4j.transform( bindable.bind( dataContext ).enumerator(), rowTransform );
+            }
+        };
+    }
+
+
     public Class<?> getResultClass() {
         Class<?> resultClazz = null;
         if ( preparedResult instanceof Typed ) {
@@ -153,7 +167,7 @@ public class PolyImplementation<T> {
         if ( bindable != null ) {
             return bindable;
         }
-        bindable = (Bindable<T>) preparedResult.getBindable( getCursorFactory() );
+        bindable = preparedResult.getBindable( getCursorFactory() );
         return bindable;
     }
 

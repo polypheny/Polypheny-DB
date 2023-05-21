@@ -31,6 +31,8 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
@@ -100,6 +102,16 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             @Deserialize("nullable") boolean nullable ) {
         this.type = type;
         this.nullable = nullable;
+    }
+
+
+    public static Expression getInitialExpression( Type type ) {
+        if ( PolyDefaults.DEFAULTS.get( type ) != null ) {
+            return PolyDefaults.DEFAULTS.get( type ).asExpression();
+        }
+
+        return Expressions.constant( null, type );
+
     }
 
 

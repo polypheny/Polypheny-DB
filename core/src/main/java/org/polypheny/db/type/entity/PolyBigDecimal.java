@@ -23,6 +23,7 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -41,6 +42,12 @@ public class PolyBigDecimal extends PolyNumber {
 
     public PolyBigDecimal( BigDecimal value, boolean nullable ) {
         super( PolyType.DECIMAL, nullable );
+        this.value = value;
+    }
+
+
+    public PolyBigDecimal( BigDecimal value ) {
+        super( PolyType.DECIMAL, true );
         this.value = value;
     }
 
@@ -76,6 +83,24 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public BigDecimal bigDecimalValue() {
         return value;
+    }
+
+
+    @Override
+    public PolyNumber increment() {
+        return PolyBigDecimal.of( value.add( BigDecimal.ONE ) );
+    }
+
+
+    @Override
+    public PolyNumber divide( PolyNumber other ) {
+        return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), RoundingMode.UNNECESSARY ) );
+    }
+
+
+    @Override
+    public PolyNumber multiply( PolyNumber other ) {
+        return PolyBigDecimal.of( value.multiply( other.bigDecimalValue() ) );
     }
 
 

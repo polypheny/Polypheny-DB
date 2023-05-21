@@ -1146,7 +1146,7 @@ public class DbmsMeta implements ProtobufMeta {
     private Iterable<Object> createIterable( DataContext dataContext, PolyphenyDbSignature<?> signature ) {
         //noinspection unchecked
         final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
-        return polyphenyDbSignature.enumerable( dataContext );
+        return polyphenyDbSignature.enumerableTransform( dataContext );
     }
 
 
@@ -1278,7 +1278,7 @@ public class DbmsMeta implements ProtobufMeta {
             resultSets = ImmutableList.of( resultSet );
             commit( connection.getHandle() );
         } else if ( statementHandle.getSignature().statementType == StatementType.IS_DML ) {
-            Iterator<?> iterator = statementHandle.getSignature().enumerable( statementHandle.getStatement().getDataContext() ).iterator();
+            Iterator<?> iterator = statementHandle.getSignature().enumerableTransform( statementHandle.getStatement().getDataContext() ).iterator();
             int rowsChanged = -1;
             try {
                 rowsChanged = PolyImplementation.getRowsChanged( statementHandle.getStatement(), iterator, statementHandle.getStatement().getMonitoringEvent().getMonitoringType() );

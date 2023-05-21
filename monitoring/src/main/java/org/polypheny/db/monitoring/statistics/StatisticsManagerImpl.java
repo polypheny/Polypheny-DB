@@ -852,9 +852,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
             PolyType polyType = column.type;
             QueryResult queryResult = new QueryResult( catalogTable, column );
             if ( this.statisticFields.containsKey( column.id ) && changedValues.get( (long) column.position ) != null ) {
-                handleInsertColumn( changedValues.get( (long) column.position ), column, queryResult );
+                handleInsertColumn( changedValues.get( (long) column.position - 1 ), column, queryResult );
             } else {
-                addNewColumnStatistics( changedValues, column.position, polyType, queryResult );
+                addNewColumnStatistics( changedValues, column.position - 1, polyType, queryResult );
             }
         }
 
@@ -867,7 +867,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private void addInserts( Map<Long, List<?>> changedValues, LogicalTable catalogTable, List<LogicalColumn> columns ) {
         for ( LogicalColumn column : columns ) {
             QueryResult queryResult = new QueryResult( catalogTable, column );
-            addNewColumnStatistics( changedValues, column.position, column.type, queryResult );
+            addNewColumnStatistics( changedValues, column.position - 1, column.type, queryResult );
         }
     }
 

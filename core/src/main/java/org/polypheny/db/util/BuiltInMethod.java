@@ -217,7 +217,7 @@ public enum BuiltInMethod {
     LIST4( List.class, "of", Object.class, Object.class, Object.class, Object.class ),
     LIST5( List.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class ),
     LIST6( List.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class, Object.class ),
-    COMPARABLE_EMPTY_LIST( ComparableList.class, "of" ),
+    COMPARABLE_EMPTY_LIST( ComparableList.class, "COMPARABLE_EMPTY_LIST", true ),
     IDENTITY_COMPARER( org.apache.calcite.linq4j.function.Functions.class, "identityComparer" ),
     IDENTITY_SELECTOR( org.apache.calcite.linq4j.function.Functions.class, "identitySelector" ),
     AS_ENUMERABLE( Linq4j.class, "asEnumerable", Object[].class ),

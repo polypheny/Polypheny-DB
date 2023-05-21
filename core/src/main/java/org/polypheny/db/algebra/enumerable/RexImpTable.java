@@ -925,7 +925,7 @@ public class RexImpTable {
             Primitive p = Primitive.of( type );
             return Expressions.constant( p.defaultValue, type );
         }
-        if ( Types.isAssignableFrom( PolyValue.class, type ) ) {
+        if ( Types.isAssignableFrom( PolyValue.class, type ) && PolyValue.getInitial( type ) != null ) {
             return PolyValue.getInitial( type ).asExpression();
         }
         return Expressions.constant( null, type );

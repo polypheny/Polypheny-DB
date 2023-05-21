@@ -59,6 +59,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Static;
 
@@ -482,8 +483,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 statement = null;
                 return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
             } else {
-                Integer updateCount = statement.getUpdateCount();
-                return Linq4j.singletonEnumerator( (T) updateCount );
+                int updateCount = statement.getUpdateCount();
+                return Linq4j.singletonEnumerator( (T) PolyLong.of( updateCount ) );
             }
         } catch ( SQLException e ) {
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
@@ -501,16 +502,16 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( preparedStatementEnricher.enrich( preparedStatement, connectionHandler ) ) {
                 // batch
                 preparedStatement.executeBatch();
-                Integer updateCount = preparedStatement.getUpdateCount();
-                return Linq4j.singletonEnumerator( (T) updateCount );
+                int updateCount = preparedStatement.getUpdateCount();
+                return Linq4j.singletonEnumerator( (T) PolyLong.of( updateCount ) );
             } else {
                 if ( preparedStatement.execute() ) {
                     final ResultSet resultSet = preparedStatement.getResultSet();
                     preparedStatement = null;
                     return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
                 } else {
-                    Integer updateCount = preparedStatement.getUpdateCount();
-                    return Linq4j.singletonEnumerator( (T) updateCount );
+                    int updateCount = preparedStatement.getUpdateCount();
+                    return Linq4j.singletonEnumerator( (T) PolyLong.of( updateCount ) );
                 }
             }
         } catch ( SQLException e ) {

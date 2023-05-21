@@ -43,7 +43,7 @@ public abstract class StatementEvent extends BaseEvent {
 
     protected MonitoringType monitoringType;
     protected AlgRoot routed;
-    protected PolyImplementation result;
+    protected PolyImplementation<?> result;
     protected Statement statement;
     protected List<List<Object>> rows;
     protected String description;

@@ -56,4 +56,11 @@ public abstract class PolyNumber extends PolyValue {
     public abstract BigDecimal bigDecimalValue();
 
 
+    public abstract PolyNumber increment();
+
+    public abstract PolyNumber divide( PolyNumber other );
+
+
+    public abstract PolyNumber multiply( PolyNumber other );
+
 }
