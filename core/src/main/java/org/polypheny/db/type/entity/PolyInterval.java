@@ -37,7 +37,7 @@ public class PolyInterval extends PolyValue {
 
 
     public PolyInterval( BigDecimal value, PolyType type ) {
-        super( type, false );
+        super( type );
         this.value = value;
         this.unitRange = TimeUnitRange.DAY; // todo adjust
     }

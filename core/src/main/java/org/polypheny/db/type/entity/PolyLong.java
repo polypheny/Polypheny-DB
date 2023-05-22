@@ -34,13 +34,13 @@ public class PolyLong extends PolyNumber {
 
 
     public PolyLong( Long value ) {
-        super( PolyType.BIGINT, true );
+        super( PolyType.BIGINT );
         this.value = value;
     }
 
 
     public PolyLong( long value ) {
-        super( PolyType.BIGINT, false );
+        super( PolyType.BIGINT );
         this.value = value;
     }
 
@@ -80,6 +80,12 @@ public class PolyLong extends PolyNumber {
     @Override
     public long longValue() {
         return value;
+    }
+
+
+    @Override
+    public float floatValue() {
+        return value.floatValue();
     }
 
 

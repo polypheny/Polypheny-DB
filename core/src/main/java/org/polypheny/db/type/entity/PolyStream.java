@@ -34,7 +34,7 @@ public class PolyStream extends PolyBlob {
 
 
     public PolyStream( InputStream stream ) {
-        super( PolyType.FILE, false );
+        super( PolyType.FILE );
         this.value = stream;
     }
 

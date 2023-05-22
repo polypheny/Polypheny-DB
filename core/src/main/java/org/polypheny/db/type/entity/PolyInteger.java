@@ -44,7 +44,7 @@ public class PolyInteger extends PolyNumber {
 
 
     public PolyInteger( @Deserialize("value") Integer value ) {
-        super( PolyType.INTEGER, true );
+        super( PolyType.INTEGER );
         this.value = value;
     }
 
@@ -99,6 +99,12 @@ public class PolyInteger extends PolyNumber {
     @Override
     public long longValue() {
         return value;
+    }
+
+
+    @Override
+    public float floatValue() {
+        return value.floatValue();
     }
 
 

@@ -35,7 +35,7 @@ public class PolyDate extends PolyValue {
 
 
     public PolyDate( long sinceEpoch ) {
-        super( PolyType.DATE, true );
+        super( PolyType.DATE );
         this.value = sinceEpoch;
     }
 

@@ -22,8 +22,8 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public abstract class PolyNumber extends PolyValue {
 
-    public PolyNumber( PolyType type, boolean nullable ) {
-        super( type, nullable );
+    public PolyNumber( PolyType type ) {
+        super( type );
     }
 
 
@@ -40,6 +40,13 @@ public abstract class PolyNumber extends PolyValue {
      * @return the numeric value represented by this object after conversion to type {@code long}.
      */
     public abstract long longValue();
+
+    /**
+     * Returns the value of the specified number as an {@code float}, which may involve rounding or truncation.
+     *
+     * @return the numeric value represented by this object after conversion to type {@code float}.
+     */
+    public abstract float floatValue();
 
     /**
      * Returns the value of the specified number as a {@code double}, which may involve rounding.
@@ -62,5 +69,6 @@ public abstract class PolyNumber extends PolyValue {
 
 
     public abstract PolyNumber multiply( PolyNumber other );
+
 
 }

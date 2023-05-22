@@ -36,7 +36,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
 
     public GraphPropertyHolder( PolyString id, PolyType type, PolyDictionary properties, PolyList<PolyString> labels, PolyString variableName ) {
-        super( id, type, variableName, false );
+        super( id, type, variableName );
         this.properties = properties;
         this.labels = labels;
     }

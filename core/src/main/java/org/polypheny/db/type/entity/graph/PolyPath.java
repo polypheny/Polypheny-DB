@@ -59,7 +59,7 @@ public class PolyPath extends GraphObject {
 
 
     public PolyPath( PolyString id, List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path, PolyString variableName ) {
-        super( id, PolyType.PATH, variableName, false );
+        super( id, PolyType.PATH, variableName );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();
         this.nodes = nodes;
@@ -281,7 +281,7 @@ public class PolyPath extends GraphObject {
 
 
         protected PolySegment( PolyString sourceId, PolyString edgeId, PolyString targetId, EdgeDirection direction ) {
-            super( null, null, null, false );
+            super( null, null, null );
             this.sourceId = sourceId;
             this.edgeId = edgeId;
             this.targetId = targetId;
@@ -296,7 +296,7 @@ public class PolyPath extends GraphObject {
 
 
         protected PolySegment( PolyNode source, PolyEdge edge, PolyNode target, EdgeDirection direction ) {
-            super( null, null, null, false );
+            super( null, null, null );
             isRef = false;
             this.sourceId = source.id;
             this.edgeId = edge.id;

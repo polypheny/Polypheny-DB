@@ -51,12 +51,12 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
 
     public PolyMap( Map<K, V> map ) {
-        this( map, PolyType.MAP, false );
+        this( map, PolyType.MAP );
     }
 
 
-    public PolyMap( Map<K, V> map, PolyType type, boolean nullable ) {
-        super( type, nullable );
+    public PolyMap( Map<K, V> map, PolyType type ) {
+        super( type );
         this.map = map;
     }
 

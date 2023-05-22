@@ -255,25 +255,25 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         switch ( type.getPolyType() ) {
             case BIGINT:
-                preparedStatement.setBigDecimal( i, value.asBigDecimal().value );
+                preparedStatement.setBigDecimal( i, value.asNumber().bigDecimalValue() );
                 break;
             case VARCHAR:
                 preparedStatement.setString( i, value.asString().value );
                 break;
             case FLOAT:
-                preparedStatement.setFloat( i, value.asFloat().value );
+                preparedStatement.setFloat( i, value.asNumber().floatValue() );
                 break;
             case DOUBLE:
-                preparedStatement.setDouble( i, value.asDouble().value );
+                preparedStatement.setDouble( i, value.asNumber().doubleValue() );
                 break;
             case INTEGER:
-                preparedStatement.setInt( i, value.asInteger().value );
+                preparedStatement.setInt( i, value.asNumber().intValue() );
                 break;
             case BOOLEAN:
                 preparedStatement.setBoolean( i, value.asBoolean().value );
                 break;
             case DECIMAL:
-                preparedStatement.setBigDecimal( i, value.asBigDecimal().value );
+                preparedStatement.setBigDecimal( i, value.asNumber().bigDecimalValue() );
                 break;
             case DATE:
                 preparedStatement.setDate( i, value.asDate().asSqlDate() );

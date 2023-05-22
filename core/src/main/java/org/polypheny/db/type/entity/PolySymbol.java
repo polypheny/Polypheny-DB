@@ -32,7 +32,7 @@ public class PolySymbol extends PolyValue {
 
 
     public PolySymbol( Enum<?> value ) {
-        super( PolyType.SYMBOL, false );
+        super( PolyType.SYMBOL );
         this.value = value;
     }
 

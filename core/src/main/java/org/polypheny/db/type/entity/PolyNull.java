@@ -25,7 +25,7 @@ import org.polypheny.db.type.PolyType;
 public class PolyNull extends PolyValue {
 
     public PolyNull() {
-        super( PolyType.NULL, true );
+        super( PolyType.NULL );
     }
 
 

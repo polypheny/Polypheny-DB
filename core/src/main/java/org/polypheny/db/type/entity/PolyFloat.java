@@ -24,6 +24,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -31,17 +32,18 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.category.PolyNumber;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
-public class PolyFloat extends PolyValue {
+public class PolyFloat extends PolyNumber {
 
     @Serialize
     public Float value;
 
 
     public PolyFloat( @Deserialize("value") Float value ) {
-        super( PolyType.FLOAT, false );
+        super( PolyType.FLOAT );
         this.value = value;
     }
 
@@ -64,6 +66,54 @@ public class PolyFloat extends PolyValue {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyFloat.class );
+    }
+
+
+    @Override
+    public int intValue() {
+        return value.intValue();
+    }
+
+
+    @Override
+    public long longValue() {
+        return value.longValue();
+    }
+
+
+    @Override
+    public float floatValue() {
+        return value;
+    }
+
+
+    @Override
+    public double doubleValue() {
+        return value.doubleValue();
+    }
+
+
+    @Override
+    public BigDecimal bigDecimalValue() {
+        return BigDecimal.valueOf( value );
+    }
+
+
+    @Override
+    public PolyNumber increment() {
+        return PolyFloat.of( value + 1 );
+    }
+
+
+    @Override
+    public PolyNumber divide( PolyNumber other ) {
+        return PolyFloat.of( value / other.floatValue() );
+    }
+
+
+    @Override
+    public PolyNumber multiply( PolyNumber other ) {
+        return PolyFloat.of( value * other.floatValue() );
     }
 
 

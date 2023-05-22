@@ -21,8 +21,8 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public abstract class PolyTemporal extends PolyValue {
 
-    public PolyTemporal( PolyType type, boolean nullable ) {
-        super( type, nullable );
+    public PolyTemporal( PolyType type ) {
+        super( type );
     }
 
 }

@@ -43,7 +43,7 @@ public class PolyDouble extends PolyNumber {
 
 
     public PolyDouble( @Deserialize("value") Double value ) {
-        super( PolyType.DOUBLE, false );
+        super( PolyType.DOUBLE );
         this.value = value;
     }
 
@@ -79,6 +79,12 @@ public class PolyDouble extends PolyNumber {
     @Override
     public long longValue() {
         return value.longValue();
+    }
+
+
+    @Override
+    public float floatValue() {
+        return value.floatValue();
     }
 
 

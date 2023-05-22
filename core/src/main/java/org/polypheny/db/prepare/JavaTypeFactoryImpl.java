@@ -63,7 +63,6 @@ import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -213,7 +212,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case INTERVAL_YEAR:
                 case INTERVAL_YEAR_MONTH:
                 case INTERVAL_MONTH:
-                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
+                    return PolyNumber.class;
                 case TIMESTAMP:
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 case BIGINT:
@@ -227,21 +226,21 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case INTERVAL_MINUTE:
                 case INTERVAL_MINUTE_SECOND:
                 case INTERVAL_SECOND:
-                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
+                    return PolyNumber.class;
                 case SMALLINT:
-                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
+                    return PolyNumber.class;
                 case TINYINT:
-                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
+                    return PolyNumber.class;
                 case DECIMAL:
-                    return PolyBigDecimal.class;
+                    return PolyNumber.class;
                 case BOOLEAN:
-                    return type.isNullable() ? PolyBoolean.class : PolyBoolean.class;
+                    return PolyBoolean.class;
                 case DOUBLE:
-                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
+                    return PolyNumber.class;
                 case FLOAT: // sic
-                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
+                    return PolyNumber.class;
                 case REAL:
-                    return type.isNullable() ? PolyNumber.class : PolyNumber.class;
+                    return PolyNumber.class;
                 case BINARY:
                 case VARBINARY:
                     return PolyBinary.class;

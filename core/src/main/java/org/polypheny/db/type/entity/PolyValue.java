@@ -90,18 +90,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .build( PolyValue.class );
 
-    @Serialize
-    public boolean nullable;
 
     @Serialize
     public PolyType type;
 
 
     public PolyValue(
-            @Deserialize("type") PolyType type,
-            @Deserialize("nullable") boolean nullable ) {
+            @Deserialize("type") PolyType type ) {
         this.type = type;
-        this.nullable = nullable;
     }
 
 

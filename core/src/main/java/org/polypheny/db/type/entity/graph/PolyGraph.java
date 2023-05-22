@@ -56,7 +56,7 @@ public class PolyGraph extends GraphObject {
 
 
     public PolyGraph( PolyString id, @NonNull PolyCollections.FlatMap<PolyString, PolyNode> nodes, @NonNull PolyCollections.FlatMap<PolyString, PolyEdge> edges ) {
-        super( id, PolyType.GRAPH, null, false );
+        super( id, PolyType.GRAPH, null );
         this.nodes = nodes;
         this.edges = edges;
     }

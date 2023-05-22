@@ -41,8 +41,8 @@ public abstract class GraphObject extends PolyValue {
     public PolyString variableName;
 
 
-    protected GraphObject( PolyString id, PolyType type, PolyString variableName, boolean nullable ) {
-        super( type, nullable );
+    protected GraphObject( PolyString id, PolyType type, PolyString variableName ) {
+        super( type );
         this.id = id;
         this.variableName = variableName;
     }

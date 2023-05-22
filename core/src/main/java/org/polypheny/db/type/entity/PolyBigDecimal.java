@@ -40,25 +40,19 @@ public class PolyBigDecimal extends PolyNumber {
     public BigDecimal value;
 
 
-    public PolyBigDecimal( BigDecimal value, boolean nullable ) {
-        super( PolyType.DECIMAL, nullable );
-        this.value = value;
-    }
-
-
     public PolyBigDecimal( BigDecimal value ) {
-        super( PolyType.DECIMAL, true );
+        super( PolyType.DECIMAL );
         this.value = value;
     }
 
 
     public static PolyBigDecimal of( BigDecimal value ) {
-        return new PolyBigDecimal( value, false );
+        return new PolyBigDecimal( value );
     }
 
 
     public static PolyBigDecimal of( long value ) {
-        return new PolyBigDecimal( BigDecimal.valueOf( value ), false );
+        return new PolyBigDecimal( BigDecimal.valueOf( value ) );
     }
 
 
@@ -71,6 +65,12 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public long longValue() {
         return value.longValue();
+    }
+
+
+    @Override
+    public float floatValue() {
+        return value.floatValue();
     }
 
 
@@ -139,7 +139,7 @@ public class PolyBigDecimal extends PolyNumber {
 
                 @Override
                 public PolyBigDecimal decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyBigDecimal( new BigDecimal( in.readUTF8() ), false );
+                    return new PolyBigDecimal( new BigDecimal( in.readUTF8() ) );
                 }
             };
         }

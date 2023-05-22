@@ -36,7 +36,7 @@ public class PolyTime extends PolyValue {
 
 
     public PolyTime( long value, TimeUnit timeUnit ) {
-        super( PolyType.TIME, false );
+        super( PolyType.TIME );
         this.value = value;
         this.timeUnit = timeUnit;
     }

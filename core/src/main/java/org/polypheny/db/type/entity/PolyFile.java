@@ -26,7 +26,7 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 public class PolyFile extends PolyBlob {
 
     public PolyFile( PolyType type, boolean nullable ) {
-        super( type, nullable );
+        super( type );
     }
 
 }

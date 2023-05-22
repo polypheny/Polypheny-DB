@@ -43,7 +43,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     public PolyDocument( @Deserialize("map") Map<PolyString, PolyValue> value ) {
-        super( value, PolyType.DOCUMENT, true );
+        super( value, PolyType.DOCUMENT );
     }
 
 

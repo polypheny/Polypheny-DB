@@ -32,7 +32,7 @@ public class PolyBinary extends PolyValue {
 
 
     public PolyBinary( ByteString value ) {
-        super( PolyType.BINARY, false );
+        super( PolyType.BINARY );
         this.value = value;
     }
 

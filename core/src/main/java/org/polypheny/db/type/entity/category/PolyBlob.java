@@ -24,8 +24,8 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class PolyBlob extends PolyValue {
 
-    public PolyBlob( PolyType type, boolean nullable ) {
-        super( type, nullable );
+    public PolyBlob( PolyType type ) {
+        super( type );
     }
 
 

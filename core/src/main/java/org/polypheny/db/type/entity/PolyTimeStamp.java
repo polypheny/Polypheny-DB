@@ -34,7 +34,7 @@ public class PolyTimeStamp extends PolyValue {
 
 
     public PolyTimeStamp( long sinceEpoch ) {
-        super( PolyType.TIMESTAMP, true );
+        super( PolyType.TIMESTAMP );
         this.value = sinceEpoch;
     }
 

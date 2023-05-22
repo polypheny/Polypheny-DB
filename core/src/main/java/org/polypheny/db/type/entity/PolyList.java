@@ -52,7 +52,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
 
     public PolyList( @Deserialize("value") List<E> value ) {
-        super( PolyType.ARRAY, false );
+        super( PolyType.ARRAY );
         this.value = ImmutableList.copyOf( value );
     }
 

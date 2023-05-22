@@ -42,7 +42,7 @@ public class PolyString extends PolyValue {
 
 
     public PolyString( @Deserialize("value") String value ) {
-        super( PolyType.VARCHAR, true );
+        super( PolyType.VARCHAR );
         this.value = value;
     }
 

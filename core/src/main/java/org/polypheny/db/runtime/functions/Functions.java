@@ -827,6 +827,14 @@ public class Functions {
     }
 
 
+    public static PolyBoolean eq( PolyValue b0, PolyValue b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return PolyBoolean.of( false );
+        }
+        return PolyBoolean.of( b0.equals( b1 ) );
+    }
+
+
     /**
      * SQL <code>=</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
      */
@@ -869,6 +877,11 @@ public class Functions {
      */
     public static boolean ne( Object b0, Object b1 ) {
         return !eq( b0, b1 );
+    }
+
+
+    public static PolyBoolean ne( PolyValue b0, PolyValue b1 ) {
+        return PolyBoolean.of( b0.compareTo( b1 ) != 0 );
     }
 
 
@@ -933,6 +946,11 @@ public class Functions {
         throw notComparable( "<", b0, b1 );
     }
 
+
+    public static PolyBoolean lt( PolyValue b0, PolyValue b1 ) {
+        return PolyBoolean.of( b0.compareTo( b1 ) < 0 );
+    }
+
     // <=
 
 
@@ -980,6 +998,11 @@ public class Functions {
         }
 
         throw notComparable( "<=", b0, b1 );
+    }
+
+
+    public static PolyBoolean le( PolyValue b0, PolyValue b1 ) {
+        return PolyBoolean.of( b0.compareTo( b1 ) <= 0 );
     }
 
     // >
@@ -1037,6 +1060,11 @@ public class Functions {
         throw notComparable( ">", b0, b1 );
     }
 
+
+    public static PolyBoolean gt( PolyValue b0, PolyValue b1 ) {
+        return PolyBoolean.of( b0.compareTo( b1 ) > 0 );
+    }
+
     // >=
 
 
@@ -1085,6 +1113,11 @@ public class Functions {
         }
 
         throw notComparable( ">=", b0, b1 );
+    }
+
+
+    public static PolyBoolean ge( PolyValue b0, PolyValue b1 ) {
+        return PolyBoolean.of( b0.compareTo( b1 ) >= 0 );
     }
 
     // +
@@ -3070,11 +3103,21 @@ public class Functions {
     }
 
 
+    public static PolyBoolean isTrue( PolyBoolean b ) {
+        return PolyBoolean.of( b != null && b.value );
+    }
+
+
     /**
      * NULL &rarr; FALSE, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
     public static boolean isFalse( Boolean b ) {
         return b != null && !b;
+    }
+
+
+    public static PolyBoolean isFalse( PolyBoolean b ) {
+        return PolyBoolean.of( b != null && !b.value );
     }
 
 
@@ -3086,16 +3129,16 @@ public class Functions {
     }
 
 
+    public static PolyBoolean isNotTrue( PolyBoolean b ) {
+        return PolyBoolean.of( b == null || !b.value );
+    }
+
+
     /**
      * NULL &rarr; TRUE, FALSE &rarr; FALSE, TRUE &rarr; TRUE.
      */
     public static boolean isNotFalse( Boolean b ) {
         return b == null || b;
-    }
-
-
-    public static boolean isNotFalse( PolyBoolean b ) {
-        return b == null || b.value;
     }
 
 
@@ -3110,7 +3153,7 @@ public class Functions {
     /**
      * Converts a JDBC array to a list.
      */
-    public static List arrayToList( final java.sql.Array a ) {
+    public static List<?> arrayToList( final java.sql.Array a ) {
         if ( a == null ) {
             return null;
         }
@@ -3122,7 +3165,7 @@ public class Functions {
     }
 
 
-    public static List deepArrayToList( final java.sql.Array a ) {
+    public static List<?> deepArrayToList( final java.sql.Array a ) {
         if ( a == null ) {
             return null;
         }
@@ -3135,12 +3178,12 @@ public class Functions {
     }
 
 
-    private static List deepArrayToListRecursive( List l ) {
+    private static List<?> deepArrayToListRecursive( List<?> l ) {
         if ( l.isEmpty() || !l.get( 0 ).getClass().isArray() ) {
-            return new ArrayList( l );
+            return new ArrayList<>( l );
         }
 
-        List outer = new ArrayList();
+        List outer = new ArrayList<>();
         for ( Object o : l ) {
             List asList = Primitive.asList( o );
             outer.add( deepArrayToListRecursive( asList ) );
@@ -3182,7 +3225,7 @@ public class Functions {
     /**
      * Support the SLICE function.
      */
-    public static List slice( List list ) {
+    public static List<?> slice( List<?> list ) {
         return list;
     }
 
@@ -3190,7 +3233,7 @@ public class Functions {
     /**
      * Support the ELEMENT function.
      */
-    public static Object element( List list ) {
+    public static Object element( List<?> list ) {
         switch ( list.size() ) {
             case 0:
                 return null;
@@ -3205,7 +3248,7 @@ public class Functions {
     /**
      * Support the MEMBER OF function.
      */
-    public static boolean memberOf( Object object, Collection collection ) {
+    public static boolean memberOf( Object object, Collection<?> collection ) {
         return collection.contains( object );
     }
 
@@ -3260,7 +3303,7 @@ public class Functions {
     /**
      * Support the IS A SET function.
      */
-    public static boolean isASet( Collection collection ) {
+    public static boolean isASet( Collection<?> collection ) {
         if ( collection instanceof Set ) {
             return true;
         }
@@ -3300,7 +3343,7 @@ public class Functions {
         Set<String> resultCollection = new HashSet<>( Math.max( (int) ((collection1.size() + collection2.size()) / .75f) + 1, 16 ) );
         resultCollection.addAll( collection1 );
         resultCollection.addAll( collection2 );
-        return new ArrayList<String>( resultCollection );
+        return new ArrayList<>( resultCollection );
     }
 
 
@@ -3484,7 +3527,7 @@ public class Functions {
         if ( structObject instanceof Object[] ) {
             return ((Object[]) structObject)[index];
         } else if ( structObject instanceof List ) {
-            return ((List) structObject).get( index );
+            return ((List<?>) structObject).get( index );
         } else if ( structObject instanceof Row ) {
             return ((Row) structObject).getObject( index );
         } else {
@@ -3503,7 +3546,7 @@ public class Functions {
         if ( obj instanceof Collection ) {
             return false;
         }
-        return !(obj instanceof Map);
+        return !(obj instanceof Map<?, ?>);
     }
 
 

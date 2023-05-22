@@ -40,7 +40,7 @@ public class PolyBoolean extends PolyValue {
 
 
     public PolyBoolean( @Deserialize("value") Boolean value ) {
-        super( PolyType.BOOLEAN, true );
+        super( PolyType.BOOLEAN );
         this.value = value;
     }
 
