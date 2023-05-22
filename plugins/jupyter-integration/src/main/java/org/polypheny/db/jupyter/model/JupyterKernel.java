@@ -135,6 +135,7 @@ public class JupyterKernel {
 
 
     private class WebSocketClient implements WebSocket.Listener {
+        private final StringBuilder textBuilder = new StringBuilder();
 
         @Override
         public void onOpen( WebSocket webSocket ) {
@@ -144,7 +145,11 @@ public class JupyterKernel {
 
         @Override
         public CompletionStage<?> onText( WebSocket webSocket, CharSequence data, boolean last ) {
-            handleText( data );
+            textBuilder.append(data);
+            if (last) {
+                handleText(textBuilder.toString());
+                textBuilder.setLength( 0 );
+            }
             return WebSocket.Listener.super.onText( webSocket, data, last );
         }
 

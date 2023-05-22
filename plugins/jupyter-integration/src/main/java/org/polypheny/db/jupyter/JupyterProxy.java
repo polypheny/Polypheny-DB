@@ -53,8 +53,9 @@ public class JupyterProxy {
 
 
     public void contents( final Context ctx, Crud crud ) {
+        String content = ctx.queryParam( "content" );
         String path = ctx.pathParam( "path" );
-        forward( ctx, () -> client.getContents( path ) );
+        forward( ctx, () -> client.getContents( path, content == null ? "1" : content ) );
     }
 
 

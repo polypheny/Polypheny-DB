@@ -182,8 +182,11 @@ public class JupyterClient {
     }
 
 
-    public HttpResponse<String> getContents( String path ) throws JupyterServerException {
-        return sendGET( "contents/" + path );
+    /**
+     * @param content Return inner content ("0" for no content, "1" for return content)
+     */
+    public HttpResponse<String> getContents( String path, String content ) throws JupyterServerException {
+        return sendGET( "contents/" + path, "content=" + content);
     }
 
 
@@ -268,10 +271,12 @@ public class JupyterClient {
         return sendPATCH( "contents/" + srcFilePath, body );
     }
 
-
     private HttpResponse<String> sendGET( String resource ) throws JupyterServerException {
+        return sendGET( resource, null );
+    }
+    private HttpResponse<String> sendGET( String resource, String queryParams ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri( getUriFromPath( resource ) )
+                .uri( getUriFromPath( resource, queryParams ) )
                 .timeout( Duration.of( 10, SECONDS ) )
                 .GET()
                 .header( "Authorization", "token " + token )
@@ -409,8 +414,12 @@ public class JupyterClient {
 
 
     private URI getUriFromPath( String path ) {
+        return getUriFromPath( path, null );
+    }
+
+    private URI getUriFromPath( String path, String queryParams ) {
         try {
-            return new URI( "http", host, "/api/" + path, null, null );
+            return new URI( "http", host, "/api/" + path, queryParams, null );
         } catch ( URISyntaxException e ) {
             throw new RuntimeException( e );
         }
