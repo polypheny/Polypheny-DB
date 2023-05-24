@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:plugins/notebooks/src/main/java/org/polypheny/db/notebooks/model/JupyterKernelSpec.java
 package org.polypheny.db.notebooks.model;
 
 /**
@@ -28,5 +29,12 @@ public class JupyterKernelSpec {
         this.name = name;
         this.displayName = displayName;
         this.language = language;
+========
+package org.polypheny.db.protointerface;
+
+public class ProtoInterfaceServiceException extends RuntimeException{
+    public ProtoInterfaceServiceException(String message) {
+        super(message);
+>>>>>>>> 2944a6bca (add gRPC server and service for proto-interface):plugins/proto-interface/src/main/java/org/polypheny/db/protointerface/ProtoInterfaceServiceException.java
     }
 }
