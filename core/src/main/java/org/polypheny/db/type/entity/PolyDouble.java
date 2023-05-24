@@ -118,6 +118,12 @@ public class PolyDouble extends PolyNumber {
     }
 
 
+    @Override
+    public PolyNumber plus( PolyNumber b1 ) {
+        return PolyDouble.of( value + b1.doubleValue() );
+    }
+
+
     public static class PolyDoubleSerializerDef extends SimpleSerializerDef<PolyDouble> {
 
         @Override

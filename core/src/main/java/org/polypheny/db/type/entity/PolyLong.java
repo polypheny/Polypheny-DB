@@ -120,6 +120,12 @@ public class PolyLong extends PolyNumber {
 
 
     @Override
+    public PolyNumber plus( PolyNumber b1 ) {
+        return PolyLong.of( value + b1.longValue() );
+    }
+
+
+    @Override
     public String toString() {
         return value.toString();
     }

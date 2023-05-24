@@ -134,7 +134,7 @@ public class RexTransformer {
                                     operand );
                     RexNode boolNode =
                             rexBuilder.makeLiteral(
-                                    directlyUnderIs.booleanValue() );
+                                    directlyUnderIs );
                     RexNode eqNode =
                             rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.EQUALS ),
@@ -150,7 +150,7 @@ public class RexTransformer {
                 } else {
                     RexNode boolNode =
                             rexBuilder.makeLiteral(
-                                    directlyUnderIs.booleanValue() );
+                                    directlyUnderIs );
                     RexNode andBoolNode =
                             rexBuilder.makeCall(
                                     OperatorRegistry.get( OperatorName.EQUALS ),

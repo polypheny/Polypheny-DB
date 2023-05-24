@@ -105,6 +105,12 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
+    public PolyNumber plus( PolyNumber b1 ) {
+        return PolyBigDecimal.of( value.add( b1.bigDecimalValue() ) );
+    }
+
+
+    @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isSameType( o ) ) {
             return -1;

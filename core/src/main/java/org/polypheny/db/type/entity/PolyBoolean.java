@@ -50,6 +50,11 @@ public class PolyBoolean extends PolyValue {
     }
 
 
+    public static PolyBoolean of( boolean value ) {
+        return new PolyBoolean( value );
+    }
+
+
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyBoolean.class, Expressions.constant( value ) );

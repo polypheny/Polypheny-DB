@@ -117,6 +117,12 @@ public class PolyFloat extends PolyNumber {
     }
 
 
+    @Override
+    public PolyNumber plus( PolyNumber b1 ) {
+        return PolyFloat.of( value + b1.floatValue() );
+    }
+
+
     public static class PolyFloatSerializerDef extends SimpleSerializerDef<PolyFloat> {
 
         @Override

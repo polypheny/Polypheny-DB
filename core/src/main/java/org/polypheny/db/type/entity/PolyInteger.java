@@ -138,6 +138,12 @@ public class PolyInteger extends PolyNumber {
     }
 
 
+    @Override
+    public PolyNumber plus( PolyNumber b1 ) {
+        return PolyInteger.of( value + b1.intValue() );
+    }
+
+
     public static class PolyIntegerSerializerDef extends SimpleSerializerDef<PolyInteger> {
 
         @Override

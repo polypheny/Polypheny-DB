@@ -1040,8 +1040,8 @@ public class Functions {
     }
 
 
-    public static boolean gt( PolyNumber b0, PolyNumber b1 ) {
-        return b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0;
+    public static PolyBoolean gt( PolyNumber b0, PolyNumber b1 ) {
+        return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
 
 
@@ -1198,6 +1198,10 @@ public class Functions {
         throw notArithmetic( "+", b0, b1 );
     }
 
+
+    public static PolyNumber plus( PolyNumber b0, PolyNumber b1 ) {
+        return b0.plus( b1 );
+    }
     // -
 
 

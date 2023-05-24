@@ -71,4 +71,6 @@ public abstract class PolyNumber extends PolyValue {
     public abstract PolyNumber multiply( PolyNumber other );
 
 
+    public abstract PolyNumber plus( PolyNumber b1 );
+
 }
