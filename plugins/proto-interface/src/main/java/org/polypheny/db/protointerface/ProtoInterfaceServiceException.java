@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.geode;
+package org.polypheny.db.protointerface;
 
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-
-public class GeodePlugin extends Plugin {
-
-    /**
-     * Constructor to be used by plugin manager for plugin instantiation.
-     * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
-     */
-    public GeodePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+public class ProtoInterfaceServiceException extends RuntimeException{
+    public ProtoInterfaceServiceException(String message) {
+        super(message);
     }
-
 }
