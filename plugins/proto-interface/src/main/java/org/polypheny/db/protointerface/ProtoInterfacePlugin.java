@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ProtoInterfacePlugin extends PolyPlugin {
-    public ProtoInterfacePlugin(PluginContext context) {
+    protected ProtoInterfacePlugin(PluginContext context) {
         super(context);
     }
 
