@@ -497,7 +497,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                 //noinspection UnnecessaryLocalVariable
                 Expression res = block.append(
                         "rowInFrame",
-                        Expressions.foldAnd(
+                        EnumUtils.foldAnd(
                                 ImmutableList.of(
                                         hasRows,
                                         Expressions.greaterThanOrEqual( rowIndex, minIndex ),

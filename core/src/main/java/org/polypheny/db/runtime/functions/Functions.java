@@ -819,14 +819,12 @@ public class Functions {
     /**
      * SQL <code>=</code> operator applied to Object values (including String; neither side may be null).
      */
-    public static boolean eq( Object b0, Object b1 ) {
+    /*public static boolean eq( Object b0, Object b1 ) {
         if ( b0 == null || b1 == null ) {
             return false;
         }
         return b0.equals( b1 );
-    }
-
-
+    }*/
     public static PolyBoolean eq( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.of( false );
@@ -875,11 +873,9 @@ public class Functions {
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (including String; neither side may be null).
      */
-    public static boolean ne( Object b0, Object b1 ) {
+    /*public static boolean ne( Object b0, Object b1 ) {
         return !eq( b0, b1 );
-    }
-
-
+    }*/
     public static PolyBoolean ne( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) != 0 );
     }
@@ -2231,9 +2227,9 @@ public class Functions {
     }
 
 
-    public static boolean lesser( boolean b0, boolean b1 ) {
+    /*public static boolean lesser( boolean b0, boolean b1 ) {
         return b0 && b1;
-    }
+    }*/
 
 
     public static byte greater( byte b0, byte b1 ) {
@@ -2241,9 +2237,9 @@ public class Functions {
     }
 
 
-    public static byte lesser( byte b0, byte b1 ) {
+    /*public static byte lesser( byte b0, byte b1 ) {
         return b0 > b1 ? b1 : b0;
-    }
+    }*/
 
 
     public static char greater( char b0, char b1 ) {
@@ -2261,9 +2257,9 @@ public class Functions {
     }
 
 
-    public static short lesser( short b0, short b1 ) {
+    /*public static short lesser( short b0, short b1 ) {
         return b0 > b1 ? b1 : b0;
-    }
+    }*/
 
 
     public static int greater( int b0, int b1 ) {
@@ -2271,9 +2267,9 @@ public class Functions {
     }
 
 
-    public static int lesser( int b0, int b1 ) {
+    /*public static int lesser( int b0, int b1 ) {
         return Math.min( b0, b1 );
-    }
+    }*/
 
 
     public static long greater( long b0, long b1 ) {
@@ -2281,9 +2277,9 @@ public class Functions {
     }
 
 
-    public static long lesser( long b0, long b1 ) {
+    /*public static long lesser( long b0, long b1 ) {
         return Math.min( b0, b1 );
-    }
+    }*/
 
 
     public static float greater( float b0, float b1 ) {
@@ -2291,9 +2287,9 @@ public class Functions {
     }
 
 
-    public static float lesser( float b0, float b1 ) {
+    /*public static float lesser( float b0, float b1 ) {
         return Math.min( b0, b1 );
-    }
+    }*/
 
 
     public static double greater( double b0, double b1 ) {
@@ -2301,9 +2297,9 @@ public class Functions {
     }
 
 
-    public static double lesser( double b0, double b1 ) {
+    /*public static double lesser( double b0, double b1 ) {
         return Math.min( b0, b1 );
-    }
+    }*/
 
 
     public static PolyNumber lesser( PolyNumber b0, PolyNumber b1 ) {
@@ -3102,8 +3098,8 @@ public class Functions {
     /**
      * NULL &rarr; FALSE, FALSE &rarr; FALSE, TRUE &rarr; TRUE.
      */
-    public static boolean isTrue( Boolean b ) {
-        return b != null && b;
+    public static PolyBoolean isTrue( Boolean b ) {
+        return PolyBoolean.of( b != null && b );
     }
 
 
@@ -3146,11 +3142,29 @@ public class Functions {
     }
 
 
+    public static PolyBoolean isNotFalse( PolyBoolean b ) {
+        return PolyBoolean.of( b == null || b.value );
+    }
+
+
     /**
      * NULL &rarr; NULL, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
-    public static Boolean not( Boolean b ) {
+    /*public static Boolean not( Boolean b ) {
         return (b == null) ? null : !b;
+    }*/
+    public static PolyBoolean not( PolyBoolean b ) {
+        return PolyBoolean.of( !b.value );
+    }
+
+
+    public static PolyBoolean not( boolean b ) {
+        return PolyBoolean.of( !b );
+    }
+
+
+    public static PolyBoolean not( Boolean b ) {
+        return PolyBoolean.of( !b );
     }
 
 

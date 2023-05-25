@@ -246,7 +246,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                                     Expressions.field( thisParameter, field.getName() ),
                                     Expressions.field( thatParameter, field.getName() ) ) );
         }
-        blockBuilder2.add( Expressions.return_( null, Expressions.foldAnd( conditions ) ) );
+        blockBuilder2.add( Expressions.return_( null, EnumUtils.foldAnd( conditions ) ) );
         classDeclaration.memberDeclarations.add(
                 Expressions.methodDecl(
                         Modifier.PUBLIC,

@@ -20,10 +20,8 @@ package org.polypheny.db.algebra.enumerable;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
 import static org.apache.calcite.linq4j.tree.ExpressionType.AndAlso;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Divide;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Equal;
 import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThan;
 import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThanOrEqual;
-import static org.apache.calcite.linq4j.tree.ExpressionType.LessThan;
 import static org.apache.calcite.linq4j.tree.ExpressionType.LessThanOrEqual;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Multiply;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Negate;
@@ -137,11 +135,13 @@ public class RexImpTable {
         defineUnary( OperatorRegistry.get( OperatorName.NOT ), Not, NullPolicy.NOT );
 
         // comparisons
-        defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN ), LessThan, NullPolicy.STRICT, "lt" );
+        //defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN ), LessThan, NullPolicy.STRICT, "lt" );
+        defineMethod( OperatorRegistry.get( OperatorName.LESS_THAN ), "lt", NullPolicy.STRICT );
         defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), LessThanOrEqual, NullPolicy.STRICT, "le" );
         defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN ), GreaterThan, NullPolicy.STRICT, "gt" );
         defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), GreaterThanOrEqual, NullPolicy.STRICT, "ge" );
-        defineBinary( OperatorRegistry.get( OperatorName.EQUALS ), Equal, NullPolicy.STRICT, "eq" );
+        //defineBinary( OperatorRegistry.get( OperatorName.EQUALS ), Equal, NullPolicy.STRICT, "eq" );
+        defineMethod( OperatorRegistry.get( OperatorName.EQUALS ), "eq", NullPolicy.STRICT );
         defineBinary( OperatorRegistry.get( OperatorName.NOT_EQUALS ), NotEqual, NullPolicy.STRICT, "ne" );
 
         // arithmetic
@@ -484,14 +484,14 @@ public class RexImpTable {
                         case FALSE:
                             // AND call should return false iff has FALSEs or has NULLs, thus if we convert nulls to false, no harm is made
                             final List<Expression> expressions = translator.translateList( call2.getOperands(), nullAs );
-                            return Expressions.foldAnd( expressions );
+                            return EnumUtils.foldAnd( expressions );
                         case NULL:
                         case IS_NULL:
                         case IS_NOT_NULL:
                             final List<Expression> nullAsTrue = translator.translateList( call2.getOperands(), NullAs.TRUE );
                             final List<Expression> nullAsIsNull = translator.translateList( call2.getOperands(), NullAs.IS_NULL );
-                            Expression hasFalse = Expressions.not( Expressions.foldAnd( nullAsTrue ) );
-                            Expression hasNull = Expressions.foldOr( nullAsIsNull );
+                            Expression hasFalse = Expressions.not( EnumUtils.foldAnd( nullAsTrue ) );
+                            Expression hasNull = EnumUtils.foldOr( nullAsIsNull );
                             return nullAs.handle( Expressions.condition( hasFalse, BOXED_FALSE_EXPR, Expressions.condition( hasNull, NULL_EXPR, BOXED_TRUE_EXPR ) ) );
                         default:
                             throw new IllegalArgumentException( "Unknown nullAs when implementing AND: " + nullAs );
@@ -518,14 +518,14 @@ public class RexImpTable {
                         case FALSE:
                             // This should return true iff has TRUE arguments, thus we convert nulls to FALSE and foldOr
                             final List<Expression> expressions = translator.translateList( call2.getOperands(), nullAs );
-                            return Expressions.foldOr( expressions );
+                            return EnumUtils.foldOr( expressions );
                         case NULL:
                         case IS_NULL:
                         case IS_NOT_NULL:
                             final List<Expression> nullAsFalse = translator.translateList( call2.getOperands(), NullAs.FALSE );
                             final List<Expression> nullAsIsNull = translator.translateList( call2.getOperands(), NullAs.IS_NULL );
-                            Expression hasTrue = Expressions.foldOr( nullAsFalse );
-                            Expression hasNull = Expressions.foldOr( nullAsIsNull );
+                            Expression hasTrue = EnumUtils.foldOr( nullAsFalse );
+                            Expression hasNull = EnumUtils.foldOr( nullAsIsNull );
                             return nullAs.handle( Expressions.condition( hasTrue, BOXED_TRUE_EXPR, Expressions.condition( hasNull, NULL_EXPR, BOXED_FALSE_EXPR ) ) );
                         default:
                             throw new IllegalArgumentException( "Unknown nullAs when implementing OR: " + nullAs );
@@ -636,7 +636,7 @@ public class RexImpTable {
         if ( !negate ) {
             return expression;
         } else {
-            return Expressions.not( expression );
+            return EnumUtils.not( expression );
         }
     }
 
@@ -725,14 +725,14 @@ public class RexImpTable {
                 // If "f" is strict, then "f(a0, a1) IS NOT NULL" is equivalent to "a0 IS NOT NULL AND a1 IS NOT NULL".
                 switch ( nullPolicy ) {
                     case STRICT:
-                        return Expressions.foldAnd( translator.translateList( call.getOperands(), nullAs ) );
+                        return EnumUtils.foldAnd( translator.translateList( call.getOperands(), nullAs ) );
                 }
                 break;
             case IS_NULL:
                 // If "f" is strict, then "f(a0, a1) IS NULL" is equivalent to "a0 IS NULL OR a1 IS NULL".
                 switch ( nullPolicy ) {
                     case STRICT:
-                        return Expressions.foldOr( translator.translateList( call.getOperands(), nullAs ) );
+                        return EnumUtils.foldOr( translator.translateList( call.getOperands(), nullAs ) );
                 }
                 break;
         }
@@ -766,7 +766,7 @@ public class RexImpTable {
                     }
                 }
                 final Expression box = Expressions.box( implementCall( translator, call, implementor, nullAs ) );
-                return optimize( Expressions.condition( Expressions.foldOr( list ), Types.castIfNecessary( box.getType(), NULL_EXPR ), box ) );
+                return optimize( Expressions.condition( EnumUtils.foldOr( list ), Types.castIfNecessary( box.getType(), NULL_EXPR ), box ) );
             case FALSE:
                 // v0 != null && v1 != null && f(v0, v1)
                 for ( Ord<RexNode> operand : Ord.zip( call.getOperands() ) ) {
@@ -776,7 +776,7 @@ public class RexImpTable {
                     }
                 }
                 list.add( implementCall( translator, call, implementor, nullAs ) );
-                return Expressions.foldAnd( list );
+                return EnumUtils.foldAnd( list );
             case TRUE:
                 // v0 == null || v1 == null || f(v0, v1)
                 for ( Ord<RexNode> operand : Ord.zip( call.getOperands() ) ) {
@@ -786,7 +786,7 @@ public class RexImpTable {
                     }
                 }
                 list.add( implementCall( translator, call, implementor, nullAs ) );
-                return Expressions.foldOr( list );
+                return EnumUtils.foldOr( list );
             case NOT_POSSIBLE:
                 // Need to transmit to the implementor the fact that call cannot return null. In particular, it should return a primitive (e.g. int) rather than a box type (Integer).
                 // The cases with setNullable above might not help since the same RexNode can be referred via multiple ways: RexNode itself, RexLocalRef, and may be others.

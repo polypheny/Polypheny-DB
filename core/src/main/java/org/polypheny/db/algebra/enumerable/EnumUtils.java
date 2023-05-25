@@ -30,12 +30,14 @@ import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.BlockStatement;
+import org.apache.calcite.linq4j.tree.ConditionalStatement;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ForStatement;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
+import org.apache.calcite.linq4j.tree.Node;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -44,6 +46,8 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
@@ -332,9 +336,33 @@ public class EnumUtils {
     }
 
 
+    @SafeVarargs
     @SuppressWarnings("unused")
     public static Map<Object, Object> ofEntries( Pair<Object, Object>... pairs ) {
         return new HashMap<>( Map.ofEntries( pairs ) );
+    }
+
+
+    public static Expression foldAnd( List<Expression> expressions ) {
+        return Expressions.foldAnd( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) );
+    }
+
+
+    public static Expression foldOr( List<Expression> expressions ) {
+        return Expressions.foldOr( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) );
+    }
+
+
+    public static Expression not( Expression expression ) {
+        return Expressions.call( Functions.class, "not", expression.type == PolyBoolean.class
+                ? Expressions.convert_( expression, PolyBoolean.class )
+                : Expressions.call( PolyBoolean.class, "of", Expressions.convert_( expression, expression.type == Boolean.class ? Boolean.class : boolean.class ) ) );
+
+    }
+
+
+    public static ConditionalStatement ifThen( Expression condition, Node ifTrue ) {
+        return Expressions.ifThen( condition.type == PolyBoolean.class ? Expressions.field( condition, "value" ) : condition, ifTrue );
     }
 
 }

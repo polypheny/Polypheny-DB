@@ -147,7 +147,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
                             add.rexFilterArgument(),
                             RexImpTable.NullAs.FALSE ) );
         }
-        Expression condition = Expressions.foldAnd( conditions );
+        Expression condition = EnumUtils.foldAnd( conditions );
         if ( Expressions.constant( false ).equals( condition ) ) {
             return;
         }

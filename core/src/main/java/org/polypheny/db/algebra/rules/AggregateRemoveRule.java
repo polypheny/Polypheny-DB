@@ -74,7 +74,7 @@ public class AggregateRemoveRule extends AlgOptRule {
             return;
         }
         final AlgMetadataQuery mq = call.getMetadataQuery();
-        if ( !Functions.isTrue( mq.areColumnsUnique( input, aggregate.getGroupSet() ) ) ) {
+        if ( !Functions.isTrue( mq.areColumnsUnique( input, aggregate.getGroupSet() ) ).value ) {
             return;
         }
         // Distinct is "GROUP BY c1, c2" (where c1, c2 are a set of columns on which the input is unique, i.e. contain a key) and has no aggregate functions. It can be removed.

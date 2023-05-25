@@ -135,7 +135,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             implementor.allCorrelateVariables,
                             implementor.getConformance() );
             builder2.add(
-                    Expressions.ifThen(
+                    EnumUtils.ifThen(
                             condition,
                             Expressions.return_( null, Expressions.constant( true ) ) ) );
             moveNextBody =

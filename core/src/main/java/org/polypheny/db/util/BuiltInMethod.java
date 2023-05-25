@@ -131,6 +131,7 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
@@ -308,9 +309,9 @@ public enum BuiltInMethod {
     RTRIM( Functions.class, "rtrim", String.class ),
     LIKE( Functions.class, "like", String.class, String.class ),
     SIMILAR( Functions.class, "similar", String.class, String.class ),
-    IS_TRUE( Functions.class, "isTrue", Boolean.class ),
-    IS_NOT_FALSE( Functions.class, "isNotFalse", Boolean.class ),
-    NOT( Functions.class, "not", Boolean.class ),
+    IS_TRUE( Functions.class, "isTrue", PolyBoolean.class ),
+    IS_NOT_FALSE( Functions.class, "isNotFalse", PolyBoolean.class ),
+    NOT( Functions.class, "not", PolyBoolean.class ),
     LESSER( Functions.class, "lesser", Comparable.class, Comparable.class ),
     GREATER( Functions.class, "greater", Comparable.class, Comparable.class ),
     BIT_AND( Functions.class, "bitAnd", long.class, long.class ),
