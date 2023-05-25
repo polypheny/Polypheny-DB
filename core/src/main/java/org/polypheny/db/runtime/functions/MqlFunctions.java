@@ -35,6 +35,7 @@ import org.bson.BsonValue;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Pair;
 
@@ -571,11 +572,11 @@ public class MqlFunctions {
      * @return if the left element is smaller than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docGt( Object b0, Object b1 ) {
+    public static boolean docGt( PolyNumber b0, PolyNumber b1 ) {
         return compNullExecute(
                 b0,
                 b1,
-                () -> Functions.gtAny( b0, b1 ) );
+                () -> Functions.gt( b0, b1 ).value );
     }
 
 
@@ -588,11 +589,11 @@ public class MqlFunctions {
      * @return if the left element is smaller equal than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docGte( Object b0, Object b1 ) {
+    public static boolean docGte( PolyNumber b0, PolyNumber b1 ) {
         return compNullExecute(
                 b0,
                 b1,
-                () -> (Functions.gtAny( b0, b1 ) || Functions.eqAny( b0, b1 )) );
+                () -> (Functions.gt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
     }
 
 

@@ -354,15 +354,18 @@ public class EnumUtils {
 
 
     public static Expression not( Expression expression ) {
-        return Expressions.call( Functions.class, "not", expression.type == PolyBoolean.class
-                ? Expressions.convert_( expression, PolyBoolean.class )
-                : Expressions.call( PolyBoolean.class, "of", Expressions.convert_( expression, expression.type == Boolean.class ? Boolean.class : boolean.class ) ) );
+        return Expressions.call( Functions.class, "not", Expressions.convert_( expression, PolyBoolean.class ) );
 
     }
 
 
     public static ConditionalStatement ifThen( Expression condition, Node ifTrue ) {
-        return Expressions.ifThen( condition.type == PolyBoolean.class ? Expressions.field( condition, "value" ) : condition, ifTrue );
+        return Expressions.ifThen( condition.type == PolyBoolean.class ? Expressions.convert_( Expressions.field( condition, "value" ), boolean.class ) : condition, ifTrue );
+    }
+
+
+    public static ConditionalStatement ifThenElse( Expression condition, Node ifTrue ) {
+        return Expressions.ifThen( condition.type == PolyBoolean.class ? Expressions.convert_( Expressions.field( condition, "value" ), boolean.class ) : condition, ifTrue );
     }
 
 }
