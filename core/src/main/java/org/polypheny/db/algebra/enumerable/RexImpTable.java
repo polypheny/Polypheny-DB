@@ -93,6 +93,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 
@@ -1043,6 +1044,8 @@ public class RexImpTable {
             Expression next;
             if ( info.returnType() == BigDecimal.class ) {
                 next = Expressions.call( acc, "add", add.arguments().get( 0 ) );
+            } else if ( acc.type == PolyNumber.class ) {
+                next = Expressions.call( acc, "plus", add.arguments().get( 0 ) );
             } else {
                 next = Expressions.add( acc, Types.castIfNecessary( acc.type, add.arguments().get( 0 ) ) );
             }

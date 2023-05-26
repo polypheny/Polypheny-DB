@@ -86,6 +86,7 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
@@ -381,6 +382,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case INTEGER:
                 poly = Expressions.call( PolyInteger.class, "of", source );
+                break;
+            case BOOLEAN:
+                poly = Expressions.call( PolyBoolean.class, "of", Expressions.convert_( source, Boolean.class ) );
                 break;
             default:
                 poly = source;
