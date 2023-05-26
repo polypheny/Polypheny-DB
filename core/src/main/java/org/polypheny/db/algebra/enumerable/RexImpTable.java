@@ -91,6 +91,7 @@ import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
@@ -492,7 +493,7 @@ public class RexImpTable {
                             final List<Expression> nullAsIsNull = translator.translateList( call2.getOperands(), NullAs.IS_NULL );
                             Expression hasFalse = Expressions.not( EnumUtils.foldAnd( nullAsTrue ) );
                             Expression hasNull = EnumUtils.foldOr( nullAsIsNull );
-                            return nullAs.handle( Expressions.condition( hasFalse, BOXED_FALSE_EXPR, Expressions.condition( hasNull, NULL_EXPR, BOXED_TRUE_EXPR ) ) );
+                            return nullAs.handle( EnumUtils.condition( hasFalse, BOXED_FALSE_EXPR, EnumUtils.condition( hasNull, NULL_EXPR, BOXED_TRUE_EXPR ) ) );
                         default:
                             throw new IllegalArgumentException( "Unknown nullAs when implementing AND: " + nullAs );
                     }
@@ -526,7 +527,7 @@ public class RexImpTable {
                             final List<Expression> nullAsIsNull = translator.translateList( call2.getOperands(), NullAs.IS_NULL );
                             Expression hasTrue = EnumUtils.foldOr( nullAsFalse );
                             Expression hasNull = EnumUtils.foldOr( nullAsIsNull );
-                            return nullAs.handle( Expressions.condition( hasTrue, BOXED_TRUE_EXPR, Expressions.condition( hasNull, NULL_EXPR, BOXED_FALSE_EXPR ) ) );
+                            return nullAs.handle( EnumUtils.condition( hasTrue, BOXED_TRUE_EXPR, EnumUtils.condition( hasNull, NULL_EXPR, BOXED_FALSE_EXPR ) ) );
                         default:
                             throw new IllegalArgumentException( "Unknown nullAs when implementing OR: " + nullAs );
                     }
@@ -651,7 +652,7 @@ public class RexImpTable {
             // Primitive values cannot be null
             return optimize( expression );
         } else {
-            return optimize( Expressions.condition( Expressions.equal( operand, NULL_EXPR ), NULL_EXPR, expression ) );
+            return optimize( EnumUtils.condition( Expressions.equal( operand, NULL_EXPR ), NULL_EXPR, expression ) );
         }
     }
 
@@ -766,7 +767,7 @@ public class RexImpTable {
                     }
                 }
                 final Expression box = Expressions.box( implementCall( translator, call, implementor, nullAs ) );
-                return optimize( Expressions.condition( EnumUtils.foldOr( list ), Types.castIfNecessary( box.getType(), NULL_EXPR ), box ) );
+                return optimize( EnumUtils.condition( EnumUtils.foldOr( list ), Types.castIfNecessary( box.getType(), NULL_EXPR ), box ) );
             case FALSE:
                 // v0 != null && v1 != null && f(v0, v1)
                 for ( Ord<RexNode> operand : Ord.zip( call.getOperands() ) ) {
@@ -895,9 +896,13 @@ public class RexImpTable {
                             throw new AssertionError();
                     }
                 case BOX:
-                    switch ( this ) {
-                        case NOT_POSSIBLE:
-                            return RexToLixTranslator.convert( x, Primitive.ofBox( x.getType() ).primitiveClass );
+                    if ( this == NullAs.NOT_POSSIBLE ) {
+                        return RexToLixTranslator.convert( x, Objects.requireNonNull( Primitive.ofBox( x.getType() ) ).primitiveClass );
+                    }
+                    // fall through
+                default:
+                    if ( (this == FALSE || this == TRUE) && Types.isAssignableFrom( PolyBoolean.class, x.type ) ) {
+                        return x;
                     }
                     // fall through
             }
@@ -923,6 +928,7 @@ public class RexImpTable {
     static Expression getDefaultValue( Type type ) {
         if ( Primitive.is( type ) ) {
             Primitive p = Primitive.of( type );
+            assert p != null;
             return Expressions.constant( p.defaultValue, type );
         }
         if ( Types.isAssignableFrom( PolyValue.class, type ) && PolyValue.getInitial( type ) != null ) {
@@ -1110,7 +1116,7 @@ public class RexImpTable {
             List<Expression> acc = add.accumulator();
             Expression flag = acc.get( 0 );
             add.currentBlock().add(
-                    Expressions.ifThen(
+                    EnumUtils.ifThen(
                             flag,
                             Expressions.throw_(
                                     Expressions.new_(
@@ -1258,7 +1264,7 @@ public class RexImpTable {
                     final int i = keyOrdinals.indexOf( k );
                     assert i >= 0;
                     final Expression e2 =
-                            Expressions.condition(
+                            EnumUtils.condition(
                                     result.keyField( keyOrdinals.size() + i ),
                                     Expressions.constant( x ),
                                     Expressions.constant( 0L ) );
@@ -1364,7 +1370,7 @@ public class RexImpTable {
             }
             BlockBuilder builder = add.nestBlock();
             add.currentBlock().add(
-                    Expressions.ifThen(
+                    EnumUtils.ifThen(
                             Expressions.lessThan(
                                     add.compareRows( Expressions.subtract( add.currentPosition(), Expressions.constant( 1 ) ), add.currentPosition() ),
                                     Expressions.constant( 0 ) ),
@@ -1372,7 +1378,7 @@ public class RexImpTable {
                                     Expressions.assign( acc, computeNewRank( acc, add ) ) ) ) );
             add.exitBlock();
             add.currentBlock().add(
-                    Expressions.ifThen(
+                    EnumUtils.ifThen(
                             Expressions.greaterThan( add.currentPosition(), add.startIndex() ),
                             builder.toBlock() ) );
         }
@@ -1451,7 +1457,7 @@ public class RexImpTable {
         public Expression implementResult( AggContext info, AggResultContext result ) {
             WinAggResultContext winResult = (WinAggResultContext) result;
 
-            return Expressions.condition(
+            return EnumUtils.condition(
                     winResult.hasRows(),
                     winResult.rowTranslator( winResult.computeIndex( Expressions.constant( 0 ), seekType ) )
                             .translate( winResult.rexArguments().get( 0 ), info.returnType() ),
@@ -1541,7 +1547,7 @@ public class RexImpTable {
             Expression defaultValue = getDefaultValue( res.type );
 
             result.currentBlock().add( Expressions.declare( 0, res, null ) );
-            result.currentBlock().add( Expressions.ifThenElse( rowInRange, thenBranch, Expressions.statement( Expressions.assign( res, defaultValue ) ) ) );
+            result.currentBlock().add( EnumUtils.ifThenElse( rowInRange, thenBranch, Expressions.statement( Expressions.assign( res, defaultValue ) ) ) );
             return res;
         }
 
@@ -1620,7 +1626,7 @@ public class RexImpTable {
                             : getDefaultValue( res.type );
 
             result.currentBlock().add( Expressions.declare( 0, res, null ) );
-            result.currentBlock().add( Expressions.ifThenElse( rowInRange, thenBranch, Expressions.statement( Expressions.assign( res, defaultValue ) ) ) );
+            result.currentBlock().add( EnumUtils.ifThenElse( rowInRange, thenBranch, Expressions.statement( Expressions.assign( res, defaultValue ) ) ) );
             return res;
         }
 
@@ -2317,7 +2323,7 @@ public class RexImpTable {
 
                 return ifTrue == null || ifFalse == null
                         ? Util.first( ifTrue, ifFalse )
-                        : Expressions.condition( test, ifTrue, ifFalse );
+                        : EnumUtils.condition( test, ifTrue, ifFalse );
             }
         }
 
@@ -2339,7 +2345,7 @@ public class RexImpTable {
             if ( operands.size() == 1 ) {
                 return translator.translate( operands.get( 0 ) );
             } else {
-                return Expressions.condition(
+                return EnumUtils.condition(
                         translator.translate( operands.get( 0 ), NullAs.IS_NULL ),
                         translator.translate( operands.get( 0 ), nullAs ),
                         implementRecurse( translator, Util.skip( operands ), nullAs ) );
@@ -2471,7 +2477,7 @@ public class RexImpTable {
             translator.getUnwindContext().activateUnwind( i_, list_, unset_ );
 
             BlockBuilder else_ = new BlockBuilder();
-            else_.add( Expressions.ifThen(
+            else_.add( EnumUtils.ifThen(
                     unset_,
                     Expressions.block(
                             Expressions.statement( Expressions.assign( list_, Expressions.call( BuiltInMethod.DOC_GET_ARRAY.method, translator.translate( call.getOperands().get( 0 ) ) ) ) ),
@@ -2479,13 +2485,13 @@ public class RexImpTable {
                             Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
                     )
             ) );
-            else_.add( Expressions.ifThen(
+            else_.add( EnumUtils.ifThen(
                     Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
                     Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ) ) );
 
             BlockBuilder outer = new BlockBuilder();
             outer.add( Expressions.declare( 0, el_, Expressions.constant( null ) ) );
-            outer.add( Expressions.ifThenElse(
+            outer.add( EnumUtils.ifThenElse(
                     Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
                     Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ),
                     else_.toBlock()
@@ -2517,7 +2523,7 @@ public class RexImpTable {
             );
             BlockStatement then = Expressions.block(
                     Expressions.declare( 0, get_, Expressions.call( _list, "get", i_ ) ),
-                    Expressions.ifThen(
+                    EnumUtils.ifThen(
                             startSubstitute( translator, call.getOperands().get( 1 ), 0, get_ ),
                             Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
             );
@@ -2591,7 +2597,7 @@ public class RexImpTable {
                     RexNode list = call.getOperands().get( 0 );
 
                     Expression list_ = translator.translate( list, NullAs.NULL );
-                    blockBuilder.add( Expressions.ifThen(
+                    blockBuilder.add( EnumUtils.ifThen(
                             Expressions.typeIs( list_, List.class ),
                             Expressions.block(
                                     Expressions.throw_(
@@ -2608,7 +2614,7 @@ public class RexImpTable {
                     ParameterExpression i_ = Expressions.parameter( int.class, "i_" + System.nanoTime() );
                     blockBuilder.add( Expressions.declare( Modifier.PRIVATE, i_, Expressions.constant( 0 ) ) );
 
-                    ConditionalStatement ifIncr = Expressions.ifThen( translator.translate( call.operands.get( 1 ) ), Expressions.block( Expressions.statement( Expressions.increment( i_ ) ) ) );
+                    ConditionalStatement ifIncr = EnumUtils.ifThen( translator.translate( call.operands.get( 1 ) ), Expressions.block( Expressions.statement( Expressions.increment( i_ ) ) ) );
 
                     blockBuilder.add( EnumUtils.for_( i_, cList, Expressions.block( ifIncr ) ) );
 

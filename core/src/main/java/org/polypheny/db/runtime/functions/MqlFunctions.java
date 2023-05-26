@@ -606,11 +606,11 @@ public class MqlFunctions {
      * @return if the left element is bigger than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docLt( Object b0, Object b1 ) {
+    public static boolean docLt( PolyNumber b0, PolyNumber b1 ) {
         return compNullExecute(
                 b0,
                 b1,
-                () -> Functions.ltAny( b0, b1 ) );
+                () -> Functions.lt( b0, b1 ).value );
     }
 
 
@@ -623,11 +623,11 @@ public class MqlFunctions {
      * @return if the left element is bigger equal than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docLte( Object b0, Object b1 ) {
+    public static boolean docLte( PolyNumber b0, PolyNumber b1 ) {
         return compNullExecute(
                 b0,
                 b1,
-                () -> (Functions.ltAny( b0, b1 ) || Functions.eqAny( b0, b1 )) );
+                () -> (Functions.lt( b0, b1 ).value || Functions.eqAny( b0, b1 )) );
     }
 
 

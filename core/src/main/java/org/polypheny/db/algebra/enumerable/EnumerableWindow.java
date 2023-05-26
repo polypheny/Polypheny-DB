@@ -303,7 +303,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
                 hasRows = builder4.append( "hasRows", Expressions.lessThanOrEqual( startTmp, endTmp ) );
                 builder4.add(
-                        Expressions.ifThenElse(
+                        EnumUtils.ifThenElse(
                                 hasRows,
                                 Expressions.block(
                                         Expressions.statement( Expressions.assign( startPe, startTmp ) ),
@@ -328,7 +328,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
             if ( hasRows.equals( Expressions.constant( true ) ) ) {
                 frameRowCount = builder4.append( "totalRows", rowCountWhenNonEmpty );
             } else {
-                frameRowCount = builder4.append( "totalRows", Expressions.condition( hasRows, rowCountWhenNonEmpty, Expressions.constant( 0 ) ) );
+                frameRowCount = builder4.append( "totalRows", EnumUtils.condition( hasRows, rowCountWhenNonEmpty, Expressions.constant( 0 ) ) );
             }
 
             ParameterExpression actualStart = Expressions.parameter( 0, int.class, builder5.newName( "actualStart" ) );
@@ -352,11 +352,11 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                         Expressions.declare(
                                 0,
                                 actualStart,
-                                Expressions.condition( needRecomputeWindow, startX, Expressions.add( prevEnd, Expressions.constant( 1 ) ) ) ) );
+                                EnumUtils.condition( needRecomputeWindow, startX, Expressions.add( prevEnd, Expressions.constant( 1 ) ) ) ) );
             } else {
                 builder5.add( Expressions.declare( 0, actualStart, null ) );
                 builder5.add(
-                        Expressions.ifThenElse(
+                        EnumUtils.ifThenElse(
                                 needRecomputeWindow,
                                 resetWindowState,
                                 Expressions.statement( Expressions.assign( actualStart, Expressions.add( prevEnd, Expressions.constant( 1 ) ) ) ) ) );
@@ -396,14 +396,14 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                         Expressions.preIncrementAssign( jDecl.parameter ),
                         forBlock );
                 if ( !hasRows.equals( Expressions.constant( true ) ) ) {
-                    forAggLoop = Expressions.ifThen( hasRows, forAggLoop );
+                    forAggLoop = EnumUtils.ifThen( hasRows, forAggLoop );
                 }
                 builder5.add( forAggLoop );
             }
 
             if ( implementResult( aggs, builder5, resultContextBuilder, rexArguments, true ) ) {
                 builder4.add(
-                        Expressions.ifThen(
+                        EnumUtils.ifThen(
                                 Expressions.orElse( lowerBoundCanChange, Expressions.notEqual( endX, prevEnd ) ),
                                 builder5.toBlock() ) );
             }

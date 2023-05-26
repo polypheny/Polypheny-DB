@@ -85,7 +85,7 @@ public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
         BlockStatement moveNextBody;
         BlockBuilder unwindBlock = new BlockBuilder();
 
-        ConditionalStatement ifNotSetInitial = Expressions.ifThen(
+        ConditionalStatement ifNotSetInitial = EnumUtils.ifThen(
                 unset_,
                 Expressions.block(
                         Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
@@ -97,7 +97,7 @@ public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
         unwindBlock.add( ifNotSetInitial );
 
         unwindBlock.add(
-                Expressions.ifThenElse(
+                EnumUtils.ifThenElse(
                         Expressions.lessThan( i_, Expressions.subtract( Expressions.call( list_, "size" ), Expressions.constant( 1 ) ) ),
                         Expressions.block(
                                 Expressions.statement(
@@ -116,7 +116,7 @@ public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
 
         BlockBuilder currentBuilder = new BlockBuilder();
 
-        ConditionalStatement ifNotSet = Expressions.ifThen(
+        ConditionalStatement ifNotSet = EnumUtils.ifThen(
                 unset_,
                 Expressions.block(
                         //Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),

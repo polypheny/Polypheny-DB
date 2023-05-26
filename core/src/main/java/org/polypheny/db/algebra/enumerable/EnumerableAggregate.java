@@ -294,7 +294,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                 if ( getGroupType() == Group.SIMPLE ) {
                     results.add( ref );
                 } else {
-                    results.add( Expressions.condition( keyPhysType.fieldReference( key_, groupCount + j ), Expressions.constant( null ), Expressions.box( ref ) ) );
+                    results.add( EnumUtils.condition( keyPhysType.fieldReference( key_, groupCount + j ), Expressions.constant( null ), Expressions.box( ref ) ) );
                 }
             }
         }

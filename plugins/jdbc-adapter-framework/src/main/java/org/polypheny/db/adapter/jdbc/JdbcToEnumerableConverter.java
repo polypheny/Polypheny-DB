@@ -59,6 +59,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.JavaRowFormat;
@@ -360,7 +361,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
                     Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
                     Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                    builder.add( Expressions.ifThenElse(
+                    builder.add( EnumUtils.ifThenElse(
                             Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
                             Expressions.statement( Expressions.assign( target, getBytes ) ),
                             //assign a PushbackInputStream for the SQL META function

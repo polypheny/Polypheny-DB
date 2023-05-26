@@ -288,7 +288,7 @@ public class PhysTypeImpl implements PhysType {
                                     parameterC,
                                     Expressions.call( method.getDeclaringClass(), method.getName(), arg0, arg1 ) ) ) );
             body.add(
-                    Expressions.ifThen(
+                    EnumUtils.ifThen(
                             Expressions.notEqual( parameterC, Expressions.constant( 0 ) ),
                             Expressions.return_(
                                     null,
@@ -368,7 +368,7 @@ public class PhysTypeImpl implements PhysType {
                                             arg0,
                                             arg1 ) ) ) );
             body.add(
-                    Expressions.ifThen(
+                    EnumUtils.ifThen(
                             Expressions.notEqual( parameterC, Expressions.constant( 0 ) ),
                             Expressions.return_(
                                     null,

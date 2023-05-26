@@ -134,6 +134,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -431,10 +432,10 @@ public enum BuiltInMethod {
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
     /// MQL BUILT-IN METHODS
     DOC_EQ( MqlFunctions.class, "docEq", Object.class, Object.class ),
-    DOC_GT( MqlFunctions.class, "docGt", Object.class, Object.class ),
-    DOC_GTE( MqlFunctions.class, "docGte", Object.class, Object.class ),
-    DOC_LT( MqlFunctions.class, "docLt", Object.class, Object.class ),
-    DOC_LTE( MqlFunctions.class, "docLte", Object.class, Object.class ),
+    DOC_GT( MqlFunctions.class, "docGt", PolyNumber.class, PolyNumber.class ),
+    DOC_GTE( MqlFunctions.class, "docGte", PolyNumber.class, PolyNumber.class ),
+    DOC_LT( MqlFunctions.class, "docLt", PolyNumber.class, PolyNumber.class ),
+    DOC_LTE( MqlFunctions.class, "docLte", PolyNumber.class, PolyNumber.class ),
     DOC_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", Object.class, int.class ),
     DOC_JSON_MATCH( MqlFunctions.class, "docJsonMatch", Object.class, String.class ),
     DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),

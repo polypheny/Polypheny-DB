@@ -222,11 +222,11 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
         final ParameterExpression thatParameter = Expressions.parameter( type, "that" );
         final ParameterExpression oParameter = Expressions.parameter( Object.class, "o" );
         blockBuilder2.add(
-                Expressions.ifThen(
+                EnumUtils.ifThen(
                         Expressions.equal( thisParameter, oParameter ),
                         Expressions.return_( null, Expressions.constant( true ) ) ) );
         blockBuilder2.add(
-                Expressions.ifThen(
+                EnumUtils.ifThen(
                         Expressions.not( Expressions.typeIs( oParameter, type ) ),
                         Expressions.return_( null, Expressions.constant( false ) ) ) );
         blockBuilder2.add(
@@ -246,7 +246,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                                     Expressions.field( thisParameter, field.getName() ),
                                     Expressions.field( thatParameter, field.getName() ) ) );
         }
-        blockBuilder2.add( Expressions.return_( null, EnumUtils.foldAnd( conditions ) ) );
+        blockBuilder2.add( Expressions.return_( null, Expressions.field( EnumUtils.foldAnd( conditions ), "value" ) ) );
         classDeclaration.memberDeclarations.add(
                 Expressions.methodDecl(
                         Modifier.PUBLIC,
@@ -301,7 +301,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
         final int mod = type.getRecordFields().size() == 1 ? Modifier.FINAL : 0;
         blockBuilder4.add( Expressions.declare( mod, cParameter, null ) );
         final ConditionalStatement conditionalStatement =
-                Expressions.ifThen(
+                EnumUtils.ifThen(
                         Expressions.notEqual( cParameter, constantZero ),
                         Expressions.return_( null, cParameter ) );
         for ( Types.RecordField field : type.getRecordFields() ) {

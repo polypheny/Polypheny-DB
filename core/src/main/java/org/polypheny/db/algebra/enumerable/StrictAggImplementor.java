@@ -179,7 +179,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
         add.nestBlock( thenBlock, nullables );
         implementNotNullAdd( info, add );
         add.exitBlock();
-        add.currentBlock().add( Expressions.ifThen( condition, thenBlock.toBlock() ) );
+        add.currentBlock().add( EnumUtils.ifThen( condition, thenBlock.toBlock() ) );
     }
 
 
@@ -208,11 +208,11 @@ public abstract class StrictAggImplementor implements AggImplementor {
                         : ((WinAggResultContext) result).hasRows();
 
         if ( thenBranch.statements.size() == 1 ) {
-            return Expressions.condition( seenNotNullRows, nonNull, RexImpTable.getDefaultValue( res.getType() ) );
+            return EnumUtils.condition( seenNotNullRows, nonNull, RexImpTable.getDefaultValue( res.getType() ) );
         }
         result.currentBlock().add( Expressions.declare( 0, res, null ) );
         result.currentBlock().add(
-                Expressions.ifThenElse(
+                EnumUtils.ifThenElse(
                         seenNotNullRows,
                         thenBranch,
                         Expressions.statement(

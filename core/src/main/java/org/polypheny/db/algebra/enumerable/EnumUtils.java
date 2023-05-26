@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConditionalStatement;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.ExpressionType;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ForStatement;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
@@ -166,7 +167,7 @@ public class EnumUtils {
                 Expression expression = inputPhysType.fieldReference( parameter, i, physType.getJavaFieldType( expressions.size() ) );
                 if ( joinType.generatesNullsOn( ord.i ) ) {
                     expression =
-                            Expressions.condition(
+                            EnumUtils.condition(
                                     Expressions.equal( parameter, Expressions.constant( null ) ),
                                     Expressions.constant( null ),
                                     expression );
@@ -344,12 +345,12 @@ public class EnumUtils {
 
 
     public static Expression foldAnd( List<Expression> expressions ) {
-        return Expressions.foldAnd( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) );
+        return Expressions.call( PolyBoolean.class, "of", Expressions.foldAnd( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) ) );
     }
 
 
     public static Expression foldOr( List<Expression> expressions ) {
-        return Expressions.foldOr( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) );
+        return Expressions.call( PolyBoolean.class, "of", Expressions.foldOr( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) ) );
     }
 
 
@@ -360,12 +361,27 @@ public class EnumUtils {
 
 
     public static ConditionalStatement ifThen( Expression condition, Node ifTrue ) {
-        return Expressions.ifThen( condition.type == PolyBoolean.class ? Expressions.convert_( Expressions.field( condition, "value" ), boolean.class ) : condition, ifTrue );
+        return Expressions.ifThen( unwrapPoly( condition ), ifTrue );
     }
 
 
-    public static ConditionalStatement ifThenElse( Expression condition, Node ifTrue ) {
-        return Expressions.ifThen( condition.type == PolyBoolean.class ? Expressions.convert_( Expressions.field( condition, "value" ), boolean.class ) : condition, ifTrue );
+    public static ConditionalStatement ifThenElse( Expression condition, Node ifTrue, Node ifFalse ) {
+        return Expressions.ifThenElse( unwrapPoly( condition ), ifTrue, ifFalse );
+    }
+
+
+    public static Expression condition( Expression test, Expression ifTrue, Expression ifFalse ) {
+        return Expressions.condition( unwrapPoly( test ), ifTrue, ifFalse );
+    }
+
+
+    public static Expression makeTernary( ExpressionType ternaryType, Expression e0, Expression e1, Expression e2 ) {
+        return makeTernary( ternaryType, unwrapPoly( e0 ), e1, e2 );
+    }
+
+
+    private static Expression unwrapPoly( Expression expression ) {
+        return expression.type == PolyBoolean.class ? Expressions.convert_( Expressions.field( expression, "value" ), boolean.class ) : expression;
     }
 
 }

@@ -196,7 +196,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         } else {
             BlockBuilder unwindBlock = new BlockBuilder();
             unwindBlock.add(
-                    Expressions.ifThenElse(
+                    EnumUtils.ifThenElse(
                             Expressions.greaterThan( unwindContext._i, Expressions.constant( 1 ) ),
                             Expressions.block(
                                     Expressions.statement(

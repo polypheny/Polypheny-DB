@@ -23,6 +23,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -66,7 +67,7 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
         final Result actionResult = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
         builder.add(
-                Expressions.ifThenElse(
+                EnumUtils.ifThenElse(
                         conditionExp,
                         actionResult.block,
                         Expressions.throw_( Expressions.new_( exceptionClass, Expressions.constant( exceptionMessage ) ) )

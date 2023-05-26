@@ -894,44 +894,44 @@ public class Functions {
     /**
      * SQL <code>&lt;</code> operator applied to boolean values.
      */
-    public static boolean lt( boolean b0, boolean b1 ) {
+    /*public static boolean lt( boolean b0, boolean b1 ) {
         return compare( b0, b1 ) < 0;
-    }
+    }*/
 
 
     /**
      * SQL <code>&lt;</code> operator applied to String values.
      */
-    public static boolean lt( String b0, String b1 ) {
+    /*public static boolean lt( String b0, String b1 ) {
         return b0.compareTo( b1 ) < 0;
-    }
+    }*/
 
 
     /**
      * SQL <code>&lt;</code> operator applied to ByteString values.
      */
-    public static boolean lt( ByteString b0, ByteString b1 ) {
+    /*public static boolean lt( ByteString b0, ByteString b1 ) {
         return b0.compareTo( b1 ) < 0;
-    }
+    }*/
 
 
     /**
      * SQL <code>&lt;</code> operator applied to BigDecimal values.
      */
-    public static boolean lt( BigDecimal b0, BigDecimal b1 ) {
+    /*public static boolean lt( BigDecimal b0, BigDecimal b1 ) {
         return b0.compareTo( b1 ) < 0;
-    }
+    }*/
 
 
-    public static boolean lt( Object b0, Object b1 ) {
+    /*public static boolean lt( Object b0, Object b1 ) {
         return ltAny( b0, b1 );
-    }
+    }*/
 
 
     /**
      * SQL <code>&lt;</code> operator applied to Object values.
      */
-    public static boolean ltAny( Object b0, Object b1 ) {
+    /*public static boolean ltAny( Object b0, Object b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
             //noinspection unchecked
             return ((Comparable) b0).compareTo( b1 ) < 0;
@@ -940,7 +940,7 @@ public class Functions {
         }
 
         throw notComparable( "<", b0, b1 );
-    }
+    }*/
 
 
     public static PolyBoolean lt( PolyValue b0, PolyValue b1 ) {
