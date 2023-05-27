@@ -43,7 +43,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
     @Override
     public void start() {
         Map<String, String> settings = new HashMap<>();
-        settings.put( "port", "13137" );
+        settings.put( "port", "20590" );
         QueryInterfaceManager.addInterfaceType( "proto-interface", ProtoInterface.class, settings );
     }
 
