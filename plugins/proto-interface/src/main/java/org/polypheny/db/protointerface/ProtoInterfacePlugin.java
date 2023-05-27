@@ -17,6 +17,8 @@
 package org.polypheny.db.protointerface;
 
 import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
+import org.pf4j.Extension;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -30,13 +32,12 @@ import java.util.List;
 import java.util.Map;
 
 public class ProtoInterfacePlugin extends PolyPlugin {
-    protected ProtoInterfacePlugin(PluginContext context) {
+    public ProtoInterfacePlugin(PluginContext context) {
         super(context);
     }
 
     @Override
     public void start() {
-        // Add HTTP interface
         Map<String, String> settings = new HashMap<>();
         settings.put("port", "13137");
         QueryInterfaceManager.addInterfaceType("proto-interface", ProtoInterface.class, settings);
@@ -46,6 +47,8 @@ public class ProtoInterfacePlugin extends PolyPlugin {
         QueryInterfaceManager.removeInterfaceType(ProtoInterface.class);
     }
 
+    @Slf4j
+    @Extension
     private static class ProtoInterface extends QueryInterface {
         public static final String INTERFACE_NAME = "proto-interface";
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
@@ -57,8 +60,8 @@ public class ProtoInterfacePlugin extends PolyPlugin {
         private Authenticator authenticator;
         private ProtoInterfaceServer protoInterfaceServer;
 
-        public ProtoInterface(TransactionManager transactionManager, Authenticator authenticator, long queryInterfaceId, String uniqueName, Map<String, String> settings, boolean supportsDml, boolean supportsDdl) {
-            super(transactionManager, authenticator, queryInterfaceId, uniqueName, settings, supportsDml, supportsDdl);
+        public ProtoInterface(TransactionManager transactionManager, Authenticator authenticator, long queryInterfaceId, String uniqueName, Map<String, String> settings) {
+            super(transactionManager, authenticator, queryInterfaceId, uniqueName, settings, true, true);
             this.uniqueName = uniqueName;
             this.authenticator = authenticator;
             this.transactionManager = transactionManager;
@@ -68,6 +71,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
                 throw new RuntimeException("Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use.");
             }
         }
+
 
         @Override
 
