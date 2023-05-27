@@ -1563,9 +1563,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
-        LogicalColumn logicalColumn = (LogicalColumn) catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
-        if ( catalog.getSnapshot().rel().getColumn( logicalColumn.tableId, newColumnName ).isEmpty() ) {
+        if ( catalog.getSnapshot().rel().getColumn( table.id, newColumnName ).isPresent() ) {
             throw new GenericRuntimeException( "There already exists a column with name %s on table %s", newColumnName, logicalColumn.getTableName() );
         }
         // Check if views are dependent from this view
@@ -1628,6 +1628,8 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
         }
+
+        catalog.updateSnapshot();
     }
 
 

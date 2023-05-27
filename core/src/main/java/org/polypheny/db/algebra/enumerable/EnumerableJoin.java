@@ -160,7 +160,8 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
                                                         EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ) )
                                                 .append( Util.first( keyPhysType.comparer(), Expressions.constant( null ) ) )
                                                 .append( Expressions.constant( joinType.generatesNullsOnLeft() ) )
-                                                .append( Expressions.constant( joinType.generatesNullsOnRight() ) ) ) )
+                                                .append( Expressions.constant( joinType.generatesNullsOnRight() ) )
+                                                .append( Expressions.constant( null ) ) ) )
                         .toBlock() );
     }
 

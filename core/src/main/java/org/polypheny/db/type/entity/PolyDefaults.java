@@ -19,6 +19,7 @@ package org.polypheny.db.type.entity;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.type.entity.category.PolyNumber;
 
 public interface PolyDefaults {
 
@@ -27,6 +28,8 @@ public interface PolyDefaults {
         put( PolyDouble.class, PolyDouble.of( 0.0 ) );
         put( PolyFloat.class, PolyFloat.of( 0.0f ) );
         put( PolyInteger.class, PolyInteger.of( 0 ) );
+        put( PolyBoolean.class, PolyBoolean.of( false ) );
+        put( PolyNumber.class, PolyLong.of( 0 ) );
     }};
 
     Map<Type, Type> PRIMITIVES = new HashMap<>() {{
@@ -36,6 +39,7 @@ public interface PolyDefaults {
         put( PolyDouble.class, double.class );
         put( PolyString.class, String.class );
         put( PolyBigDecimal.class, long.class );
+        put( PolyBoolean.class, boolean.class );
     }};
 
 }

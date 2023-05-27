@@ -331,7 +331,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NotNull Optional<LogicalColumn> getColumn( long tableId, String columnName ) {
-        return Optional.ofNullable( tableIdColumnNameColumn.get( Pair.of( tableId, columnName ) ) );
+        return getTable( tableId ).map( t -> namespaces.get( t.namespaceId ) ).map( n -> tableIdColumnNameColumn.get( Pair.of( tableId, n.caseSensitive ? columnName : columnName.toLowerCase() ) ) );
     }
 
 

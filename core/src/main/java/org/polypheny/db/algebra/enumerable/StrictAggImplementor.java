@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.enumerable.RexImpTable.CountImplementor;
 import org.polypheny.db.algebra.enumerable.RexImpTable.SumImplementor;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyBoolean;
 
 
 /**
@@ -81,7 +82,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
 
         List<Type> res = new ArrayList<>( subState.size() + 1 );
         res.addAll( subState );
-        res.add( boolean.class ); // has not nulls
+        res.add( PolyBoolean.class ); // has not nulls
         return res;
     }
 
@@ -163,7 +164,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
                     Expressions.statement(
                             Expressions.assign(
                                     acc.get( acc.size() - 1 ),
-                                    Expressions.constant( true ) ) ) );
+                                    PolyBoolean.TRUE.asExpression() ) ) );
         }
         if ( argsNotNull ) {
             implementNotNullAdd( info, add );

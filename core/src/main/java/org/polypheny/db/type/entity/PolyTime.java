@@ -25,10 +25,11 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class PolyTime extends PolyValue {
+public class PolyTime extends PolyTemporal {
 
     public long value;
 

@@ -104,8 +104,8 @@ import org.polypheny.db.util.Util;
 public class RexImpTable {
 
     public static final ConstantExpression NULL_EXPR = Expressions.constant( null );
-    public static final ConstantExpression FALSE_EXPR = Expressions.constant( false );
-    public static final ConstantExpression TRUE_EXPR = Expressions.constant( true );
+    public static final Expression FALSE_EXPR = PolyBoolean.FALSE.asExpression();// Expressions.constant( false );
+    public static final Expression TRUE_EXPR = PolyBoolean.TRUE.asExpression();//Expressions.constant( true );
     public static final MemberExpression BOXED_FALSE_EXPR = Expressions.field( null, Boolean.class, "FALSE" );
     public static final MemberExpression BOXED_TRUE_EXPR = Expressions.field( null, Boolean.class, "TRUE" );
 
@@ -1030,9 +1030,9 @@ public class RexImpTable {
 
         @Override
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
-            Expression start = info.returnType() == BigDecimal.class
-                    ? Expressions.constant( BigDecimal.ZERO )
-                    : Expressions.constant( 0 );
+            Expression start = PolyValue.getInitialExpression( info.returnType() );//info.returnType() == BigDecimal.class
+            //? Expressions.constant( BigDecimal.ZERO )
+            //: Expressions.constant( 0 );
 
             reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), start ) ) );
         }
@@ -1098,14 +1098,14 @@ public class RexImpTable {
 
         @Override
         public List<Type> getStateType( AggContext info ) {
-            return Arrays.asList( boolean.class, info.returnType() );
+            return Arrays.asList( PolyBoolean.class, info.returnType() );
         }
 
 
         @Override
         public void implementReset( AggContext info, AggResetContext reset ) {
             List<Expression> acc = reset.accumulator();
-            reset.currentBlock().add( Expressions.statement( Expressions.assign( acc.get( 0 ), Expressions.constant( false ) ) ) );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( acc.get( 0 ), FALSE_EXPR ) ) );
             reset.currentBlock().add(
                     Expressions.statement(
                             Expressions.assign(
@@ -1125,7 +1125,7 @@ public class RexImpTable {
                                     Expressions.new_(
                                             IllegalStateException.class,
                                             Expressions.constant( "more than one value in agg " + info.aggregation() ) ) ) ) );
-            add.currentBlock().add( Expressions.statement( Expressions.assign( flag, Expressions.constant( true ) ) ) );
+            add.currentBlock().add( Expressions.statement( Expressions.assign( flag, TRUE_EXPR ) ) );
             add.currentBlock().add( Expressions.statement( Expressions.assign( acc.get( 1 ), add.arguments().get( 0 ) ) ) );
         }
 

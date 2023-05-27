@@ -61,6 +61,7 @@ import org.polypheny.db.util.Util;
  */
 public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
+
     public EnumerableAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         Preconditions.checkArgument( !indicator, "EnumerableAggregate no longer supports indicator fields" );
