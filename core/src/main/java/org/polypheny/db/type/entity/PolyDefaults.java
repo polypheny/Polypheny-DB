@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -40,6 +41,17 @@ public interface PolyDefaults {
         put( PolyString.class, String.class );
         put( PolyBigDecimal.class, long.class );
         put( PolyBoolean.class, boolean.class );
+        put( PolyNumber.class, BigDecimal.class );
+    }};
+
+    Map<Type, PolyValue> NULLS = new HashMap<>() {{
+        put( PolyNumber.class, PolyNull.NULL.asNumber() );
+        put( PolyBigDecimal.class, PolyNull.NULL.asBigDecimal() );
+        put( PolyInteger.class, PolyNull.NULL.asInteger() );
+        put( PolyFloat.class, PolyNull.NULL.asFloat() );
+        put( PolyDouble.class, PolyNull.NULL.asDouble() );
+        put( PolyString.class, PolyNull.NULL.asString() );
+        put( PolyBoolean.class, PolyNull.NULL.asBoolean() );
     }};
 
 }

@@ -31,7 +31,7 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 @Value
 public class PolyTime extends PolyTemporal {
 
-    public long value;
+    public Long value;
 
     public TimeUnit timeUnit;
 
@@ -43,7 +43,12 @@ public class PolyTime extends PolyTemporal {
     }
 
 
-    public static PolyTime of( long value ) {
+    public static PolyTime of( Long value ) {
+        return new PolyTime( value, TimeUnit.MILLISECOND );
+    }
+
+
+    public static PolyValue of( Integer value ) {
         return new PolyTime( value, TimeUnit.MILLISECOND );
     }
 

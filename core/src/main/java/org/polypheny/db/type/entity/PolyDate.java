@@ -32,7 +32,7 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 public class PolyDate extends PolyTemporal {
 
 
-    public long value;
+    public Long value;
 
 
     public PolyDate( long sinceEpoch ) {

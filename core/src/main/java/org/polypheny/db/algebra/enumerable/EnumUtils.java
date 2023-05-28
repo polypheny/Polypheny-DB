@@ -50,6 +50,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -169,7 +170,7 @@ public class EnumUtils {
                     expression =
                             EnumUtils.condition(
                                     Expressions.equal( parameter, Expressions.constant( null ) ),
-                                    Expressions.constant( null ),
+                                    PolyValue.getNull( inputPhysType.field( i ).fieldClass( 0 ) ).asExpression(),
                                     expression );
                 }
                 expressions.add( expression );

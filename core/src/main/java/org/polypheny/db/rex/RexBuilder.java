@@ -79,6 +79,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyTime;
@@ -148,7 +149,7 @@ public class RexBuilder {
                 typeFactory.createPolyType( PolyType.CHAR, 0 ),
                 PolyType.CHAR );
         this.constantNull = makeLiteral(
-                null,
+                PolyNull.NULL,
                 typeFactory.createPolyType( PolyType.NULL ),
                 PolyType.NULL );
     }
@@ -542,7 +543,7 @@ public class RexBuilder {
 
 
     boolean canRemoveCastFromLiteral( AlgDataType toType, PolyValue value, PolyType fromTypeName ) {
-        if ( value == null ) {
+        if ( value == null || value.isNull() ) {
             return true;
         }
         final PolyType sqlType = toType.getPolyType();
@@ -1052,7 +1053,7 @@ public class RexBuilder {
      * Creates a Date literal.
      */
     public RexLiteral makeDateLiteral( DateString date ) {
-        return makeLiteral( PolyDate.of( date.getDaysSinceEpoch() ), typeFactory.createPolyType( PolyType.DATE ), PolyType.DATE );
+        return makeLiteral( PolyDate.of( (long) date.getDaysSinceEpoch() ), typeFactory.createPolyType( PolyType.DATE ), PolyType.DATE );
     }
 
 
@@ -1061,7 +1062,7 @@ public class RexBuilder {
      */
     public RexLiteral makeTimeLiteral( TimeString time, int precision ) {
         return makeLiteral(
-                PolyTime.of( time.getMillisOfDay() ),
+                PolyTime.of( (long) time.getMillisOfDay() ),
                 typeFactory.createPolyType( PolyType.TIME, precision ),
                 PolyType.TIME );
     }
@@ -1072,7 +1073,7 @@ public class RexBuilder {
      */
     public RexLiteral makeTimeWithLocalTimeZoneLiteral( TimeString time, int precision ) {
         return makeLiteral(
-                PolyTime.of( time.getMillisOfDay() ),
+                PolyTime.of( (long) time.getMillisOfDay() ),
                 typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE, precision ),
                 PolyType.TIME_WITH_LOCAL_TIME_ZONE );
     }

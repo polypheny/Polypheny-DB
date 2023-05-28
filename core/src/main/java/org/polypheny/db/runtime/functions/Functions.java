@@ -117,6 +117,7 @@ import org.polypheny.db.runtime.Like;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
@@ -890,14 +891,12 @@ public class Functions {
 
     // <
 
-
     /**
      * SQL <code>&lt;</code> operator applied to boolean values.
      */
     /*public static boolean lt( boolean b0, boolean b1 ) {
         return compare( b0, b1 ) < 0;
     }*/
-
 
     /**
      * SQL <code>&lt;</code> operator applied to String values.
@@ -906,14 +905,12 @@ public class Functions {
         return b0.compareTo( b1 ) < 0;
     }*/
 
-
     /**
      * SQL <code>&lt;</code> operator applied to ByteString values.
      */
     /*public static boolean lt( ByteString b0, ByteString b1 ) {
         return b0.compareTo( b1 ) < 0;
     }*/
-
 
     /**
      * SQL <code>&lt;</code> operator applied to BigDecimal values.
@@ -941,8 +938,6 @@ public class Functions {
 
         throw notComparable( "<", b0, b1 );
     }*/
-
-
     public static PolyBoolean lt( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) < 0 );
     }
@@ -995,8 +990,6 @@ public class Functions {
 
         throw notComparable( "<=", b0, b1 );
     }*/
-
-
     public static PolyBoolean le( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) <= 0 );
     }
@@ -1034,8 +1027,6 @@ public class Functions {
     /*public static boolean gt( BigDecimal b0, BigDecimal b1 ) {
         return b0.compareTo( b1 ) > 0;
     }*/
-
-
     public static PolyBoolean gt( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
@@ -1055,8 +1046,6 @@ public class Functions {
 
         throw notComparable( ">", b0, b1 );
     }*/
-
-
     public static PolyBoolean gt( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) > 0 );
     }
@@ -1649,6 +1638,12 @@ public class Functions {
     }
 
 
+    public static PolyNumber floor( PolyNumber b0 ) {
+        log.warn( "optimize" );
+        return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.FLOOR ) );
+    }
+
+
     /**
      * SQL <code>FLOOR</code> operator applied to byte values.
      */
@@ -1708,6 +1703,11 @@ public class Functions {
             r = r.add( b1 );
         }
         return b0.subtract( r );
+    }
+
+
+    public static PolyNumber floor( PolyNumber b0, PolyNumber b1 ) {
+        return b0.floor( b1 );
     }
 
     // CEIL

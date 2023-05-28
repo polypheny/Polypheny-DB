@@ -28,6 +28,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -110,13 +111,14 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isSameType( o ) ) {
             return -1;
         }
 
-        return value.compareTo( o.asBigDecimal().value );
+        return ObjectUtils.compare( value, o.asBigDecimal().value );
     }
 
 

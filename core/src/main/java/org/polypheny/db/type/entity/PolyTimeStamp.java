@@ -31,10 +31,10 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 @Value(staticConstructor = "of")
 public class PolyTimeStamp extends PolyTemporal {
 
-    public long value;
+    public Long value;
 
 
-    public PolyTimeStamp( long sinceEpoch ) {
+    public PolyTimeStamp( Long sinceEpoch ) {
         super( PolyType.TIMESTAMP );
         this.value = sinceEpoch;
     }

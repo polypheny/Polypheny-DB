@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -64,7 +65,7 @@ public class PolyBoolean extends PolyValue {
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( isSameType( o ) ) {
-            return this.value.compareTo( o.asBoolean().value );
+            return ObjectUtils.compare( value, o.asBoolean().value );
         }
         return -1;
     }

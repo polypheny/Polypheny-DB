@@ -341,7 +341,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @return whether value is appropriate for its type (we have rules about these things)
      */
     public static boolean valueMatchesType( PolyValue value, PolyType typeName, boolean strict ) {
-        if ( value == null ) {
+        if ( value == null || value.isNull() ) {
             return true;
         }
         switch ( typeName ) {

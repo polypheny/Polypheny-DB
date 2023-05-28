@@ -137,16 +137,17 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
                     transform.add( o -> o.asString().value );
                     break;
                 case INTEGER:
-                    transform.add( o -> o.asNumber().intValue() );
+                    transform.add( o -> o.asNumber().IntValue() );
+                    break;
+                case FLOAT:
+                    transform.add( o -> o.asNumber().FloatValue() );
                     break;
                 case BIGINT:
-                    transform.add( o -> o.asNumber().bigDecimalValue() );
+                case DECIMAL:
+                    transform.add( o -> o.asNumber().BigDecimalValue() );
                     break;
                 case DATE:
                     transform.add( o -> o.asDate().value );
-                    break;
-                case DECIMAL:
-                    transform.add( o -> o.asNumber().bigDecimalValue() );
                     break;
                 default:
                     throw new NotImplementedException();

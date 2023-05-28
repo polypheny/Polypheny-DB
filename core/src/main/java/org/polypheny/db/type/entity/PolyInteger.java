@@ -59,6 +59,11 @@ public class PolyInteger extends PolyNumber {
     }
 
 
+    public static PolyInteger of( Integer value ) {
+        return new PolyInteger( value );
+    }
+
+
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyInteger.class, Expressions.constant( value ) );
@@ -78,6 +83,12 @@ public class PolyInteger extends PolyNumber {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyInteger.class );
+    }
+
+
+    @Override
+    public boolean isNull() {
+        return value == null;
     }
 
 

@@ -248,7 +248,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * method based on the type of the parameter.
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
-        if ( value == null ) {
+        if ( value == null || value.isNull() ) {
             preparedStatement.setNull( i, SqlType.NULL.id );
             return;
         }

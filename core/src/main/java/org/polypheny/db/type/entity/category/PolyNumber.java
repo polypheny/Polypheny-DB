@@ -17,9 +17,12 @@
 package org.polypheny.db.type.entity.category;
 
 import java.math.BigDecimal;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyValue;
 
+@Slf4j
 public abstract class PolyNumber extends PolyValue {
 
     public PolyNumber( PolyType type ) {
@@ -34,12 +37,30 @@ public abstract class PolyNumber extends PolyValue {
      */
     public abstract int intValue();
 
+
+    public Integer IntValue() {
+        if ( isNull() ) {
+            return null;
+        }
+        return intValue();
+    }
+
+
     /**
      * Returns the value of the specified number as an {@code long}, which may involve rounding or truncation.
      *
      * @return the numeric value represented by this object after conversion to type {@code long}.
      */
     public abstract long longValue();
+
+
+    public Long LongValue() {
+        if ( isNull() ) {
+            return null;
+        }
+        return longValue();
+    }
+
 
     /**
      * Returns the value of the specified number as an {@code float}, which may involve rounding or truncation.
@@ -48,6 +69,15 @@ public abstract class PolyNumber extends PolyValue {
      */
     public abstract float floatValue();
 
+
+    public Float FloatValue() {
+        if ( isNull() ) {
+            return null;
+        }
+        return floatValue();
+    }
+
+
     /**
      * Returns the value of the specified number as a {@code double}, which may involve rounding.
      *
@@ -55,12 +85,29 @@ public abstract class PolyNumber extends PolyValue {
      */
     public abstract double doubleValue();
 
+
+    public Double DoubleValue() {
+        if ( isNull() ) {
+            return null;
+        }
+        return doubleValue();
+    }
+
+
     /**
      * Returns the value of the specified number as a {@code BigDecimal}, which may involve rounding.
      *
      * @return the numeric value represented by this object after conversion to type {@code BigDecimal}.
      */
     public abstract BigDecimal bigDecimalValue();
+
+
+    public BigDecimal BigDecimalValue() {
+        if ( isNull() ) {
+            return null;
+        }
+        return bigDecimalValue();
+    }
 
 
     public abstract PolyNumber increment();
@@ -72,5 +119,16 @@ public abstract class PolyNumber extends PolyValue {
 
 
     public abstract PolyNumber plus( PolyNumber b1 );
+
+
+    public PolyNumber floor( PolyNumber b1 ) {
+        log.warn( "optimize" );
+        final BigDecimal[] bigDecimals = bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
+        BigDecimal r = bigDecimals[1];
+        if ( r.signum() < 0 ) {
+            r = r.add( b1.bigDecimalValue() );
+        }
+        return PolyBigDecimal.of( bigDecimalValue().subtract( r ) );
+    }
 
 }

@@ -42,6 +42,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.function.Function1;
@@ -54,7 +55,6 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -87,6 +87,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
@@ -168,16 +169,16 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final ParameterExpression resultSet_ = Expressions.parameter( Modifier.FINAL, ResultSet.class, builder.newName( "resultSet" ) );
         final CalendarPolicy calendarPolicy = jdbcConvention.dialect.getCalendarPolicy();
         final Expression calendar_;
-        switch ( calendarPolicy ) {
-            case LOCAL:
-                calendar_ =
-                        builder0.append(
-                                "calendar",
-                                Expressions.call( Calendar.class, "getInstance", getTimeZoneExpression( implementor ) ) );
-                break;
-            default:
-                calendar_ = null;
+
+        if ( Objects.requireNonNull( calendarPolicy ) == CalendarPolicy.LOCAL ) {
+            calendar_ =
+                    builder0.append(
+                            "calendar",
+                            Expressions.call( Calendar.class, "getInstance", getTimeZoneExpression( implementor ) ) );
+        } else {
+            calendar_ = null;
         }
+
         if ( fieldCount == 1 ) {
             final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
             builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
@@ -375,13 +376,13 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
-                poly = Expressions.call( PolyLong.class, "of", source );
+                poly = Expressions.call( PolyLong.class, "of", Expressions.convert_( source, Long.class ) );
                 break;
             case VARCHAR:
                 poly = Expressions.call( PolyString.class, "of", Expressions.convert_( source, String.class ) );
                 break;
             case INTEGER:
-                poly = Expressions.call( PolyInteger.class, "of", source );
+                poly = Expressions.call( PolyInteger.class, "of", Expressions.convert_( source, Integer.class ) );
                 break;
             case BOOLEAN:
                 poly = Expressions.call( PolyBoolean.class, "of", Expressions.convert_( source, Boolean.class ) );
@@ -400,7 +401,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             builder.add(
                     Expressions.ifThen(
                             Expressions.call( resultSet_, "wasNull" ),
-                            Expressions.statement( Expressions.assign( target, Expressions.constant( null ) ) ) ) );
+                            Expressions.statement( Expressions.assign( target, PolyDefaults.NULLS.get( PolyValue.classFrom( polyType ) ).asExpression() ) ) ) );
         }
 
 
@@ -458,7 +459,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     private SqlString generateSql( SqlDialect dialect, JdbcSchema jdbcSchema ) {
-        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) new JavaTypeFactoryImpl(), jdbcSchema );
+        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, new JavaTypeFactoryImpl(), jdbcSchema );
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
         return result.asStatement().toSqlString( dialect );
     }

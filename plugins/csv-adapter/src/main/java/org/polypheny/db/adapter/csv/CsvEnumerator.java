@@ -338,7 +338,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     }
                     try {
                         Date date = TIME_FORMAT_TIME.parse( string );
-                        return PolyTime.of( (int) date.getTime() );
+                        return PolyTime.of( date.getTime() );
                     } catch ( ParseException e ) {
                         return null;
                     }
