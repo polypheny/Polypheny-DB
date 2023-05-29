@@ -38,20 +38,20 @@ public class RefactorFunctions {
 
 
     @SuppressWarnings("unused")
-    public static Object[] toObjectArray( Object... obj ) {
+    public static PolyValue[] toObjectArray( PolyValue... obj ) {
         return obj;
     }
 
 
     @SuppressWarnings("unused")
-    public static String fromDocument( PolyValue doc ) {
-        return doc.serialize();
+    public static PolyString fromDocument( PolyValue doc ) {
+        return PolyString.of( doc.serialize() );
     }
 
 
     @SuppressWarnings("unused")
-    public static PolyValue toDocument( String json ) {
-        return PolyValue.deserialize( json );
+    public static PolyValue toDocument( PolyString json ) {
+        return PolyValue.deserialize( json.value );
     }
 
 

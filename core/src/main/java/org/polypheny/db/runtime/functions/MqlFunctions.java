@@ -29,10 +29,11 @@ import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.schema.document.DocumentUtil;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -266,12 +267,12 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyDocument docUpdateReplace( PolyValue input, List<String> names, List<PolyValue> values ) {
+    public static PolyDocument docUpdateReplace( PolyValue input, List<PolyString> names, List<PolyValue> values ) {
         if ( !input.isDocument() ) {
             return new PolyDocument();
         }
-        for ( Pair<String, PolyValue> pair : Pair.zip( names, values ) ) {
-            updateValue( pair.right, input.asDocument(), List.of( pair.left.split( "\\." ) ) );
+        for ( Pair<PolyString, PolyValue> pair : Pair.zip( names, values ) ) {
+            updateValue( pair.right, input.asDocument(), List.of( pair.left.value.split( "\\." ) ) );
         }
 
         return input.asDocument();
@@ -378,16 +379,16 @@ public class MqlFunctions {
      * @return if the object/type is of one of the provided types
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docTypeMatch( Object input, List<Integer> typeNumbers ) {
+    public static PolyBoolean docTypeMatch( PolyValue input, List<PolyInteger> typeNumbers ) {
 
         if ( input == null ) {
             // if we look for nullType
-            return typeNumbers.contains( 10 );
+            return PolyBoolean.of( typeNumbers.contains( PolyInteger.of( 10 ) ) );
         }
 
-        List<Pair<Class<? extends BsonValue>, Class<?>>> clazzPairs = typeNumbers.stream().map( DocumentUtil::getBsonClass ).collect( Collectors.toList() );
+        List<Pair<Class<? extends BsonValue>, Class<?>>> clazzPairs = typeNumbers.stream().map( typeNumber -> DocumentUtil.getBsonClass( typeNumber.intValue() ) ).collect( Collectors.toList() );
 
-        return Pair.right( clazzPairs ).stream().anyMatch( clazz -> clazz.isInstance( input ) );
+        return PolyBoolean.of( Pair.right( clazzPairs ).stream().anyMatch( clazz -> clazz.isInstance( input ) ) );
     }
 
 
@@ -479,7 +480,7 @@ public class MqlFunctions {
      * @return the element at the specified position, else null
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docItemAny( Object input, Object index ) {
+    public static Object docItemAny( PolyValue input, Object index ) {
         if ( index instanceof BigDecimal ) {
             return docItem( input, ((BigDecimal) index).intValue() );
         }
@@ -495,30 +496,12 @@ public class MqlFunctions {
      * @return the element at the specified position, else null
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docItem( Object input, int index ) {
-        if ( input instanceof String ) {
-            BsonDocument doc = BsonDocument.parse( (String) input );
-            if ( doc.isArray() ) {
-                return docItemAny( doc.asArray(), index );
-            }
-        } else if ( input instanceof List ) {
-            return docItemAny( (List<?>) input, index );
+    public static PolyValue docItem( PolyValue input, int index ) {
+        if ( input.isList() ) {
+            return input.asList().get( index );
         }
 
         return null;
-    }
-
-
-    /**
-     * Retrieves an element in the underlying array
-     *
-     * @param input the array to scan
-     * @param index the element, which is retrieved, negative starts form behind
-     * @return the element at the specified position, else null
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static Object docItem( BsonArray input, int index ) {
-        return docItemAny( input, index );
     }
 
 
@@ -530,11 +513,11 @@ public class MqlFunctions {
      * @return if the size matches
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docSizeMatch( Object input, int size ) {
+    public static PolyBoolean docSizeMatch( Object input, int size ) {
         if ( input instanceof List ) {
-            return ((List<?>) input).size() == size;
+            return PolyBoolean.of( ((List<?>) input).size() == size );
         }
-        return false;
+        return PolyBoolean.FALSE;
     }
 
 
@@ -547,19 +530,19 @@ public class MqlFunctions {
      * @return if the elements are equal
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docEq( Object b0, Object b1 ) {
+    public static PolyBoolean docEq( PolyValue b0, PolyValue b1 ) {
         if ( b0 instanceof List && !(b1 instanceof List) ) {
-            return ((List<?>) b0).contains( b1 );
+            return PolyBoolean.of( ((List<?>) b0).contains( b1 ) );
         }
         if ( b0 == null || b1 == null ) {
             if ( b0 == null && b1 == null ) {
-                return true;
+                return PolyBoolean.TRUE;
             } else {
-                return false;
+                return PolyBoolean.FALSE;
             }
         }
 
-        return b0.equals( b1 );
+        return PolyBoolean.of( b0.equals( b1 ) );
     }
 
 
@@ -572,7 +555,7 @@ public class MqlFunctions {
      * @return if the left element is smaller than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docGt( PolyNumber b0, PolyNumber b1 ) {
+    public static PolyBoolean docGt( PolyValue b0, PolyValue b1 ) {
         return compNullExecute(
                 b0,
                 b1,
@@ -589,7 +572,7 @@ public class MqlFunctions {
      * @return if the left element is smaller equal than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docGte( PolyNumber b0, PolyNumber b1 ) {
+    public static PolyBoolean docGte( PolyValue b0, PolyValue b1 ) {
         return compNullExecute(
                 b0,
                 b1,
@@ -606,7 +589,7 @@ public class MqlFunctions {
      * @return if the left element is bigger than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docLt( PolyNumber b0, PolyNumber b1 ) {
+    public static PolyBoolean docLt( PolyValue b0, PolyValue b1 ) {
         return compNullExecute(
                 b0,
                 b1,
@@ -623,7 +606,7 @@ public class MqlFunctions {
      * @return if the left element is bigger equal than the right
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docLte( PolyNumber b0, PolyNumber b1 ) {
+    public static PolyBoolean docLte( PolyValue b0, PolyValue b1 ) {
         return compNullExecute(
                 b0,
                 b1,
@@ -640,14 +623,14 @@ public class MqlFunctions {
      * @return if the provided elements fit the provided condition
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static boolean compNullExecute( Object b0, Object b1, Supplier<Boolean> predicate ) {
+    private static PolyBoolean compNullExecute( Object b0, Object b1, Supplier<Boolean> predicate ) {
         if ( b0 == null || b1 == null ) {
-            return false;
+            return PolyBoolean.FALSE;
         }
-        if ( !(b0 instanceof Number) || !(b1 instanceof Number) ) {
-            return false;
+        if ( !(b0 instanceof PolyNumber) || !(b1 instanceof PolyNumber) ) {
+            return PolyBoolean.FALSE;
         }
-        return predicate.get();
+        return PolyBoolean.of( predicate.get() );
     }
 
 

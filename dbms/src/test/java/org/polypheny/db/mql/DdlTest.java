@@ -149,11 +149,12 @@ public class DdlTest extends MqlTestTemplate {
 
         String placement = "store1";
         final String DATA = "{ \"key\": \"value\", \"key1\": \"value1\"}";
+
+        execute( "db.createCollection(\"" + collectionName + "\")" );
+
+        insert( DATA );
+
         try {
-
-            execute( "db.createCollection(\"" + collectionName + "\")" );
-
-            insert( DATA );
 
             addStore( placement );
 

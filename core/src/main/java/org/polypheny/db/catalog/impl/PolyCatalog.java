@@ -181,6 +181,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     private void change() {
         // empty for now
+        updateSnapshot();
     }
 
 

@@ -133,15 +133,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @Override
-    public <T extends PolySerializable> BinarySerializer<T> getSerializer() {
-        return null;
-    }
-
 
     public static Class<? extends PolyValue> classFrom( PolyType polyType ) {
         switch ( polyType ) {
-
             case BOOLEAN:
                 return PolyBoolean.class;
             case TINYINT:
@@ -258,7 +252,19 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static PolyValue deserialize( String json ) {
-        return PolySerializable.deserialize( json, PolyValue.class );
+        return PolySerializable.deserialize( json, serializer );
+    }
+
+
+    @Override
+    public String serialize() {
+        return PolySerializable.serialize( serializer, this );
+    }
+
+
+    @Override
+    public <T extends PolySerializable> BinarySerializer<T> getSerializer() {
+        return (BinarySerializer<T>) serializer;
     }
 
 
@@ -605,9 +611,17 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         switch ( type ) {
             case INTEGER:
                 return PolyInteger.from( value );
+            case DOCUMENT:
+                // docs accept all
+                return value;
         }
 
         throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, type ) );
+    }
+
+
+    public String toJson() {
+        return toString();
     }
 
 

@@ -2097,15 +2097,16 @@ public class MqlToAlgConverter {
     private RexCall getStringArray( List<String> elements ) {
         List<RexNode> rexNodes = new ArrayList<>();
         int maxSize = 0;
+        AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.CHAR, 200 );
         for ( String name : elements ) {
-            rexNodes.add( convertLiteral( new BsonString( name ) ) );
+            rexNodes.add( new RexLiteral( PolyString.of( name ), type, PolyType.CHAR ) );
             maxSize = Math.max( name.length(), maxSize );
         }
 
-        AlgDataType type = cluster.getTypeFactory().createArrayType(
+        AlgDataType arrayType = cluster.getTypeFactory().createArrayType(
                 cluster.getTypeFactory().createPolyType( PolyType.CHAR, maxSize ),
                 rexNodes.size() );
-        return DocumentUtil.getArray( rexNodes, type );
+        return DocumentUtil.getArray( rexNodes, arrayType );
     }
 
 

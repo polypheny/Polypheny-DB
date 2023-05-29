@@ -58,9 +58,18 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.DateString;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimestampString;
 
 public class DocumentUtil {
 
@@ -80,27 +89,27 @@ public class DocumentUtil {
     public static Pair<Class<? extends BsonValue>, Class<?>> getBsonClass( int typeNumber ) {
         switch ( typeNumber ) {
             case 1:
-                return new Pair<>( BsonDouble.class, Double.class );
+                return new Pair<>( BsonDouble.class, PolyDouble.class );
             case 2:
-                return new Pair<>( BsonString.class, String.class );
+                return new Pair<>( BsonString.class, PolyString.class );
             case 3:
-                return new Pair<>( BsonDocument.class, Object.class );
+                return new Pair<>( BsonDocument.class, PolyDocument.class );
             case 4:
-                return new Pair<>( BsonArray.class, List.class );
+                return new Pair<>( BsonArray.class, PolyList.class );
             case 5:
-                return new Pair<>( BsonBinary.class, Byte.class );
+                return new Pair<>( BsonBinary.class, PolyBinary.class );
             case 6: // undefined
                 throw new RuntimeException( "DEPRECATED" );
             case 7:
                 return new Pair<>( BsonObjectId.class, ObjectId.class );
             case 8:
-                return new Pair<>( BsonBoolean.class, Boolean.class );
+                return new Pair<>( BsonBoolean.class, PolyBoolean.class );
             case 9:
-                return new Pair<>( BsonDateTime.class, DateString.class );
+                return new Pair<>( BsonDateTime.class, PolyDate.class );
             case 10:
                 return new Pair<>( BsonNull.class, null );
             case 11:
-                return new Pair<>( BsonRegularExpression.class, String.class );
+                return new Pair<>( BsonRegularExpression.class, PolyString.class );
             case 12: // dbPointer
                 throw new RuntimeException( "DEPRECATED" );
             case 13:
@@ -112,13 +121,13 @@ public class DocumentUtil {
                 //return new Pair<>( BsonJavaScriptWithScope.class, String.class );
                 throw new RuntimeException( "UNSUPPORTED" );
             case 16:
-                return new Pair<>( BsonInt32.class, Integer.class );
+                return new Pair<>( BsonInt32.class, PolyInteger.class );
             case 17:
-                return new Pair<>( BsonTimestamp.class, TimestampString.class );
+                return new Pair<>( BsonTimestamp.class, PolyTimeStamp.class );
             case 18:
-                return new Pair<>( BsonInt64.class, Long.class );
+                return new Pair<>( BsonInt64.class, PolyLong.class );
             case 19:
-                return new Pair<>( BsonDecimal128.class, BigDecimal.class );
+                return new Pair<>( BsonDecimal128.class, PolyBigDecimal.class );
             case -1:
                 return new Pair<>( BsonMinKey.class, BsonMinKey.class );
             case 127:

@@ -53,10 +53,10 @@ public class PolyLong extends PolyNumber {
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isSameType( o ) ) {
+        if ( !o.isNumber() ) {
             return -1;
         }
-        return ObjectUtils.compare( value, o.asLong().value );
+        return ObjectUtils.compare( value, o.asNumber().LongValue() );
     }
 
 

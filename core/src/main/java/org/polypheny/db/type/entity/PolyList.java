@@ -16,7 +16,6 @@
 
 package org.polypheny.db.type.entity;
 
-import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -53,7 +52,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     public PolyList( @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY );
-        this.value = ImmutableList.copyOf( value );
+        this.value = new ArrayList<>( value );
     }
 
 

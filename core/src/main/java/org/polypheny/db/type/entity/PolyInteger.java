@@ -25,6 +25,7 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.math.BigDecimal;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -71,12 +72,36 @@ public class PolyInteger extends PolyNumber {
 
 
     @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( !(o instanceof PolyValue) ) {
+            return false;
+        }
+        PolyValue val = (PolyValue) o;
+
+        if ( val.isNumber() ) {
+            return Objects.equals( value, val.asNumber().intValue() );
+        }
+
+        return false;
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
+    }
+
+
+    @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isSameType( o ) ) {
+        if ( !o.isNumber() ) {
             return -1;
         }
 
-        return this.value.compareTo( o.asInteger().value );
+        return this.value.compareTo( o.asNumber().intValue() );
     }
 
 

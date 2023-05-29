@@ -423,7 +423,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case MAP:
                 return value.isMap();
             case DOCUMENT:
-                return value.isDocument();
+                return true;
             default:
                 throw Util.unexpected( typeName );
         }

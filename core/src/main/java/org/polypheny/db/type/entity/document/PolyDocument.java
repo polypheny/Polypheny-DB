@@ -71,7 +71,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @Override
     public Expression asExpression() {
-        return Expressions.convert_( super.asExpression(), PolyDocument.class );
+        return Expressions.new_( PolyDocument.class, super.asExpression() );
     }
 
 
@@ -116,6 +116,12 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     @Override
     public String toString() {
         return "{" + map.entrySet().stream().map( e -> String.format( "%s:%s", e.getKey(), e.getValue() ) ).collect( Collectors.joining( "," ) ) + "}";
+    }
+
+
+    @Override
+    public String toJson() {
+        return "{" + map.entrySet().stream().map( e -> String.format( "%s:%s", e.getKey().toJson(), e.getValue().toJson() ) ).collect( Collectors.joining( "," ) ) + "}";
     }
 
 }

@@ -54,6 +54,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.functions.RefactorFunctions;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
@@ -324,7 +325,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         ParameterExpression target = Expressions.parameter( Object[].class );
 
         for ( AlgDataTypeField field : getInput( 0 ).getRowType().getFieldList() ) {
-            UnaryExpression element = Expressions.convert_( Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) ), String.class );
+            UnaryExpression element = Expressions.convert_( Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) ), PolyString.class );
             Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
                 expressions.add( 0, el );

@@ -355,7 +355,10 @@ public class TestHelper {
             try {
                 DocResult[] result = gson.fromJson( res.getBody(), DocResult[].class );
                 if ( result.length == 1 ) {
-                    return gson.fromJson( res.getBody(), DocResult[].class )[0];
+                    if ( result[0].error != null ) {
+                        throw new RuntimeException( result[0].error );
+                    }
+                    return result[0];
                 } else if ( result.length == 0 ) {
                     return DocResult.builder().build();
                 }

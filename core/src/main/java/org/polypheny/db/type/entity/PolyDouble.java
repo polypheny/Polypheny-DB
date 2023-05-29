@@ -51,11 +51,11 @@ public class PolyDouble extends PolyNumber {
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isSameType( o ) ) {
+        if ( !o.isNumber() ) {
             return -1;
         }
 
-        return ObjectUtils.compare( value, o.asDouble().value );
+        return ObjectUtils.compare( value, o.asNumber().DoubleValue() );
     }
 
 

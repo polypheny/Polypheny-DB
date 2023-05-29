@@ -447,7 +447,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public @NonNull Optional<LogicalTable> getTable( long namespaceId, String name ) {
         String adjustedName = name;
-        if ( !namespaces.get( namespaceId ).caseSensitive ) {
+        if ( namespaces.containsKey( namespaceId ) && !namespaces.get( namespaceId ).caseSensitive ) {
             adjustedName = name.toLowerCase();
         }
         return Optional.ofNullable( tableNames.get( Pair.of( namespaceId, adjustedName ) ) );

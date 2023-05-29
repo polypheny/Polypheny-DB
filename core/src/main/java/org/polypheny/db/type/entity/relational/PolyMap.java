@@ -37,7 +37,6 @@ import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
 
 @EqualsAndHashCode(callSuper = true)
@@ -57,7 +56,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
     public PolyMap( Map<K, V> map, PolyType type ) {
         super( type );
-        this.map = map;
+        this.map = new HashMap<>( map );
     }
 
 
@@ -91,15 +90,15 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyDictionary.class, Expressions.call(
+        return Expressions.new_( PolyMap.class, Expressions.call(
                 BuiltInMethod.MAP_OF_ENTRIES.method,
                 EnumUtils.expressionList(
                         entrySet()
                                 .stream()
                                 .map( p -> Expressions.call(
                                         BuiltInMethod.PAIR_OF.method,
-                                        Expressions.constant( p.getKey(), String.class ),
-                                        EnumUtils.getExpression( p.getValue(), Object.class ) ) ).collect( Collectors.toList() ) ) ) );
+                                        p.getKey().asExpression(),
+                                        p.getValue().asExpression() ) ).collect( Collectors.toList() ) ) ) );
     }
 
 

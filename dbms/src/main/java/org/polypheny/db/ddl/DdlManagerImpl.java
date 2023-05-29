@@ -2104,6 +2104,8 @@ public class DdlManagerImpl extends DdlManager {
             store.createCollection( statement.getPrepareContext(), logical, alloc );
         }
 
+        Catalog.getInstance().updateSnapshot();
+
     }
 
 
@@ -2111,9 +2113,9 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalNamespace namespace = snapshot.getNamespace( namespaceId );
         // Check if there is already an entity with this name
-        if ( snapshot.rel().getTable( namespaceId, name ).isPresent()
-                || snapshot.doc().getCollection( namespaceId, name ).isPresent()
-                || snapshot.graph().getGraph( namespaceId ).isPresent() ) {
+        if ( (namespace.namespaceType == NamespaceType.RELATIONAL && snapshot.rel().getTable( namespaceId, name ).isPresent())
+                || (namespace.namespaceType == NamespaceType.DOCUMENT && snapshot.doc().getCollection( namespaceId, name ).isPresent())
+                || (namespace.namespaceType == NamespaceType.GRAPH && snapshot.graph().getGraph( namespaceId ).isPresent()) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return true;

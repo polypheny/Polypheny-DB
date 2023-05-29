@@ -114,11 +114,11 @@ public class PolyBigDecimal extends PolyNumber {
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
-        if ( !isSameType( o ) ) {
+        if ( !o.isNumber() ) {
             return -1;
         }
 
-        return ObjectUtils.compare( value, o.asBigDecimal().value );
+        return ObjectUtils.compare( value, o.asNumber().BigDecimalValue() );
     }
 
 

@@ -240,10 +240,10 @@ public class LanguageCrud {
 
     private static <T> DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation<T> implementation, Transaction transaction, boolean noLimit ) {
 
-        List<T> data = implementation.getDocRows( statement, noLimit );
+        List<PolyValue> data = (List<PolyValue>) implementation.getDocRows( statement, noLimit );
 
         return DocResult.builder()
-                .data( data.stream().map( Object::toString ).toArray( String[]::new ) )
+                .data( data.stream().map( PolyValue::toJson ).toArray( String[]::new ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )
                 .namespaceName( request.database )

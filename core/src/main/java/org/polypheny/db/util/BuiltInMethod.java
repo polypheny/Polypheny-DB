@@ -134,7 +134,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -432,15 +431,15 @@ public enum BuiltInMethod {
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
     /// MQL BUILT-IN METHODS
-    DOC_EQ( MqlFunctions.class, "docEq", Object.class, Object.class ),
-    DOC_GT( MqlFunctions.class, "docGt", PolyNumber.class, PolyNumber.class ),
-    DOC_GTE( MqlFunctions.class, "docGte", PolyNumber.class, PolyNumber.class ),
-    DOC_LT( MqlFunctions.class, "docLt", PolyNumber.class, PolyNumber.class ),
-    DOC_LTE( MqlFunctions.class, "docLte", PolyNumber.class, PolyNumber.class ),
+    DOC_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
+    DOC_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
+    DOC_GTE( MqlFunctions.class, "docGte", PolyValue.class, PolyValue.class ),
+    DOC_LT( MqlFunctions.class, "docLt", PolyValue.class, PolyValue.class ),
+    DOC_LTE( MqlFunctions.class, "docLte", PolyValue.class, PolyValue.class ),
     DOC_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", Object.class, int.class ),
     DOC_JSON_MATCH( MqlFunctions.class, "docJsonMatch", Object.class, String.class ),
     DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
-    DOC_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", Object.class, List.class ),
+    DOC_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", PolyValue.class, List.class ),
     DOC_SLICE( MqlFunctions.class, "docSlice", Object.class, int.class, int.class ),
     DOC_QUERY_VALUE( MqlFunctions.class, "docQueryValue", PolyValue.class, List.class ),
     DOC_QUERY_EXCLUDE( MqlFunctions.class, "docQueryExclude", Object.class, List.class ),
