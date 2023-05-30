@@ -27,49 +27,54 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ProtoInterfaceServer {
+
     private final Server server;
     private final int port;
-    public ProtoInterfaceServer(int port, ProtoInterfaceService service, ClientManager clientManager) {
-        ExceptionHandler exceptionHandler = new ExceptionHandler();
-        ClientMetaInterceptor clientMetaInterceptor = new ClientMetaInterceptor(clientManager);
+
+
+    public ProtoInterfaceServer( int port, ProtoInterfaceService service, ClientManager clientManager ) {
         this.port = port;
-        ServerBuilder<?> serverBuilder = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create());
+        ServerBuilder<?> serverBuilder = Grpc.newServerBuilderForPort( port, InsecureServerCredentials.create() );
         server = serverBuilder
-                .addService(service)
-                .intercept(clientMetaInterceptor)
-                .intercept(exceptionHandler)
+                .addService( service )
+                .intercept( new ClientMetaInterceptor( clientManager ) )
+                .intercept( new ExceptionHandler() )
                 .build();
     }
+
 
     public void start() throws IOException {
         server.start();
         if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface server started on port {}", port);
+            log.trace( "proto-interface server started on port {}", port );
         }
         // used to handle unexpected shutdown of the JVM
-        Runtime.getRuntime().addShutdownHook(getShutdownHook());
+        Runtime.getRuntime().addShutdownHook( getShutdownHook() );
     }
 
+
     public void shutdown() throws InterruptedException {
-        if (server == null) {
+        if ( server == null ) {
             return;
         }
         if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface server shutdown requested");
+            log.trace( "proto-interface server shutdown requested" );
         }
-        server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
+        server.shutdown().awaitTermination( 30, TimeUnit.SECONDS );
     }
 
+
     private Thread getShutdownHook() {
-        return new Thread(() -> {
+        return new Thread( () -> {
             // Use stderr here since the logger may have been reset by its JVM shutdown hook.
-            System.err.println("shutting down gRPC server since JVM is shutting down");
+            System.err.println( "shutting down gRPC server since JVM is shutting down" );
             try {
                 ProtoInterfaceServer.this.shutdown();
-            } catch (InterruptedException e) {
-                e.printStackTrace(System.err);
+            } catch ( InterruptedException e ) {
+                e.printStackTrace( System.err );
             }
-            System.err.println("server shut down");
-        });
+            System.err.println( "server shut down" );
+        } );
     }
+
 }
