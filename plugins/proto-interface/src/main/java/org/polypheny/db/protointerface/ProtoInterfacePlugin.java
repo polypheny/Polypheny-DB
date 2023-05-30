@@ -57,7 +57,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
     @Extension
     public static class ProtoInterface extends QueryInterface implements PropertyChangeListener {
 
-        public static final String INTERFACE_NAME = "proto-interface";
+        public static final String INTERFACE_NAME = "Proto Interface";
         public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting the PolySQL dialect.";
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingInteger( "port", false, true, false, 20590 )
@@ -66,6 +66,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
         private TransactionManager transactionManager;
         private Authenticator authenticator;
         private ProtoInterfaceServer protoInterfaceServer;
+
 
         public ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, long queryInterfaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, queryInterfaceId, uniqueName, settings, true, true );
@@ -77,6 +78,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
                 throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
         }
+
 
         @Override
         public List<QueryInterfaceSetting> getAvailableSettings() {
