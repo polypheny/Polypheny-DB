@@ -23,46 +23,57 @@ import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.db.transaction.TransactionException;
 
 public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
+
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
     private ClientManager clientManager;
     private StatementManager statementManager;
 
-    public ProtoInterfaceService(ClientManager clientManager) {
+
+    public ProtoInterfaceService( ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
     }
 
+
     @Override
-    public void connect(ConnectionRequest connectionRequest, StreamObserver<ConnectionReply> responseObserver) {
+    public void connect( ConnectionRequest connectionRequest, StreamObserver<ConnectionReply> responseObserver ) {
         ConnectionReply.Builder responseBuilder = ConnectionReply.newBuilder()
-                .setMajorApiVersion(majorApiVersion)
-                .setMinorApiVersion(minorApiVersion);
-        boolean isCompatible = checkApiVersion(connectionRequest);
-        responseBuilder.setIsCompatible(isCompatible);
+                .setMajorApiVersion( majorApiVersion )
+                .setMinorApiVersion( minorApiVersion );
+        boolean isCompatible = checkApiVersion( connectionRequest );
+        responseBuilder.setIsCompatible( isCompatible );
         ConnectionReply connectionReply = responseBuilder.build();
         // reject incompatible client
-        if (!isCompatible) {
-            responseObserver.onNext(connectionReply);
+        if ( !isCompatible ) {
+            responseObserver.onNext( connectionReply );
+            responseObserver.onCompleted();
             return;
         }
         try {
-            clientManager.registerConnection(connectionRequest);
-        } catch (TransactionException | AuthenticationException e) {
-            throw new RuntimeException(e);
+            clientManager.registerConnection( connectionRequest );
+
+        } catch ( TransactionException | AuthenticationException e ) {
+            throw new RuntimeException( e );
         }
-        responseObserver.onNext(connectionReply);
+        responseObserver.onNext( connectionReply );
+        responseObserver.onCompleted();
     }
+
 
     @Override
-    public void executeSimpleSqlQuery(SimpleSqlQuery query, StreamObserver<QueryResult> responseObserver) {
+    public void executeSimpleSqlQuery( SimpleSqlQuery query, StreamObserver<QueryResult> responseObserver ) {
+        System.out.println( "==========================HIT========================" );
         ProtoInterfaceClient protoInterfaceClient = ClientMetaInterceptor.CLIENT.get();
-        ProtoInterfaceStatement statement = statementManager.createStatement(protoInterfaceClient, QueryLanguage.from("sql"));
-        QueryResult result = statement.prepareAndExecute(query.getQuery());
-        responseObserver.onNext(result);
+        ProtoInterfaceStatement statement = statementManager.createStatement( protoInterfaceClient, QueryLanguage.from( "sql" ) );
+        QueryResult result = statement.prepareAndExecute( query.getQuery() );
+        responseObserver.onNext( result );
+        responseObserver.onCompleted();
     }
 
-    private boolean checkApiVersion(ConnectionRequest connectionRequest) {
+
+    private boolean checkApiVersion( ConnectionRequest connectionRequest ) {
         return connectionRequest.getMajorApiVersion() == majorApiVersion;
     }
+
 }
