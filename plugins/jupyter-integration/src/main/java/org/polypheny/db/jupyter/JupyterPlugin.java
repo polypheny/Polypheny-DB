@@ -43,7 +43,7 @@ public class JupyterPlugin extends Plugin {
     private final int adapterId = 123456;
     private final int PORT = 12345;
     private final String UNIQUE_NAME = "jupyter-container";
-    private final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";
+    public static final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";
     private final String REST_PATH = "/notebooks";
     private final String WEBSOCKET_PATH = REST_PATH + "/webSocket";
     private DockerManager.Container container;

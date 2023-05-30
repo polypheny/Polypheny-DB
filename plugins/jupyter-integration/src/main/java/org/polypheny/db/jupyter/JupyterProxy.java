@@ -54,8 +54,9 @@ public class JupyterProxy {
 
     public void contents( final Context ctx, Crud crud ) {
         String content = ctx.queryParam( "content" );
+        String format = ctx.queryParam( "format" );
         String path = ctx.pathParam( "path" );
-        forward( ctx, () -> client.getContents( path, content == null ? "1" : content ) );
+        forward( ctx, () -> client.getContents( path, content == null ? "1" : content, format ) );
     }
 
 
@@ -127,15 +128,15 @@ public class JupyterProxy {
 
 
     private void forward( Context ctx, HttpResponseSupplier supplier ) {
+        ctx.contentType( "application/json" );
         try {
             HttpResponse<String> res = supplier.get();
             log.info( "Responding with: {}", res.body() );
             ctx.status( res.statusCode() );
-            ctx.contentType( "application/json" );
             ctx.result( res.body() );
 
         } catch ( JupyterServerException e ) {
-            ctx.status( e.getStatus() ).json( e );
+            ctx.status( e.getStatus() ).result(e.getMsg());
         }
     }
 

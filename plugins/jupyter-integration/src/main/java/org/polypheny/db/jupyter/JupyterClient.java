@@ -184,9 +184,12 @@ public class JupyterClient {
 
     /**
      * @param content Return inner content ("0" for no content, "1" for return content)
+     * @param format Specify the content format (text, base64, text, null)
      */
-    public HttpResponse<String> getContents( String path, String content ) throws JupyterServerException {
-        return sendGET( "contents/" + path, "content=" + content);
+    public HttpResponse<String> getContents( String path, String content, String format ) throws JupyterServerException {
+        String queryParams = "content=" + content;
+        if (format != null) queryParams += "&format=" + format;
+        return sendGET( "contents/" + path, queryParams);
     }
 
 
@@ -259,7 +262,12 @@ public class JupyterClient {
 
 
     public HttpResponse<String> deleteFile( String filePath ) throws JupyterServerException {
-        return sendDELETE( "contents/" + filePath );
+        HttpResponse<String> response = sendDELETE( "contents/" + filePath );
+        if (response.statusCode() == 400 ) {
+            throw new JupyterServerException( response.body()
+                    .replace( JupyterPlugin.SERVER_TARGET_PATH + '/', "" ), 400 );
+        }
+        return response;
     }
 
 
