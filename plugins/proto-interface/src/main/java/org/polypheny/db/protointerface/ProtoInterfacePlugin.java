@@ -60,7 +60,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
         public static final String INTERFACE_NAME = "proto-interface";
         public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting the PolySQL dialect.";
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-                new QueryInterfaceSettingInteger( "port", false, true, false, 20000 )
+                new QueryInterfaceSettingInteger( "port", false, true, false, 20590 )
         );
         private final int port;
         private TransactionManager transactionManager;
