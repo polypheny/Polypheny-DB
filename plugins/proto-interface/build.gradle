@@ -3,6 +3,8 @@ plugins {
     id "com.google.protobuf" version "0.9.3"
 }
 
+apply plugin: "com.google.protobuf"
+
 group "org.polypheny"
 
 configurations {
@@ -115,4 +117,3 @@ java {
 licensee {
     allow('Apache-2.0')
 }
-
