@@ -68,6 +68,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
         private Authenticator authenticator;
         private ProtoInterfaceServer protoInterfaceServer;
 
+
         public ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, long queryInterfaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, queryInterfaceId, uniqueName, settings, true, true );
             this.authenticator = authenticator;
@@ -78,6 +79,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
                 throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
         }
+
 
         @Override
         public List<QueryInterfaceSetting> getAvailableSettings() {
