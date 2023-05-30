@@ -44,7 +44,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
     public void start() {
         Map<String, String> settings = new HashMap<>();
         settings.put( "port", "20590" );
-        QueryInterfaceManager.addInterfaceType( "Proto Interface", ProtoInterface.class, settings );
+        QueryInterfaceManager.addInterfaceType( "proto-interface", ProtoInterface.class, settings );
     }
 
 
@@ -124,11 +124,13 @@ public class ProtoInterfacePlugin extends PolyPlugin {
             ClientManager clientManager = new ClientManager( authenticator, transactionManager );
             ProtoInterfaceService protoInterfaceService = new ProtoInterfaceService( clientManager );
             protoInterfaceServer = new ProtoInterfaceServer( port, protoInterfaceService, clientManager );
+            /*
             try {
                 protoInterfaceServer.blockUntilShutdown();
             } catch ( InterruptedException e ) {
                 throw new RuntimeException( e );
             }
+            */
         }
 
     }
