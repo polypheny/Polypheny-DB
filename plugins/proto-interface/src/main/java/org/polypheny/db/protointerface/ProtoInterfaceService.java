@@ -65,7 +65,9 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
             responseObserver.onCompleted();
             return;
         }
-        clientManager.registerConnection( connectionRequest );
+
+            clientManager.registerConnection( connectionRequest );
+
         responseObserver.onNext( connectionReply );
         responseObserver.onCompleted();
     }
@@ -73,17 +75,20 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
-        SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder()
-                .addAllLanguageNames( new LinkedList<>() )
+        SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder( )
+                .addAllLanguageNames( new LinkedList<>( ))
                 .build();
         responseObserver.onNext( supportedLanguages );
+        responseObserver.onCompleted( );
         responseObserver.onCompleted();
     }
+
 
 
     @SneakyThrows
     @Override
     public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
+        System.out.println( "==========================HIT========================" );
         ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
         String languageName = unparameterizedStatement.getStatementLanguageName();
         if ( !statementManager.isSupportedLanguage( languageName ) ) {
@@ -91,26 +96,10 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         }
         UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
         responseObserver.onNext( ProtoUtils.createStatus( statement ) );
-        StatementResult result = statement.execute();
-        responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
+        StatementResult result = statement.execute() ;
+        responseObserver.onNext( ProtoUtils.createStatus( statement,result ));
         responseObserver.onCompleted();
-    }
-
-    @Override
-    public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
-        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
-        ProtoInterfaceStatement statement = statementManager.getStatement( client, fetchRequest.getStatementId() );
-        Frame frame = statement.fetch( fetchRequest.getOffset() );
-        responseObserver.onNext( frame );
         responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
-        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
-        statementManager.closeStatement( client, closeStatementRequest.getStatementId() );
-        responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
     }
 
 
