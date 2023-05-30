@@ -169,8 +169,9 @@ public class QueryInterfaceManager {
             String[] split = clazzName.split( "\\$" );
             split = split[split.length - 1].split( "\\." );
             Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
-            Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
+            Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, long.class, String.class, Map.class );
             ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
+
             instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
 
             Thread thread = new Thread( instance );
