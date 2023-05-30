@@ -12,7 +12,7 @@ public final class ProtoInterfaceGrpc {
 
   private ProtoInterfaceGrpc() {}
 
-  public static final String SERVICE_NAME = "org.polypheny.db.protointerface.proto.ProtoInterface";
+  public static final String SERVICE_NAME = "polypheny.protointerface.ProtoInterface";
 
   // Static method descriptors that strictly reflect the proto.
   private static volatile io.grpc.MethodDescriptor<ConnectionRequest,
@@ -47,7 +47,7 @@ public final class ProtoInterfaceGrpc {
   }
 
   private static volatile io.grpc.MethodDescriptor<SimpleSqlQuery,
-          QueryResult> getExecuteSimpleSqlQueryMethod;
+      QueryResult> getExecuteSimpleSqlQueryMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "executeSimpleSqlQuery",
@@ -55,7 +55,7 @@ public final class ProtoInterfaceGrpc {
       responseType = QueryResult.class,
       methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
   public static io.grpc.MethodDescriptor<SimpleSqlQuery,
-          QueryResult> getExecuteSimpleSqlQueryMethod() {
+      QueryResult> getExecuteSimpleSqlQueryMethod() {
     io.grpc.MethodDescriptor<SimpleSqlQuery, QueryResult> getExecuteSimpleSqlQueryMethod;
     if ((getExecuteSimpleSqlQueryMethod = ProtoInterfaceGrpc.getExecuteSimpleSqlQueryMethod) == null) {
       synchronized (ProtoInterfaceGrpc.class) {
@@ -130,15 +130,15 @@ public final class ProtoInterfaceGrpc {
      * Connect to server by sending a ConnectionRequest.
      * </pre>
      */
-    default void connect(ConnectionRequest request,
+    default void connect( ConnectionRequest request,
         io.grpc.stub.StreamObserver<ConnectionReply> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getConnectMethod(), responseObserver);
     }
 
     /**
      */
-    default void executeSimpleSqlQuery(SimpleSqlQuery request,
-                                       io.grpc.stub.StreamObserver<QueryResult> responseObserver) {
+    default void executeSimpleSqlQuery( SimpleSqlQuery request,
+        io.grpc.stub.StreamObserver<QueryResult> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getExecuteSimpleSqlQueryMethod(), responseObserver);
     }
   }
@@ -175,7 +175,7 @@ public final class ProtoInterfaceGrpc {
      * Connect to server by sending a ConnectionRequest.
      * </pre>
      */
-    public void connect(ConnectionRequest request,
+    public void connect( ConnectionRequest request,
         io.grpc.stub.StreamObserver<ConnectionReply> responseObserver) {
       io.grpc.stub.ClientCalls.asyncUnaryCall(
           getChannel().newCall(getConnectMethod(), getCallOptions()), request, responseObserver);
@@ -183,8 +183,8 @@ public final class ProtoInterfaceGrpc {
 
     /**
      */
-    public void executeSimpleSqlQuery(SimpleSqlQuery request,
-                                      io.grpc.stub.StreamObserver<QueryResult> responseObserver) {
+    public void executeSimpleSqlQuery( SimpleSqlQuery request,
+        io.grpc.stub.StreamObserver<QueryResult> responseObserver) {
       io.grpc.stub.ClientCalls.asyncUnaryCall(
           getChannel().newCall(getExecuteSimpleSqlQueryMethod(), getCallOptions()), request, responseObserver);
     }
@@ -211,14 +211,14 @@ public final class ProtoInterfaceGrpc {
      * Connect to server by sending a ConnectionRequest.
      * </pre>
      */
-    public ConnectionReply connect(ConnectionRequest request) {
+    public ConnectionReply connect( ConnectionRequest request) {
       return io.grpc.stub.ClientCalls.blockingUnaryCall(
           getChannel(), getConnectMethod(), getCallOptions(), request);
     }
 
     /**
      */
-    public QueryResult executeSimpleSqlQuery(SimpleSqlQuery request) {
+    public QueryResult executeSimpleSqlQuery( SimpleSqlQuery request) {
       return io.grpc.stub.ClientCalls.blockingUnaryCall(
           getChannel(), getExecuteSimpleSqlQueryMethod(), getCallOptions(), request);
     }
@@ -317,8 +317,8 @@ public final class ProtoInterfaceGrpc {
           getExecuteSimpleSqlQueryMethod(),
           io.grpc.stub.ServerCalls.asyncUnaryCall(
             new MethodHandlers<
-                    SimpleSqlQuery,
-                    QueryResult>(
+              SimpleSqlQuery,
+              QueryResult>(
                 service, METHODID_EXECUTE_SIMPLE_SQL_QUERY)))
         .build();
   }
