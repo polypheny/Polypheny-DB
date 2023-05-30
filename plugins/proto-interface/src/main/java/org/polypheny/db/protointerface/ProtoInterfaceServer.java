@@ -72,12 +72,4 @@ public class ProtoInterfaceServer {
             System.err.println("server shut down");
         });
     }
-
-    public void blockUntilShutdown() throws InterruptedException {
-        if (server == null) {
-            return;
-        }
-        server.awaitTermination();
-    }
-
 }
