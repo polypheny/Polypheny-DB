@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.polypheny.db.iface.Authenticator;
@@ -124,15 +125,11 @@ public class ProtoInterfacePlugin extends PolyPlugin {
             ClientManager clientManager = new ClientManager( authenticator, transactionManager );
             ProtoInterfaceService protoInterfaceService = new ProtoInterfaceService( clientManager );
             protoInterfaceServer = new ProtoInterfaceServer( port, protoInterfaceService, clientManager );
-            /*
             try {
-                protoInterfaceServer.blockUntilShutdown();
-            } catch ( InterruptedException e ) {
-                throw new RuntimeException( e );
+                protoInterfaceServer.start();
+            } catch ( IOException e ) {
+                log.error( "Proto interface server could not be started: {}", e.getMessage() );
             }
-            */
         }
-
     }
-
 }
