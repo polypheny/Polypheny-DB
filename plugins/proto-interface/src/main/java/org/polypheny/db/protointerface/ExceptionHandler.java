@@ -22,10 +22,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ExceptionHandler implements ServerInterceptor {
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata,
-                                                                 ServerCallHandler<ReqT, RespT> serverCallHandler) {
-        ServerCall.Listener<ReqT> listener = serverCallHandler.startCall(serverCall, metadata);
-        return new ExceptionHandlingServerCallListener<>(listener, serverCall, metadata);
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata metadata,
+                                                                 ServerCallHandler<ReqT, RespT> nextHandler) {
+        ServerCall.Listener<ReqT> listener = nextHandler.startCall(call, metadata);
+        return new ExceptionHandlingServerCallListener<>(listener, call, metadata);
     }
 
     private class ExceptionHandlingServerCallListener<ReqT, RespT> extends ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
@@ -41,7 +41,7 @@ public class ExceptionHandler implements ServerInterceptor {
         @Override
         public void onHalfClose() {
             try {
-                super.onReady();
+                super.onHalfClose();
             } catch (RuntimeException e) {
                 handleException(e, serverCall, metadata);
                 throw e;
