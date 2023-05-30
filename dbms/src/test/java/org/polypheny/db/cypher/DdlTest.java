@@ -40,7 +40,7 @@ public class DdlTest extends CypherTestTemplate {
 
 
     @Test
-    public void addCollectionTest() {
+    public void addGraphTest() {
 
         execute( "CREATE DATABASE " + graphName );
 

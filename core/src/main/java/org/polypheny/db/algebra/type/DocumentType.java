@@ -36,7 +36,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
     public static final String DOCUMENT_DATA = "_data";
     public StructKind structKind;
 
-    public List<AlgDataTypeField> fixedFields;
+    public final List<AlgDataTypeField> fixedFields;
 
 
     public String physicalName = null;

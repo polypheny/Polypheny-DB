@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -298,13 +299,17 @@ public class RelationalAdapterDelegate implements Modifiable {
 
     @Override
     public void updateGraph( long allocId ) {
-
+        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
+        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
+        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
+        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
     }
 
 
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
         catalog.dropTable( allocation.id );
+        catalog.getAllocRelations().remove( allocation.id );
     }
 
 
@@ -323,7 +328,8 @@ public class RelationalAdapterDelegate implements Modifiable {
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
-
+        catalog.dropTable( allocation.id );
+        catalog.getAllocRelations().remove( allocation.id );
     }
 
 
@@ -347,11 +353,7 @@ public class RelationalAdapterDelegate implements Modifiable {
         builder.scan( edge );
         builder.scan( eProps );
 
-        AlgDataType rowType = new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( "_graph_", 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.GRAPH ) )
-        ) );
-
-        builder.transform( ModelTrait.GRAPH, rowType, false );
+        builder.transform( ModelTrait.GRAPH, GraphType.of(), false );
 
         return builder.build();
     }

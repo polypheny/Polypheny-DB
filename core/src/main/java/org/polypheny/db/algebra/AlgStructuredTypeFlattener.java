@@ -484,7 +484,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
-        if ( !(scan.entity.isPhysical()) ) {
+        if ( scan.entity.isPhysical() ) {
             alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, scan.traitSet );
         }
         setNewForOldRel( scan, alg );

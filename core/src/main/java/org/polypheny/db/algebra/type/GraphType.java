@@ -19,57 +19,67 @@ package org.polypheny.db.algebra.type;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.stream.Collectors;
+import lombok.Data;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 
-public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily, AlgDataTypeField {
+@Data
+public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
 
-    @Override
-    public String getKey() {
-        return null;
+    public static final String GRAPH_ID = "_id";
+
+    public final List<AlgDataTypeField> fixedFields;
+
+    public String digest;
+
+
+    public GraphType( List<AlgDataTypeField> fixedFields ) {
+        this.fixedFields = fixedFields;
+        this.digest = computeDigest();
     }
 
 
-    @Override
-    public AlgDataType getValue() {
-        return null;
+    public static GraphType of() {
+        return new GraphType( List.of( new AlgDataTypeFieldImpl( GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.CHAR, 255 ) ) ) );
     }
 
 
-    @Override
-    public AlgDataType setValue( AlgDataType value ) {
-        return null;
+    private String computeDigest() {
+        assert fixedFields != null;
+        return getClass().getSimpleName() +
+                fixedFields.stream().map( f -> f.getType().getFullTypeString() ).collect( Collectors.joining( "$" ) );
     }
 
 
     @Override
     public boolean isStruct() {
-        return false;
+        return true;
     }
 
 
     @Override
     public List<AlgDataTypeField> getFieldList() {
-        return null;
+        return fixedFields;
     }
 
 
     @Override
     public List<String> getFieldNames() {
-        return null;
+        return getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 
     @Override
     public int getFieldCount() {
-        return 0;
+        return fixedFields.size();
     }
 
 
     @Override
     public StructKind getStructKind() {
-        return null;
+        return StructKind.SEMI;
     }
 
 
@@ -129,7 +139,7 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily, 
 
     @Override
     public PolyType getPolyType() {
-        return null;
+        return PolyType.GRAPH;
     }
 
 
@@ -162,34 +172,5 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily, 
         return false;
     }
 
-
-    @Override
-    public String getName() {
-        return null;
-    }
-
-
-    @Override
-    public String getPhysicalName() {
-        return null;
-    }
-
-
-    @Override
-    public int getIndex() {
-        return 0;
-    }
-
-
-    @Override
-    public AlgDataType getType() {
-        return null;
-    }
-
-
-    @Override
-    public boolean isDynamicStar() {
-        return false;
-    }
 
 }

@@ -39,6 +39,9 @@ import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
@@ -51,9 +54,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
@@ -78,6 +84,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.LimitIterator;
 
@@ -86,14 +93,14 @@ import org.polypheny.db.util.LimitIterator;
 public class DataMigratorImpl implements DataMigrator {
 
     @Override
-    public void copyGraphData( LogicalGraph target, Transaction transaction, Long existingAdapterId, CatalogAdapter to ) {
+    public void copyGraphData( AllocationGraph to, LogicalGraph from, Transaction transaction ) {
         Statement statement = transaction.createStatement();
 
         AlgBuilder builder = AlgBuilder.create( statement );
 
-        LogicalLpgScan scan = (LogicalLpgScan) builder.lpgScan( target.id ).build();
+        LogicalLpgScan scan = (LogicalLpgScan) builder.lpgScan( from ).build();
 
-        AlgNode routed = RoutingManager.getInstance().getFallbackRouter().handleGraphScan( scan, statement, existingAdapterId );
+        AlgNode routed = RoutingManager.getInstance().getFallbackRouter().handleGraphScan( scan, statement, null, List.of( to.id ) );
 
         AlgRoot algRoot = AlgRoot.of( routed, Kind.SELECT );
 
@@ -129,9 +136,9 @@ public class DataMigratorImpl implements DataMigrator {
 
             LogicalLpgValues values = getLogicalLpgValues( builder, graph );
 
-            LogicalLpgModify modify = new LogicalLpgModify( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), target, values, Modify.Operation.INSERT, null, null );
+            LogicalLpgModify modify = new LogicalLpgModify( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), to, values, Modify.Operation.INSERT, null, null );
 
-            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, target, List.of( to.id ) );
+            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, from, List.of( to.id ) );
 
             result = statement.getQueryProcessor().prepareQuery(
                     AlgRoot.of( routedModify, Kind.SELECT ),
@@ -146,10 +153,74 @@ public class DataMigratorImpl implements DataMigrator {
             if ( modifyIterator.hasNext() ) {
                 modifyIterator.next();
             }
-
         }
+    }
 
 
+    @Override
+    public void copyDocData( AllocationCollection to, LogicalCollection from, Transaction transaction ) {
+        Statement statement = transaction.createStatement();
+
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        LogicalDocumentScan scan = (LogicalDocumentScan) builder.documentScan( from ).build();
+
+        AlgNode routed = RoutingManager.getInstance().getFallbackRouter().handleDocScan( scan, statement, List.of( to.id ) );
+
+        AlgRoot algRoot = AlgRoot.of( routed, Kind.SELECT );
+
+        AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
+                AlgBuilder.create( statement, algRoot.alg.getCluster() ),
+                algRoot.alg.getCluster().getRexBuilder(),
+                algRoot.alg::getCluster,
+                true );
+        algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
+
+        PolyImplementation<PolyValue> result = statement.getQueryProcessor().prepareQuery(
+                algRoot,
+                algRoot.alg.getCluster().getTypeFactory().builder().build(),
+                true,
+                false,
+                false );
+
+        final Enumerable<PolyValue> enumerable = result.enumerable( statement.getDataContext() );
+
+        Iterator<PolyValue> sourceIterator = enumerable.iterator();
+
+        if ( sourceIterator.hasNext() ) {
+            // we have a new statement
+            statement = transaction.createStatement();
+            builder = AlgBuilder.create( statement );
+
+            LogicalDocumentValues values = getLogicalDocValues( builder, sourceIterator );
+
+            LogicalDocumentModify modify = new LogicalDocumentModify( builder.getCluster().traitSetOf( ModelTrait.DOCUMENT ), to, values, Modify.Operation.INSERT, null, null, null );
+
+            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeDocumentDml( modify, statement, to.adapterId );
+
+            result = statement.getQueryProcessor().prepareQuery(
+                    AlgRoot.of( routedModify, Kind.SELECT ),
+                    routedModify.getCluster().getTypeFactory().builder().build(),
+                    true,
+                    false,
+                    false );
+
+            final Enumerable<?> modifyEnumerable = result.enumerable( statement.getDataContext() );
+
+            Iterator<?> modifyIterator = modifyEnumerable.iterator();
+            if ( modifyIterator.hasNext() ) {
+                modifyIterator.next();
+            }
+        }
+    }
+
+
+    private LogicalDocumentValues getLogicalDocValues( AlgBuilder builder, Iterator<PolyValue> iterator ) {
+        List<PolyDocument> documents = new ArrayList<>();
+
+        iterator.forEachRemaining( e -> documents.add( e.asDocument() ) );
+
+        return new LogicalDocumentValues( builder.getCluster(), builder.getCluster().traitSet(), documents );
     }
 
 

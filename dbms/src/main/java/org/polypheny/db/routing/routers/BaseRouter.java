@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -170,17 +171,34 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    protected RoutedAlgBuilder handleDocScan(
-            RoutedAlgBuilder builder,
+    public DocumentScan<CatalogEntity> handleDocScan(
+            DocumentScan<?> scan,
             Statement statement,
-            CatalogEntity entity ) {
-        List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
+            @Nullable List<Long> forbidden ) {
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        if ( entity.unwrap( LogicalCollection.class ) == null ) {
-            throw new NotImplementedException();
+        LogicalNamespace namespace = snapshot.getNamespace( scan.entity.namespaceId );
+        if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
+            // cross model queries on relational
+            // return handleGraphOnRelational( alg, namespace, statement, allocId );
+        } else if ( namespace.namespaceType == NamespaceType.DOCUMENT ) {
+            // cross model queries on document
+            // return handleGraphOnDocument( alg, namespace, statement, allocId );
         }
 
-        return (RoutedAlgBuilder) builder.documentScan( allocations.get( 0 ) );
+        LogicalCollection collection = scan.entity.unwrap( LogicalCollection.class );
+
+        List<Long> placements = snapshot.alloc().getFromLogical( collection.id ).stream().filter( p -> forbidden == null || !forbidden.contains( p.id ) ).map( p -> p.adapterId ).collect( Collectors.toList() );
+
+        for ( long adapterId : placements ) {
+            AllocationEntity allocation = snapshot.alloc().getEntity( adapterId, collection.id ).orElseThrow();
+
+            // a native placement was used, we go with that
+            return new LogicalDocumentScan( scan.getCluster(), scan.getTraitSet(), allocation );
+        }
+
+        throw new RuntimeException( "Error while routing graph query." );
+
     }
 
 
@@ -363,29 +381,29 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Long placementId ) {
+    public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Long allocId, @Nullable List<Long> forbidden ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        LogicalNamespace namespace = snapshot.getNamespace( alg.entity.id );
+        LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId );
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
-            return handleGraphOnRelational( alg, namespace, statement, placementId );
+            return handleGraphOnRelational( alg, namespace, statement, allocId );
         } else if ( namespace.namespaceType == NamespaceType.DOCUMENT ) {
             // cross model queries on document
-            return handleGraphOnDocument( alg, namespace, statement, placementId );
+            return handleGraphOnDocument( alg, namespace, statement, allocId );
         }
 
         LogicalGraph catalogGraph = alg.entity.unwrap( LogicalGraph.class );
 
         List<AlgNode> scans = new ArrayList<>();
 
-        List<Long> placements = snapshot.alloc().getFromLogical( catalogGraph.id ).stream().map( p -> p.adapterId ).collect( Collectors.toList() );
-        if ( placementId != null ) {
-            placements = List.of( placementId );
+        List<Long> placements = snapshot.alloc().getFromLogical( catalogGraph.id ).stream().filter( p -> forbidden == null || !forbidden.contains( p.id ) ).map( p -> p.adapterId ).collect( Collectors.toList() );
+        if ( allocId != null ) {
+            placements = List.of( allocId );
         }
 
         for ( long adapterId : placements ) {
-            AllocationEntity graph = snapshot.alloc().getEntity( catalogGraph.id, adapterId ).orElseThrow();
+            AllocationEntity graph = snapshot.alloc().getEntity( adapterId, catalogGraph.id ).orElseThrow();
 
             // a native placement was used, we go with that
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), graph, alg.getRowType() );
@@ -459,7 +477,7 @@ public abstract class BaseRouter implements Router {
             }
             return alg;
         } else if ( alg instanceof DocumentScan ) {
-            builder.push( handleDocScan( builder, statement, alg.getEntity() ).build() );
+            builder.push( handleDocScan( (DocumentScan<?>) alg, statement, null ) );
             return alg;
         } else if ( alg instanceof DocumentValues ) {
             return alg;

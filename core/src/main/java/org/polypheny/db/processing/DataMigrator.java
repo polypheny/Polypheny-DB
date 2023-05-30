@@ -20,8 +20,11 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -87,6 +90,8 @@ public interface DataMigrator {
     AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placementDistribution );
 
 
-    void copyGraphData( LogicalGraph graph, Transaction transaction, Long existingAdapterId, CatalogAdapter adapter );
+    void copyGraphData( AllocationGraph to, LogicalGraph from, Transaction transaction );
+
+    void copyDocData( AllocationCollection to, LogicalCollection from, Transaction transaction );
 
 }

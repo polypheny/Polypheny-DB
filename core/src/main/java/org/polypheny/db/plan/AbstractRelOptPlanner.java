@@ -233,7 +233,7 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
         if ( classes.add( clazz ) ) {
             onNewClass( node );
         }
-        for ( AlgTrait trait : node.getTraitSet() ) {
+        for ( AlgTrait<?> trait : node.getTraitSet() ) {
             if ( traits.add( trait ) ) {
                 trait.register( this );
             }

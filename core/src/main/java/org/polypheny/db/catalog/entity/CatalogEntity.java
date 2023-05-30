@@ -90,7 +90,7 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
             case DOCUMENT:
                 return DocumentType.ofId();
             case GRAPH:
-                return new GraphType();
+                return GraphType.of();
         }
         throw new RuntimeException( "Error while generating the RowType" );
     }

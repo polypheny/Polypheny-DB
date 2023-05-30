@@ -136,8 +136,7 @@ public class AlgRoot {
     public static AlgRoot of( AlgNode alg, AlgDataType rowType, Kind kind ) {
         final ImmutableList<Integer> refs = PolyTypeUtil.identity( rowType.getFieldCount() );
         final List<String> names = rowType.getFieldNames();
-        return new AlgRoot( alg, rowType, kind, Pair.zip( refs, names ),
-                AlgCollations.EMPTY );
+        return new AlgRoot( alg, rowType, kind, Pair.zip( refs, names ), AlgCollations.EMPTY );
     }
 
 

@@ -675,7 +675,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Long adapterId ) {
+    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, Long adapterId ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
@@ -759,7 +759,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     private AlgNode buildGraphDml( AlgNode node, Statement statement, long adapterId ) {
         if ( node instanceof LpgScan ) {
-            return super.handleGraphScan( (LogicalLpgScan) node, statement, adapterId );
+            return super.handleGraphScan( (LogicalLpgScan) node, statement, adapterId, null );
         }
         int i = 0;
         List<AlgNode> inputs = new ArrayList<>();
@@ -777,10 +777,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return super.handleDocScan(
-                    builder,
+            return builder.push( super.handleDocScan(
+                    (DocumentScan<?>) node,
                     statement,
-                    node.getEntity() );
+                    null ) );
         } else if ( node instanceof LogicalRelScan ) {
             return super.handleRelScan(
                     builder,

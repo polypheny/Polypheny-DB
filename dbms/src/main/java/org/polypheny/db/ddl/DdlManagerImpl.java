@@ -1760,10 +1760,10 @@ public class DdlManagerImpl extends DdlManager {
         for ( DataStore<?> store : stores ) {
             AllocationGraph alloc = catalog.getAllocGraph( graphId ).addAllocation( store.getAdapterId(), logical.id );
 
-            catalog.updateSnapshot();
-
             store.createGraph( statement.getPrepareContext(), logical, alloc );
         }
+
+        catalog.updateSnapshot();
 
         return graphId;
     }
@@ -1777,24 +1777,21 @@ public class DdlManagerImpl extends DdlManager {
 
         List<Long> preExistingPlacements = snapshot
                 .alloc()
-                .getEntitiesOnAdapter( graphId )
-                .orElseThrow()
+                .getFromLogical( graphId )
                 .stream()
                 .filter( p -> !stores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) )
                 .map( p -> p.adapterId )
                 .collect( Collectors.toList() );
-
-        Long existingAdapterId = preExistingPlacements.isEmpty() ? null : preExistingPlacements.get( 0 );
 
         for ( DataStore<?> store : stores ) {
             AllocationGraph alloc = catalog.getAllocGraph( graphId ).addAllocation( store.getAdapterId(), graphId );
 
             store.createGraph( statement.getPrepareContext(), graph, alloc );
 
-            if ( existingAdapterId != null ) {
+            if ( !preExistingPlacements.isEmpty() ) {
                 // Copy the data to the newly added column placements
                 DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-                dataMigrator.copyGraphData( graph, statement.getTransaction(), existingAdapterId, catalog.getSnapshot().getAdapter( store.getAdapterId() ) );
+                dataMigrator.copyGraphData( alloc, graph, statement.getTransaction() );
             }
 
         }
@@ -1807,13 +1804,13 @@ public class DdlManagerImpl extends DdlManager {
     public void removeGraphAllocation( long graphId, DataStore<?> store, Statement statement ) {
         AllocationGraph alloc = statement.getTransaction().getSnapshot()
                 .alloc()
-                .getEntity( graphId, store.getAdapterId() )
+                .getEntity( store.getAdapterId(), graphId )
                 .map( a -> a.unwrap( AllocationGraph.class ) )
                 .orElseThrow();
 
         store.dropGraph( statement.getPrepareContext(), alloc );
 
-        catalog.getAllocGraph( graphId ).deleteAllocation( store.getAdapterId() );
+        catalog.getAllocGraph( graphId ).deleteAllocation( alloc.id );
     }
 
 
@@ -1852,6 +1849,7 @@ public class DdlManagerImpl extends DdlManager {
         AllocSnapshot allocSnapshot = catalog.getSnapshot().alloc();
         for ( AllocationEntity alloc : allocSnapshot.getFromLogical( graphId ) ) {
             AdapterManager.getInstance().getStore( alloc.adapterId ).dropGraph( statement.getPrepareContext(), alloc.unwrap( AllocationGraph.class ) );
+            catalog.getAllocGraph( alloc.namespaceId ).deleteAllocation( alloc.id );
         }
 
         catalog.getLogicalGraph( graphId ).deleteGraph( graphId );
@@ -2152,12 +2150,26 @@ public class DdlManagerImpl extends DdlManager {
 
         // Initially create DataPlacement containers on every store the table should be placed.
 
+        List<Long> preExistingPlacements = catalog.getSnapshot()
+                .alloc()
+                .getFromLogical( collection.id )
+                .stream()
+                .filter( p -> !stores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) )
+                .map( p -> p.adapterId )
+                .collect( Collectors.toList() );
+
         for ( DataStore<?> store : stores ) {
             AllocationCollection alloc = catalog.getAllocDoc( collection.namespaceId ).addAllocation(
                     store.getAdapterId(),
                     collection.id );
 
             store.createCollection( statement.getPrepareContext(), collection, alloc );
+
+            if ( !preExistingPlacements.isEmpty() ) {
+                // Copy the data to the newly added column placements
+                DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+                dataMigrator.copyDocData( alloc, collection, statement.getTransaction() );
+            }
         }
     }
 

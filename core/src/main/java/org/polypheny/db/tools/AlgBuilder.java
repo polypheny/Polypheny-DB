@@ -1398,9 +1398,15 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder lpgScan( long id ) {
-        LogicalGraph graph = snapshot.graph().getGraph( id ).orElseThrow();
+    public AlgBuilder lpgScan( long logicalId ) {
+        LogicalGraph graph = snapshot.graph().getGraph( logicalId ).orElseThrow();
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgScan( CatalogEntity entity ) {
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getRowType() ) ) );
         return this;
     }
 
@@ -2498,7 +2504,8 @@ public class AlgBuilder {
             throw new GenericRuntimeException( "Empty nodes on transform" );
         }
         AlgNode input = nodes.get( 0 );
-        push( new LogicalTransformer( input.getCluster(), List.of( input ), null, input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
+
+        push( new LogicalTransformer( input.getCluster(), nodes, null, input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
         return this;
     }
 

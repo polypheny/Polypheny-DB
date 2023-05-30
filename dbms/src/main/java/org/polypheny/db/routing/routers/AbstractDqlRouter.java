@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
+import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgAlg.NodeType;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
@@ -147,7 +148,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             return alg;
         } else if ( alg.getNodeType() == NodeType.SCAN ) {
 
-            builder.push( handleGraphScan( (LogicalLpgScan) alg, statement, null ) );
+            builder.push( handleGraphScan( (LogicalLpgScan) alg, statement, null, null ) );
             return alg;
         } else if ( alg.getNodeType() == NodeType.VALUES ) {
             return alg;
@@ -186,7 +187,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return Lists.newArrayList( super.handleDocScan( builders.get( 0 ), statement, node.getEntity() ) );
+            return Lists.newArrayList( builders.get( 0 ).push( super.handleDocScan( (DocumentScan<?>) node, statement, null ) ) );
         }
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {

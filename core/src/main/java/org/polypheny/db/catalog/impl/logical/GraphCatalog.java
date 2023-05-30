@@ -64,6 +64,9 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
             @Deserialize("graphs") Map<Long, LogicalGraph> graphs ) {
         this.logicalNamespace = logicalNamespace;
         this.graphs = new ConcurrentHashMap<>( graphs );
+
+        // already add only graph
+        addGraph( logicalNamespace.id, logicalNamespace.name, true );
     }
 
 
