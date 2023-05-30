@@ -39,6 +39,7 @@ public class ClientManager {
     private final TransactionManager transactionManager;
 
     public ClientManager(Authenticator authenticator, TransactionManager transactionManager) {
+        this.openConnections = new ConcurrentHashMap<>();
         this.authenticator = authenticator;
         this.transactionManager = transactionManager;
     }
