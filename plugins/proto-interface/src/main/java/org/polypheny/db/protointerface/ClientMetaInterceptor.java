@@ -27,8 +27,8 @@ public class ClientMetaInterceptor implements ServerInterceptor {
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-        final String clientUUD = headers.get(Metadata.Key.of("clientUUID", Metadata.ASCII_STRING_MARSHALLER));
-        ProtoInterfaceClient protoInterfaceClient = clientManager.getClient(clientUUD);
+        final String clientUUID = headers.get(Metadata.Key.of("clientUUID", Metadata.ASCII_STRING_MARSHALLER));
+        ProtoInterfaceClient protoInterfaceClient = clientManager.getClient(clientUUID);
         Context context = Context.current().withValue(CLIENT, protoInterfaceClient);
         return Contexts.interceptCall(context, call, headers, next);
     }
