@@ -83,7 +83,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
-import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;
@@ -718,19 +717,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<AlgNode> modifies = new ArrayList<>();
 
         for ( long adapterId : placements ) {
-            AllocationEntity alloc = snapshot.alloc().getEntity( catalogGraph.id, adapterId ).orElseThrow();
+            AllocationEntity alloc = snapshot.alloc().getEntity( adapterId, catalogGraph.id ).orElseThrow();
 
-            if ( !(alloc instanceof ModifiableGraph) ) {
-                throw new RuntimeException( "Graph is not modifiable." );
-            }
-
-            modifies.add( ((ModifiableEntity) alloc).toModificationAlg(
-                    alg.getCluster(),
+            modifies.add( new LogicalLpgModify( alg.getCluster(),
                     alg.getTraitSet(),
                     alloc,
                     buildGraphDml( alg.getInput(), statement, adapterId ),
                     alg.operation,
-                    alg.ids.stream().map( id -> id.value ).collect( Collectors.toList() ),
+                    alg.ids,
                     alg.operations ) );
 
         }

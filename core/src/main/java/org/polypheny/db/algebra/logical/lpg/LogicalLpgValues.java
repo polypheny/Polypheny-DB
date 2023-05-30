@@ -100,7 +100,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             i++;
         }
 
-        for ( PolyString name : Pair.left( edges ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
+        for ( PolyString name : Pair.left( edges ).stream().filter( s -> s.value != null ).collect( Collectors.toList() ) ) {
             fields.add( new AlgDataTypeFieldImpl( name.value, i, edgeType ) );
             i++;
         }

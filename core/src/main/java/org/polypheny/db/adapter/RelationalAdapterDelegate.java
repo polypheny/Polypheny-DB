@@ -30,7 +30,10 @@ import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
+import org.polypheny.db.algebra.core.lpg.LpgProject;
+import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -42,6 +45,8 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -52,6 +57,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -203,8 +209,58 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {
-        return null;
+    public AlgNode getGraphModify( long allocId, LpgModify<?> alg, AlgBuilder builder ) {
+        PhysicalTable nodesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
+        PhysicalTable nodePropertiesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
+        PhysicalTable edgesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
+        PhysicalTable edgePropertiesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
+
+        List<AlgNode> inputs = new ArrayList<>();
+        switch ( alg.operation ) {
+            case INSERT:
+                if ( alg.getInput() instanceof LpgValues ) {
+                    // simple value insert
+                    inputs.addAll( ((LogicalLpgValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), Catalog.snapshot() ) );
+                }
+                if ( alg.getInput() instanceof LpgProject ) {
+                    return attachRelationalRelatedInsert( (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                }
+
+                break;
+            case UPDATE:
+                return attachRelationalGraphUpdate( (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+
+            case DELETE:
+                return attachRelationalGraphDelete( (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+            case MERGE:
+                break;
+        }
+
+        List<AlgNode> modifies = new ArrayList<>();
+        if ( inputs.get( 0 ) != null ) {
+            modifies.add( switchContext( getModify( nodesTable, inputs.get( 0 ), alg.operation, null, null ) ) );
+        }
+
+        if ( inputs.get( 1 ) != null ) {
+            modifies.add( switchContext( getModify( nodePropertiesTable, inputs.get( 1 ), alg.operation, null, null ) ) );
+        }
+
+        if ( inputs.size() > 2 ) {
+            if ( inputs.get( 2 ) != null ) {
+                modifies.add( switchContext( getModify( edgesTable, inputs.get( 2 ), alg.operation, null, null ) ) );
+            }
+
+            if ( inputs.get( 3 ) != null ) {
+                modifies.add( switchContext( getModify( edgePropertiesTable, inputs.get( 3 ), alg.operation, null, null ) ) );
+            }
+        }
+
+        return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.GRAPH ), modifies, true );
+    }
+
+
+    private AlgNode switchContext( AlgNode node ) {
+        return new LogicalContextSwitcher( node );
     }
 
 
@@ -409,9 +465,9 @@ public class RelationalAdapterDelegate implements Modifiable {
 
         LogicalRelModify modify;
         if ( alg.operation == Modify.Operation.UPDATE ) {
-            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), statement, alg.operation, List.of( "_data_" ), List.of( rexBuilder.makeDynamicParam( alg.getCluster().getTypeFactory().createPolyType( PolyType.JSON ), 1 ) ) );
+            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), alg.operation, List.of( "_data_" ), List.of( rexBuilder.makeDynamicParam( alg.getCluster().getTypeFactory().createPolyType( PolyType.JSON ), 1 ) ) );
         } else {
-            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), statement, alg.operation, null, null );
+            modify = (LogicalRelModify) getModify( collectionTable, builder.build(), alg.operation, null, null );
         }
 
         return List.of( LogicalStreamer.create( collector, modify ) );
@@ -422,7 +478,7 @@ public class RelationalAdapterDelegate implements Modifiable {
         if ( alg.getInput() instanceof DocumentValues ) {
             // simple value insert
             AlgNode values = ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getSnapshot() ).get( 0 );
-            return List.of( getModify( collectionTable, values, statement, alg.operation, null, null ) );
+            return List.of( getModify( collectionTable, values, alg.operation, null, null ) );
         }
 
         return List.of( attachDocUpdate( alg, statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation, adapterId ).build() );
@@ -466,61 +522,7 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalLpgModify alg, long adapterId, Statement statement ) {
-        /*CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.entity.id );
-
-        PhysicalTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId ).unwrap( PhysicalTable.class );
-        PhysicalTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId, adapterId ).unwrap( PhysicalTable.class );
-        PhysicalTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId, adapterId ).unwrap( PhysicalTable.class );
-
-        List<AlgNode> inputs = new ArrayList<>();
-        switch ( alg.operation ) {
-            case INSERT:
-                if ( alg.getInput() instanceof LpgValues ) {
-                    // simple value insert
-                    inputs.addAll( ((LogicalLpgValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getSnapshot() ) );
-                }
-                if ( alg.getInput() instanceof LpgProject ) {
-                    return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
-                }
-
-                break;
-            case UPDATE:
-                return attachRelationalGraphUpdate( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
-
-            case DELETE:
-                return attachRelationalGraphDelete( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
-            case MERGE:
-                break;
-        }
-
-        List<AlgNode> modifies = new ArrayList<>();
-        if ( inputs.get( 0 ) != null ) {
-            modifies.add( switchContext( getModify( nodesTable, inputs.get( 0 ), statement, alg.operation, null, null ) ) );
-        }
-
-        if ( inputs.get( 1 ) != null ) {
-            modifies.add( switchContext( getModify( nodePropertiesTable, inputs.get( 1 ), statement, alg.operation, null, null ) ) );
-        }
-
-        if ( inputs.size() > 2 ) {
-            if ( inputs.get( 2 ) != null ) {
-                modifies.add( switchContext( getModify( edgesTable, inputs.get( 2 ), statement, alg.operation, null, null ) ) );
-            }
-
-            if ( inputs.get( 3 ) != null ) {
-                modifies.add( switchContext( getModify( edgePropertiesTable, inputs.get( 3 ), statement, alg.operation, null, null ) ) );
-            }
-        }
-
-        return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.GRAPH ), modifies, true );
-        */// todo dl
-        return null;
-    }
-
-
-    private AlgNode attachRelationalGraphUpdate( LogicalLpgModify alg, Statement statement, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, int adapterId ) {
+    private AlgNode attachRelationalGraphUpdate( LogicalLpgModify alg, AlgBuilder builder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
@@ -528,11 +530,11 @@ public class RelationalAdapterDelegate implements Modifiable {
         for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyDelete( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
-                inputs.addAll( attachPreparedGraphEdgeModifyInsert( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
+                inputs.addAll( attachPreparedGraphEdgeModifyDelete( alg.getCluster(), edgesTable, edgePropertiesTable, builder ) );
+                inputs.addAll( attachPreparedGraphEdgeModifyInsert( alg.getCluster(), edgesTable, edgePropertiesTable, builder ) );
             } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
-                inputs.addAll( attachPreparedGraphNodeModifyInsert( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
+                inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, builder ) );
+                inputs.addAll( attachPreparedGraphNodeModifyInsert( alg.getCluster(), nodesTable, nodePropertiesTable, builder ) );
             } else {
                 throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
             }
@@ -544,7 +546,7 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private AlgNode attachRelationalGraphDelete( LogicalLpgModify alg, Statement statement, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, int adapterId ) {
+    private AlgNode attachRelationalGraphDelete( LogicalLpgModify alg, AlgBuilder algBuilder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
@@ -552,9 +554,9 @@ public class RelationalAdapterDelegate implements Modifiable {
         for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyDelete( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
+                inputs.addAll( attachPreparedGraphEdgeModifyDelete( alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
             } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
+                inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, algBuilder ) );
             } else {
                 throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
             }
@@ -566,8 +568,7 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private List<AlgNode> attachPreparedGraphNodeModifyDelete( AlgOptCluster cluster, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
+    private List<AlgNode> attachPreparedGraphNodeModifyDelete( AlgOptCluster cluster, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -581,7 +582,7 @@ public class RelationalAdapterDelegate implements Modifiable {
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
                                 rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
 
-        inputs.add( getModify( nodesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
+        inputs.add( getModify( nodesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
 
         // id = ?
         algBuilder
@@ -591,13 +592,13 @@ public class RelationalAdapterDelegate implements Modifiable {
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
                                 rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
 
-        inputs.add( getModify( nodePropertiesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
+        inputs.add( getModify( nodePropertiesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
 
         return inputs;
     }
 
 
-    private AlgNode attachRelationalRelatedInsert( LogicalLpgModify alg, Statement statement, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, int adapterId ) {
+    private AlgNode attachRelationalRelatedInsert( LogicalLpgModify alg, AlgBuilder algBuilder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
         AlgNode project = alg;
 
         List<AlgNode> inputs = new ArrayList<>();
@@ -605,9 +606,9 @@ public class RelationalAdapterDelegate implements Modifiable {
         for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyInsert( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
+                inputs.addAll( attachPreparedGraphEdgeModifyInsert( alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
             } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyInsert( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
+                inputs.addAll( attachPreparedGraphNodeModifyInsert( alg.getCluster(), nodesTable, nodePropertiesTable, algBuilder ) );
             } else {
                 throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
             }
@@ -618,8 +619,7 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private List<AlgNode> attachPreparedGraphNodeModifyInsert( AlgOptCluster cluster, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
+    private List<AlgNode> attachPreparedGraphNodeModifyInsert( AlgOptCluster cluster, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -631,7 +631,7 @@ public class RelationalAdapterDelegate implements Modifiable {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ) ), // label
                 nodesTable.getRowType() );
 
-        inputs.add( getModify( nodesTable, preparedNodes, statement, Modify.Operation.INSERT, null, null ) );
+        inputs.add( getModify( nodesTable, preparedNodes, Modify.Operation.INSERT, null, null ) );
 
         LogicalProject preparedNProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
@@ -641,14 +641,13 @@ public class RelationalAdapterDelegate implements Modifiable {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
                 nodePropertiesTable.getRowType() );
 
-        inputs.add( getModify( nodePropertiesTable, preparedNProperties, statement, Modify.Operation.INSERT, null, null ) );
+        inputs.add( getModify( nodePropertiesTable, preparedNProperties, Modify.Operation.INSERT, null, null ) );
 
         return inputs;
     }
 
 
-    private List<AlgNode> attachPreparedGraphEdgeModifyDelete( AlgOptCluster cluster, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
+    private List<AlgNode> attachPreparedGraphEdgeModifyDelete( AlgOptCluster cluster, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -661,7 +660,7 @@ public class RelationalAdapterDelegate implements Modifiable {
                         rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
 
-        inputs.add( getModify( edgesTable, algBuilder.build(), statement, Modify.Operation.DELETE, null, null ) );
+        inputs.add( getModify( edgesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
 
         // id = ?
         algBuilder
@@ -675,8 +674,7 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private List<AlgNode> attachPreparedGraphEdgeModifyInsert( AlgOptCluster cluster, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, Statement statement ) {
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
+    private List<AlgNode> attachPreparedGraphEdgeModifyInsert( AlgOptCluster cluster, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -690,7 +688,7 @@ public class RelationalAdapterDelegate implements Modifiable {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 3 ) ), // target
                 edgesTable.getRowType() );
 
-        inputs.add( getModify( edgesTable, preparedEdges, statement, Modify.Operation.INSERT, null, null ) );
+        inputs.add( getModify( edgesTable, preparedEdges, Modify.Operation.INSERT, null, null ) );
 
         LogicalProject preparedEProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
@@ -700,14 +698,14 @@ public class RelationalAdapterDelegate implements Modifiable {
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
                 edgePropertiesTable.getRowType() );
 
-        inputs.add( getModify( edgePropertiesTable, preparedEProperties, statement, Modify.Operation.INSERT, null, null ) );
+        inputs.add( getModify( edgePropertiesTable, preparedEProperties, Modify.Operation.INSERT, null, null ) );
 
         return inputs;
 
     }
 
 
-    private Modify<?> getModify( CatalogEntity table, AlgNode input, Statement statement, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
+    private Modify<?> getModify( CatalogEntity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
         return table.unwrap( ModifiableEntity.class ).toModificationAlg( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
 

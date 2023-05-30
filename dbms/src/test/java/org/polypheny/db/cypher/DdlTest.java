@@ -153,11 +153,12 @@ public class DdlTest extends CypherTestTemplate {
     @Test
     @Category(CassandraExcluded.class)
     public void deletePlacementDataTest() throws SQLException {
+
+        execute( "CREATE DATABASE " + graphName );
+
+        execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2 );
+
         try {
-            execute( "CREATE DATABASE " + graphName );
-
-            execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2 );
-
             addStore( "store1" );
 
             execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
