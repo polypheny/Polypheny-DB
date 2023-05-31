@@ -71,7 +71,7 @@ public class ClientManager {
         final CatalogUser user = authenticateUser( properties.get( USERNAME_KEY ), properties.get( PASSWORD_KEY ) );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
-        if ( properties.containsKey( "namespace" )) {
+        if ( properties.containsKey( "namespace" ) ) {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.get( "namespace" ) );
         } else {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( Catalog.defaultNamespaceName );
@@ -86,6 +86,7 @@ public class ClientManager {
             log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
         }
     }
+
 
 
     public ProtoInterfaceClient getClient( String clientUUID ) {
