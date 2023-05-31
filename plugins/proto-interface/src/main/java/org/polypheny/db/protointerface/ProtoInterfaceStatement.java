@@ -96,11 +96,13 @@ public class ProtoInterfaceStatement {
         QueryResult.Builder resultBuilder = QueryResult.newBuilder();
         if (Kind.DDL.contains(polyImplementation.getKind())) {
             commitElseRollback();
-            return resultBuilder.setCount(1).build();
+            // TODO TH: Proper implementation
+            return null;
         }
         if (Kind.DML.contains(polyImplementation.getKind())) {
             commitElseRollback();
-            return resultBuilder.setCount(getChangedRowCount()).build();
+            // TODO: proper implementation
+            return null;
         }
         throw new NotImplementedException("At this time only DML and DDL statements are implemented");
     }
