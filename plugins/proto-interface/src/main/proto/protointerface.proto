@@ -11,17 +11,11 @@ package polypheny.protointerface;
 service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   // prepare and execute 1..n statements with the provided values
-  rpc ExecuteStatements(StatementBatch) returns (QueryResult) {}
+  rpc ExecuteParameterizedStatements(ParameterizedStatementBatch) returns (QueryResult) {}
   // prepare a single statement
   rpc PrepareStatement(PreparedStatement) returns (QueryResult) {}
   // execute a previously prepared statement with the values provided
   rpc ExecutePreparedStatement(ValuesBatch) returns (QueryResult) {}
-}
-
-// Supported query languages
-enum QUERY_LANGUAGE {
-  QUERY_LANGUAGE_UNSPECIFIED = 0;
-  QUERY_LANGUAGE_SQL = 1;
 }
 
 message ConnectionRequest {
@@ -37,6 +31,10 @@ message ConnectionReply {
   uint32 minor_api_version = 3;
 }
 
+message AvailableLanguages {
+  repeated string language_names = 1;
+}
+
 // The value set required for one execution of a statement
 message Values {
   /* TODO: implementation of values to be inserted into statements
@@ -49,18 +47,19 @@ message ValuesBatch {
 }
 
 // A statement in a specific query language and its values
-message Statement {
-  QUERY_LANGUAGE query_language = 1;
+message ParameterizedStatement {
+  string statement_language_name = 1;
   string statement = 2;
-  ValuesBatch value_batch = 3;
+  map<string, string> statement_properties = 3;
+  ValuesBatch value_batch = 4;
 }
 
-message StatementBatch {
-  repeated Statement statements = 1;
+message ParameterizedStatementBatch {
+  repeated ParameterizedStatement parameterized_statement = 1;
 }
 
 message PreparedStatement {
-  QUERY_LANGUAGE query_language = 1;
+  string statement_language_name = 1;
   string statement = 2;
 }
 
