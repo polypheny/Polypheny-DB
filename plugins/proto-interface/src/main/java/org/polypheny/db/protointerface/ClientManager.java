@@ -32,70 +32,78 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class ClientManager {
-    private final String DEFAULT_USERNAME_KEY = "username";
-    private final String DEFAULT_PASSWORD_KEY = "password";
+
+    private final String USERNAME_KEY = "user";
+    private final String PASSWORD_KEY = "password";
     private ConcurrentHashMap<String, ProtoInterfaceClient> openConnections;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
 
-    public ClientManager(Authenticator authenticator, TransactionManager transactionManager) {
+
+    public ClientManager( Authenticator authenticator, TransactionManager transactionManager ) {
         this.openConnections = new ConcurrentHashMap<>();
         this.authenticator = authenticator;
         this.transactionManager = transactionManager;
     }
 
-    public void registerConnection(ConnectionRequest connectionRequest) throws AuthenticationException, TransactionException, ProtoInterfaceServiceException {
+
+    public void registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, ProtoInterfaceServiceException {
         if ( log.isTraceEnabled() ) {
-            log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUUID());
+            log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUUID() );
         }
         // reject already connected user
-        if (isConnected(connectionRequest.getClientUUID())) {
-            throw new ProtoInterfaceServiceException("user with uid " + connectionRequest.getClientUUID() + "is already connected.");
+        if ( isConnected( connectionRequest.getClientUUID() ) ) {
+            throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUUID() + "is already connected." );
         }
         Map<String, String> properties = connectionRequest.getConnectionPropertiesMap();
-        if (!credentialsPresent(properties)) {
-            throw new ProtoInterfaceServiceException("No username and password given.");
+        if ( !credentialsPresent( properties ) ) {
+            throw new ProtoInterfaceServiceException( "No username and password given." );
         }
         ProtoInterfaceClient.Builder connectionBuilder = ProtoInterfaceClient.newBuilder();
         connectionBuilder
-                .setMajorApiVersion(connectionRequest.getMajorApiVersion())
-                .setMinorApiVersion(connectionRequest.getMinorApiVersion())
-                .setClientUUID(connectionRequest.getClientUUID())
-                .setProperties(properties)
-                .setTransactionManager(transactionManager);
+                .setMajorApiVersion( connectionRequest.getMajorApiVersion() )
+                .setMinorApiVersion( connectionRequest.getMinorApiVersion() )
+                .setClientUUID( connectionRequest.getClientUUID() )
+                .setProperties( properties )
+                .setTransactionManager( transactionManager );
 
-        final CatalogUser user = authenticateUser(properties.get(DEFAULT_USERNAME_KEY), properties.get(DEFAULT_PASSWORD_KEY));
-        Transaction transaction = transactionManager.startTransaction(user, null, false, "proto-interface");
+        final CatalogUser user = authenticateUser( properties.get( USERNAME_KEY ), properties.get( PASSWORD_KEY ) );
+        Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
-        if (connectionRequest.containsConnectionProperties("namespace")) {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace(connectionRequest.getConnectionPropertiesOrThrow("namespace"));
+        if ( connectionRequest.containsConnectionProperties( "namespace" ) ) {
+            namespace = Catalog.getInstance().getSnapshot().getNamespace( connectionRequest.getConnectionPropertiesOrThrow( "namespace" ) );
         } else {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace(Catalog.defaultNamespaceName);
+            namespace = Catalog.getInstance().getSnapshot().getNamespace( Catalog.defaultNamespaceName );
         }
         assert namespace != null;
         transaction.commit();
         connectionBuilder
-                .setCatalogUser(user)
-                .setLogicalNamespace(namespace);
-        openConnections.put(connectionRequest.getClientUUID(), connectionBuilder.build());
+                .setCatalogUser( user )
+                .setLogicalNamespace( namespace );
+        openConnections.put( connectionRequest.getClientUUID(), connectionBuilder.build() );
         if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUUID());
+            log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUUID() );
         }
     }
 
-    public ProtoInterfaceClient getClient(String clientUUID) {
-        return openConnections.get(clientUUID);
+
+    public ProtoInterfaceClient getClient( String clientUUID ) {
+        return openConnections.get( clientUUID );
     }
 
-    private boolean credentialsPresent(Map<String, String> properties) {
-        return properties.containsKey(DEFAULT_USERNAME_KEY) && properties.containsKey(DEFAULT_PASSWORD_KEY);
+
+    private boolean credentialsPresent( Map<String, String> properties ) {
+        return properties.containsKey( USERNAME_KEY ) && properties.containsKey( PASSWORD_KEY );
     }
 
-    CatalogUser authenticateUser(String username, String password) throws AuthenticationException {
-        return authenticator.authenticate(username, password);
+
+    private CatalogUser authenticateUser( String username, String password ) throws AuthenticationException {
+        return authenticator.authenticate( username, password );
     }
 
-    boolean isConnected(String clientUUID) {
-        return openConnections.containsKey(clientUUID);
+
+    private boolean isConnected( String clientUUID ) {
+        return openConnections.containsKey( clientUUID );
     }
+
 }
