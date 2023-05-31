@@ -33,6 +33,12 @@ dependencies {
 
 }
 
+def generatedDirName = "${project.buildDir}/generated"
+
+// compile protos on build
+compileJava.dependsOn(generateProto)
+
+
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.23.0"
@@ -48,17 +54,17 @@ protobuf {
             grpc {}
         }
     }
+    generatedFilesBaseDir = "${generatedDirName}/proto"
 }
 
 sourceSets {
     main {
         proto {
-            srcDirs = ['src/main/proto']
+            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/grpc"
+            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/java"
         }
         java {
-            srcDirs = ['build/generated/source/proto/main/grpc']
-            srcDirs = ['build/generated/source/proto/main/java']
-            srcDirs = ["src/main/java"]
+            srcDirs = ["src/main/java", "build/generated-sources", 'build/generated/source/proto/main/grpc', 'build/generated/source/proto/main/java']
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {

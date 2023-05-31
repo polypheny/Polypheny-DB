@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import io.grpc.stub.StreamObserver;
+import java.sql.PreparedStatement;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.*;
@@ -61,14 +62,33 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     }
 
 
+    /*
     @Override
     public void executeSimpleSqlQuery( SimpleSqlQuery query, StreamObserver<QueryResult> responseObserver ) {
-        System.out.println( "==========================HIT========================" );
         ProtoInterfaceClient protoInterfaceClient = ClientMetaInterceptor.CLIENT.get();
         ProtoInterfaceStatement statement = statementManager.createStatement( protoInterfaceClient, QueryLanguage.from( "sql" ) );
         QueryResult result = statement.prepareAndExecute( query.getQuery() );
         responseObserver.onNext( result );
         responseObserver.onCompleted();
+    }
+    */
+
+
+    @Override
+    public void executeStatements( StatementBatch statementBatch, StreamObserver<QueryResult> resultStreamObserver ) {
+
+    }
+
+
+
+    public void prepareStatement( PreparedStatement preparedStatement, StreamObserver<QueryResult> resultStreamObserver ) {
+
+    }
+
+
+    @Override
+    public void executePreparedStatement( ValuesBatch valuesBatch, StreamObserver<QueryResult> resultStreamObserver) {
+
     }
 
 

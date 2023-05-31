@@ -49,11 +49,11 @@ public class ClientManager {
 
     public void registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, ProtoInterfaceServiceException {
         if ( log.isTraceEnabled() ) {
-            log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUUID() );
+            log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid() );
         }
         // reject already connected user
-        if ( isConnected( connectionRequest.getClientUUID() ) ) {
-            throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUUID() + "is already connected." );
+        if ( isConnected( connectionRequest.getClientUuid() ) ) {
+            throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUuid() + "is already connected." );
         }
         Map<String, String> properties = connectionRequest.getConnectionPropertiesMap();
         if ( !credentialsPresent( properties ) ) {
@@ -63,7 +63,7 @@ public class ClientManager {
         connectionBuilder
                 .setMajorApiVersion( connectionRequest.getMajorApiVersion() )
                 .setMinorApiVersion( connectionRequest.getMinorApiVersion() )
-                .setClientUUID( connectionRequest.getClientUUID() )
+                .setClientUUID( connectionRequest.getClientUuid() )
                 .setProperties( properties )
                 .setTransactionManager( transactionManager );
 
@@ -80,9 +80,9 @@ public class ClientManager {
         connectionBuilder
                 .setCatalogUser( user )
                 .setLogicalNamespace( namespace );
-        openConnections.put( connectionRequest.getClientUUID(), connectionBuilder.build() );
+        openConnections.put( connectionRequest.getClientUuid(), connectionBuilder.build() );
         if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUUID() );
+            log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
         }
     }
 
