@@ -80,10 +80,9 @@ message SimpleSqlQuery {
 
 message QueryResult {
   oneof result {
-    bool noResult = 1;
+    bool no_result = 1;
     Frame frame = 2;
-    int32 count = 3;
-    int64 bigCount = 4;
+    int64 row_count = 4;
   }
 }
 
