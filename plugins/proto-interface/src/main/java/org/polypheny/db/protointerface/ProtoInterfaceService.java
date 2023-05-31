@@ -17,8 +17,11 @@
 package org.polypheny.db.protointerface;
 
 import io.grpc.stub.StreamObserver;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.LinkedList;
 import lombok.SneakyThrows;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
@@ -75,7 +78,15 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<AvailableLanguages> responseObserver ) {
-
+        List<String> languageNames = LanguageManager.getLanguages()
+                .stream()
+                .map( QueryLanguage::getSerializedName )
+                .collect( Collectors.toList() );
+        AvailableLanguages availableLanguages = AvailableLanguages.newBuilder()
+                .addAllLanguageNames( languageNames )
+                .build();
+        responseObserver.onNext( availableLanguages );
+        responseObserver.onCompleted();
     }
 
 
@@ -92,7 +103,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
 
     @Override
-    public void executePreparedStatement( ValueMapBatch valueMapBatch, StreamObserver<QueryResult> resultStreamObserver) {
+    public void executePreparedStatement( ValueMapBatch valueMapBatch, StreamObserver<QueryResult> resultStreamObserver ) {
 
     }
 
