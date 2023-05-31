@@ -35,24 +35,8 @@ message ConnectionReply {
   uint32 minor_api_version = 3;
 }
 
-message LanguageRequest {}
-
-message SupportedLanguages {
-  repeated string language_names = 1;
-}
-
-message StatementStatus {
-  int32 statementId = 1;
-  optional StatementResult result = 2;
-}
-
-message FetchRequest {
-  int32 statement_id = 1;
-  int64 offset = 2;
-}
-
-message UnparameterizedStatement {
-  string statement_language_name = 1;
+message Statement {
+  QUERY_LANGUAGE query_language = 1;
   string statement = 2;
   bool expects_result = 4;
 }
@@ -61,6 +45,37 @@ message CloseStatementRequest {
   int32 statement_id = 1;
 }
 
+message StatementBatch {
+  repeated Statement statements = 1;
+}
+
+message DirectStatement {
+  Statement statement = 1;
+  Values values = 2;
+}
+
+message DirectStatementBatch {
+  repeated DirectStatement direct_statements = 1;
+  repeated Values values = 2;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+message SimpleSqlQuery {
+  string query = 1;
 message CloseStatementResponse {
 }
 
