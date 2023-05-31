@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import io.grpc.stub.StreamObserver;
+import java.sql.PreparedStatement;
 import java.util.LinkedList;
 import lombok.SneakyThrows;
 import org.polypheny.db.languages.QueryLanguage;
@@ -73,6 +74,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     }
 
 
+    /*
     @Override
     public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
         SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder( )
@@ -88,7 +90,6 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
-        System.out.println( "==========================HIT========================" );
         ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
         String languageName = unparameterizedStatement.getStatementLanguageName();
         if ( !statementManager.isSupportedLanguage( languageName ) ) {
@@ -100,6 +101,25 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onNext( ProtoUtils.createStatus( statement,result ));
         responseObserver.onCompleted();
         responseObserver.onCompleted();
+    }
+    */
+
+
+    @Override
+    public void executeStatements( StatementBatch statementBatch, StreamObserver<QueryResult> resultStreamObserver ) {
+
+    }
+
+
+
+    public void prepareStatement( PreparedStatement preparedStatement, StreamObserver<QueryResult> resultStreamObserver ) {
+
+    }
+
+
+    @Override
+    public void executePreparedStatement( ValuesBatch valuesBatch, StreamObserver<QueryResult> resultStreamObserver) {
+
     }
 
 
