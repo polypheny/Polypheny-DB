@@ -16,7 +16,10 @@
 
 package org.polypheny.db.protointerface;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.HashSet;
+import org.polypheny.db.languages.LanguageManager;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +58,12 @@ public class StatementManager {
         return supportedLanguages;
     }
 
+    public List<String> getAvailableLanguages() {
+        return LanguageManager.getLanguages()
+                .stream()
+                .map( QueryLanguage::getSerializedName )
+                .collect( Collectors.toList() );
+    }
 
     public synchronized UnparameterizedInterfaceStatement createUnparameterizedStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         if ( log.isTraceEnabled() ) {
