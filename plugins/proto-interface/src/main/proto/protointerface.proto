@@ -61,25 +61,6 @@ message DirectStatementBatch {
   repeated Values values = 2;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-message SimpleSqlQuery {
-  string query = 1;
-}
-
 message QueryResult {
   oneof result {
     bool noResult = 1;
