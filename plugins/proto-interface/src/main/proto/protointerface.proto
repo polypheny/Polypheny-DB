@@ -32,10 +32,49 @@ message ConnectionReply {
   uint32 minor_api_version = 3;
 }
 
+message Values {
+  /* TODO: implementation of values to be inserted into statements
+   * Idea: list of value wrapper according to polyvalue / new stuff from refactor branch
+   */
+}
+
+message ValueBatch {
+  repeated Values value_sets = 1;
+}
+
 message Statement {
   QUERY_LANGUAGE query_language = 1;
   string statement = 2;
 }
+
+message StatementBatch {
+  repeated Statement statements = 1;
+}
+
+message DirectStatement {
+  Statement statement = 1;
+  Values values = 2;
+}
+
+message DirectStatementBatch {
+  repeated DirectStatement direct_statements = 1;
+  repeated Values values = 2;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 message SimpleSqlQuery {
   string query = 1;
