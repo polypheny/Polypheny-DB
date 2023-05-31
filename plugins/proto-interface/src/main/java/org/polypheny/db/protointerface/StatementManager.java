@@ -16,7 +16,10 @@
 
 package org.polypheny.db.protointerface;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +33,13 @@ public class StatementManager {
     public StatementManager() {
         statementIdGenerator = new AtomicInteger();
         openStatments = new ConcurrentHashMap<>();
+    }
+
+    public List<String> getAvailableLanguages() {
+        return LanguageManager.getLanguages()
+                .stream()
+                .map( QueryLanguage::getSerializedName )
+                .collect( Collectors.toList() );
     }
 
     public synchronized ProtoInterfaceStatement createStatement(ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage) {
