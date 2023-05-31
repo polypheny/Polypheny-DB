@@ -74,24 +74,6 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     */
 
 
-    @Override
-    public void executeStatements( StatementBatch statementBatch, StreamObserver<QueryResult> resultStreamObserver ) {
-
-    }
-
-
-
-    public void prepareStatement( PreparedStatement preparedStatement, StreamObserver<QueryResult> resultStreamObserver ) {
-
-    }
-
-
-    @Override
-    public void executePreparedStatement( ValuesBatch valuesBatch, StreamObserver<QueryResult> resultStreamObserver) {
-
-    }
-
-
     private boolean checkApiVersion( ConnectionRequest connectionRequest ) {
         return connectionRequest.getMajorApiVersion() == majorApiVersion;
     }
