@@ -17,7 +17,6 @@
 package org.polypheny.db.protointerface;
 
 import io.grpc.stub.StreamObserver;
-import java.sql.PreparedStatement;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.*;
@@ -59,6 +58,30 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         }
         responseObserver.onNext( connectionReply );
         responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<AvailableLanguages> responseObserver ) {
+
+    }
+
+
+    @Override
+    public void executeParameterizedStatements( ParameterizedStatementBatch parameterizedStatements, StreamObserver<QueryResult> resultStreamObserver ) {
+
+    }
+
+
+    @Override
+    public void prepareStatement( PreparedStatement request, StreamObserver<QueryResult> responseObserver ) {
+
+    }
+
+
+    @Override
+    public void executePreparedStatement( ValueMapBatch valueMapBatch, StreamObserver<QueryResult> resultStreamObserver) {
+
     }
 
 
