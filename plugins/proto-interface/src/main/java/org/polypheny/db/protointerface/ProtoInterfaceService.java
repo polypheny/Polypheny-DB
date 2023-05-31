@@ -78,12 +78,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<AvailableLanguages> responseObserver ) {
-        List<String> languageNames = LanguageManager.getLanguages()
-                .stream()
-                .map( QueryLanguage::getSerializedName )
-                .collect( Collectors.toList() );
         AvailableLanguages availableLanguages = AvailableLanguages.newBuilder()
-                .addAllLanguageNames( languageNames )
+                .addAllLanguageNames( statementManager.getAvailableLanguages() )
                 .build();
         responseObserver.onNext( availableLanguages );
         responseObserver.onCompleted();
