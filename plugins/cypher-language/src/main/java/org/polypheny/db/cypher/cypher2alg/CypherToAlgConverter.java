@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
@@ -446,7 +447,7 @@ public class CypherToAlgConverter {
                     cluster,
                     cluster.traitSet(),
                     graph,
-                    new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, graphType ) ) ) );
+                    GraphType.of() );
             stack.add( lps );
         }
 

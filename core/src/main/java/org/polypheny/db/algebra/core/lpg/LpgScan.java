@@ -16,15 +16,12 @@
 
 package org.polypheny.db.algebra.core.lpg;
 
-import java.util.List;
 import org.polypheny.db.algebra.core.common.Scan;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.type.PolyType;
 
 
 public abstract class LpgScan<E extends CatalogEntity> extends Scan<E> implements LpgAlg {
@@ -36,7 +33,7 @@ public abstract class LpgScan<E extends CatalogEntity> extends Scan<E> implement
      */
     public LpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, E graph ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
-        this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) );
+        this.rowType = GraphType.of();//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) );
     }
 
 

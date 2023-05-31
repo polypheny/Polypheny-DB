@@ -105,7 +105,6 @@ public class DdlTest extends CypherTestTemplate {
             namespace = catalog.getSnapshot().getNamespace( graphName );
             graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
-            assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
             assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
             execute( "DROP DATABASE " + graphName );

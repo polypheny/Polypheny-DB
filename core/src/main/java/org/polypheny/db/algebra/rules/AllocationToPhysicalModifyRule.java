@@ -36,7 +36,7 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
 
     public AllocationToPhysicalModifyRule( Class<? extends Modify<?>> modify ) {
-        super( operandJ( modify, Convention.NONE, AllocationToPhysicalModifyRule::canApply, any() ), AlgFactories.LOGICAL_BUILDER, modify.getSimpleName() );
+        super( operandJ( modify, Convention.NONE, AllocationToPhysicalModifyRule::canApply, any() ), AlgFactories.LOGICAL_BUILDER, modify.getSimpleName() + "ToPhysical" );
     }
 
 

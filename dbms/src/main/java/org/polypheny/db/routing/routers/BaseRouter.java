@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -424,10 +424,10 @@ public abstract class BaseRouter implements Router {
                 .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, null ) ) )
                 .collect( Collectors.toList() );
 
-        Builder infoBuilder = cluster.getTypeFactory().builder();
-        infoBuilder.add( "g", null, PolyType.GRAPH );
+        // Builder infoBuilder = cluster.getTypeFactory().builder();
+        // infoBuilder.add( "g", null, PolyType.GRAPH );
 
-        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, infoBuilder.build(), true );
+        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, GraphType.of(), true );
     }
 
 
@@ -443,10 +443,10 @@ public abstract class BaseRouter implements Router {
                 } )
                 .collect( Collectors.toList() );
 
-        Builder infoBuilder = cluster.getTypeFactory().builder();
-        infoBuilder.add( "g", null, PolyType.GRAPH );
+        // Builder infoBuilder = cluster.getTypeFactory().builder();
+        // infoBuilder.add( "g", null, PolyType.GRAPH );
 
-        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, infoBuilder.build(), true );
+        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, GraphType.of(), true );
     }
 
 

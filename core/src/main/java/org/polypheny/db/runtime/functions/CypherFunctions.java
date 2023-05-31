@@ -120,7 +120,7 @@ public class CypherFunctions {
         Map<PolyString, PolyValue> oldProps = new HashMap<>();
 
         for ( Object value : edge ) {
-            PolyValue[] o = (PolyValue[]) value;
+            Object[] o = (Object[]) value;
             PolyString id = (PolyString) o[0];
             PolyString label = (PolyString) o[1];
             PolyString sourceId = (PolyString) o[2];

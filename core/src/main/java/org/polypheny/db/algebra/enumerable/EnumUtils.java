@@ -377,7 +377,7 @@ public class EnumUtils {
 
 
     public static Expression makeTernary( ExpressionType ternaryType, Expression e0, Expression e1, Expression e2 ) {
-        return makeTernary( ternaryType, unwrapPoly( e0 ), e1, e2 );
+        return Expressions.makeTernary( ternaryType, unwrapPoly( e0 ), e1, e2 );
     }
 
 

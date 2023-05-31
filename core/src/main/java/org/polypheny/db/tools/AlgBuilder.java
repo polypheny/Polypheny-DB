@@ -96,6 +96,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -117,6 +118,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexBuilder;
@@ -2505,8 +2507,27 @@ public class AlgBuilder {
         }
         AlgNode input = nodes.get( 0 );
 
+        if ( nodes.size() == 4 && model == ModelTrait.GRAPH ) {
+            push( new LogicalTransformer( input.getCluster(), List.of( buildSubstitutionJoin( nodes.get( 0 ), nodes.get( 1 ) ), buildSubstitutionJoin( nodes.get( 2 ), nodes.get( 3 ) ) ), null, input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
+            return this;
+        }
+
         push( new LogicalTransformer( input.getCluster(), nodes, null, input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
         return this;
+    }
+
+
+    protected AlgNode buildSubstitutionJoin( AlgNode nodesScan, AlgNode propertiesScan ) {
+        AlgTraitSet out = nodesScan.getTraitSet().replace( ModelTrait.RELATIONAL );
+
+        RexBuilder builder = nodesScan.getCluster().getRexBuilder();
+
+        RexNode nodeCondition = builder.makeCall(
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                builder.makeInputRef( nodesScan.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( propertiesScan.getRowType().getFieldList().get( 0 ).getType(), nodesScan.getRowType().getFieldList().size() ) );
+
+        return new LogicalJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
     }
 
 

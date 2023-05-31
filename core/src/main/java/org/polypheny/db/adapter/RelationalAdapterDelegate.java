@@ -79,6 +79,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -216,13 +217,19 @@ public class RelationalAdapterDelegate implements Modifiable {
         PhysicalTable edgePropertiesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
 
         List<AlgNode> inputs = new ArrayList<>();
+
+        AlgNode raw = alg.getInput();
+        if ( raw instanceof AlgSubset ) {
+            raw = ((AlgSubset) alg.getInput()).getAlgList().get( 0 );
+        }
+
         switch ( alg.operation ) {
             case INSERT:
-                if ( alg.getInput() instanceof LpgValues ) {
+                if ( raw instanceof LpgValues ) {
                     // simple value insert
-                    inputs.addAll( ((LogicalLpgValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), Catalog.snapshot() ) );
+                    inputs.addAll( ((LogicalLpgValues) raw).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), Catalog.snapshot() ) );
                 }
-                if ( alg.getInput() instanceof LpgProject ) {
+                if ( raw instanceof LpgProject ) {
                     return attachRelationalRelatedInsert( (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
                 }
 
@@ -319,9 +326,9 @@ public class RelationalAdapterDelegate implements Modifiable {
 
         PhysicalTable nProperties = createSubstitution( context, logical, allocation, "_nProperties_", List.of( "id", "key", "value" ) );
 
-        PhysicalTable edge = createSubstitution( context, logical, allocation, "_edge_", List.of( "id", "label" ) );
+        PhysicalTable edge = createSubstitution( context, logical, allocation, "_edge_", List.of( "id", "label", "_l_id_", "_r_id_" ) );
 
-        PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_edge_", List.of( "id", "label" ) );
+        PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_eProperties_", List.of( "id", "label" ) );
 
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( node.id, nProperties.id, edge.id, eProperties.id ) ) );
     }

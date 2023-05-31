@@ -120,6 +120,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -763,11 +764,11 @@ public class Functions {
 
 
     public static Enumerable<?> singleSum( Enumerable<?> results ) {
-        int amount = 0;
+        long amount = 0;
         for ( Object result : results ) {
-            amount += ((Number) result).intValue();
+            amount += ((PolyNumber) result).intValue();
         }
-        return Linq4j.singletonEnumerable( amount );
+        return Linq4j.singletonEnumerable( PolyLong.of( amount ) );
     }
 
 
