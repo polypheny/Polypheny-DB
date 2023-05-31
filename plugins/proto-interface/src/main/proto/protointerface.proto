@@ -10,6 +10,8 @@ package polypheny.protointerface;
 // Functions provided by the proto interface
 service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
+  // get names of all available languages
+  rpc GetAvailableLanguages(LanguageRequest) returns (AvailableLanguages) {}
   // prepare and execute 1..n statements with the provided values
   rpc ExecuteParameterizedStatements(ParameterizedStatementBatch) returns (QueryResult) {}
   // prepare a single statement
@@ -30,6 +32,8 @@ message ConnectionReply {
   uint32 major_api_version = 2;
   uint32 minor_api_version = 3;
 }
+
+message LanguageRequest {}
 
 message AvailableLanguages {
   repeated string language_names = 1;
