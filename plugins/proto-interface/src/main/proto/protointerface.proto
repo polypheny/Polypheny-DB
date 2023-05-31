@@ -49,14 +49,9 @@ message StatementBatch {
   repeated Statement statements = 1;
 }
 
-message DirectStatement {
-  Statement statement = 1;
-  Values values = 2;
-}
-
-message DirectStatementBatch {
-  repeated DirectStatement direct_statements = 1;
-  repeated Values values = 2;
+message PreparedStatement {
+  QUERY_LANGUAGE query_language = 1;
+  string statement = 2;
 }
 
 
