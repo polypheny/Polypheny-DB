@@ -45,12 +45,12 @@ message CloseStatementRequest {
   int32 statement_id = 1;
 }
 
-message StatementBatch {
-  repeated Statement statements = 1;
+message ParameterizedStatementBatch {
+  repeated ParameterizedStatement parameterized_statement = 1;
 }
 
 message PreparedStatement {
-  QUERY_LANGUAGE query_language = 1;
+  string statement_language_name = 1;
   string statement = 2;
 }
 
