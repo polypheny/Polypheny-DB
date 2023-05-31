@@ -35,6 +35,8 @@ message ConnectionReply {
   uint32 minor_api_version = 3;
 }
 
+message LanguageRequest {}
+
 message Statement {
   QUERY_LANGUAGE query_language = 1;
   string statement = 2;
