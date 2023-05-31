@@ -17,7 +17,7 @@ service ProtoInterface {
   // prepare a single statement
   rpc PrepareStatement(PreparedStatement) returns (QueryResult) {}
   // execute a previously prepared statement with the values provided
-  rpc ExecutePreparedStatement(ValuesBatch) returns (QueryResult) {}
+  rpc ExecutePreparedStatement(ValueMapBatch) returns (QueryResult) {}
 }
 
 message ConnectionRequest {
@@ -39,23 +39,23 @@ message AvailableLanguages {
   repeated string language_names = 1;
 }
 
-// The value set required for one execution of a statement
-message Values {
-  /* TODO: implementation of values to be inserted into statements
-   * Idea: list of value wrapper according to polyvalue / new stuff from refactor branch
-   */
+message Value {
+
 }
 
-message ValuesBatch {
-  repeated Values value_sets = 1;
+message ValueMap {
+  map<string, Value> value_map = 1;
 }
 
-// A statement in a specific query language and its values
+message ValueMapBatch {
+  repeated ValueMap value_maps = 1;
+}
+
 message ParameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
   map<string, string> statement_properties = 3;
-  ValuesBatch value_batch = 4;
+  ValueMapBatch value_map_batch = 4;
 }
 
 message ParameterizedStatementBatch {
