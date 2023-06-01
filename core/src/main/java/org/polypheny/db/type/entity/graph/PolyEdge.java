@@ -153,7 +153,7 @@ public class PolyEdge extends GraphPropertyHolder {
                                 source.asExpression(),
                                 target.asExpression(),
                                 Expressions.constant( direction ),
-                                getVariableName().asExpression() ),
+                                getVariableName() == null ? Expressions.constant( null ) : getVariableName().asExpression() ),
                         PolyEdge.class );
         if ( fromTo != null ) {
             expression = Expressions.call( expression, "fromTo",

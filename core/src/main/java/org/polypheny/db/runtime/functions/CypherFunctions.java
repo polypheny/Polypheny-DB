@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -210,8 +211,8 @@ public class CypherFunctions {
      * @param property the key to check
      */
     @SuppressWarnings("unused")
-    public static boolean hasProperty( PolyNode node, PolyValue property ) {
-        return node.properties.containsKey( property.asString() );
+    public static PolyBoolean hasProperty( PolyNode node, PolyValue property ) {
+        return PolyBoolean.of( node.properties.containsKey( property.asString() ) );
     }
 
 
@@ -222,8 +223,8 @@ public class CypherFunctions {
      * @param label the label to check
      */
     @SuppressWarnings("unused")
-    public static boolean hasLabel( PolyNode node, PolyValue label ) {
-        return node.labels.contains( label.asString() );
+    public static PolyBoolean hasLabel( PolyNode node, PolyValue label ) {
+        return PolyBoolean.of( node.labels.contains( label.asString() ) );
     }
 
 
@@ -247,9 +248,9 @@ public class CypherFunctions {
      * @return the property value
      */
     @SuppressWarnings("unused")
-    public static String extractProperty( GraphPropertyHolder holder, PolyString key ) {
+    public static PolyValue extractProperty( GraphPropertyHolder holder, PolyString key ) {
         if ( holder.getProperties().containsKey( key ) ) {
-            return holder.getProperties().get( key ).toString();
+            return holder.getProperties().get( key );
         }
         return null;
     }

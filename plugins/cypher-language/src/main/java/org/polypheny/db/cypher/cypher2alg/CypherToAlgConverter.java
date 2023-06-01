@@ -596,7 +596,7 @@ public class CypherToAlgConverter {
 
         public Pair<PolyString, RexNode> getPropertyExtract( String key, String subject, RexNode field ) {
             RexNode extractedProperty = rexBuilder.makeCall(
-                    typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
+                    typeFactory.createPolyType( PolyType.ANY ),
                     OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ),
                     List.of( field, rexBuilder.makeLiteral( key ) ) );
 

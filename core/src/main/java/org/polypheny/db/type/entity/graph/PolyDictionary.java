@@ -18,11 +18,19 @@ package org.polypheny.db.type.entity.graph;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.relational.PolyMap;
@@ -61,5 +69,36 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
         return gson.fromJson( json, PolyDictionary.class );
     }
 
+
+    public static class PolyDictionarySerializerDef extends SimpleSerializerDef<PolyDictionary> {
+
+        @Override
+        protected BinarySerializer<PolyDictionary> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyDictionary item ) {
+                    out.writeLong( item.size() );
+                    for ( Entry<PolyString, PolyValue> entry : item.entrySet() ) {
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getKey() ) );
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getValue() ) );
+                    }
+                }
+
+
+                @Override
+                public PolyDictionary decode( BinaryInput in ) throws CorruptedDataException {
+                    Map<PolyString, PolyValue> map = new HashMap<>();
+                    long size = in.readLong();
+                    for ( long i = 0; i < size; i++ ) {
+                        map.put(
+                                PolySerializable.deserialize( in.readUTF8(), serializer ).asString(),
+                                PolySerializable.deserialize( in.readUTF8(), serializer ) );
+                    }
+                    return new PolyDictionary( map );
+                }
+            };
+        }
+
+    }
 
 }

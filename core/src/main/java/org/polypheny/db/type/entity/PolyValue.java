@@ -49,11 +49,13 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 
 @Value
 @Slf4j
@@ -85,8 +87,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
             .with( PolyFloat.class, ctx -> new PolyFloatSerializerDef() )
             .with( PolyDouble.class, ctx -> new PolyDoubleSerializerDef() )
-            .with( PolyMap.class, ctx -> new PolyMap.PolyDocumentSerializerDef() )
+            .with( PolyMap.class, ctx -> new PolyMapSerializerDef() )
             .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
+            .with( PolyDictionary.class, ctx -> new PolyDocumentSerializerDef() )
             .with( PolyList.class, ctx -> new PolyListSerializerDef() )
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .build( PolyValue.class );

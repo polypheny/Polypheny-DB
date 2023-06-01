@@ -16,6 +16,12 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
@@ -74,7 +80,7 @@ public class PolyNode extends GraphPropertyHolder {
                         id.asExpression(),
                         properties.asExpression(),
                         labels.asExpression(),
-                        getVariableName().asExpression() ),
+                        getVariableName() == null ? Expressions.constant( null ) : getVariableName().asExpression() ),
                 PolyNode.class
         ), "isVariable", Expressions.constant( true ) );
     }
@@ -109,6 +115,27 @@ public class PolyNode extends GraphPropertyHolder {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyNode.class );
+    }
+
+
+    public static class PolyNodeSerializerDef extends SimpleSerializerDef<PolyNode> {
+
+        @Override
+        protected BinarySerializer<PolyNode> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyNode item ) {
+
+                }
+
+
+                @Override
+                public PolyNode decode( BinaryInput in ) throws CorruptedDataException {
+                    return null;
+                }
+            };
+        }
+
     }
 
 }

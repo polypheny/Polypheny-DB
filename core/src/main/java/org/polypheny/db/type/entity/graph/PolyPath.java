@@ -252,7 +252,7 @@ public class PolyPath extends GraphObject {
                         edges.asExpression(),
                         names.asExpression(),
                         path.asExpression(),
-                        getVariableName().asExpression() ),
+                        getVariableName() == null ? Expressions.constant( null ) : getVariableName().asExpression() ),
                 PolyPath.class );
     }
 

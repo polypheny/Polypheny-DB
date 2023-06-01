@@ -1028,6 +1028,7 @@ public class Functions {
     /*public static boolean gt( BigDecimal b0, BigDecimal b1 ) {
         return b0.compareTo( b1 ) > 0;
     }*/
+
     public static PolyBoolean gt( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
@@ -1047,7 +1048,7 @@ public class Functions {
 
         throw notComparable( ">", b0, b1 );
     }*/
-    public static PolyBoolean gt( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean gtAny( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) > 0 );
     }
 

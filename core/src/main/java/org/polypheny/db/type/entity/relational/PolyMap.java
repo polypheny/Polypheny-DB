@@ -108,7 +108,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     }
 
 
-    public static class PolyDocumentSerializerDef extends SimpleSerializerDef<PolyMap<?, ?>> {
+    public static class PolyMapSerializerDef extends SimpleSerializerDef<PolyMap<?, ?>> {
 
         @Override
         protected BinarySerializer<PolyMap<? extends PolyValue, ? extends PolyValue>> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
