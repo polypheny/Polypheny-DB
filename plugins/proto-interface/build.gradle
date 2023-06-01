@@ -21,7 +21,7 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.23.0'
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.21.12'
 
     // https://mvnrepository.com/artifact/io.grpc/grpc-all
     implementation group: 'io.grpc', name: 'grpc-all', version: '1.55.1'
@@ -41,7 +41,7 @@ compileJava.dependsOn(generateProto)
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.23.0"
+        artifact = "com.google.protobuf:protoc:3.21.12"
     }
     plugins {
 
