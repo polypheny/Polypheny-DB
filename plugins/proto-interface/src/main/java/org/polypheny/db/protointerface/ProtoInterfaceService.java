@@ -92,7 +92,9 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void executeParameterizedStatements( ParameterizedStatementBatch parameterizedStatements, StreamObserver<QueryResult> resultStreamObserver ) {
-
+        ProtoInterfaceClient protoInterfaceClient = ClientMetaInterceptor.CLIENT.get();
+        ProtoInterfaceStatementBatch statementBatch = statementManager.createStatementBatch( parameterizedStatements, protoInterfaceClient );
+        statementBatch.executeAll();
     }
 
 
