@@ -40,8 +40,7 @@ message LanguageRequest {}
 message Statement {
   QUERY_LANGUAGE query_language = 1;
   string statement = 2;
-  map<string, string> statement_properties = 3;
-  ValueMapBatch value_map_batch = 4;
+  ValueMapBatch value_map_batch = 3;
   bool expects_result = 4;
 }
 
@@ -51,6 +50,7 @@ message CloseStatementRequest {
 
 message ParameterizedStatementBatch {
   repeated ParameterizedStatement parameterized_statement = 1;
+  map<string, string> statement_properties = 2;
 }
 
 message PreparedStatement {
