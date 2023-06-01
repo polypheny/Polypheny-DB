@@ -11,7 +11,7 @@ package polypheny.protointerface;
 service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   // get names of all available languages
-  rpc GetAvailableLanguages(LanguageRequest) returns (AvailableLanguages) {}
+  rpc GetAvailableLanguages(LanguageRequest) returns (SupportedLanguages) {}
   // prepare and execute 1..n statements with the provided values
   rpc ExecuteParameterizedStatements(ParameterizedStatementBatch) returns (QueryResult) {}
   // prepare a single statement
@@ -35,7 +35,7 @@ message ConnectionReply {
 
 message LanguageRequest {}
 
-message AvailableLanguages {
+message SupportedLanguages {
   repeated string language_names = 1;
 }
 
@@ -54,12 +54,12 @@ message ValueMapBatch {
 message ParameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  map<string, string> statement_properties = 3;
-  ValueMapBatch value_map_batch = 4;
+  ValueMapBatch value_map_batch = 3;
 }
 
 message ParameterizedStatementBatch {
   repeated ParameterizedStatement parameterized_statement = 1;
+  map<string, string> statement_properties = 2;
 }
 
 message PreparedStatement {
