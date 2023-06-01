@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import io.grpc.stub.StreamObserver;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.iface.AuthenticationException;
@@ -24,6 +25,8 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
@@ -36,6 +39,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public ProtoInterfaceService( ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
+        PolyValue value = new PolyString("hi ;)");
     }
 
 
@@ -67,7 +71,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @Override
     public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<AvailableLanguages> responseObserver ) {
         AvailableLanguages availableLanguages = AvailableLanguages.newBuilder()
-                .addAllLanguageNames( statementManager.getAvailableLanguages() )
+                .addAllLanguageNames( new LinkedList<>())
                 .build();
         responseObserver.onNext( availableLanguages );
         responseObserver.onCompleted();
