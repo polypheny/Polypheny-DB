@@ -81,11 +81,11 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
 
     @Override
-    public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<AvailableLanguages> responseObserver ) {
-        AvailableLanguages availableLanguages = AvailableLanguages.newBuilder()
+    public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
+        SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder()
                 .addAllLanguageNames( new LinkedList<>())
                 .build();
-        responseObserver.onNext( availableLanguages );
+        responseObserver.onNext( supportedLanguages );
         responseObserver.onCompleted();
     }
 
