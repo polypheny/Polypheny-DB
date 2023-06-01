@@ -26,7 +26,6 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
@@ -148,13 +147,13 @@ public class PolyEdge extends GraphPropertyHolder {
                 Expressions.convert_(
                         Expressions.new_(
                                 PolyEdge.class,
-                                Expressions.constant( id ),
+                                id.asExpression(),
                                 properties.asExpression(),
-                                EnumUtils.constantArrayList( labels, String.class ),
-                                Expressions.constant( source ),
-                                Expressions.constant( target ),
+                                labels.asExpression(),
+                                source.asExpression(),
+                                target.asExpression(),
                                 Expressions.constant( direction ),
-                                Expressions.constant( getVariableName(), String.class ) ),
+                                getVariableName().asExpression() ),
                         PolyEdge.class );
         if ( fromTo != null ) {
             expression = Expressions.call( expression, "fromTo",

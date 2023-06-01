@@ -328,7 +328,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
         PhysicalTable edge = createSubstitution( context, logical, allocation, "_edge_", List.of( "id", "label", "_l_id_", "_r_id_" ) );
 
-        PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_eProperties_", List.of( "id", "label" ) );
+        PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_eProperties_", List.of( "id", "key", "value" ) );
 
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( node.id, nProperties.id, edge.id, eProperties.id ) ) );
     }

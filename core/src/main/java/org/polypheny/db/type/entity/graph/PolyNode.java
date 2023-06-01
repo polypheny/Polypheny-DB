@@ -24,7 +24,6 @@ import lombok.experimental.Accessors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
@@ -72,10 +71,10 @@ public class PolyNode extends GraphPropertyHolder {
         return Expressions.call( Expressions.convert_(
                 Expressions.new_(
                         PolyNode.class,
-                        Expressions.constant( id ),
+                        id.asExpression(),
                         properties.asExpression(),
-                        EnumUtils.constantArrayList( labels, String.class ),
-                        Expressions.constant( getVariableName(), String.class ) ),
+                        labels.asExpression(),
+                        getVariableName().asExpression() ),
                 PolyNode.class
         ), "isVariable", Expressions.constant( true ) );
     }

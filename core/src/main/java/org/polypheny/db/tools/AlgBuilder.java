@@ -2499,7 +2499,8 @@ public class AlgBuilder {
         }
         List<AlgNode> nodes = new ArrayList<>();
         while ( !stack.isEmpty() ) {
-            nodes.add( build() );
+            // it builds FILO
+            nodes.add( 0, build() );
         }
 
         if ( nodes.isEmpty() ) {
