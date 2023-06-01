@@ -21,13 +21,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class PlaceholderReplacement {
+public class NamedValueProcessor {
 
     // matches tags such as :name
     private static final Pattern placeholderpattern = Pattern.compile( "(?<!')(:[\\w]*)(?!')" );
 
 
-    public static String replacePlacehoders( String statement, Map<String, PolyValue> values ) {
+    public static String process( String statement, Map<String, PolyValue> values ) {
         Matcher matcher = placeholderpattern.matcher( statement );
         if ( !matcher.find() ) {
             return statement;
