@@ -16,7 +16,10 @@
 
 package org.polypheny.db.protointerface;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.HashSet;
 import org.polypheny.db.languages.LanguageManager;
@@ -30,6 +33,9 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
+import org.polypheny.db.protointerface.proto.ParameterizedStatement;
+import org.polypheny.db.protointerface.proto.ParameterizedStatementBatch;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class StatementManager {
@@ -58,12 +64,6 @@ public class StatementManager {
         return supportedLanguages;
     }
 
-    public List<String> getAvailableLanguages() {
-        return LanguageManager.getLanguages()
-                .stream()
-                .map( QueryLanguage::getSerializedName )
-                .collect( Collectors.toList() );
-    }
 
     public synchronized UnparameterizedInterfaceStatement createUnparameterizedStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         if ( log.isTraceEnabled() ) {
@@ -98,6 +98,35 @@ public class StatementManager {
     }
 
     public boolean isSupportedLanguage( String statementLanguageName ) {
+        return getSupportedLanguages().contains(statementLanguageName);
+    }
+
+
+
+    public ProtoInterfaceStatementBatch createStatementBatch( ParameterizedStatementBatch pStatementBatch, ProtoInterfaceClient protoInterfaceClient ) {
+        List<ParameterizedStatement> statements = pStatementBatch.getParameterizedStatementList();
+        ProtoInterfaceStatementBatch statementBatch = new ProtoInterfaceStatementBatch( pStatementBatch.getStatementPropertiesMap() );
+
+        QueryLanguage queryLanguage;
+        ProtoInterfaceStatement protoInterfaceStatement;
+        List<Map<String, PolyValue>> valuesMaps;
+
+        for ( ParameterizedStatement statement : statements ) {
+            // check if valid language
+            if ( !isSupportedLanguage( statement.getStatementLanguageName() ) ) {
+                throw new ProtoInterfaceServiceException( "Language " + statement.getStatementLanguageName() + " not supported." );
+            }
+            queryLanguage = QueryLanguage.from( statement.getStatementLanguageName() );
+            protoInterfaceStatement = createStatement( protoInterfaceClient, queryLanguage, statement.getStatement() );
+            valuesMaps = PolyValueDeserializer.deserializeValueMapBatch( statement.getValueMapBatch() );
+            protoInterfaceStatement.addValues( valuesMaps );
+            statementBatch.addStatement( protoInterfaceStatement );
+        }
+        return statementBatch;
+    }
+
+
+    private boolean isSupportedLanguage( String statementLanguageName ) {
         return getSupportedLanguages().contains(statementLanguageName);
     }
 
