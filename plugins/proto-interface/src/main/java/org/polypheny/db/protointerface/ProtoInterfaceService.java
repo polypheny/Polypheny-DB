@@ -81,7 +81,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
 
     @Override
-    public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
+    public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
         SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder()
                 .addAllLanguageNames( new LinkedList<>())
                 .build();
@@ -91,54 +91,21 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
 
     @Override
-    public void executeParameterizedStatements( ParameterizedStatementBatch parameterizedStatements, StreamObserver<QueryResult> resultStreamObserver ) {
-        ProtoInterfaceClient protoInterfaceClient = ClientMetaInterceptor.CLIENT.get();
-        ProtoInterfaceStatementBatch statementBatch = statementManager.createStatementBatch( parameterizedStatements, protoInterfaceClient );
-        statementBatch.executeAll();
-    }
-
-
-    @Override
-    public void prepareStatement( PreparedStatement request, StreamObserver<QueryResult> responseObserver ) {
-
-    }
-
-
-    @Override
-    public void executePreparedStatement( ValueMapBatch valueMapBatch, StreamObserver<QueryResult> resultStreamObserver ) {
-
-    }
-
-
-    /*
-    @Override
-    public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
-        SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder( )
-                .addAllLanguageNames( new LinkedList<>( ))
-                .build();
-        responseObserver.onNext( supportedLanguages );
-        responseObserver.onCompleted( );
-        responseObserver.onCompleted();
-    }
-
-
-
-    @SneakyThrows
-    @Override
-    public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
+    public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<QueryResult> responseObserver ) {
         ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
         String languageName = unparameterizedStatement.getStatementLanguageName();
-        if ( !statementManager.isSupportedLanguage( languageName ) ) {
+        if (!statementManager.getSupportedLanguages().contains( languageName )) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
         }
         UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
-        responseObserver.onNext( ProtoUtils.createStatus( statement ) );
-        StatementResult result = statement.execute() ;
-        responseObserver.onNext( ProtoUtils.createStatus( statement,result ));
-        responseObserver.onCompleted();
-        responseObserver.onCompleted();
+        try {
+            QueryResult result = statement.execute();
+            responseObserver.onNext( result );
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException( e.getMessage() );
+        }
     }
-    */
 
 
     private boolean checkApiVersion( ConnectionRequest connectionRequest ) {

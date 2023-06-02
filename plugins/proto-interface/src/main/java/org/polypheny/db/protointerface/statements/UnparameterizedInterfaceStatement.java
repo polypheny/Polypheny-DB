@@ -16,17 +16,13 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
