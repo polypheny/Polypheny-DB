@@ -76,15 +76,15 @@ public class UnparameterizedStatement extends ProtoInterfaceStatement {
         return resultBuilder.build();
     }
 
-    public Frame fetch(long offset, final int fetchMaxRowCount ) {
+    public Frame fetch(long offset, final int maxRowCount ) {
         synchronized ( protoInterfaceClient ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "fetch( statement {}, long {}, int {} )", currentStatement, offset, fetchMaxRowCount );
+                log.trace( "fetch(long {}, int {} )", currentStatement, offset, maxRowCount );
             }
             startOrResumeStopwatch();
-            List<List<Object>> rows = currentImplementation.getRows( currentStatement, fetchMaxRowCount );
+            List<List<Object>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
             executionStopWatch.suspend();
-            boolean isDone = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
+            boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
             if (isDone) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
