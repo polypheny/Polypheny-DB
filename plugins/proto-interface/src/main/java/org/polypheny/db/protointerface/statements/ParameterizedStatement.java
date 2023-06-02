@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.protointerface;
+package org.polypheny.db.protointerface.statements;
 
-import java.util.List;
-import java.util.Map;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.ProtoInterfaceClient;
 
-public class ProtoInterfaceStatementBatch {
-    private List<ProtoInterfaceStatement> statements;
-    private Map<String, String> properties;
+public class ParameterizedStatement extends ProtoInterfaceStatement {
 
-    public ProtoInterfaceStatementBatch(Map<String, String> properties) {
-        this.properties = properties;
-    }
-
-    public void addStatement(ProtoInterfaceStatement protoInterfaceStatement) {
-        statements.add( protoInterfaceStatement );
-    }
-
-
-    public void executeAll() {
-
+    public ParameterizedStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+        super( statementId, protoInterfaceClient, queryLanguage, query );
     }
 
 }
