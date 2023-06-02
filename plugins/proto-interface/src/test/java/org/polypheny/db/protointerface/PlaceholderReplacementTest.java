@@ -59,7 +59,7 @@ public class PlaceholderReplacementTest {
         values.put( "first_name", PolyString.of( "tobias" ) );
         values.put( "last_name", PolyString.of( "hafner" ) );
 
-        PlaceholderReplacement.replacePlacehoders( statement, values );
+        NamedValueProcessor.process( statement, values );
         fail( "No ProtoInterfaceServiceException thrown" );
     }
 
