@@ -26,7 +26,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.cast.PolyTypeCaster;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -60,10 +59,10 @@ public class CypherBinary extends CypherExpression {
                     throw new UnsupportedOperationException( "Both binary sides define non matching types" );
                 } else if ( left.right.isA( Kind.LITERAL ) ) {
                     // left defines type
-                    right = Pair.of( right.left, PolyTypeCaster.cast( right.right, left.right.getType() ) );
+                    right = Pair.of( right.left, context.rexBuilder.makeCast( left.right.getType(), right.right ) );
                 } else {
                     // right defines type
-                    left = Pair.of( left.left, PolyTypeCaster.cast( left.right, right.right.getType() ) );
+                    left = Pair.of( left.left, context.rexBuilder.makeCast( right.right.getType(), left.right ) );
                 }
             }
         }

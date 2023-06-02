@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -108,20 +109,26 @@ public class PolyLong extends PolyNumber {
 
 
     @Override
-    public PolyLong divide( PolyNumber other ) {
-        return PolyLong.of( value / other.longValue() );
+    public PolyNumber divide( @NotNull PolyNumber other ) {
+        return PolyBigDecimal.of( bigDecimalValue().divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
     }
 
 
     @Override
-    public PolyLong multiply( PolyNumber other ) {
-        return PolyLong.of( value * other.longValue() );
+    public PolyNumber multiply( @NotNull PolyNumber other ) {
+        return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().multiply( other.bigDecimalValue() ) ) : PolyLong.of( value * other.longValue() );
     }
 
 
     @Override
-    public PolyNumber plus( PolyNumber b1 ) {
-        return PolyLong.of( value + b1.longValue() );
+    public PolyNumber plus( @NotNull PolyNumber other ) {
+        return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().add( other.bigDecimalValue() ) ) : PolyLong.of( value + other.longValue() );
+    }
+
+
+    @Override
+    public PolyNumber subtract( @NotNull PolyNumber other ) {
+        return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().subtract( other.bigDecimalValue() ) ) : PolyLong.of( value - other.longValue() );
     }
 
 

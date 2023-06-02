@@ -107,20 +107,26 @@ public class PolyFloat extends PolyNumber {
 
 
     @Override
-    public PolyNumber divide( PolyNumber other ) {
+    public PolyNumber divide( @NotNull PolyNumber other ) {
         return PolyFloat.of( value / other.floatValue() );
     }
 
 
     @Override
-    public PolyNumber multiply( PolyNumber other ) {
+    public PolyNumber multiply( @NotNull PolyNumber other ) {
         return PolyFloat.of( value * other.floatValue() );
     }
 
 
     @Override
-    public PolyNumber plus( PolyNumber b1 ) {
+    public PolyNumber plus( @NotNull PolyNumber b1 ) {
         return PolyFloat.of( value + b1.floatValue() );
+    }
+
+
+    @Override
+    public PolyNumber subtract( @NotNull PolyNumber b1 ) {
+        return PolyFloat.of( value - b1.floatValue() );
     }
 
 

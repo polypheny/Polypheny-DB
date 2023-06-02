@@ -25,6 +25,7 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -161,20 +162,26 @@ public class PolyInteger extends PolyNumber {
 
 
     @Override
-    public PolyInteger divide( PolyNumber other ) {
-        return PolyInteger.of( value / other.intValue() );
+    public PolyNumber divide( @NotNull PolyNumber other ) {
+        return PolyBigDecimal.of( bigDecimalValue().divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
     }
 
 
     @Override
-    public PolyInteger multiply( PolyNumber other ) {
-        return PolyInteger.of( value * other.intValue() );
+    public PolyNumber multiply( @NotNull PolyNumber other ) {
+        return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().multiply( other.bigDecimalValue() ) ) : PolyInteger.of( value * other.intValue() );
     }
 
 
     @Override
-    public PolyNumber plus( PolyNumber b1 ) {
-        return PolyInteger.of( value + b1.intValue() );
+    public PolyNumber plus( @NotNull PolyNumber other ) {
+        return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().add( other.bigDecimalValue() ) ) : PolyInteger.of( value + other.intValue() );
+    }
+
+
+    @Override
+    public PolyNumber subtract( @NotNull PolyNumber other ) {
+        return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().subtract( other.bigDecimalValue() ) ) : PolyInteger.of( value - other.intValue() );
     }
 
 

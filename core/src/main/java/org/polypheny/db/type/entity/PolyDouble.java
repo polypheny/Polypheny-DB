@@ -108,20 +108,26 @@ public class PolyDouble extends PolyNumber {
 
 
     @Override
-    public PolyDouble divide( PolyNumber other ) {
+    public PolyDouble divide( @NotNull PolyNumber other ) {
         return PolyDouble.of( value / other.doubleValue() );
     }
 
 
     @Override
-    public PolyDouble multiply( PolyNumber other ) {
+    public PolyDouble multiply( @NotNull PolyNumber other ) {
         return PolyDouble.of( value * other.doubleValue() );
     }
 
 
     @Override
-    public PolyNumber plus( PolyNumber b1 ) {
+    public PolyNumber plus( @NotNull PolyNumber b1 ) {
         return PolyDouble.of( value + b1.doubleValue() );
+    }
+
+
+    @Override
+    public PolyNumber subtract( @NotNull PolyNumber b1 ) {
+        return PolyDouble.of( value - b1.doubleValue() );
     }
 
 

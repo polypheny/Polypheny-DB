@@ -1199,7 +1199,7 @@ public class Functions {
         return (b0 == null || b1 == null) ? null : b0.add( b1 );
     }*/
     public static PolyNumber plus( PolyNumber b0, PolyNumber b1 ) {
-        return b0.plus( b1 );
+        return (b0 == null || b1 == null) ? null : b0.plus( b1 );
     }
 
 
@@ -1224,59 +1224,59 @@ public class Functions {
     /**
      * SQL <code>-</code> operator applied to int values.
      */
-    public static int minus( int b0, int b1 ) {
+    /*public static int minus( int b0, int b1 ) {
         return b0 - b1;
-    }
+    }*/
 
 
     /**
      * SQL <code>-</code> operator applied to int values; left side may be null.
      */
-    public static Integer minus( Integer b0, int b1 ) {
+    /*public static Integer minus( Integer b0, int b1 ) {
         return b0 == null ? null : (b0 - b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>-</code> operator applied to int values; right side may be null.
      */
-    public static Integer minus( int b0, Integer b1 ) {
+    /*public static Integer minus( int b0, Integer b1 ) {
         return b1 == null ? null : (b0 - b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>-</code> operator applied to nullable int values.
      */
-    public static Integer minus( Integer b0, Integer b1 ) {
+    /*public static Integer minus( Integer b0, Integer b1 ) {
         return (b0 == null || b1 == null) ? null : (b0 - b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>-</code> operator applied to nullable long and int values.
      */
-    public static Long minus( Long b0, Integer b1 ) {
+    /*public static Long minus( Long b0, Integer b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() - b1.longValue());
-    }
+    }*/
 
 
     /**
      * SQL <code>-</code> operator applied to nullable int and long values.
      */
-    public static Long minus( Integer b0, Long b1 ) {
+    /*public static Long minus( Integer b0, Long b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() - b1.longValue());
-    }
+    }*/
 
 
     /**
      * SQL <code>-</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal minus( BigDecimal b0, BigDecimal b1 ) {
+    public static PolyNumber minus( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.subtract( b1 );
     }
 
@@ -1284,13 +1284,13 @@ public class Functions {
     /**
      * SQL <code>-</code> operator applied to Object values (at least one operand has ANY type; either may be null).
      */
-    public static Object minusAny( Object b0, Object b1 ) {
+    public static PolyValue minusAny( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return null;
         }
 
-        if ( allAssignable( Number.class, b0, b1 ) ) {
-            return minus( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return minus( b0.asNumber(), b1.asNumber() );
         }
 
         throw notArithmetic( "-", b0, b1 );
@@ -1302,154 +1302,156 @@ public class Functions {
     /**
      * SQL <code>/</code> operator applied to int values.
      */
-    public static int divide( int b0, int b1 ) {
+    /*public static int divide( int b0, int b1 ) {
         return b0 / b1;
-    }
+    }*/
 
 
     /**
      * SQL <code>/</code> operator applied to int values; left side may be null.
      */
-    public static Integer divide( Integer b0, int b1 ) {
+    /*public static Integer divide( Integer b0, int b1 ) {
         return b0 == null ? null : (b0 / b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>/</code> operator applied to int values; right side may be null.
      */
-    public static Integer divide( int b0, Integer b1 ) {
+    /*public static Integer divide( int b0, Integer b1 ) {
         return b1 == null ? null : (b0 / b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>/</code> operator applied to nullable int values.
      */
-    public static Integer divide( Integer b0, Integer b1 ) {
+    /*public static Integer divide( Integer b0, Integer b1 ) {
         return (b0 == null || b1 == null) ? null : (b0 / b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>/</code> operator applied to nullable long and int values.
      */
-    public static Long divide( Long b0, Integer b1 ) {
+    /*public static Long divide( Long b0, Integer b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() / b1.longValue());
-    }
+    }*/
 
 
     /**
      * SQL <code>/</code> operator applied to nullable int and long values.
      */
-    public static Long divide( Integer b0, Long b1 ) {
+    /*public static Long divide( Integer b0, Long b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() / b1.longValue());
-    }
+    }*/
 
 
     /**
      * SQL <code>/</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal divide( BigDecimal b0, BigDecimal b1 ) {
+    /*public static BigDecimal divide( BigDecimal b0, BigDecimal b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : b0.divide( b1, MathContext.DECIMAL64 );
-    }
+    }*/
 
 
     /**
      * SQL <code>/</code> operator applied to Object values (at least one operand has ANY type; either may be null).
      */
-    public static Object divideAny( Object b0, Object b1 ) {
+    public static PolyValue divideAny( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return null;
         }
 
-        if ( allAssignable( Number.class, b0, b1 ) ) {
-            return divide( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return divide( b0.asNumber(), b1.asNumber() );
         }
 
         throw notArithmetic( "/", b0, b1 );
     }
 
 
-    public static int divide( int b0, BigDecimal b1 ) {
+    /*public static int divide( int b0, BigDecimal b1 ) {
         return BigDecimal.valueOf( b0 )
                 .divide( b1, RoundingMode.HALF_DOWN ).intValue();
-    }
+    }*/
 
 
-    public static long divide( long b0, BigDecimal b1 ) {
+    /*public static long divide( long b0, BigDecimal b1 ) {
         return BigDecimal.valueOf( b0 )
                 .divide( b1, RoundingMode.HALF_DOWN ).longValue();
-    }
+    }*/
 
 
     public static PolyNumber divide( PolyNumber b0, PolyNumber b1 ) {
-        return b0.divide( b1 );
+        return (b0 == null || b1 == null)
+                ? null
+                : b0.divide( b1 );
     }
 
 
     /**
      * SQL <code>*</code> operator applied to int values.
      */
-    public static int multiply( int b0, int b1 ) {
+    /*public static int multiply( int b0, int b1 ) {
         return b0 * b1;
-    }
+    }*/
 
 
     /**
      * SQL <code>*</code> operator applied to int values; left side may be null.
      */
-    public static Integer multiply( Integer b0, int b1 ) {
+    /*public static Integer multiply( Integer b0, int b1 ) {
         return b0 == null ? null : (b0 * b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>*</code> operator applied to int values; right side may be null.
      */
-    public static Integer multiply( int b0, Integer b1 ) {
+    /*public static Integer multiply( int b0, Integer b1 ) {
         return b1 == null ? null : (b0 * b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>*</code> operator applied to nullable int values.
      */
-    public static Integer multiply( Integer b0, Integer b1 ) {
+    /*public static Integer multiply( Integer b0, Integer b1 ) {
         return (b0 == null || b1 == null) ? null : (b0 * b1);
-    }
+    }*/
 
 
     /**
      * SQL <code>*</code> operator applied to nullable long and int values.
      */
-    public static Long multiply( Long b0, Integer b1 ) {
+    /*public static Long multiply( Long b0, Integer b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() * b1.longValue());
-    }
+    }*/
 
 
     /**
      * SQL <code>*</code> operator applied to nullable int and long values.
      */
-    public static Long multiply( Integer b0, Long b1 ) {
+    /*public static Long multiply( Integer b0, Long b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() * b1.longValue());
-    }
+    }*/
 
 
     /**
      * SQL <code>*</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal multiply( BigDecimal b0, BigDecimal b1 ) {
+    public static PolyValue multiply( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.multiply( b1 );
     }
 
@@ -1457,23 +1459,17 @@ public class Functions {
     /**
      * SQL <code>*</code> operator applied to Object values (at least one operand has ANY type; either may be null).
      */
-    public static Object multiplyAny( Object b0, Object b1 ) {
+    public static PolyValue multiplyAny( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return null;
         }
 
-        if ( allAssignable( Number.class, b0, b1 ) ) {
-            return multiply( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return multiply( b0.asNumber(), b1.asNumber() );
         }
 
         throw notArithmetic( "*", b0, b1 );
     }
-
-
-    public static PolyNumber multiply( PolyNumber b0, PolyNumber b1 ) {
-        return b0.multiply( b1 );
-    }
-
 
     private static RuntimeException notArithmetic(
             String op, Object b0,

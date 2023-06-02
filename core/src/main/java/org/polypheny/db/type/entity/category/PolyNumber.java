@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity.category;
 
 import java.math.BigDecimal;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyValue;
@@ -112,16 +113,18 @@ public abstract class PolyNumber extends PolyValue {
 
     public abstract PolyNumber increment();
 
-    public abstract PolyNumber divide( PolyNumber other );
+    public abstract PolyNumber divide( @NotNull PolyNumber other );
 
 
-    public abstract PolyNumber multiply( PolyNumber other );
+    public abstract PolyNumber multiply( @NotNull PolyNumber other );
 
 
-    public abstract PolyNumber plus( PolyNumber b1 );
+    public abstract PolyNumber plus( @NotNull PolyNumber b1 );
+
+    public abstract PolyNumber subtract( @NotNull PolyNumber b1 );
 
 
-    public PolyNumber floor( PolyNumber b1 ) {
+    public PolyNumber floor( @NotNull PolyNumber b1 ) {
         log.warn( "optimize" );
         final BigDecimal[] bigDecimals = bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
         BigDecimal r = bigDecimals[1];
@@ -130,5 +133,11 @@ public abstract class PolyNumber extends PolyValue {
         }
         return PolyBigDecimal.of( bigDecimalValue().subtract( r ) );
     }
+
+
+    public boolean isDecimal() {
+        return PolyType.FRACTIONAL_TYPES.contains( type );
+    }
+
 
 }

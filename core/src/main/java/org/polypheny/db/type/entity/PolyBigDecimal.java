@@ -23,7 +23,7 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.math.MathContext;
 import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -48,6 +48,11 @@ public class PolyBigDecimal extends PolyNumber {
 
     public static PolyBigDecimal of( BigDecimal value ) {
         return new PolyBigDecimal( value );
+    }
+
+
+    public static PolyBigDecimal of( String value ) {
+        return new PolyBigDecimal( new BigDecimal( value ) );
     }
 
 
@@ -98,20 +103,26 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
-    public PolyNumber divide( PolyNumber other ) {
-        return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), RoundingMode.UNNECESSARY ) );
+    public PolyNumber divide( @NotNull PolyNumber other ) {
+        return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
     }
 
 
     @Override
-    public PolyNumber multiply( PolyNumber other ) {
+    public PolyNumber multiply( @NotNull PolyNumber other ) {
         return PolyBigDecimal.of( value.multiply( other.bigDecimalValue() ) );
     }
 
 
     @Override
-    public PolyNumber plus( PolyNumber b1 ) {
+    public PolyNumber plus( @NotNull PolyNumber b1 ) {
         return PolyBigDecimal.of( value.add( b1.bigDecimalValue() ) );
+    }
+
+
+    @Override
+    public PolyNumber subtract( @NotNull PolyNumber b1 ) {
+        return PolyBigDecimal.of( value.subtract( b1.bigDecimalValue() ) );
     }
 
 

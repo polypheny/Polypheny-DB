@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import java.math.BigDecimal;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -129,7 +130,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyBigDecimal asBigDecimal() {
-        return PolyBigDecimal.of( null );
+        return PolyBigDecimal.of( (BigDecimal) null );
     }
 
 

@@ -695,8 +695,8 @@ public class FunctionsTest {
 
         // Numeric types
         assertThat( Functions.plusAny( PolyInteger.of( 2 ), PolyLong.of( 1 ) ), is( PolyLong.of( 3 ) ) );
-        assertThat( Functions.plusAny( PolyInteger.of( 2 ), PolyDouble.of( 1.0 ) ), is( PolyLong.of( 3 ) ) );
-        assertThat( Functions.plusAny( PolyLong.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyLong.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyInteger.of( 2 ), PolyDouble.of( 1.0 ) ), is( PolyBigDecimal.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyLong.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 3 ) ) );
         assertThat( Functions.plusAny( PolyBigDecimal.of( 2 ), PolyInteger.of( 1 ) ), is( PolyBigDecimal.of( 3 ) ) );
         assertThat( Functions.plusAny( PolyBigDecimal.of( 2 ), PolyLong.of( 1 ) ), is( PolyBigDecimal.of( 3 ) ) );
         assertThat( Functions.plusAny( PolyBigDecimal.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 3 ) ) );
@@ -716,21 +716,21 @@ public class FunctionsTest {
     public void testMinusAny() {
         // null parameters
         assertNull( Functions.minusAny( null, null ) );
-        assertNull( Functions.minusAny( null, 1 ) );
-        assertNull( Functions.minusAny( 1, null ) );
+        assertNull( Functions.minusAny( null, PolyInteger.of( 1 ) ) );
+        assertNull( Functions.minusAny( PolyInteger.of( 1 ), null ) );
 
         // Numeric types
-        assertThat( Functions.minusAny( 2, 1L ), is( (Object) new BigDecimal( 1 ) ) );
-        assertThat( Functions.minusAny( 2, 1.0D ), is( (Object) new BigDecimal( 1 ) ) );
-        assertThat( Functions.minusAny( 2L, 1.0D ), is( (Object) new BigDecimal( 1 ) ) );
-        assertThat( Functions.minusAny( new BigDecimal( 2L ), 1 ), is( (Object) new BigDecimal( 1 ) ) );
-        assertThat( Functions.minusAny( new BigDecimal( 2L ), 1L ), is( (Object) new BigDecimal( 1 ) ) );
-        assertThat( Functions.minusAny( new BigDecimal( 2L ), 1.0D ), is( (Object) new BigDecimal( 1 ) ) );
-        assertThat( Functions.minusAny( new BigDecimal( 2L ), new BigDecimal( 1.0D ) ), is( (Object) new BigDecimal( 1 ) ) );
+        assertThat( Functions.minusAny( PolyInteger.of( 2 ), PolyLong.of( 1L ) ), is( PolyBigDecimal.of( 1 ) ) );
+        assertThat( Functions.minusAny( PolyInteger.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 1 ) ) );
+        assertThat( Functions.minusAny( PolyLong.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 1 ) ) );
+        assertThat( Functions.minusAny( PolyBigDecimal.of( 2L ), PolyInteger.of( 1 ) ), is( PolyBigDecimal.of( 1 ) ) );
+        assertThat( Functions.minusAny( PolyBigDecimal.of( 2L ), PolyLong.of( 1L ) ), is( PolyBigDecimal.of( 1 ) ) );
+        assertThat( Functions.minusAny( PolyBigDecimal.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 1 ) ) );
+        assertThat( Functions.minusAny( PolyBigDecimal.of( 2L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBigDecimal.of( 1 ) ) );
 
         // Non-numeric type
         try {
-            Functions.minusAny( "2", 2L );
+            Functions.minusAny( PolyString.of( "2" ), PolyLong.of( 2L ) );
             fail( "'minus' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
             assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString - class org.polypheny.db.type.entity.PolyLong" ) );
@@ -742,24 +742,24 @@ public class FunctionsTest {
     public void testMultiplyAny() {
         // null parameters
         assertNull( Functions.multiplyAny( null, null ) );
-        assertNull( Functions.multiplyAny( null, 1 ) );
-        assertNull( Functions.multiplyAny( 1, null ) );
+        assertNull( Functions.multiplyAny( null, PolyInteger.of( 1 ) ) );
+        assertNull( Functions.multiplyAny( PolyInteger.of( 1 ), null ) );
 
         // Numeric types
-        assertThat( Functions.multiplyAny( 2, 1L ), is( (Object) new BigDecimal( 2 ) ) );
-        assertThat( Functions.multiplyAny( 2, 1.0D ), is( (Object) new BigDecimal( 2 ) ) );
-        assertThat( Functions.multiplyAny( 2L, 1.0D ), is( (Object) new BigDecimal( 2 ) ) );
-        assertThat( Functions.multiplyAny( new BigDecimal( 2L ), 1 ), is( (Object) new BigDecimal( 2 ) ) );
-        assertThat( Functions.multiplyAny( new BigDecimal( 2L ), 1L ), is( (Object) new BigDecimal( 2 ) ) );
-        assertThat( Functions.multiplyAny( new BigDecimal( 2L ), 1.0D ), is( (Object) new BigDecimal( 2 ) ) );
-        assertThat( Functions.multiplyAny( new BigDecimal( 2L ), new BigDecimal( 1.0D ) ), is( (Object) new BigDecimal( 2 ) ) );
+        assertThat( Functions.multiplyAny( PolyInteger.of( 2 ), PolyLong.of( 1L ) ), is( PolyBigDecimal.of( 2 ) ) );
+        assertThat( Functions.multiplyAny( PolyInteger.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 2 ) ) );
+        assertThat( Functions.multiplyAny( PolyLong.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 2 ) ) );
+        assertThat( Functions.multiplyAny( PolyBigDecimal.of( 2L ), PolyInteger.of( 1 ) ), is( PolyBigDecimal.of( 2 ) ) );
+        assertThat( Functions.multiplyAny( PolyBigDecimal.of( 2L ), PolyLong.of( 1L ) ), is( PolyBigDecimal.of( 2 ) ) );
+        assertThat( Functions.multiplyAny( PolyBigDecimal.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 2 ) ) );
+        assertThat( Functions.multiplyAny( PolyBigDecimal.of( 2L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBigDecimal.of( 2 ) ) );
 
         // Non-numeric type
         try {
-            Functions.multiplyAny( "2", 2L );
+            Functions.multiplyAny( PolyString.of( "2" ), PolyLong.of( 2L ) );
             fail( "'multiply' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class java.lang.String * class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString * class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 
@@ -768,24 +768,24 @@ public class FunctionsTest {
     public void testDivideAny() {
         // null parameters
         assertNull( Functions.divideAny( null, null ) );
-        assertNull( Functions.divideAny( null, 1 ) );
-        assertNull( Functions.divideAny( 1, null ) );
+        assertNull( Functions.divideAny( null, PolyInteger.of( 1 ) ) );
+        assertNull( Functions.divideAny( PolyInteger.of( 1 ), null ) );
 
         // Numeric types
-        assertThat( Functions.divideAny( 5, 2L ), is( (Object) new BigDecimal( "2.5" ) ) );
-        assertThat( Functions.divideAny( 5, 2.0D ), is( (Object) new BigDecimal( "2.5" ) ) );
-        assertThat( Functions.divideAny( 5L, 2.0D ), is( (Object) new BigDecimal( "2.5" ) ) );
-        assertThat( Functions.divideAny( new BigDecimal( 5L ), 2 ), is( (Object) new BigDecimal( 2.5 ) ) );
-        assertThat( Functions.divideAny( new BigDecimal( 5L ), 2L ), is( (Object) new BigDecimal( 2.5 ) ) );
-        assertThat( Functions.divideAny( new BigDecimal( 5L ), 2.0D ), is( (Object) new BigDecimal( 2.5 ) ) );
-        assertThat( Functions.divideAny( new BigDecimal( 5L ), new BigDecimal( 2.0D ) ), is( (Object) new BigDecimal( 2.5 ) ) );
+        assertThat( Functions.divideAny( PolyInteger.of( 5 ), PolyLong.of( 2L ) ), is( PolyBigDecimal.of( "2.5" ) ) );
+        assertThat( Functions.divideAny( PolyInteger.of( 5 ), PolyDouble.of( 2.0D ) ), is( PolyBigDecimal.of( "2.5" ) ) );
+        assertThat( Functions.divideAny( PolyLong.of( 5L ), PolyDouble.of( 2.0D ) ), is( PolyBigDecimal.of( "2.5" ) ) );
+        assertThat( Functions.divideAny( PolyBigDecimal.of( 5L ), PolyInteger.of( 2 ) ), is( PolyBigDecimal.of( 2.5 ) ) );
+        assertThat( Functions.divideAny( PolyBigDecimal.of( 5L ), PolyLong.of( 2L ) ), is( PolyBigDecimal.of( 2.5 ) ) );
+        assertThat( Functions.divideAny( PolyBigDecimal.of( 5L ), PolyDouble.of( 2.0D ) ), is( PolyBigDecimal.of( 2.5 ) ) );
+        assertThat( Functions.divideAny( PolyBigDecimal.of( 5L ), PolyBigDecimal.of( 2.0D ) ), is( PolyBigDecimal.of( 2.5 ) ) );
 
         // Non-numeric type
         try {
-            Functions.divideAny( "5", 2L );
+            Functions.divideAny( PolyString.of( "5" ), PolyLong.of( 2L ) );
             fail( "'divide' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class java.lang.String / class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString / class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 
