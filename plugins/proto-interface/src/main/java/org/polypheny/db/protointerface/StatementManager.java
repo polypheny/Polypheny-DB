@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.polypheny.db.protointerface.proto.ParameterizedStatement;
 import org.polypheny.db.protointerface.proto.ParameterizedStatementBatch;
+import org.polypheny.db.protointerface.statements.OldPIStatement;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
@@ -36,7 +37,7 @@ public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
     private Set<String> supportedLanguages;
-    private ConcurrentHashMap<String, ProtoInterfaceStatement> openStatments;
+    private ConcurrentHashMap<String, OldPIStatement> openStatments;
 
 
     public StatementManager() {
@@ -59,13 +60,13 @@ public class StatementManager {
     }
 
 
-    public synchronized ProtoInterfaceStatement createStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+    public synchronized OldPIStatement createStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         if ( log.isTraceEnabled() ) {
             log.trace( "createStatement( Connection {} )", protoInterfaceClient );
         }
         final int statementId = statementIdGenerator.getAndIncrement();
         final String statementKey = getStatementKey( protoInterfaceClient.getClientUUID(), statementId );
-        final ProtoInterfaceStatement protoInterfaceStatement = new ProtoInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
+        final OldPIStatement protoInterfaceStatement = new OldPIStatement( statementId, protoInterfaceClient, queryLanguage, query );
         openStatments.put( statementKey, protoInterfaceStatement );
         if ( log.isTraceEnabled() ) {
             log.trace( "created statement {}", protoInterfaceStatement );
@@ -79,7 +80,7 @@ public class StatementManager {
         ProtoInterfaceStatementBatch statementBatch = new ProtoInterfaceStatementBatch( pStatementBatch.getStatementPropertiesMap() );
 
         QueryLanguage queryLanguage;
-        ProtoInterfaceStatement protoInterfaceStatement;
+        OldPIStatement protoInterfaceStatement;
         List<Map<String, PolyValue>> valuesMaps;
 
         for ( ParameterizedStatement statement : statements ) {
