@@ -17,9 +17,9 @@
 package org.polypheny.db.protointerface;
 
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.HashSet;
 import org.polypheny.db.languages.LanguageManager;
@@ -43,7 +43,7 @@ public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
     private Set<String> supportedLanguages;
-    private ConcurrentHashMap<String, OldPIStatement> openStatments;
+    private ConcurrentHashMap<String, ProtoInterfaceStatement> openStatments;
 
 
     public StatementManager() {
