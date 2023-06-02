@@ -215,7 +215,7 @@ public class TraitConversionTest {
     /**
      * Dummy distribution for test (simplified version of RelDistribution).
      */
-    private static class SimpleDistribution implements AlgTrait {
+    private static class SimpleDistribution implements AlgTrait<ConvertRelDistributionTraitDef> {
 
         private final String name;
 
@@ -232,7 +232,7 @@ public class TraitConversionTest {
 
 
         @Override
-        public AlgTraitDef<?> getTraitDef() {
+        public ConvertRelDistributionTraitDef getTraitDef() {
             return NEW_TRAIT_DEF_INSTANCE;
         }
 

@@ -30,10 +30,11 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.RexImplicationChecker;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -43,8 +44,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -143,11 +142,11 @@ public class TestFixture {
 
         final Holder<RexExecutorImpl> holder = Holder.of( null );
 
-        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createSnapshot( "" );
+        //PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createSnapshot( "" );
         FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( rootSchema.plus() )
+                //.defaultSnapshot( rootSchema.plus() )
                 .prepareContext( new ContextImpl(
-                        rootSchema,
+                        Catalog.snapshot(),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -156,14 +155,13 @@ public class TestFixture {
                         },
                         "",
                         0,
-                        0,
                         null ) )
                 .build();
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
-                        DataContext dataContext = Schemas.createDataContext( rootSchema );
+                    public Void apply( AlgOptCluster cluster, Snapshot snapshot ) {
+                        DataContext dataContext = Schemas.createDataContext( snapshot );
                         holder.set( new RexExecutorImpl( dataContext ) );
                         return null;
                     }

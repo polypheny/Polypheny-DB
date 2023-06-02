@@ -593,7 +593,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> Functions.lt( b0, b1 ).value );
+                () -> Functions.ltAny( b0, b1 ).value );
     }
 
 
@@ -610,7 +610,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> (Functions.lt( b0, b1 ).value || Functions.eqAny( b0, b1 )) );
+                () -> (Functions.ltAny( b0, b1 ).value || Functions.eqAny( b0, b1 ).value) );
     }
 
 

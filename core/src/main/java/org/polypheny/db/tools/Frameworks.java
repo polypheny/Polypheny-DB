@@ -150,7 +150,7 @@ public class Frameworks {
     public static <R> R withPlanner( final PlannerAction<R> action ) {
         Snapshot snapshot = Frameworks.createSnapshot( true );
         FrameworkConfig config = newConfigBuilder()
-                .defaultSchema( snapshot )
+                .defaultSnapshot( snapshot )
                 .prepareContext( new ContextImpl(
                         snapshot,
                         new SlimDataContext() {
@@ -329,7 +329,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder defaultSchema( Snapshot snapshot ) {
+        public ConfigBuilder defaultSnapshot( Snapshot snapshot ) {
             this.snapshot = snapshot;
             return this;
         }

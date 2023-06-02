@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
  *
  * <blockquote><pre>{
  *   version: '1.0',
- *   defaultSchema: 'MATH',
+ *   defaultSnapshot: 'MATH',
  *   schemas: [
  *     {
  *       name: 'MATH',

@@ -152,7 +152,7 @@ public class AlgBuilderTest {
         final Snapshot snapshot = transaction.getSnapshot();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
-                .defaultSchema( snapshot )
+                .defaultSnapshot( snapshot )
                 .traitDefs( (List<AlgTraitDef<?>>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(

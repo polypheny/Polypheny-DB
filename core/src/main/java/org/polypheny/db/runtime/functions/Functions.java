@@ -798,24 +798,22 @@ public class Functions {
         return Pattern.matches( regex, s );
     }
 
-
     /**
      * SQL {@code SIMILAR} function with escape.
      */
-    public static boolean similar( String s, String pattern, String escape ) {
+    /*public static boolean similar( String s, String pattern, String escape ) {
         final String regex = Like.sqlToRegexSimilar( pattern, escape );
         return Pattern.matches( regex, s );
-    }
+    }*/
 
     // =
-
 
     /**
      * SQL <code>=</code> operator applied to BigDecimal values (neither may be null).
      */
-    public static boolean eq( BigDecimal b0, BigDecimal b1 ) {
+    /*public static boolean eq( BigDecimal b0, BigDecimal b1 ) {
         return b0.stripTrailingZeros().equals( b1.stripTrailingZeros() );
-    }
+    }*/
 
 
     /**
@@ -829,28 +827,32 @@ public class Functions {
     }*/
     public static PolyBoolean eq( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
-            return PolyBoolean.of( false );
+            return PolyBoolean.FALSE;
         }
-        return PolyBoolean.of( b0.equals( b1 ) );
+        return eqAny( b0, b1 );
+    }
+
+
+    public static PolyBoolean eq( PolyNumber b0, PolyNumber b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return PolyBoolean.FALSE;
+        }
+        return PolyBoolean.of( b0.bigDecimalValue().stripTrailingZeros().equals( b1.bigDecimalValue().stripTrailingZeros() ) );
     }
 
 
     /**
      * SQL <code>=</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
      */
-    public static boolean eqAny( Object b0, Object b1 ) {
+    public static PolyBoolean eqAny( PolyValue b0, PolyValue b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) ) {
             // The result of SqlFunctions.eq(BigDecimal, BigDecimal) makes more sense than BigDecimal.equals(BigDecimal). So if both of types are BigDecimal, we just use SqlFunctions.eq(BigDecimal, BigDecimal).
-            if ( BigDecimal.class.isInstance( b0 ) ) {
-                return eq( (BigDecimal) b0, (BigDecimal) b1 );
-            } else {
-                return b0.equals( b1 );
-            }
-        } else if ( allAssignable( Number.class, b0, b1 ) ) {
-            return eq( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+            return PolyBoolean.of( b0.equals( b1 ) );
+        } else if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return eq( (PolyNumber) b0, (PolyNumber) b1 );
         }
         // We shouldn't rely on implementation even though overridden equals can handle other types which may create worse result: for example, a.equals(b) != b.equals(a)
-        return false;
+        return PolyBoolean.FALSE;
     }
 
 
@@ -861,15 +863,19 @@ public class Functions {
         return clazz.isInstance( o0 ) && clazz.isInstance( o1 );
     }
 
-    // <>
 
+    private static boolean allAssignablePoly( Class<? extends PolyValue> clazz, Object o0, Object o1 ) {
+        return clazz.isInstance( o0 ) && clazz.isInstance( o1 );
+    }
+
+    // <>
 
     /**
      * SQL <code>&lt;gt;</code> operator applied to BigDecimal values.
      */
-    public static boolean ne( BigDecimal b0, BigDecimal b1 ) {
+    /*public static boolean ne( BigDecimal b0, BigDecimal b1 ) {
         return b0.compareTo( b1 ) != 0;
-    }
+    }*/
 
 
     /**
@@ -886,8 +892,8 @@ public class Functions {
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (at least one operand has ANY type, including String; neither may be null).
      */
-    public static boolean neAny( Object b0, Object b1 ) {
-        return !eqAny( b0, b1 );
+    public static PolyBoolean neAny( PolyValue b0, PolyValue b1 ) {
+        return PolyBoolean.of( !eqAny( b0, b1 ).value );
     }
 
     // <
@@ -929,17 +935,24 @@ public class Functions {
     /**
      * SQL <code>&lt;</code> operator applied to Object values.
      */
-    /*public static boolean ltAny( Object b0, Object b1 ) {
-        if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
-            //noinspection unchecked
-            return ((Comparable) b0).compareTo( b1 ) < 0;
-        } else if ( allAssignable( Number.class, b0, b1 ) ) {
-            return lt( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+    public static PolyBoolean ltAny( PolyValue b0, PolyValue b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return PolyBoolean.FALSE;
+        }
+
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return lt( b0.asNumber(), b1.asNumber() );
+        }
+
+        if ( b0.isSameType( b1 ) ) {
+            return PolyBoolean.of( b0.compareTo( b1 ) < 0 );
         }
 
         throw notComparable( "<", b0, b1 );
-    }*/
-    public static PolyBoolean lt( PolyValue b0, PolyValue b1 ) {
+    }
+
+
+    public static PolyBoolean lt( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) < 0 );
     }
 
@@ -981,17 +994,24 @@ public class Functions {
     /**
      * SQL <code>&le;</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
      */
-    /*public static boolean leAny( Object b0, Object b1 ) {
-        if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
-            //noinspection unchecked
-            return ((Comparable) b0).compareTo( b1 ) <= 0;
-        } else if ( allAssignable( Number.class, b0, b1 ) ) {
-            return le( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+    public static PolyBoolean leAny( PolyValue b0, PolyValue b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return PolyBoolean.FALSE;
+        }
+
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return le( b0.asNumber(), b1.asNumber() );
+        }
+
+        if ( b0.isSameType( b1 ) ) {
+            return PolyBoolean.of( b0.compareTo( b1 ) <= 0 );
         }
 
         throw notComparable( "<=", b0, b1 );
-    }*/
-    public static PolyBoolean le( PolyValue b0, PolyValue b1 ) {
+    }
+
+
+    public static PolyBoolean le( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) <= 0 );
     }
 
@@ -1028,7 +1048,6 @@ public class Functions {
     /*public static boolean gt( BigDecimal b0, BigDecimal b1 ) {
         return b0.compareTo( b1 ) > 0;
     }*/
-
     public static PolyBoolean gt( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
@@ -1049,41 +1068,53 @@ public class Functions {
         throw notComparable( ">", b0, b1 );
     }*/
     public static PolyBoolean gtAny( PolyValue b0, PolyValue b1 ) {
-        return PolyBoolean.of( b0.compareTo( b1 ) > 0 );
+        if ( b0 == null || b1 == null ) {
+            return PolyBoolean.FALSE;
+        }
+
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return gt( b0.asNumber(), b1.asNumber() );
+        }
+
+        if ( b0.isSameType( b1 ) ) {
+            return PolyBoolean.of( b0.compareTo( b1 ) > 0 );
+        }
+
+        throw notComparable( ">", b0, b1 );
     }
 
     // >=
 
-
     /**
      * SQL <code>&ge;</code> operator applied to boolean values.
      */
-    public static boolean ge( boolean b0, boolean b1 ) {
+    /*public static boolean ge( boolean b0, boolean b1 ) {
         return compare( b0, b1 ) >= 0;
-    }
-
+    }*/
 
     /**
      * SQL <code>&ge;</code> operator applied to String values.
      */
-    public static boolean ge( String b0, String b1 ) {
+    /*public static boolean ge( String b0, String b1 ) {
         return b0.compareTo( b1 ) >= 0;
-    }
-
+    }*/
 
     /**
      * SQL <code>&ge;</code> operator applied to ByteString values.
      */
-    public static boolean ge( ByteString b0, ByteString b1 ) {
+    /*public static boolean ge( ByteString b0, ByteString b1 ) {
         return b0.compareTo( b1 ) >= 0;
-    }
+    }*/
 
 
     /**
      * SQL <code>&ge;</code> operator applied to BigDecimal values.
      */
-    public static boolean ge( BigDecimal b0, BigDecimal b1 ) {
+    /*public static boolean ge( BigDecimal b0, BigDecimal b1 ) {
         return b0.compareTo( b1 ) >= 0;
+    }*/
+    public static PolyBoolean ge( PolyNumber b0, PolyNumber b1 ) {
+        return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) >= 0 );
     }
 
 
@@ -1091,104 +1122,102 @@ public class Functions {
      * SQL <code>&ge;</code> operator applied to Object values (at least one
      * operand has ANY type; neither may be null).
      */
-    public static boolean geAny( Object b0, Object b1 ) {
-        if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
-            //noinspection unchecked,rawtypes
-            return ((Comparable) b0).compareTo( b1 ) >= 0;
-        } else if ( allAssignable( Number.class, b0, b1 ) ) {
-            return ge( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+    public static PolyBoolean geAny( PolyValue b0, PolyValue b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return PolyBoolean.FALSE;
+        }
+
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return ge( b0.asNumber(), b1.asNumber() );
+        }
+
+        if ( b0.isSameType( b1 ) ) {
+            return PolyBoolean.of( b0.compareTo( b1 ) >= 0 );
         }
 
         throw notComparable( ">=", b0, b1 );
+
     }
 
 
-    public static PolyBoolean ge( PolyValue b0, PolyValue b1 ) {
+    /*public static PolyBoolean ge( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) >= 0 );
-    }
-
+    }*/
     // +
-
 
     /**
      * SQL <code>+</code> operator applied to int values.
      */
-    public static int plus( int b0, int b1 ) {
+    /*public static int plus( int b0, int b1 ) {
         return b0 + b1;
-    }
-
+    }*/
 
     /**
      * SQL <code>+</code> operator applied to int values; left side may be null.
      */
-    public static Integer plus( Integer b0, int b1 ) {
+    /*public static Integer plus( Integer b0, int b1 ) {
         return b0 == null ? null : (b0 + b1);
-    }
-
+    }*/
 
     /**
      * SQL <code>+</code> operator applied to int values; right side may be null.
      */
-    public static Integer plus( int b0, Integer b1 ) {
+    /*public static Integer plus( int b0, Integer b1 ) {
         return b1 == null ? null : (b0 + b1);
-    }
-
+    }*/
 
     /**
      * SQL <code>+</code> operator applied to nullable int values.
      */
-    public static Integer plus( Integer b0, Integer b1 ) {
+    /*public static Integer plus( Integer b0, Integer b1 ) {
         return (b0 == null || b1 == null) ? null : (b0 + b1);
-    }
-
+    }*/
 
     /**
      * SQL <code>+</code> operator applied to nullable long and int values.
      */
-    public static Long plus( Long b0, Integer b1 ) {
+    /*public static Long plus( Long b0, Integer b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() + b1.longValue());
-    }
-
+    }*/
 
     /**
      * SQL <code>+</code> operator applied to nullable int and long values.
      */
-    public static Long plus( Integer b0, Long b1 ) {
+    /*public static Long plus( Integer b0, Long b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : (b0.longValue() + b1.longValue());
-    }
+    }*/
 
 
     /**
      * SQL <code>+</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal plus( BigDecimal b0, BigDecimal b1 ) {
+    /*public static BigDecimal plus( BigDecimal b0, BigDecimal b1 ) {
         return (b0 == null || b1 == null) ? null : b0.add( b1 );
+    }*/
+    public static PolyNumber plus( PolyNumber b0, PolyNumber b1 ) {
+        return b0.plus( b1 );
     }
 
 
     /**
      * SQL <code>+</code> operator applied to Object values (at least one operand has ANY type; either may be null).
      */
-    public static Object plusAny( Object b0, Object b1 ) {
+    public static PolyValue plusAny( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return null;
         }
 
-        if ( allAssignable( Number.class, b0, b1 ) ) {
-            return plus( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return plus( b0.asNumber(), b1.asNumber() );
         }
 
         throw notArithmetic( "+", b0, b1 );
     }
 
-
-    public static PolyNumber plus( PolyNumber b0, PolyNumber b1 ) {
-        return b0.plus( b1 );
-    }
     // -
 
 

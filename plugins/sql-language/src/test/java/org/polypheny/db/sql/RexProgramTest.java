@@ -70,7 +70,6 @@ import org.polypheny.db.type.PolyTypeAssignmentRules;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -1836,10 +1835,10 @@ public class RexProgramTest extends RexProgramBuilderBase {
                         boolean expectedSimplify =
                                 literal.getPolyType() != toType.getPolyType()
                                         || (literal.getPolyType() == PolyType.CHAR
-                                        && ((NlsString) literal.getValue()).getValue().length()
+                                        && literal.value.asString().value.length()
                                         > toType.getPrecision())
                                         || (literal.getPolyType() == PolyType.BINARY
-                                        && ((ByteString) literal.getValue()).length()
+                                        && literal.value.asBinary().value.length()
                                         > toType.getPrecision());
                         boolean couldSimplify = !cast.equals( simplified );
                         final String reason = (expectedSimplify

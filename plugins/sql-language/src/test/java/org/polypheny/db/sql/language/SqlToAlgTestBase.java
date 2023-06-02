@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -34,21 +33,19 @@ import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDynamic;
 import org.polypheny.db.catalog.MockCatalogReaderSimple;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -63,7 +60,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.prepare.Prepare;
@@ -281,7 +277,7 @@ public abstract class SqlToAlgTestBase {
 
         @Override
         public LogicalTable getTableForMember( List<String> names ) {
-            final ValidatorTable table = catalogReader.getTable( names );
+            final LogicalTable table = catalogReader.getTable( names );
             final AlgDataType rowType = table.getRowType();
             final List<AlgCollation> collationList = deduceMonotonicity( table );
             if ( names.size() < 3 ) {
@@ -298,7 +294,7 @@ public abstract class SqlToAlgTestBase {
         }
 
 
-        private List<AlgCollation> deduceMonotonicity( ValidatorTable table ) {
+        private List<AlgCollation> deduceMonotonicity( LogicalTable table ) {
             final AlgDataType rowType = table.getRowType();
             final List<AlgCollation> collationList = new ArrayList<>();
 
@@ -306,7 +302,7 @@ public abstract class SqlToAlgTestBase {
             int i = -1;
             for ( AlgDataTypeField field : rowType.getFieldList() ) {
                 ++i;
-                final Monotonicity monotonicity = table.getMonotonicity( field.getName() );
+                final Monotonicity monotonicity = ValidatorTable.getMonotonicity( table, field.getName() );
                 if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
                     final AlgFieldCollation.Direction direction =
                             monotonicity.isDecreasing()
@@ -321,12 +317,10 @@ public abstract class SqlToAlgTestBase {
 
         @Override
         public AlgOptEntity getTableForMember( List<String> names, final String datasetName, boolean[] usedDataset ) {
-            final AlgOptEntity table = getTableForMember( names );
+            final LogicalTable table = getTableForMember( names );
 
             // If they're asking for a sample, just for test purposes, assume there's a table called "<table>:<sample>".
-            AlgOptEntity datasetTable =
-                    new DelegatingRelOptEntity( table ) {
-                    };
+            AlgOptEntity datasetTable = null;//new DelegatingRelOptEntity( table ) {};
             if ( usedDataset != null ) {
                 assert usedDataset.length == 1;
                 usedDataset[0] = true;
@@ -335,7 +329,7 @@ public abstract class SqlToAlgTestBase {
         }
 
 
-        protected MockColumnSet createColumnSet( ValidatorTable table, List<String> names, final AlgDataType rowType, final List<AlgCollation> collationList ) {
+        protected MockColumnSet createColumnSet( LogicalTable table, List<String> names, final AlgDataType rowType, final List<AlgCollation> collationList ) {
             return new MockColumnSet( names, rowType, collationList );
         }
 
@@ -343,7 +337,7 @@ public abstract class SqlToAlgTestBase {
         /**
          * Mock column set.
          */
-        protected class MockColumnSet implements AlgOptEntity {
+        protected class MockColumnSet extends LogicalTable {
 
             private final List<String> names;
             private final AlgDataType rowType;
@@ -351,6 +345,7 @@ public abstract class SqlToAlgTestBase {
 
 
             protected MockColumnSet( List<String> names, AlgDataType rowType, final List<AlgCollation> collationList ) {
+                super( null );
                 this.names = ImmutableList.copyOf( names );
                 this.rowType = rowType;
                 this.collationList = collationList;
@@ -383,7 +378,7 @@ public abstract class SqlToAlgTestBase {
             }
 
 
-            @Override
+            /*@Override
             public AlgOptSchema getRelOptSchema() {
                 return MockRelOptSchema.this;
             }
@@ -398,7 +393,7 @@ public abstract class SqlToAlgTestBase {
             @Override
             public List<AlgCollation> getCollationList() {
                 return collationList;
-            }
+            }*/
 
 
             @Override
@@ -408,15 +403,15 @@ public abstract class SqlToAlgTestBase {
 
 
             @Override
-            public boolean isKey( ImmutableBitSet columns ) {
+            public Boolean isKey( ImmutableBitSet columns ) {
                 return false;
             }
 
 
-            @Override
+            /*@Override
             public List<AlgReferentialConstraint> getReferentialConstraints() {
                 return ImmutableList.of();
-            }
+            }*/
 
 
             @Override
@@ -425,8 +420,14 @@ public abstract class SqlToAlgTestBase {
             }
 
 
-            @Override
+            /*@Override
             public CatalogEntity getCatalogEntity() {
+                return null;
+            }
+
+
+            @Override
+            public CatalogEntityPlacement getPartitionPlacement() {
                 return null;
             }
 
@@ -444,17 +445,16 @@ public abstract class SqlToAlgTestBase {
                         .addAll( extendedFields )
                         .build();
                 return new MockColumnSet( names, extendedRowType, collationList );
-            }
+            }*/
 
         }
 
     }
 
-
     /**
      * Table that delegates to a given table.
      */
-    private static class DelegatingRelOptEntity implements AlgOptEntity {
+    /*private static class DelegatingRelOptEntity implements AlgOptEntity {
 
         private final AlgOptEntity parent;
 
@@ -544,7 +544,7 @@ public abstract class SqlToAlgTestBase {
             return null;
         }
 
-    }
+    }*/
 
 
     /**
@@ -669,11 +669,11 @@ public abstract class SqlToAlgTestBase {
 
         protected SqlToAlgConverter createSqlToRelConverter( final SqlValidator validator, final Prepare.CatalogReader catalogReader, final AlgDataTypeFactory typeFactory, final Config config ) {
             final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-            AlgOptCluster cluster = AlgOptCluster.create( getPlanner(), rexBuilder, traitSet, rootSchema );
+            AlgOptCluster cluster = AlgOptCluster.create( getPlanner(), rexBuilder, getPlanner().emptyTraitSet(), Catalog.snapshot() );
             if ( clusterFactory != null ) {
                 cluster = clusterFactory.apply( cluster );
             }
-            return new SqlToAlgConverter( validator, catalogReader, cluster, StandardConvertletTable.INSTANCE, config );
+            return new SqlToAlgConverter( validator, Catalog.snapshot(), cluster, StandardConvertletTable.INSTANCE, config );
         }
 
 
@@ -891,7 +891,7 @@ public abstract class SqlToAlgTestBase {
     private static class FarragoTestValidator extends SqlValidatorImpl {
 
         FarragoTestValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
-            super( opTab, catalogReader, typeFactory, conformance );
+            super( opTab, Catalog.snapshot(), typeFactory, conformance );
         }
 
 

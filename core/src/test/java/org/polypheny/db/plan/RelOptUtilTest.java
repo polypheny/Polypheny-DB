@@ -66,7 +66,7 @@ public class RelOptUtilTest {
 
         return Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
-                .defaultSchema( snapshot )
+                .defaultSnapshot( snapshot )
                 .prepareContext( new ContextImpl(
                         snapshot,
                         new SlimDataContext() {

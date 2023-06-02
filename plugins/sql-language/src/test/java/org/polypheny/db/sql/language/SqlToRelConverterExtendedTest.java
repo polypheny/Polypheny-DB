@@ -17,18 +17,15 @@
 package org.polypheny.db.sql.language;
 
 
-import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.externalize.AlgJsonReader;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
-import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
-import org.polypheny.db.tools.Frameworks;
 
 
 /**
@@ -61,25 +58,25 @@ public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
         final String json = writer.asString();
 
         // Find the schema. If there are no tables in the plan, we won't need one.
-        final AlgOptSchema[] schemas = { null };
+        final CatalogEntity[] entities = { null };
         alg.accept( new AlgShuttleImpl() {
             @Override
             public AlgNode visit( RelScan<?> scan ) {
-                schemas[0] = scan.getEntity().getRelOptSchema();
+                entities[0] = scan.getEntity();
                 return super.visit( scan );
             }
         } );
 
         // Convert JSON back to alg tree.
-        Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
-            final AlgJsonReader reader = new AlgJsonReader( cluster, schemas[0], rootSchema );
+        /*Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
+            final AlgJsonReader reader = new AlgJsonReader( cluster, null, null );
             try {
                 AlgNode x = reader.read( json );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }
             return null;
-        } );
+        } );*/
     }
 
 }

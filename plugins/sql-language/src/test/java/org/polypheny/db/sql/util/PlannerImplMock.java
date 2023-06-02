@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -43,7 +44,6 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
@@ -62,7 +62,6 @@ import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.SourceStringReader;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -81,7 +80,7 @@ public class PlannerImplMock implements Planner {
     /**
      * Holds the trait definitions to be registered with planner. May be null.
      */
-    private final ImmutableList<AlgTraitDef> traitDefs;
+    private final ImmutableList<AlgTraitDef<?>> traitDefs;
 
     private final ParserConfig parserConfig;
     private final NodeToAlgConverter.Config sqlToRelConverterConfig;
@@ -94,7 +93,7 @@ public class PlannerImplMock implements Planner {
     private boolean open;
 
     // set in STATE_2_READY
-    private SchemaPlus defaultSchema;
+    private Snapshot defaultSchema;
     private JavaTypeFactory typeFactory;
     private AlgOptPlanner planner;
     private RexExecutor executor;
@@ -168,15 +167,15 @@ public class PlannerImplMock implements Planner {
                 reset();
         }
         ensure( State.STATE_1_RESET );
-        Frameworks.withPlanner(
+        /*Frameworks.withPlanner(
                 ( cluster, algOptSchema, rootSchema ) -> {
-                    Util.discard( rootSchema ); // use our own defaultSchema
+                    Util.discard( null ); // use our own defaultSnapshot
                     typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
                     planner = cluster.getPlanner();
                     planner.setExecutor( executor );
                     return null;
                 },
-                config );
+                config );*/
 
         state = State.STATE_2_READY;
 
@@ -184,7 +183,7 @@ public class PlannerImplMock implements Planner {
         // register the trait def specified in traitDefs.
         if ( this.traitDefs != null ) {
             planner.clearRelTraitDefs();
-            for ( AlgTraitDef def : this.traitDefs ) {
+            for ( AlgTraitDef<?> def : this.traitDefs ) {
                 planner.addAlgTraitDef( def );
             }
         }
@@ -226,7 +225,7 @@ public class PlannerImplMock implements Planner {
         ensure( State.STATE_3_PARSED );
         final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = new PolyphenyDbSqlValidator( operatorTable != null ? operatorTable : SqlStdOperatorTable.instance(), catalogReader, typeFactory, conformance );
+        this.validator = new PolyphenyDbSqlValidator( operatorTable != null ? operatorTable : SqlStdOperatorTable.instance(), Catalog.snapshot(), typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
             validatedSqlNode = validator.validate( sqlNode );
@@ -255,7 +254,7 @@ public class PlannerImplMock implements Planner {
         ensure( State.STATE_4_VALIDATED );
         assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();
-        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, traitSet, rootSchema );
+        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, planner.emptyTraitSet(), Catalog.snapshot() );
         final NodeToAlgConverter.Config config =
                 new NodeToAlgConverter.ConfigBuilder()
                         .config( sqlToRelConverterConfig )
@@ -278,17 +277,18 @@ public class PlannerImplMock implements Planner {
             AlgOptCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
-        return new SqlToAlgConverter( validator, catalogReader, cluster, convertletTable, config );
+        return new SqlToAlgConverter( validator, Catalog.snapshot(), cluster, convertletTable, config );
     }
 
 
     // PolyphenyDbCatalogReader is stateless; no need to store one
     private PolyphenyDbCatalogReader createCatalogReader() {
-        final SchemaPlus rootSchema = rootSchema( defaultSchema );
+        /*final SchemaPlus rootSchema = rootSchema( Catalog.snapshot() );
         return new PolyphenyDbCatalogReader(
                 PolyphenyDbSchema.from( rootSchema ),
-                PolyphenyDbSchema.from( defaultSchema ).path( null ),
-                typeFactory );
+                PolyphenyDbSchema.from( defaultSnapshot ).path( null ),
+                typeFactory );*/
+        return null;
     }
 
 

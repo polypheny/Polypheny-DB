@@ -131,7 +131,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
         final SchemaPlus rootSchema = Frameworks.createSnapshot( false );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
-                .defaultSchema( schema )
+                .defaultSnapshot( schema )
                 .traitDefs( traitDefs )
                 .sqlToRelConverterConfig( sqlToRelConf )
                 .programs( programs )
@@ -181,7 +181,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
         final SchemaPlus schema = Frameworks.createSnapshot( true ).add( "scott", new ReflectiveSchema( new ScottSchema(), -1 ), NamespaceType.RELATIONAL );
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
-                .defaultSchema( schema )
+                .defaultSnapshot( schema )
                 .traitDefs( (List<AlgTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(

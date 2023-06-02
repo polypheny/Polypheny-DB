@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.rules.JoinToCorrelateRule;
 import org.polypheny.db.algebra.rules.SemiJoinRules;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -46,9 +46,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schemas.HrClusteredSchema;
 import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -68,15 +65,15 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
      * The default schema that is used in these tests provides tables sorted on the primary key. Due to this scan operators always come with a {@link AlgCollation} trait.
      */
     private AlgNode transform( String sql, RuleSet prepareRules ) throws Exception {
-        final SchemaPlus rootSchema = Frameworks.createSnapshot( true );
-        final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema( rootSchema.getId() ), NamespaceType.RELATIONAL );
+        final Snapshot snapshot = Frameworks.createSnapshot( true );
+        //final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema( rootSchema.getId() ), NamespaceType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
-                .defaultSchema( defSchema )
+                .defaultSnapshot( snapshot )
                 .traitDefs( ConventionTraitDef.INSTANCE, AlgCollationTraitDef.INSTANCE )
                 .programs( Programs.of( prepareRules ), Programs.ofRules( SortRemoveRule.INSTANCE ) )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
+                        snapshot,//PolyphenyDbSchema.from( rootSchema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -84,7 +81,6 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
                             }
                         },
                         "",
-                        0,
                         0,
                         null ) )
                 .build();

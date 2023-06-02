@@ -18,11 +18,12 @@ package org.polypheny.db.nodes.validate;
 
 
 import java.util.List;
-import org.polypheny.db.algebra.constant.Modality;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.util.AccessType;
 
 
 /**
@@ -41,6 +42,18 @@ public interface ValidatorTable extends Wrapper {
      * Returns whether a given column is monotonic.
      */
     Monotonicity getMonotonicity( String columnName );
+
+    @Deprecated
+    static Monotonicity getMonotonicity( LogicalTable table, String columnName ) {
+        for ( AlgCollation collation : table.getStatistic().getCollations() ) {
+            final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
+            final int fieldIndex = fieldCollation.getFieldIndex();
+            if ( fieldIndex < table.getRowType().getFieldCount() && table.getRowType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+                return fieldCollation.direction.monotonicity();
+            }
+        }
+        return Monotonicity.NOT_MONOTONIC;
+    }
 
 }
 

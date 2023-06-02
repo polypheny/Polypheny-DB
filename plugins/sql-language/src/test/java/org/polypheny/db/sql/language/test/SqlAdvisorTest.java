@@ -41,7 +41,6 @@ import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.advise.SqlAdvisor;
-import org.polypheny.db.sql.language.advise.SqlAdvisorValidator;
 import org.polypheny.db.sql.language.advise.SqlSimpleParser.Token;
 import org.polypheny.db.sql.language.advise.SqlSimpleParser.Tokenizer;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
@@ -58,7 +57,7 @@ import org.polypheny.db.util.Moniker;
  */
 public class SqlAdvisorTest extends SqlValidatorTestCase {
 
-    public static final SqlTestFactory ADVISOR_TEST_FACTORY = SqlTestFactory.INSTANCE.withValidator( SqlAdvisorValidator::new );
+    public static final SqlTestFactory ADVISOR_TEST_FACTORY = SqlTestFactory.INSTANCE.withValidator( null );// SqlAdvisorValidator );
 
     @Rule
     public MethodRule configureTester = SqlValidatorTestCase.TESTER_CONFIGURATION_RULE;

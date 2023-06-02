@@ -52,7 +52,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -78,7 +77,7 @@ import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -95,11 +94,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.schema.FoodmartSchema;
-import org.polypheny.db.schema.HrSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TpchSchema;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
@@ -232,17 +226,18 @@ public class PlannerTest extends SqlLanguageDependent {
 
     @Test
     public void testValidateUserDefinedAggregate() throws Exception {
-        final SchemaPlus schema = Frameworks
-                .createSnapshot( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
+        //final SchemaPlus schema = Frameworks
+        //.createSnapshot( true );
+        //.add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
         OperatorTable opTab = ChainedOperatorTable.of( stdOpTab, new ListSqlOperatorTable( ImmutableList.of( new MyCountAggFunction() ) ) );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( schema )
+                .defaultSnapshot( Catalog.snapshot() )
                 .operatorTable( opTab )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( schema ),
+                        Catalog.snapshot(),
+                        //PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -250,7 +245,6 @@ public class PlannerTest extends SqlLanguageDependent {
                             }
                         },
                         "",
-                        0,
                         0,
                         null ) )
                 .build();
@@ -281,23 +275,23 @@ public class PlannerTest extends SqlLanguageDependent {
     }
 
 
-    private Planner getPlanner( List<AlgTraitDef> traitDefs, Program... programs ) {
+    private Planner getPlanner( List<AlgTraitDef<?>> traitDefs, Program... programs ) {
         return getPlanner( traitDefs, Parser.ParserConfig.DEFAULT, programs );
     }
 
 
-    private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
-        final SchemaPlus schema = Frameworks
+    private Planner getPlanner( List<AlgTraitDef<?>> traitDefs, ParserConfig parserConfig, Program... programs ) {
+        /*final SchemaPlus schema = Frameworks
                 .createSnapshot( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );*/
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
-                .defaultSchema( schema )
+                .defaultSnapshot( Catalog.snapshot() )
                 .traitDefs( traitDefs )
                 .programs( programs )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( schema ),
+                        Catalog.snapshot(),//PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -305,7 +299,6 @@ public class PlannerTest extends SqlLanguageDependent {
                             }
                         },
                         "",
-                        0,
                         0,
                         null ) )
                 .build();
@@ -619,7 +612,7 @@ public class PlannerTest extends SqlLanguageDependent {
     @Test
     public void testPlanWithExplicitTraitDefs() throws Exception {
         RuleSet ruleSet = RuleSets.ofList( FilterMergeRule.INSTANCE, EnumerableRules.ENUMERABLE_FILTER_RULE, EnumerableRules.ENUMERABLE_PROJECT_RULE );
-        final List<AlgTraitDef> traitDefs = new ArrayList<>();
+        final List<AlgTraitDef<?>> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( AlgCollationTraitDef.INSTANCE );
 
@@ -1002,15 +995,15 @@ public class PlannerTest extends SqlLanguageDependent {
      * Checks that a query returns a particular plan, using a planner with MultiJoinOptimizeBushyRule enabled.
      */
     private void checkBushy( String sql, String expected ) throws Exception {
-        final SchemaPlus schema = Frameworks.createSnapshot( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema(), -1 ), NamespaceType.RELATIONAL );
+        final Snapshot snapshot = Frameworks.createSnapshot( false );//.add( "foodmart", new ReflectiveSchema( new FoodmartSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
-                .defaultSchema( schema )
-                .traitDefs( (List<AlgTraitDef>) null )
+                .defaultSnapshot( snapshot )
+                .traitDefs( (List<AlgTraitDef<?>>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( schema ),
+                        snapshot,//PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -1018,7 +1011,6 @@ public class PlannerTest extends SqlLanguageDependent {
                             }
                         },
                         "",
-                        0,
                         0,
                         null ) )
                 .build();
@@ -1058,14 +1050,14 @@ public class PlannerTest extends SqlLanguageDependent {
 
 
     public String checkTpchQuery( String tpchTestQuery ) throws Exception {
-        final SchemaPlus schema = Frameworks.createSnapshot( false ).add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
+        final Snapshot snapshot = Frameworks.createSnapshot( false );//.add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.configBuilder().setLex( Lex.MYSQL ).build() )
-                .defaultSchema( schema )
+                .defaultSnapshot( snapshot )
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( schema ),
+                        snapshot,
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -1073,7 +1065,6 @@ public class PlannerTest extends SqlLanguageDependent {
                             }
                         },
                         "",
-                        0,
                         0,
                         null ) )
                 .build();
@@ -1116,26 +1107,26 @@ public class PlannerTest extends SqlLanguageDependent {
      */
     @Test
     public void testOrderByNonSelectColumn() throws Exception {
-        final SchemaPlus schema = Frameworks
-                .createSnapshot( true )
-                .add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
+        final Snapshot snapshot = Frameworks
+                .createSnapshot( true );
+        //.add( "tpch", new ReflectiveSchema( new TpchSchema(), -1 ), NamespaceType.RELATIONAL );
 
         String query = "select t.psPartkey from \n"
                 + "(select ps.psPartkey from `tpch`.`partsupp` ps \n"
                 + "order by ps.psPartkey, ps.psSupplyCost) t \n"
                 + "order by t.psPartkey";
 
-        List<AlgTraitDef> traitDefs = new ArrayList<>();
+        List<AlgTraitDef<?>> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( AlgCollationTraitDef.INSTANCE );
         final ParserConfig parserConfig = Parser.configBuilder().setLex( Lex.MYSQL ).build();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
-                .defaultSchema( schema )
+                .defaultSnapshot( snapshot )
                 .traitDefs( traitDefs )
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( schema ),
+                        snapshot,//PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -1143,7 +1134,6 @@ public class PlannerTest extends SqlLanguageDependent {
                             }
                         },
                         "",
-                        0,
                         0,
                         null ) )
                 .build();
@@ -1199,14 +1189,14 @@ public class PlannerTest extends SqlLanguageDependent {
 
 
     private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, AlgConversionException {
-        final SchemaPlus schema = Frameworks
-                .createSnapshot( true )
-                .add( "hr", new ReflectiveSchema( -1L, new HrSchema() ), NamespaceType.RELATIONAL );
+        final Snapshot snapshot = Frameworks
+                .createSnapshot( true );
+        //.add( "hr", new ReflectiveSchema( -1L, new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( schema )
+                .defaultSnapshot( snapshot )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( schema ),
+                        snapshot,//PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -1214,7 +1204,6 @@ public class PlannerTest extends SqlLanguageDependent {
                             }
                         },
                         "",
-                        0,
                         0,
                         null ) )
                 .build();

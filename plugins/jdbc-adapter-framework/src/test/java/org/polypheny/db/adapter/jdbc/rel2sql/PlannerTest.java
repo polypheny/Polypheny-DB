@@ -113,7 +113,7 @@ public class PlannerTest extends SqlLanguageDependent {
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
-                .defaultSchema( schema )
+                .defaultSnapshot( schema )
                 .traitDefs( traitDefs )
                 .programs( programs )
                 .prepareContext( new ContextImpl(

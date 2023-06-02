@@ -17,7 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import java.math.BigDecimal;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -27,7 +27,6 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
-@EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
 public class PolyLong extends PolyNumber {
 
@@ -123,6 +122,28 @@ public class PolyLong extends PolyNumber {
     @Override
     public PolyNumber plus( PolyNumber b1 ) {
         return PolyLong.of( value + b1.longValue() );
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        if ( !super.equals( o ) ) {
+            return false;
+        }
+        PolyLong polyLong = (PolyLong) o;
+        return Objects.equals( value, polyLong.value );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

@@ -46,16 +46,30 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.junit.Before;
 import org.junit.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
 
 
 /**
  * Unit test for the methods in {@link Functions} that implement SQL functions.
  */
-public class SqlFunctionsTest {
+public class FunctionsTest {
+
+    @Before
+    public void before() {
+        TestHelper.getInstance();
+    }
+
 
     @Test
     public void testCharLength() {
@@ -525,61 +539,61 @@ public class SqlFunctionsTest {
     @Test
     public void testEqWithAny() {
         // Non-numeric same type equality check
-        assertThat( Functions.eqAny( "hello", "hello" ), is( true ) );
+        assertThat( Functions.eqAny( PolyString.of( "hello" ), PolyString.of( "hello" ) ), is( PolyBoolean.TRUE ) );
 
         // Numeric types equality check
-        assertThat( Functions.eqAny( 1, 1L ), is( true ) );
-        assertThat( Functions.eqAny( 1, 1.0D ), is( true ) );
-        assertThat( Functions.eqAny( 1L, 1.0D ), is( true ) );
-        assertThat( Functions.eqAny( new BigDecimal( 1L ), 1 ), is( true ) );
-        assertThat( Functions.eqAny( new BigDecimal( 1L ), 1L ), is( true ) );
-        assertThat( Functions.eqAny( new BigDecimal( 1L ), 1.0D ), is( true ) );
-        assertThat( Functions.eqAny( new BigDecimal( 1L ), new BigDecimal( 1.0D ) ), is( true ) );
+        assertThat( Functions.eqAny( PolyInteger.of( 1 ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.eqAny( PolyInteger.of( 1 ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.eqAny( PolyLong.of( 1L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.eqAny( PolyBigDecimal.of( 1L ), PolyInteger.of( 1 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.eqAny( PolyBigDecimal.of( 1L ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.eqAny( PolyBigDecimal.of( 1L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.eqAny( PolyBigDecimal.of( 1L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
 
         // Non-numeric different type equality check
-        assertThat( Functions.eqAny( "2", 2 ), is( false ) );
+        assertThat( Functions.eqAny( PolyString.of( "2" ), PolyInteger.of( 2 ) ), is( PolyBoolean.FALSE ) );
     }
 
 
     @Test
     public void testNeWithAny() {
         // Non-numeric same type inequality check
-        assertThat( Functions.neAny( "hello", "world" ), is( true ) );
+        assertThat( Functions.neAny( PolyString.of( "hello" ), PolyString.of( "world" ) ), is( PolyBoolean.TRUE ) );
 
         // Numeric types inequality check
-        assertThat( Functions.neAny( 1, 2L ), is( true ) );
-        assertThat( Functions.neAny( 1, 2.0D ), is( true ) );
-        assertThat( Functions.neAny( 1L, 2.0D ), is( true ) );
-        assertThat( Functions.neAny( new BigDecimal( 2L ), 1 ), is( true ) );
-        assertThat( Functions.neAny( new BigDecimal( 2L ), 1L ), is( true ) );
-        assertThat( Functions.neAny( new BigDecimal( 2L ), 1.0D ), is( true ) );
-        assertThat( Functions.neAny( new BigDecimal( 2L ), new BigDecimal( 1.0D ) ), is( true ) );
+        assertThat( Functions.neAny( PolyInteger.of( 1 ), PolyLong.of( 2L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.neAny( PolyInteger.of( 1 ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.neAny( PolyLong.of( 1L ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.neAny( PolyBigDecimal.of( 2L ), PolyInteger.of( 1 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.neAny( PolyBigDecimal.of( 2L ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.neAny( PolyBigDecimal.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.neAny( PolyBigDecimal.of( 2L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
 
         // Non-numeric different type inequality check
-        assertThat( Functions.neAny( "2", 2 ), is( true ) );
+        assertThat( Functions.neAny( PolyString.of( "2" ), PolyInteger.of( 2 ) ), is( PolyBoolean.TRUE ) );
     }
 
 
     @Test
     public void testLtWithAny() {
         // Non-numeric same type "less then" check
-        assertThat( Functions.ltAny( "apple", "banana" ), is( true ) );
+        assertThat( Functions.ltAny( PolyString.of( "apple" ), PolyString.of( "banana" ) ), is( PolyBoolean.TRUE ) );
 
         // Numeric types "less than" check
-        assertThat( Functions.ltAny( 1, 2L ), is( true ) );
-        assertThat( Functions.ltAny( 1, 2.0D ), is( true ) );
-        assertThat( Functions.ltAny( 1L, 2.0D ), is( true ) );
-        assertThat( Functions.ltAny( new BigDecimal( 1L ), 2 ), is( true ) );
-        assertThat( Functions.ltAny( new BigDecimal( 1L ), 2L ), is( true ) );
-        assertThat( Functions.ltAny( new BigDecimal( 1L ), 2.0D ), is( true ) );
-        assertThat( Functions.ltAny( new BigDecimal( 1L ), new BigDecimal( 2.0D ) ), is( true ) );
+        assertThat( Functions.ltAny( PolyInteger.of( 1 ), PolyLong.of( 2L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.ltAny( PolyInteger.of( 1 ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.ltAny( PolyLong.of( 1L ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.ltAny( PolyBigDecimal.of( 1L ), PolyInteger.of( 2 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.ltAny( PolyBigDecimal.of( 1L ), PolyLong.of( 2L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.ltAny( PolyBigDecimal.of( 1L ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.ltAny( PolyBigDecimal.of( 1L ), PolyBigDecimal.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
 
         // Non-numeric different type but both implements Comparable "less than" check
         try {
-            assertThat( Functions.ltAny( "1", 2L ), is( false ) );
+            assertThat( Functions.ltAny( PolyString.of( "1" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'lt' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class java.lang.String < class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString < class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 
@@ -587,31 +601,31 @@ public class SqlFunctionsTest {
     @Test
     public void testLeWithAny() {
         // Non-numeric same type "less or equal" check
-        assertThat( Functions.leAny( "apple", "banana" ), is( true ) );
-        assertThat( Functions.leAny( "apple", "apple" ), is( true ) );
+        assertThat( Functions.leAny( PolyString.of( "apple" ), PolyString.of( "banana" ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyString.of( "apple" ), PolyString.of( "apple" ) ), is( PolyBoolean.TRUE ) );
 
         // Numeric types "less or equal" check
-        assertThat( Functions.leAny( 1, 2L ), is( true ) );
-        assertThat( Functions.leAny( 1, 1L ), is( true ) );
-        assertThat( Functions.leAny( 1, 2.0D ), is( true ) );
-        assertThat( Functions.leAny( 1, 1.0D ), is( true ) );
-        assertThat( Functions.leAny( 1L, 2.0D ), is( true ) );
-        assertThat( Functions.leAny( 1L, 1.0D ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), 2 ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), 1 ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), 2L ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), 1L ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), 2.0D ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), 1.0D ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), new BigDecimal( 2.0D ) ), is( true ) );
-        assertThat( Functions.leAny( new BigDecimal( 1L ), new BigDecimal( 1.0D ) ), is( true ) );
+        assertThat( Functions.leAny( PolyInteger.of( 1 ), PolyLong.of( 2L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyInteger.of( 1 ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyInteger.of( 1 ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyInteger.of( 1 ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyLong.of( 1L ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyLong.of( 1L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyInteger.of( 2 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyInteger.of( 1 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyLong.of( 2L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyDouble.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyBigDecimal.of( 2.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.leAny( PolyBigDecimal.of( 1L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
 
         // Non-numeric different type but both implements Comparable "less or equal" check
         try {
-            assertThat( Functions.leAny( "2", 2L ), is( false ) );
+            assertThat( Functions.leAny( PolyString.of( "2" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'le' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class java.lang.String <= class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString <= class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 
@@ -619,23 +633,23 @@ public class SqlFunctionsTest {
     @Test
     public void testGtWithAny() {
         // Non-numeric same type "greater then" check
-        assertThat( Functions.gtAny( "banana", "apple" ), is( true ) );
+        assertThat( Functions.gtAny( PolyString.of( "banana" ), PolyString.of( "apple" ) ), is( PolyBoolean.TRUE ) );
 
         // Numeric types "greater than" check
-        assertThat( Functions.gtAny( 2, 1L ), is( true ) );
-        assertThat( Functions.gtAny( 2, 1.0D ), is( true ) );
-        assertThat( Functions.gtAny( 2L, 1.0D ), is( true ) );
-        assertThat( Functions.gtAny( new BigDecimal( 2L ), 1 ), is( true ) );
-        assertThat( Functions.gtAny( new BigDecimal( 2L ), 1L ), is( true ) );
-        assertThat( Functions.gtAny( new BigDecimal( 2L ), 1.0D ), is( true ) );
-        assertThat( Functions.gtAny( new BigDecimal( 2L ), new BigDecimal( 1.0D ) ), is( true ) );
+        assertThat( Functions.gtAny( PolyInteger.of( 2 ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.gtAny( PolyInteger.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.gtAny( PolyLong.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.gtAny( PolyBigDecimal.of( 2L ), PolyInteger.of( 1 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.gtAny( PolyBigDecimal.of( 2L ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.gtAny( PolyBigDecimal.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.gtAny( PolyBigDecimal.of( 2L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
 
         // Non-numeric different type but both implements Comparable "greater than" check
         try {
-            assertThat( Functions.gtAny( "2", 1L ), is( false ) );
+            assertThat( Functions.gtAny( PolyString.of( "2" ), PolyLong.of( 1L ) ), is( PolyBoolean.FALSE ) );
             fail( "'gt' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class java.lang.String > class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString > class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 
@@ -643,31 +657,31 @@ public class SqlFunctionsTest {
     @Test
     public void testGeWithAny() {
         // Non-numeric same type "greater or equal" check
-        assertThat( Functions.geAny( "banana", "apple" ), is( true ) );
-        assertThat( Functions.geAny( "apple", "apple" ), is( true ) );
+        assertThat( Functions.geAny( PolyString.of( "banana" ), PolyString.of( "apple" ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyString.of( "apple" ), PolyString.of( "apple" ) ), is( PolyBoolean.TRUE ) );
 
         // Numeric types "greater or equal" check
-        assertThat( Functions.geAny( 2, 1L ), is( true ) );
-        assertThat( Functions.geAny( 1, 1L ), is( true ) );
-        assertThat( Functions.geAny( 2, 1.0D ), is( true ) );
-        assertThat( Functions.geAny( 1, 1.0D ), is( true ) );
-        assertThat( Functions.geAny( 2L, 1.0D ), is( true ) );
-        assertThat( Functions.geAny( 1L, 1.0D ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 2L ), 1 ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 1L ), 1 ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 2L ), 1L ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 1L ), 1L ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 2L ), 1.0D ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 1L ), 1.0D ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 2L ), new BigDecimal( 1.0D ) ), is( true ) );
-        assertThat( Functions.geAny( new BigDecimal( 1L ), new BigDecimal( 1.0D ) ), is( true ) );
+        assertThat( Functions.geAny( PolyInteger.of( 2 ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyInteger.of( 1 ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyInteger.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyInteger.of( 1 ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyLong.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyLong.of( 1L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 2L ), PolyInteger.of( 1 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 1L ), PolyInteger.of( 1 ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 2L ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 1L ), PolyLong.of( 1L ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 2L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 1L ), PolyDouble.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 2L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
+        assertThat( Functions.geAny( PolyBigDecimal.of( 1L ), PolyBigDecimal.of( 1.0D ) ), is( PolyBoolean.TRUE ) );
 
         // Non-numeric different type but both implements Comparable "greater or equal" check
         try {
-            assertThat( Functions.geAny( "2", 2L ), is( false ) );
+            assertThat( Functions.geAny( PolyString.of( "2" ), PolyLong.of( 2L ) ), is( PolyBoolean.FALSE ) );
             fail( "'ge' on non-numeric different type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for comparison: class java.lang.String >= class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for comparison: class org.polypheny.db.type.entity.PolyString >= class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 
@@ -676,24 +690,24 @@ public class SqlFunctionsTest {
     public void testPlusAny() {
         // null parameters
         assertNull( Functions.plusAny( null, null ) );
-        assertNull( Functions.plusAny( null, 1 ) );
-        assertNull( Functions.plusAny( 1, null ) );
+        assertNull( Functions.plusAny( null, PolyInteger.of( 1 ) ) );
+        assertNull( Functions.plusAny( PolyInteger.of( 1 ), null ) );
 
         // Numeric types
-        assertThat( Functions.plusAny( 2, 1L ), is( (Object) new BigDecimal( 3 ) ) );
-        assertThat( Functions.plusAny( 2, 1.0D ), is( (Object) new BigDecimal( 3 ) ) );
-        assertThat( Functions.plusAny( 2L, 1.0D ), is( (Object) new BigDecimal( 3 ) ) );
-        assertThat( Functions.plusAny( new BigDecimal( 2L ), 1 ), is( (Object) new BigDecimal( 3 ) ) );
-        assertThat( Functions.plusAny( new BigDecimal( 2L ), 1L ), is( (Object) new BigDecimal( 3 ) ) );
-        assertThat( Functions.plusAny( new BigDecimal( 2L ), 1.0D ), is( (Object) new BigDecimal( 3 ) ) );
-        assertThat( Functions.plusAny( new BigDecimal( 2L ), new BigDecimal( 1.0D ) ), is( (Object) new BigDecimal( 3 ) ) );
+        assertThat( Functions.plusAny( PolyInteger.of( 2 ), PolyLong.of( 1 ) ), is( PolyLong.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyInteger.of( 2 ), PolyDouble.of( 1.0 ) ), is( PolyLong.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyLong.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyLong.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyBigDecimal.of( 2 ), PolyInteger.of( 1 ) ), is( PolyBigDecimal.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyBigDecimal.of( 2 ), PolyLong.of( 1 ) ), is( PolyBigDecimal.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyBigDecimal.of( 2 ), PolyDouble.of( 1.0D ) ), is( PolyBigDecimal.of( 3 ) ) );
+        assertThat( Functions.plusAny( PolyBigDecimal.of( 2 ), PolyBigDecimal.of( 1.0D ) ), is( PolyBigDecimal.of( 3 ) ) );
 
         // Non-numeric type
         try {
-            Functions.plusAny( "2", 2L );
+            Functions.plusAny( PolyString.of( "2" ), PolyLong.of( 2 ) );
             fail( "'plus' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class java.lang.String + class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString + class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 
@@ -719,7 +733,7 @@ public class SqlFunctionsTest {
             Functions.minusAny( "2", 2L );
             fail( "'minus' on non-numeric type is not possible" );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class java.lang.String - class java.lang.Long" ) );
+            assertThat( e.getMessage(), is( "Invalid types for arithmetic: class org.polypheny.db.type.entity.PolyString - class org.polypheny.db.type.entity.PolyLong" ) );
         }
     }
 

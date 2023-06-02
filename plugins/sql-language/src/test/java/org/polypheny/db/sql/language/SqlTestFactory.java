@@ -42,7 +42,6 @@ import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
-import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.SourceStringReader;
@@ -78,7 +77,7 @@ public class SqlTestFactory {
 
 
     protected SqlTestFactory() {
-        this( DEFAULT_OPTIONS, MockCatalogReaderSimple::new, SqlValidatorUtil::newValidator );
+        this( DEFAULT_OPTIONS, MockCatalogReaderSimple::new, null );//SqlValidatorUtil::newValidator );
     }
 
 

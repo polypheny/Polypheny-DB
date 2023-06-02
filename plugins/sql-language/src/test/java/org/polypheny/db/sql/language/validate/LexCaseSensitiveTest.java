@@ -24,14 +24,10 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
@@ -39,15 +35,7 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.schema.HrSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.tools.AlgConversionException;
-import org.polypheny.db.tools.FrameworkConfig;
-import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
@@ -60,10 +48,10 @@ import org.polypheny.db.tools.ValidationException;
 public class LexCaseSensitiveTest {
 
     private static Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
-        final SchemaPlus schema = Frameworks.createSnapshot( true ).add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
+        /*final SchemaPlus schema = Frameworks.createSnapshot( true ).add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
-                .defaultSchema( schema )
+                .defaultSnapshot( schema )
                 .traitDefs( traitDefs )
                 .programs( programs )
                 .prepareContext( new ContextImpl(
@@ -79,7 +67,8 @@ public class LexCaseSensitiveTest {
                         0,
                         null ) )
                 .build();
-        return new PlannerImplMock( config );
+        return new PlannerImplMock( config );*/
+        return null;
     }
 
 

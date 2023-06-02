@@ -24,7 +24,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -34,7 +34,6 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
-@EqualsAndHashCode(callSuper = true)
 @Value
 public class PolyBigDecimal extends PolyNumber {
 
@@ -53,6 +52,11 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal of( long value ) {
+        return new PolyBigDecimal( BigDecimal.valueOf( value ) );
+    }
+
+
+    public static PolyBigDecimal of( double value ) {
         return new PolyBigDecimal( BigDecimal.valueOf( value ) );
     }
 
@@ -110,6 +114,27 @@ public class PolyBigDecimal extends PolyNumber {
         return PolyBigDecimal.of( value.add( b1.bigDecimalValue() ) );
     }
 
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        if ( !super.equals( o ) ) {
+            return false;
+        }
+        PolyBigDecimal that = (PolyBigDecimal) o;
+        return Objects.equals( value.stripTrailingZeros(), that.value.stripTrailingZeros() );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
+    }
 
 
     @Override

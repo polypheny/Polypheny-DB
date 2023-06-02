@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -51,11 +52,6 @@ class PlannerTests {
      * Private calling convention representing a physical implementation.
      */
     static final Convention PHYS_CALLING_CONVENTION = new Convention.Impl( "PHYS", AlgNode.class ) {
-        @Override
-        public boolean canConvertConvention( Convention<?> toConvention ) {
-            return true;
-        }
-
 
         @Override
         public boolean useAbstractConvertersForConversion( AlgTraitSet fromTraits, AlgTraitSet toTraits ) {
@@ -66,7 +62,7 @@ class PlannerTests {
 
     static AlgOptCluster newCluster( VolcanoPlanner planner ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        return AlgOptCluster.create( planner, new RexBuilder( typeFactory ), traitSet, rootSchema );
+        return AlgOptCluster.create( planner, new RexBuilder( typeFactory ), planner.emptyTraitSet(), Catalog.snapshot() );
     }
 
 
