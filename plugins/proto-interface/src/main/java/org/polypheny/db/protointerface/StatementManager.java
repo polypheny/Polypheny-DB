@@ -35,6 +35,7 @@ import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatem
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.proto.ParameterizedStatement;
 import org.polypheny.db.protointerface.proto.ParameterizedStatementBatch;
+import org.polypheny.db.protointerface.statements.OldPIStatement;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
@@ -42,7 +43,7 @@ public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
     private Set<String> supportedLanguages;
-    private ConcurrentHashMap<String, ProtoInterfaceStatement> openStatments;
+    private ConcurrentHashMap<String, OldPIStatement> openStatments;
 
 
     public StatementManager() {
@@ -108,7 +109,7 @@ public class StatementManager {
         ProtoInterfaceStatementBatch statementBatch = new ProtoInterfaceStatementBatch( pStatementBatch.getStatementPropertiesMap() );
 
         QueryLanguage queryLanguage;
-        ProtoInterfaceStatement protoInterfaceStatement;
+        OldPIStatement protoInterfaceStatement;
         List<Map<String, PolyValue>> valuesMaps;
 
         for ( ParameterizedStatement statement : statements ) {
