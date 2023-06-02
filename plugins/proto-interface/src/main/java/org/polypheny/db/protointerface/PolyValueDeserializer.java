@@ -16,14 +16,9 @@
 
 package org.polypheny.db.protointerface;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.protointerface.proto.ParameterizedStatementOrBuilder;
 import org.polypheny.db.protointerface.proto.Value;
-import org.polypheny.db.protointerface.proto.ValueMap;
-import org.polypheny.db.protointerface.proto.ValueMapBatch;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class PolyValueDeserializer {
@@ -32,12 +27,4 @@ public class PolyValueDeserializer {
         throw new NotImplementedException( "not yet implemeted" );
     }
         //TODO: implementation
-
-    public static List<Map<String, PolyValue>> deserializeValueMapBatch( ValueMapBatch valueMapBatch ) {
-        return valueMapBatch.getValueMapsList().stream()
-                .map( ValueMap::getValueMapMap )
-                .map( PolyValueDeserializer::deserializeValueMap )
-                .collect( Collectors.toList() );
-    }
-
 }
