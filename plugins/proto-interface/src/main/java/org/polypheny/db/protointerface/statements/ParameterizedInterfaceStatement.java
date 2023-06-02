@@ -19,9 +19,9 @@ package org.polypheny.db.protointerface.statements;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 
-public class ParameterizedStatement extends ProtoInterfaceStatement {
+public class ParameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
-    public ParameterizedStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+    public ParameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
     }
 
