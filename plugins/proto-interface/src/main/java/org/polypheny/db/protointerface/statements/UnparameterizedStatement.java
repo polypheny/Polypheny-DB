@@ -16,7 +16,6 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.Iterator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
