@@ -35,11 +35,11 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
-public class UnparameterizedStatement extends ProtoInterfaceStatement {
+public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     protected PolyImplementation currentImplementation;
     protected Statement currentStatement;
 
-    public UnparameterizedStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+    public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
     }
 
