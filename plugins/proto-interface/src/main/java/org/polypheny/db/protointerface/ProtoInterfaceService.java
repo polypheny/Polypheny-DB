@@ -24,6 +24,7 @@ import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.*;
+import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -39,7 +40,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public ProtoInterfaceService( ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
-        PolyValue value = new PolyString("hi ;)");
+        PolyValue value = new PolyString("hi! i'm new ;)");
     }
 
 
@@ -69,7 +70,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
 
     @Override
-    public void getAvailableLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
+    public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
         SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder()
                 .addAllLanguageNames( new LinkedList<>())
                 .build();
@@ -79,35 +80,21 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
 
     @Override
-    public void executeParameterizedStatements( ParameterizedStatementBatch parameterizedStatements, StreamObserver<QueryResult> resultStreamObserver ) {
-        ProtoInterfaceClient protoInterfaceClient = ClientMetaInterceptor.CLIENT.get();
-        ProtoInterfaceStatementBatch statementBatch = statementManager.createStatementBatch( parameterizedStatements, protoInterfaceClient );
-        statementBatch.executeAll();
+    public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<QueryResult> responseObserver ) {
+        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
+        String languageName = unparameterizedStatement.getStatementLanguageName();
+        if (!statementManager.getSupportedLanguages().contains( languageName )) {
+            throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
+        }
+        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
+        try {
+            QueryResult result = statement.execute();
+            responseObserver.onNext( result );
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException( e.getMessage() );
+        }
     }
-
-
-    @Override
-    public void prepareStatement( PreparedStatement request, StreamObserver<QueryResult> responseObserver ) {
-
-    }
-
-
-    @Override
-    public void executePreparedStatement( ValueMapBatch valueMapBatch, StreamObserver<QueryResult> resultStreamObserver ) {
-
-    }
-
-
-    /*
-    @Override
-    public void executeSimpleSqlQuery( SimpleSqlQuery query, StreamObserver<QueryResult> responseObserver ) {
-        ProtoInterfaceClient protoInterfaceClient = ClientMetaInterceptor.CLIENT.get();
-        ProtoInterfaceStatement statement = statementManager.createStatement( protoInterfaceClient, QueryLanguage.from( "sql" ) );
-        QueryResult result = statement.prepareAndExecute( query.getQuery() );
-        responseObserver.onNext( result );
-        responseObserver.onCompleted();
-    }
-    */
 
 
     private boolean checkApiVersion( ConnectionRequest connectionRequest ) {
