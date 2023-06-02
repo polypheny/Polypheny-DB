@@ -59,8 +59,8 @@ public class ClientManager {
         if ( !credentialsPresent( properties ) ) {
             throw new ProtoInterfaceServiceException( "No username and password given." );
         }
-        ProtoInterfaceClient.Builder connectionBuilder = ProtoInterfaceClient.newBuilder();
-        connectionBuilder
+        ProtoInterfaceClient.Builder clientBuilder = ProtoInterfaceClient.newBuilder();
+        clientBuilder
                 .setMajorApiVersion( connectionRequest.getMajorApiVersion() )
                 .setMinorApiVersion( connectionRequest.getMinorApiVersion() )
                 .setClientUUID( connectionRequest.getClientUuid() )
@@ -77,10 +77,10 @@ public class ClientManager {
         }
         assert namespace != null;
         transaction.commit();
-        connectionBuilder
+        clientBuilder
                 .setCatalogUser( user )
                 .setLogicalNamespace( namespace );
-        openConnections.put( connectionRequest.getClientUuid(), connectionBuilder.build() );
+        openConnections.put( connectionRequest.getClientUuid(), clientBuilder.build() );
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
         }
