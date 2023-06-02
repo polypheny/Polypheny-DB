@@ -10,6 +10,7 @@ package polypheny.protointerface;
 // Functions provided by the proto interface
 service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
+  rpc GetSupportedLanguages(LanguageRequest) returns (SupportedLanguages) {}
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (QueryResult) {}
   rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (QueryResult) {}
   rpc PrepareStatement(PreparedStatement) returns (QueryResult) {}
