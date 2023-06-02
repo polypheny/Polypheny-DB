@@ -71,6 +71,9 @@ message Row {
   repeated Value values = 1;
 }
 
+message ValueMap {
+  map<string, Value> values = 1;
+}
 message Value {
 
 }
