@@ -16,6 +16,9 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -24,6 +27,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.IOException;
 import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -117,6 +121,29 @@ public class PolyString extends PolyValue {
                     return PolyString.of( in.readUTF8() );
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyStringTypeAdapter extends TypeAdapter<PolyString> {
+
+        @Override
+        public void write( JsonWriter out, PolyString value ) throws IOException {
+            out.beginObject();
+            out.name( "value" );
+            out.value( value.value );
+            out.endObject();
+        }
+
+
+        @Override
+        public PolyString read( JsonReader in ) throws IOException {
+            in.beginObject();
+            in.nextName();
+            String name = in.nextString();
+            in.endObject();
+            return PolyString.of( name );
         }
 
     }

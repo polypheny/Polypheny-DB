@@ -16,6 +16,10 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -145,6 +149,24 @@ public class PolyLong extends PolyNumber {
         }
         PolyLong polyLong = (PolyLong) o;
         return Objects.equals( value, polyLong.value );
+    }
+
+
+    public static class PolyLongTypeAdapter extends TypeAdapter<PolyLong> {
+
+        @Override
+        public void write( JsonWriter out, PolyLong value ) throws IOException {
+            out.name( "value" );
+            out.value( value.value );
+        }
+
+
+        @Override
+        public PolyLong read( JsonReader in ) throws IOException {
+            in.nextName();
+            return PolyLong.of( in.nextLong() );
+        }
+
     }
 
 

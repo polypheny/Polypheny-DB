@@ -19,7 +19,7 @@ package org.polypheny.db.cypher;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 
 public class WithTest extends CypherTestTemplate {
@@ -36,7 +36,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = execute( "MATCH (n:Person) WITH n.name, n WHERE n.name STARTS WITH 'H' RETURN n" );
+        GraphResult res = execute( "MATCH (n:Person) WITH n.name, n WHERE n.name STARTS WITH 'H' RETURN n" );
         assertNode( res, 0 );
 
         assert containsRows( res, true, true,
@@ -50,7 +50,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = execute( "MATCH (n:Person) WITH n.name AS name, n WHERE name ENDS WITH 'x' RETURN name, n" );
+        GraphResult res = execute( "MATCH (n:Person) WITH n.name AS name, n WHERE name ENDS WITH 'x' RETURN name, n" );
         assertNode( res, 1 );
 
         assert containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ), MAX ) );
@@ -65,7 +65,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        Result res = execute( "MATCH (n:Person)-[]->(p:Animal) WITH *, n.name AS username WHERE username CONTAINS 'a' RETURN username, p" );
+        GraphResult res = execute( "MATCH (n:Person)-[]->(p:Animal) WITH *, n.name AS username WHERE username CONTAINS 'a' RETURN username, p" );
         assertNode( res, 1 );
 
         assert containsRows( res, true, true, Row.of( TestLiteral.from( "Max" ), KIRA ) );

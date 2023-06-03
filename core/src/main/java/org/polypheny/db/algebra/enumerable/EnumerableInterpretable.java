@@ -92,7 +92,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
-    public static Pair<Bindable<PolyValue[]>, String> toBindable(
+    public static Pair<Bindable<PolyValue>, String> toBindable(
             Map<String, Object> parameters,
             EnumerableAlg alg,
             EnumerableAlg.Prefer prefer,
@@ -109,7 +109,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         Hook.JAVA_PLAN.run( s );
 
         try {
-            return new Pair<Bindable<PolyValue[]>, String>( (Bindable) getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
+            return new Pair<>( getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
         }
@@ -117,7 +117,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
 
     static ArrayBindable getArrayBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
-        Bindable<PolyValue> bindable = getBindable( expr, s, fieldCount );
+        Bindable<PolyValue> bindable = (Bindable<PolyValue>) getBindable( expr, s, fieldCount );
         return box( bindable );
     }
 

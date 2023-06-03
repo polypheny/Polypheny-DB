@@ -165,7 +165,7 @@ import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.GenericResult;
+import org.polypheny.db.webui.models.results.GenericResult;
 
 public class SqlLanguagePlugin extends PolyPlugin {
 

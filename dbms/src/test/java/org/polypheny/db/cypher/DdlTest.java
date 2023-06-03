@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 @Category({ AdapterTestSuite.class })
 public class DdlTest extends CypherTestTemplate {
@@ -164,7 +164,7 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
 
-            Result res = execute( "MATCH (n) RETURN n" );
+            GraphResult res = execute( "MATCH (n) RETURN n" );
             assert res.getData().length == 3;
             assertNode( res, 0 );
 

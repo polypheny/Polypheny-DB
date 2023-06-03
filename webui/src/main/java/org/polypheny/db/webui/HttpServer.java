@@ -55,7 +55,7 @@ import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.Result;
 
 
 /**

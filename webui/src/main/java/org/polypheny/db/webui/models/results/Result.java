@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.results;
 
 
 import com.google.gson.Gson;
@@ -33,6 +33,8 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.FieldDefinition;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 

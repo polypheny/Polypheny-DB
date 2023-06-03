@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
@@ -40,6 +41,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.time.StopWatch;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -381,17 +383,39 @@ public class PolyImplementation<T> {
     }
 
 
-    public List<T> getDocRows( Statement statement, boolean noLimit ) {
+    public List<T> getSingleRows( Statement statement, boolean noLimit ) {
+
         cursorFactory = CursorFactory.OBJECT;
-        bindable = preparedResult.getBindable( CursorFactory.OBJECT );
+
+        return getRows( statement, null );
+
+    }
+
+
+    @NotNull
+    private <D> List<D> getRows( Statement statement, Function<T, D> transformer ) {
+        bindable = preparedResult.getBindable( cursorFactory );
 
         Iterator<T> iterator = createIterator( bindable, statement, true );
 
         final Iterable<T> iterable = () -> iterator;
 
+        if ( transformer == null ) {
+            return (List<D>) StreamSupport
+                    .stream( iterable.spliterator(), false )
+                    .collect( Collectors.toList() );
+        }
         return StreamSupport
                 .stream( iterable.spliterator(), false )
+                .map( transformer )
                 .collect( Collectors.toList() );
+    }
+
+
+    public List<List<T>> getArrayRows( Statement statement, boolean noLimit ) {
+        cursorFactory = CursorFactory.ARRAY;
+
+        return getRows( statement, rowType.getFieldCount() == 1 ? List::of : null );
 
     }
 

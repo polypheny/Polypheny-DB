@@ -16,12 +16,16 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
+import java.io.IOException;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
@@ -134,6 +138,41 @@ public class PolyNode extends GraphPropertyHolder {
                     return null;
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyNodeTypeAdapter extends TypeAdapter<PolyNode> {
+
+        @Override
+        public void write( JsonWriter out, PolyNode value ) throws IOException {
+            out.beginObject();
+            out.name( "id" );
+            out.value( value.id.value );
+            out.name( "props" );
+            out.value( PolyValue.GSON.toJson( value.properties ) );
+            out.name( "labels" );
+            out.value( PolyValue.GSON.toJson( value.labels ) );
+            out.name( "var" );
+            out.value( PolyValue.GSON.toJson( value.variableName ) );
+            out.endObject();
+        }
+
+
+        @Override
+        public PolyNode read( JsonReader in ) throws IOException {
+            in.beginObject();
+            in.nextName();
+            PolyString name = PolyString.of( in.nextString() );
+            in.nextName();
+            PolyDictionary props = PolyValue.GSON.fromJson( in.nextString(), PolyDictionary.class );
+            in.nextName();
+            PolyList<PolyString> labels = PolyValue.GSON.fromJson( in.nextString(), PolyList.class );
+            in.nextName();
+            PolyString var = PolyValue.GSON.fromJson( in.nextString(), PolyString.class );
+            in.endObject();
+            return new PolyNode( name, props, labels, var );
         }
 
     }

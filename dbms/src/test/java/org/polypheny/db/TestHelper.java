@@ -65,8 +65,9 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.models.DocResult;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.DocResult;
+import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.Result;
 
 
 @Slf4j
@@ -453,23 +454,23 @@ public class TestHelper {
         static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
-        public static Result executeGetResponse( String query ) {
+        public static GraphResult executeGetResponse( String query ) {
             return getBody( execute( "/cypher", query, "test" ) );
         }
 
 
-        public static Result executeGetResponse( String query, String database ) {
+        public static GraphResult executeGetResponse( String query, String database ) {
             return getBody( execute( "/cypher", query, database ) );
         }
 
 
-        private static Result getBody( HttpResponse<String> res ) {
+        private static GraphResult getBody( HttpResponse<String> res ) {
             try {
-                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                GraphResult[] result = gson.fromJson( res.getBody(), GraphResult[].class );
                 if ( result.length == 1 ) {
-                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                    return gson.fromJson( res.getBody(), GraphResult[].class )[0];
                 } else if ( result.length == 0 ) {
-                    return Result.builder().build();
+                    return GraphResult.builder().build();
                 }
                 fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );

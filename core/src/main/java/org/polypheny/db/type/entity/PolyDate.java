@@ -16,6 +16,10 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -69,6 +73,24 @@ public class PolyDate extends PolyTemporal {
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyLong.class, Expressions.constant( value ) );
+    }
+
+
+    public static class PolyDateTypeAdapter extends TypeAdapter<PolyDate> {
+
+        @Override
+        public void write( JsonWriter out, PolyDate value ) throws IOException {
+            out.name( "value" );
+            out.value( value.value );
+        }
+
+
+        @Override
+        public PolyDate read( JsonReader in ) throws IOException {
+            in.nextName();
+            return PolyDate.of( in.nextLong() );
+        }
+
     }
 
 

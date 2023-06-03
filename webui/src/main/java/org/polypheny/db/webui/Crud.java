@@ -175,9 +175,6 @@ import org.polypheny.db.webui.models.PathAccessRequest;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
-import org.polypheny.db.webui.models.Result;
-import org.polypheny.db.webui.models.Result.ResultBuilder;
-import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
 import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.SortState;
@@ -195,6 +192,9 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.Result.ResultBuilder;
+import org.polypheny.db.webui.models.results.ResultType;
 
 
 @Slf4j

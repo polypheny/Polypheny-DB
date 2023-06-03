@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 
 public class AggregateTest extends CypherTestTemplate {
@@ -39,7 +39,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        Result res = execute( "MATCH (n:Person) RETURN count(*)" );
+        GraphResult res = execute( "MATCH (n:Person) RETURN count(*)" );
 
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 4 ) ) );
@@ -58,7 +58,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        Result res = execute( "MATCH (n) RETURN n.name, count(*)" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name, count(*)" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 3 ) ),
@@ -75,8 +75,8 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        Result res = execute( "MATCH (n) RETURN n.name, count(*) AS c" );
-        assert res.getHeader()[1].name.equals( "c" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name, count(*) AS c" );
+        assert res.getHeader().get( 1 ).name.equals( "c" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 3 ) ),
@@ -93,7 +93,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        Result res = execute( "MATCH (n) RETURN n.name, n.age, count(*) AS c" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name, n.age, count(*) AS c" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( null ), TestLiteral.from( 3 ) ),
@@ -113,7 +113,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
 
-        Result res = execute( "MATCH (n) RETURN avg(n.age)" );
+        GraphResult res = execute( "MATCH (n) RETURN avg(n.age)" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 24 ) ) );
@@ -130,7 +130,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
 
-        Result res = execute( "MATCH (n) RETURN min(n.age)" );
+        GraphResult res = execute( "MATCH (n) RETURN min(n.age)" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3 ) ) );
@@ -151,7 +151,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        Result res = execute( "MATCH (n) RETURN sum(n.age)" );
+        GraphResult res = execute( "MATCH (n) RETURN sum(n.age)" );
     }
 
 }

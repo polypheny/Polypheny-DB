@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.results;
 
 import lombok.Value;
 import lombok.experimental.NonFinal;

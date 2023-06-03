@@ -38,9 +38,9 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.GenericResult;
-import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.Result;
 
 public class CypherLanguagePlugin extends PolyPlugin {
 

@@ -32,7 +32,7 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.Neo4jExcluded;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 @Category(FileExcluded.class) // Array support for FileAdapter is quite wonky, which results in mismatched labels here, todo enable when fixed @see simpleLpgTest
 public class RelationalOnLpgTest extends CrossModelTestTemplate {
@@ -61,7 +61,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
     @Test
     public void simpleLpgTest() {
-        Result res = CypherTestTemplate.execute( "MATCH (n) RETURN n", GRAPH_NAME );
+        GraphResult res = CypherTestTemplate.execute( "MATCH (n) RETURN n", GRAPH_NAME );
         assert CypherTestTemplate.containsRows(
                 res,
                 true,

@@ -16,8 +16,6 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import io.activej.serializer.annotations.Serialize;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -31,8 +29,6 @@ import org.polypheny.db.type.entity.PolyValue;
 @Value
 @NonFinal
 public abstract class GraphObject extends PolyValue {
-
-    private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().excludeFieldsWithoutExposeAnnotation().create();
 
     @Serialize
     public PolyString id;
@@ -49,7 +45,7 @@ public abstract class GraphObject extends PolyValue {
 
 
     public String toJson() {
-        return gson.toJson( this );
+        return PolyValue.GSON.toJson( this );
     }
 
 

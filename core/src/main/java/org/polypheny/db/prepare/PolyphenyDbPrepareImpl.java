@@ -586,7 +586,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     CatalogReader.THREAD_LOCAL.set( snapshot );
                     final Conformance conformance = context.config().conformance();
                     internalParameters.put( "_conformance", PolyString.of( conformance.toString() ) );
-                    Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
+                    Pair<Bindable<PolyValue>, String> implementationPair = EnumerableInterpretable.toBindable(
                             internalParameters,
                             enumerable,
                             prefer,

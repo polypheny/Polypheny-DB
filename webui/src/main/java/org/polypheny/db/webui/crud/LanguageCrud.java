@@ -58,16 +58,18 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
-import org.polypheny.db.webui.models.DocResult;
-import org.polypheny.db.webui.models.GenericResult;
+import org.polypheny.db.webui.models.FieldDefinition;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.DocumentStore;
-import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.DocResult;
+import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.Result;
 
 @Slf4j
 public class LanguageCrud {
@@ -181,6 +183,8 @@ public class LanguageCrud {
 
         if ( language == QueryLanguage.from( "mql" ) ) {
             return getDocResult( statement, request, query, implementation, transaction, noLimit );
+        } else if ( language == QueryLanguage.from( "cypher" ) ) {
+            return getGraphResult( statement, request, query, implementation, transaction, noLimit );
         }
 
         List<List<PolyValue>> rows = implementation.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
@@ -238,9 +242,23 @@ public class LanguageCrud {
     }
 
 
-    private static <T> DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation<T> implementation, Transaction transaction, boolean noLimit ) {
+    private static GraphResult getGraphResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
 
-        List<PolyValue> data = (List<PolyValue>) implementation.getDocRows( statement, noLimit );
+        List<List<PolyValue>> data = implementation.getArrayRows( statement, noLimit );
+
+        return GraphResult.builder()
+                .data( data.stream().map( r -> r.stream().map( PolyValue::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
+                .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).collect( Collectors.toList() ) )
+                .query( query )
+                .xid( transaction.getXid().toString() )
+                .namespaceName( request.database )
+                .build();
+    }
+
+
+    private static DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
+
+        List<PolyValue> data = implementation.getSingleRows( statement, noLimit );
 
         return DocResult.builder()
                 .data( data.stream().map( PolyValue::toJson ).toArray( String[]::new ) )

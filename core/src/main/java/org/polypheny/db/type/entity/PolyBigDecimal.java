@@ -16,12 +16,16 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -170,6 +174,16 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+    public static PolyBigDecimal convert( PolyValue value ) {
+        if ( value.isNumber() ) {
+            return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
+        } else if ( value.isString() ) {
+            return PolyBigDecimal.of( value.asString().value );
+        }
+        return null;
+    }
+
+
     public static class PolyBigDecimalSerializerDef extends SimpleSerializerDef<PolyBigDecimal> {
 
         @Override
@@ -186,6 +200,24 @@ public class PolyBigDecimal extends PolyNumber {
                     return new PolyBigDecimal( new BigDecimal( in.readUTF8() ) );
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyBigDecimalTypeAdapter extends TypeAdapter<PolyBigDecimal> {
+
+        @Override
+        public void write( JsonWriter out, PolyBigDecimal value ) throws IOException {
+            out.name( "value" );
+            out.value( value.value.toPlainString() );
+        }
+
+
+        @Override
+        public PolyBigDecimal read( JsonReader in ) throws IOException {
+            in.nextName();
+            return PolyBigDecimal.of( in.nextString() );
         }
 
     }

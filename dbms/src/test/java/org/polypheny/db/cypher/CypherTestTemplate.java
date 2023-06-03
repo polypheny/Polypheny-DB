@@ -43,8 +43,26 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalTypeAdapter;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBinary.PolyBinaryTypeAdapter;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanTypeAdapter;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDate.PolyDateTypeAdapter;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyDouble.PolyDoubleTypeAdapter;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyFloat.PolyFloatTypeAdapter;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyInteger.PolyIntegerTypeAdapter;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyList.PolyListTypeAdapter;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyLong.PolyLongTypeAdapter;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyString.PolyStringTypeAdapter;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphObject.GraphObjectType;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
@@ -52,14 +70,29 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeTypeAdapter;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 public class CypherTestTemplate {
 
     private static final String GRAPH_NAME = "test";
-    public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().registerTypeAdapter( GraphPropertyHolder.class, new GraphObjectAdapter() ).create();
+    public static final Gson GSON = new GsonBuilder()
+            .enableComplexMapKeySerialization()
+            .registerTypeAdapter( PolyBigDecimal.class, new PolyBigDecimalTypeAdapter() )
+            .registerTypeAdapter( PolyBinary.class, new PolyBinaryTypeAdapter() )
+            .registerTypeAdapter( PolyBoolean.class, new PolyBooleanTypeAdapter() )
+            .registerTypeAdapter( PolyDate.class, new PolyDateTypeAdapter() )
+            .registerTypeAdapter( PolyDouble.class, new PolyDoubleTypeAdapter() )
+            .registerTypeAdapter( PolyFloat.class, new PolyFloatTypeAdapter() )
+            .registerTypeAdapter( PolyInteger.class, new PolyIntegerTypeAdapter() )
+            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
+            .registerTypeAdapter( PolyLong.class, new PolyLongTypeAdapter() )
+            .registerTypeAdapter( PolyString.class, new PolyStringTypeAdapter() )
+            .registerTypeAdapter( GraphPropertyHolder.class, new GraphObjectAdapter() )
+            .registerTypeAdapter( PolyNode.class, new PolyNodeTypeAdapter() )
+            .create();
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
@@ -107,8 +140,8 @@ public class CypherTestTemplate {
     }
 
 
-    public static Result execute( String query ) {
-        Result res = CypherConnection.executeGetResponse( query );
+    public static GraphResult execute( String query ) {
+        GraphResult res = CypherConnection.executeGetResponse( query );
         if ( res.getError() != null ) {
             fail( res.getError() );
         }
@@ -116,8 +149,8 @@ public class CypherTestTemplate {
     }
 
 
-    public static Result execute( String query, String database ) {
-        Result res = CypherConnection.executeGetResponse( query, database );
+    public static GraphResult execute( String query, String database ) {
+        GraphResult res = CypherConnection.executeGetResponse( query, database );
         if ( res.getError() != null ) {
             fail( res.getError() );
         }
@@ -125,23 +158,23 @@ public class CypherTestTemplate {
     }
 
 
-    protected boolean containsNodes( Result res, boolean exclusive, TestObject... nodes ) {
-        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
+    protected boolean containsNodes( GraphResult res, boolean exclusive, TestObject... nodes ) {
+        if ( res.getHeader().size() == 1 && res.getHeader().get( 0 ).dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
             return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
         }
         throw new UnsupportedOperationException();
     }
 
 
-    protected boolean containsEdges( Result res, boolean exclusive, TestEdge... edges ) {
-        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
+    protected boolean containsEdges( GraphResult res, boolean exclusive, TestEdge... edges ) {
+        if ( res.getHeader().size() == 1 && res.getHeader().get( 0 ).dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
             return contains( res.getData(), exclusive, 0, PolyEdge.class, edges );
         }
         throw new UnsupportedOperationException();
     }
 
 
-    public boolean containsIn( Result res, boolean exclusive, int index, TestGraphObject... expected ) {
+    public boolean containsIn( GraphResult res, boolean exclusive, int index, TestGraphObject... expected ) {
         boolean successful = true;
         Class<? extends GraphPropertyHolder> clazz = null;
         if ( expected.length > 0 ) {
@@ -153,11 +186,11 @@ public class CypherTestTemplate {
             return false;
         }
 
-        return contains( res.getData(), exclusive, index, clazz, expected );
+        return contains( res.data, exclusive, index, clazz, expected );
     }
 
 
-    public boolean containsIn( Result actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
+    public boolean containsIn( GraphResult actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
         // simple object match
         List<String> cols = new ArrayList<>();
 
@@ -168,7 +201,7 @@ public class CypherTestTemplate {
 
         boolean correct = true;
         if ( name != null ) {
-            correct = actual.getHeader()[index].name.equals( name );
+            correct = actual.getHeader().get( index ).name.equals( name );
         }
 
         boolean contains = correct;
@@ -181,7 +214,7 @@ public class CypherTestTemplate {
     }
 
 
-    public static boolean containsRows( Result actual, boolean exclusive, boolean ordered, Row... rows ) {
+    public static boolean containsRows( GraphResult actual, boolean exclusive, boolean ordered, Row... rows ) {
         try {
             List<List<Object>> parsed = new ArrayList<>();
 
@@ -261,29 +294,29 @@ public class CypherTestTemplate {
     }
 
 
-    public Result matchAndReturnAllNodes() {
+    public GraphResult matchAndReturnAllNodes() {
         return execute( "MATCH (n) RETURN n" );
     }
 
 
-    protected void assertNode( Result res, int index ) {
+    protected void assertNode( GraphResult res, int index ) {
         assert is( res, Type.NODE, index );
     }
 
 
-    protected void assertEdge( Result res, int index ) {
+    protected void assertEdge( GraphResult res, int index ) {
         assert is( res, Type.EDGE, index );
     }
 
 
-    protected boolean is( Result res, Type type, int index ) {
-        assert res.getHeader().length >= index;
+    protected boolean is( GraphResult res, Type type, int index ) {
+        assert res.getHeader().size() >= index;
 
-        return res.getHeader()[index].dataType.toLowerCase( Locale.ROOT ).contains( type.getTypeName() );
+        return res.getHeader().get( index ).dataType.toLowerCase( Locale.ROOT ).contains( type.getTypeName() );
     }
 
 
-    protected void assertEmpty( Result res ) {
+    protected void assertEmpty( GraphResult res ) {
         assert res.getData().length == 0;
     }
 

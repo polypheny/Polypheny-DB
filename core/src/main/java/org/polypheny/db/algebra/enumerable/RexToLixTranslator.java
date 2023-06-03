@@ -1060,7 +1060,7 @@ public class RexToLixTranslator {
             }
         } else if ( toType == PolyNumber.class ) {
             // due to refactor
-            return Expressions.call( PolyBigDecimal.class, "of", operand );
+            return Expressions.call( PolyBigDecimal.class, "convert", operand );
         }
         return Expressions.convert_( operand, toType );
     }

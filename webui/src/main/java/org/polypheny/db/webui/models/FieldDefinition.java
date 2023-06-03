@@ -25,6 +25,7 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 @Value
 @Accessors(chain = true)
@@ -74,5 +75,9 @@ public class FieldDefinition {
 
     };
 
+
+    public static FieldDefinition of( AlgDataTypeField field ) {
+        return FieldDefinition.builder().name( field.getName() ).dataType( field.getType().getFullTypeString() ).build();
+    }
 
 }

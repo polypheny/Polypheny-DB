@@ -19,7 +19,7 @@ package org.polypheny.db.cypher;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 public class OrderByTest extends CypherTestTemplate {
 
@@ -36,7 +36,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = execute( "MATCH (n) RETURN n.name ORDER BY n.name ASC" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name ORDER BY n.name ASC" );
 
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Hans" ) ),
@@ -58,7 +58,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_COMPLEX_1 );
         execute( SINGLE_NODE_PERSON_COMPLEX_2 );
 
-        Result res = execute( "MATCH (n) RETURN n.name, n.age ORDER BY n.age ASC, n.name ASC" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name, n.age ORDER BY n.age ASC, n.name ASC" );
 
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Bob" ), TestLiteral.from( 31 ) ),
@@ -78,7 +78,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n.name, n.age ORDER BY n.age ASC" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name, n.age ORDER BY n.age ASC" );
 
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Kira" ), TestLiteral.from( 3 ) ),
@@ -101,7 +101,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n.name, n.age LIMIT 3" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name, n.age LIMIT 3" );
 
         assert res.getData().length == 3;
     }
@@ -115,7 +115,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n.name ORDER BY n.name DESC LIMIT 3" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name ORDER BY n.name DESC LIMIT 3" );
 
         assert res.getData().length == 3;
 
@@ -135,7 +135,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n.name, n.age SKIP 3" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name, n.age SKIP 3" );
 
         assert res.getData().length == 2;
     }
@@ -149,7 +149,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n.name ORDER BY n.name DESC SKIP 3" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name ORDER BY n.name DESC SKIP 3" );
 
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Kira" ) ),
@@ -165,7 +165,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n.name SKIP 3 LIMIT 1" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name SKIP 3 LIMIT 1" );
 
         assert res.getData().length == 1;
     }
@@ -179,7 +179,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n.name ORDER BY n.name DESC SKIP 1 LIMIT 2" );
+        GraphResult res = execute( "MATCH (n) RETURN n.name ORDER BY n.name DESC SKIP 1 LIMIT 2" );
 
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( "Max" ) ),
@@ -195,7 +195,7 @@ public class OrderByTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = execute( "MATCH (n) RETURN n ORDER BY n.name DESC" );
+        GraphResult res = execute( "MATCH (n) RETURN n ORDER BY n.name DESC" );
 
         assert containsRows( res, true, true,
                 Row.of( MAX ),

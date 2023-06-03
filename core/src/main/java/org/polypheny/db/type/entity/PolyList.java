@@ -16,6 +16,9 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -24,12 +27,14 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.Delegate;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -129,6 +134,49 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                     return PolyList.of( list );
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyListTypeAdapter<E extends PolyValue> extends TypeAdapter<PolyList<E>> {
+
+
+        @Override
+        public void write( JsonWriter out, PolyList<E> value ) throws IOException {
+            out.beginObject();
+            out.name( "size" );
+            out.value( value.size() );
+            out.name( "type" );
+            out.value( value.value.getClass().getSimpleName() );
+            out.name( "name" );
+            out.beginArray();
+            for ( PolyValue entry : value.value ) {
+                out.value( GSON.toJson( entry ) );
+            }
+            out.endArray();
+            out.endObject();
+        }
+
+
+        @SneakyThrows
+        @Override
+        public PolyList<E> read( JsonReader in ) throws IOException {
+            in.beginObject();
+            in.nextName();
+            int size = in.nextInt();
+            in.nextName();
+            Class<?> clazz = Class.forName( in.nextString() );
+            List<E> list = new ArrayList<>();
+            in.nextName();
+            in.beginArray();
+            for ( int i = 0; i < size; i++ ) {
+                list.add( (E) GSON.fromJson( in.nextString(), clazz ) );
+            }
+            in.beginArray();
+            in.endObject();
+
+            return PolyList.of( list );
         }
 
     }

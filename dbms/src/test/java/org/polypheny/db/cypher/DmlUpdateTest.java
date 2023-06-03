@@ -22,7 +22,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 public class DmlUpdateTest extends CypherTestTemplate {
 
@@ -39,7 +39,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
         execute( "MATCH (a:Person {name: 'Max'})\n"
                 + "SET a.age = 25" );
 
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
     }
@@ -51,7 +51,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
         execute( "MATCH (a:Person {name: 'Max'})\n"
                 + "SET a:Swiss" );
 
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person", "Swiss" ), Pair.of( "name", "Max" ) ) ) );
     }
@@ -63,7 +63,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
         execute( "MATCH (a:Person {name: 'Max'})\n"
                 + "SET a:Swiss:German" );
 
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person", "Swiss", "German" ), Pair.of( "name", "Max" ) ) ) );
     }
@@ -75,7 +75,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
         execute( "MATCH (a:Person {name: 'Max'})\n"
                 + "SET a = {} " );
 
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person" ) ) ) );
     }
@@ -87,7 +87,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
         execute( "MATCH (a:Person {name: 'Max'})\n"
                 + "SET a = { age: 13, job: 'Developer'} " );
 
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsRows( res, true, true,
                 Row.of( TestNode.from(
                         List.of( "Person" ),

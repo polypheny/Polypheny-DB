@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 public class DmlInsertTest extends CypherTestTemplate {
 
@@ -52,7 +52,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertEmptyNode() {
         execute( "CREATE (p)" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from( List.of() ) );
     }
@@ -61,7 +61,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertNodeTest() {
         execute( "CREATE (p:Person {name: 'Max Muster'})" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from( Pair.of( "name", "Max Muster" ) ) );
     }
@@ -71,7 +71,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     public void insertTwoNodeTest() {
         execute( CREATE_PERSON_MAX );
         execute( CREATE_PERSON_MAX );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         assert containsNodes( res, true,
                 TestNode.from( Pair.of( "name", "Max Muster" ) ),
@@ -82,7 +82,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertMultipleNodesTest() {
         execute( "CREATE (p),(n),(m)" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from(), TestNode.from(), TestNode.from() );
     }
@@ -91,7 +91,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertPropertyTypeTest() {
         execute( "CREATE (p:Person {name: 'Max Muster', age: 13, height: 185.3, nicknames: [\"Maxi\",\"Musti\"]})" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertNode( res, 0 );
         assert containsNodes( res, true,
                 TestNode.from(
@@ -106,7 +106,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     @Ignore
     public void insertReturnNodeTest() {
-        Result res = execute(
+        GraphResult res = execute(
                 "CREATE (p:Person {name: 'Max Muster'})\n"
                         + "RETURN p" );
     }
@@ -115,7 +115,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertSingleHopPathTest() {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsNodes( res, true,
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
                 TestNode.from(
@@ -129,7 +129,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertSingleHopPathEdgesTest() {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
-        Result res = execute( "MATCH ()-[r]->() RETURN r" );
+        GraphResult res = execute( "MATCH ()-[r]->() RETURN r" );
         assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
 
@@ -139,7 +139,7 @@ public class DmlInsertTest extends CypherTestTemplate {
         execute( "CREATE (n:Person)-[f:FRIEND_OF]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})" );
 
         // only select all nodes
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsNodes( res, true,
                 TestNode.from( List.of( "Person" ) ),
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
@@ -156,7 +156,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertAllInOneTest() {
         execute( CREATE_COMPLEX_GRAPH_1 );
-        Result res = execute( "MATCH (n) RETURN n" );
+        GraphResult res = execute( "MATCH (n) RETURN n" );
         assert res.getData().length == 3;
         assertNode( res, 0 );
 
@@ -175,7 +175,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertAllInOneCircleTest() {
         execute( CREATE_COMPLEX_GRAPH_2 );
-        Result res = execute( "MATCH (n) RETURN n" );
+        GraphResult res = execute( "MATCH (n) RETURN n" );
         assert res.getData().length == 3;
         assertNode( res, 0 );
 
@@ -193,7 +193,7 @@ public class DmlInsertTest extends CypherTestTemplate {
         execute( "MATCH (max:Person {name: 'Max'}), (hans:Person {name: 'Hans'})\n"
                 + "CREATE (max)-[:KNOWS]->(hans)" );
 
-        Result res = execute( "MATCH ()-[r]->() RETURN r" );
+        GraphResult res = execute( "MATCH ()-[r]->() RETURN r" );
 
         assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
@@ -208,7 +208,7 @@ public class DmlInsertTest extends CypherTestTemplate {
         execute( "MATCH (max:Person {name: 'Max'})\n"
                 + "CREATE (max)-[:KNOWS]->(hans:Person {name: 'Hans'})" );
 
-        Result res = execute( "MATCH ()-[r]->() RETURN r" );
+        GraphResult res = execute( "MATCH ()-[r]->() RETURN r" );
 
         assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
@@ -224,7 +224,7 @@ public class DmlInsertTest extends CypherTestTemplate {
         execute( "MATCH (max:Person {name: 'Max'})\n"
                 + "CREATE (max)-[:KNOWS]->(hans:Person {name: 'Hans'})-[:KNOWS]->(peter:Person {name: 'Peter'})" );
 
-        Result res = execute( "MATCH ()-[r]->() RETURN r" );
+        GraphResult res = execute( "MATCH ()-[r]->() RETURN r" );
 
         assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ),

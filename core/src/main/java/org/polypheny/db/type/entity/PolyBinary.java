@@ -16,6 +16,10 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
@@ -58,6 +62,24 @@ public class PolyBinary extends PolyValue {
     @Override
     public String toString() {
         return value.toBase64String();
+    }
+
+
+    public static class PolyBinaryTypeAdapter extends TypeAdapter<PolyBinary> {
+
+        @Override
+        public void write( JsonWriter out, PolyBinary value ) throws IOException {
+            out.name( "value" );
+            out.value( value.value.toBase64String() );
+        }
+
+
+        @Override
+        public PolyBinary read( JsonReader in ) throws IOException {
+            in.nextName();
+            return PolyBinary.of( ByteString.ofBase64( in.nextString() ) );
+        }
+
     }
 
 }

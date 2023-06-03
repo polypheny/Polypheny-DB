@@ -16,6 +16,9 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -24,6 +27,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.IOException;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -147,6 +151,24 @@ public class PolyDouble extends PolyNumber {
                     return new PolyDouble( in.readDouble() );
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyDoubleTypeAdapter extends TypeAdapter<PolyDouble> {
+
+        @Override
+        public void write( JsonWriter out, PolyDouble value ) throws IOException {
+            out.name( "value" );
+            out.value( value.value );
+        }
+
+
+        @Override
+        public PolyDouble read( JsonReader in ) throws IOException {
+            in.nextName();
+            return PolyDouble.of( in.nextDouble() );
         }
 
     }

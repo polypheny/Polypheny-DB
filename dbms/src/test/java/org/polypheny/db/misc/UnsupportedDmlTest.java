@@ -28,7 +28,7 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
-import org.polypheny.db.webui.models.DocResult;
+import org.polypheny.db.webui.models.results.DocResult;
 
 @Category({ AdapterTestSuite.class, CassandraExcluded.class, FileExcluded.class }) // todo fix error with filter in file
 public class UnsupportedDmlTest extends MqlTestTemplate {

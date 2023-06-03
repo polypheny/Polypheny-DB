@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -39,11 +41,21 @@ import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
+import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalTypeAdapter;
+import org.polypheny.db.type.entity.PolyBinary.PolyBinaryTypeAdapter;
+import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanTypeAdapter;
+import org.polypheny.db.type.entity.PolyDate.PolyDateTypeAdapter;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
+import org.polypheny.db.type.entity.PolyDouble.PolyDoubleTypeAdapter;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
+import org.polypheny.db.type.entity.PolyFloat.PolyFloatTypeAdapter;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
+import org.polypheny.db.type.entity.PolyInteger.PolyIntegerTypeAdapter;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
+import org.polypheny.db.type.entity.PolyList.PolyListTypeAdapter;
+import org.polypheny.db.type.entity.PolyLong.PolyLongTypeAdapter;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
+import org.polypheny.db.type.entity.PolyString.PolyStringTypeAdapter;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -53,6 +65,8 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeSerializerDef;
+import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeTypeAdapter;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
@@ -92,7 +106,23 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyDictionary.class, ctx -> new PolyDocumentSerializerDef() )
             .with( PolyList.class, ctx -> new PolyListSerializerDef() )
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
+            .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .build( PolyValue.class );
+
+    public static final Gson GSON = new GsonBuilder()
+            .enableComplexMapKeySerialization()
+            .registerTypeAdapter( PolyBigDecimal.class, new PolyBigDecimalTypeAdapter() )
+            .registerTypeAdapter( PolyBinary.class, new PolyBinaryTypeAdapter() )
+            .registerTypeAdapter( PolyBoolean.class, new PolyBooleanTypeAdapter() )
+            .registerTypeAdapter( PolyDate.class, new PolyDateTypeAdapter() )
+            .registerTypeAdapter( PolyDouble.class, new PolyDoubleTypeAdapter() )
+            .registerTypeAdapter( PolyFloat.class, new PolyFloatTypeAdapter() )
+            .registerTypeAdapter( PolyInteger.class, new PolyIntegerTypeAdapter() )
+            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
+            .registerTypeAdapter( PolyLong.class, new PolyLongTypeAdapter() )
+            .registerTypeAdapter( PolyString.class, new PolyStringTypeAdapter() )
+            .registerTypeAdapter( PolyNode.class, new PolyNodeTypeAdapter() )
+            .create();
 
 
     @Serialize
@@ -134,7 +164,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public static PolyValue getNull( Class<?> clazz ) {
         return PolyDefaults.NULLS.get( clazz );
     }
-
 
 
     public static Class<? extends PolyValue> classFrom( PolyType polyType ) {

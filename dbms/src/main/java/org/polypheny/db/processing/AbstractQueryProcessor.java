@@ -1155,7 +1155,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        final Bindable<PolyValue[]> bindable;
+        final Bindable<?> bindable;
         final String generatedCode;
         if ( resultConvention == BindableConvention.INSTANCE ) {
             bindable = Interpreters.bindable( root.alg );
@@ -1179,7 +1179,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();
                 internalParameters.put( "_conformance", conformance );
 
-                Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
+                Pair<Bindable<PolyValue>, String> implementationPair = EnumerableInterpretable.toBindable(
                         internalParameters,
                         enumerable,
                         prefer,

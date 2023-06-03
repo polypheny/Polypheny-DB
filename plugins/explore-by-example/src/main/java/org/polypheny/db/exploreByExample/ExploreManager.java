@@ -32,12 +32,12 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.Crud.QueryExecutionException;
-import org.polypheny.db.webui.models.ExploreResult;
-import org.polypheny.db.webui.models.Result;
-import org.polypheny.db.webui.models.Result.ResultBuilder;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
+import org.polypheny.db.webui.models.results.ExploreResult;
+import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 
 @Slf4j
 public class ExploreManager {

@@ -54,8 +54,8 @@ import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.GenericResult;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.results.GenericResult;
 
 public class HttpInterfacePlugin extends PolyPlugin {
 
