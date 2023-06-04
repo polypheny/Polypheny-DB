@@ -16,6 +16,15 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.UUID;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -50,12 +59,12 @@ public class PolyEdge extends GraphPropertyHolder {
     public Pair<Integer, Integer> fromTo;
 
 
-    public PolyEdge( @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
+    public PolyEdge( @NonNull PolyDictionary properties, List<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
         this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, source, target, direction, variableName );
     }
 
 
-    public PolyEdge( PolyString id, @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
+    public PolyEdge( PolyString id, @NonNull PolyDictionary properties, List<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
         super( id, PolyType.EDGE, properties, labels, variableName );
         this.source = source;
         this.target = target;
@@ -186,6 +195,38 @@ public class PolyEdge extends GraphPropertyHolder {
                 ", rightId=" + target +
                 ", direction=" + direction +
                 '}';
+    }
+
+
+    public static class PolyEdgeSerializer implements JsonSerializer<PolyEdge>, JsonDeserializer<PolyEdge> {
+
+        @Override
+        public PolyEdge deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            JsonObject jsonObject = json.getAsJsonObject();
+            PolyString id = PolyString.of( jsonObject.get( "id" ).getAsString() );
+            PolyDictionary props = PolyValue.GSON.fromJson( jsonObject.get( "properties" ).getAsString(), PolyDictionary.class );
+            List<PolyString> labels = PolyValue.GSON.fromJson( jsonObject.get( "labels" ).getAsString(), PolyList.class );
+            PolyString source = PolyString.of( jsonObject.get( "source" ).getAsString() );
+            PolyString target = PolyString.of( jsonObject.get( "target" ).getAsString() );
+            EdgeDirection dir = EdgeDirection.valueOf( jsonObject.get( "direction" ).getAsString() );
+            PolyString var = PolyValue.GSON.fromJson( jsonObject.get( "var" ).getAsString(), PolyString.class );
+            return new PolyEdge( id, props, labels, source, target, dir, var );
+        }
+
+
+        @Override
+        public JsonElement serialize( PolyEdge src, Type typeOfSrc, JsonSerializationContext context ) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty( "id", src.id.value );
+            jsonObject.addProperty( "properties", PolyValue.GSON.toJson( src.properties ) );
+            jsonObject.addProperty( "labels", PolyValue.GSON.toJson( src.labels ) );
+            jsonObject.addProperty( "source", src.source.value );
+            jsonObject.addProperty( "target", src.target.value );
+            jsonObject.addProperty( "direction", src.direction.name() );
+            jsonObject.addProperty( "var", PolyValue.GSON.toJson( src.variableName ) );
+            return jsonObject;
+        }
+
     }
 
 

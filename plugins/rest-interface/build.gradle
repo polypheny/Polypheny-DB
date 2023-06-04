@@ -2,7 +2,7 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(path: ':core')
+    compileOnly project(path: ':core')
     compileOnly project(":core")
     compileOnly project(":monitoring")
 

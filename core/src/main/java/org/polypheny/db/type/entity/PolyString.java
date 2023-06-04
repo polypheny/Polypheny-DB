@@ -16,9 +16,13 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -27,7 +31,7 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -95,7 +99,7 @@ public class PolyString extends PolyValue {
 
     @Override
     public String toJson() {
-        return "\"" + value + "\"";
+        return value;
     }
 
 
@@ -126,28 +130,20 @@ public class PolyString extends PolyValue {
     }
 
 
-    public static class PolyStringTypeAdapter extends TypeAdapter<PolyString> {
+    public static class PolyStringSerializer implements JsonDeserializer<PolyString>, JsonSerializer<PolyString> {
 
         @Override
-        public void write( JsonWriter out, PolyString value ) throws IOException {
-            out.beginObject();
-            out.name( "value" );
-            out.value( value.value );
-            out.endObject();
+        public PolyString deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyString.of( json.getAsString() );
         }
 
 
         @Override
-        public PolyString read( JsonReader in ) throws IOException {
-            in.beginObject();
-            in.nextName();
-            String name = in.nextString();
-            in.endObject();
-            return PolyString.of( name );
+        public JsonElement serialize( PolyString src, Type typeOfSrc, JsonSerializationContext context ) {
+            return new JsonPrimitive( src.value );
         }
 
     }
-
 
     @Override
     public String toString() {

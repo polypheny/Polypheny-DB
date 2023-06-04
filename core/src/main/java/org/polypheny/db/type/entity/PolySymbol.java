@@ -16,6 +16,15 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
+import java.util.Arrays;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -56,6 +65,34 @@ public class PolySymbol extends PolyValue {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolySymbol.class );
+    }
+
+
+    public static class PolySymbolSerializer implements JsonSerializer<PolySymbol>, JsonDeserializer<PolySymbol> {
+
+
+        @Override
+        public JsonElement serialize( PolySymbol src, Type typeOfSrc, JsonSerializationContext context ) {
+            JsonObject object = new JsonObject();
+            object.addProperty( "type", src.value.getClass().getName() );
+            object.addProperty( "data", src.value.name() );
+            return object;
+        }
+
+
+        @Override
+        public PolySymbol deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            JsonObject object = json.getAsJsonObject();
+            String className = object.get( "type" ).getAsString();
+            try {
+                Class<Enum<?>> clazz = (Class<Enum<?>>) Class.forName( className );
+                String name = object.get( "data" ).getAsString();
+                return PolySymbol.of( Arrays.stream( clazz.getEnumConstants() ).filter( s -> s.name().equals( name ) ).findFirst().orElse( null ) );
+            } catch ( ClassNotFoundException e ) {
+                throw new JsonParseException( "Invalid class name: " + className, e );
+            }
+        }
+
     }
 
 }

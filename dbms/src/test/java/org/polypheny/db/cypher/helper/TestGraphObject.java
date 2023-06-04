@@ -79,7 +79,7 @@ public class TestGraphObject implements TestObject {
 
     @Override
     public Object toPoly( String val ) {
-        return CypherTestTemplate.GSON.fromJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
+        return PolyValue.GSON.fromJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
     }
 
 

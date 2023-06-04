@@ -16,10 +16,14 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
@@ -65,19 +69,17 @@ public class PolyBinary extends PolyValue {
     }
 
 
-    public static class PolyBinaryTypeAdapter extends TypeAdapter<PolyBinary> {
+    public static class PolyBinarySerializer implements JsonSerializer<PolyBinary>, JsonDeserializer<PolyBinary> {
 
         @Override
-        public void write( JsonWriter out, PolyBinary value ) throws IOException {
-            out.name( "value" );
-            out.value( value.value.toBase64String() );
+        public JsonElement serialize( PolyBinary src, Type typeOfSrc, JsonSerializationContext context ) {
+            return new JsonPrimitive( src.value.toBase64String() );
         }
 
 
         @Override
-        public PolyBinary read( JsonReader in ) throws IOException {
-            in.nextName();
-            return PolyBinary.of( ByteString.ofBase64( in.nextString() ) );
+        public PolyBinary deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyBinary.of( ByteString.ofBase64( json.getAsString() ) );
         }
 
     }

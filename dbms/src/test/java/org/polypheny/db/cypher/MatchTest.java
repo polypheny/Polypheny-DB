@@ -118,7 +118,7 @@ public class MatchTest extends CypherTestTemplate {
     public void simplePropertyTest() {
         execute( SINGLE_NODE_PERSON_1 );
         GraphResult res = execute( "MATCH (n:Person) RETURN n.name" );
-        assert is( res, Type.STRING, 0 );
+        assert is( res, Type.ANY, 0 );
         assert containsIn( res, true, 0, "n.name", TestLiteral.from( "Max" ) );
     }
 

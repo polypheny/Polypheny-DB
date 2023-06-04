@@ -247,7 +247,7 @@ public class LanguageCrud {
         List<List<PolyValue>> data = implementation.getArrayRows( statement, noLimit );
 
         return GraphResult.builder()
-                .data( data.stream().map( r -> r.stream().map( PolyValue::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
+                .data( data.stream().map( r -> r.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
                 .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).collect( Collectors.toList() ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )
@@ -261,11 +261,16 @@ public class LanguageCrud {
         List<PolyValue> data = implementation.getSingleRows( statement, noLimit );
 
         return DocResult.builder()
-                .data( data.stream().map( PolyValue::toJson ).toArray( String[]::new ) )
+                .data( data.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )
                 .namespaceName( request.database )
                 .build();
+    }
+
+
+    private static String toJson( PolyValue src ) {
+        return src.isString() ? src.asString().value : PolyValue.GSON.toJson( src );
     }
 
 

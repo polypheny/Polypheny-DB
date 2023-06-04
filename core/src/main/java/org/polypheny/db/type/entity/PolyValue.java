@@ -46,24 +46,39 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializer;
 import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
+import org.polypheny.db.type.entity.PolyBinary.PolyBinarySerializer;
+import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializer;
+import org.polypheny.db.type.entity.PolyDate.PolyDateSerializer;
+import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializer;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
+import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializer;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
+import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializer;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
+import org.polypheny.db.type.entity.PolyInterval.PolyIntervalSerializer;
+import org.polypheny.db.type.entity.PolyList.PolyListSerializer;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
-import org.polypheny.db.type.entity.PolyList.PolyListTypeAdapter;
+import org.polypheny.db.type.entity.PolyLong.PolyLongSerializer;
+import org.polypheny.db.type.entity.PolyString.PolyStringSerializer;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
+import org.polypheny.db.type.entity.PolySymbol.PolySymbolSerializer;
+import org.polypheny.db.type.entity.PolyTime.PolyTimeSerializer;
+import org.polypheny.db.type.entity.PolyTimeStamp.PolyTimeStampSerializer;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionarySerializer;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.PolyEdgeSerializer;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeSerializer;
 import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeSerializerDef;
-import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeTypeAdapter;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
@@ -92,6 +107,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         PolyPath.class }) // add on Constructor already exists exception
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
+    // used internally to serialize into binary format
     public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get()
             .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
             .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
@@ -106,11 +122,30 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .build( PolyValue.class );
 
-    public static final Gson GSON = new GsonBuilder()
+    // used to serialize to Json
+    public static final GsonBuilder GSON_BUILDER = new GsonBuilder()
             .enableComplexMapKeySerialization()
-            .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() )
-            .registerTypeAdapter( PolyNode.class, new PolyNodeTypeAdapter() )
-            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
+            .registerTypeAdapter( PolyNode.class, new PolyNodeSerializer() )
+            .registerTypeAdapter( PolyEdge.class, new PolyEdgeSerializer() )
+            .registerTypeAdapter( PolyDictionary.class, new PolyDictionarySerializer() )
+            .registerTypeAdapter( PolyBigDecimal.class, new PolyBigDecimalSerializer() )
+            .registerTypeAdapter( PolyList.class, new PolyListSerializer<>() )
+            .registerTypeAdapter( PolyString.class, new PolyStringSerializer() )
+            .registerTypeAdapter( PolyLong.class, new PolyLongSerializer() )
+            .registerTypeAdapter( PolyInteger.class, new PolyIntegerSerializer() )
+            .registerTypeAdapter( PolyBoolean.class, new PolyBooleanSerializer() )
+            .registerTypeAdapter( PolyDouble.class, new PolyDoubleSerializer() )
+            .registerTypeAdapter( PolyBinary.class, new PolyBinarySerializer() )
+            .registerTypeAdapter( PolyFloat.class, new PolyFloatSerializer() )
+            .registerTypeAdapter( PolySymbol.class, new PolySymbolSerializer() )
+            .registerTypeAdapter( PolyTime.class, new PolyTimeSerializer() )
+            .registerTypeAdapter( PolyDate.class, new PolyDateSerializer() )
+            .registerTypeAdapter( PolyTimeStamp.class, new PolyTimeStampSerializer() )
+            .registerTypeAdapter( PolyInterval.class, new PolyIntervalSerializer() )
+            .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() );
+
+
+    public static final Gson GSON = GSON_BUILDER
             .create();
 
 
@@ -668,7 +703,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     }
 
-
     public static class PolyValueTypeAdapter extends TypeAdapter<PolyValue> {
 
         private static final String CLASSNAME = "className";
@@ -725,6 +759,5 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         }
 
     }
-
 
 }

@@ -16,11 +16,15 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -29,7 +33,6 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +40,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.Delegate;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -142,73 +144,47 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
-    public static class PolyListTypeAdapter<E extends PolyValue> extends TypeAdapter<PolyList<E>> {
+    public static class PolyListSerializer<E extends PolyValue> implements JsonSerializer<PolyList<E>>, JsonDeserializer<PolyList<E>> {
 
         private static final String CLASSNAME = "className";
         private static final String INSTANCE = "instance";
-        public static final String SIZE = "size";
+        private static final String SIZE = "size";
 
 
         @Override
-        public void write( JsonWriter out, PolyList<E> value ) throws IOException {
-            if ( value == null ) {
-                out.nullValue();
-                return;
+        public JsonElement serialize( PolyList<E> src, Type typeOfSrc, JsonSerializationContext context ) {
+            if ( src == null ) {
+                return JsonNull.INSTANCE;
             }
 
-            out.beginObject();
-            out.name( SIZE );
-            out.value( value.size() );
-            out.name( CLASSNAME );
-            out.value( value.isEmpty() ? PolyValue.class.getName() : value.value.get( 0 ).getClass().getName() );
-            out.name( INSTANCE );
-            out.beginArray();
-            for ( PolyValue entry : value.value ) {
-                GSON.toJson( entry, entry.getClass(), out );
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty( SIZE, src.size() );
+            jsonObject.addProperty( CLASSNAME, src.isEmpty() ? PolyValue.class.getName() : src.value.get( 0 ).getClass().getName() );
+            JsonArray jsonArray = new JsonArray();
+            for ( PolyValue entry : src.value ) {
+                jsonArray.add( context.serialize( entry, entry.getClass() ) );
             }
-            out.endArray();
-            out.endObject();
+            jsonObject.add( INSTANCE, jsonArray );
+            return jsonObject;
         }
 
 
-        @SneakyThrows
         @Override
-        public PolyList<E> read( JsonReader in ) throws IOException {
-            JsonToken token = in.peek();
-            if ( token == JsonToken.NULL ) {
-                in.nextNull();
-                return null;
-            }
-
-            in.beginObject();
-            String className = null;
-            int size = 0;
+        public PolyList<E> deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            JsonObject jsonObject = json.getAsJsonObject();
+            String className = jsonObject.get( CLASSNAME ).getAsString();
+            int size = jsonObject.get( SIZE ).getAsInt();
             List<E> list = new ArrayList<>();
 
-            while ( in.hasNext() ) {
-                String name = in.nextName();
-                if ( name.equals( CLASSNAME ) ) {
-                    className = in.nextString();
-                } else if ( name.equals( SIZE ) ) {
-                    size = in.nextInt();
-                } else if ( name.equals( INSTANCE ) ) {
-                    Type type;
-                    try {
-                        type = Class.forName( className );
-                    } catch ( ClassNotFoundException e ) {
-                        throw new JsonParseException( "Invalid class name: " + className, e );
-                    }
-                    in.beginArray();
-                    for ( int i = 0; i < size; i++ ) {
-                        list.add( GSON.fromJson( in, type ) );
-                    }
-                    in.endArray();
-                } else {
-                    in.skipValue();
+            try {
+                Type type = Class.forName( className );
+                JsonArray jsonArray = jsonObject.get( INSTANCE ).getAsJsonArray();
+                for ( JsonElement element : jsonArray ) {
+                    list.add( context.deserialize( element, type ) );
                 }
+            } catch ( ClassNotFoundException e ) {
+                throw new JsonParseException( "Invalid class name: " + className, e );
             }
-
-            in.endObject();
 
             return PolyList.of( list );
         }

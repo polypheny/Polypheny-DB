@@ -19,8 +19,6 @@ package org.polypheny.db.cypher;
 import static java.lang.String.format;
 import static org.junit.Assert.fail;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -44,17 +42,14 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyList.PolyListTypeAdapter;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.PolyValue.PolyValueTypeAdapter;
 import org.polypheny.db.type.entity.graph.GraphObject.GraphObjectType;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeTypeAdapter;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -62,12 +57,6 @@ import org.polypheny.db.webui.models.results.GraphResult;
 public class CypherTestTemplate {
 
     private static final String GRAPH_NAME = "test";
-    public static final Gson GSON = new GsonBuilder()
-            .enableComplexMapKeySerialization()
-            .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() )
-            .registerTypeAdapter( PolyNode.class, new PolyNodeTypeAdapter() )
-            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
-            .create();
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
@@ -255,7 +244,7 @@ public class CypherTestTemplate {
         List<T> parsed = new ArrayList<>();
 
         for ( String[] entry : actual ) {
-            parsed.add( GSON.fromJson( entry[index], clazz ) );
+            parsed.add( PolyValue.GSON.fromJson( entry[index], clazz ) );
         }
 
         assert !exclusive || parsed.size() == expected.length;
@@ -301,6 +290,7 @@ public class CypherTestTemplate {
         NODE( "node", TestNode.class, PolyNode.class ),
         EDGE( "edge", TestNode.class, PolyNode.class ),
         PATH( "path", TestPath.class, PolyPath.class ),
+        ANY( "any", TestNode.class, PolyNode.class ),
         STRING( "varchar", TestNode.class, PolyNode.class );
 
 
@@ -401,7 +391,7 @@ public class CypherTestTemplate {
                         id = PolyString.of( in.nextString() );
                         break;
                     case "properties":
-                        properties = GSON.fromJson( in, Map.class );
+                        properties = PolyValue.GSON.fromJson( in, Map.class );
                         break;
                     case "type":
                         type = GraphObjectType.valueOf( in.nextString() );
@@ -413,7 +403,7 @@ public class CypherTestTemplate {
                         target = PolyString.of( in.nextString() );
                         break;
                     case "labels":
-                        labels = GSON.fromJson( in, List.class );
+                        labels = PolyValue.GSON.fromJson( in, List.class );
                         break;
                     case "direction":
                         direction = EdgeDirection.valueOf( in.nextString() );

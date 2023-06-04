@@ -16,13 +16,17 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.IOException;
+import java.lang.reflect.Type;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -75,19 +79,17 @@ public class PolyBoolean extends PolyValue {
     }
 
 
-    public static class PolyBooleanTypeAdapter extends TypeAdapter<PolyBoolean> {
+    public static class PolyBooleanSerializer implements JsonSerializer<PolyBoolean>, JsonDeserializer<PolyBoolean> {
 
         @Override
-        public void write( JsonWriter out, PolyBoolean value ) throws IOException {
-            out.name( "value" );
-            out.value( value.value );
+        public PolyBoolean deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyBoolean.of( json.getAsBoolean() );
         }
 
 
         @Override
-        public PolyBoolean read( JsonReader in ) throws IOException {
-            in.nextName();
-            return PolyBoolean.of( in.nextBoolean() );
+        public JsonElement serialize( PolyBoolean src, Type typeOfSrc, JsonSerializationContext context ) {
+            return new JsonPrimitive( src.value );
         }
 
     }

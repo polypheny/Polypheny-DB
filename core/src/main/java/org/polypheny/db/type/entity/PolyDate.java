@@ -16,10 +16,14 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -76,21 +80,18 @@ public class PolyDate extends PolyTemporal {
     }
 
 
-    public static class PolyDateTypeAdapter extends TypeAdapter<PolyDate> {
+    public static class PolyDateSerializer implements JsonSerializer<PolyDate>, JsonDeserializer<PolyDate> {
 
         @Override
-        public void write( JsonWriter out, PolyDate value ) throws IOException {
-            out.name( "value" );
-            out.value( value.value );
+        public JsonElement serialize( PolyDate src, Type typeOfSrc, JsonSerializationContext context ) {
+            return new JsonPrimitive( src.value );
         }
 
 
         @Override
-        public PolyDate read( JsonReader in ) throws IOException {
-            in.nextName();
-            return PolyDate.of( in.nextLong() );
+        public PolyDate deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyDate.of( json.getAsLong() );
         }
-
     }
 
 

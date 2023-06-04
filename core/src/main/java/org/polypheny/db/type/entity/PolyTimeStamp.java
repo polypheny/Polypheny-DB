@@ -16,6 +16,14 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
@@ -69,6 +77,22 @@ public class PolyTimeStamp extends PolyTemporal {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyTimeStamp.class );
+    }
+
+
+    public static class PolyTimeStampSerializer implements JsonSerializer<PolyTimeStamp>, JsonDeserializer<PolyTimeStamp> {
+
+        @Override
+        public PolyTimeStamp deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyTimeStamp.of( json.getAsLong() );
+        }
+
+
+        @Override
+        public JsonElement serialize( PolyTimeStamp src, Type typeOfSrc, JsonSerializationContext context ) {
+            return new JsonPrimitive( src.value );
+        }
+
     }
 
 }

@@ -16,10 +16,14 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -152,19 +156,17 @@ public class PolyLong extends PolyNumber {
     }
 
 
-    public static class PolyLongTypeAdapter extends TypeAdapter<PolyLong> {
+    public static class PolyLongSerializer implements JsonDeserializer<PolyLong>, JsonSerializer<PolyLong> {
 
         @Override
-        public void write( JsonWriter out, PolyLong value ) throws IOException {
-            out.name( "value" );
-            out.value( value.value );
+        public PolyLong deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyLong.of( json.getAsLong() );
         }
 
 
         @Override
-        public PolyLong read( JsonReader in ) throws IOException {
-            in.nextName();
-            return PolyLong.of( in.nextLong() );
+        public JsonElement serialize( PolyLong src, Type typeOfSrc, JsonSerializationContext context ) {
+            return new JsonPrimitive( src.value );
         }
 
     }

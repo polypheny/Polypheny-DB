@@ -16,16 +16,20 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
-import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
@@ -144,36 +148,27 @@ public class PolyNode extends GraphPropertyHolder {
     }
 
 
-    public static class PolyNodeTypeAdapter extends TypeAdapter<PolyNode> {
+    public static class PolyNodeSerializer implements JsonSerializer<PolyNode>, JsonDeserializer<PolyNode> {
 
         @Override
-        public void write( JsonWriter out, PolyNode value ) throws IOException {
-            out.beginObject();
-            out.name( "id" );
-            out.value( value.id.value );
-            out.name( "props" );
-            out.value( PolyValue.GSON.toJson( value.properties ) );
-            out.name( "labels" );
-            out.value( PolyValue.GSON.toJson( value.labels ) );
-            out.name( "var" );
-            out.value( PolyValue.GSON.toJson( value.variableName ) );
-            out.endObject();
+        public JsonElement serialize( PolyNode src, Type typeOfSrc, JsonSerializationContext context ) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty( "id", src.id.value );
+            jsonObject.addProperty( "properties", PolyValue.GSON.toJson( src.properties ) );
+            jsonObject.addProperty( "labels", PolyValue.GSON.toJson( src.labels ) );
+            jsonObject.addProperty( "var", PolyValue.GSON.toJson( src.variableName ) );
+            return jsonObject;
         }
 
 
         @Override
-        public PolyNode read( JsonReader in ) throws IOException {
-            in.beginObject();
-            in.nextName();
-            PolyString name = PolyString.of( in.nextString() );
-            in.nextName();
-            PolyDictionary props = PolyValue.GSON.fromJson( in.nextString(), PolyDictionary.class );
-            in.nextName();
-            List<PolyString> labels = PolyValue.GSON.fromJson( in.nextString(), PolyList.class );
-            in.nextName();
-            PolyString var = PolyValue.GSON.fromJson( in.nextString(), PolyString.class );
-            in.endObject();
-            return new PolyNode( name, props, labels, var );
+        public PolyNode deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            JsonObject jsonObject = json.getAsJsonObject();
+            PolyString id = PolyString.of( jsonObject.get( "id" ).getAsString() );
+            PolyDictionary props = PolyValue.GSON.fromJson( jsonObject.get( "properties" ).getAsString(), PolyDictionary.class );
+            List<PolyString> labels = PolyValue.GSON.fromJson( jsonObject.get( "labels" ).getAsString(), PolyList.class );
+            PolyString var = PolyValue.GSON.fromJson( jsonObject.get( "var" ).getAsString(), PolyString.class );
+            return new PolyNode( id, props, labels, var );
         }
 
     }

@@ -16,16 +16,20 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
-import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -205,19 +209,18 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
-    public static class PolyBigDecimalTypeAdapter extends TypeAdapter<PolyBigDecimal> {
+    public static class PolyBigDecimalSerializer implements JsonDeserializer<PolyBigDecimal>, JsonSerializer<PolyBigDecimal> {
+
 
         @Override
-        public void write( JsonWriter out, PolyBigDecimal value ) throws IOException {
-            out.name( "value" );
-            out.value( value.value.toPlainString() );
+        public PolyBigDecimal deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyBigDecimal.of( json.getAsBigDecimal() );
         }
 
 
         @Override
-        public PolyBigDecimal read( JsonReader in ) throws IOException {
-            in.nextName();
-            return PolyBigDecimal.of( in.nextString() );
+        public JsonElement serialize( PolyBigDecimal src, Type typeOfSrc, JsonSerializationContext context ) {
+            return new JsonPrimitive( src.value );
         }
 
     }
