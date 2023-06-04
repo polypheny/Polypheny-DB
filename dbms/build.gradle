@@ -115,9 +115,9 @@ licensee {
     allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.67') { because 'MIT license' }
     allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.67') { because 'MIT license' }
     allowDependency('org.javassist', 'javassist', '3.28.0-GA') { because 'Apache 2.0 license' }
-    allowDependency('net.java.dev.jna', 'jna', '5.8.0') { because 'Apache 2.0 license' }
+    allowDependency('net.java.dev.jna', 'jna', '5.12.1') { because 'Apache 2.0 license' }
     allowDependency('net.java.dev.jna', 'jna-platform', '5.8.0') { because 'Apache 2.0 license' }
-    allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.2') { because 'Eclipse Distribution License 1.0' }
+    allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.3') { because 'Eclipse Distribution License 1.0' }
     allowDependency('org.codehaus.janino', 'janino', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('org.codehaus.janino', 'commons-compiler', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('com.google.re2j', 're2j', '1.5') { because 'BSD 3-Clause' }
@@ -133,16 +133,16 @@ licensee {
     allowDependency('com.github.jnr', 'jnr-posix', '3.0.50') { because 'Eclipse Public License v. 2.0' }
     allowDependency('jakarta.annotation', 'jakarta.annotation-api', '1.3.5') { because 'Eclipse Public License v. 2.0' }
     allowDependency('jakarta.ws.rs', 'jakarta.ws.rs-api', '2.1.6') { because 'Eclipse Public License v. 2.0' }
-    allowDependency('jakarta.activation', 'jakarta.activation-api', '1.2.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('jakarta.activation', 'jakarta.activation-api', '1.2.2') { because 'Eclipse Public License v. 2.0' }
     allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
 
     allowDependency('org.ow2.asm', 'asm-util', '7.1') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm', '7.1') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-analysis', '7.1') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-commons', '7.1') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-tree', '7.1') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm', '9.4') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-analysis', '9.2') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-commons', '9.2') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-tree', '9.2') { because 'BSD 3-Clause' }
 
     // Glassfish
     allowDependency('org.glassfish.jersey.core', 'jersey-common', '2.30.1') { because 'Eclipse Public License v. 2.0' }

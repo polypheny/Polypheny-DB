@@ -126,7 +126,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
 
     /**
-     * Given a method that implements {@link Scalar#execute(Context, Object[])}, adds a bridge method that implements {@link Scalar#execute(Context)}, and compiles.
+     * Given a method that implements {@link Scalar#execute(Context, org.polypheny.db.type.entity.PolyValue[])}, adds a bridge method that implements {@link Scalar#execute(Context)}, and compiles.
      */
     static Scalar baz( ParameterExpression context_, ParameterExpression outputValues_, BlockStatement block, DataContext dataContext ) {
         final List<MemberDeclaration> declarations = new ArrayList<>();

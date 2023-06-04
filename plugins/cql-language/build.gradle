@@ -123,9 +123,4 @@ licensee {
 
     allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
 
-    allowDependency('com.j256.simplemagic', 'simplemagic', '1.16') { because 'ISC license' }
-
-    allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
-        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
-    }
 }
