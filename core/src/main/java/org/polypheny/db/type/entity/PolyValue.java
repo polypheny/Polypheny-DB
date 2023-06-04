@@ -18,6 +18,11 @@ package org.polypheny.db.type.entity;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -27,6 +32,7 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -41,21 +47,12 @@ import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
-import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalTypeAdapter;
-import org.polypheny.db.type.entity.PolyBinary.PolyBinaryTypeAdapter;
-import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanTypeAdapter;
-import org.polypheny.db.type.entity.PolyDate.PolyDateTypeAdapter;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
-import org.polypheny.db.type.entity.PolyDouble.PolyDoubleTypeAdapter;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
-import org.polypheny.db.type.entity.PolyFloat.PolyFloatTypeAdapter;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
-import org.polypheny.db.type.entity.PolyInteger.PolyIntegerTypeAdapter;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListTypeAdapter;
-import org.polypheny.db.type.entity.PolyLong.PolyLongTypeAdapter;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
-import org.polypheny.db.type.entity.PolyString.PolyStringTypeAdapter;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -111,17 +108,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static final Gson GSON = new GsonBuilder()
             .enableComplexMapKeySerialization()
-            .registerTypeAdapter( PolyBigDecimal.class, new PolyBigDecimalTypeAdapter() )
-            .registerTypeAdapter( PolyBinary.class, new PolyBinaryTypeAdapter() )
-            .registerTypeAdapter( PolyBoolean.class, new PolyBooleanTypeAdapter() )
-            .registerTypeAdapter( PolyDate.class, new PolyDateTypeAdapter() )
-            .registerTypeAdapter( PolyDouble.class, new PolyDoubleTypeAdapter() )
-            .registerTypeAdapter( PolyFloat.class, new PolyFloatTypeAdapter() )
-            .registerTypeAdapter( PolyInteger.class, new PolyIntegerTypeAdapter() )
-            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
-            .registerTypeAdapter( PolyLong.class, new PolyLongTypeAdapter() )
-            .registerTypeAdapter( PolyString.class, new PolyStringTypeAdapter() )
+            .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() )
             .registerTypeAdapter( PolyNode.class, new PolyNodeTypeAdapter() )
+            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
             .create();
 
 
@@ -675,6 +664,64 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                     return PolySerializable.deserialize( in.readUTF8(), PolySerializable.builder.get().build( PolyValue.classFrom( type ) ) );
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyValueTypeAdapter extends TypeAdapter<PolyValue> {
+
+        private static final String CLASSNAME = "className";
+        private static final String INSTANCE = "instance";
+
+
+        @Override
+        public void write( JsonWriter out, PolyValue value ) throws IOException {
+            if ( value == null ) {
+                out.nullValue();
+                return;
+            }
+
+            out.beginObject();
+            out.name( CLASSNAME );
+            out.value( value.getClass().getName() );
+            out.name( INSTANCE );
+            GSON.toJson( value, value.getClass(), out );
+            out.endObject();
+        }
+
+
+        @Override
+        public PolyValue read( JsonReader in ) throws IOException {
+            JsonToken token = in.peek();
+            if ( token == JsonToken.NULL ) {
+                in.nextNull();
+                return null;
+            }
+
+            in.beginObject();
+            String className = null;
+            PolyValue instance = null;
+
+            while ( in.hasNext() ) {
+                String name = in.nextName();
+                if ( name.equals( CLASSNAME ) ) {
+                    className = in.nextString();
+                } else if ( name.equals( INSTANCE ) ) {
+                    Type type;
+                    try {
+                        type = Class.forName( className );
+                    } catch ( ClassNotFoundException e ) {
+                        throw new JsonParseException( "Invalid class name: " + className, e );
+                    }
+                    instance = GSON.fromJson( in, type );
+                } else {
+                    in.skipValue();
+                }
+            }
+
+            in.endObject();
+            return instance;
         }
 
     }

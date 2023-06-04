@@ -27,6 +27,6 @@ public class DocResult extends GenericResult<String> {
 
     public String query;
 
-    public Throwable exception;
+    // public Throwable exception;
 
 }

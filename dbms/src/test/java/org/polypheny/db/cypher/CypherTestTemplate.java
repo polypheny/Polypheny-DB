@@ -43,27 +43,11 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
-import org.polypheny.db.type.entity.PolyBigDecimal;
-import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalTypeAdapter;
-import org.polypheny.db.type.entity.PolyBinary;
-import org.polypheny.db.type.entity.PolyBinary.PolyBinaryTypeAdapter;
-import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanTypeAdapter;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDate.PolyDateTypeAdapter;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyDouble.PolyDoubleTypeAdapter;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyFloat.PolyFloatTypeAdapter;
-import org.polypheny.db.type.entity.PolyInteger;
-import org.polypheny.db.type.entity.PolyInteger.PolyIntegerTypeAdapter;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyList.PolyListTypeAdapter;
-import org.polypheny.db.type.entity.PolyLong;
-import org.polypheny.db.type.entity.PolyLong.PolyLongTypeAdapter;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyString.PolyStringTypeAdapter;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.PolyValue.PolyValueTypeAdapter;
 import org.polypheny.db.type.entity.graph.GraphObject.GraphObjectType;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -80,18 +64,9 @@ public class CypherTestTemplate {
     private static final String GRAPH_NAME = "test";
     public static final Gson GSON = new GsonBuilder()
             .enableComplexMapKeySerialization()
-            .registerTypeAdapter( PolyBigDecimal.class, new PolyBigDecimalTypeAdapter() )
-            .registerTypeAdapter( PolyBinary.class, new PolyBinaryTypeAdapter() )
-            .registerTypeAdapter( PolyBoolean.class, new PolyBooleanTypeAdapter() )
-            .registerTypeAdapter( PolyDate.class, new PolyDateTypeAdapter() )
-            .registerTypeAdapter( PolyDouble.class, new PolyDoubleTypeAdapter() )
-            .registerTypeAdapter( PolyFloat.class, new PolyFloatTypeAdapter() )
-            .registerTypeAdapter( PolyInteger.class, new PolyIntegerTypeAdapter() )
-            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
-            .registerTypeAdapter( PolyLong.class, new PolyLongTypeAdapter() )
-            .registerTypeAdapter( PolyString.class, new PolyStringTypeAdapter() )
-            .registerTypeAdapter( GraphPropertyHolder.class, new GraphObjectAdapter() )
+            .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() )
             .registerTypeAdapter( PolyNode.class, new PolyNodeTypeAdapter() )
+            .registerTypeAdapter( PolyList.class, new PolyListTypeAdapter<>() )
             .create();
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";

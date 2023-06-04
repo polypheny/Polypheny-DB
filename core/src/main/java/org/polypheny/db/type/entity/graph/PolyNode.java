@@ -26,6 +26,7 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
@@ -50,12 +51,12 @@ public class PolyNode extends GraphPropertyHolder {
     private boolean isVariable = false;
 
 
-    public PolyNode( @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString variableName ) {
+    public PolyNode( @NonNull PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
         this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, variableName );
     }
 
 
-    public PolyNode( PolyString id, @NonNull PolyDictionary properties, PolyList<PolyString> labels, PolyString variableName ) {
+    public PolyNode( PolyString id, @NonNull PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
         super( id, PolyType.NODE, properties, labels, variableName );
     }
 
@@ -168,7 +169,7 @@ public class PolyNode extends GraphPropertyHolder {
             in.nextName();
             PolyDictionary props = PolyValue.GSON.fromJson( in.nextString(), PolyDictionary.class );
             in.nextName();
-            PolyList<PolyString> labels = PolyValue.GSON.fromJson( in.nextString(), PolyList.class );
+            List<PolyString> labels = PolyValue.GSON.fromJson( in.nextString(), PolyList.class );
             in.nextName();
             PolyString var = PolyValue.GSON.fromJson( in.nextString(), PolyString.class );
             in.endObject();

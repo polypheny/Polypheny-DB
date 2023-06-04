@@ -73,7 +73,7 @@ public class TestGraphObject implements TestObject {
     @Override
     public boolean matches( Object other, boolean exclusive ) {
         assert other instanceof GraphPropertyHolder;
-        return matches( (GraphPropertyHolder) other, exclusive );
+        return matches( (GraphPropertyHolder) other, exclusive, true );
     }
 
 
@@ -83,9 +83,9 @@ public class TestGraphObject implements TestObject {
     }
 
 
-    public boolean matches( GraphPropertyHolder other, boolean exclusive ) {
+    public boolean matches( GraphPropertyHolder other, boolean exclusive, boolean ignoreId ) {
         boolean matches = true;
-        if ( id != null ) {
+        if ( !ignoreId && id != null ) {
             matches = id.equals( other.id );
         }
         if ( properties != null ) {

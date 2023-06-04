@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity.graph;
 
 import com.google.gson.annotations.Expose;
+import java.util.List;
 import java.util.Map.Entry;
 import lombok.Getter;
 import org.polypheny.db.type.PolyType;
@@ -35,10 +36,10 @@ public abstract class GraphPropertyHolder extends GraphObject {
     public final PolyList<PolyString> labels;
 
 
-    public GraphPropertyHolder( PolyString id, PolyType type, PolyDictionary properties, PolyList<PolyString> labels, PolyString variableName ) {
+    public GraphPropertyHolder( PolyString id, PolyType type, PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
         super( id, type, variableName );
         this.properties = properties;
-        this.labels = labels;
+        this.labels = PolyList.of( labels );
     }
 
 

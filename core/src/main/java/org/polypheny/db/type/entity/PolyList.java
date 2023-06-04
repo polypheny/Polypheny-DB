@@ -16,8 +16,10 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.JsonParseException;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -28,6 +30,7 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -141,18 +144,27 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     public static class PolyListTypeAdapter<E extends PolyValue> extends TypeAdapter<PolyList<E>> {
 
+        private static final String CLASSNAME = "className";
+        private static final String INSTANCE = "instance";
+        public static final String SIZE = "size";
+
 
         @Override
         public void write( JsonWriter out, PolyList<E> value ) throws IOException {
+            if ( value == null ) {
+                out.nullValue();
+                return;
+            }
+
             out.beginObject();
-            out.name( "size" );
+            out.name( SIZE );
             out.value( value.size() );
-            out.name( "type" );
-            out.value( value.value.getClass().getSimpleName() );
-            out.name( "name" );
+            out.name( CLASSNAME );
+            out.value( value.isEmpty() ? PolyValue.class.getName() : value.value.get( 0 ).getClass().getName() );
+            out.name( INSTANCE );
             out.beginArray();
             for ( PolyValue entry : value.value ) {
-                out.value( GSON.toJson( entry ) );
+                GSON.toJson( entry, entry.getClass(), out );
             }
             out.endArray();
             out.endObject();
@@ -162,18 +174,40 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         @SneakyThrows
         @Override
         public PolyList<E> read( JsonReader in ) throws IOException {
-            in.beginObject();
-            in.nextName();
-            int size = in.nextInt();
-            in.nextName();
-            Class<?> clazz = Class.forName( in.nextString() );
-            List<E> list = new ArrayList<>();
-            in.nextName();
-            in.beginArray();
-            for ( int i = 0; i < size; i++ ) {
-                list.add( (E) GSON.fromJson( in.nextString(), clazz ) );
+            JsonToken token = in.peek();
+            if ( token == JsonToken.NULL ) {
+                in.nextNull();
+                return null;
             }
-            in.beginArray();
+
+            in.beginObject();
+            String className = null;
+            int size = 0;
+            List<E> list = new ArrayList<>();
+
+            while ( in.hasNext() ) {
+                String name = in.nextName();
+                if ( name.equals( CLASSNAME ) ) {
+                    className = in.nextString();
+                } else if ( name.equals( SIZE ) ) {
+                    size = in.nextInt();
+                } else if ( name.equals( INSTANCE ) ) {
+                    Type type;
+                    try {
+                        type = Class.forName( className );
+                    } catch ( ClassNotFoundException e ) {
+                        throw new JsonParseException( "Invalid class name: " + className, e );
+                    }
+                    in.beginArray();
+                    for ( int i = 0; i < size; i++ ) {
+                        list.add( GSON.fromJson( in, type ) );
+                    }
+                    in.endArray();
+                } else {
+                    in.skipValue();
+                }
+            }
+
             in.endObject();
 
             return PolyList.of( list );
