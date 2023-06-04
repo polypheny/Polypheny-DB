@@ -64,8 +64,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.catalog.refactor.QueryableEntity;
-import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.schema.types.QueryableEntity;
