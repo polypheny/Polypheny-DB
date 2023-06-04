@@ -32,6 +32,4 @@ public interface QueryableEntity extends Typed {
         return Object[].class;
     }
 
-    Type getElementType();
-
 }
