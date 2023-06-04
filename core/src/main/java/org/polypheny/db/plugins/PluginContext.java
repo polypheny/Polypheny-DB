@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:core/src/main/java/org/polypheny/db/plugins/PluginContext.java
 package org.polypheny.db.plugins;
 
 import org.pf4j.RuntimeMode;
@@ -32,10 +31,5 @@ public class PluginContext {
     public RuntimeMode getRuntimeMode() {
         return runtimeMode;
     }
-========
-package org.polypheny.db.catalog.catalogs;
-
-public interface PhysicalCatalog {
->>>>>>>> f595385dd (added logistic PolyCatalog functions):core/src/main/java/org/polypheny/db/catalog/catalogs/PhysicalCatalog.java
 
 }
