@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:webui/src/main/java/org/polypheny/db/webui/models/PathAccessRequest.java
 package org.polypheny.db.webui.models;
 
 import lombok.AllArgsConstructor;
@@ -26,11 +25,6 @@ import lombok.Getter;
 public class PathAccessRequest {
 
     public String name;
-========
-package org.polypheny.db.catalog.catalogs;
-
-public interface AllocationCatalog {
->>>>>>>> f595385dd (added logistic PolyCatalog functions):core/src/main/java/org/polypheny/db/catalog/catalogs/AllocationCatalog.java
 
     public String directoryName;
 
