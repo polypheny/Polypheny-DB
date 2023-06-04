@@ -1044,10 +1044,6 @@ public class Functions {
     }
 
 
-    public static boolean gt( PolyNumber b0, PolyNumber b1 ) {
-        return b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0;
-    }
-
 
     /**
      * SQL <code>&gt;</code> operator applied to Object values (at least one
