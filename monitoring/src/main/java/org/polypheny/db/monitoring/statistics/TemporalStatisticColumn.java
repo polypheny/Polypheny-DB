@@ -35,34 +35,22 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 @Slf4j
 public class TemporalStatisticColumn extends StatisticColumn {
 
-    public void setMin( T min ) {
-        this.min = min;
-        this.minSinceEpoch = getSinceEpoch( min );
-    }
-
-
-    public void setMax( T max ) {
-        this.max = max;
-        this.maxSinceEpoch = getSinceEpoch( max );
-    }
-
 
     @Expose
     @Getter
+    @Setter
     private PolyTemporal min;
 
-    private Long minSinceEpoch;
-
     @Expose
     @Getter
+    @Setter
     private PolyTemporal max;
-
-    private Long maxSinceEpoch;
 
     @Expose
     @Getter
     @Setter
     private String temporalType;
+
 
     @Getter
     public TreeSet<PolyTemporal> minCache = new TreeSet<>();
@@ -90,11 +78,9 @@ public class TemporalStatisticColumn extends StatisticColumn {
             full = true;
         }
 
-        if ( original == null ) {
+        if ( val == null ) {
             return;
         }
-
-        long val = getSinceEpoch( original );
 
         if ( min == null ) {
             min = val.asTemporal();
@@ -105,38 +91,19 @@ public class TemporalStatisticColumn extends StatisticColumn {
             this.max = val.asTemporal();
         }
 
-        if ( getSinceEpoch( minCache.last() ) > val ) {
+        if ( minCache.last().compareTo( val ) > 0 ) {
             if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 minCache.remove( minCache.last() );
             }
             minCache.add( val.asTemporal() );
         }
 
-        if ( getSinceEpoch( maxCache.first() ) < val ) {
+        if ( maxCache.first().compareTo( val ) < 0 ) {
             if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }
             maxCache.add( val.asTemporal() );
         }
-    }
-
-
-    private long getSinceEpoch( T val ) {
-        if ( val instanceof Long ) {
-            return (Long) val;
-        } else if ( val instanceof Integer ) {
-            return (Integer) val;
-        } else if ( val instanceof Timestamp ) {
-            return ((Timestamp) val).getTime();
-        } else if ( val instanceof TimestampString ) {
-            return ((TimestampString) val).getMillisSinceEpoch();
-        } else if ( val instanceof Date ) {
-            return ((Date) val).getTime();
-        } else if ( val instanceof DateString ) {
-            return ((DateString) val).getMillisSinceEpoch();
-        }
-
-        throw new RuntimeException();
     }
 
 

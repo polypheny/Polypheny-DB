@@ -25,6 +25,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -52,7 +53,7 @@ public class CypherGate extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         OperatorName operatorName = null;
         switch ( gate ) {
             case OR:
@@ -75,7 +76,7 @@ public class CypherGate extends CypherExpression {
     }
 
 
-    private Pair<String, RexNode> handleSingular( CypherContext context, RexType type, OperatorName operatorName ) {
+    private Pair<PolyString, RexNode> handleSingular( CypherContext context, RexType type, OperatorName operatorName ) {
         return Pair.of( null, new RexCall(
                 context.booleanType,
                 OperatorRegistry.get( operatorName ),

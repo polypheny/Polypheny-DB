@@ -18,7 +18,6 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
-import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.Getter;
@@ -89,20 +88,20 @@ public class NumericalStatisticColumn extends StatisticColumn {
         if ( min == null ) {
             min = val.asNumber();
             max = val.asNumber();
-        } else if ( val.doubleValue() < min.doubleValue() ) {
+        } else if ( val.compareTo( min ) < 0 ) {
             this.min = val.asNumber();
-        } else if ( val.doubleValue() > min.doubleValue() ) {
+        } else if ( val.compareTo( max ) > 0 ) {
             this.max = val.asNumber();
         }
 
-        if ( minCache.last().doubleValue() > val.doubleValue() ) {
+        if ( minCache.last().compareTo( val ) > 0 ) {
             if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 minCache.remove( minCache.last() );
             }
             minCache.add( val.asNumber() );
         }
 
-        if ( maxCache.first().doubleValue() < val.doubleValue() ) {
+        if ( maxCache.first().compareTo( val ) < 0 ) {
             if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }

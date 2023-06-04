@@ -209,11 +209,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
-        try {
-            Catalog.getInstance().commit();
-        } catch ( NoTablePrimaryKeyException e ) {
-            throw new RuntimeException( e );
-        }
+
+        Catalog.getInstance().commit();
     }
 
 
