@@ -64,9 +64,6 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     @Serialize
     public boolean modifiable;
 
-    @Serialize
-    public boolean modifiable;
-
 
     public Entity(
             long id,
