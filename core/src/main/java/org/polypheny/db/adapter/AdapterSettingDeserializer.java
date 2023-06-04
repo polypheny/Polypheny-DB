@@ -36,6 +36,7 @@ public class AdapterSettingDeserializer implements JsonDeserializer<AbstractAdap
         boolean canBeNull = jsonObject.get( "canBeNull" ).getAsBoolean();
         boolean required = jsonObject.get( "required" ).getAsBoolean();
         boolean modifiable = jsonObject.get( "modifiable" ).getAsBoolean();
+        String subOf = jsonObject.has( "subOf" ) ? jsonObject.get( "subOf" ).getAsString() : null;
         int position = jsonObject.get( "position" ).getAsInt();
         String description = null;
         if ( jsonObject.get( "description" ) != null ) {
@@ -45,26 +46,26 @@ public class AdapterSettingDeserializer implements JsonDeserializer<AbstractAdap
         AbstractAdapterSetting out;
         switch ( type ) {
             case "Integer":
-                Integer integer = jsonObject.get( "defaultValue" ).getAsInt();
-                out = new AbstractAdapterSettingInteger( name, canBeNull, required, modifiable, integer, new ArrayList<>(), position );
+                int integer = jsonObject.get( "defaultValue" ).getAsInt();
+                out = new AbstractAdapterSettingInteger( name, canBeNull, subOf, required, modifiable, integer, new ArrayList<>(), position );
                 break;
             case "String":
                 String string = jsonObject.get( "defaultValue" ).getAsString();
-                out = new AbstractAdapterSettingString( name, canBeNull, required, modifiable, string, new ArrayList<>(), position );
+                out = new AbstractAdapterSettingString( name, canBeNull, subOf, required, modifiable, string, new ArrayList<>(), position );
                 break;
             case "Boolean":
                 boolean bool = jsonObject.get( "defaultValue" ).getAsBoolean();
-                out = new AbstractAdapterSettingBoolean( name, canBeNull, required, modifiable, bool, new ArrayList<>(), position );
+                out = new AbstractAdapterSettingBoolean( name, canBeNull, subOf, required, modifiable, bool, new ArrayList<>(), position );
                 break;
             case "List":
                 List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
                 String defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
-                out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>(), defaultValue, position );
+                out = new AbstractAdapterSettingList( name, canBeNull, subOf, required, modifiable, options, new ArrayList<>(), defaultValue, position );
                 break;
             case "Directory":
                 String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
                 String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
-                out = new AbstractAdapterSettingDirectory( name, canBeNull, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
+                out = new AbstractAdapterSettingDirectory( name, canBeNull, subOf, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
                 break;
             default:
                 throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );

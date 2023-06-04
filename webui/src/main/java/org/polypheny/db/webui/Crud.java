@@ -41,6 +41,7 @@ import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Array;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -146,6 +147,7 @@ import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -2278,22 +2280,23 @@ public class Crud implements InformationObserver {
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
         if ( a.settings.containsKey( "method" ) ) {
-            method = a.settings.get( "method" ).equals( "link" ) ? LINK : ConnectionMethod.UPLOAD;
+            method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
         }
 
         for ( Entry<String, AbstractAdapterSetting> entry : a.settings.entrySet() ) {
             if ( entry.getValue() instanceof AbstractAdapterSettingDirectory ) {
                 AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) entry.getValue());
-                if ( method == LINK ) {
+                if ( method == ConnectionMethod.LINK ) {
                     Exception e = handleLinkFiles( ctx, a, setting, a.settings );
                     if ( e != null ) {
-                        ctx.json( new Result( e ) );
+                        ctx.json( Result.builder().exception( e ).build() );
                         return;
                     }
                 } else {
                     handleUploadFiles( inputStreams, a, setting );
                 }
                 settings.put( entry.getKey(), entry.getValue().getValue() );
+
             } else {
                 settings.put( entry.getKey(), entry.getValue().getValue() );
             }

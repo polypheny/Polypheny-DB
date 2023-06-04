@@ -26,8 +26,8 @@ public class AbstractAdapterSettingString extends AbstractAdapterSetting {
     private final String type = "String";
 
 
-    public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
-        super( name, canBeNull, required, modifiable, modes, defaultValue, position );
+    public AbstractAdapterSettingString( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
+        super( name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
     }
 
 
@@ -35,6 +35,7 @@ public class AbstractAdapterSettingString extends AbstractAdapterSetting {
         return new AbstractAdapterSettingString(
                 annotation.name(),
                 annotation.canBeNull(),
+                annotation.subOf(),
                 annotation.required(),
                 annotation.modifiable(),
                 annotation.defaultValue(),

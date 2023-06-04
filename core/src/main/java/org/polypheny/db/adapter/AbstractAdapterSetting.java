@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,6 +41,7 @@ public abstract class AbstractAdapterSetting {
 
     public final String name;
     public final boolean canBeNull;
+    public final String subOf;
     public final boolean required;
     public final boolean modifiable;
     public final String defaultValue;
@@ -51,14 +53,17 @@ public abstract class AbstractAdapterSetting {
     public final List<DeploySetting> appliesTo;
 
 
-    public AbstractAdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
+    public AbstractAdapterSetting( final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
         this.name = name;
         this.canBeNull = canBeNull;
+        this.subOf = Objects.equals( subOf, "" ) ? null : subOf;
         this.required = required;
         this.modifiable = modifiable;
         this.position = position;
         this.appliesTo = appliesTo;
         this.defaultValue = defaultValue;
+        assert this.subOf == null || this.subOf.split( "_" ).length == 2
+                : "SubOf needs to be null or has to be seperated by \"_\" and requires link and value due to limitation in Java";
     }
 
 

@@ -301,16 +301,6 @@ public class AdapterManager {
     }
 
 
-    private static Adapter instantiate( long id, String adapterName, String uniqueName, AdapterType type, Map<String, String> settings ) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName, type );
-        if ( adapter.getPreEvaluation() != null ) {
-            adapter.getPreEvaluation().accept( settings );
-        }
-        Constructor<?> ctor = adapter.getClazz().getConstructor( int.class, String.class, Map.class );
-        return (Adapter) ctor.newInstance( id, uniqueName, settings );
-    }
-
-
     @AllArgsConstructor
     public static class AdapterInformation {
 

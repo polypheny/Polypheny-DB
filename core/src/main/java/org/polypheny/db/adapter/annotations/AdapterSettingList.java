@@ -50,6 +50,8 @@ public @interface AdapterSettingList {
 
     DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
 
+    String subOf() default "";
+
     @Inherited
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

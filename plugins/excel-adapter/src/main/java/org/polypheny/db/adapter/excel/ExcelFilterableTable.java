@@ -28,7 +28,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.util.Source;
 
 public class ExcelFilterableTable extends ExcelTable implements FilterableTable {

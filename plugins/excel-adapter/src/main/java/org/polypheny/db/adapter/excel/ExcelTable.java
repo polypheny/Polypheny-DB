@@ -22,7 +22,6 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Source;
 
 public class ExcelTable extends AbstractTable {
