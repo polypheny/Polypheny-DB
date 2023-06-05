@@ -30,6 +30,7 @@ include 'plugins:jdbc-adapter-framework'
 include 'plugins:avatica-interface'
 include 'plugins:rest-interface'
 include 'plugins:http-interface'
+include 'plugins:mqtt-interface'
 
 // adapters plugins
 include 'plugins:hsqldb-adapter'
