@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.protointerface;
+package org.polypheny.db.protointerface.utils;
 
 import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
