@@ -56,7 +56,7 @@ public class ClientManager {
         if ( isConnected( connectionRequest.getClientUuid() ) ) {
             throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUuid() + "is already connected." );
         }
-        Map<String, String> properties = connectionRequest.getConnectionPropertiesMap();
+        Map<String, String> properties = ProtoUtils.unwrapStringMap(connectionRequest.getConnectionProperties());
         if ( !credentialsPresent( properties ) ) {
             throw new ProtoInterfaceServiceException( "No username and password given." );
         }
@@ -71,7 +71,7 @@ public class ClientManager {
         final CatalogUser user = authenticateUser( properties.get( USERNAME_KEY ), properties.get( PASSWORD_KEY ) );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
-        if ( properties.containsKey( "namespace" ) ) {
+        if ( properties.containsKey( "namespace" )) {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.get( "namespace" ) );
         } else {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( Catalog.defaultNamespaceName );
