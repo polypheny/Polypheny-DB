@@ -71,14 +71,14 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             commitElseRollback();
             return resultBuilder.build();
         }
-        // Fetch data and return
+        // TODO TH: Fetch data and return
         return resultBuilder.build();
     }
 
     public Frame fetch(long offset, final int maxRowCount ) {
         synchronized ( protoInterfaceClient ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "fetch(long {}, int {} )", currentStatement, offset, maxRowCount );
+                log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
             }
             startOrResumeStopwatch();
             List<List<Object>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
