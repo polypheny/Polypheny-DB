@@ -18,6 +18,7 @@ package org.polypheny.db.protointerface.utils;
 
 import java.util.List;
 import org.polypheny.db.protointerface.proto.StatementResult;
+import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StatementStatus;
