@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.protointerface.proto";
+option java_outer_classname = "ProtoValueProto";
+option objc_class_prefix = "PI";
+
+package polypheny.protointerface;
+
+message Value {
+  oneof value {
+    ProtoBoolean boolean = 1;
+    ProtoInteger integer = 2;
+    ProtoLong long = 3;
+    ProtoBinary binary = 4;
+    ProtoDate date = 5;
+    ProtoDouble double = 6;
+    ProtoFloat float = 7;
+    ProtoString string = 8;
+    ProtoTime time = 9;
+    ProtoTimeStamp time_stamp = 10;
+    ProtoNull null = 11;
+  }
+}
+
+message ProtoBoolean {
+  bool boolean = 1;
+}
+
+message ProtoInteger {
+  int32 integer = 1;
+}
+
+message ProtoLong {
+  int64 long = 1;
+}
+
+message ProtoBinary {
+  bytes binary = 1;
+}
+
+message ProtoDate {
+  int64 date = 1;
+}
+
+message ProtoDouble {
+  double double = 1;
+}
+
+message ProtoFloat {
+  float float = 1;
+}
+
+message ProtoNull {
+}
+
+message ProtoString {
+  string string = 1;
+}
+
+message ProtoTime {
+  int64 value = 1;
+  TimeUnit timeUnit = 2;
+}
+
+message ProtoTimeStamp {
+  int64 timeStamp = 1;
+}
+
+enum TimeUnit {
+    TIME_UNIT_UNSPECIFIED = 0;
+    TIME_UNIT_YEAR = 1;
+    TIME_UNIT_MONTH = 2;
+    TIME_UNIT_DAY = 3;
+    TIME_UNIT_HOUR = 4;
+    TIME_UNIT_MINUTE = 5;
+    TIME_UNIT_SECOND = 6;
+    TIME_UNIT_QUARTER = 7;
+    TIME_UNIT_ISOYEAR = 8;
+    TIME_UNIT_WEEK = 9;
+    TIME_UNIT_MILLISECOND = 10;
+    TIME_UNIT_MICROSECOND = 11;
+    TIME_UNIT_NANOSECOND = 12;
+    TIME_UNIT_DOW = 13;
+    TIME_UNIT_ISODOW = 14;
+    TIME_UNIT_DOY = 15;
+    TIME_UNIT_EPOCH = 16;
+    TIME_UNIT_DECADE = 17;
+    TIME_UNIT_CENTURY = 18;
+    TIME_UNIT_MILLENNIUM = 19;
+}
+
