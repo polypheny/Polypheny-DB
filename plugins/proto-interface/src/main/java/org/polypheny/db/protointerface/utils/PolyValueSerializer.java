@@ -48,6 +48,63 @@ import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class PolyValueSerializer {
+    public static Value serialize( PolyValue polyValue) {
+        throw new NotImplementedException("serialization of PolyValue not implemented yet.");
+    }
+
+    public static Value serialize( PolyBoolean polyBoolean ) {
+        ProtoBoolean protoBoolean = ProtoBoolean.newBuilder()
+                .setBoolean( polyBoolean.getValue() )
+                .build();
+        return  Value.newBuilder()
+                .setBoolean( protoBoolean )
+                .build();
+    }
+
+    public static Value serialize( PolyInteger polyInteger) {
+        ProtoInteger protoInteger = ProtoInteger.newBuilder()
+                .setInteger( polyInteger.getValue() )
+                .build();
+        return Value.newBuilder()
+                .setInteger( protoInteger )
+                .build();
+    }
+
+    public static Value serialize( PolyLong polyLong ) {
+        ProtoLong protoLong = ProtoLong.newBuilder()
+                .setLong( polyLong.value )
+                .build();
+        return Value.newBuilder()
+                .setLong( protoLong )
+                .build();
+    }
+
+    public static Value serialize( PolyBinary polyBinary ) {
+        ProtoBinary protoBinary = ProtoBinary.newBuilder()
+                .setBinary( ByteString.copyFrom( polyBinary.getValue().getBytes() ) )
+                .build();
+        return Value.newBuilder()
+                .setBinary( protoBinary )
+                .build();
+    }
+
+    public static Value serialize( PolyDate polyDate ) {
+        ProtoDate protoDate = ProtoDate.newBuilder()
+                .setDate( polyDate.getValue() )
+                .build();
+        return Value.newBuilder()
+                .setDate( protoDate )
+                .build();
+    }
+
+    public static Value serialize( PolyDouble polyDouble ) {
+        ProtoDouble protoDouble = ProtoDouble.newBuilder()
+                .setDouble( polyDouble.getValue() )
+                .build();
+        return Value.newBuilder()
+                .setDouble( protoDouble )
+                .build();
+    }
 
     private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
 
