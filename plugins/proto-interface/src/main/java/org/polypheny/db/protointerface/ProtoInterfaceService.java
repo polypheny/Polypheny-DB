@@ -16,13 +16,14 @@
 
 package org.polypheny.db.protointerface;
 
+import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.reflection.v1alpha.ErrorResponse;
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import java.util.LinkedList;
 import lombok.SneakyThrows;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
@@ -39,6 +40,7 @@ import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
+import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -53,7 +55,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public ProtoInterfaceService( ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
-        PolyValue value = new PolyString("hi ;)");
+        PolyValue value = new PolyString( "hi ;)" );
     }
 
 
@@ -72,9 +74,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
             responseObserver.onCompleted();
             return;
         }
-
-            clientManager.registerConnection( connectionRequest );
-
+        clientManager.registerConnection( connectionRequest );
         responseObserver.onNext( connectionReply );
         responseObserver.onCompleted();
     }
@@ -83,28 +83,28 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @Override
     public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
         SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder()
-                .addAllLanguageNames( new LinkedList<>())
+                .addAllLanguageNames( new LinkedList<>() )
                 .build();
         responseObserver.onNext( supportedLanguages );
         responseObserver.onCompleted();
     }
 
 
+    @SneakyThrows
     @Override
     public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<QueryResult> responseObserver ) {
         ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
         String languageName = unparameterizedStatement.getStatementLanguageName();
-        if (!statementManager.getSupportedLanguages().contains( languageName )) {
+        if ( !statementManager.getSupportedLanguages().contains( languageName ) ) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
         }
-        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
-        try {
-            QueryResult result = statement.execute();
-            responseObserver.onNext( result );
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            throw new ProtoInterfaceServiceException( e.getMessage() );
+        if ( unparameterizedStatement.hasProperties() ) {
+            client.setStatementProperties( ProtoUtils.unwrapStringMap( unparameterizedStatement.getProperties() ) );
         }
+        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
+        QueryResult result = statement.execute();
+        responseObserver.onNext( result );
+        responseObserver.onCompleted();
     }
 
 
