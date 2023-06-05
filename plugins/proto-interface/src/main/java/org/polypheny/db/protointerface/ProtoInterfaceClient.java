@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -28,147 +30,175 @@ import java.util.Map;
 
 @Slf4j
 public class ProtoInterfaceClient {
+
     private String clientUUID;
     private CatalogUser catalogUser;
     private CatalogDatabase catalogDatabase;
     private LogicalNamespace logicalNamespace;
     private Transaction currentTransaction;
     private TransactionManager transactionManager;
-    private Map<String, String> properties;
+    @Setter
+    @Getter
+    private Map<String, String> statementProperties;
+
+    private Map<String, String> connectionProperties;
     private int minorApiVersion;
     private int majorApiVersion;
 
-    private ProtoInterfaceClient(Builder connectionBuilder) {
+
+    private ProtoInterfaceClient( Builder connectionBuilder ) {
         this.clientUUID = connectionBuilder.clientUUID;
         this.catalogUser = connectionBuilder.catalogUser;
         this.logicalNamespace = connectionBuilder.logicalNamespace;
         this.currentTransaction = connectionBuilder.currentTransaction;
         this.transactionManager = connectionBuilder.transactionManager;
-        this.properties = connectionBuilder.properties;
+        this.connectionProperties = connectionBuilder.connectionProperties;
         this.majorApiVersion = connectionBuilder.majorApiVersion;
         this.minorApiVersion = connectionBuilder.minorApiVersion;
     }
+
 
     public String getClientUUID() {
         return clientUUID;
     }
 
+
     public synchronized Transaction getCurrentOrCreateNewTransaction() {
-        if (currentTransaction == null || !currentTransaction.isActive()) {
-            currentTransaction = transactionManager.startTransaction(catalogUser, logicalNamespace, false, "ProtoInterface");
+        if ( currentTransaction == null || !currentTransaction.isActive() ) {
+            currentTransaction = transactionManager.startTransaction( catalogUser, logicalNamespace, false, "ProtoInterface" );
         }
         return currentTransaction;
     }
+
 
     public Transaction getCurrentTransaction() {
         return currentTransaction;
     }
 
+
     public synchronized void commitCurrentTransaction() {
-        if (log.isTraceEnabled()) {
-            log.trace("commitCurrentTransaction() for client: {}", clientUUID);
+        if ( log.isTraceEnabled() ) {
+            log.trace( "commitCurrentTransaction() for client: {}", clientUUID );
         }
-        if (hasNoTransaction()) {
-            if (log.isTraceEnabled()) {
-                log.trace("No open transaction for client: {}", clientUUID);
+        if ( hasNoTransaction() ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "No open transaction for client: {}", clientUUID );
             }
             return;
         }
         try {
             currentTransaction.commit();
-        } catch (TransactionException e) {
-            throw new ProtoInterfaceServiceException("Committing current transaction failed: " + e.getLocalizedMessage());
+        } catch ( TransactionException e ) {
+            throw new ProtoInterfaceServiceException( "Committing current transaction failed: " + e.getLocalizedMessage() );
         } finally {
             endCurrentTransaction();
         }
     }
 
+
     public synchronized void rollbackCurrentTransaction() {
-        if (log.isTraceEnabled()) {
-            log.trace("commitCurrentTransaction() for client: {}", clientUUID);
+        if ( log.isTraceEnabled() ) {
+            log.trace( "commitCurrentTransaction() for client: {}", clientUUID );
         }
-        if (hasNoTransaction()) {
-            if (log.isTraceEnabled()) {
-                log.trace("No open transaction for client: {}", clientUUID);
+        if ( hasNoTransaction() ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "No open transaction for client: {}", clientUUID );
             }
             return;
         }
         try {
             currentTransaction.rollback();
-        } catch (TransactionException e) {
-            throw new ProtoInterfaceServiceException("Rollback of current transaction failed: " + e.getLocalizedMessage());
+        } catch ( TransactionException e ) {
+            throw new ProtoInterfaceServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
         } finally {
             endCurrentTransaction();
         }
     }
 
+
     private synchronized void endCurrentTransaction() {
         currentTransaction = null;
     }
+
 
     public boolean hasNoTransaction() {
         return currentTransaction == null || !currentTransaction.isActive();
     }
 
+
     public static Builder newBuilder() {
         return new Builder();
     }
 
+
     static class Builder {
+
         private String clientUUID;
         private CatalogUser catalogUser;
         private LogicalNamespace logicalNamespace;
         private Transaction currentTransaction;
         private TransactionManager transactionManager;
-        private Map<String, String> properties;
+        private Map<String, String> connectionProperties;
         private int minorApiVersion;
         private int majorApiVersion;
+
 
         private Builder() {
         }
 
-        public Builder setClientUUID(String clientUUID) {
+
+        public Builder setClientUUID( String clientUUID ) {
             this.clientUUID = clientUUID;
             return this;
         }
 
-        public Builder setCatalogUser(CatalogUser catalogUser) {
+
+        public Builder setCatalogUser( CatalogUser catalogUser ) {
             this.catalogUser = catalogUser;
             return this;
         }
 
-        public Builder setLogicalNamespace(LogicalNamespace logicalNamespace) {
+
+        public Builder setLogicalNamespace( LogicalNamespace logicalNamespace ) {
             this.logicalNamespace = logicalNamespace;
             return this;
         }
 
-        public Builder setCurrentTransaction(Transaction currentTransaction) {
+
+        public Builder setCurrentTransaction( Transaction currentTransaction ) {
             this.currentTransaction = currentTransaction;
             return this;
         }
 
-        public Builder setTransactionManager(TransactionManager transactionManager) {
+
+        public Builder setTransactionManager( TransactionManager transactionManager ) {
             this.transactionManager = transactionManager;
             return this;
         }
 
-        public Builder setProperties(Map<String, String> properties) {
-            this.properties = properties;
+
+        public Builder setConnectionProperties( Map<String, String> connectionProperties ) {
+            this.connectionProperties = connectionProperties;
             return this;
         }
 
-        public Builder setMajorApiVersion(int majorApiVersion) {
+
+        public Builder setMajorApiVersion( int majorApiVersion ) {
             this.majorApiVersion = majorApiVersion;
             return this;
         }
 
-        public Builder setMinorApiVersion(int minorApiVersion) {
+
+        public Builder setMinorApiVersion( int minorApiVersion ) {
             this.minorApiVersion = minorApiVersion;
             return this;
         }
 
+
         public ProtoInterfaceClient build() {
-            return new ProtoInterfaceClient(this);
+            return new ProtoInterfaceClient( this );
         }
+
     }
+
 }

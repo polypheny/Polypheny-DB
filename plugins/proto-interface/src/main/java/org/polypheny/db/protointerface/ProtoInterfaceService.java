@@ -16,15 +16,23 @@
 
 package org.polypheny.db.protointerface;
 
+import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.reflection.v1alpha.ErrorResponse;
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import org.polypheny.db.iface.AuthenticationException;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.proto.*;
+import org.polypheny.db.protointerface.proto.ConnectionReply;
+import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.db.protointerface.proto.LanguageRequest;
+import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
+import org.polypheny.db.protointerface.proto.QueryResult;
+import org.polypheny.db.protointerface.proto.SupportedLanguages;
+import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
+import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -40,10 +48,11 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public ProtoInterfaceService( ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
-        PolyValue value = new PolyString("hi! i'm new ;)");
+        PolyValue value = new PolyString( "hi! i'm new ;)" );
     }
 
 
+    @SneakyThrows
     @Override
     public void connect( ConnectionRequest connectionRequest, StreamObserver<ConnectionReply> responseObserver ) {
         ConnectionReply.Builder responseBuilder = ConnectionReply.newBuilder()
@@ -58,12 +67,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
             responseObserver.onCompleted();
             return;
         }
-        try {
-            clientManager.registerConnection( connectionRequest );
-
-        } catch ( TransactionException | AuthenticationException e ) {
-            throw new RuntimeException( e );
-        }
+        clientManager.registerConnection( connectionRequest );
         responseObserver.onNext( connectionReply );
         responseObserver.onCompleted();
     }
@@ -72,28 +76,28 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @Override
     public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
         SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder()
-                .addAllLanguageNames( new LinkedList<>())
+                .addAllLanguageNames( new LinkedList<>() )
                 .build();
         responseObserver.onNext( supportedLanguages );
         responseObserver.onCompleted();
     }
 
 
+    @SneakyThrows
     @Override
     public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<QueryResult> responseObserver ) {
         ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
         String languageName = unparameterizedStatement.getStatementLanguageName();
-        if (!statementManager.getSupportedLanguages().contains( languageName )) {
+        if ( !statementManager.getSupportedLanguages().contains( languageName ) ) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
         }
-        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
-        try {
-            QueryResult result = statement.execute();
-            responseObserver.onNext( result );
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            throw new ProtoInterfaceServiceException( e.getMessage() );
+        if ( unparameterizedStatement.hasProperties() ) {
+            client.setStatementProperties( ProtoUtils.unwrapStringMap( unparameterizedStatement.getProperties() ) );
         }
+        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
+        QueryResult result = statement.execute();
+        responseObserver.onNext( result );
+        responseObserver.onCompleted();
     }
 
 
