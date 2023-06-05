@@ -16,11 +16,27 @@
 
 package org.polypheny.db.protointerface.utils;
 
+import java.util.List;
 import java.util.Map;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StringMap;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
     public static Map<String, String> unwrapStringMap( StringMap stringMap ) {
         return stringMap.getEntriesMap();
+    }
+
+    public static Frame buildFrame( List<List<PolyValue>> rows ) {
+        Frame.Builder frameBuilder = Frame.newBuilder();
+        for (List<PolyValue> row : rows) {
+            Row.Builder rowBuilder = Row.newBuilder();
+            for (PolyValue value : row) {
+                rowBuilder.addValues( PolyValueSerializer.serialize(value));
+            }
+            frameBuilder.addRows( rowBuilder.build() );
+        }
+        return frameBuilder.build();
     }
 }
