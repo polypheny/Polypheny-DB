@@ -32,6 +32,7 @@ import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.QueryResult;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -81,7 +82,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
             }
             startOrResumeStopwatch();
-            List<List<Object>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
+            List<List<? extends PolyValue>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
             executionStopWatch.suspend();
             boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
             if (isDone) {
