@@ -26,7 +26,7 @@ message ConnectionRequest {
   int32 major_api_version = 1;
   int32 minor_api_version = 2;
   string client_uuid = 3;
-  map<string, string> connection_properties = 4;
+  StringMap connection_properties = 4;
 }
 
 message ConnectionReply {
@@ -41,23 +41,27 @@ message SupportedLanguages {
   repeated string language_names = 1;
 }
 
+message StringMap {
+  map<string, string> entries = 1;
+}
+
 message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  map<string, string> statement_properties = 3;
+  optional StringMap properties = 3;
 }
 
 message ParameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  map<string, string> statement_properties = 3;
-  map<string, Value> values = 4;
+  map<string, Value> values = 3;
+  optional StringMap properties = 4;
 }
 
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  map<string, string> statement_properties = 3;
+  optional StringMap properties = 3;
 }
 
 
@@ -81,10 +85,14 @@ message SimpleSqlQuery {
 
 message QueryResult {
   oneof result {
-    bool no_result = 1;
+    int64 row_count = 1;
     Frame frame = 2;
-    int64 row_count = 4;
+    NoResult no_result = 3;
   }
+}
+
+message NoResult {
+
 }
 
 message StatementResult {
