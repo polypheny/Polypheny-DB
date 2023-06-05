@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -55,7 +56,7 @@ public class ClientManager {
         if ( isConnected( connectionRequest.getClientUuid() ) ) {
             throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUuid() + "is already connected." );
         }
-        Map<String, String> properties = connectionRequest.getConnectionPropertiesMap();
+        Map<String, String> properties = ProtoUtils.unwrapStringMap(connectionRequest.getConnectionProperties());
         if ( !credentialsPresent( properties ) ) {
             throw new ProtoInterfaceServiceException( "No username and password given." );
         }
@@ -64,14 +65,14 @@ public class ClientManager {
                 .setMajorApiVersion( connectionRequest.getMajorApiVersion() )
                 .setMinorApiVersion( connectionRequest.getMinorApiVersion() )
                 .setClientUUID( connectionRequest.getClientUuid() )
-                .setProperties( properties )
+                .setConnectionProperties( properties )
                 .setTransactionManager( transactionManager );
 
         final CatalogUser user = authenticateUser( properties.get( USERNAME_KEY ), properties.get( PASSWORD_KEY ) );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
-        if ( connectionRequest.containsConnectionProperties( "namespace" ) ) {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace( connectionRequest.getConnectionPropertiesOrThrow( "namespace" ) );
+        if ( properties.containsKey( "namespace" )) {
+            namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.get( "namespace" ) );
         } else {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( Catalog.defaultNamespaceName );
         }
