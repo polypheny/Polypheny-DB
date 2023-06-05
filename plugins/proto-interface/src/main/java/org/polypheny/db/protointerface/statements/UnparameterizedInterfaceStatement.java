@@ -88,7 +88,6 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
-            //TODO TH: handle values
         }
         return Frame.newBuilder().build();
     }
