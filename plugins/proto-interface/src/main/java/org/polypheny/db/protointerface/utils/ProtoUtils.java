@@ -16,9 +16,13 @@
 
 package org.polypheny.db.protointerface.utils;
 
+import java.util.List;
 import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
 
