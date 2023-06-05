@@ -31,6 +31,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.QueryResult;
+import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -72,7 +73,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             commitElseRollback();
             return resultBuilder.build();
         }
-        // TODO TH: Fetch data and return
+        resultBuilder.setFrame( fetch( 0, 100 ) );
         return resultBuilder.build();
     }
 
@@ -82,14 +83,14 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
             }
             startOrResumeStopwatch();
-            List<List<? extends PolyValue>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
+            List<List<PolyValue>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
             executionStopWatch.suspend();
             boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
             if (isDone) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
+            return ProtoUtils.buildFrame(rows);
         }
-        return Frame.newBuilder().build();
     }
 }

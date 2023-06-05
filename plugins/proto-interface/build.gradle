@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation project(path: ':core')
     compileOnly project(":core")
     compileOnly project(":monitoring")
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
