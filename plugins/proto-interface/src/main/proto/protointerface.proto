@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
@@ -81,7 +82,4 @@ message Row {
 
 message ValueMap {
   map<string, Value> values = 1;
-}
-message Value {
-
 }
