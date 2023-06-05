@@ -36,7 +36,7 @@ public class NamedValueProcessor {
         String currentGroup = matcher.group( 1 );
         do {
             if ( !values.containsKey( currentGroup ) ) {
-                throw new ProtoInterfaceServiceException( "Missing value for named parameter :" + currentGroup );
+                throw new ProtoInterfaceServiceException( "Missing value for named parameter:" + currentGroup );
             }
             matcher.appendReplacement( stringBuilder, values.get( currentGroup ).toString() );
         } while ( matcher.find() );
