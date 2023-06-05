@@ -58,6 +58,7 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.LimitIterator;
 
 
@@ -327,9 +328,9 @@ public class PolyImplementation<T> {
             int num;
             if ( object != null && object.getClass().isArray() ) {
                 Object[] o = (Object[]) object;
-                num = ((Number) o[0]).intValue();
+                num = ((PolyNumber) o[0]).intValue();
             } else if ( object != null ) {
-                num = ((Number) object).intValue();
+                num = ((PolyNumber) object).intValue();
             } else {
                 throw new Exception( "Result is null" );
             }
