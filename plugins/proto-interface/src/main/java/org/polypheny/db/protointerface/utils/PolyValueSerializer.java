@@ -447,5 +447,4 @@ private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
                 .setType( getType( polyBigDecimal ) )
                 .build();
     }
-
 }
