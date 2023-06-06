@@ -15,6 +15,7 @@ service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (SupportedLanguages) {}
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
+  rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
   rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
   rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
   rpc FetchResult(FetchRequest) returns (Frame) {}
@@ -49,6 +50,13 @@ message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
   optional StringMap properties = 3;
+}
+
+message CloseStatementRequest {
+  int32 statementId = 1;
+}
+
+message CloseStatementResponse {
 }
 
 message ParameterizedStatement {
@@ -89,6 +97,7 @@ message QueryResult {
     Frame frame = 2;
     NoResult no_result = 3;
   }
+  int32 statementId = 4;
 }
 
 message NoResult {

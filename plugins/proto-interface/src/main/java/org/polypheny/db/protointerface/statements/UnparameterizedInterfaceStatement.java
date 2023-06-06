@@ -119,6 +119,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             startOrResumeStopwatch();
             // TODO TH: clean up this mess
             List<List<PolyValue>> rows = (List<List<PolyValue>>)(List<?>)MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
+            //List<String> column_labels = TODO get row names
             executionStopWatch.suspend();
             boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
             if ( isDone ) {

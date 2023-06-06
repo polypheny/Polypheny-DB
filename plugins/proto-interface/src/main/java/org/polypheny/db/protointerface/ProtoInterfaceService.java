@@ -95,7 +95,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<QueryResult> responseObserver ) {
         ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
         String languageName = unparameterizedStatement.getStatementLanguageName();
-        if ( !statementManager.getSupportedLanguages().contains( languageName ) ) {
+        if ( !statementManager.isSupportedLanguage( languageName ) ) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
         }
         if ( unparameterizedStatement.hasProperties() ) {
@@ -105,6 +105,13 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         QueryResult result = statement.execute();
         responseObserver.onNext( result );
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
+        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
+        statementManager.closeStatement( client, closeStatementRequest.getStatementId() );
+        responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
     }
 
 
