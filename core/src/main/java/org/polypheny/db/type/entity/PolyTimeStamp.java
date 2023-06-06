@@ -27,7 +27,6 @@ import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +35,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
 public class PolyTimeStamp extends PolyTemporal {
 
     public Long value;
@@ -45,6 +43,16 @@ public class PolyTimeStamp extends PolyTemporal {
     public PolyTimeStamp( Long sinceEpoch ) {
         super( PolyType.TIMESTAMP );
         this.value = sinceEpoch;
+    }
+
+
+    public static PolyTimeStamp of( Long value ) {
+        return new PolyTimeStamp( value );
+    }
+
+
+    public static PolyTimeStamp of( Timestamp value ) {
+        return new PolyTimeStamp( value.getTime() );
     }
 
 

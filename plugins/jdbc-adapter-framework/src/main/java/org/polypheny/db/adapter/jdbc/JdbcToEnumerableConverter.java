@@ -39,6 +39,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -88,9 +90,13 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDefaults;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -376,16 +382,31 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
-                poly = Expressions.call( PolyLong.class, "of", Expressions.convert_( source, Long.class ) );
+                poly = Expressions.call( PolyLong.class, "of", Expressions.convert_( source, Number.class ) );
                 break;
             case VARCHAR:
+            case CHAR:
                 poly = Expressions.call( PolyString.class, "of", Expressions.convert_( source, String.class ) );
                 break;
+            case SMALLINT:
             case INTEGER:
-                poly = Expressions.call( PolyInteger.class, "of", Expressions.convert_( source, Integer.class ) );
+                poly = Expressions.call( PolyInteger.class, "of", Expressions.convert_( source, Number.class ) );
                 break;
             case BOOLEAN:
                 poly = Expressions.call( PolyBoolean.class, "of", Expressions.convert_( source, Boolean.class ) );
+                break;
+            case FLOAT:
+            case REAL:
+                poly = Expressions.call( PolyFloat.class, "of", Expressions.convert_( source, Number.class ) );
+                break;
+            case DOUBLE:
+                poly = Expressions.call( PolyDouble.class, "of", Expressions.convert_( source, Number.class ) );
+                break;
+            case TIME:
+                poly = Expressions.call( PolyTime.class, "of", Expressions.convert_( source, Time.class ) );
+                break;
+            case TIMESTAMP:
+                poly = Expressions.call( PolyTimeStamp.class, "of", Expressions.convert_( source, Timestamp.class ) );
                 break;
             default:
                 poly = source;

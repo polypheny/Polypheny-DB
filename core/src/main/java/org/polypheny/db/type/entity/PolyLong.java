@@ -59,6 +59,11 @@ public class PolyLong extends PolyNumber {
     }
 
 
+    public static PolyLong of( Number value ) {
+        return new PolyLong( value.longValue() );
+    }
+
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !o.isNumber() ) {

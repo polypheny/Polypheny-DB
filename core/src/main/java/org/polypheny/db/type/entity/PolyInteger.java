@@ -72,6 +72,11 @@ public class PolyInteger extends PolyNumber {
     }
 
 
+    public static PolyInteger of( Number value ) {
+        return new PolyInteger( value.intValue() );
+    }
+
+
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyInteger.class, Expressions.constant( value ) );

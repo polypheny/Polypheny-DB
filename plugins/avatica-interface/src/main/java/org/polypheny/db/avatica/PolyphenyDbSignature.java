@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -31,7 +30,6 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
@@ -41,7 +39,6 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -126,45 +123,6 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
 
     public Enumerable<T> enumerable( DataContext dataContext ) {
         return PolyImplementation.enumerable( bindable, dataContext );
-    }
-
-
-    public Enumerable<T> enumerableTransform( DataContext dataContext ) {
-        List<Function<PolyValue, Object>> transform = new ArrayList<>();
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
-            switch ( field.getType().getPolyType() ) {
-                case VARCHAR:
-                    transform.add( o -> o.asString().value );
-                    break;
-                case INTEGER:
-                    transform.add( o -> o.asNumber().IntValue() );
-                    break;
-                case FLOAT:
-                    transform.add( o -> o.asNumber().FloatValue() );
-                    break;
-                case BIGINT:
-                case DECIMAL:
-                    transform.add( o -> o.asNumber().BigDecimalValue() );
-                    break;
-                case DATE:
-                    transform.add( o -> o.asDate().value );
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        if ( rowType.getFieldCount() > 1 ) {
-            return (Enumerable<T>) PolyImplementation.enumerable( bindable, dataContext, row -> {
-                Object[] objects = (Object[]) row;
-                for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
-                    objects[i] = transform.get( i ).apply( (PolyValue) objects[i] );
-                }
-                return objects;
-            } );
-        }
-        return (Enumerable<T>) PolyImplementation.enumerable( bindable, dataContext, row -> transform.get( 0 ).apply( (PolyValue) row ) );
-
     }
 
 }

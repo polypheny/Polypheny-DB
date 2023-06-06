@@ -34,7 +34,6 @@ import io.activej.serializer.annotations.Serialize;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
@@ -44,7 +43,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
 public class PolyDouble extends PolyNumber {
 
     @Serialize
@@ -54,6 +52,16 @@ public class PolyDouble extends PolyNumber {
     public PolyDouble( @Deserialize("value") Double value ) {
         super( PolyType.DOUBLE );
         this.value = value;
+    }
+
+
+    public static PolyDouble of( Double value ) {
+        return new PolyDouble( value );
+    }
+
+
+    public static PolyDouble of( Number value ) {
+        return new PolyDouble( value.doubleValue() );
     }
 
 

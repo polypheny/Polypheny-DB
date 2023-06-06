@@ -92,4 +92,26 @@ public class SimpleSqlTest {
 
     }
 
+
+    @Test
+    public void updateTable() throws SQLException {
+        List<Object[]> data = List.of(
+                new Object[]{ 1, "Name1" },
+                new Object[]{ 2, "Name2" },
+                new Object[]{ 3, "Name3" },
+                new Object[]{ 4, "Name4" }
+        );
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE Person(ID INTEGER NOT NULL, NAME VARCHAR(20), PRIMARY KEY (ID))" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (1, 'Name1')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (2, 'Name2')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (3, 'Name3')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (4, 'Name4')" ),
+                ( c, s ) -> s.executeUpdate( "UPDATE Person SET NAME = 'Name99' WHERE ID < 3" ),
+                ( c, s ) -> s.executeUpdate( "DROP TABLE Person" ),
+                ( c, s ) -> c.commit()
+        );
+
+    }
+
 }

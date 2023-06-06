@@ -58,8 +58,12 @@ import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
@@ -1146,7 +1150,7 @@ public class DbmsMeta implements ProtobufMeta {
     private Iterable<Object> createIterable( DataContext dataContext, PolyphenyDbSignature<?> signature ) {
         //noinspection unchecked
         final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
-        return polyphenyDbSignature.enumerableTransform( dataContext );
+        return externalize( polyphenyDbSignature.enumerable( dataContext ), polyphenyDbSignature.rowType );
     }
 
 
@@ -1271,6 +1275,50 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
+    private Enumerable<Object> externalize( Enumerable<Object> enumerable, AlgDataType rowType ) {
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<Object> enumerator() {
+                List<Function1<PolyValue, Object>> transform = new ArrayList<>();
+                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                    switch ( field.getType().getPolyType() ) {
+                        case VARCHAR:
+                        case CHAR:
+                            transform.add( o -> o.asString().value );
+                            break;
+                        case INTEGER:
+                            transform.add( o -> o.asNumber().IntValue() );
+                            break;
+                        case FLOAT:
+                            transform.add( o -> o.asNumber().FloatValue() );
+                            break;
+                        case BIGINT:
+                        case DECIMAL:
+                            transform.add( o -> o.asNumber().BigDecimalValue() );
+                            break;
+                        case DATE:
+                            transform.add( o -> o.asDate().value );
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                }
+
+                if ( rowType.getFieldCount() > 1 ) {
+                    return Linq4j.transform( enumerable.enumerator(), row -> {
+                        Object[] objects = new Object[((Object[]) row).length];
+                        for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
+                            objects[i] = transform.get( i ).apply( (PolyValue) objects[i] );
+                        }
+                        return objects;
+                    } );
+                }
+                return Linq4j.transform( enumerable.enumerator(), row -> transform.get( 0 ).apply( (PolyValue) row ) );
+            }
+        };
+    }
+
+
     private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle statementHandle, int maxRowsInFirstFrame ) {
         List<MetaResultSet> resultSets;
         if ( statementHandle.getSignature().statementType == StatementType.OTHER_DDL ) {
@@ -1278,7 +1326,7 @@ public class DbmsMeta implements ProtobufMeta {
             resultSets = ImmutableList.of( resultSet );
             commit( connection.getHandle() );
         } else if ( statementHandle.getSignature().statementType == StatementType.IS_DML ) {
-            Iterator<?> iterator = statementHandle.getSignature().enumerableTransform( statementHandle.getStatement().getDataContext() ).iterator();
+            Iterator<?> iterator = statementHandle.getSignature().enumerable( statementHandle.getStatement().getDataContext() ).iterator();
             int rowsChanged = -1;
             try {
                 rowsChanged = PolyImplementation.getRowsChanged( statementHandle.getStatement(), iterator, statementHandle.getStatement().getMonitoringEvent().getMonitoringType() );

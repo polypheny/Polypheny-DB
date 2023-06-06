@@ -188,7 +188,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     /**
      * Executes a SQL query and returns the results as an enumerator, using a row builder to convert
      * JDBC column values into rows.
-     *
+     * <p>
      * It uses a {@link PreparedStatement} for computing the query result, and that means that it can bind parameters.
      */
     public static <T> ResultSetEnumerable<T> of(
@@ -255,36 +255,42 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         switch ( type.getPolyType() ) {
             case BIGINT:
+            case DECIMAL:
                 preparedStatement.setBigDecimal( i, value.asNumber().bigDecimalValue() );
                 break;
             case VARCHAR:
+            case CHAR:
                 preparedStatement.setString( i, value.asString().value );
                 break;
             case FLOAT:
+            case REAL:
                 preparedStatement.setFloat( i, value.asNumber().floatValue() );
                 break;
             case DOUBLE:
                 preparedStatement.setDouble( i, value.asNumber().doubleValue() );
                 break;
+            case SMALLINT:
             case INTEGER:
                 preparedStatement.setInt( i, value.asNumber().intValue() );
                 break;
             case BOOLEAN:
                 preparedStatement.setBoolean( i, value.asBoolean().value );
                 break;
-            case DECIMAL:
-                preparedStatement.setBigDecimal( i, value.asNumber().bigDecimalValue() );
-                break;
             case DATE:
                 preparedStatement.setDate( i, value.asDate().asSqlDate() );
                 break;
             case TIME:
-                preparedStatement.setTime( 0, value.asTime().asSqlTime() );
+                preparedStatement.setTime( i, value.asTime().asSqlTime() );
                 break;
             case TIMESTAMP:
-                preparedStatement.setTimestamp( 0, value.asTimeStamp().asSqlTimestamp() );
+                preparedStatement.setTimestamp( i, value.asTimeStamp().asSqlTimestamp() );
+                break;
+            case VARBINARY:
+            case BINARY:
+                preparedStatement.setBytes( i, value.asBinary().value.getBytes() );
                 break;
             default:
+                log.warn( "potentially unhandled type" );
                 preparedStatement.setObject( i, value );
         }
 
