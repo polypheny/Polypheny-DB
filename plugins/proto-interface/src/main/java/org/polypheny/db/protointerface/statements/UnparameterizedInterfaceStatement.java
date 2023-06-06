@@ -84,6 +84,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             }
             startOrResumeStopwatch();
             List<List<PolyValue>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
+            //List<String> column_labels = TODO get row names
             executionStopWatch.suspend();
             boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
             if (isDone) {
