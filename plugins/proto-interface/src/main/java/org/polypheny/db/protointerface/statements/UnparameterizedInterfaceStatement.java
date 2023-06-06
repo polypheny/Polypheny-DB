@@ -63,6 +63,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         }
 
         QueryResult.Builder resultBuilder = QueryResult.newBuilder();
+        resultBuilder.setStatementId( statementId );
         if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
             resultBuilder.setRowCount( 1 );
             commitElseRollback();
