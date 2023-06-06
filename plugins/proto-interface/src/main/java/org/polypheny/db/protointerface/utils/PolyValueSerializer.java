@@ -252,5 +252,4 @@ public class PolyValueSerializer {
                 .setNull( ProtoNull.newBuilder().build() )
                 .build();
     }
-
 }
