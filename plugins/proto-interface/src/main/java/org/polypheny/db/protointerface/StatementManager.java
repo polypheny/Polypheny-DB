@@ -69,7 +69,16 @@ public class StatementManager {
         return unparameterizedInterfaceStatement;
     }
 
-    private boolean isSupportedLanguage( String statementLanguageName ) {
+    public void closeStatement(ProtoInterfaceClient client, int statementId) {
+        String statementKey = getStatementKey( client.getClientUUID(), statementId );
+        ProtoInterfaceStatement toClose = openStatments.remove(statementKey);
+        if (toClose == null) {
+            return;
+        }
+        return;
+    }
+
+    public boolean isSupportedLanguage( String statementLanguageName ) {
         return getSupportedLanguages().contains(statementLanguageName);
     }
 
