@@ -26,7 +26,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 
-
+@Slf4j
 public abstract class ProtoInterfaceStatement {
 
     protected final int statementId;
@@ -98,5 +98,8 @@ public abstract class ProtoInterfaceStatement {
             executionStopWatch.start();
         }
     }
+
+
+
 
 }
