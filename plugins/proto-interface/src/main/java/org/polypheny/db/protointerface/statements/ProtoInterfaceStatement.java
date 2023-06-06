@@ -99,7 +99,4 @@ public abstract class ProtoInterfaceStatement {
         }
     }
 
-
-
-
 }
