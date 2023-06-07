@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.proto.StatementResult;
 
 @Slf4j
 public abstract class ProtoInterfaceStatement {
@@ -33,6 +34,7 @@ public abstract class ProtoInterfaceStatement {
     protected final QueryLanguage queryLanguage;
     protected final String query;
 
+    public abstract StatementResult execute() throws Exception;
 
     public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         if ( query == null ) {
