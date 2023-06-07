@@ -16,32 +16,43 @@
 
 package org.polypheny.db.protointerface;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Getter;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class NamedValueProcessor {
 
     // matches tags such as :name
-    private static final Pattern placeholderpattern = Pattern.compile( "(?<!')(:[\\w]*)(?!')" );
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile( "(?<!')(:[\\w]*)(?!')" );
+    private static final String REPLACEMENT_CHARACTER = "?";
+    @Getter
+    private String statement;
+    @Getter
+    private List<PolyValue> values;
 
 
-    public static String process( String statement, Map<String, PolyValue> values ) {
-        Matcher matcher = placeholderpattern.matcher( statement );
+    public void
+    process( String statement, Map<String, PolyValue> valueMap ) {
+        values = new LinkedList<>();
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher( statement );
         if ( !matcher.find() ) {
-            return statement;
+            this.statement = statement;
         }
         StringBuilder stringBuilder = new StringBuilder();
         String currentGroup = matcher.group( 1 );
         do {
-            if ( !values.containsKey( currentGroup ) ) {
+            if ( !valueMap.containsKey( currentGroup ) ) {
                 throw new ProtoInterfaceServiceException( "Missing value for named parameter:" + currentGroup );
             }
-            matcher.appendReplacement( stringBuilder, values.get( currentGroup ).toString() );
+            matcher.appendReplacement( stringBuilder, REPLACEMENT_CHARACTER );
+            values.add( valueMap.get( currentGroup ) );
         } while ( matcher.find() );
         matcher.appendTail( stringBuilder );
-        return stringBuilder.toString();
+        this.statement = stringBuilder.toString();
     }
 
 }
