@@ -16,9 +16,6 @@
 
 package org.polypheny.db.protointerface;
 
-import io.grpc.Metadata;
-import io.grpc.Status;
-import io.grpc.reflection.v1alpha.ErrorResponse;
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
 import lombok.SneakyThrows;
@@ -104,13 +101,14 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
             client.setStatementProperties( ProtoUtils.unwrapStringMap( unparameterizedStatement.getProperties() ) );
         }
         UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
-        Thread statusThread = new Thread(new StatementStatusProvider( unparameterizedStatement.getStatusUpdateInterval(), statement, responseObserver));
+        Thread statusThread = new Thread( new StatementStatusProvider( unparameterizedStatement.getStatusUpdateInterval(), statement, responseObserver ) );
         statusThread.start();
         StatementResult result = statement.execute();
         statusThread.interrupt();
         responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
         responseObserver.onCompleted();
     }
+
 
     @Override
     public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
