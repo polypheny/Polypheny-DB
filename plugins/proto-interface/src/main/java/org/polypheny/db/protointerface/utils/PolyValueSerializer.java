@@ -198,7 +198,7 @@ public class PolyValueSerializer {
 
     public static Value serialize( PolyDouble polyDouble ) {
         ProtoDouble protoDouble = ProtoDouble.newBuilder()
-                .setDouble( polyDouble.getValue() )
+                .setDouble( polyDouble.doubleValue() )
                 .build();
         return Value.newBuilder()
                 .setDouble( protoDouble )
@@ -208,7 +208,7 @@ public class PolyValueSerializer {
 
     public static Value serialize( PolyFloat polyFloat ) {
         ProtoFloat protoFloat = ProtoFloat.newBuilder()
-                .setFloat( polyFloat.getValue() )
+                .setFloat( polyFloat.floatValue() )
                 .build();
         return Value.newBuilder()
                 .setFloat( protoFloat )
