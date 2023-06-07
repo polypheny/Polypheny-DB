@@ -101,33 +101,11 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
             client.setStatementProperties( ProtoUtils.unwrapStringMap( unparameterizedStatement.getProperties() ) );
         }
         UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
-        if ( unparameterizedStatement.getPeriodicStatusUpdates() ) {
-            executeStatementWithStatus( statement, responseObserver );
-            responseObserver.onCompleted();
-            return;
-        }
-        executeStatementNoStatus( statement, responseObserver );
-        responseObserver.onCompleted();
-    }
-
-
-    @SneakyThrows
-    private void executeStatementNoStatus( ProtoInterfaceStatement statement, StreamObserver<StatementStatus> responseObserver ) {
         responseObserver.onNext( ProtoUtils.createStatus( statement ) );
         StatementResult result = statement.execute();
         responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
+        responseObserver.onCompleted();
     }
-
-
-    @SneakyThrows
-    private void executeStatementWithStatus( ProtoInterfaceStatement statement, StreamObserver<StatementStatus> responseObserver ) {
-        Thread statusThread = new Thread( new StatementStatusProvider( statement, responseObserver ) );
-        statusThread.start();
-        StatementResult result = statement.execute();
-        statusThread.interrupt();
-        responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
-    }
-
 
     @Override
     public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
