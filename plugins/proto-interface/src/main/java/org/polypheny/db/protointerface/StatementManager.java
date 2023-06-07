@@ -26,6 +26,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
+import org.polypheny.db.protointerface.utils.ProtoUtils;
 
 @Slf4j
 public class StatementManager {
