@@ -30,7 +30,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.QueryResult;
+import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
@@ -38,15 +38,17 @@ import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
+
     protected PolyImplementation currentImplementation;
     protected Statement currentStatement;
+
 
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
     }
 
 
-    public QueryResult execute() throws Exception {
+    public StatementResult execute() throws Exception {
         currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
         Processor queryProcessor = currentStatement.getTransaction().getProcessor( queryLanguage );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
@@ -62,8 +64,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             currentImplementation = currentStatement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
         }
 
-        QueryResult.Builder resultBuilder = QueryResult.newBuilder();
-        resultBuilder.setStatementId( statementId );
+        StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
             resultBuilder.setRowCount( 1 );
             commitElseRollback();
@@ -78,7 +79,8 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         return resultBuilder.build();
     }
 
-    public Frame fetch(long offset, final int maxRowCount ) {
+
+    public Frame fetch( long offset, final int maxRowCount ) {
         synchronized ( protoInterfaceClient ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
@@ -88,11 +90,12 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             //List<String> column_labels = TODO get row names
             executionStopWatch.suspend();
             boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
-            if (isDone) {
+            if ( isDone ) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
-            return ProtoUtils.buildFrame(rows);
+            return ProtoUtils.buildFrame( rows );
         }
     }
+
 }
