@@ -49,14 +49,12 @@ public class ProtoUtils {
 
     public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement ) {
         return StatementStatus.newBuilder()
-                .setExecutionTime( protoInterfaceStatement.getMillisSinceCreation() )
                 .setStatementId( protoInterfaceStatement.getStatementId() )
                 .build();
     }
 
     public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement, StatementResult result ) {
         return StatementStatus.newBuilder()
-                .setExecutionTime( protoInterfaceStatement.getMillisSinceCreation() )
                 .setStatementId( protoInterfaceStatement.getStatementId() )
                 .setResult( result )
                 .build();
