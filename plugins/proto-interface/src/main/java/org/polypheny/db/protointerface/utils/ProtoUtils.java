@@ -21,7 +21,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Row;
+import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.proto.StringMap;
+import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
@@ -41,6 +44,21 @@ public class ProtoUtils {
     public static Frame buildFrame( List<List<PolyValue>> rows ) {
         return Frame.newBuilder()
                 .addAllRows( rows.stream().map( ProtoUtils::serializeToRow ).collect( Collectors.toList() ) )
+                .build();
+    }
+
+    public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement ) {
+        return StatementStatus.newBuilder()
+                .setExecutionTime( protoInterfaceStatement.getMillisSinceCreation() )
+                .setStatementId( protoInterfaceStatement.getStatementId() )
+                .build();
+    }
+
+    public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement, StatementResult result ) {
+        return StatementStatus.newBuilder()
+                .setExecutionTime( protoInterfaceStatement.getMillisSinceCreation() )
+                .setStatementId( protoInterfaceStatement.getStatementId() )
+                .setResult( result )
                 .build();
     }
 }
