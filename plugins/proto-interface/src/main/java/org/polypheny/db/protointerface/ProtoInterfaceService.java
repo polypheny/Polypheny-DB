@@ -35,6 +35,8 @@ import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
+import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.proto.SupportedLanguages;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
@@ -92,7 +94,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @SneakyThrows
     @Override
-    public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<QueryResult> responseObserver ) {
+    public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
         ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
         String languageName = unparameterizedStatement.getStatementLanguageName();
         if ( !statementManager.isSupportedLanguage( languageName ) ) {
@@ -102,8 +104,11 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
             client.setStatementProperties( ProtoUtils.unwrapStringMap( unparameterizedStatement.getProperties() ) );
         }
         UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
-        QueryResult result = statement.execute();
-        responseObserver.onNext( result );
+        Thread statusThread = new Thread(new StatementStatusProvider( unparameterizedStatement.getStatusUpdateInterval(), statement, responseObserver));
+        statusThread.start();
+        StatementResult result = statement.execute();
+        statusThread.interrupt();
+        responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
         responseObserver.onCompleted();
     }
 

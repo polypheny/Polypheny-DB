@@ -44,6 +44,10 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
+    protected PolyImplementation currentImplementation;
+    protected Statement currentStatement;
+
+
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
     }
@@ -65,7 +69,6 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         }
 
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        resultBuilder.setStatementId( statementId );
         if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
             resultBuilder.setScalar( 1 );
             commitElseRollback();
@@ -82,8 +85,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     }
 
 
-    @Override
-    public Frame fetch( long offset ) {
+@Override    public Frame fetch( long offset) {
         switch ( queryLanguage.getNamespaceType() ) {
             case RELATIONAL:
                 return relationalFetch( offset );
@@ -128,7 +130,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
             List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
-            return RelationalUtils.buildRelationalFrame( offset, isDone, rows, columnMetas );
+            return RelationalUtils.buildRelationalFrame( offset, isDone, rows , columnMetas );
         }
     }
 
