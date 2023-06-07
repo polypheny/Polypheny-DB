@@ -48,8 +48,7 @@ message StringMap {
 
 message StatementStatus {
   int32 statementId = 1;
-  int64 execution_time = 2;
-  optional StatementResult result = 3;
+  optional StatementResult result = 2;
 }
 
 message FetchRequest {
