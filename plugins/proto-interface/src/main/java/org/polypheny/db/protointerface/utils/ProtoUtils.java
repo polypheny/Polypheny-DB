@@ -21,7 +21,10 @@ import org.polypheny.db.protointerface.proto.StatementResult;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Row;
+import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
+import org.polypheny.db.protointerface.proto.StatementStatus;
+import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.type.entity.PolyValue;
 
