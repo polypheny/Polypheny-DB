@@ -46,10 +46,20 @@ message StringMap {
   map<string, string> entries = 1;
 }
 
+message StatementStatus {
+  int32 statementId = 1;
+  int64 execution_time = 2;
+  optional StatementResult result = 3;
+}
+
+message FetchRequest {
+}
+
 message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
   optional StringMap properties = 3;
+  bool expects_result = 4;
 }
 
 message CloseStatementRequest {
@@ -63,13 +73,15 @@ message ParameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
   map<string, Value> values = 3;
-  optional StringMap properties = 4;
+  bool expects_result = 4;
+  optional StringMap properties = 5;
 }
 
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  optional StringMap properties = 3;
+  bool expects_result = 3;
+  optional StringMap properties = 4;
 }
 
 
@@ -91,17 +103,15 @@ message SimpleSqlQuery {
   string query = 1;
 }
 
-message QueryResult {
+message StatementResult {
   oneof result {
     int64 row_count = 1;
     Frame frame = 2;
     NoResult no_result = 3;
   }
-  int32 statementId = 4;
 }
 
 message NoResult {
-
 }
 
 message StatementResult {
