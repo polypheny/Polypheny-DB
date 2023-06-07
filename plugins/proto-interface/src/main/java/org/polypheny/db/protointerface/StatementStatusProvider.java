@@ -24,14 +24,12 @@ import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 
 public class StatementStatusProvider implements Runnable {
-
+    private static final long UPDATE_INTERVAL = 2000;
     private int updateIntervall;
     private ProtoInterfaceStatement protoInterfaceStatement;
     private StreamObserver<StatementStatus> responseObserver;
 
-
-    public StatementStatusProvider( int updateIntervall, ProtoInterfaceStatement statement, StreamObserver<StatementStatus> responseObserver) {
-        this.updateIntervall = updateIntervall;
+    public StatementStatusProvider(ProtoInterfaceStatement statement, StreamObserver<StatementStatus> responseObserver) {
         this.protoInterfaceStatement = statement;
         this.responseObserver = responseObserver;
     }
@@ -41,7 +39,7 @@ public class StatementStatusProvider implements Runnable {
     public void run() {
         while ( !Thread.interrupted() ) {
             responseObserver.onNext(createStatus( protoInterfaceStatement ));
-            Thread.sleep( updateIntervall );
+            Thread.sleep( UPDATE_INTERVAL );
         }
     }
 }
