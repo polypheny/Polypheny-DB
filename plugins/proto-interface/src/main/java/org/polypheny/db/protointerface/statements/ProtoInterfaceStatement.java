@@ -16,6 +16,7 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.languages.QueryLanguage;
@@ -24,6 +25,8 @@ import org.polypheny.db.protointerface.ProtoInterfaceClient;
 @Slf4j
 public abstract class ProtoInterfaceStatement {
 
+    protected final long creationDate;
+    @Getter
     protected final int statementId;
     protected final ProtoInterfaceClient protoInterfaceClient;
     protected final StopWatch executionStopWatch;
@@ -45,7 +48,13 @@ public abstract class ProtoInterfaceStatement {
         this.protoInterfaceClient = protoInterfaceClient;
         this.queryLanguage = queryLanguage;
         this.query = query;
+        this.creationDate = System.currentTimeMillis();
         this.executionStopWatch = new StopWatch();
+    }
+
+
+    public long getMillisSinceCreation() {
+        return System.currentTimeMillis() - creationDate;
     }
 
 
