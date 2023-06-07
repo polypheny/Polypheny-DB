@@ -57,6 +57,7 @@ message UnparameterizedStatement {
   string statement = 2;
   optional StringMap properties = 3;
   bool expects_result = 4;
+  int32 status_update_interval = 5;
 }
 
 message CloseStatementRequest {
@@ -71,14 +72,17 @@ message ParameterizedStatement {
   string statement = 2;
   map<string, Value> values = 3;
   bool expects_result = 4;
-  optional StringMap properties = 5;
+  int32 status_update_interval = 5;
+  optional StringMap properties = 6;
+
 }
 
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
   bool expects_result = 3;
-  optional StringMap properties = 4;
+  int32 status_update_interval = 4;
+  optional StringMap properties = 5;
 }
 
 message StatementResult {
