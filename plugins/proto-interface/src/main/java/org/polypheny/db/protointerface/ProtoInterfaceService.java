@@ -16,13 +16,9 @@
 
 package org.polypheny.db.protointerface;
 
-import io.grpc.Metadata;
-import io.grpc.Status;
-import io.grpc.reflection.v1alpha.ErrorResponse;
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
 import lombok.SneakyThrows;
-import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
@@ -30,16 +26,12 @@ import org.polypheny.db.protointerface.proto.ConnectionReply;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
-import org.polypheny.db.protointerface.proto.QueryResult;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.proto.SupportedLanguages;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
@@ -52,7 +44,6 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public ProtoInterfaceService( ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
-        PolyValue value = new PolyString( "hi! i'm new ;)" );
     }
 
 
@@ -99,13 +90,14 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
             client.setStatementProperties( ProtoUtils.unwrapStringMap( unparameterizedStatement.getProperties() ) );
         }
         UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
-        Thread statusThread = new Thread(new StatementStatusProvider( unparameterizedStatement.getStatusUpdateInterval(), statement, responseObserver));
+        Thread statusThread = new Thread( new StatementStatusProvider( unparameterizedStatement.getStatusUpdateInterval(), statement, responseObserver ) );
         statusThread.start();
         StatementResult result = statement.execute();
         statusThread.interrupt();
         responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
         responseObserver.onCompleted();
     }
+
 
     @Override
     public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
