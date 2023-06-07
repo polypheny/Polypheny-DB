@@ -29,6 +29,8 @@ import org.polypheny.db.protointerface.ProtoInterfaceClient;
 @Slf4j
 public abstract class ProtoInterfaceStatement {
 
+    protected final long creationDate;
+    @Getter
     protected final int statementId;
     protected final ProtoInterfaceClient protoInterfaceClient;
     protected final StopWatch executionStopWatch;
@@ -54,6 +56,7 @@ public abstract class ProtoInterfaceStatement {
         this.protoInterfaceClient = protoInterfaceClient;
         this.queryLanguage = queryLanguage;
         this.query = query;
+        this.creationDate = System.currentTimeMillis();
         this.executionStopWatch = new StopWatch();
         this.maxRowCount = DEFAULT_FETCH_ROW_COUNT;
     }
@@ -77,6 +80,11 @@ public abstract class ProtoInterfaceStatement {
         final Enumerable<Object> enumerable = currentImplementation.getBindable().bind( statement.getDataContext() );
         resultIterator = enumerable.iterator();
         return resultIterator;
+    }
+
+
+    public long getMillisSinceCreation() {
+        return System.currentTimeMillis() - creationDate;
     }
 
 
