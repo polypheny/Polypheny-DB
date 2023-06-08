@@ -38,25 +38,27 @@ public class ProtoUtils {
     }
 
 
-    public static Row serializeToRow( List<PolyValue> row) {
+    public static Row serializeToRow( List<PolyValue> row ) {
         return Row.newBuilder()
                 .addAllValues( row.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() ) )
                 .build();
     }
 
 
-    public static Frame buildFrame( List<List<PolyValue>> rows, List<ColumnMeta> metas) {
+    public static Frame buildFrame( List<List<PolyValue>> rows, List<ColumnMeta> metas ) {
         return Frame.newBuilder()
                 .addAllColumnMeta( metas )
                 .addAllRows( rows.stream().map( ProtoUtils::serializeToRow ).collect( Collectors.toList() ) )
                 .build();
     }
 
-    public static List<ColumnMeta> buildColumnMetasFromAvatica(List<ColumnMetaData> avaticaColumnMetas) {
-        return avaticaColumnMetas.stream().map( ProtoUtils::buildColumnMetaFromAvatica ).collect( Collectors.toList());
+
+    public static List<ColumnMeta> buildColumnMetasFromAvatica( List<ColumnMetaData> avaticaColumnMetas ) {
+        return avaticaColumnMetas.stream().map( ProtoUtils::buildColumnMetaFromAvatica ).collect( Collectors.toList() );
     }
 
-    public static ColumnMeta buildColumnMetaFromAvatica(ColumnMetaData avaticaColumnMeta) {
+
+    public static ColumnMeta buildColumnMetaFromAvatica( ColumnMetaData avaticaColumnMeta ) {
         return ColumnMeta.newBuilder()
                 .setColumnIndex( avaticaColumnMeta.ordinal )
                 .setIsNullable( avaticaColumnMeta.nullable == DatabaseMetaData.columnNullable )
@@ -67,6 +69,7 @@ public class ProtoUtils {
                 .setTableName( avaticaColumnMeta.tableName )
                 .build();
     }
+
 
     public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement ) {
         return StatementStatus.newBuilder()

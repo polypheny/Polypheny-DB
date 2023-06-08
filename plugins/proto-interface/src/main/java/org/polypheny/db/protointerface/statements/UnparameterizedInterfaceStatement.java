@@ -48,7 +48,6 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     protected PolyImplementation currentImplementation;
 
 
-
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
     }
@@ -130,7 +129,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
-            List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
+            List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation  );
             return RelationalUtils.buildRelationalFrame( offset, isDone, rows , columnMetas );
         }
     }
