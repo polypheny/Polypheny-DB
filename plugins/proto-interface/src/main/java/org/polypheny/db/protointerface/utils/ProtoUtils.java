@@ -16,9 +16,12 @@
 
 package org.polypheny.db.protointerface.utils;
 
+import java.sql.DatabaseMetaData;
 import java.util.List;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import java.util.stream.Collectors;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StatementResult;
@@ -30,6 +33,40 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
 
+    public static Map<String, String> unwrapStringMap( StringMap stringMap ) {
+        return stringMap.getEntriesMap();
+    }
+
+
+    public static Row serializeToRow( List<PolyValue> row) {
+        return Row.newBuilder()
+                .addAllValues( row.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() ) )
+                .build();
+    }
+
+
+    public static Frame buildFrame( List<List<PolyValue>> rows, List<ColumnMeta> metas) {
+        return Frame.newBuilder()
+                .addAllColumnMeta( metas )
+                .addAllRows( rows.stream().map( ProtoUtils::serializeToRow ).collect( Collectors.toList() ) )
+                .build();
+    }
+
+    public static List<ColumnMeta> buildColumnMetasFromAvatica(List<ColumnMetaData> avaticaColumnMetas) {
+        return avaticaColumnMetas.stream().map( ProtoUtils::buildColumnMetaFromAvatica ).collect( Collectors.toList());
+    }
+
+    public static ColumnMeta buildColumnMetaFromAvatica(ColumnMetaData avaticaColumnMeta) {
+        return ColumnMeta.newBuilder()
+                .setColumnIndex( avaticaColumnMeta.ordinal )
+                .setIsNullable( avaticaColumnMeta.nullable == DatabaseMetaData.columnNullable )
+                .setDisplaySize( avaticaColumnMeta.displaySize )
+                .setColumnLabel( avaticaColumnMeta.columnName )
+                .setColumnName( avaticaColumnMeta.columnName )
+                .setPrecision( avaticaColumnMeta.precision )
+                .setTableName( avaticaColumnMeta.tableName )
+                .build();
+    }
 
     public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement ) {
         return StatementStatus.newBuilder()
