@@ -1,0 +1,29 @@
+syntax = "proto3";
+import "value.proto";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.protointerface.proto";
+option java_outer_classname = "FrameProto";
+option objc_class_prefix = "PI";
+
+package polypheny.protointerface;
+
+message Frame {
+  repeated ColumnMeta column_meta = 1;
+  repeated Row rows = 2;
+  int64 offset = 3;
+}
+
+message ColumnMeta {
+  int32 columnIndex = 1;
+  bool is_nullable = 2;
+  int32 display_size = 3;
+  string column_label = 4;
+  string column_name = 5;
+  int32 precision = 6;
+  string table_name = 7;
+}
+
+message Row {
+  repeated Value values = 1;
+}

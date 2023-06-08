@@ -18,6 +18,7 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.ColumnMetaData;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -45,7 +46,7 @@ import org.polypheny.db.util.Pair;
 public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
     protected PolyImplementation currentImplementation;
-    protected Statement currentStatement;
+
 
 
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
