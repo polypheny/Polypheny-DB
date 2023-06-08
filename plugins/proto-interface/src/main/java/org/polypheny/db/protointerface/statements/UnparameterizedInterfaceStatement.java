@@ -44,7 +44,6 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     protected PolyImplementation currentImplementation;
 
 
-
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
     }
@@ -57,7 +56,6 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         if ( parsedStatement.isA( Kind.DDL ) ) {
             // TODO TH: namespace type according to language
             currentImplementation = queryProcessor.prepareDdl( currentStatement, parsedStatement, new QueryParameters( query, NamespaceType.RELATIONAL ) );
-
         } else {
             Pair<Node, AlgDataType> validated = queryProcessor.validate( protoInterfaceClient.getCurrentTransaction(),
                     parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
@@ -97,7 +95,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
             List<ColumnMetaData> avaticaColumnMetas = currentImplementation.getColumns();
-            List<ColumnMeta> protoColumnMetas = ProtoUtils.buildColumnMetasFromAvatica( avaticaColumnMetas);
+            List<ColumnMeta> protoColumnMetas = ProtoUtils.buildColumnMetasFromAvatica( avaticaColumnMetas );
             return ProtoUtils.buildFrame( rows, protoColumnMetas );
         }
     }
