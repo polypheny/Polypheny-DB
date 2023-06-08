@@ -30,7 +30,6 @@ import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.proto.SupportedLanguages;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
-import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 
@@ -96,6 +95,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
         responseObserver.onCompleted();
     }
+
 
     @Override
     public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
