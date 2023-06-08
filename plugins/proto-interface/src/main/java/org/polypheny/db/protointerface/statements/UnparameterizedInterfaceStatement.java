@@ -18,6 +18,7 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.ColumnMetaData;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -29,6 +30,7 @@ import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
@@ -40,7 +42,7 @@ import org.polypheny.db.util.Pair;
 public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
     protected PolyImplementation currentImplementation;
-    protected Statement currentStatement;
+
 
 
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
@@ -49,7 +51,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
 
     public StatementResult execute() throws Exception {
-        currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
+        Statement currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
         Processor queryProcessor = currentStatement.getTransaction().getProcessor( queryLanguage );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
         if ( parsedStatement.isA( Kind.DDL ) ) {
@@ -86,7 +88,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
             }
             startOrResumeStopwatch();
-            List<List<PolyValue>> rows = currentImplementation.getRows( currentStatement, maxRowCount );
+            List<List<PolyValue>> rows = currentImplementation.getRows( currentImplementation.getStatement(), maxRowCount );
             //List<String> column_labels = TODO get row names
             executionStopWatch.suspend();
             boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
@@ -94,7 +96,9 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
-            return ProtoUtils.buildFrame( rows );
+            List<ColumnMetaData> avaticaColumnMetas = currentImplementation.getColumns();
+            List<ColumnMeta> protoColumnMetas = ProtoUtils.buildColumnMetasFromAvatica( avaticaColumnMetas);
+            return ProtoUtils.buildFrame( rows, protoColumnMetas );
         }
     }
 
