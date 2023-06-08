@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "value.proto";
+import "frame.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
@@ -90,16 +91,6 @@ message StatementResult {
 }
 
 message NoResult {
-}
-
-message Frame {
-  repeated string column_labels = 1;
-  repeated Row rows = 2;
-  int64 offset = 3;
-}
-
-message Row {
-  repeated Value values = 1;
 }
 
 message ValueMap {

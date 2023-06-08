@@ -966,7 +966,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return Signature of prepared statement
      */
     @Override
-    public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
+    public StatementHandle prepare( final @NotNull ConnectionHandle ch, final String sql, final long maxRowCount ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
