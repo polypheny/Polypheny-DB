@@ -63,14 +63,14 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
         if ( !RexNode.class.isAssignableFrom( method.getReturnType() ) ) {
             return;
         }
-        final Class[] parameterTypes = method.getParameterTypes();
+        final Class<?>[] parameterTypes = method.getParameterTypes();
         if ( parameterTypes.length != 2 ) {
             return;
         }
         if ( parameterTypes[0] != SqlRexContext.class ) {
             return;
         }
-        final Class parameterType = parameterTypes[1];
+        final Class<?> parameterType = parameterTypes[1];
         if ( !SqlNode.class.isAssignableFrom( parameterType ) ) {
             return;
         }
@@ -98,18 +98,18 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
         if ( !RexNode.class.isAssignableFrom( method.getReturnType() ) ) {
             return;
         }
-        final Class[] parameterTypes = method.getParameterTypes();
+        final Class<?>[] parameterTypes = method.getParameterTypes();
         if ( parameterTypes.length != 3 ) {
             return;
         }
         if ( parameterTypes[0] != SqlRexContext.class ) {
             return;
         }
-        final Class opClass = parameterTypes[1];
+        final Class<?> opClass = parameterTypes[1];
         if ( !SqlOperator.class.isAssignableFrom( opClass ) ) {
             return;
         }
-        final Class parameterType = parameterTypes[2];
+        final Class<?> parameterType = parameterTypes[2];
         if ( !SqlCall.class.isAssignableFrom( parameterType ) ) {
             return;
         }

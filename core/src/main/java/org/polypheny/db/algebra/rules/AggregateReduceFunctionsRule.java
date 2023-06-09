@@ -189,6 +189,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                             Collections.nCopies( extraArgCount, null ) ) );
         }
         newAggregateAlg( algBuilder, oldAggAlg, newCalls );
+
         newCalcAlg( algBuilder, oldAggAlg.getRowType(), projList );
         ruleCall.transformTo( algBuilder.build() );
     }

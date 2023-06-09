@@ -232,19 +232,19 @@ public enum JavaRowFormat {
     ARRAY {
         @Override
         Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
-            return Object[].class;
+            return PolyValue[].class;
         }
 
 
         @Override
         Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
-            return Object.class;
+            return PolyValue.class;
         }
 
 
         @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
-            return Expressions.newArrayInit( Object.class, expressions );
+            return Expressions.newArrayInit( PolyValue.class, expressions );
         }
 
 
@@ -260,6 +260,7 @@ public enum JavaRowFormat {
             if ( fromType == null ) {
                 fromType = e.getType();
             }
+
             return RexToLixTranslator.convert( e, fromType, fieldType );
         }
     };

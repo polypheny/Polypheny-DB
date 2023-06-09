@@ -769,27 +769,25 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         final AlgSubset subset = registerImpl( alg, set );
 
         // Checking if tree is valid considerably slows down planning. Only doing it if logger level is debug or finer
-        if ( LOGGER.isDebugEnabled() ) {
-            assert isValid( Litmus.THROW );
-        }
+        assert !LOGGER.isDebugEnabled() || isValid( Litmus.THROW );
 
         return subset;
     }
 
 
     @Override
-    public AlgSubset ensureRegistered( AlgNode alg, AlgNode equivRel ) {
+    public AlgSubset ensureRegistered( AlgNode alg, AlgNode equivAlg ) {
         final AlgSubset subset = getSubset( alg );
         if ( subset != null ) {
-            if ( equivRel != null ) {
-                final AlgSubset equivSubset = getSubset( equivRel );
+            if ( equivAlg != null ) {
+                final AlgSubset equivSubset = getSubset( equivAlg );
                 if ( subset.set != equivSubset.set ) {
                     merge( equivSubset.set, subset.set );
                 }
             }
             return subset;
         } else {
-            return register( alg, equivRel );
+            return register( alg, equivAlg );
         }
     }
 
@@ -1611,9 +1609,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
-    public void ensureRegistered( AlgNode alg, AlgNode equivRel, VolcanoRuleCall ruleCall ) {
+    public void ensureRegistered( AlgNode alg, AlgNode equivAlg, VolcanoRuleCall ruleCall ) {
         ruleCallStack.push( ruleCall );
-        ensureRegistered( alg, equivRel );
+        ensureRegistered( alg, equivAlg );
         ruleCallStack.pop();
     }
 

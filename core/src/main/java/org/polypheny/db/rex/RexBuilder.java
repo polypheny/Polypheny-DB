@@ -79,7 +79,6 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInterval;
-import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyTime;
@@ -149,7 +148,7 @@ public class RexBuilder {
                 typeFactory.createPolyType( PolyType.CHAR, 0 ),
                 PolyType.CHAR );
         this.constantNull = makeLiteral(
-                PolyNull.NULL,
+                null,
                 typeFactory.createPolyType( PolyType.NULL ),
                 PolyType.NULL );
     }

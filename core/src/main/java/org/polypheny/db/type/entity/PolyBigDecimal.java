@@ -74,6 +74,11 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+    public static PolyBigDecimal of( PolyValue value ) {
+        return null;
+    }
+
+
     @Override
     public int intValue() {
         return value.intValue();

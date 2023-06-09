@@ -85,7 +85,7 @@ public class EnumUtils {
 
     static Type javaClass( JavaTypeFactory typeFactory, AlgDataType type ) {
         final Type clazz = typeFactory.getJavaClass( type );
-        return clazz instanceof Class ? clazz : Object[].class;
+        return clazz instanceof Class ? clazz : PolyValue[].class;
     }
 
 
@@ -94,12 +94,12 @@ public class EnumUtils {
             type = type.getFieldList().get( 0 ).getType();
         }
         final Type clazz = typeFactory.getJavaClass( type );
-        return clazz instanceof Class ? (Class<?>) clazz : Object[].class;
+        return clazz instanceof Class ? (Class<?>) clazz : PolyValue[].class;
     }
 
 
     static List<Type> fieldTypes( final JavaTypeFactory typeFactory, final List<? extends AlgDataType> inputTypes ) {
-        return new AbstractList<Type>() {
+        return new AbstractList<>() {
             @Override
             public Type get( int index ) {
                 return EnumUtils.javaClass( typeFactory, inputTypes.get( index ) );
@@ -116,7 +116,7 @@ public class EnumUtils {
 
     static List<AlgDataType> fieldRowTypes( final AlgDataType inputRowType, final List<? extends RexNode> extraInputs, final List<Integer> argList ) {
         final List<AlgDataTypeField> inputFields = inputRowType.getFieldList();
-        return new AbstractList<AlgDataType>() {
+        return new AbstractList<>() {
             @Override
             public AlgDataType get( int index ) {
                 final int arg = argList.get( index );

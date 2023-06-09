@@ -2547,7 +2547,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder aggregate( GroupKey groupKey, List<AggregateCall> aggregateCalls ) {
-        return aggregate( groupKey, Lists.transform( aggregateCalls, AggCallImpl2::new ) );
+        return aggregate( groupKey, aggregateCalls.stream().map( AggCallImpl2::new ).collect( Collectors.toList() ) );
     }
 
 

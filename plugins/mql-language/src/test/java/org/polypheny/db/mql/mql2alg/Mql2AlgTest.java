@@ -18,9 +18,9 @@ package org.polypheny.db.mql.mql2alg;
 
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDocument;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
 import org.polypheny.db.mql.mql.MqlTest;
@@ -36,15 +36,14 @@ public abstract class Mql2AlgTest extends MqlTest {
     private static final AlgOptCluster cluster;
     final static MqlToAlgConverter MQL_TO_ALG_CONVERTER;
 
-    private static final MockCatalogReader reader;
+    private static final Snapshot snapshot;
 
 
     static {
         factory = AlgDataTypeFactory.DEFAULT;
         cluster = AlgOptCluster.create( new MockRelOptPlanner( Contexts.empty() ), new RexBuilder( factory ), null, null );
-        reader = new MockCatalogReaderDocument( factory, false );
-        reader.init();
-        MQL_TO_ALG_CONVERTER = new MqlToAlgConverter( reader, cluster );
+        snapshot = new MockCatalogReaderDocument( factory, false ).getSnapshot();
+        MQL_TO_ALG_CONVERTER = new MqlToAlgConverter( snapshot, cluster );
     }
 
 

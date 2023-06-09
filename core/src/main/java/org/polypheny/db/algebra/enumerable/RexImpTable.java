@@ -1043,7 +1043,7 @@ public class RexImpTable {
             Expression acc = add.accumulator().get( 0 );
             Expression next;
             if ( acc.type == PolyNumber.class ) {
-                next = Expressions.call( acc, "plus", add.arguments().get( 0 ) );
+                next = Expressions.call( acc, "plus", Expressions.convert_( add.arguments().get( 0 ), PolyNumber.class ) );
             } else {
                 next = Expressions.add( acc, Types.castIfNecessary( acc.type, add.arguments().get( 0 ) ) );
             }
