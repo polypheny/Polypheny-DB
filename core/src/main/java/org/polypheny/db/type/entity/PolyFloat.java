@@ -123,25 +123,25 @@ public class PolyFloat extends PolyNumber {
 
 
     @Override
-    public PolyNumber divide( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber divide( @NotNull PolyNumber other ) {
         return PolyFloat.of( value / other.floatValue() );
     }
 
 
     @Override
-    public PolyNumber multiply( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber multiply( @NotNull PolyNumber other ) {
         return PolyFloat.of( value * other.floatValue() );
     }
 
 
     @Override
-    public PolyNumber plus( @NotNull PolyNumber b1 ) {
+    public @NotNull PolyNumber plus( @NotNull PolyNumber b1 ) {
         return PolyFloat.of( value + b1.floatValue() );
     }
 
 
     @Override
-    public PolyNumber subtract( @NotNull PolyNumber b1 ) {
+    public @NotNull PolyNumber subtract( @NotNull PolyNumber b1 ) {
         return PolyFloat.of( value - b1.floatValue() );
     }
 

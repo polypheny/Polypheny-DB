@@ -752,19 +752,19 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public AlgSubset register( AlgNode alg, AlgNode equivRel ) {
+    public AlgSubset register( AlgNode alg, AlgNode equivAlg ) {
         assert !isRegistered( alg ) : "pre: isRegistered(rel)";
         final AlgSet set;
-        if ( equivRel == null ) {
+        if ( equivAlg == null ) {
             set = null;
         } else {
             assert AlgOptUtil.equal(
                     "alg rowtype",
                     alg.getRowType(),
-                    "equivRel rowtype",
-                    equivRel.getRowType(),
+                    "equivAlg rowtype",
+                    equivAlg.getRowType(),
                     Litmus.THROW );
-            set = getSet( equivRel );
+            set = getSet( equivAlg );
         }
         final AlgSubset subset = registerImpl( alg, set );
 

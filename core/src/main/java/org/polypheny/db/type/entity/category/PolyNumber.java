@@ -113,17 +113,21 @@ public abstract class PolyNumber extends PolyValue {
 
     public abstract PolyNumber increment();
 
+    @NotNull
     public abstract PolyNumber divide( @NotNull PolyNumber other );
 
 
+    @NotNull
     public abstract PolyNumber multiply( @NotNull PolyNumber other );
 
-
+    @NotNull
     public abstract PolyNumber plus( @NotNull PolyNumber b1 );
 
+    @NotNull
     public abstract PolyNumber subtract( @NotNull PolyNumber b1 );
 
 
+    @NotNull
     public PolyNumber floor( @NotNull PolyNumber b1 ) {
         log.warn( "optimize" );
         final BigDecimal[] bigDecimals = bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );

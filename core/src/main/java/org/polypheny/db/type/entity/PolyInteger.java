@@ -175,25 +175,25 @@ public class PolyInteger extends PolyNumber {
 
 
     @Override
-    public PolyNumber divide( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber divide( @NotNull PolyNumber other ) {
         return PolyBigDecimal.of( bigDecimalValue().divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
     }
 
 
     @Override
-    public PolyNumber multiply( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber multiply( @NotNull PolyNumber other ) {
         return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().multiply( other.bigDecimalValue() ) ) : PolyInteger.of( value * other.intValue() );
     }
 
 
     @Override
-    public PolyNumber plus( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber plus( @NotNull PolyNumber other ) {
         return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().add( other.bigDecimalValue() ) ) : PolyInteger.of( value + other.intValue() );
     }
 
 
     @Override
-    public PolyNumber subtract( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber subtract( @NotNull PolyNumber other ) {
         return other.isDecimal() ? PolyBigDecimal.of( bigDecimalValue().subtract( other.bigDecimalValue() ) ) : PolyInteger.of( value - other.intValue() );
     }
 

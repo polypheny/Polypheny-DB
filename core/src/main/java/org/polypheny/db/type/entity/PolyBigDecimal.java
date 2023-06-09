@@ -111,25 +111,25 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
-    public PolyNumber divide( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber divide( @NotNull PolyNumber other ) {
         return PolyBigDecimal.of( value.divide( other.bigDecimalValue(), MathContext.DECIMAL64 ) );
     }
 
 
     @Override
-    public PolyNumber multiply( @NotNull PolyNumber other ) {
+    public @NotNull PolyNumber multiply( @NotNull PolyNumber other ) {
         return PolyBigDecimal.of( value.multiply( other.bigDecimalValue() ) );
     }
 
 
     @Override
-    public PolyNumber plus( @NotNull PolyNumber b1 ) {
+    public @NotNull PolyNumber plus( @NotNull PolyNumber b1 ) {
         return PolyBigDecimal.of( value.add( b1.bigDecimalValue() ) );
     }
 
 
     @Override
-    public PolyNumber subtract( @NotNull PolyNumber b1 ) {
+    public @NotNull PolyNumber subtract( @NotNull PolyNumber b1 ) {
         return PolyBigDecimal.of( value.subtract( b1.bigDecimalValue() ) );
     }
 
