@@ -159,10 +159,14 @@ public class HttpServer implements Runnable {
             }
 
         };
+        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
+        long maxRequestSize = 1_000_000L * maxSizeMB;
+
         this.server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();
             config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+            config.maxRequestSize = maxRequestSize;
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         this.crud = new Crud(
