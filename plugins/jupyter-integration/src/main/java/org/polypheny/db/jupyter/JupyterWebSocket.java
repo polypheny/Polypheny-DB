@@ -20,6 +20,7 @@ import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsMessageContext;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,9 +60,9 @@ public class JupyterWebSocket implements Consumer<WsConfig> {
     @OnWebSocketMessage
     public void onMessage( final WsMessageContext ctx ) {
         JupyterExecutionRequest request = ctx.messageAsClass( JupyterExecutionRequest.class );
+        JupyterKernel kernel = kernels.get( ctx.session );
         switch ( request.type ) {
             case "code":
-                JupyterKernel kernel = kernels.get( ctx.session );
                 if ( kernel != null ) {
                     kernel.execute( request.content, request.uuid );
                 }
@@ -69,6 +70,11 @@ public class JupyterWebSocket implements Consumer<WsConfig> {
             case "poly":
                 log.error( "TODO: Handle Polypheny Cells" );
                 break;
+            case "status":
+                try {
+                    ctx.session.getRemote().sendString( kernel.getStatusMessage() );
+                } catch ( IOException ignored ) {
+                }
         }
     }
 

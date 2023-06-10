@@ -16,7 +16,9 @@
 
 package org.polypheny.db.jupyter.model;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
@@ -38,6 +40,8 @@ public class JupyterKernel {
     private final String name, kernelId, clientId;
     private final WebSocket webSocket;
     private final Set<Session> subscribers = new HashSet<>();
+    private final Gson gson = new Gson();
+    private final JsonObject statusMsg;
 
 
     public JupyterKernel( String kernelId, String name, WebSocket.Builder builder, String host ) {
@@ -49,6 +53,11 @@ public class JupyterKernel {
 
         this.webSocket = builder.buildAsync( URI.create( url ), new WebSocketClient() ).join();
 
+        this.statusMsg = new JsonObject();
+        this.statusMsg.addProperty( "msg_type", "status" );
+        JsonObject content = new JsonObject();
+        content.addProperty( "execution_state", "starting" );
+        this.statusMsg.add( "content", content );
     }
 
 
@@ -65,6 +74,17 @@ public class JupyterKernel {
     private void handleText( CharSequence data ) {
         log.info( "Received Text: {}", data );
         String dataStr = data.toString();
+        if ( dataStr.length() < 1000 ) {
+            try {
+                JsonObject json = gson.fromJson( dataStr, JsonObject.class );
+                if ( json.get( "msg_type" ).getAsString().equals( "status" ) ) {
+                    statusMsg.add( "content", json.getAsJsonObject( "content" ) );
+                }
+            } catch ( JsonSyntaxException ignored ) {
+
+            }
+        }
+
         subscribers.forEach( s -> {
             try {
                 s.getRemote().sendString( dataStr );
@@ -72,6 +92,11 @@ public class JupyterKernel {
                 s.close();
             }
         } );
+    }
+
+
+    public String getStatusMessage() {
+        return statusMsg.toString();
     }
 
 
@@ -135,7 +160,9 @@ public class JupyterKernel {
 
 
     private class WebSocketClient implements WebSocket.Listener {
+
         private final StringBuilder textBuilder = new StringBuilder();
+
 
         @Override
         public void onOpen( WebSocket webSocket ) {
@@ -145,9 +172,9 @@ public class JupyterKernel {
 
         @Override
         public CompletionStage<?> onText( WebSocket webSocket, CharSequence data, boolean last ) {
-            textBuilder.append(data);
-            if (last) {
-                handleText(textBuilder.toString());
+            textBuilder.append( data );
+            if ( last ) {
+                handleText( textBuilder.toString() );
                 textBuilder.setLength( 0 );
             }
             return WebSocket.Listener.super.onText( webSocket, data, last );
