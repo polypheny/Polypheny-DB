@@ -202,7 +202,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyTime asTime() {
-        return PolyTime.of( (Long) null );
+        return (PolyTime) PolyTime.of( (Long) null );
     }
 
 

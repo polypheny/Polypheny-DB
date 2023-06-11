@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -280,10 +281,10 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 preparedStatement.setDate( i, value.asDate().asSqlDate() );
                 break;
             case TIME:
-                preparedStatement.setTime( i, value.asTime().asSqlTime() );
+                preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                preparedStatement.setTimestamp( i, value.asTimeStamp().asSqlTimestamp() );
+                preparedStatement.setTimestamp( i, value.asTimeStamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case VARBINARY:
             case BINARY:

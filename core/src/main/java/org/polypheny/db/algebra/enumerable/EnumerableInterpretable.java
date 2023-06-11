@@ -117,7 +117,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
 
     static ArrayBindable getArrayBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
-        Bindable<PolyValue> bindable = (Bindable<PolyValue>) getBindable( expr, s, fieldCount );
+        Bindable<PolyValue> bindable = getBindable( expr, s, fieldCount );
         return box( bindable );
     }
 

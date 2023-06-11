@@ -24,9 +24,9 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -36,26 +36,30 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
 public class PolyDate extends PolyTemporal {
 
 
-    public Long value;
+    public Long sinceEpoch;
 
 
     public PolyDate( long sinceEpoch ) {
         super( PolyType.DATE );
-        this.value = sinceEpoch;
+        this.sinceEpoch = sinceEpoch;
+    }
+
+
+    public static PolyDate of( Number number ) {
+        return new PolyDate( number.longValue() );
     }
 
 
     public Date asDefaultDate() {
-        return new Date( value );
+        return new Date( sinceEpoch );
     }
 
 
     public java.sql.Date asSqlDate() {
-        return new java.sql.Date( value );
+        return java.sql.Date.valueOf( LocalDate.ofEpochDay( sinceEpoch ) );
     }
 
 
@@ -70,13 +74,13 @@ public class PolyDate extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( value, o.asDate().value );
+        return Long.compare( sinceEpoch, o.asDate().sinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyLong.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyLong.class, Expressions.constant( sinceEpoch ) );
     }
 
 
@@ -84,7 +88,7 @@ public class PolyDate extends PolyTemporal {
 
         @Override
         public JsonElement serialize( PolyDate src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
+            return new JsonPrimitive( src.sinceEpoch );
         }
 
 
@@ -92,6 +96,7 @@ public class PolyDate extends PolyTemporal {
         public PolyDate deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
             return PolyDate.of( json.getAsLong() );
         }
+
     }
 
 

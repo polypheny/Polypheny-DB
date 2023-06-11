@@ -41,6 +41,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Ignore // this test is an extreme time sink, use integration tests
 public class Mql2AlgFindTest extends Mql2AlgTest {
@@ -693,7 +694,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
         RexCall excluded = assertRexCall( jsonExpr, 1 );
         assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, excluded.op.getKind() );
         assertEquals( excludes.size(), excluded.operands.size() );
-        List<String> names = excluded.operands.stream()
+        List<PolyValue> names = excluded.operands.stream()
                 .map( e -> ((RexLiteral) e).getValueAs( String.class ) )
                 .collect( Collectors.toList() );
         assertEquals( names, excludes );

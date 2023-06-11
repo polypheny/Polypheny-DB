@@ -116,9 +116,9 @@ public class DayTimeFunctionsTest {
 
                 // YEAR() Equivalent to EXTRACT(YEAR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 2000 ) },
-                        new Object[]{ 2, Long.valueOf( 2001 ) },
-                        new Object[]{ 3, Long.valueOf( 2002 ) }
+                        new Object[]{ 1, 2000L },
+                        new Object[]{ 2, 2001L },
+                        new Object[]{ 3, 2002L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, YEAR(DateData) FROM DateTestTable" ),
@@ -128,9 +128,9 @@ public class DayTimeFunctionsTest {
 
                 // QUARTER(date) Equivalent to  EXTRACT(MONTH FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 1 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 1L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, QUARTER(DateData) FROM DateTestTable" ),
@@ -140,9 +140,9 @@ public class DayTimeFunctionsTest {
 
                 // MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MONTH(DateData) FROM DateTestTable" ),
@@ -152,9 +152,9 @@ public class DayTimeFunctionsTest {
 
                 // WEEK(date) Equivalent to EXTRACT(WEEK FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 5 ) },
-                        new Object[]{ 3, Long.valueOf( 9 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 5L },
+                        new Object[]{ 3, 9L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, WEEK(DateData) FROM DateTestTable" ),
@@ -164,9 +164,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFYEAR(date) Equivalent to EXTRACT(DOY FROM date)
                 List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ Long.valueOf( 5 ) },
-                        new Object[]{ Long.valueOf( 33 ) },
-                        new Object[]{ Long.valueOf( 62 ) }
+                        new Object[]{ 5L },
+                        new Object[]{ 33L },
+                        new Object[]{ 62L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT DAYOFYEAR(DateData) FROM DateTestTable" ),
@@ -176,9 +176,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 5 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                        new Object[]{ 1, 5L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFMONTH(DateData) FROM DateTestTable" ),
@@ -188,9 +188,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFWEEK(date) Equivalent to EXTRACT(DOW FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 4 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                        new Object[]{ 1, 4L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFWEEK(DateData) FROM DateTestTable" ),
@@ -221,9 +221,9 @@ public class DayTimeFunctionsTest {
 
                 // HOUR() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 12 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 23 ) }
+                        new Object[]{ 1, 12L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 23L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, HOUR(TimeData) FROM TimeTestTable" ),
@@ -233,9 +233,9 @@ public class DayTimeFunctionsTest {
 
                 // MINUTE() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 30 ) },
-                        new Object[]{ 2, Long.valueOf( 34 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                        new Object[]{ 1, 30L },
+                        new Object[]{ 2, 34L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MINUTE(TimeData) FROM TimeTestTable" ),
@@ -245,9 +245,9 @@ public class DayTimeFunctionsTest {
 
                 // SECOND() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 35 ) },
-                        new Object[]{ 2, Long.valueOf( 59 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                        new Object[]{ 1, 35L },
+                        new Object[]{ 2, 59L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, SECOND(TimeData) FROM TimeTestTable" ),
@@ -291,9 +291,9 @@ public class DayTimeFunctionsTest {
 
                 // QUARTER(date) Equivalent to  EXTRACT(MONTH FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 1 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 1L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, QUARTER(TimeStampData) FROM TimeStampTestTable" ),
@@ -303,9 +303,9 @@ public class DayTimeFunctionsTest {
 
                 // MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MONTH(TimeStampData) FROM TimeStampTestTable" ),
@@ -315,9 +315,9 @@ public class DayTimeFunctionsTest {
 
                 // WEEK(date) Equivalent to EXTRACT(WEEK FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 5 ) },
-                        new Object[]{ 3, Long.valueOf( 9 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 5L },
+                        new Object[]{ 3, 9L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, WEEK(TimeStampData) FROM TimeStampTestTable" ),
@@ -327,9 +327,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFYEAR(date) Equivalent to EXTRACT(DOY FROM date)
                 List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ Long.valueOf( 5 ) },
-                        new Object[]{ Long.valueOf( 33 ) },
-                        new Object[]{ Long.valueOf( 62 ) }
+                        new Object[]{ 5L },
+                        new Object[]{ 33L },
+                        new Object[]{ 62L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT DAYOFYEAR(TimeStampData) FROM TimeStampTestTable" ),
@@ -339,9 +339,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 5 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                        new Object[]{ 1, 5L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFMONTH(TimeStampData) FROM TimeStampTestTable" ),
@@ -351,9 +351,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFWEEK(date) Equivalent to EXTRACT(DOW FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 4 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                        new Object[]{ 1, 4L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFWEEK(TimeStampData) FROM TimeStampTestTable" ),
@@ -363,9 +363,9 @@ public class DayTimeFunctionsTest {
 
                 // HOUR() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 12 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 23 ) }
+                        new Object[]{ 1, 12L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 23L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, HOUR(TimeStampData) FROM TimeStampTestTable" ),
@@ -375,9 +375,9 @@ public class DayTimeFunctionsTest {
 
                 // MINUTE() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 30 ) },
-                        new Object[]{ 2, Long.valueOf( 34 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                        new Object[]{ 1, 30L },
+                        new Object[]{ 2, 34L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MINUTE(TimeStampData) FROM TimeStampTestTable" ),
@@ -387,9 +387,9 @@ public class DayTimeFunctionsTest {
 
                 // SECOND() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 35 ) },
-                        new Object[]{ 2, Long.valueOf( 59 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                        new Object[]{ 1, 35L },
+                        new Object[]{ 2, 59L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, SECOND(TimeStampData) FROM TimeStampTestTable" ),

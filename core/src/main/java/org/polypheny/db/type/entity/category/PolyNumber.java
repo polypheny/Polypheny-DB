@@ -144,4 +144,13 @@ public abstract class PolyNumber extends PolyValue {
     }
 
 
+    public PolyNumber ceil( PolyNumber b1 ) {
+        final BigDecimal[] bigDecimals = bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
+        BigDecimal r = bigDecimals[1];
+        if ( r.signum() > 0 ) {
+            r = r.subtract( b1.bigDecimalValue() );
+        }
+        return PolyBigDecimal.of( bigDecimalValue().subtract( r ) );
+    }
+
 }

@@ -32,7 +32,9 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -56,6 +58,11 @@ public class PolyString extends PolyValue {
 
     public static PolyString of( String value ) {
         return new PolyString( value );
+    }
+
+
+    public static PolyString concat( List<PolyString> strings ) {
+        return PolyString.of( strings.stream().map( s -> s.value ).collect( Collectors.joining() ) );
     }
 
 
@@ -144,6 +151,7 @@ public class PolyString extends PolyValue {
         }
 
     }
+
 
     @Override
     public String toString() {

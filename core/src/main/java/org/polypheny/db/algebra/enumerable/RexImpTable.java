@@ -62,6 +62,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ExpressionType;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MemberExpression;
+import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -2133,6 +2134,7 @@ public class RexImpTable {
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final TimeUnitRange timeUnitRange = (TimeUnitRange) ((ConstantExpression) translatedOperands.get( 0 )).value;
+            assert timeUnitRange != null;
             final TimeUnit unit = timeUnitRange.startUnit;
             Expression operand = translatedOperands.get( 1 );
             final PolyType polyType = call.operands.get( 1 ).getType().getPolyType();
@@ -2219,14 +2221,15 @@ public class RexImpTable {
                 case HOUR:
                 case MINUTE:
                 case SECOND:
-                    switch ( polyType ) {
-                        case DATE:
-                            return Expressions.multiply( operand, Expressions.constant( 0L ) );
+                    if ( Objects.requireNonNull( polyType ) == PolyType.DATE ) {
+                        return Expressions.multiply( operand, Expressions.constant( 0L ) );
                     }
                     break;
             }
 
-            operand = mod( operand, getFactor( unit ) );
+            MethodCallExpression num = Expressions.call( PolyValue.classFrom( call.type.getPolyType() ), "convert", operand );
+            num = Expressions.call( num, "longValue" );
+            operand = mod( num, getFactor( unit ) );
             if ( unit == TimeUnit.QUARTER ) {
                 operand = Expressions.subtract( operand, Expressions.constant( 1L ) );
             }
@@ -2234,7 +2237,7 @@ public class RexImpTable {
             if ( unit == TimeUnit.QUARTER ) {
                 operand = Expressions.add( operand, Expressions.constant( 1L ) );
             }
-            return operand;
+            return Expressions.call( PolyValue.classFrom( call.type.getPolyType() ), "of", operand );
         }
 
     }

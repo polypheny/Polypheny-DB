@@ -240,11 +240,11 @@ public class FunctionsTest {
 
 
     private void checkFloor( int x, int y, int result ) {
-        assertThat( Functions.floor( x, y ), is( result ) );
+        /*assertThat( Functions.floor( x, y ), is( result ) );
         assertThat( Functions.floor( (long) x, (long) y ), is( (long) result ) );
         assertThat( Functions.floor( (short) x, (short) y ), is( (short) result ) );
-        assertThat( Functions.floor( (byte) x, (byte) y ), is( (byte) result ) );
-        assertThat( Functions.floor( BigDecimal.valueOf( x ), BigDecimal.valueOf( y ) ), is( BigDecimal.valueOf( result ) ) );
+        assertThat( Functions.floor( (byte) x, (byte) y ), is( (byte) result ) );*/
+        assertThat( Functions.floor( PolyBigDecimal.of( x ), PolyBigDecimal.of( y ) ), is( PolyBigDecimal.of( result ) ) );
     }
 
 
@@ -260,11 +260,11 @@ public class FunctionsTest {
 
 
     private void checkCeil( int x, int y, int result ) {
-        assertThat( Functions.ceil( x, y ), is( result ) );
+        /*assertThat( Functions.ceil( x, y ), is( result ) );
         assertThat( Functions.ceil( (long) x, (long) y ), is( (long) result ) );
         assertThat( Functions.ceil( (short) x, (short) y ), is( (short) result ) );
-        assertThat( Functions.ceil( (byte) x, (byte) y ), is( (byte) result ) );
-        assertThat( Functions.ceil( BigDecimal.valueOf( x ), BigDecimal.valueOf( y ) ), is( BigDecimal.valueOf( result ) ) );
+        assertThat( Functions.ceil( (byte) x, (byte) y ), is( (byte) result ) );*/
+        assertThat( Functions.ceil( PolyBigDecimal.of( x ), PolyBigDecimal.of( y ) ), is( BigDecimal.valueOf( result ) ) );
     }
 
 

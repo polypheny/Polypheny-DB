@@ -121,6 +121,7 @@ import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -140,7 +141,6 @@ import org.polypheny.db.util.TimestampWithTimeZoneString;
  * Many of the functions do not check for null values. This is intentional. If null arguments are possible, the
  * code-generation framework checks for nulls before calling the functions.
  */
-@SuppressWarnings("UnnecessaryUnboxing")
 @Deterministic
 @Slf4j
 public class Functions {
@@ -718,22 +718,22 @@ public class Functions {
     /**
      * SQL {@code OVERLAY} function.
      */
-    public static String overlay( String s, String r, int start ) {
+    public static PolyString overlay( PolyString s, PolyString r, PolyNumber start ) {
         if ( s == null || r == null ) {
             return null;
         }
-        return s.substring( 0, start - 1 ) + r + s.substring( start - 1 + r.length() );
+        return PolyString.of( s.value.substring( 0, start.intValue() - 1 ) + r.value + s.value.substring( start.intValue() - 1 + r.value.length() ) );
     }
 
 
     /**
      * SQL {@code OVERLAY} function.
      */
-    public static String overlay( String s, String r, int start, int length ) {
+    public static PolyString overlay( PolyString s, PolyString r, PolyNumber start, PolyNumber length ) {
         if ( s == null || r == null ) {
             return null;
         }
-        return s.substring( 0, start - 1 ) + r + s.substring( start - 1 + length );
+        return PolyString.of( s.value.substring( 0, start.intValue() - 1 ) + r + s.value.substring( start.intValue() - 1 + length.intValue() ) );
     }
 
 
@@ -1220,14 +1220,12 @@ public class Functions {
 
     // -
 
-
     /**
      * SQL <code>-</code> operator applied to int values.
      */
     /*public static int minus( int b0, int b1 ) {
         return b0 - b1;
     }*/
-
 
     /**
      * SQL <code>-</code> operator applied to int values; left side may be null.
@@ -1236,7 +1234,6 @@ public class Functions {
         return b0 == null ? null : (b0 - b1);
     }*/
 
-
     /**
      * SQL <code>-</code> operator applied to int values; right side may be null.
      */
@@ -1244,14 +1241,12 @@ public class Functions {
         return b1 == null ? null : (b0 - b1);
     }*/
 
-
     /**
      * SQL <code>-</code> operator applied to nullable int values.
      */
     /*public static Integer minus( Integer b0, Integer b1 ) {
         return (b0 == null || b1 == null) ? null : (b0 - b1);
     }*/
-
 
     /**
      * SQL <code>-</code> operator applied to nullable long and int values.
@@ -1261,7 +1256,6 @@ public class Functions {
                 ? null
                 : (b0.longValue() - b1.longValue());
     }*/
-
 
     /**
      * SQL <code>-</code> operator applied to nullable int and long values.
@@ -1298,14 +1292,12 @@ public class Functions {
 
     // /
 
-
     /**
      * SQL <code>/</code> operator applied to int values.
      */
     /*public static int divide( int b0, int b1 ) {
         return b0 / b1;
     }*/
-
 
     /**
      * SQL <code>/</code> operator applied to int values; left side may be null.
@@ -1314,7 +1306,6 @@ public class Functions {
         return b0 == null ? null : (b0 / b1);
     }*/
 
-
     /**
      * SQL <code>/</code> operator applied to int values; right side may be null.
      */
@@ -1322,14 +1313,12 @@ public class Functions {
         return b1 == null ? null : (b0 / b1);
     }*/
 
-
     /**
      * SQL <code>/</code> operator applied to nullable int values.
      */
     /*public static Integer divide( Integer b0, Integer b1 ) {
         return (b0 == null || b1 == null) ? null : (b0 / b1);
     }*/
-
 
     /**
      * SQL <code>/</code> operator applied to nullable long and int values.
@@ -1340,7 +1329,6 @@ public class Functions {
                 : (b0.longValue() / b1.longValue());
     }*/
 
-
     /**
      * SQL <code>/</code> operator applied to nullable int and long values.
      */
@@ -1349,7 +1337,6 @@ public class Functions {
                 ? null
                 : (b0.longValue() / b1.longValue());
     }*/
-
 
     /**
      * SQL <code>/</code> operator applied to BigDecimal values.
@@ -1395,14 +1382,12 @@ public class Functions {
                 : b0.divide( b1 );
     }
 
-
     /**
      * SQL <code>*</code> operator applied to int values.
      */
     /*public static int multiply( int b0, int b1 ) {
         return b0 * b1;
     }*/
-
 
     /**
      * SQL <code>*</code> operator applied to int values; left side may be null.
@@ -1411,7 +1396,6 @@ public class Functions {
         return b0 == null ? null : (b0 * b1);
     }*/
 
-
     /**
      * SQL <code>*</code> operator applied to int values; right side may be null.
      */
@@ -1419,14 +1403,12 @@ public class Functions {
         return b1 == null ? null : (b0 * b1);
     }*/
 
-
     /**
      * SQL <code>*</code> operator applied to nullable int values.
      */
     /*public static Integer multiply( Integer b0, Integer b1 ) {
         return (b0 == null || b1 == null) ? null : (b0 * b1);
     }*/
-
 
     /**
      * SQL <code>*</code> operator applied to nullable long and int values.
@@ -1436,7 +1418,6 @@ public class Functions {
                 ? null
                 : (b0.longValue() * b1.longValue());
     }*/
-
 
     /**
      * SQL <code>*</code> operator applied to nullable int and long values.
@@ -1470,6 +1451,7 @@ public class Functions {
 
         throw notArithmetic( "*", b0, b1 );
     }
+
 
     private static RuntimeException notArithmetic(
             String op, Object b0,
@@ -1650,7 +1632,7 @@ public class Functions {
     // FLOOR
 
 
-    public static double floor( double b0 ) {
+    /*public static double floor( double b0 ) {
         return Math.floor( b0 );
     }
 
@@ -1663,6 +1645,7 @@ public class Functions {
     public static BigDecimal floor( BigDecimal b0 ) {
         return b0.setScale( 0, RoundingMode.FLOOR );
     }
+     */
 
 
     public static PolyNumber floor( PolyNumber b0 ) {
@@ -1674,7 +1657,7 @@ public class Functions {
     /**
      * SQL <code>FLOOR</code> operator applied to byte values.
      */
-    public static byte floor( byte b0, byte b1 ) {
+    /*public static byte floor( byte b0, byte b1 ) {
         return (byte) floor( (int) b0, (int) b1 );
     }
 
@@ -1682,7 +1665,7 @@ public class Functions {
     /**
      * SQL <code>FLOOR</code> operator applied to short values.
      */
-    public static short floor( short b0, short b1 ) {
+    /*public static short floor( short b0, short b1 ) {
         return (short) floor( (int) b0, (int) b1 );
     }
 
@@ -1690,7 +1673,7 @@ public class Functions {
     /**
      * SQL <code>FLOOR</code> operator applied to int values.
      */
-    public static int floor( int b0, int b1 ) {
+    /*public static int floor( int b0, int b1 ) {
         int r = b0 % b1;
         if ( r < 0 ) {
             r += b1;
@@ -1702,7 +1685,7 @@ public class Functions {
     /**
      * SQL <code>FLOOR</code> operator applied to long values.
      */
-    public static long floor( long b0, long b1 ) {
+    /*public static long floor( long b0, long b1 ) {
         long r = b0 % b1;
         if ( r < 0 ) {
             r += b1;
@@ -1723,16 +1706,14 @@ public class Functions {
     }
 
 
-    public static BigDecimal floor( BigDecimal b0, BigDecimal b1 ) {
+    /*public static BigDecimal floor( BigDecimal b0, BigDecimal b1 ) {
         final BigDecimal[] bigDecimals = b0.divideAndRemainder( b1 );
         BigDecimal r = bigDecimals[1];
         if ( r.signum() < 0 ) {
             r = r.add( b1 );
         }
         return b0.subtract( r );
-    }
-
-
+    }*/
     public static PolyNumber floor( PolyNumber b0, PolyNumber b1 ) {
         return b0.floor( b1 );
     }
@@ -1740,7 +1721,7 @@ public class Functions {
     // CEIL
 
 
-    public static double ceil( double b0 ) {
+    /*public static double ceil( double b0 ) {
         return Math.ceil( b0 );
     }
 
@@ -1752,13 +1733,18 @@ public class Functions {
 
     public static BigDecimal ceil( BigDecimal b0 ) {
         return b0.setScale( 0, RoundingMode.CEILING );
+    }*/
+
+
+    public static PolyNumber ceil( PolyNumber b0 ) {
+        return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.CEILING ) );
     }
 
 
     /**
      * SQL <code>CEIL</code> operator applied to byte values.
      */
-    public static byte ceil( byte b0, byte b1 ) {
+    /*public static byte ceil( byte b0, byte b1 ) {
         return floor( (byte) (b0 + b1 - 1), b1 );
     }
 
@@ -1766,7 +1752,7 @@ public class Functions {
     /**
      * SQL <code>CEIL</code> operator applied to short values.
      */
-    public static short ceil( short b0, short b1 ) {
+    /*public static short ceil( short b0, short b1 ) {
         return floor( (short) (b0 + b1 - 1), b1 );
     }
 
@@ -1774,7 +1760,7 @@ public class Functions {
     /**
      * SQL <code>CEIL</code> operator applied to int values.
      */
-    public static int ceil( int b0, int b1 ) {
+    /*public static int ceil( int b0, int b1 ) {
         int r = b0 % b1;
         if ( r > 0 ) {
             r -= b1;
@@ -1786,7 +1772,7 @@ public class Functions {
     /**
      * SQL <code>CEIL</code> operator applied to long values.
      */
-    public static long ceil( long b0, long b1 ) {
+    /*public static long ceil( long b0, long b1 ) {
         return floor( b0 + b1 - 1, b1 );
     }
 
@@ -1810,6 +1796,9 @@ public class Functions {
             r = r.subtract( b1 );
         }
         return b0.subtract( r );
+    }*/
+    public static PolyNumber ceil( PolyNumber b0, PolyNumber b1 ) {
+        return b0.ceil( b1 );
     }
 
     // ABS
@@ -2156,7 +2145,7 @@ public class Functions {
     /**
      * SQL <code>SIGN</code> operator applied to int values.
      */
-    public static int sign( int b0 ) {
+    /*public static int sign( int b0 ) {
         return Integer.signum( b0 );
     }
 
@@ -2164,7 +2153,7 @@ public class Functions {
     /**
      * SQL <code>SIGN</code> operator applied to long values.
      */
-    public static long sign( long b0 ) {
+    /*public static long sign( long b0 ) {
         return Long.signum( b0 );
     }
 
@@ -2172,15 +2161,15 @@ public class Functions {
     /**
      * SQL <code>SIGN</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal sign( BigDecimal b0 ) {
-        return BigDecimal.valueOf( b0.signum() );
+    public static PolyBigDecimal sign( PolyNumber b0 ) {
+        return PolyBigDecimal.of( b0.bigDecimalValue().signum() );
     }
 
 
     /**
      * SQL <code>SIGN</code> operator applied to double values.
      */
-    public static double sign( double b0 ) {
+    /*public static double sign( double b0 ) {
         return Math.signum( b0 );
     }
 
@@ -2819,11 +2808,11 @@ public class Functions {
     /**
      * Helper for CAST(... AS VARCHAR(maxLength)).
      */
-    public static String truncate( String s, int maxLength ) {
+    public static PolyString truncate( PolyString s, int maxLength ) {
         if ( s == null ) {
             return null;
-        } else if ( s.length() > maxLength ) {
-            return s.substring( 0, maxLength );
+        } else if ( s.value.length() > maxLength ) {
+            return PolyString.of( s.value.substring( 0, maxLength ) );
         } else {
             return s;
         }
@@ -2833,15 +2822,16 @@ public class Functions {
     /**
      * Helper for CAST(... AS CHAR(maxLength)).
      */
-    public static String truncateOrPad( String s, int maxLength ) {
+    @SuppressWarnings("unused")
+    public static PolyString truncateOrPad( PolyString s, int maxLength ) {
         if ( s == null ) {
             return null;
         } else {
-            final int length = s.length();
+            final int length = s.value.length();
             if ( length > maxLength ) {
-                return s.substring( 0, maxLength );
+                return PolyString.of( s.value.substring( 0, maxLength ) );
             } else {
-                return length < maxLength ? Spaces.padRight( s, maxLength ) : s;
+                return length < maxLength ? PolyString.of( Spaces.padRight( s.value, maxLength ) ) : s;
             }
         }
     }
@@ -2883,8 +2873,8 @@ public class Functions {
     /**
      * SQL {@code POSITION(seek IN string)} function.
      */
-    public static int position( String seek, String s ) {
-        return s.indexOf( seek ) + 1;
+    public static int position( PolyString seek, PolyString s ) {
+        return s.value.indexOf( seek.value ) + 1;
     }
 
 
@@ -2899,13 +2889,13 @@ public class Functions {
     /**
      * SQL {@code POSITION(seek IN string FROM integer)} function.
      */
-    public static int position( String seek, String s, int from ) {
-        final int from0 = from - 1; // 0-based
-        if ( from0 > s.length() || from0 < 0 ) {
+    public static int position( PolyString seek, PolyString s, PolyNumber from ) {
+        final int from0 = from.intValue() - 1; // 0-based
+        if ( from0 > s.value.length() || from0 < 0 ) {
             return 0;
         }
 
-        return s.indexOf( seek, from0 ) + 1;
+        return s.value.indexOf( seek.value, from0 ) + 1;
     }
 
 

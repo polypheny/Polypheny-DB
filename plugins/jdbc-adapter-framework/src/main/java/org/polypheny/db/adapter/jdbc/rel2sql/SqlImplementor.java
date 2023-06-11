@@ -566,11 +566,11 @@ public abstract class SqlImplementor {
                             final boolean negative = literal.getValueAs( Boolean.class ).asBoolean().value;
                             return SqlLiteral.createInterval( negative ? -1 : 1, literal.value.asString().value, SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
                         case DATE:
-                            return SqlDateLiteral.createDate( DateString.fromDaysSinceEpoch( literal.value.asDate().value.intValue() ), POS );
+                            return SqlDateLiteral.createDate( DateString.fromDaysSinceEpoch( literal.value.asDate().sinceEpoch.intValue() ), POS );
                         case TIME:
-                            return SqlLiteral.createTime( TimeString.fromMillisOfDay( literal.value.asTime().value.intValue() ), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTime( TimeString.fromMillisOfDay( literal.value.asTime().ofDay.intValue() ), literal.getType().getPrecision(), POS );
                         case TIMESTAMP:
-                            return SqlLiteral.createTimestamp( TimestampString.fromMillisSinceEpoch( literal.value.asTimeStamp().value ), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTimestamp( TimestampString.fromMillisSinceEpoch( literal.value.asTimeStamp().sinceEpoch ), literal.getType().getPrecision(), POS );
                         case BINARY:
                             return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary().toString(), POS );
                         case ARRAY:

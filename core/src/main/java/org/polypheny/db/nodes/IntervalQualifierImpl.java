@@ -16,6 +16,8 @@
 
 package org.polypheny.db.nodes;
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -27,9 +29,14 @@ import org.polypheny.db.type.PolyType;
 public class IntervalQualifierImpl implements IntervalQualifier {
 
     @Getter
+    @Serialize
     private final TimeUnitRange timeUnitRange;
+
+    @Serialize
     @Getter
     private final int startPrecision;
+
+    @Serialize
     @Getter
     private final int fractionalSecondPrecision;
 
@@ -39,11 +46,16 @@ public class IntervalQualifierImpl implements IntervalQualifier {
             int startPrecision,
             TimeUnit endUnit,
             int fractionalSecondPrecision ) {
-        if ( endUnit == startUnit ) {
-            endUnit = null;
-        }
-        this.timeUnitRange =
-                TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit );
+        this( TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit == startUnit ? null : endUnit ), startPrecision, fractionalSecondPrecision );
+    }
+
+
+    public IntervalQualifierImpl(
+            @Deserialize("timeUnitRange") TimeUnitRange timeUnitRange,
+            @Deserialize("startPrecision") int startPrecision,
+            @Deserialize("fractionalSecondPrecision") int fractionalSecondPrecision ) {
+
+        this.timeUnitRange = timeUnitRange;
         this.startPrecision = startPrecision;
         this.fractionalSecondPrecision = fractionalSecondPrecision;
     }

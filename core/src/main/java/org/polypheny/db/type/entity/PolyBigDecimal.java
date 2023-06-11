@@ -74,7 +74,29 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
-    public static PolyBigDecimal of( PolyValue value ) {
+    public static PolyBigDecimal of( Number value, int precision, int scale ) {
+        return PolyBigDecimal.of( value.doubleValue() );
+    }
+
+
+    public static PolyBigDecimal convert( Object value ) {
+        if ( value instanceof PolyNumber ) {
+            return PolyBigDecimal.of( ((PolyNumber) value).longValue() );
+        } else if ( value instanceof PolyValue ) {
+            return null;
+        }
+        return null;
+    }
+
+
+    public static PolyBigDecimal convert( PolyValue value ) {
+        if ( value.isNumber() ) {
+            return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
+        } else if ( value.isTime() ) {
+            return PolyBigDecimal.of( value.asTime().ofDay );
+        } else if ( value.isString() ) {
+            return PolyBigDecimal.of( value.asString().value );
+        }
         return null;
     }
 
@@ -180,16 +202,6 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyBigDecimal.class );
-    }
-
-
-    public static PolyBigDecimal convert( PolyValue value ) {
-        if ( value.isNumber() ) {
-            return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
-        } else if ( value.isString() ) {
-            return PolyBigDecimal.of( value.asString().value );
-        }
-        return null;
     }
 
 

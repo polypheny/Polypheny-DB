@@ -1114,7 +1114,7 @@ public class RexBuilder {
      */
     public RexLiteral makeIntervalLiteral( BigDecimal v, IntervalQualifier intervalQualifier ) {
         return makeLiteral(
-                PolyInterval.of( v, intervalQualifier.typeName() ),
+                PolyInterval.of( v, intervalQualifier ),
                 typeFactory.createIntervalType( intervalQualifier ),
                 intervalQualifier.typeName() );
     }

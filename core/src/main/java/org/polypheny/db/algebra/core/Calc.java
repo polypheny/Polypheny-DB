@@ -35,6 +35,7 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -58,6 +59,7 @@ import org.polypheny.db.util.Litmus;
  */
 public abstract class Calc extends SingleAlg {
 
+    @Getter
     protected final RexProgram program;
 
 
@@ -109,10 +111,6 @@ public abstract class Calc extends SingleAlg {
         return litmus.succeed();
     }
 
-
-    public RexProgram getProgram() {
-        return program;
-    }
 
 
     @Override

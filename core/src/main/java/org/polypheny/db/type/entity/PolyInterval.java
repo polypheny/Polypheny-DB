@@ -27,12 +27,11 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolySerializable;
-import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -40,20 +39,20 @@ public class PolyInterval extends PolyValue {
 
 
     public BigDecimal value;
+    public IntervalQualifier qualifier;
 
-    public TimeUnitRange unitRange;
 
-
-    public PolyInterval( BigDecimal value, PolyType type ) {
-        super( type );
+    public PolyInterval( BigDecimal value, IntervalQualifier qualifier ) {
+        super( qualifier.typeName() );
         this.value = value;
-        this.unitRange = TimeUnitRange.DAY; // todo adjust
+        this.qualifier = qualifier;
     }
 
 
-    public static PolyInterval of( BigDecimal value, PolyType type ) {
+    public static PolyInterval of( BigDecimal value, IntervalQualifier type ) {
         return new PolyInterval( value, type );
     }
+
 
 
     @Override
@@ -81,20 +80,20 @@ public class PolyInterval extends PolyValue {
 
 
         public static final String DATA = "data";
-        public static final String TYPE = "type";
+        public static final String QUALIFIER = "qualifier";
 
 
         @Override
         public PolyInterval deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
             JsonObject object = json.getAsJsonObject();
-            return PolyInterval.of( object.get( DATA ).getAsBigDecimal(), PolyType.get( object.get( TYPE ).getAsString() ) );
+            return PolyInterval.of( object.get( DATA ).getAsBigDecimal(), context.deserialize( object.get( QUALIFIER ), IntervalQualifier.class ) );
         }
 
 
         @Override
         public JsonElement serialize( PolyInterval src, Type typeOfSrc, JsonSerializationContext context ) {
             JsonObject object = new JsonObject();
-            object.addProperty( TYPE, src.type.getName() );
+            object.add( QUALIFIER, context.serialize( src.qualifier ) );
             object.addProperty( DATA, src.value );
             return object;
         }

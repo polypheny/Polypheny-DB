@@ -37,12 +37,17 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 @EqualsAndHashCode(callSuper = true)
 public class PolyTimeStamp extends PolyTemporal {
 
-    public Long value;
+    public Long sinceEpoch;
 
 
     public PolyTimeStamp( Long sinceEpoch ) {
         super( PolyType.TIMESTAMP );
-        this.value = sinceEpoch;
+        this.sinceEpoch = sinceEpoch;
+    }
+
+
+    public static PolyTimeStamp of( Number number ) {
+        return new PolyTimeStamp( number.longValue() );
     }
 
 
@@ -62,7 +67,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public Timestamp asSqlTimestamp() {
-        return new Timestamp( value );
+        return new Timestamp( sinceEpoch );
     }
 
 
@@ -72,13 +77,13 @@ public class PolyTimeStamp extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( value, o.asTimeStamp().value );
+        return Long.compare( sinceEpoch, o.asTimeStamp().sinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( sinceEpoch ) );
     }
 
 
@@ -98,7 +103,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
         @Override
         public JsonElement serialize( PolyTimeStamp src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
+            return new JsonPrimitive( src.sinceEpoch );
         }
 
     }

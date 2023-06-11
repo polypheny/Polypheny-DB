@@ -47,11 +47,21 @@ public interface PolyDefaults {
     Map<Type, PolyValue> NULLS = new HashMap<>() {{
         put( PolyNumber.class, PolyNull.NULL.asNumber() );
         put( PolyBigDecimal.class, PolyNull.NULL.asBigDecimal() );
+        put( PolyLong.class, PolyNull.NULL.asLong() );
+        put( PolyTimeStamp.class, PolyNull.NULL.asTimeStamp() );
         put( PolyInteger.class, PolyNull.NULL.asInteger() );
         put( PolyFloat.class, PolyNull.NULL.asFloat() );
         put( PolyDouble.class, PolyNull.NULL.asDouble() );
         put( PolyString.class, PolyNull.NULL.asString() );
         put( PolyBoolean.class, PolyNull.NULL.asBoolean() );
+    }};
+
+    Map<Type, Type> MAPPINGS = new HashMap<>() {{
+        put( PolyNumber.class, BigDecimal.class );
+        put( PolyString.class, String.class );
+        put( PolyDate.class, Long.class );
+        put( PolyTime.class, Integer.class );
+        put( PolyTimeStamp.class, Long.class );
     }};
 
 }

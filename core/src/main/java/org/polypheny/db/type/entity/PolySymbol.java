@@ -26,7 +26,6 @@ import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +33,6 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
 public class PolySymbol extends PolyValue {
 
     public Enum<?> value;
@@ -46,19 +44,24 @@ public class PolySymbol extends PolyValue {
     }
 
 
+    public static PolySymbol of( Enum<?> value ) {
+        return new PolySymbol( value );
+    }
+
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isSameType( o ) ) {
             return -1;
         }
 
-        return ((Enum) value).compareTo( (Enum) o.asSymbol().value );
+        return ((Enum) value).compareTo( o.asSymbol().value );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( PolySymbol.class, "of", Expressions.constant( value ) );
+        return Expressions.constant( value );
     }
 
 

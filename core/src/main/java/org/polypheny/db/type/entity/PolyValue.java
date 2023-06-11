@@ -201,7 +201,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case INTEGER:
                 return PolyInteger.class;
             case BIGINT:
-                return PolyBigDecimal.class;
+                return PolyLong.class;
             case DECIMAL:
                 return PolyBigDecimal.class;
             case FLOAT:
@@ -303,7 +303,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case JSON:
                 return PolyString.class;
         }
-        throw new NotImplementedException();
+        throw new NotImplementedException( "value" );
     }
 
 

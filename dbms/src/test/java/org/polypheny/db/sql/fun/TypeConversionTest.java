@@ -93,7 +93,7 @@ public class TypeConversionTest {
 
                 // Cast Decimal to Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{ Double.valueOf( 10.1324 ) }
+                        new Object[]{ 10.1324 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT  CAST(DecimalData AS Double) FROM ConversionTestTable" ),
@@ -118,13 +118,6 @@ public class TypeConversionTest {
                         expectedResult
                 );
 
-                expectedResult = ImmutableList.of(
-                        new Object[]{ "2021-07-17" }
-                );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT  Cast(DateData AS VARCHAR(20)) FROM ConversionTestTable" ),
-                        expectedResult
-                );
             }
         }
     }

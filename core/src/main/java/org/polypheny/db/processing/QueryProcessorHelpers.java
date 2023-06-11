@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -35,6 +34,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
+import org.polypheny.db.type.entity.PolyDefaults;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 
 
@@ -130,8 +131,8 @@ public class QueryProcessorHelpers {
                     typeOrdinal = Types.VARCHAR;
                     // Fall through
                 default:
-                    final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
-                    final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+                    //final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
+                    final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( PolyDefaults.MAPPINGS.get( PolyValue.classFrom( Util.first( fieldType, type ).getPolyType() ) ) );
                     assert rep != null;
                     return ColumnMetaData.scalar( typeOrdinal, typeName, rep );
             }

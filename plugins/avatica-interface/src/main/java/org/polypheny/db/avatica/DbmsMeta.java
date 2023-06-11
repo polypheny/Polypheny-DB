@@ -1292,15 +1292,28 @@ public class DbmsMeta implements ProtobufMeta {
                         case FLOAT:
                             transform.add( o -> o.asNumber().FloatValue() );
                             break;
+                        case DOUBLE:
+                            transform.add( o -> o.asNumber().DoubleValue() );
+                            break;
                         case BIGINT:
+                            transform.add( o -> o.asNumber().LongValue() );
                         case DECIMAL:
                             transform.add( o -> o.asNumber().BigDecimalValue() );
                             break;
                         case DATE:
-                            transform.add( o -> o.asDate().value );
+                            transform.add( o -> o.asDate().sinceEpoch );
+                            break;
+                        case TIME:
+                            transform.add( o -> o.asTime().ofDay );
+                            break;
+                        case TIMESTAMP:
+                            transform.add( o -> o.asTimeStamp().sinceEpoch );
+                            break;
+                        case BOOLEAN:
+                            transform.add( o -> o.asBoolean().value );
                             break;
                         default:
-                            throw new NotImplementedException();
+                            throw new NotImplementedException( "meta" );
                     }
                 }
 
@@ -1308,7 +1321,9 @@ public class DbmsMeta implements ProtobufMeta {
                     return Linq4j.transform( enumerable.enumerator(), row -> {
                         Object[] objects = new Object[((Object[]) row).length];
                         for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
-                            objects[i] = transform.get( i ).apply( (PolyValue) objects[i] );
+                            if ( ((PolyValue[]) row)[i] != null ) {
+                                objects[i] = transform.get( i ).apply( ((PolyValue[]) row)[i] );
+                            }
                         }
                         return objects;
                     } );

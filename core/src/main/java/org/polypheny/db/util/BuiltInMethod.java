@@ -126,14 +126,18 @@ import org.polypheny.db.runtime.functions.CypherFunctions;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.functions.MqlFunctions;
+import org.polypheny.db.runtime.functions.TemporalFunctions;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -292,17 +296,17 @@ public enum BuiltInMethod {
     ADD_MONTHS( Functions.class, "addMonths", long.class, int.class ),
     ADD_MONTHS_INT( Functions.class, "addMonths", int.class, int.class ),
     SUBTRACT_MONTHS( Functions.class, "subtractMonths", long.class, long.class ),
-    FLOOR( Functions.class, "floor", int.class, int.class ),
-    CEIL( Functions.class, "ceil", int.class, int.class ),
-    OVERLAY( Functions.class, "overlay", String.class, String.class, int.class ),
-    OVERLAY3( Functions.class, "overlay", String.class, String.class, int.class, int.class ),
-    POSITION( Functions.class, "position", String.class, String.class ),
+    FLOOR( Functions.class, "floor", PolyNumber.class, PolyNumber.class ),
+    CEIL( Functions.class, "ceil", PolyNumber.class, PolyNumber.class ),
+    OVERLAY( Functions.class, "overlay", PolyString.class, PolyString.class, PolyNumber.class ),
+    OVERLAY3( Functions.class, "overlay", PolyString.class, PolyString.class, PolyNumber.class, PolyNumber.class ),
+    POSITION( Functions.class, "position", PolyString.class, PolyString.class ),
     RAND( RandomFunction.class, "rand" ),
     RAND_SEED( RandomFunction.class, "randSeed", int.class ),
     RAND_INTEGER( RandomFunction.class, "randInteger", int.class ),
     RAND_INTEGER_SEED( RandomFunction.class, "randIntegerSeed", int.class, int.class ),
-    TRUNCATE( Functions.class, "truncate", String.class, int.class ),
-    TRUNCATE_OR_PAD( Functions.class, "truncateOrPad", String.class, int.class ),
+    TRUNCATE( Functions.class, "truncate", PolyString.class, int.class ),
+    TRUNCATE_OR_PAD( Functions.class, "truncateOrPad", PolyString.class, int.class ),
     TRIM( Functions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
     REPLACE( Functions.class, "replace", String.class, String.class, String.class ),
     TRANSLATE3( Functions.class, "translate3", String.class, String.class, String.class ),
@@ -338,8 +342,8 @@ public enum BuiltInMethod {
     TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "timestampWithLocalTimeZoneToTimeWithLocalTimeZone", long.class ),
     TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timestampWithLocalTimeZoneToTimestamp", long.class, TimeZone.class ),
     TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
-    UNIX_DATE_TO_STRING( DateTimeUtils.class, "unixDateToString", int.class ),
-    UNIX_TIME_TO_STRING( DateTimeUtils.class, "unixTimeToString", int.class ),
+    UNIX_DATE_TO_STRING( TemporalFunctions.class, "unixDateToString", PolyDate.class ),
+    UNIX_TIME_TO_STRING( TemporalFunctions.class, "unixTimeToString", PolyTime.class ),
     UNIX_TIMESTAMP_TO_STRING( DateTimeUtils.class, "unixTimestampToString", long.class ),
     INTERVAL_YEAR_MONTH_TO_STRING( DateTimeUtils.class, "intervalYearMonthToString", int.class, TimeUnitRange.class ),
     INTERVAL_DAY_TIME_TO_STRING( DateTimeUtils.class, "intervalDayTimeToString", long.class, TimeUnitRange.class, int.class ),
@@ -483,6 +487,7 @@ public enum BuiltInMethod {
 
     X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class );
 
+    private static final String toIntOptional = "toIntOptional";
     public final Method method;
     public final Constructor<?> constructor;
     public final Field field;

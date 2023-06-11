@@ -39,35 +39,35 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 @Value
 public class PolyTime extends PolyTemporal {
 
-    public Long value;
+    public Integer ofDay;
 
     public TimeUnit timeUnit;
 
 
-    public PolyTime( long value, TimeUnit timeUnit ) {
+    public PolyTime( int ofDay, TimeUnit timeUnit ) {
         super( PolyType.TIME );
-        this.value = value;
+        this.ofDay = ofDay;
         this.timeUnit = timeUnit;
     }
 
 
-    public static PolyTime of( Long value ) {
-        return new PolyTime( value, TimeUnit.MILLISECOND );
+    public static PolyValue of( Number value ) {
+        return new PolyTime( value.intValue(), TimeUnit.MILLISECOND );
     }
 
 
-    public static PolyValue of( Integer value ) {
+    public static PolyTime of( Integer value ) {
         return new PolyTime( value, TimeUnit.MILLISECOND );
     }
 
 
     public static PolyTime of( Time value ) {
-        return new PolyTime( value.getTime(), TimeUnit.MILLISECOND );
+        return new PolyTime( (int) value.getTime(), TimeUnit.MILLISECOND );
     }
 
 
     public Time asSqlTime() {
-        return new Time( value );
+        return new Time( ofDay );
     }
 
 
@@ -77,13 +77,13 @@ public class PolyTime extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( value, o.asTime().value );
+        return Long.compare( ofDay, o.asTime().ofDay );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyTime.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyTime.class, Expressions.constant( ofDay ) );
     }
 
 
@@ -98,13 +98,13 @@ public class PolyTime extends PolyTemporal {
 
         @Override
         public JsonElement serialize( PolyTime src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
+            return new JsonPrimitive( src.ofDay );
         }
 
 
         @Override
         public PolyTime deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return PolyTime.of( json.getAsLong() );
+            return PolyTime.of( json.getAsInt() );
         }
 
     }

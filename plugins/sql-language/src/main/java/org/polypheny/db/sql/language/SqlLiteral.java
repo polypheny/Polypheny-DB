@@ -35,6 +35,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.sql.language.SqlIntervalLiteral.IntervalValue;
 import org.polypheny.db.sql.language.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.validate.SqlValidator;
@@ -42,6 +43,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Collation;
@@ -937,6 +939,9 @@ public class SqlLiteral extends SqlNode implements Literal {
     public PolyValue getPolyValue() {
         if ( value instanceof PolyValue ) {
             return (PolyValue) value;
+        }
+        if ( value instanceof IntervalValue ) {
+            return PolyInterval.of( null, ((IntervalValue) value).getIntervalQualifier() );
         }
         throw new NotImplementedException();
     }

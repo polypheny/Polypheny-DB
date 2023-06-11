@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -78,6 +79,7 @@ import org.polypheny.db.util.Util;
  * Translates {@link RexNode REX expressions} to
  * {@link Expression linq4j expressions}.
  */
+@Slf4j
 public class RexToLixTranslator {
 
     public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
@@ -1062,6 +1064,7 @@ public class RexToLixTranslator {
             // due to refactor
             return Expressions.call( PolyBigDecimal.class, "convert", operand );
         }
+        log.warn( "Converter missing" );
         return Expressions.convert_( operand, toType );
     }
 

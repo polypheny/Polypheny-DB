@@ -230,7 +230,7 @@ public abstract class DateRangeRules {
             switch ( call.getKind() ) {
                 case EXTRACT:
                     final RexLiteral operand = (RexLiteral) call.getOperands().get( 0 );
-                    timeUnits.add( operand.value.asInterval().unitRange );
+                    timeUnits.add( operand.value.asInterval().qualifier.getTimeUnitRange() );
                     break;
                 case FLOOR:
                 case CEIL:
@@ -303,7 +303,7 @@ public abstract class DateRangeRules {
                                 assert op1 instanceof RexCall;
                                 final RexCall subCall = (RexCall) op1;
                                 final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                                final TimeUnitRange timeUnit = flag.value.asInterval().unitRange;
+                                final TimeUnitRange timeUnit = flag.value.asInterval().qualifier.getTimeUnitRange();
                                 return compareFloorCeil( call.getKind().reverse(), subCall.getOperands().get( 0 ), (RexLiteral) op0, timeUnit, op1.getKind() == Kind.FLOOR );
                             }
                     }
@@ -321,7 +321,7 @@ public abstract class DateRangeRules {
                             if ( isFloorCeilCall( op0 ) ) {
                                 final RexCall subCall = (RexCall) op0;
                                 final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                                final TimeUnitRange timeUnit = flag.value.asInterval().unitRange;
+                                final TimeUnitRange timeUnit = flag.value.asInterval().qualifier.getTimeUnitRange();
                                 return compareFloorCeil( call.getKind(), subCall.getOperands().get( 0 ), (RexLiteral) op1, timeUnit, op0.getKind() == Kind.FLOOR );
                             }
                     }
@@ -403,7 +403,7 @@ public abstract class DateRangeRules {
                 case EXTRACT:
                     final RexCall call = (RexCall) e;
                     final RexLiteral flag = (RexLiteral) call.operands.get( 0 );
-                    final TimeUnitRange timeUnit = flag.value.asInterval().unitRange;
+                    final TimeUnitRange timeUnit = flag.value.asInterval().qualifier.getTimeUnitRange();
                     return timeUnit == this.timeUnit;
                 default:
                     return false;
@@ -604,13 +604,13 @@ public abstract class DateRangeRules {
             switch ( timeLiteral.getPolyType() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimeStamp().value, tz ) );
+                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimeStamp().sinceEpoch, tz ) );
                 case TIMESTAMP:
-                    return Util.calendar( timeLiteral.value.asTimeStamp().value );
+                    return Util.calendar( timeLiteral.value.asTimeStamp().sinceEpoch );
                 case DATE:
                     // Cast date to timestamp with local time zone
                     //final DateString d = timeLiteral.getValueAs( DateString.class );
-                    return Util.calendar( timeLiteral.value.asDate().value );
+                    return Util.calendar( timeLiteral.value.asDate().sinceEpoch );
                 default:
                     throw Util.unexpected( timeLiteral.getPolyType() );
             }

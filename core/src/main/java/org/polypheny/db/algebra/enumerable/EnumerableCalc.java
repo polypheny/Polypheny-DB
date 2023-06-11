@@ -259,10 +259,5 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
     }
 
 
-    @Override
-    public RexProgram getProgram() {
-        return program;
-    }
-
 }
 

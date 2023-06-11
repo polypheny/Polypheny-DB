@@ -232,11 +232,11 @@ public class EnumUtils {
 
     static Type toInternal( AlgDataType type ) {
         switch ( type.getPolyType() ) {
-            case DATE:
+            /*case DATE:
             case TIME:
                 return type.isNullable() ? Integer.class : int.class;
             case TIMESTAMP:
-                return type.isNullable() ? Long.class : long.class;
+                return type.isNullable() ? Long.class : long.class;*/
             default:
                 return null; // we don't care; use the default storage type
         }

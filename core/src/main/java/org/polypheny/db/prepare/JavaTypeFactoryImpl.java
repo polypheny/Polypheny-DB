@@ -65,9 +65,11 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
+import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -206,8 +208,10 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case DOCUMENT:
                     return PolyString.class;
                 case DATE:
+                    return PolyDate.class;
                 case TIME:
                 case TIME_WITH_LOCAL_TIME_ZONE:
+                    return PolyTime.class;
                 case INTEGER:
                 case INTERVAL_YEAR:
                 case INTERVAL_YEAR_MONTH:

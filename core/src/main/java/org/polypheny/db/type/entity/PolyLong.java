@@ -161,6 +161,18 @@ public class PolyLong extends PolyNumber {
     }
 
 
+    public static PolyLong convert( PolyValue value ) {
+        if ( value.isNumber() ) {
+            return PolyLong.of( value.asNumber().longValue() );
+        } else if ( value.isTime() ) {
+            return PolyLong.of( value.asTime().ofDay );
+        } else if ( value.isString() ) {
+            return PolyLong.of( Long.parseLong( value.asString().value ) );
+        }
+        return null;
+    }
+
+
     public static class PolyLongSerializer implements JsonDeserializer<PolyLong>, JsonSerializer<PolyLong> {
 
         @Override

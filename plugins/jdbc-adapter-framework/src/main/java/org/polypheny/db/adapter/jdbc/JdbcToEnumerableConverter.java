@@ -39,8 +39,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -88,7 +86,9 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
@@ -186,14 +186,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
 
         if ( fieldCount == 1 ) {
-            final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
+            final ParameterExpression value_ = Expressions.parameter( PolyValue.class, builder.newName( "value" ) );
             builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
             generateGet( implementor, physType, builder, resultSet_, 0, value_, calendar_, calendarPolicy, jdbcConvention.dialect );
             builder.add( Expressions.return_( null, value_ ) );
         } else {
             final Expression values_ = builder.append(
                     "values",
-                    Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
+                    Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( fieldCount ) ) );
             for ( int i = 0; i < fieldCount; i++ ) {
                 generateGet(
                         implementor,
@@ -403,10 +403,16 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyDouble.class, "of", Expressions.convert_( source, Number.class ) );
                 break;
             case TIME:
-                poly = Expressions.call( PolyTime.class, "of", Expressions.convert_( source, Time.class ) );
+                poly = Expressions.call( PolyTime.class, "of", Expressions.convert_( source, Integer.class ) );
                 break;
             case TIMESTAMP:
-                poly = Expressions.call( PolyTimeStamp.class, "of", Expressions.convert_( source, Timestamp.class ) );
+                poly = Expressions.call( PolyTimeStamp.class, "of", Expressions.convert_( source, Long.class ) );
+                break;
+            case DATE:
+                poly = Expressions.call( PolyDate.class, "of", Expressions.convert_( source, Integer.class ) );
+                break;
+            case DECIMAL:
+                poly = Expressions.call( PolyBigDecimal.class, "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             default:
                 poly = source;
