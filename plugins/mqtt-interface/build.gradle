@@ -5,6 +5,9 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
 
+    // https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3
+    implementation group: 'org.eclipse.paho', name: 'org.eclipse.paho.client.mqttv3', version: eclipse_mqttv3_version
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
