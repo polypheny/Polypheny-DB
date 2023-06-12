@@ -27,6 +27,8 @@ import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Value;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -35,10 +37,11 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
+@Value
 @EqualsAndHashCode(callSuper = true)
 public class PolyDate extends PolyTemporal {
 
-
+    @Getter
     public Long sinceEpoch;
 
 

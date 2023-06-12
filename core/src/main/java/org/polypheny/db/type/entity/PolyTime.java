@@ -93,6 +93,12 @@ public class PolyTime extends PolyTemporal {
     }
 
 
+    @Override
+    public Long getSinceEpoch() {
+        return Long.valueOf( ofDay );
+    }
+
+
     public static class PolyTimeSerializer implements JsonSerializer<PolyTime>, JsonDeserializer<PolyTime> {
 
 

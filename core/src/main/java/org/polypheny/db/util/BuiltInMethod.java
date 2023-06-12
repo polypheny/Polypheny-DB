@@ -134,10 +134,13 @@ import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -344,14 +347,14 @@ public enum BuiltInMethod {
     TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
     UNIX_DATE_TO_STRING( TemporalFunctions.class, "unixDateToString", PolyDate.class ),
     UNIX_TIME_TO_STRING( TemporalFunctions.class, "unixTimeToString", PolyTime.class ),
-    UNIX_TIMESTAMP_TO_STRING( DateTimeUtils.class, "unixTimestampToString", long.class ),
-    INTERVAL_YEAR_MONTH_TO_STRING( DateTimeUtils.class, "intervalYearMonthToString", int.class, TimeUnitRange.class ),
-    INTERVAL_DAY_TIME_TO_STRING( DateTimeUtils.class, "intervalDayTimeToString", long.class, TimeUnitRange.class, int.class ),
-    UNIX_DATE_EXTRACT( DateTimeUtils.class, "unixDateExtract", TimeUnitRange.class, long.class ),
-    UNIX_DATE_FLOOR( DateTimeUtils.class, "unixDateFloor", TimeUnitRange.class, int.class ),
-    UNIX_DATE_CEIL( DateTimeUtils.class, "unixDateCeil", TimeUnitRange.class, int.class ),
-    UNIX_TIMESTAMP_FLOOR( DateTimeUtils.class, "unixTimestampFloor", TimeUnitRange.class, long.class ),
-    UNIX_TIMESTAMP_CEIL( DateTimeUtils.class, "unixTimestampCeil", TimeUnitRange.class, long.class ),
+    UNIX_TIMESTAMP_TO_STRING( TemporalFunctions.class, "unixTimestampToString", PolyTimeStamp.class ),
+    INTERVAL_YEAR_MONTH_TO_STRING( TemporalFunctions.class, "intervalYearMonthToString", PolyInterval.class, TimeUnitRange.class ),
+    INTERVAL_DAY_TIME_TO_STRING( TemporalFunctions.class, "intervalDayTimeToString", PolyInterval.class, TimeUnitRange.class, PolyNumber.class ),
+    UNIX_DATE_EXTRACT( TemporalFunctions.class, "unixDateExtract", TimeUnitRange.class, PolyTemporal.class ),
+    UNIX_DATE_FLOOR( TemporalFunctions.class, "unixDateFloor", TimeUnitRange.class, PolyDate.class ),
+    UNIX_DATE_CEIL( TemporalFunctions.class, "unixDateCeil", TimeUnitRange.class, PolyDate.class ),
+    UNIX_TIMESTAMP_FLOOR( TemporalFunctions.class, "unixTimestampFloor", TimeUnitRange.class, PolyTimeStamp.class ),
+    UNIX_TIMESTAMP_CEIL( TemporalFunctions.class, "unixTimestampCeil", TimeUnitRange.class, PolyTimeStamp.class ),
     CURRENT_TIMESTAMP( Functions.class, "currentTimestamp", DataContext.class ),
     CURRENT_TIME( Functions.class, "currentTime", DataContext.class ),
     CURRENT_DATE( Functions.class, "currentDate", DataContext.class ),

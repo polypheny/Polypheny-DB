@@ -16,10 +16,19 @@
 
 package org.polypheny.db.type.entity.category;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public abstract class PolyTemporal extends PolyValue {
+
+    public abstract Long getSinceEpoch();
+
 
     public PolyTemporal( PolyType type ) {
         super( type );
