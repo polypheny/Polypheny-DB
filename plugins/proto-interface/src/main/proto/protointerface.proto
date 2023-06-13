@@ -52,6 +52,8 @@ message StatementStatus {
 }
 
 message FetchRequest {
+  int32 statement_id = 1;
+  int64 offset = 2;
 }
 
 message UnparameterizedStatement {
@@ -71,7 +73,7 @@ message CloseStatementResponse {
 message ParameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  map<string, Value> values = 3;
+  map<string, ProtoValue> values = 3;
   bool expects_result = 4;
   optional StringMap properties = 5;
 
@@ -130,7 +132,7 @@ message Frame {
 }
 
 message ValueMap {
-  map<string, Value> values = 1;
+  map<string, ProtoValue> values = 1;
 }
 message ValueMap {
   map<string, ProtoValue> values = 1;
