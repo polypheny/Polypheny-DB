@@ -23,6 +23,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.javalin.http.HttpCode;
+import java.io.File;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
@@ -32,7 +33,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.WebSocket;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -189,6 +192,11 @@ public class JupyterClient {
     public HttpResponse<String> getContents( String path, String content, String format ) throws JupyterServerException {
         String queryParams = "content=" + content;
         if (format != null) queryParams += "&format=" + format;
+        return sendGET( "contents/" + path, queryParams);
+    }
+
+    public HttpResponse<String> getFileBase64( String path) throws JupyterServerException {
+        String queryParams = "content=1&format=base64";
         return sendGET( "contents/" + path, queryParams);
     }
 

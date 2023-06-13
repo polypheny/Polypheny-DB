@@ -16,9 +16,12 @@
 
 package org.polypheny.db.jupyter;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.jupyter.JupyterClient;
 import org.polypheny.db.jupyter.JupyterClient.JupyterServerException;
 import org.polypheny.db.webui.Crud;
 import io.javalin.http.Context;
@@ -27,6 +30,7 @@ import io.javalin.http.Context;
 public class JupyterProxy {
 
     private final JupyterClient client;
+    private final Gson gson = new Gson();
 
 
     public JupyterProxy( JupyterClient client ) {
@@ -57,6 +61,26 @@ public class JupyterProxy {
         String format = ctx.queryParam( "format" );
         String path = ctx.pathParam( "path" );
         forward( ctx, () -> client.getContents( path, content == null ? "1" : content, format ) );
+    }
+
+
+    public void file(final Context ctx, Crud crud) {
+        String path = ctx.pathParam( "path" );
+        try {
+            HttpResponse<String> response = client.getFileBase64( path );
+            JsonObject body = gson.fromJson( response.body(), JsonObject.class );
+            String base64 = body.get( "content" ).getAsString().replace( "\n", "" );
+            byte[] data = Base64.getDecoder().decode(base64.getBytes( StandardCharsets.UTF_8));
+            String mimetype = body.get("mimetype").getAsString();
+            ctx.contentType(mimetype);
+            ctx.result( data );
+
+        } catch ( JupyterServerException e ) {
+            ctx.status( e.getStatus() ).result(e.getMsg());
+        } catch ( IllegalArgumentException e ) {
+            ctx.status(404).result("Invalid file");
+        }
+
     }
 
 
