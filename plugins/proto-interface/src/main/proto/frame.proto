@@ -23,6 +23,7 @@ message ColumnMeta {
   string column_name = 5;
   int32 precision = 6;
   string table_name = 7;
+  ProtoValueType proto_value_type = 8;
 }
 
 message Row {
