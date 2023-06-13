@@ -12,6 +12,7 @@ message Frame {
   repeated ColumnMeta column_meta = 1;
   repeated Row rows = 2;
   int64 offset = 3;
+  bool isLast = 4;
 }
 
 message ColumnMeta {
@@ -25,5 +26,5 @@ message ColumnMeta {
 }
 
 message Row {
-  repeated Value values = 1;
+  repeated ProtoValue values = 1;
 }
