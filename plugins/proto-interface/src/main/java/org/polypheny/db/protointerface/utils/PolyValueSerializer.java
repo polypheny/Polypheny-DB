@@ -49,7 +49,10 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class PolyValueSerializer {
 
-    public static Value serialize( PolyValue polyValue ) {
+    private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
+
+
+    public static ProtoValue serialize( PolyValue polyValue ) {
         switch ( polyValue.getType() ) {
             case BOOLEAN:
                 return serialize( polyValue.asBoolean() );
@@ -149,62 +152,73 @@ public class PolyValueSerializer {
     }
 
 
-    public static Value serialize( PolyBoolean polyBoolean ) {
+    private static ProtoValueType getType( PolyValue polyValue ) {
+        return ProtoValueType.valueOf( PROTO_TYPE_PREFIX + polyValue.getType() );
+    }
+
+
+    public static ProtoValue serialize( PolyBoolean polyBoolean ) {
         ProtoBoolean protoBoolean = ProtoBoolean.newBuilder()
                 .setBoolean( polyBoolean.getValue() )
                 .build();
-        return Value.newBuilder()
+        return ProtoValue.newBuilder()
                 .setBoolean( protoBoolean )
+                .setType( getType( polyBoolean ) )
                 .build();
     }
 
 
-    public static Value serialize( PolyInteger polyInteger ) {
+    public static ProtoValue serialize( PolyInteger polyInteger ) {
         ProtoInteger protoInteger = ProtoInteger.newBuilder()
                 .setInteger( polyInteger.getValue() )
                 .build();
-        return Value.newBuilder()
+        return ProtoValue.newBuilder()
                 .setInteger( protoInteger )
+                .setType( getType( polyInteger ) )
                 .build();
     }
 
 
-    public static Value serialize( PolyLong polyLong ) {
+    public static ProtoValue serialize( PolyLong polyLong ) {
         ProtoLong protoLong = ProtoLong.newBuilder()
                 .setLong( polyLong.value )
                 .build();
-        return Value.newBuilder()
+        return ProtoValue.newBuilder()
                 .setLong( protoLong )
+                .setType( getType( polyLong ) )
                 .build();
     }
 
 
-    public static Value serialize( PolyBinary polyBinary ) {
+    public static ProtoValue serialize( PolyBinary polyBinary ) {
         ProtoBinary protoBinary = ProtoBinary.newBuilder()
                 .setBinary( ByteString.copyFrom( polyBinary.getValue().getBytes() ) )
                 .build();
-        return Value.newBuilder()
+        return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
+                .setType( getType( polyBinary ) )
                 .build();
     }
 
 
-    public static Value serialize( PolyDate polyDate ) {
+    public static ProtoValue serialize( PolyDate polyDate ) {
         ProtoDate protoDate = ProtoDate.newBuilder()
                 .setDate( polyDate.getValue() )
                 .build();
-        return Value.newBuilder()
+        return ProtoValue.newBuilder()
                 .setDate( protoDate )
+                .setType( getType( polyDate ) )
                 .build();
     }
 
 
-    public static Value serialize( PolyDouble polyDouble ) {
+    public static ProtoValue serialize( PolyDouble polyDouble ) {
         ProtoDouble protoDouble = ProtoDouble.newBuilder()
                 .setDouble( polyDouble.doubleValue() )
                 .build();
-        return Value.newBuilder()
+        return ProtoValue.newBuilder()
                 .setDouble( protoDouble )
+                .setType( getType( polyDouble ) )
                 .build();
     }
 
@@ -447,4 +461,5 @@ private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
                 .setType( getType( polyBigDecimal ) )
                 .build();
     }
+
 }
