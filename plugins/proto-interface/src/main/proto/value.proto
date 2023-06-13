@@ -7,19 +7,21 @@ option objc_class_prefix = "PI";
 
 package polypheny.protointerface;
 
-message Value {
+message ProtoValue {
+  ProtoValueType type = 1;
   oneof value {
-    ProtoBoolean boolean = 1;
-    ProtoInteger integer = 2;
-    ProtoLong long = 3;
-    ProtoBinary binary = 4;
-    ProtoDate date = 5;
-    ProtoDouble double = 6;
-    ProtoFloat float = 7;
-    ProtoString string = 8;
-    ProtoTime time = 9;
-    ProtoTimeStamp time_stamp = 10;
-    ProtoNull null = 11;
+    ProtoBoolean boolean = 2;
+    ProtoInteger integer = 3;
+    ProtoLong long = 4;
+    ProtoBinary binary = 5;
+    ProtoDate date = 6;
+    ProtoDouble double = 7;
+    ProtoFloat float = 8;
+    ProtoString string = 9;
+    ProtoTime time = 10;
+    ProtoTimeStamp time_stamp = 11;
+    ProtoNull null = 12;
+    ProtoBigDecimal big_decimal = 13;
   }
 }
 
@@ -67,26 +69,81 @@ message ProtoTimeStamp {
   int64 timeStamp = 1;
 }
 
+message ProtoBigDecimal {
+  uint32 scale = 1;
+  uint32 precision = 2;
+  bytes unscaled_value = 3;
+}
+
+enum ProtoValueType {
+  PROTO_VALUE_TYPE_UNSPECIFIED = 0;
+  PROTO_VALUE_TYPE_BOOLEAN = 1;
+  PROTO_VALUE_TYPE_INTEGER = 2;
+  PROTO_VALUE_TYPE_VARCHAR = 3;
+  PROTO_VALUE_TYPE_JSON = 4;
+  PROTO_VALUE_TYPE_DATE = 5;
+  PROTO_VALUE_TYPE_TIME = 6;
+  PROTO_VALUE_TYPE_TIMESTAMP = 7;
+  PROTO_VALUE_TYPE_NULL = 8;
+  PROTO_VALUE_TYPE_DECIMAL = 9;
+  PROTO_VALUE_TYPE_ANY = 10;
+  PROTO_VALUE_TYPE_CHAR = 11;
+  PROTO_VALUE_TYPE_BINARY = 12;
+  PROTO_VALUE_TYPE_VARBINARY = 13;
+  PROTO_VALUE_TYPE_FILE = 14;
+  PROTO_VALUE_TYPE_IMAGE = 15;
+  PROTO_VALUE_TYPE_VIDEO = 16;
+  PROTO_VALUE_TYPE_AUDIO = 17;
+  PROTO_VALUE_TYPE_TINYINT = 18;
+  PROTO_VALUE_TYPE_SMALLINT = 19;
+  PROTO_VALUE_TYPE_BIGINT = 20;
+  PROTO_VALUE_TYPE_REAL = 21;
+  PROTO_VALUE_TYPE_DOUBLE = 22;
+  PROTO_VALUE_TYPE_SYMBOL = 23;
+  PROTO_VALUE_TYPE_INTERVAL_YEAR = 24;
+  PROTO_VALUE_TYPE_INTERVAL_YEAR_MONTH = 25;
+  PROTO_VALUE_TYPE_INTERVAL_MONTH = 26;
+  PROTO_VALUE_TYPE_INTERVAL_DAY = 27;
+  PROTO_VALUE_TYPE_INTERVAL_DAY_HOUR = 28;
+  PROTO_VALUE_TYPE_INTERVAL_DAY_MINUTE = 29;
+  PROTO_VALUE_TYPE_INTERVAL_DAY_SECOND = 30;
+  PROTO_VALUE_TYPE_INTERVAL_HOUR = 31;
+  PROTO_VALUE_TYPE_INTERVAL_HOUR_MINUTE = 32;
+  PROTO_VALUE_TYPE_INTERVAL_HOUR_SECOND = 33;
+  PROTO_VALUE_TYPE_INTERVAL_MINUTE = 34;
+  PROTO_VALUE_TYPE_INTERVAL_MINUTE_SECOND = 35;
+  PROTO_VALUE_TYPE_INTERVAL_SECOND = 36;
+  PROTO_VALUE_TYPE_TIME_WITH_LOCAL_TIME_ZONE = 37;
+  PROTO_VALUE_TYPE_TIMESTAMP_WITH_LOCAL_TIME_ZONE = 38;
+  PROTO_VALUE_TYPE_FLOAT = 39;
+  PROTO_VALUE_TYPE_MULTISET = 40;
+  PROTO_VALUE_TYPE_DISTINCT = 41;
+  PROTO_VALUE_TYPE_STRUCTURED = 42;
+  PROTO_VALUE_TYPE_ROW = 43;
+  //PROTO_VALUE_TYPE_CURSOR = 44;
+  PROTO_VALUE_TYPE_COLUMN_LIST = 45;
+}
+
 enum TimeUnit {
-    TIME_UNIT_UNSPECIFIED = 0;
-    TIME_UNIT_YEAR = 1;
-    TIME_UNIT_MONTH = 2;
-    TIME_UNIT_DAY = 3;
-    TIME_UNIT_HOUR = 4;
-    TIME_UNIT_MINUTE = 5;
-    TIME_UNIT_SECOND = 6;
-    TIME_UNIT_QUARTER = 7;
-    TIME_UNIT_ISOYEAR = 8;
-    TIME_UNIT_WEEK = 9;
-    TIME_UNIT_MILLISECOND = 10;
-    TIME_UNIT_MICROSECOND = 11;
-    TIME_UNIT_NANOSECOND = 12;
-    TIME_UNIT_DOW = 13;
-    TIME_UNIT_ISODOW = 14;
-    TIME_UNIT_DOY = 15;
-    TIME_UNIT_EPOCH = 16;
-    TIME_UNIT_DECADE = 17;
-    TIME_UNIT_CENTURY = 18;
-    TIME_UNIT_MILLENNIUM = 19;
+  TIME_UNIT_UNSPECIFIED = 0;
+  TIME_UNIT_YEAR = 1;
+  TIME_UNIT_MONTH = 2;
+  TIME_UNIT_DAY = 3;
+  TIME_UNIT_HOUR = 4;
+  TIME_UNIT_MINUTE = 5;
+  TIME_UNIT_SECOND = 6;
+  TIME_UNIT_QUARTER = 7;
+  TIME_UNIT_ISOYEAR = 8;
+  TIME_UNIT_WEEK = 9;
+  TIME_UNIT_MILLISECOND = 10;
+  TIME_UNIT_MICROSECOND = 11;
+  TIME_UNIT_NANOSECOND = 12;
+  TIME_UNIT_DOW = 13;
+  TIME_UNIT_ISODOW = 14;
+  TIME_UNIT_DOY = 15;
+  TIME_UNIT_EPOCH = 16;
+  TIME_UNIT_DECADE = 17;
+  TIME_UNIT_CENTURY = 18;
+  TIME_UNIT_MILLENNIUM = 19;
 }
 
