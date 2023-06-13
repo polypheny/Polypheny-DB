@@ -22,6 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -30,6 +37,8 @@ import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.transaction.TransactionManager;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 
 
 public class MqttInterfacePlugin extends Plugin {
@@ -67,17 +76,19 @@ public class MqttInterfacePlugin extends Plugin {
         @SuppressWarnings("WeakerAccess")
         public static final String INTERFACE_NAME = "MQTT Interface";
         @SuppressWarnings("WeakerAccess")
-        public static final String INTERFACE_DESCRIPTION = "ADD TEXT.";
+        public static final String INTERFACE_DESCRIPTION = "Connection establishment to MQTT broker.";
         @SuppressWarnings("WeakerAccess")
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingString( "broker", false, true, false, "localhost" ),
                 new QueryInterfaceSettingInteger( "brokerPort", false, true, false, 5555 ),
-                new QueryInterfaceSettingString( "topics", false, true, true, null )
+                new QueryInterfaceSettingList( "topics", false, true, true, null )
         );
 
         private final String uniqueName;
 
         private final String broker;
+
+        private final String brokerPort;
 
         private final MonitoringPage monitoringPage;
 
@@ -89,12 +100,69 @@ public class MqttInterfacePlugin extends Plugin {
             // Add information page
             monitoringPage = new MonitoringPage();
             broker = settings.get( "broker" );
+            brokerPort = settings.get( "brokerPort" );
         }
 
 
         @Override
         public void run() {
-            log.info( "{} started", INTERFACE_NAME );
+            String serverURI = String.format( "tcp://%s:%s", broker, brokerPort);
+            // creating fileStore to store all messages in this directory folder
+            MqttDefaultFilePersistence fileStore = new MqttDefaultFilePersistence("C:\\Users\\Public\\UniProjekte\\BA_MQTT_Messages");
+            try {
+                fileStore.open(uniqueName, serverURI);
+            } catch (MqttPersistenceException e) {
+                log.error( "There is a problem reading or writing persistence data." );
+            }
+            try {
+                MqttAsyncClient client = new MqttAsyncClient(serverURI, uniqueName, fileStore);
+                MqttCallback callback = new MqttCallback() {
+                    @Override
+                    public void connectionLost(Throwable cause) {
+                        log.error( "Lost connection to the broker!" );
+                        //TODO: show this on UI!
+                    }
+
+                    @Override
+                    public void messageArrived(String topic, MqttMessage message) throws Exception {
+                        log.info( "Message: {}", message.toString());
+                        //TODO: extract the topic content of the message
+                        // AND send it to StreamProcessor as PolyStream.
+                    }
+
+                    @Override
+                    public void deliveryComplete(IMqttDeliveryToken token) {
+                        log.info( "Delivery of Message was successful!" );
+                    }
+                };
+
+                client.setCallback(callback);
+                IMqttActionListener connectionListener = new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        log.info( "{} started and is listening to broker {}:{}", INTERFACE_NAME, broker, brokerPort );
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        log.error( "Connection to broker could not be established. Please delete and recreate the Plug-In." );
+                    }
+                };
+                IMqttToken connToken = client.connect(null, connectionListener);
+                connToken.waitForCompletion();
+
+
+                // Testing the connection:
+                String str = "Hello, I am the Polypheny-Client!";
+                MqttMessage msg = new MqttMessage(str.getBytes());
+                IMqttToken pubToken= client.publish("testTopic", msg);
+
+                // TEsting subscribtion:
+                IMqttToken subToken= client.subscribe("testTopic", 1);
+
+            } catch (MqttException e) {
+                log.error( "An error occurred while communicating to the server.");
+            }
         }
 
 
