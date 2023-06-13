@@ -27,7 +27,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
-import org.polypheny.db.sql.language.SqlSyntax;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -60,12 +59,6 @@ public class SqlDatetimePlusOperator extends SqlSpecialOperator {
         final IntervalPolyType unitType = (IntervalPolyType) opBinding.getOperandType( 1 );
         final TimeUnit timeUnit = unitType.getIntervalQualifier().getTimeUnitRange().startUnit;
         return SqlTimestampAddFunction.deduceType( typeFactory, timeUnit, unitType, leftType );
-    }
-
-
-    @Override
-    public SqlSyntax getSqlSyntax() {
-        return SqlSyntax.SPECIAL;
     }
 
 

@@ -147,6 +147,12 @@ public class PolyDouble extends PolyNumber {
     }
 
 
+    @Override
+    public PolyNumber negate() {
+        return PolyDouble.of( -value );
+    }
+
+
     public static class PolyDoubleSerializerDef extends SimpleSerializerDef<PolyDouble> {
 
         @Override

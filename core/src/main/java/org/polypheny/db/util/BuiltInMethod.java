@@ -126,6 +126,7 @@ import org.polypheny.db.runtime.functions.CypherFunctions;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.functions.MqlFunctions;
+import org.polypheny.db.runtime.functions.RefactorFunctions;
 import org.polypheny.db.runtime.functions.TemporalFunctions;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
@@ -294,11 +295,11 @@ public enum BuiltInMethod {
     SUBSTRING( Functions.class, "substring", String.class, int.class, int.class ),
     CHAR_LENGTH( Functions.class, "charLength", String.class ),
     STRING_CONCAT( Functions.class, "concat", String.class, String.class ),
-    FLOOR_DIV( DateTimeUtils.class, "floorDiv", long.class, long.class ),
-    FLOOR_MOD( DateTimeUtils.class, "floorMod", long.class, long.class ),
-    ADD_MONTHS( Functions.class, "addMonths", long.class, int.class ),
-    ADD_MONTHS_INT( Functions.class, "addMonths", int.class, int.class ),
-    SUBTRACT_MONTHS( Functions.class, "subtractMonths", long.class, long.class ),
+    FLOOR_DIV( TemporalFunctions.class, "floorDiv", PolyNumber.class, PolyNumber.class ),
+    FLOOR_MOD( TemporalFunctions.class, "floorMod", PolyNumber.class, PolyNumber.class ),
+    ADD_MONTHS( TemporalFunctions.class, "addMonths", PolyTimeStamp.class, PolyNumber.class ),
+    ADD_MONTHS_INT( TemporalFunctions.class, "addMonths", PolyDate.class, PolyNumber.class ),
+    SUBTRACT_MONTHS( TemporalFunctions.class, "subtractMonths", PolyDate.class, PolyDate.class ),
     FLOOR( Functions.class, "floor", PolyNumber.class, PolyNumber.class ),
     CEIL( Functions.class, "ceil", PolyNumber.class, PolyNumber.class ),
     OVERLAY( Functions.class, "overlay", PolyString.class, PolyString.class, PolyNumber.class ),
@@ -437,6 +438,7 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
+    UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
     /// MQL BUILT-IN METHODS
     DOC_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     DOC_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),

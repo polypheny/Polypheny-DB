@@ -201,6 +201,12 @@ public class PolyInteger extends PolyNumber {
     }
 
 
+    @Override
+    public PolyNumber negate() {
+        return PolyInteger.of( -value );
+    }
+
+
     public static class PolyIntegerSerializerDef extends SimpleSerializerDef<PolyInteger> {
 
         @Override

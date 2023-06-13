@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.polypheny.db.runtime.functions.Functions.addMonths;
 import static org.polypheny.db.runtime.functions.Functions.charLength;
 import static org.polypheny.db.runtime.functions.Functions.concat;
 import static org.polypheny.db.runtime.functions.Functions.greater;
@@ -35,9 +34,10 @@ import static org.polypheny.db.runtime.functions.Functions.lesser;
 import static org.polypheny.db.runtime.functions.Functions.lower;
 import static org.polypheny.db.runtime.functions.Functions.ltrim;
 import static org.polypheny.db.runtime.functions.Functions.rtrim;
-import static org.polypheny.db.runtime.functions.Functions.subtractMonths;
 import static org.polypheny.db.runtime.functions.Functions.trim;
 import static org.polypheny.db.runtime.functions.Functions.upper;
+import static org.polypheny.db.runtime.functions.TemporalFunctions.addMonths;
+import static org.polypheny.db.runtime.functions.TemporalFunctions.subtractMonths;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -54,6 +54,7 @@ import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
@@ -208,14 +209,14 @@ public class FunctionsTest {
 
 
     private void checkAddMonths( int y0, int m0, int d0, int y1, int m1, int d1, int months ) {
-        final int date0 = ymdToUnixDate( y0, m0, d0 );
-        final long date = addMonths( date0, months );
-        final int date1 = ymdToUnixDate( y1, m1, d1 );
+        final PolyDate date0 = PolyDate.of( ymdToUnixDate( y0, m0, d0 ) );
+        final long date = addMonths( date0, PolyLong.of( months ) ).sinceEpoch;
+        final PolyDate date1 = PolyDate.of( ymdToUnixDate( y1, m1, d1 ) );
         assertThat( (int) date, is( date1 ) );
 
         assertThat( subtractMonths( date1, date0 ), anyOf( is( months ), is( months + 1 ) ) );
-        assertThat( subtractMonths( date1 + 1, date0 ), anyOf( is( months ), is( months + 1 ) ) );
-        assertThat( subtractMonths( date1, date0 + 1 ), anyOf( is( months ), is( months - 1 ) ) );
+        assertThat( subtractMonths( addMonths( date1, PolyInteger.of( 1 ) ), date0 ), anyOf( is( months ), is( months + 1 ) ) );
+        assertThat( subtractMonths( date1, addMonths( date0, PolyInteger.of( 1 ) ) ), anyOf( is( months ), is( months - 1 ) ) );
         assertThat( subtractMonths( d2ts( date1, 1 ), d2ts( date0, 0 ) ), anyOf( is( months ), is( months + 1 ) ) );
         assertThat( subtractMonths( d2ts( date1, 0 ), d2ts( date0, 1 ) ), anyOf( is( months - 1 ), is( months ), is( months + 1 ) ) );
     }
@@ -224,8 +225,8 @@ public class FunctionsTest {
     /**
      * Converts a date (days since epoch) and milliseconds (since midnight) into a timestamp (milliseconds since epoch).
      */
-    private long d2ts( int date, int millis ) {
-        return date * DateTimeUtils.MILLIS_PER_DAY + millis;
+    private PolyDate d2ts( PolyDate date, int millis ) {
+        return PolyDate.of( date.sinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
     }
 
 

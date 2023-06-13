@@ -64,7 +64,7 @@ public class SqlTimestampAddFunction extends SqlFunction {
                 final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 return deduceType(
                         typeFactory,
-                        opBinding.getOperandLiteralValue( 0, PolyType.TIME ).asTime().timeUnit,
+                        (TimeUnit) opBinding.getOperandLiteralValue( 0, PolyType.TIME ).asSymbol().value,
                         opBinding.getOperandType( 1 ),
                         opBinding.getOperandType( 2 ) );
             };

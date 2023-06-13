@@ -27,14 +27,17 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolySerializable;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@Slf4j
 public class PolyInterval extends PolyValue {
 
 
@@ -54,7 +57,6 @@ public class PolyInterval extends PolyValue {
     }
 
 
-
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isSameType( o ) ) {
@@ -66,13 +68,23 @@ public class PolyInterval extends PolyValue {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyInterval.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyInterval.class, Expressions.constant( value ), qualifier.asExpression() );
     }
 
 
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyInterval.class );
+    }
+
+
+    public Long getMonths() {
+        log.warn( "might adjust" );
+        switch ( qualifier.getTimeUnitRange() ) {
+            case YEAR:
+                return value.longValue();
+        }
+        throw new NotImplementedException( "since Epoch" );
     }
 
 

@@ -31,6 +31,7 @@ import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -99,6 +100,16 @@ public class PolyTimeStamp extends PolyTemporal {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyTimeStamp.class );
+    }
+
+
+    public static PolyTimeStamp convert( PolyValue value ) {
+        if ( value.isNumber() ) {
+            return PolyTimeStamp.of( value.asNumber().longValue() );
+        } else if ( value.isTemporal() ) {
+            return PolyTimeStamp.of( value.asTemporal().getSinceEpoch() );
+        }
+        throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
     }
 
 

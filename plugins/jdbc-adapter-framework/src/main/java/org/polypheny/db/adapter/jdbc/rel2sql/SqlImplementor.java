@@ -73,6 +73,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
@@ -563,12 +564,12 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:
                         case INTERVAL_DAY_TIME:
-                            final boolean negative = literal.getValueAs( Boolean.class ).asBoolean().value;
-                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.value.asString().value, SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
+                            final boolean negative = literal.value.asInterval().value.signum() < 0;
+                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.intervalString( literal.value.asInterval().value.abs() ), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
                         case DATE:
                             return SqlDateLiteral.createDate( DateString.fromDaysSinceEpoch( literal.value.asDate().sinceEpoch.intValue() ), POS );
                         case TIME:
-                            return SqlLiteral.createTime( TimeString.fromMillisOfDay( literal.value.asTime().ofDay.intValue() ), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTime( TimeString.fromMillisOfDay( literal.value.asTime().ofDay ), literal.getType().getPrecision(), POS );
                         case TIMESTAMP:
                             return SqlLiteral.createTimestamp( TimestampString.fromMillisSinceEpoch( literal.value.asTimeStamp().sinceEpoch ), literal.getType().getPrecision(), POS );
                         case BINARY:
@@ -718,6 +719,9 @@ public abstract class SqlImplementor {
                         // In RexNode trees, OR and AND have any number of children;
                         // SqlCall requires exactly 2. So, convert to a left-deep binary tree.
                         return createLeftCall( op, nodeList );
+                    }
+                    if ( op instanceof LangFunctionOperator ) {
+                        return toSql( program, call.operands.get( 0 ) );
                     }
                     return (SqlNode) op.createCall( new SqlNodeList( nodeList, POS ) );
             }

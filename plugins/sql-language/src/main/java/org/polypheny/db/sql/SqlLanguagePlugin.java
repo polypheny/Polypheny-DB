@@ -2483,6 +2483,8 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 OperatorName.CROSS_MODEL_ITEM,
                 new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
 
+        register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
+
         isInit = true;
     }
 

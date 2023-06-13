@@ -44,6 +44,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Collation;
@@ -942,6 +943,9 @@ public class SqlLiteral extends SqlNode implements Literal {
         }
         if ( value instanceof IntervalValue ) {
             return PolyInterval.of( null, ((IntervalValue) value).getIntervalQualifier() );
+        }
+        if ( value instanceof Enum ) {
+            return PolySymbol.of( (Enum<?>) value );
         }
         throw new NotImplementedException();
     }

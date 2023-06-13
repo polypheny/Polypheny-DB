@@ -208,7 +208,7 @@ public abstract class SqlOperator extends OperatorImpl {
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         pos = pos.plusAll( Arrays.asList( operands ) );
-        return new SqlBasicCall( this, Arrays.stream( operands ).map( e -> (SqlNode) e ).toArray( value -> new SqlNode[value] ), pos, false, (SqlLiteral) functionQualifier );
+        return new SqlBasicCall( this, Arrays.stream( operands ).map( e -> (SqlNode) e ).toArray( SqlNode[]::new ), pos, false, (SqlLiteral) functionQualifier );
     }
 
 

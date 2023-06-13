@@ -30,6 +30,7 @@ import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
@@ -146,6 +147,12 @@ public class PolyLong extends PolyNumber {
 
 
     @Override
+    public PolyNumber negate() {
+        return PolyLong.of( -value );
+    }
+
+
+    @Override
     public boolean equals( Object o ) {
         if ( this == o ) {
             return true;
@@ -164,12 +171,12 @@ public class PolyLong extends PolyNumber {
     public static PolyLong convert( PolyValue value ) {
         if ( value.isNumber() ) {
             return PolyLong.of( value.asNumber().longValue() );
-        } else if ( value.isTime() ) {
-            return PolyLong.of( value.asTime().ofDay );
+        } else if ( value.isTemporal() ) {
+            return PolyLong.of( value.asTemporal().getSinceEpoch() );
         } else if ( value.isString() ) {
             return PolyLong.of( Long.parseLong( value.asString().value ) );
         }
-        return null;
+        throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
     }
 
 

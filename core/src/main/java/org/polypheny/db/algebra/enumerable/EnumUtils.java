@@ -41,6 +41,7 @@ import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.Node;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -48,6 +49,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
@@ -381,8 +383,32 @@ public class EnumUtils {
     }
 
 
-    private static Expression unwrapPoly( Expression expression ) {
+    public static Expression unwrapPoly( Expression expression ) {
         return expression.type == PolyBoolean.class ? Expressions.convert_( Expressions.field( expression, "value" ), boolean.class ) : expression;
+    }
+
+
+    @NotNull
+    public static MethodCallExpression unwrapPolyValue( Expression num, String methodName ) {
+        return Expressions.call( num, methodName );
+    }
+
+
+    @NotNull
+    public static MethodCallExpression convertPolyValue( PolyType outputType, Expression operand ) {
+        return Expressions.call( PolyValue.classFrom( outputType ), "convert", operand );
+    }
+
+
+    @NotNull
+    public static MethodCallExpression wrapPolyValue( PolyType outputType, Expression operand ) {
+        return wrapPolyValue( PolyValue.classFrom( outputType ), operand );
+    }
+
+
+    @NotNull
+    public static MethodCallExpression wrapPolyValue( Type outputClass, Expression operand ) {
+        return Expressions.call( outputClass, "of", operand );
     }
 
 }

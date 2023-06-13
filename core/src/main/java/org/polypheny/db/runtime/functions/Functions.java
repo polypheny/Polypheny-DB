@@ -88,7 +88,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.CartesianProductEnumerator;
 import org.apache.calcite.linq4j.Enumerable;
@@ -120,6 +119,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -1434,6 +1434,11 @@ public class Functions {
      */
     public static PolyValue multiply( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.multiply( b1 );
+    }
+
+
+    public static PolyInterval multiply( PolyInterval b0, PolyNumber b1 ) {
+        return PolyInterval.of( b0.value.multiply( b1.bigDecimalValue() ), b0.qualifier );
     }
 
 
@@ -3464,87 +3469,6 @@ public class Functions {
         };
     }
 
-
-    /**
-     * Adds a given number of months to a timestamp, represented as the number of milliseconds since the epoch.
-     */
-    public static long addMonths( long timestamp, int m ) {
-        final long millis = DateTimeUtils.floorMod( timestamp, DateTimeUtils.MILLIS_PER_DAY );
-        timestamp -= millis;
-        final long x = addMonths( (int) (timestamp / DateTimeUtils.MILLIS_PER_DAY), m );
-        return x * DateTimeUtils.MILLIS_PER_DAY + millis;
-    }
-
-
-    /**
-     * Adds a given number of months to a date, represented as the number of days since the epoch.
-     */
-    public static int addMonths( int date, int m ) {
-        int y0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.YEAR, date );
-        int m0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.MONTH, date );
-        int d0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.DAY, date );
-        int y = m / 12;
-        y0 += y;
-        m0 += m - y * 12;
-        int last = lastDay( y0, m0 );
-        if ( d0 > last ) {
-            d0 = last;
-        }
-        return DateTimeUtils.ymdToUnixDate( y0, m0, d0 );
-    }
-
-
-    private static int lastDay( int y, int m ) {
-        switch ( m ) {
-            case 2:
-                return y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) ? 29 : 28;
-            case 4:
-            case 6:
-            case 9:
-            case 11:
-                return 30;
-            default:
-                return 31;
-        }
-    }
-
-
-    /**
-     * Finds the number of months between two dates, each represented as the number of days since the epoch.
-     */
-    public static int subtractMonths( int date0, int date1 ) {
-        if ( date0 < date1 ) {
-            return -subtractMonths( date1, date0 );
-        }
-        // Start with an estimate.
-        // Since no month has more than 31 days, the estimate is <= the true value.
-        int m = (date0 - date1) / 31;
-        for ( ; ; ) {
-            int date2 = addMonths( date1, m );
-            if ( date2 >= date0 ) {
-                return m;
-            }
-            int date3 = addMonths( date1, m + 1 );
-            if ( date3 > date0 ) {
-                return m;
-            }
-            ++m;
-        }
-    }
-
-
-    public static int subtractMonths( long t0, long t1 ) {
-        final long millis0 = DateTimeUtils.floorMod( t0, DateTimeUtils.MILLIS_PER_DAY );
-        final int d0 = (int) DateTimeUtils.floorDiv( t0 - millis0, DateTimeUtils.MILLIS_PER_DAY );
-        final long millis1 = DateTimeUtils.floorMod( t1, DateTimeUtils.MILLIS_PER_DAY );
-        final int d1 = (int) DateTimeUtils.floorDiv( t1 - millis1, DateTimeUtils.MILLIS_PER_DAY );
-        int x = subtractMonths( d0, d1 );
-        final long d2 = addMonths( d1, x );
-        if ( d2 == d0 && millis0 < millis1 ) {
-            --x;
-        }
-        return x;
-    }
 
 
     /**

@@ -1379,7 +1379,22 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             return rexBuilder.makeCall(
                     OperatorRegistry.get( OperatorName.DATETIME_PLUS ),
                     cx.convertExpression( call.operand( 2 ) ),
+                    toInterval( rexBuilder, interval2Add, qualifier ) );
+        }
+
+
+        private RexNode toInterval( RexBuilder rexBuilder, RexNode interval2Add, SqlIntervalQualifier qualifier ) {
+            return rexBuilder.makeCast(
+                    rexBuilder.getTypeFactory().createIntervalType( qualifier ),
                     interval2Add );
+        }
+
+
+        private RexNode interval2Num( RexBuilder rexBuilder, RexLiteral rexLiteral ) {
+            return rexBuilder.makeCall(
+                    AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ),
+                    OperatorRegistry.get( OperatorName.UNWRAP_INTERVAL ),
+                    rexLiteral );
         }
 
     }

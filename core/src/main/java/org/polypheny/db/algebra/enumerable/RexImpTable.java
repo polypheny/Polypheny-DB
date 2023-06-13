@@ -68,7 +68,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -93,6 +92,7 @@ import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -331,6 +331,8 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( OperatorName.CURRENT_DATE ), systemFunctionImplementor );
         map.put( OperatorRegistry.get( OperatorName.LOCALTIME ), systemFunctionImplementor );
         map.put( OperatorRegistry.get( OperatorName.LOCALTIMESTAMP ), systemFunctionImplementor );
+
+        defineMethod( OperatorRegistry.get( OperatorName.UNWRAP_INTERVAL ), BuiltInMethod.UNWRAP_INTERVAL.method, NullPolicy.NONE );
 
         aggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountImplementor.class ) );
         aggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountImplementor.class ) );
@@ -958,7 +960,9 @@ public class RexImpTable {
             case 0:
                 return e;
             case 1:
-                return Expressions.multiply( e, Expressions.constant( x.intValueExact() ) );
+                return EnumUtils.wrapPolyValue( e.type, Expressions.multiply(
+                        EnumUtils.unwrapPolyValue( e, "longValue" ),
+                        Expressions.constant( x.intValueExact() ) ) );
             case -1:
                 return multiplyDivide( e, BigDecimal.ONE, x );
             default:
@@ -1910,21 +1914,21 @@ public class RexImpTable {
                                     Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
                             // fall through
                         case TIMESTAMP:
-                            type = long.class;
+                            type = PolyBigDecimal.class;
                             floorMethod = timestampMethod;
                             break;
                         default:
-                            type = int.class;
+                            type = PolyBigDecimal.class;
                             floorMethod = dateMethod;
                     }
                     final ConstantExpression tur = (ConstantExpression) translatedOperands.get( 1 );
                     final TimeUnitRange timeUnitRange = (TimeUnitRange) tur.value;
-                    switch ( timeUnitRange ) {
+                    switch ( Objects.requireNonNull( timeUnitRange ) ) {
                         case YEAR:
                         case MONTH:
-                            return Expressions.call( floorMethod, tur, call( operand, type, TimeUnit.DAY ) );
+                            return Expressions.call( floorMethod, tur, EnumUtils.convertPolyValue( call.type.getPolyType(), call( operand, type, TimeUnit.DAY ) ) );
                         default:
-                            return call( operand, type, timeUnitRange.startUnit );
+                            return EnumUtils.convertPolyValue( call.type.getPolyType(), call( operand, type, timeUnitRange.startUnit ) );
                     }
                 default:
                     throw new AssertionError();
@@ -1935,7 +1939,7 @@ public class RexImpTable {
         private Expression call( Expression operand, Type type, TimeUnit timeUnit ) {
             return Expressions.call( Functions.class, methodName,
                     Types.castIfNecessary( type, operand ),
-                    Types.castIfNecessary( type, Expressions.constant( timeUnit.multiplier ) ) );
+                    Types.castIfNecessary( type, EnumUtils.wrapPolyValue( type, Expressions.constant( timeUnit.multiplier ) ) ) );
         }
 
     }
@@ -2174,35 +2178,35 @@ public class RexImpTable {
                                     Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
                             // fall through
                         case TIMESTAMP:
-                            operand = Expressions.divide( unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.DAY.multiplier.longValue() ) );
-                            return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), wrapPolyValue( PolyType.TIMESTAMP, operand ) );
+                            operand = Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.DAY.multiplier.longValue() ) );
+                            return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), EnumUtils.wrapPolyValue( PolyType.TIMESTAMP, operand ) );
 
                         case DATE:
-                            return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), wrapPolyValue( PolyType.DATE, operand ) );
+                            return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), operand );
                         default:
                             throw new AssertionError( "unexpected " + polyType );
                     }
                     break;
                 case MILLISECOND:
-                    return wrapPolyValue( call.type.getPolyType(), Expressions.modulo( unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.MINUTE.multiplier.longValue() ) ) );
+                    return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.modulo( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.MINUTE.multiplier.longValue() ) ) );
                 case MICROSECOND:
-                    operand = Expressions.modulo( unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.MINUTE.multiplier.longValue() ) );
-                    return wrapPolyValue( call.type.getPolyType(), Expressions.multiply( operand, Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
+                    operand = Expressions.modulo( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.MINUTE.multiplier.longValue() ) );
+                    return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.multiply( operand, Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
                 case EPOCH:
                     switch ( polyType ) {
                         case DATE:
                             // convert to milliseconds
-                            operand = Expressions.multiply( unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.DAY.multiplier.longValue() ) );
-                            return wrapPolyValue( call.type.getPolyType(), Expressions.divide( operand, Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
+                            operand = Expressions.multiply( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.DAY.multiplier.longValue() ) );
+                            return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.divide( operand, Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
                         case TIMESTAMP:
                             // convert to seconds
-                            return wrapPolyValue( call.type.getPolyType(), Expressions.divide( unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
+                            return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
                         case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                             operand = Expressions.call(
                                     BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
                                     operand,
                                     Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
-                            return wrapPolyValue( call.type.getPolyType(), Expressions.divide( unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
+                            return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
                         case INTERVAL_YEAR:
                         case INTERVAL_YEAR_MONTH:
                         case INTERVAL_MONTH:
@@ -2224,13 +2228,13 @@ public class RexImpTable {
                 case MINUTE:
                 case SECOND:
                     if ( Objects.requireNonNull( polyType ) == PolyType.DATE ) {
-                        return wrapPolyValue( call.type.getPolyType(), Expressions.multiply( unwrapPolyValue( operand, "longValue" ), Expressions.constant( 0L ) ) );
+                        return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.multiply( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( 0L ) ) );
                     }
                     break;
             }
 
             MethodCallExpression num = Expressions.call( PolyValue.classFrom( call.type.getPolyType() ), "convert", operand );
-            num = unwrapPolyValue( num, "longValue" );
+            num = EnumUtils.unwrapPolyValue( num, "longValue" );
             operand = mod( num, getFactor( unit ) );
             if ( unit == TimeUnit.QUARTER ) {
                 operand = Expressions.subtract( operand, Expressions.constant( 1L ) );
@@ -2239,20 +2243,9 @@ public class RexImpTable {
             if ( unit == TimeUnit.QUARTER ) {
                 operand = Expressions.add( operand, Expressions.constant( 1L ) );
             }
-            return wrapPolyValue( call.type.getPolyType(), operand );
+            return EnumUtils.wrapPolyValue( call.type.getPolyType(), operand );
         }
 
-
-        @NotNull
-        private static MethodCallExpression unwrapPolyValue( Expression num, String methodName ) {
-            return Expressions.call( num, methodName );
-        }
-
-
-        @NotNull
-        private static MethodCallExpression wrapPolyValue( PolyType outputType, Expression operand ) {
-            return Expressions.call( PolyValue.classFrom( outputType ), "of", operand );
-        }
 
     }
 
@@ -2859,7 +2852,7 @@ public class RexImpTable {
                                     operand0.getType().getPolyType() == PolyType.TIMESTAMP
                                             ? BuiltInMethod.ADD_MONTHS
                                             : BuiltInMethod.ADD_MONTHS_INT;
-                            return Expressions.call( method.method, trop0, trop1 );
+                            return Expressions.call( method.method, EnumUtils.convertPolyValue( typeName, trop0 ), trop1 );
                     }
 
                 case INTERVAL_DAY:
@@ -2891,7 +2884,7 @@ public class RexImpTable {
                             TimeUnit fromUnit = typeName1 == PolyType.DATE ? TimeUnit.DAY : TimeUnit.MILLISECOND;
                             TimeUnit toUnit = TimeUnit.MILLISECOND;
                             return multiplyDivide(
-                                    Expressions.convert_( Expressions.subtract( trop0, trop1 ), (Class) long.class ),
+                                    Expressions.convert_( Expressions.subtract( trop0, trop1 ), long.class ),
                                     fromUnit.multiplier, toUnit.multiplier );
                         default:
                             throw new AssertionError( call );

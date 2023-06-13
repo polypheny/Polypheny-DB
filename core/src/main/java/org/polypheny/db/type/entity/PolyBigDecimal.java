@@ -92,8 +92,8 @@ public class PolyBigDecimal extends PolyNumber {
     public static PolyBigDecimal convert( PolyValue value ) {
         if ( value.isNumber() ) {
             return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
-        } else if ( value.isTime() ) {
-            return PolyBigDecimal.of( value.asTime().ofDay );
+        } else if ( value.isTemporal() ) {
+            return PolyBigDecimal.of( value.asTemporal().getSinceEpoch() );
         } else if ( value.isString() ) {
             return PolyBigDecimal.of( value.asString().value );
         }
@@ -158,6 +158,12 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public @NotNull PolyNumber subtract( @NotNull PolyNumber b1 ) {
         return PolyBigDecimal.of( value.subtract( b1.bigDecimalValue() ) );
+    }
+
+
+    @Override
+    public PolyNumber negate() {
+        return PolyLong.of( value.negate() );
     }
 
 

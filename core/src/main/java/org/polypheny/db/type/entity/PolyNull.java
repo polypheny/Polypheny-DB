@@ -70,7 +70,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyInteger asInteger() {
-        return PolyInteger.of( null );
+        return PolyInteger.of( (Integer) null );
     }
 
 
@@ -142,7 +142,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyFloat asFloat() {
-        return PolyFloat.of( null );
+        return PolyFloat.of( (Float) null );
     }
 
 
@@ -154,7 +154,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyDouble asDouble() {
-        return PolyDouble.of( null );
+        return PolyDouble.of( (Double) null );
     }
 
 
@@ -166,7 +166,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyLong asLong() {
-        return PolyLong.of( null );
+        return PolyLong.of( (Long) null );
     }
 
 
@@ -286,7 +286,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public PolyNumber asNumber() {
-        return PolyInteger.of( null );
+        return PolyInteger.of( (Integer) null );
     }
 
 

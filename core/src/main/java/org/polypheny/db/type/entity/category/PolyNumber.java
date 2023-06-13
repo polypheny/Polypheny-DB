@@ -111,6 +111,7 @@ public abstract class PolyNumber extends PolyValue {
     }
 
 
+
     public abstract PolyNumber increment();
 
     @NotNull
@@ -152,5 +153,8 @@ public abstract class PolyNumber extends PolyValue {
         }
         return PolyBigDecimal.of( bigDecimalValue().subtract( r ) );
     }
+
+
+    public abstract PolyNumber negate();
 
 }

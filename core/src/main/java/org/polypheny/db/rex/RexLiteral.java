@@ -554,7 +554,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    private String intervalString( BigDecimal v ) {
+    public String intervalString( BigDecimal v ) {
         final List<TimeUnit> timeUnits = getTimeUnits( type.getPolyType() );
         final StringBuilder b = new StringBuilder();
         for ( TimeUnit timeUnit : timeUnits ) {

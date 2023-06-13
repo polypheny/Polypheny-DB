@@ -146,6 +146,12 @@ public class PolyFloat extends PolyNumber {
     }
 
 
+    @Override
+    public PolyNumber negate() {
+        return PolyFloat.of( -value );
+    }
+
+
     public static class PolyFloatSerializerDef extends SimpleSerializerDef<PolyFloat> {
 
         @Override
