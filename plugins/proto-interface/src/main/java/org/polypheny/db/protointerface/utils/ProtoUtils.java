@@ -33,11 +33,6 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
 
-    public static Map<String, String> unwrapStringMap( StringMap stringMap ) {
-        return stringMap.getEntriesMap();
-    }
-
-
     public static Row serializeToRow( List<PolyValue> row ) {
         return Row.newBuilder()
                 .addAllValues( row.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() ) )
