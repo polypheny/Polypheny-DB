@@ -18,7 +18,6 @@ package org.polypheny.db.protointerface.utils;
 
 import java.sql.DatabaseMetaData;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
@@ -26,16 +25,10 @@ import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
-import org.polypheny.db.protointerface.proto.StringMap;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
-
-    public static Map<String, String> unwrapStringMap( StringMap stringMap ) {
-        return stringMap.getEntriesMap();
-    }
-
 
     public static Row serializeToRow( List<PolyValue> row ) {
         return Row.newBuilder()
