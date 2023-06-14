@@ -56,7 +56,7 @@ public class ClientManager {
         if ( isConnected( connectionRequest.getClientUuid() ) ) {
             throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUuid() + "is already connected." );
         }
-        Map<String, String> properties = ProtoUtils.unwrapStringMap(connectionRequest.getConnectionProperties());
+        Map<String, String> properties = connectionRequest.getConnectionPropertiesMap();
         if ( !credentialsPresent( properties ) ) {
             throw new ProtoInterfaceServiceException( "No username and password given." );
         }
