@@ -86,9 +86,6 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         if ( !statementManager.isSupportedLanguage( languageName ) ) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
         }
-        if ( unparameterizedStatement.hasProperties() ) {
-            client.setStatementProperties( ProtoUtils.unwrapStringMap( unparameterizedStatement.getProperties() ) );
-        }
         UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
         responseObserver.onNext( ProtoUtils.createStatus( statement ) );
         StatementResult result = statement.execute();
