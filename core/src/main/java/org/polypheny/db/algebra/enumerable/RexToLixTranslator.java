@@ -67,6 +67,8 @@ import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
@@ -1063,6 +1065,10 @@ public class RexToLixTranslator {
         } else if ( toType == PolyNumber.class ) {
             // due to refactor
             return Expressions.call( PolyBigDecimal.class, "convert", operand );
+        }else if ( toType == PolyString.class ){
+            return Expressions.call( PolyString.class, "convert", operand );
+        }else if ( toType == PolyBoolean.class ){
+            return Expressions.call( PolyBoolean.class, "convert", operand );
         }
         log.warn( "Converter missing" );
         return Expressions.convert_( operand, toType );

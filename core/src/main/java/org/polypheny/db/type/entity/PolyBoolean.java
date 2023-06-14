@@ -31,6 +31,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
@@ -61,6 +62,16 @@ public class PolyBoolean extends PolyValue {
 
     public static PolyBoolean of( boolean value ) {
         return new PolyBoolean( value );
+    }
+
+
+    public static PolyBoolean convert( Object value ) {
+        if ( value instanceof PolyValue ) {
+            if ( ((PolyValue) value).isBoolean() ) {
+                return ((PolyValue) value).asBoolean();
+            }
+        }
+        throw new NotImplementedException( "convert value to boolean" );
     }
 
 

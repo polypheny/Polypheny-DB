@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
@@ -63,6 +64,16 @@ public class PolyString extends PolyValue {
 
     public static PolyString concat( List<PolyString> strings ) {
         return PolyString.of( strings.stream().map( s -> s.value ).collect( Collectors.joining() ) );
+    }
+
+
+    public static PolyString convert( Object value ) {
+        if ( value instanceof PolyValue ) {
+            if ( ((PolyValue) value).isString() ) {
+                return ((PolyValue) value).asString();
+            }
+        }
+        throw new NotImplementedException( "convert value to string" );
     }
 
 
