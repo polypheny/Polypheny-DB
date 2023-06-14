@@ -160,9 +160,7 @@ public class PolyLong extends PolyNumber {
         if ( o == null || getClass() != o.getClass() ) {
             return false;
         }
-        if ( !super.equals( o ) ) {
-            return false;
-        }
+
         PolyLong polyLong = (PolyLong) o;
         return Objects.equals( value, polyLong.value );
     }

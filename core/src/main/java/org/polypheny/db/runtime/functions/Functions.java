@@ -775,27 +775,27 @@ public class Functions {
     /**
      * SQL {@code LIKE} function.
      */
-    public static boolean like( String s, String pattern ) {
-        final String regex = Like.sqlToRegexLike( pattern, null );
-        return Pattern.matches( regex, s );
+    public static PolyBoolean like( PolyString s, PolyString pattern ) {
+        final String regex = Like.sqlToRegexLike( pattern.value, null );
+        return PolyBoolean.of( Pattern.matches( regex, s.value ) );
     }
 
 
     /**
      * SQL {@code LIKE} function with escape.
      */
-    public static boolean like( String s, String pattern, String escape ) {
-        final String regex = Like.sqlToRegexLike( pattern, escape );
-        return Pattern.matches( regex, s );
+    public static PolyBoolean like( PolyString s, PolyString pattern, PolyString escape ) {
+        final String regex = Like.sqlToRegexLike( pattern.value, escape.value );
+        return PolyBoolean.of( Pattern.matches( regex, s.value ) );
     }
 
 
     /**
      * SQL {@code SIMILAR} function.
      */
-    public static boolean similar( String s, String pattern ) {
-        final String regex = Like.sqlToRegexSimilar( pattern, null );
-        return Pattern.matches( regex, s );
+    public static PolyBoolean similar( PolyString s, PolyString pattern ) {
+        final String regex = Like.sqlToRegexSimilar( pattern.value, null );
+        return PolyBoolean.of( Pattern.matches( regex, s.value ) );
     }
 
     /**
@@ -1575,7 +1575,7 @@ public class Functions {
     /**
      * SQL <code>MOD</code> operator applied to byte values.
      */
-    public static byte mod( byte b0, byte b1 ) {
+    /*public static byte mod( byte b0, byte b1 ) {
         return (byte) (b0 % b1);
     }
 
@@ -1583,7 +1583,7 @@ public class Functions {
     /**
      * SQL <code>MOD</code> operator applied to short values.
      */
-    public static short mod( short b0, short b1 ) {
+    /*public static short mod( short b0, short b1 ) {
         return (short) (b0 % b1);
     }
 
@@ -1591,7 +1591,7 @@ public class Functions {
     /**
      * SQL <code>MOD</code> operator applied to int values.
      */
-    public static int mod( int b0, int b1 ) {
+    /*public static int mod( int b0, int b1 ) {
         return b0 % b1;
     }
 
@@ -1599,19 +1599,19 @@ public class Functions {
     /**
      * SQL <code>MOD</code> operator applied to long values.
      */
-    public static long mod( long b0, long b1 ) {
+    /*public static long mod( long b0, long b1 ) {
         return b0 % b1;
     }
 
 
     // temporary
-    public static BigDecimal mod( BigDecimal b0, int b1 ) {
+    /*public static BigDecimal mod( BigDecimal b0, int b1 ) {
         return mod( b0, BigDecimal.valueOf( b1 ) );
     }
 
 
     // temporary
-    public static int mod( int b0, BigDecimal b1 ) {
+    /*public static int mod( int b0, BigDecimal b1 ) {
         return mod( b0, b1.intValue() );
     }
 
@@ -1629,6 +1629,23 @@ public class Functions {
 
         if ( allAssignable( Number.class, b0, b1 ) ) {
             return mod( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+        }
+
+        throw notArithmetic( "mod", b0, b1 );
+    }*/
+    public static PolyNumber mod( PolyNumber b0, PolyNumber b1 ) {
+        final BigDecimal[] bigDecimals = b0.bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
+        return PolyBigDecimal.of( bigDecimals[1] );
+    }
+
+
+    public static PolyNumber mod( PolyValue b0, PolyValue b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return null;
+        }
+
+        if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
+            return mod( b0, b1 );
         }
 
         throw notArithmetic( "mod", b0, b1 );
@@ -3210,7 +3227,7 @@ public class Functions {
             return null;
         }
         try {
-            List asList = Primitive.asList( a.getArray() );
+            List<?> asList = Primitive.asList( a.getArray() );
             return deepArrayToListRecursive( asList );
         } catch ( SQLException e ) {
             throw toUnchecked( e );
@@ -3223,9 +3240,9 @@ public class Functions {
             return new ArrayList<>( l );
         }
 
-        List outer = new ArrayList<>();
+        List<Object> outer = new ArrayList<>();
         for ( Object o : l ) {
-            List asList = Primitive.asList( o );
+            List<?> asList = Primitive.asList( o );
             outer.add( deepArrayToListRecursive( asList ) );
         }
 
@@ -3348,7 +3365,7 @@ public class Functions {
             return true;
         }
         // capacity calculation is in the same way like for new HashSet(Collection) however return immediately in case of duplicates
-        Set set = new HashSet( Math.max( (int) (collection.size() / .75f) + 1, 16 ) );
+        Set<Object> set = new HashSet<>( Math.max( (int) (collection.size() / .75f) + 1, 16 ) );
         for ( Object e : collection ) {
             if ( !set.add( e ) ) {
                 return false;
@@ -3361,11 +3378,11 @@ public class Functions {
     /**
      * Support the SUBMULTISET OF function.
      */
-    public static boolean submultisetOf( Collection possibleSubMultiset, Collection multiset ) {
+    public static boolean submultisetOf( Collection<?> possibleSubMultiset, Collection<?> multiset ) {
         if ( possibleSubMultiset.size() > multiset.size() ) {
             return false;
         }
-        Collection multisetLocal = new LinkedList( multiset );
+        Collection<?> multisetLocal = new LinkedList<>( multiset );
         for ( Object e : possibleSubMultiset ) {
             if ( !multisetLocal.remove( e ) ) {
                 return false;

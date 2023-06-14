@@ -101,9 +101,6 @@ public class PolyString extends PolyValue {
         if ( o == null || getClass() != o.getClass() ) {
             return false;
         }
-        if ( !super.equals( o ) ) {
-            return false;
-        }
         PolyString that = (PolyString) o;
         return Objects.equals( value, that.value );
     }

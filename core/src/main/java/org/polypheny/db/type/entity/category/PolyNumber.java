@@ -31,6 +31,12 @@ public abstract class PolyNumber extends PolyValue {
     }
 
 
+    @Override
+    public boolean equals( Object o ) {
+        return super.equals( o );
+    }
+
+
     /**
      * Returns the value of the specified number as an {@code int}, which may involve rounding or truncation.
      *

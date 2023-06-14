@@ -67,7 +67,6 @@ import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
-import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -2120,7 +2119,8 @@ public class RexImpTable {
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final Expression operand = translatedOperands.get( 0 );
-            final UnaryExpression e = Expressions.makeUnary( expressionType, operand );
+            //final UnaryExpression e = Expressions.makeUnary( expressionType, operand );
+            final Expression e = Expressions.call( operand, "negate" );
             if ( e.type.equals( operand.type ) ) {
                 return e;
             }

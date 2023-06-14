@@ -136,7 +136,7 @@ public class SelectTest {
                         new Object[]{ 99, "Name3" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT TableA.id, TableA.name FROM  TableA WHERE TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name3')" ),
+                        statement.executeQuery( "SELECT TableA.id, TableA.name FROM TableA WHERE TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name3')" ),
                         expectedResult,
                         true
                 );
@@ -148,7 +148,7 @@ public class SelectTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "\n" +
-                                "SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name2')" ),
+                                "SELECT TableA.id, TableA.name FROM TableA WHERE TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name2')" ),
                         expectedResult,
                         true
                 );
@@ -160,7 +160,7 @@ public class SelectTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "\n" +
-                                "SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age IN (60,11,50)" ),
+                                "SELECT TableA.id, TableA.name FROM TableA WHERE TableA.age IN (60,11,50)" ),
                         expectedResult,
                         true
                 );
@@ -172,7 +172,7 @@ public class SelectTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "\n" +
-                                "SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age NOT IN (11)" ),
+                                "SELECT TableA.id, TableA.name FROM TableA WHERE TableA.age NOT IN (11)" ),
                         expectedResult,
                         true
                 );
@@ -190,7 +190,7 @@ public class SelectTest {
                         new Object[]{ 98 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM TABLEC WHERE category='AC' AND EXISTS (SELECT *  FROM TABLEB WHERE age > 19 AND TABLEB.id = TABLEC.id)" ),
+                        statement.executeQuery( "SELECT id FROM TABLEC WHERE category='AC' AND EXISTS (SELECT * FROM TABLEB WHERE age > 19 AND TABLEB.id = TABLEC.id)" ),
                         expectedResult
                 );
             }
