@@ -18,14 +18,14 @@ service ProtoInterface {
   rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
   rpc FetchResult(FetchRequest) returns (Frame) {}
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
-
+  rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
 }
 
 message ConnectionRequest {
   int32 major_api_version = 1;
   int32 minor_api_version = 2;
   string client_uuid = 3;
-  StringMap connection_properties = 4;
+  map<string, string> connection_properties = 4;
 }
 
 message ConnectionReply {
@@ -38,10 +38,6 @@ message LanguageRequest {}
 
 message SupportedLanguages {
   repeated string language_names = 1;
-}
-
-message StringMap {
-  map<string, string> entries = 1;
 }
 
 message StatementStatus {
@@ -57,7 +53,6 @@ message FetchRequest {
 message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  optional StringMap properties = 3;
   bool expects_result = 4;
 }
 
@@ -68,20 +63,25 @@ message CloseStatementRequest {
 message CloseStatementResponse {
 }
 
+message StatementProperties{
+  int32 statementId = 1;
+  map<string, string> properties = 2;
+}
+
+message StatementPropertyConfirmation {
+}
+
 message ParameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
   map<string, ProtoValue> values = 3;
   bool expects_result = 4;
-  optional StringMap properties = 5;
-
 }
 
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
   bool expects_result = 3;
-  optional StringMap properties = 5;
 }
 
 message StatementResult {
