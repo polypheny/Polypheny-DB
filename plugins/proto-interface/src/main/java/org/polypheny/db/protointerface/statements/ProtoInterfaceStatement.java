@@ -35,7 +35,9 @@ public abstract class ProtoInterfaceStatement {
     protected final QueryLanguage queryLanguage;
     protected final String query;
 
+
     public abstract StatementResult execute() throws Exception;
+
 
     public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         if ( query == null ) {
@@ -54,6 +56,7 @@ public abstract class ProtoInterfaceStatement {
         this.isRunning = false;
         this.executionStopWatch = new StopWatch();
     }
+
 
     protected void commitElseRollback() {
         try {
