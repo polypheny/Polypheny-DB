@@ -39,43 +39,9 @@ import org.polypheny.db.protointerface.proto.ProtoValueType;
 import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
-import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
-import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
-
-
-
-
-    public static Row serializeToRow( List<PolyValue> row ) {
-        return Row.newBuilder()
-                .addAllValues( row.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() ) )
-                .build();
-    }
-
-
-    public static Frame buildFrame( List<List<PolyValue>> rows, List<ColumnMeta> metas ) {
-        return Frame.newBuilder()
-                .addAllColumnMeta( metas )
-                .addAllRows( rows.stream().map( ProtoUtils::serializeToRow ).collect( Collectors.toList() ) )
-                .build();
-    }
-
-
-    public static List<ColumnMeta> buildColumnMetasFromAvatica( List<ColumnMetaData> avaticaColumnMetas ) {
-        return avaticaColumnMetas.stream().map( ProtoUtils::buildColumnMetaFromAvatica ).collect( Collectors.toList() );
-    }
-
-
-    public static ColumnMeta buildColumnMetaFromAvatica( ColumnMetaData avaticaColumnMeta ) {
-        throw new NotImplementedException("DONT USE THIS!");
-    }
-
-
-
 
 
     public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement ) {
