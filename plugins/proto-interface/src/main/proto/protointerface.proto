@@ -1,6 +1,8 @@
 syntax = "proto3";
 import "value.proto";
-import "frame.proto";
+import "relational_result.proto";
+import "graph_result.proto";
+import "document_result.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
@@ -85,10 +87,12 @@ message PreparedStatement {
 }
 
 message StatementResult {
+  int64 scalar = 1;
   oneof result {
-    int64 row_count = 1;
-    Frame frame = 2;
-    NoResult no_result = 3;
+    RelationalResult relational_result = 2;
+    GraphResult graph_result = 3;
+    DocumentResult document_result = 4;
+    NoResult no_result = 5;
   }
 }
 

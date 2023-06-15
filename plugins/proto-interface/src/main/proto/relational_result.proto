@@ -3,12 +3,11 @@ import "value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
-option java_outer_classname = "FrameProto";
-option objc_class_prefix = "PI";
+option java_outer_classname = "RelationalResult";
 
 package polypheny.protointerface;
 
-message Frame {
+message RelationalResult {
   repeated ColumnMeta column_meta = 1;
   repeated Row rows = 2;
   int64 offset = 3;
@@ -16,7 +15,7 @@ message Frame {
 }
 
 message ColumnMeta {
-  int32 columnIndex = 1;
+  int32 column_index = 1;
   bool is_nullable = 2;
   int32 length = 3;
   string column_label = 4;
@@ -30,7 +29,7 @@ message ColumnMeta {
 }
 
 message FieldMeta {
-  int32 fieldIndex = 1;
+  int32 field_index = 1;
   bool is_nullable = 2;
   int32 length = 3;
   string field_name = 4;
