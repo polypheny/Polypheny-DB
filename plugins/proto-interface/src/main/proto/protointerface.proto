@@ -106,10 +106,12 @@ message SimpleSqlQuery {
 }
 
 message StatementResult {
+  int64 scalar = 1;
   oneof result {
-    int64 row_count = 1;
-    Frame frame = 2;
-    NoResult no_result = 3;
+    RelationalResult relational_result = 2;
+    GraphResult graph_result = 3;
+    DocumentResult document_result = 4;
+    NoResult no_result = 5;
   }
 }
 
