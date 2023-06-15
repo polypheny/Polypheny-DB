@@ -6,7 +6,5 @@ option java_outer_classname = "DocumentResultProto";
 
 package polypheny.protointerface;
 
-message DocumentResult {
-  int64 offset = 3;
-  bool isLast = 4;
+message DocumentFrame {
 }

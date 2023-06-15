@@ -6,7 +6,5 @@ option java_outer_classname = "GraphResultProto";
 
 package polypheny.protointerface;
 
-message GraphResult {
-  int64 offset = 3;
-  bool isLast = 4;
+message GraphFrame {
 }
