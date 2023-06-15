@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.common.base.Charsets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -32,6 +33,7 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -41,6 +43,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
@@ -50,10 +53,23 @@ public class PolyString extends PolyValue {
     @Serialize
     public String value;
 
+    public Charset charset;
+
 
     public PolyString( @Deserialize("value") String value ) {
+        this( value, Charsets.UTF_16 );
+    }
+
+
+    public PolyString( String value, Charset charset ) {
         super( PolyType.VARCHAR );
         this.value = value;
+        this.charset = charset;
+    }
+
+
+    public static PolyString of( String value, @Nullable String charset ) {
+        return new PolyString( value, charset == null ? Charsets.UTF_16 : Charset.forName( charset ) );
     }
 
 

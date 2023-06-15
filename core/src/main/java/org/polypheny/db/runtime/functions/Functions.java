@@ -55,7 +55,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -115,11 +114,12 @@ import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -157,7 +157,7 @@ public class Functions {
             lists -> {
                 final List<Enumerator<Object>> enumerators = new ArrayList<>();
                 for ( Object list : lists ) {
-                    enumerators.add( Linq4j.enumerator( (List) list ) );
+                    enumerators.add( Linq4j.enumerator( (List<?>) list ) );
                 }
                 final Enumerator<List<Object>> product = Linq4j.product( enumerators );
                 return new AbstractEnumerable<>() {
@@ -186,40 +186,40 @@ public class Functions {
     }
 
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static double distance( List<Number> value, List<Number> target, String metric, List<Number> weights ) {
+    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
         DistanceFunctions.verifyInputs( value, target, weights );
-        if ( "L2".equals( metric ) ) {
-            return DistanceFunctions.l2MetricWeighted( value, target, weights );
-        } else if ( "L1".equals( metric ) ) {
-            return DistanceFunctions.l1MetricWeighted( value, target, weights );
-        } else if ( "L2SQUARED".equals( metric ) ) {
-            return DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
-        } else if ( "CHISQUARED".equals( metric ) ) {
-            return DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
-        } else if ( "COSINE".equals( metric ) ) {
-            return DistanceFunctions.cosineMetricWeighted( value, target, weights );
-        } else {
-            return 0.0;
+        switch ( metric.value ) {
+            case "L2":
+                return DistanceFunctions.l2MetricWeighted( value, target, weights );
+            case "L1":
+                return DistanceFunctions.l1MetricWeighted( value, target, weights );
+            case "L2SQUARED":
+                return DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
+            case "CHISQUARED":
+                return DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
+            case "COSINE":
+                return DistanceFunctions.cosineMetricWeighted( value, target, weights );
+            default:
+                return PolyDouble.of( 0.0 );
         }
     }
 
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static double distance( List<Number> value, List<Number> target, String metric ) {
+    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
         DistanceFunctions.verifyInputs( value, target, null );
-        if ( "L2".equals( metric ) ) {
-            return DistanceFunctions.l2Metric( value, target );
-        } else if ( "L1".equals( metric ) ) {
-            return DistanceFunctions.l1Metric( value, target );
-        } else if ( "L2SQUARED".equals( metric ) ) {
-            return DistanceFunctions.l2SquaredMetric( value, target );
-        } else if ( "CHISQUARED".equals( metric ) ) {
-            return DistanceFunctions.chiSquaredMetric( value, target );
-        } else if ( "COSINE".equals( metric ) ) {
-            return DistanceFunctions.cosineMetric( value, target );
-        } else {
-            return 0.0;
+        switch ( metric.value ) {
+            case "L2":
+                return DistanceFunctions.l2Metric( value, target );
+            case "L1":
+                return DistanceFunctions.l1Metric( value, target );
+            case "L2SQUARED":
+                return DistanceFunctions.l2SquaredMetric( value, target );
+            case "CHISQUARED":
+                return DistanceFunctions.chiSquaredMetric( value, target );
+            case "COSINE":
+                return DistanceFunctions.cosineMetric( value, target );
+            default:
+                return PolyDouble.of( 0.0 );
         }
     }
 
@@ -1514,7 +1514,7 @@ public class Functions {
     /**
      * SQL <code>POWER</code> operator applied to double values.
      */
-    public static double power( double b0, double b1 ) {
+    /*public static double power( double b0, double b1 ) {
         return Math.pow( b0, b1 );
     }
 
@@ -1531,6 +1531,9 @@ public class Functions {
 
     public static double power( BigDecimal b0, BigDecimal b1 ) {
         return Math.pow( b0.doubleValue(), b1.doubleValue() );
+    }*/
+    public static PolyNumber power( PolyNumber base, PolyNumber exp ) {
+        return PolyDouble.of( Math.pow( base.doubleValue(), exp.doubleValue() ) );
     }
 
     // LN
@@ -1829,7 +1832,7 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to byte values.
      */
-    public static byte abs( byte b0 ) {
+    /*public static byte abs( byte b0 ) {
         return (byte) Math.abs( b0 );
     }
 
@@ -1837,7 +1840,7 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to short values.
      */
-    public static short abs( short b0 ) {
+    /*public static short abs( short b0 ) {
         return (short) Math.abs( b0 );
     }
 
@@ -1845,7 +1848,7 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to int values.
      */
-    public static int abs( int b0 ) {
+    /*public static int abs( int b0 ) {
         return Math.abs( b0 );
     }
 
@@ -1853,7 +1856,7 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to long values.
      */
-    public static long abs( long b0 ) {
+    /*public static long abs( long b0 ) {
         return Math.abs( b0 );
     }
 
@@ -1861,7 +1864,7 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to float values.
      */
-    public static float abs( float b0 ) {
+    /*public static float abs( float b0 ) {
         return Math.abs( b0 );
     }
 
@@ -1869,7 +1872,7 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to double values.
      */
-    public static double abs( double b0 ) {
+    /*public static double abs( double b0 ) {
         return Math.abs( b0 );
     }
 
@@ -1877,8 +1880,11 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal abs( BigDecimal b0 ) {
+    /*public static BigDecimal abs( BigDecimal b0 ) {
         return b0.abs();
+    }*/
+    public static PolyNumber abs( PolyNumber number ) {
+        return PolyBigDecimal.of( number.bigDecimalValue().abs() );
     }
 
     // ACOS
@@ -3125,12 +3131,12 @@ public class Functions {
     }
 
 
-    public static Object reparse( PolyType innerType, Long dimension, String stringValue ) {
-        Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+    public static List<?> reparse( PolyType innerType, Long dimension, String stringValue ) {
+        /*Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
         if ( stringValue == null ) {
             return null;
-        }
-        return gson.fromJson( stringValue.trim(), conversionType );
+        }*/
+        return PolyList.deserialize( stringValue ).asList();
     }
 
 
@@ -3485,7 +3491,6 @@ public class Functions {
             }
         };
     }
-
 
 
     /**

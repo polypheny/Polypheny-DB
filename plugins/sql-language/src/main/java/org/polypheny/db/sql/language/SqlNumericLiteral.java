@@ -17,12 +17,13 @@
 package org.polypheny.db.sql.language;
 
 
-import java.math.BigDecimal;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.NumericLiteral;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.Util;
 
 
@@ -36,9 +37,8 @@ public class SqlNumericLiteral extends SqlLiteral implements NumericLiteral {
     private boolean isExact;
 
 
-    protected SqlNumericLiteral( BigDecimal value, Integer prec, Integer scale, boolean isExact, ParserPos pos ) {
-        super(
-                value,
+    protected SqlNumericLiteral( PolyNumber value, Integer prec, Integer scale, boolean isExact, ParserPos pos ) {
+        super( value,
                 isExact ? PolyType.DECIMAL : PolyType.DOUBLE,
                 pos );
         this.prec = prec;
@@ -64,7 +64,7 @@ public class SqlNumericLiteral extends SqlLiteral implements NumericLiteral {
 
     @Override
     public SqlNumericLiteral clone( ParserPos pos ) {
-        return new SqlNumericLiteral( (BigDecimal) value, getPrec(), getScale(), isExact, pos );
+        return new SqlNumericLiteral( (PolyNumber) value, getPrec(), getScale(), isExact, pos );
     }
 
 
@@ -76,20 +76,20 @@ public class SqlNumericLiteral extends SqlLiteral implements NumericLiteral {
 
     @Override
     public String toValue() {
-        BigDecimal bd = (BigDecimal) value;
+        PolyBigDecimal bd = (PolyBigDecimal) value;
         if ( isExact ) {
-            return value.toString();
+            return ((PolyBigDecimal) value).value.toString();
         }
-        return Util.toScientificNotation( bd );
+        return Util.toScientificNotation( bd.value );
     }
 
 
     @Override
     public AlgDataType createSqlType( AlgDataTypeFactory typeFactory ) {
         if ( isExact ) {
-            int scaleValue = scale.intValue();
+            int scaleValue = scale;
             if ( 0 == scaleValue ) {
-                BigDecimal bd = (BigDecimal) value;
+                PolyBigDecimal bd = (PolyBigDecimal) value;
                 PolyType result;
                 long l = bd.longValue();
                 if ( (l >= Integer.MIN_VALUE) && (l <= Integer.MAX_VALUE) ) {
@@ -101,7 +101,7 @@ public class SqlNumericLiteral extends SqlLiteral implements NumericLiteral {
             }
 
             // else we have a decimal
-            return typeFactory.createPolyType( PolyType.DECIMAL, prec.intValue(), scaleValue );
+            return typeFactory.createPolyType( PolyType.DECIMAL, prec, scaleValue );
         }
 
         // else we have a a float, real or double.  make them all double for now.
@@ -110,7 +110,7 @@ public class SqlNumericLiteral extends SqlLiteral implements NumericLiteral {
 
 
     public boolean isInteger() {
-        return 0 == scale.intValue();
+        return 0 == scale;
     }
 
 }

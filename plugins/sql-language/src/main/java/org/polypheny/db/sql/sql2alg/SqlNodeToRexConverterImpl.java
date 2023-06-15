@@ -35,7 +35,6 @@ import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -97,16 +96,15 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
         switch ( literal.getTypeName() ) {
             case DECIMAL:
                 // exact number
-                BigDecimal bd = literal.getValueAs( BigDecimal.class );
-                return rexBuilder.makeExactLiteral( bd, literal.createSqlType( typeFactory ) );
+                return rexBuilder.makeLiteral( literal.getPolyValue(), literal.createSqlType( typeFactory ), PolyType.DECIMAL );
 
             case DOUBLE:
                 // approximate type
                 // TODO:  preserve fixed-point precision and large integers
-                return rexBuilder.makeApproxLiteral( literal.getValueAs( BigDecimal.class ) );
+                return rexBuilder.makeLiteral( literal.getPolyValue(), literal.createSqlType( typeFactory ), PolyType.DOUBLE );
 
             case CHAR:
-                return rexBuilder.makeCharLiteral( literal.getValueAs( NlsString.class ) );
+                return rexBuilder.makeLiteral( literal.getPolyValue(), literal.createSqlType( typeFactory ), PolyType.CHAR );
             case BOOLEAN:
                 return rexBuilder.makeLiteral( literal.getValueAs( Boolean.class ) );
             case BINARY:

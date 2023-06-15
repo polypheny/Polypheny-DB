@@ -828,7 +828,7 @@ public class CypherToAlgConverter {
                             ref,
                             rexBuilder.makeArray(
                                     typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                    labels.stream().map( l -> (RexNode) rexBuilder.makeLiteral( l ) ).collect( Collectors.toList() ) ),
+                                    labels.stream().map( PolyString::of ).collect( Collectors.toList() ) ),
                             rexBuilder.makeLiteral( replace ) ) );
         }
 

@@ -47,6 +47,7 @@ import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MetaImpl.MetaTypeInfo;
@@ -111,6 +112,9 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
@@ -899,8 +903,8 @@ public class DbmsMeta implements ProtobufMeta {
                     if ( !values.containsKey( i ) ) {
                         values.put( i, new LinkedList<>() );
                     }
-                    if ( "ARRAY".equals( v.getType().name() ) ) {
-                        values.get( i ).add( (PolyValue) convertList( (List<PolyValue>) TypedValue.fromProto( v ).toLocal() ) );
+                    if ( v.getType() == Common.Rep.ARRAY ) {
+                        values.get( i ).add( (PolyValue) convertList( (List<TypedValue>) TypedValue.fromProto( v ).toLocal() ) );
                     } else {
                         values.get( i ).add( (PolyValue) TypedValue.fromProto( v ).toJdbc( calendar ) );
                     }
@@ -1203,8 +1207,8 @@ public class DbmsMeta implements ProtobufMeta {
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {
                 PolyValue o;
-                if ( "ARRAY".equals( v.type.name() ) ) {
-                    o = (PolyValue) convertList( (List<PolyValue>) v.toLocal() );
+                if ( v.type == Rep.ARRAY ) {
+                    o = (PolyValue) convertList( (List<TypedValue>) v.toLocal() );
                 } else {
                     o = (PolyValue) v.toJdbc( calendar );
                 }
@@ -1236,16 +1240,27 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private List<Object> convertList( List<PolyValue> list ) {
-        List<Object> newList = new LinkedList<>();
-        for ( Object o : list ) {
+    private PolyList<PolyValue> convertList( List<TypedValue> list ) {
+        List<PolyValue> newList = new LinkedList<>();
+        for ( TypedValue o : list ) {
             if ( o instanceof List ) {
                 newList.add( convertList( list ) );
-            } else if ( o instanceof TypedValue ) {
-                newList.add( ((TypedValue) o).toJdbc( calendar ) );
+            } else if ( o != null ) {
+                newList.add( toPolyValue( o ) );
             }
         }
-        return newList;
+        return PolyList.of( newList );
+    }
+
+
+    private PolyValue toPolyValue( TypedValue value ) {
+        switch ( value.type ) {
+            case FLOAT:
+                return PolyFloat.of( (Number) value.toJdbc( calendar ) );
+            case INTEGER:
+                return PolyInteger.of( (Number) value.toJdbc( calendar ) );
+        }
+        throw new NotImplementedException( "dbms to poly" );
     }
 
 
@@ -1287,6 +1302,7 @@ public class DbmsMeta implements ProtobufMeta {
                             transform.add( o -> o.asString().value );
                             break;
                         case INTEGER:
+                        case TINYINT:
                             transform.add( o -> o.asNumber().IntValue() );
                             break;
                         case FLOAT:

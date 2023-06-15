@@ -253,7 +253,7 @@ public class SqlProcessorImpl extends Processor {
             catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
-            int size = (int) catalogTable.getColumns().size();
+            int size = catalogTable.getColumns().size();
             if ( namespaceType == NamespaceType.DOCUMENT ) {
                 List<String> columnNames = catalogTable.getColumnNames();
                 size += oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();

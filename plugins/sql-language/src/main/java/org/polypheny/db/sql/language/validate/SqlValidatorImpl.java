@@ -146,6 +146,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.AssignableOperandTypeChecker;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.AccessType;
@@ -2824,11 +2825,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             case DECIMAL:
                 // Decimal and long have the same precision (as 64-bit integers), so the unscaled value of a decimal must fit into a long.
 
-                // REVIEW jvs:  This should probably be calling over to the available calculator implementations to see what they support.  For now use ESP instead.
+                // REPVIEW jvs:  This should probably be calling over to the available calculator implementations to see what they support.  For now use ESP instead.
                 //
                 // jhyde: I think the limits should be baked into the type system, not dependent on the calculator implementation.
-                BigDecimal bd = (BigDecimal) literal.getValue();
-                BigInteger unscaled = bd.unscaledValue();
+                PolyBigDecimal bd = (PolyBigDecimal) literal.getValue();
+                BigInteger unscaled = bd.bigDecimalValue().unscaledValue();
                 long longValue = unscaled.longValue();
                 if ( !BigInteger.valueOf( longValue ).equals( unscaled ) ) {
                     // overflow

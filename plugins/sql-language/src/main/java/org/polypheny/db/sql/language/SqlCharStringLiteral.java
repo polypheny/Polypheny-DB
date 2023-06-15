@@ -18,12 +18,12 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Bug;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -33,7 +33,7 @@ import org.polypheny.db.util.Util;
  */
 public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
 
-    protected SqlCharStringLiteral( NlsString val, ParserPos pos ) {
+    protected SqlCharStringLiteral( PolyString val, ParserPos pos ) {
         super( val, PolyType.CHAR, pos );
     }
 
@@ -56,29 +56,20 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
 
     @Override
     public SqlCharStringLiteral clone( ParserPos pos ) {
-        return new SqlCharStringLiteral( (NlsString) value, pos );
+        return new SqlCharStringLiteral( (PolyString) value, pos );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        if ( false ) {
-            Util.discard( Bug.FRG78_FIXED );
-            String stringValue = ((NlsString) value).getValue();
-            writer.literal( writer.getDialect().quoteStringLiteral( stringValue ) );
-        }
-        assert value instanceof NlsString;
-        writer.literal( value.toString() );
+        assert value instanceof PolyString;
+        writer.literal( ((PolyString) value).value );
     }
 
 
     @Override
     protected SqlAbstractStringLiteral concat1( List<SqlLiteral> literals ) {
-        return new SqlCharStringLiteral(
-                NlsString.concat(
-                        Util.transform(
-                                literals,
-                                literal -> ((SqlCharStringLiteral) literal).getNlsString() ) ),
+        return new SqlCharStringLiteral( PolyString.of( literals.stream().map( literal -> (literal.getPolyValue().asString().value) ).collect( Collectors.joining() ) ),
                 literals.get( 0 ).getPos() );
     }
 

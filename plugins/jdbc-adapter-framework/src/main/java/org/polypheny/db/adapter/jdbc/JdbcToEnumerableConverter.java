@@ -93,6 +93,7 @@ import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
@@ -389,6 +390,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyString.class, "of", Expressions.convert_( source, String.class ) );
                 break;
             case SMALLINT:
+            case TINYINT:
             case INTEGER:
                 poly = Expressions.call( PolyInteger.class, "of", Expressions.convert_( source, Number.class ) );
                 break;
@@ -413,6 +415,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case DECIMAL:
                 poly = Expressions.call( PolyBigDecimal.class, "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
+                break;
+            case ARRAY:
+                poly = Expressions.call( PolyList.class, "of", source );
                 break;
             default:
                 poly = source;

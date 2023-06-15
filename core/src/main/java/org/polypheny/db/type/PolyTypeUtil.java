@@ -62,6 +62,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
@@ -677,9 +678,7 @@ public abstract class PolyTypeUtil {
         Charset cs1 = t1.getCharset();
         Charset cs2 = t2.getCharset();
         if ( (cs1 != null) && (cs2 != null) ) {
-            if ( !cs1.equals( cs2 ) ) {
-                return true;
-            }
+            return !cs1.equals( cs2 );
         }
         return false;
     }
@@ -1300,7 +1299,7 @@ public abstract class PolyTypeUtil {
         if ( dimension == -1 ) {
             conversionType = TypeUtils.parameterize( List.class, PolyTypeUtil.polyToJavaType( innerType ) );
         } else {
-            conversionType = TypeUtils.wrap( PolyTypeUtil.polyToJavaType( innerType ) ).getType();
+            conversionType = TypeUtils.wrap( PolyValue.classFrom( innerType ) ).getType();
             while ( dimension > 0 ) {
                 conversionType = TypeUtils.parameterize( List.class, conversionType );
                 dimension -= 1;

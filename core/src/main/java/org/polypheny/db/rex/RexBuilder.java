@@ -79,6 +79,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyTime;
@@ -802,7 +803,7 @@ public class RexBuilder {
      * @param typeName SQL type of literal
      * @return Literal
      */
-    protected RexLiteral makeLiteral( PolyValue o, AlgDataType type, PolyType typeName ) {
+    public RexLiteral makeLiteral( PolyValue o, AlgDataType type, PolyType typeName ) {
         // All literals except NULL have NOT NULL types.
         type = typeFactory.createTypeWithNullability( type, o == null );
         /*int p;
@@ -1298,7 +1299,7 @@ public class RexBuilder {
             case MAP:
                 return makeMap( (Map<Object, Object>) value, type, allowCast );
             case ARRAY:
-                return makeArray( (List<Object>) value, type, allowCast );
+                return makeArray( (List<PolyValue>) value, type, allowCast );
             case MULTISET:
                 final MultisetPolyType multisetType = (MultisetPolyType) type;
                 operands = new ArrayList<>();
@@ -1350,19 +1351,8 @@ public class RexBuilder {
     }
 
 
-    private RexLiteral makeArray( List<Object> value, AlgDataType type, boolean allowCast ) {
-        if ( value.stream().allMatch( v -> v instanceof RexLiteral ) ) {
-            return makeArray( type, value.stream().map( v -> (RexLiteral) v ).collect( Collectors.toList() ) );
-        }
-
-        final List<RexNode> operands;
-        final ArrayType arrayType = (ArrayType) type;
-        @SuppressWarnings("unchecked") final List<Object> listValue = value;
-        operands = new ArrayList<>();
-        for ( Object entry : listValue ) {
-            operands.add( makeLiteral( entry, arrayType.getComponentType(), allowCast ) );
-        }
-        return makeArray( type, operands );
+    private RexLiteral makeArray( List<PolyValue> value, AlgDataType type, boolean allowCast ) {
+        return makeArray( type, value );
     }
 
 
@@ -1523,9 +1513,9 @@ public class RexBuilder {
     }
 
 
-    public RexLiteral makeArray( AlgDataType type, List<RexNode> operands ) {
+    public RexLiteral makeArray( AlgDataType type, List<PolyValue> operands ) {
         log.warn( "why" );
-        return new RexLiteral( (PolyValue) List.of( operands ), type, type.getPolyType() );
+        return new RexLiteral( PolyList.of( operands ), type, type.getPolyType() );
     }
 
 

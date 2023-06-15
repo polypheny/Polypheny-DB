@@ -70,7 +70,7 @@ public class CypherRemoveLabels extends CypherRemoveItem {
                         ref,
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                labels.stream().map( l -> (RexNode) context.rexBuilder.makeLiteral( l.getImage() ) ).collect( Collectors.toList() ) ) ) );
+                                labels.stream().map( l -> PolyString.of( l.getImage() ) ).collect( Collectors.toList() ) ) ) );
 
         context.add( Pair.of( PolyString.of( variable.getName() ), op ) );
     }

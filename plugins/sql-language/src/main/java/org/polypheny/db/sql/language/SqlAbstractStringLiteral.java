@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import java.util.List;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 
 
 /**
@@ -27,7 +28,7 @@ import org.polypheny.db.type.PolyType;
  */
 abstract class SqlAbstractStringLiteral extends SqlLiteral {
 
-    protected SqlAbstractStringLiteral( Object value, PolyType typeName, ParserPos pos ) {
+    protected SqlAbstractStringLiteral( PolyString value, PolyType typeName, ParserPos pos ) {
         super( value, typeName, pos );
     }
 

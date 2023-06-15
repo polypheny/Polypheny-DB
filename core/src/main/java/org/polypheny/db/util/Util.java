@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -145,7 +146,7 @@ public class Util {
      */
     private static final Pattern JAVA_ID_PATTERN = Pattern.compile( "[a-zA-Z_$][a-zA-Z0-9$]*" );
 
-    private static final Charset DEFAULT_CHARSET = Charset.forName( SaffronProperties.INSTANCE.defaultCharset().get() );
+    private static final Charset DEFAULT_CHARSET = Charsets.UTF_16;//Charset.forName( SaffronProperties.INSTANCE.defaultCharset().get() );
 
     /**
      * Maps classes to the map of their enum values. Uses a weak map so that classes are not prevented from being unloaded.

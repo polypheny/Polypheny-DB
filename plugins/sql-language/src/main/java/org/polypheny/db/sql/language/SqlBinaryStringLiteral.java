@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import java.util.List;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Util;
 
@@ -33,7 +34,7 @@ public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
 
 
     protected SqlBinaryStringLiteral( BitString val, ParserPos pos ) {
-        super( val, PolyType.BINARY, pos );
+        super( PolyString.of( val.toString() ), PolyType.BINARY, pos );
     }
 
 

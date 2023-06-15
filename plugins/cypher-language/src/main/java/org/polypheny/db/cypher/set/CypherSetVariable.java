@@ -16,9 +16,9 @@
 
 package org.polypheny.db.cypher.set;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -83,10 +83,10 @@ public class CypherSetVariable extends CypherSetItem {
                         ref,
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                ((PolyDictionary) value).keySet().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false ) ).collect( Collectors.toList() ) ),
+                                new ArrayList<>( ((PolyDictionary) value).keySet() ) ),
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 ),
-                                ((PolyDictionary) value).values().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.ANY ), false ) ).collect( Collectors.toList() ) ),
+                                new ArrayList<>( ((PolyDictionary) value).values() ) ),
                         context.rexBuilder.makeLiteral( !increment ) ) );
 
         context.add( Pair.of( PolyString.of( nodeName ), op ) );

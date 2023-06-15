@@ -35,6 +35,7 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import com.google.gson.Gson;
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -60,6 +61,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Static;
@@ -271,6 +273,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 preparedStatement.setDouble( i, value.asNumber().doubleValue() );
                 break;
             case SMALLINT:
+            case TINYINT:
             case INTEGER:
                 preparedStatement.setInt( i, value.asNumber().intValue() );
                 break;
@@ -289,6 +292,20 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             case VARBINARY:
             case BINARY:
                 preparedStatement.setBytes( i, value.asBinary().value.getBytes() );
+                break;
+            case ARRAY:
+                if ( connectionHandler.getDialect().supportsNestedArrays() ) {
+                    SqlType componentType;
+                    AlgDataType t = type;
+                    while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                        t = t.getComponentType();
+                    }
+                    componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
+                    Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
+                    preparedStatement.setArray( i, array );
+                } else {
+                    preparedStatement.setString( i, value.serialize() );
+                }
                 break;
             default:
                 log.warn( "potentially unhandled type" );

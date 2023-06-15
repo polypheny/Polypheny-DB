@@ -80,6 +80,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.Pair;
@@ -693,10 +694,38 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             type = rexBuilder.deriveReturnType( op, exprs );
         }
         if ( type.getPolyType() == PolyType.ARRAY ) {
-            return rexBuilder.makeArray( type, RexUtil.flatten( exprs, op ) );
+            return rexBuilder.makeArray( type, makePolyValues( cx, operands ) );
         }
 
         return rexBuilder.makeCall( type, op, RexUtil.flatten( exprs, op ) );
+    }
+
+
+    private List<PolyValue> makePolyValues( SqlRexContext cx, List<SqlNode> nodes ) {
+        final List<PolyValue> exprs = new ArrayList<>();
+        for ( SqlNode node : nodes ) {
+            exprs.add( toPolyValue( node ) );
+        }
+        /*if ( exprs.size() > 1 ) {
+            final AlgDataType type = consistentType( cx, consistency, RexUtil.types( exprs ) );
+            if ( type != null ) {
+                final List<RexNode> oldExprs = Lists.newArrayList( exprs );
+                exprs.clear();
+                for ( RexNode expr : oldExprs ) {
+                    exprs.add( cx.getRexBuilder().ensureType( type, expr, true ) );
+                }
+            }
+        }*/
+        return exprs;
+    }
+
+
+    private PolyValue toPolyValue( SqlNode node ) {
+        switch ( node.getKind() ) {
+            case LITERAL:
+                return ((SqlLiteral) node).getPolyValue();
+        }
+        return null;
     }
 
 

@@ -126,7 +126,7 @@ public class BasicPolyType extends AbstractPolyType {
 
         if ( typeName == PolyType.JSON ) {
             this.collation = Collation.IMPLICIT;
-            this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.ISO_8859_1 );
+            this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.UTF_16 );
         } else {
             this.collation = collation;
             this.wrappedCharset = wrappedCharset;

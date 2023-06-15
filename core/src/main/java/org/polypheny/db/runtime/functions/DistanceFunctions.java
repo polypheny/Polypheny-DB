@@ -19,6 +19,8 @@ package org.polypheny.db.runtime.functions;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.Pair;
 
 
@@ -29,65 +31,65 @@ public class DistanceFunctions {
     }
 
 
-    protected static double l1Metric( List<Number> value, List<Number> target ) {
+    protected static PolyDouble l1Metric( List<PolyNumber> value, List<PolyNumber> target ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             result += Math.abs( value.get( i ).doubleValue() - target.get( i ).doubleValue() );
         }
-        return result;
+        return PolyDouble.of( result );
         // Apparently java for loops are faster than the stream api. It also looks easier to maintain, even though I love streams :/
     }
 
 
-    protected static double l1MetricWeighted( List<Number> value, List<Number> target, List<Number> weights ) {
+    protected static PolyDouble l1MetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             result += Math.abs( value.get( i ).doubleValue() - target.get( i ).doubleValue() ) * weights.get( i ).doubleValue();
         }
-        return result;
+        return PolyDouble.of( result );
     }
 
 
-    protected static double l2SquaredMetric( List<Number> value, List<Number> target ) {
+    protected static PolyDouble l2SquaredMetric( List<PolyNumber> value, List<PolyNumber> target ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             result += Math.pow( value.get( i ).doubleValue() - target.get( i ).doubleValue(), 2.0 );
         }
-        return result;
+        return PolyDouble.of( result );
     }
 
 
-    protected static double l2SquaredMetricWeighted( List<Number> value, List<Number> target, List<Number> weights ) {
+    protected static PolyDouble l2SquaredMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             result += Math.pow( value.get( i ).doubleValue() - target.get( i ).doubleValue(), 2.0 ) * weights.get( i ).doubleValue();
         }
-        return result;
+        return PolyDouble.of( result );
     }
 
 
-    protected static double l2Metric( List<Number> value, List<Number> target ) {
-        return Math.sqrt( l2SquaredMetric( value, target ) );
+    protected static PolyDouble l2Metric( List<PolyNumber> value, List<PolyNumber> target ) {
+        return PolyDouble.of( Math.sqrt( l2SquaredMetric( value, target ).doubleValue() ) );
     }
 
 
-    protected static double l2MetricWeighted( List<Number> value, List<Number> target, List<Number> weights ) {
-        return Math.sqrt( l2SquaredMetricWeighted( value, target, weights ) );
+    protected static PolyDouble l2MetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
+        return PolyDouble.of( Math.sqrt( l2SquaredMetricWeighted( value, target, weights ).doubleValue() ) );
     }
 
 
-    protected static double chiSquaredMetric( List<Number> value, List<Number> target ) {
+    protected static PolyDouble chiSquaredMetric( List<PolyNumber> value, List<PolyNumber> target ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             double a = value.get( i ).doubleValue();
             double b = target.get( i ).doubleValue();
             result += Math.pow( a - b, 2.0 ) / (b + a);
         }
-        return result;
+        return PolyDouble.of( result );
     }
 
 
-    protected static double chiSquaredMetricWeighted( List<Number> value, List<Number> target, List<Number> weights ) {
+    protected static PolyDouble chiSquaredMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             double a = value.get( i ).doubleValue();
@@ -95,37 +97,37 @@ public class DistanceFunctions {
             double weight = weights.get( i ).doubleValue();
             result += Math.pow( a - b, 2.0 ) / (b + a) * weight;
         }
-        return result;
+        return PolyDouble.of( result );
     }
 
 
-    protected static double cosineMetric( List<Number> value, List<Number> target ) {
-        return 1 - dot( value, target ) / (norm2( value ) * norm2( target ));
+    protected static PolyDouble cosineMetric( List<PolyNumber> value, List<PolyNumber> target ) {
+        return PolyDouble.of( 1 - dot( value, target ).doubleValue() / (norm2( value ) * norm2( target )) );
     }
 
 
-    protected static double cosineMetricWeighted( List<Number> value, List<Number> target, List<Number> weights ) {
-        List<Number> valueWeighted = Pair.zip( value, weights ).stream().map( p -> p.left.doubleValue() * p.right.doubleValue() ).collect( Collectors.toList() );
-        List<Number> targetWeighted = Pair.zip( target, weights ).stream().map( p -> p.left.doubleValue() * p.right.doubleValue() ).collect( Collectors.toList() );
+    protected static PolyDouble cosineMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
+        List<PolyNumber> valueWeighted = Pair.zip( value, weights ).stream().map( p -> PolyDouble.of( p.left.doubleValue() * p.right.doubleValue() ) ).collect( Collectors.toList() );
+        List<PolyNumber> targetWeighted = Pair.zip( target, weights ).stream().map( p -> PolyDouble.of( p.left.doubleValue() * p.right.doubleValue() ) ).collect( Collectors.toList() );
         return cosineMetric( valueWeighted, targetWeighted );
     }
 
 
-    private static double dot( List<Number> a, List<Number> b ) {
+    private static PolyDouble dot( List<PolyNumber> a, List<PolyNumber> b ) {
         double result = 0;
         for ( int i = 0; i < a.size(); i++ ) {
             result += a.get( i ).doubleValue() * b.get( i ).doubleValue();
         }
-        return result;
+        return PolyDouble.of( result );
     }
 
 
-    private static double norm2( List<Number> list ) {
+    private static double norm2( List<PolyNumber> list ) {
         return Math.sqrt( list.stream().mapToDouble( a -> Math.pow( a.doubleValue(), 2.0 ) ).sum() );
     }
 
 
-    protected static void verifyInputs( List a, List b, List w ) {
+    protected static void verifyInputs( List<?> a, List<?> b, List<?> w ) {
         if ( a.isEmpty() && b.isEmpty() && (w == null || w.isEmpty()) ) {
             return;
         }
@@ -135,11 +137,11 @@ public class DistanceFunctions {
         }
 
         if ( !a.get( 0 ).getClass().isArray() || !b.get( 0 ).getClass().isArray() || (w != null && !w.get( 0 ).getClass().isArray()) ) {
-            if ( !(a.get( 0 ) instanceof Number) || !(b.get( 0 ) instanceof Number) || (w != null && !(w.get( 0 ) instanceof Number)) ) {
+            if ( !(a.get( 0 ) instanceof PolyNumber) || !(b.get( 0 ) instanceof PolyNumber) || (w != null && !(w.get( 0 ) instanceof PolyNumber)) ) {
                 throw new RuntimeException( "Inputs are not Numbers." );
             }
         } else {
-            throw new RuntimeException( "Not useable Arrays, ask jan." );
+            throw new RuntimeException( "Not usable Arrays" );
         }
     }
 

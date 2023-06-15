@@ -71,6 +71,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -131,7 +132,7 @@ public abstract class BaseRouter implements Router {
                                 RexInputRef.of( 0, rowType ),
                                 rexBuilder.makeArray(
                                         rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ),
-                                        List.of( rexBuilder.makeLiteral( "_id" ) ) ) ) ),
+                                        List.of( PolyString.of( "_id" ) ) ) ) ),
                 (forceVarchar
                         ? rexBuilder.makeCall( data,
                         OperatorRegistry.get(
