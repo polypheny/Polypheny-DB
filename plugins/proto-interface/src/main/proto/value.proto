@@ -143,6 +143,15 @@ message ProtoBigDecimal {
   bytes unscaled_value = 3;
 }
 
+message ProtoStruct {
+  repeated ProtoValue fields = 1;
+}
+
+message ProtoArray {
+  repeated ProtoValue elements = 1;
+}
+
+
 enum ProtoValueType {
   PROTO_VALUE_TYPE_UNSPECIFIED = 0;
   PROTO_VALUE_TYPE_BOOLEAN = 1;
@@ -190,6 +199,8 @@ enum ProtoValueType {
   PROTO_VALUE_TYPE_ROW = 43;
   //PROTO_VALUE_TYPE_CURSOR = 44;
   PROTO_VALUE_TYPE_COLUMN_LIST = 45;
+  PROTO_VALUE_TYPE_ARRAY = 46;
+
 }
 
 enum TimeUnit {
