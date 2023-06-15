@@ -18,12 +18,39 @@ message Frame {
 message ColumnMeta {
   int32 columnIndex = 1;
   bool is_nullable = 2;
-  int32 display_size = 3;
+  int32 length = 3;
   string column_label = 4;
   string column_name = 5;
   int32 precision = 6;
   string table_name = 7;
-  ProtoValueType proto_value_type = 8;
+  string schema_name = 8;
+  TypeMeta type_meta = 9;
+  int32 scale = 10;
+  string namespace = 11;
+}
+
+message FieldMeta {
+  int32 fieldIndex = 1;
+  bool is_nullable = 2;
+  int32 length = 3;
+  string field_name = 4;
+  int32 precision = 6;
+  TypeMeta type_meta = 9;
+  int32 scale = 10;
+}
+
+message TypeMeta {
+  ProtoValueType proto_value_type = 1;
+  optional StructMeta struct_meta = 2;
+  optional ArrayMeta array_meta = 3;
+}
+
+message StructMeta {
+  repeated FieldMeta field_metas = 1;
+}
+
+message ArrayMeta {
+  TypeMeta element_type = 1;
 }
 
 message Row {
