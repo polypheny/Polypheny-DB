@@ -16,15 +16,6 @@
 
 package org.polypheny.db.protointerface.utils;
 
-import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.protointerface.proto.Value;
-import org.polypheny.db.type.entity.PolyValue;
-
 public class ProtoValueDeserializer {
 
-    public static Map<String, PolyValue> deserializeValueMap( Map<String, Value> protoValueMap ) {
-        throw new NotImplementedException( "not yet implemeted" );
-    }
-        //TODO: implementation
 }
