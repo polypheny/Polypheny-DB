@@ -7,11 +7,9 @@ option java_outer_classname = "RelationalResult";
 
 package polypheny.protointerface;
 
-message RelationalResult {
+message RelationalFrame {
   repeated ColumnMeta column_meta = 1;
   repeated Row rows = 2;
-  int64 offset = 3;
-  bool isLast = 4;
 }
 
 message ColumnMeta {
