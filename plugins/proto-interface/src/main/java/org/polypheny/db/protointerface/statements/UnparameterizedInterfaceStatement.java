@@ -34,6 +34,7 @@ import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
+import org.polypheny.db.protointerface.utils.RelationalMetaRetriever;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -94,8 +95,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
-            List<ColumnMetaData> avaticaColumnMetas = currentImplementation.getColumns();
-            List<ColumnMeta> protoColumnMetas = ProtoUtils.buildColumnMetasFromAvatica( avaticaColumnMetas );
+            List<ColumnMeta> protoColumnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
             return ProtoUtils.buildFrame( rows, protoColumnMetas );
         }
     }
