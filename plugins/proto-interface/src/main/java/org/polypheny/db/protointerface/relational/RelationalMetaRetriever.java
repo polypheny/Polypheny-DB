@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.protointerface.utils;
+package org.polypheny.db.protointerface.relational;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -135,7 +135,6 @@ public class RelationalMetaRetriever {
                     .build();
         }
     }
-
 
     private static AlgDataType retrieveAlgDataType( PolyImplementation polyImplementation ) {
         switch ( polyImplementation.getKind() ) {
