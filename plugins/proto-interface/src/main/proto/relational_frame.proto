@@ -19,7 +19,7 @@ message ColumnMeta {
   string column_label = 4;
   string column_name = 5;
   int32 precision = 6;
-  string entity_name = 7;
+  string table_name = 7;
   string schema_name = 8;
   TypeMeta type_meta = 9;
   int32 scale = 10;
@@ -37,7 +37,7 @@ message FieldMeta {
 }
 
 message TypeMeta {
-  ProtoValue.ProtoValueType proto_value_type = 1;
+  ProtoValueType proto_value_type = 1;
   optional StructMeta struct_meta = 2;
   optional ArrayMeta array_meta = 3;
 }
