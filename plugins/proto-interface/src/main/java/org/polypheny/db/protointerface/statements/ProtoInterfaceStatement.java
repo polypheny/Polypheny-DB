@@ -43,7 +43,9 @@ public abstract class ProtoInterfaceStatement {
 
     protected Iterator<Object> resultIterator;
 
+
     public abstract StatementResult execute() throws Exception;
+
 
     public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         if ( query == null ) {
@@ -84,6 +86,7 @@ public abstract class ProtoInterfaceStatement {
         resultIterator = enumerable.iterator();
         return resultIterator;
     }
+
 
     protected void commitElseRollback() {
         try {
