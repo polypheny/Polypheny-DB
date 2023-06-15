@@ -18,23 +18,23 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.utils.ProtoUtils;
-import org.polypheny.db.protointerface.utils.RelationalMetaRetriever;
+import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
+import org.polypheny.db.protointerface.relational.RelationalUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -55,8 +55,8 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         Processor queryProcessor = currentStatement.getTransaction().getProcessor( queryLanguage );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
         if ( parsedStatement.isA( Kind.DDL ) ) {
-            // TODO TH: namespace type according to language
-            currentImplementation = queryProcessor.prepareDdl( currentStatement, parsedStatement, new QueryParameters( query, NamespaceType.RELATIONAL ) );
+            currentImplementation = queryProcessor.prepareDdl( currentStatement, parsedStatement,
+                    new QueryParameters( query, queryLanguage.getNamespaceType() ) );
         } else {
             Pair<Node, AlgDataType> validated = queryProcessor.validate( protoInterfaceClient.getCurrentTransaction(),
                     parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
@@ -67,12 +67,12 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
-            resultBuilder.setRowCount( 1 );
+            resultBuilder.setScalar( 1 );
             commitElseRollback();
             return resultBuilder.build();
         }
         if ( Kind.DML.contains( currentImplementation.getKind() ) ) {
-            resultBuilder.setRowCount( currentImplementation.getRowsChanged( currentStatement ) );
+            resultBuilder.setScalar( currentImplementation.getRowsChanged( currentStatement ) );
             commitElseRollback();
             return resultBuilder.build();
         }
@@ -82,6 +82,29 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
 
     public Frame fetch( long offset, final int maxRowCount ) {
+        switch ( queryLanguage.getNamespaceType() ) {
+            case RELATIONAL:
+                return relationalFetch( offset, maxRowCount );
+            case GRAPH:
+                return graphFetch( offset, maxRowCount );
+            case DOCUMENT:
+                return documentFetch( offset, maxRowCount );
+        }
+        throw new ProtoInterfaceServiceException( "Should never be thrown." );
+    }
+
+
+    private Frame documentFetch( long offset, int maxRowCount ) {
+        throw new NotImplementedException( "Doument fetching is no yet implemented." );
+    }
+
+
+    private Frame graphFetch( long offset, int maxRowCount ) {
+        throw new NotImplementedException( "Graph Fetching is not yet implmented." );
+    }
+
+
+    public Frame relationalFetch( long offset, final int maxRowCount ) {
         synchronized ( protoInterfaceClient ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
@@ -95,9 +118,8 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
             }
-            List<ColumnMeta> protoColumnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
-            return ProtoUtils.buildFrame( rows, protoColumnMetas );
+            List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
+            return RelationalUtils.buildRelationalFrame( offset, isDone, rows, columnMetas );
         }
     }
-
 }
