@@ -18,12 +18,11 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
@@ -36,8 +35,8 @@ import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.protointerface.relational.RelationalUtils;
-import org.polypheny.db.protointerface.utils.ProtoUtils;
-import org.polypheny.db.protointerface.utils.RelationalMetaRetriever;
+import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
+import org.polypheny.db.protointerface.relational.RelationalUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
@@ -134,5 +133,4 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             return RelationalUtils.buildRelationalFrame( offset, isDone, rows , columnMetas );
         }
     }
-
 }
