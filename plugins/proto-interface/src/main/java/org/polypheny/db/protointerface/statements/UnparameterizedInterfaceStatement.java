@@ -37,6 +37,7 @@ import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.protointerface.relational.RelationalUtils;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
+import org.polypheny.db.protointerface.utils.RelationalMetaRetriever;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
