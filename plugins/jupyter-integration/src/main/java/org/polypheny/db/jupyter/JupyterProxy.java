@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.jupyter.JupyterClient.JupyterServerException;
 import org.polypheny.db.webui.Crud;
@@ -29,7 +30,8 @@ import io.javalin.http.Context;
 @Slf4j
 public class JupyterProxy {
 
-    private final JupyterClient client;
+    @Setter
+    private JupyterClient client;
     private final Gson gson = new Gson();
 
 
@@ -64,21 +66,21 @@ public class JupyterProxy {
     }
 
 
-    public void file(final Context ctx, Crud crud) {
+    public void file( final Context ctx, Crud crud ) {
         String path = ctx.pathParam( "path" );
         try {
             HttpResponse<String> response = client.getFileBase64( path );
             JsonObject body = gson.fromJson( response.body(), JsonObject.class );
             String base64 = body.get( "content" ).getAsString().replace( "\n", "" );
-            byte[] data = Base64.getDecoder().decode(base64.getBytes( StandardCharsets.UTF_8));
-            String mimetype = body.get("mimetype").getAsString();
-            ctx.contentType(mimetype);
+            byte[] data = Base64.getDecoder().decode( base64.getBytes( StandardCharsets.UTF_8 ) );
+            String mimetype = body.get( "mimetype" ).getAsString();
+            ctx.contentType( mimetype );
             ctx.result( data );
 
         } catch ( JupyterServerException e ) {
-            ctx.status( e.getStatus() ).result(e.getMsg());
+            ctx.status( e.getStatus() ).result( e.getMsg() );
         } catch ( IllegalArgumentException e ) {
-            ctx.status(404).result("Invalid file");
+            ctx.status( 404 ).result( "Invalid file" );
         }
 
     }
@@ -86,6 +88,11 @@ public class JupyterProxy {
 
     public void kernels( final Context ctx, Crud crud ) {
         forward( ctx, client::getRunningKernels );
+    }
+
+
+    public void connectionStatus( final Context ctx, Crud crud ) {
+        forward( ctx, client::getStatus );
     }
 
 
@@ -160,7 +167,7 @@ public class JupyterProxy {
             ctx.result( res.body() );
 
         } catch ( JupyterServerException e ) {
-            ctx.status( e.getStatus() ).result(e.getMsg());
+            ctx.status( e.getStatus() ).result( e.getMsg() );
         }
     }
 

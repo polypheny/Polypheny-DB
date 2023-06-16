@@ -16,6 +16,9 @@
 
 package org.polypheny.db.jupyter;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import io.javalin.http.Context;
 import java.io.File;
 
 import java.security.SecureRandom;
@@ -31,6 +34,7 @@ import org.polypheny.db.jupyter.model.JupyterSessionManager;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.HttpServer.HandlerType;
 
@@ -105,6 +109,28 @@ public class JupyterPlugin extends Plugin {
         DockerInstance.getInstance().destroyAll( adapterId );
     }
 
+    public void restartContainer(Context ctx, Crud crud) {
+        log.warn( "stopping container" );
+        log.warn( container.getStatus().toString());
+        stopContainer();
+        JupyterSessionManager.getInstance().reset();
+        log.warn( "restarting container" );
+        startContainer();
+        proxy.setClient( new JupyterClient( token, host, PORT ) );
+        log.warn( "finished restart" );
+        ctx.status(200).json("restart ok");
+    }
+
+    public void containerStatus(Context ctx, Crud crud) {
+        JsonObject status = new JsonObject();
+        status.addProperty( "status", container.getStatus().toString() );
+        status.addProperty( "host", container.getHost() );
+        status.addProperty( "ip", container.getIpAddress() );
+
+        log.warn( "container status: {}", container.getStatus().toString() );
+        ctx.status(200).json( status );
+    }
+
 
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
@@ -117,11 +143,15 @@ public class JupyterPlugin extends Plugin {
         server.addSerializedRoute( REST_PATH + "/kernels", proxy::kernels, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/kernelspecs", proxy::kernelspecs, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/file/<path>", proxy::file, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/container/status", this::containerStatus, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/status", proxy::connectionStatus, HandlerType.GET );
+
 
         server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", proxy::createFile, HandlerType.POST );
         server.addSerializedRoute( REST_PATH + "/sessions", proxy::createSession, HandlerType.POST );
         server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/interrupt", proxy::interruptKernel, HandlerType.POST );
         server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/restart", proxy::restartKernel, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/container/restart", this::restartContainer, HandlerType.POST );
 
         server.addSerializedRoute( REST_PATH + "/contents/<filePath>", proxy::moveFile, HandlerType.PATCH );
         server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::patchSession, HandlerType.PATCH );
