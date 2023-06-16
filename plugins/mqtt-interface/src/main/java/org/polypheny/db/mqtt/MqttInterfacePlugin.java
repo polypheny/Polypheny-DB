@@ -80,7 +80,7 @@ public class MqttInterfacePlugin extends Plugin {
         @SuppressWarnings("WeakerAccess")
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingString( "broker", false, true, false, "localhost" ),
-                new QueryInterfaceSettingInteger( "brokerPort", false, true, false, 5555 ),
+                new QueryInterfaceSettingInteger( "brokerPort", false, true, false, 1883 ),
                 new QueryInterfaceSettingList( "topics", false, true, true, null )
         );
 
@@ -89,6 +89,8 @@ public class MqttInterfacePlugin extends Plugin {
         private final String broker;
 
         private final String brokerPort;
+
+        private MqttAsyncClient client;
 
         private final MonitoringPage monitoringPage;
 
@@ -108,6 +110,7 @@ public class MqttInterfacePlugin extends Plugin {
         public void run() {
             String serverURI = String.format( "tcp://%s:%s", broker, brokerPort);
             // creating fileStore to store all messages in this directory folder
+            //won't be needed later, when data is stored in data store
             MqttDefaultFilePersistence fileStore = new MqttDefaultFilePersistence("C:\\Users\\Public\\UniProjekte\\BA_MQTT_Messages");
             try {
                 fileStore.open(uniqueName, serverURI);
@@ -115,7 +118,7 @@ public class MqttInterfacePlugin extends Plugin {
                 log.error( "There is a problem reading or writing persistence data." );
             }
             try {
-                MqttAsyncClient client = new MqttAsyncClient(serverURI, uniqueName, fileStore);
+                client = new MqttAsyncClient(serverURI, uniqueName, fileStore);
                 MqttCallback callback = new MqttCallback() {
                     @Override
                     public void connectionLost(Throwable cause) {
@@ -126,7 +129,9 @@ public class MqttInterfacePlugin extends Plugin {
                     @Override
                     public void messageArrived(String topic, MqttMessage message) throws Exception {
                         log.info( "Message: {}", message.toString());
-                        //TODO: extract the topic content of the message
+                        MqttDocumentStore store = new MqttDocumentStore();
+                        store.saveMessage(topic, message);
+                        //TODO: extract the important content of the message
                         // AND send it to StreamProcessor as PolyStream.
                     }
 
@@ -140,11 +145,13 @@ public class MqttInterfacePlugin extends Plugin {
                 IMqttActionListener connectionListener = new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
+                        //TODO: show on UI
                         log.info( "{} started and is listening to broker {}:{}", INTERFACE_NAME, broker, brokerPort );
                     }
 
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        //TODO: show on UI
                         log.error( "Connection to broker could not be established. Please delete and recreate the Plug-In." );
                     }
                 };
@@ -153,18 +160,17 @@ public class MqttInterfacePlugin extends Plugin {
 
 
                 // Testing the connection:
-                String str = "Hello, I am the Polypheny-Client!";
-                MqttMessage msg = new MqttMessage(str.getBytes());
-                IMqttToken pubToken= client.publish("testTopic", msg);
+                //String str = "Hello, I am the Polypheny-Client!";
+                //MqttMessage msg = new MqttMessage(str.getBytes());
+                //IMqttToken pubToken= client.publish("testTopic", msg);
 
-                // TEsting subscribtion:
-                IMqttToken subToken= client.subscribe("testTopic", 1);
+                // Testing subscribtion:
+                //IMqttToken subToken= client.subscribe("testTopic", 1);
 
             } catch (MqttException e) {
                 log.error( "An error occurred while communicating to the server.");
             }
         }
-
 
         @Override
         public List<QueryInterfaceSetting> getAvailableSettings() {
@@ -174,9 +180,28 @@ public class MqttInterfacePlugin extends Plugin {
 
         @Override
         public void shutdown() {
-            //restServer.stop();
+            IMqttActionListener shutDownListener = new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    //TODO: show on UI
+                    log.info( "{} stopped.", INTERFACE_NAME);
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    //TODO: show on UI
+                    log.info( "{} could not disconnected from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
+                }
+            };
+
+            try {
+                client.disconnect(null, shutDownListener);
+            } catch (MqttException e) {
+                log.error( "An error occurred while disconnecting from the broker {}:{}. Please try again.", broker, brokerPort );
+            }
+
             //monitoringPage.remove();
-            log.info( "{} stopped.", INTERFACE_NAME );
+
         }
 
 
