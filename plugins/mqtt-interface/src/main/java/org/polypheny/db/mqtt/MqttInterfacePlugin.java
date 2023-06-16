@@ -90,6 +90,8 @@ public class MqttInterfacePlugin extends Plugin {
 
         private final String brokerPort;
 
+        private List<String> topics;
+
         private MqttAsyncClient client;
 
         private final MonitoringPage monitoringPage;
@@ -203,6 +205,77 @@ public class MqttInterfacePlugin extends Plugin {
             //monitoringPage.remove();
 
         }
+
+
+        public void subscribe(String topic){
+            //TODO: trigger from UI.
+            if (!topics.contains(topic)) {
+                IMqttActionListener subListener = new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        topics.add(topic);
+                        log.info( "Successfull subscription to {}.", topic );
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        log.info( "Subscription was not successfull. Please try again." );
+                    }
+                };
+                try {
+                    IMqttToken subToken= client.subscribe(topic, 1, null, subListener);
+                } catch (MqttException e) {
+                    log.error( "An error occurred while subscribing to {}. Please try again.", topic );
+                }
+            }
+        }
+
+        public void unsubscribe(String topic) {
+            //TODO: trigger from UI.
+            if (topics.contains(topic)) {
+                IMqttActionListener unsubListener = new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        topics.remove(topic);
+                        log.info( "Successfull unsubscription from {}.", topic );
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        log.info( "Unsubscription was not successfull. Please try again." );
+                    }
+                };
+                try {
+                    IMqttToken subToken= client.unsubscribe(topic, null, unsubListener);
+                } catch (MqttException e) {
+                    log.error( "An error occurred while unsubscribing from {}. Please try again.", topic );
+                }
+            }
+        }
+
+        public void publish(String topic, String msg) {
+            //TODO: trigger from UI.
+            if (topics.contains(topic)) {
+                IMqttActionListener pubListener = new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        log.info( "Message was published successfully.");
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        log.info( "Unsubscription was not successfull. Please try again." );
+                    }
+                };
+                MqttMessage message = new MqttMessage(msg.getBytes());
+                try {
+                    IMqttToken subToken= client.publish(topic, message, null, pubListener);
+                } catch (MqttException e) {
+                    log.error( "An error occurred while unsubscribing from {}. Please try again.", topic );
+                }
+            }
+        }
+
 
 
         @Override
