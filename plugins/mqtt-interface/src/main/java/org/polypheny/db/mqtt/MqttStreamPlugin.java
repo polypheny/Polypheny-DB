@@ -19,7 +19,6 @@ package org.polypheny.db.mqtt;
 
 import com.google.common.collect.ImmutableList;
 
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,14 +46,14 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 
 
-public class MqttInterfacePlugin extends Plugin {
+public class MqttStreamPlugin extends Plugin {
 
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MqttInterfacePlugin( PluginWrapper wrapper ) {
+    public MqttStreamPlugin( PluginWrapper wrapper ) {
         super( wrapper );
     }
 
@@ -65,19 +64,19 @@ public class MqttInterfacePlugin extends Plugin {
         Map<String, String> mqttSettings = new HashMap<>();
         mqttSettings.put( "broker", "localhost" );
         mqttSettings.put( "brokerPort", "1883" );
-        QueryInterfaceManager.addInterfaceType( "mqtt", MqttInterfaceServer.class, mqttSettings );
+        QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamServer.class, mqttSettings );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( MqttInterfaceServer.class );
+        QueryInterfaceManager.removeInterfaceType( MqttStreamServer.class );
     }
 
 
     @Slf4j
     @Extension
-    public static class MqttInterfaceServer extends QueryInterface {
+    public static class MqttStreamServer extends QueryInterface {
 
         @SuppressWarnings("WeakerAccess")
         public static final String INTERFACE_NAME = "MQTT Interface";
@@ -103,7 +102,7 @@ public class MqttInterfacePlugin extends Plugin {
         private final MonitoringPage monitoringPage;
 
 
-        public MqttInterfaceServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        public MqttStreamServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
             //this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
             this.uniqueName = uniqueName;
