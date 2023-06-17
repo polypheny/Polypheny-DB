@@ -18,6 +18,9 @@ package org.polypheny.db.mqtt;
 
 
 import com.google.common.collect.ImmutableList;
+
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +38,10 @@ import org.pf4j.PluginWrapper;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
@@ -55,10 +61,10 @@ public class MqttInterfacePlugin extends Plugin {
 
     @Override
     public void start() {
-        // Add REST interface
+        // Add MQTT stream
         Map<String, String> mqttSettings = new HashMap<>();
         mqttSettings.put( "broker", "localhost" );
-        mqttSettings.put( "brokerPort", "5555" );
+        mqttSettings.put( "brokerPort", "1883" );
         QueryInterfaceManager.addInterfaceType( "mqtt", MqttInterfaceServer.class, mqttSettings );
     }
 
@@ -90,7 +96,7 @@ public class MqttInterfacePlugin extends Plugin {
 
         private final String brokerPort;
 
-        private List<String> topics;
+        private ArrayList<String> topics = new ArrayList<String>();
 
         private MqttAsyncClient client;
 
@@ -105,6 +111,7 @@ public class MqttInterfacePlugin extends Plugin {
             monitoringPage = new MonitoringPage();
             broker = settings.get( "broker" );
             brokerPort = settings.get( "brokerPort" );
+            //subscribe(settings.get("topics"));
         }
 
 
@@ -202,14 +209,14 @@ public class MqttInterfacePlugin extends Plugin {
                 log.error( "An error occurred while disconnecting from the broker {}:{}. Please try again.", broker, brokerPort );
             }
 
-            //monitoringPage.remove();
+            monitoringPage.remove();
 
         }
 
 
         public void subscribe(String topic){
             //TODO: trigger from UI.
-            if (!topics.contains(topic)) {
+            if (topics.isEmpty() || !topics.contains(topic)) {
                 IMqttActionListener subListener = new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
@@ -224,6 +231,7 @@ public class MqttInterfacePlugin extends Plugin {
                 };
                 try {
                     IMqttToken subToken= client.subscribe(topic, 1, null, subListener);
+                    subToken.waitForCompletion();
                 } catch (MqttException e) {
                     log.error( "An error occurred while subscribing to {}. Please try again.", topic );
                 }
@@ -298,11 +306,50 @@ public class MqttInterfacePlugin extends Plugin {
 
         private class MonitoringPage {
 
+            private final InformationPage informationPage;
+
+            private final InformationGroup informationGroupTopics;
+
+            private InformationTable topicsTable;
 
             public MonitoringPage() {
                 InformationManager im = InformationManager.getInstance();
+
+                informationPage = new InformationPage(uniqueName, INTERFACE_NAME).fullWidth().setLabel("Interfaces");
+                informationGroupTopics = new InformationGroup(informationPage, "Subscribed Topics");
+
+                im.addPage( informationPage );
+                im.addGroup( informationGroupTopics );
+
+                topicsTable = new InformationTable(
+                        informationGroupTopics,
+                        List.of("Topics")
+                );
+
+                im.registerInformation( topicsTable );
+                informationGroupTopics.setRefreshFunction( this::update );
+
             }
 
+
+            public void update() {
+                if( topics.isEmpty() ) {
+                    topicsTable.addRow("No topic subscriptions");
+                } else {
+                    topicsTable.reset();
+                    for( String topic: topics) {
+                        topicsTable.addRow(topic);
+                    }
+                }
+
+            }
+
+            public void remove() {
+                InformationManager im = InformationManager.getInstance();
+                im.removeInformation( topicsTable );
+                im.removeGroup( informationGroupTopics );
+                im.removePage( informationPage );
+            }
 
         }
 
