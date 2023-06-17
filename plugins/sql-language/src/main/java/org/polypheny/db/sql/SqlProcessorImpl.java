@@ -367,7 +367,7 @@ public class SqlProcessorImpl extends Processor {
             namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            namespaceId = snapshot.getNamespace( transaction.getDefaultSchema().name ).id;
+            namespaceId = snapshot.getNamespace( transaction.getDefaultNamespace().name ).id;
             tableOldName = tableName.names.get( 0 );
         }
         catalogTable = snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow();

@@ -294,7 +294,7 @@ public final class Schemas {
 
 
             @Override
-            public String getDefaultSchemaName() {
+            public String getDefaultNamespaceName() {
                 return null;
             }
 

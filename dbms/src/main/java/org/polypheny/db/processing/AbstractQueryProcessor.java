@@ -915,7 +915,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ctypes.add( field.getType() );
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
-                    final LogicalNamespace schema = statement.getTransaction().getDefaultSchema();
+                    final LogicalNamespace schema = statement.getTransaction().getDefaultNamespace();
                     final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class );
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );

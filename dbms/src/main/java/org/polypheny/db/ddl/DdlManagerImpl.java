@@ -174,17 +174,16 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace ) {
         name = name.toLowerCase();
-        // Check if there is already a schema with this name
+        // Check if there is already a namespace with this name
         if ( catalog.getSnapshot().checkIfExistsNamespace( name ) ) {
             if ( ifNotExists ) {
-                // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
+                // It is ok that there is already a namespace with this name because "IF NOT EXISTS" was specified
                 return catalog.getSnapshot().getNamespace( name ).id;
             } else if ( replace ) {
                 throw new GenericRuntimeException( "Replacing namespace is not yet supported." );
             }
         }
         return catalog.addNamespace( name, type, false );
-
     }
 
 
@@ -327,12 +326,12 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void renameNamespace( String newName, String oldName ) {
+    public void renameNamespace( String newName, String currentName ) {
         newName = newName.toLowerCase();
         if ( catalog.getSnapshot().checkIfExistsNamespace( newName ) ) {
-            throw new GenericRuntimeException( "The name of the namespace is already used" );
+            throw new GenericRuntimeException( "There is already a namespace with this name!" );
         }
-        LogicalNamespace logicalNamespace = catalog.getSnapshot().getNamespace( oldName );
+        LogicalNamespace logicalNamespace = catalog.getSnapshot().getNamespace( currentName );
         catalog.renameNamespace( logicalNamespace.id, newName );
     }
 

@@ -75,7 +75,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final CatalogUser user;
     @Getter
-    private final LogicalNamespace defaultSchema;
+    private final LogicalNamespace defaultNamespace;
 
     private final TransactionManagerImpl transactionManager;
 
@@ -114,7 +114,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             PolyXid xid,
             TransactionManagerImpl transactionManager,
             CatalogUser user,
-            LogicalNamespace defaultSchema,
+            LogicalNamespace defaultNamespace,
             boolean analyze,
             String origin,
             MultimediaFlavor flavor ) {
@@ -122,7 +122,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.xid = xid;
         this.transactionManager = transactionManager;
         this.user = user;
-        this.defaultSchema = defaultSchema;
+        this.defaultNamespace = defaultNamespace;
         this.analyze = analyze;
         this.origin = origin;
         this.flavor = flavor;

@@ -38,21 +38,21 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code CREATE SCHEMA} statement.
+ * Parse tree for {@code CREATE NAMESPACE} statement (has alias for CREATE SCHEMA).
  */
-public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
+public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement {
 
     private final SqlIdentifier name;
 
     private final NamespaceType type;
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE SCHEMA", Kind.CREATE_SCHEMA );
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE NAMESPACE", Kind.CREATE_NAMESPACE );
 
 
     /**
-     * Creates a SqlCreateSchema.
+     * Creates a SqlCreateNamespace.
      */
-    SqlCreateSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
+    SqlCreateNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.type = namespaceType;
@@ -77,7 +77,7 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
         if ( replace ) {
             writer.keyword( "OR REPLACE" );
         }
-        writer.keyword( "SCHEMA" );
+        writer.keyword( "NAMESPACE" );
         if ( ifNotExists ) {
             writer.keyword( "IF NOT EXISTS" );
         }
@@ -87,7 +87,6 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-
         DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace );
     }
 

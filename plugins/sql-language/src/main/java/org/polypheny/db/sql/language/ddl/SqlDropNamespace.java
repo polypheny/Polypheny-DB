@@ -36,19 +36,19 @@ import org.polypheny.db.transaction.Statement;
 
 
 /**
- * Parse tree for {@code DROP SCHEMA} statement.
+ * Parse tree for {@code DROP NAMESPACE} statement (has alias for DROP SCHEMA).
  */
-public class SqlDropSchema extends SqlDrop implements ExecutableStatement {
+public class SqlDropNamespace extends SqlDrop implements ExecutableStatement {
 
     private final SqlIdentifier name;
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "DROP SCHEMA", Kind.DROP_TABLE );
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "DROP NAMESPACE", Kind.DROP_NAMESPACE );
 
 
     /**
-     * Creates a SqlDropSchema.
+     * Creates a SqlDropNamespace.
      */
-    SqlDropSchema( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    SqlDropNamespace( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists );
         this.name = name;
     }
@@ -68,7 +68,7 @@ public class SqlDropSchema extends SqlDrop implements ExecutableStatement {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        writer.keyword( "DROP SCHEMA" );
+        writer.keyword( "DROP NAMESPACE" );
         if ( ifExists ) {
             writer.keyword( "IF EXISTS" );
         }

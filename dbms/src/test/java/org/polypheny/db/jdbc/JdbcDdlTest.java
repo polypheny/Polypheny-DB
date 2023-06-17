@@ -803,6 +803,12 @@ public class JdbcDdlTest {
                 statement.executeUpdate( "DROP TABLE ddlexiststest" );
                 statement.executeUpdate( "DROP TABLE IF EXISTS ddlexiststest" );
 
+                statement.executeUpdate( "CREATE NAMESPACE ddlexiststest" );
+                statement.executeUpdate( "CREATE NAMESPACE IF NOT EXISTS ddlexiststest" );
+                statement.executeUpdate( "DROP NAMESPACE ddlexiststest" );
+                statement.executeUpdate( "DROP NAMESPACE IF EXISTS ddlexiststest" );
+
+                // There should be aliases to use the SQL term SCHEMA instead of NAMESPACE
                 statement.executeUpdate( "CREATE SCHEMA ddlexiststest" );
                 statement.executeUpdate( "CREATE SCHEMA IF NOT EXISTS ddlexiststest" );
                 statement.executeUpdate( "DROP SCHEMA ddlexiststest" );

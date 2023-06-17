@@ -64,14 +64,14 @@ public abstract class SqlDdl extends SqlCall {
     protected LogicalTable getFromCatalog( Context context, SqlIdentifier tableName ) {
         long schemaId;
         String tableOldName;
-        if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+        if ( tableName.names.size() == 3 ) { // DatabaseName.NamespaceName.TableName
             schemaId = context.getSnapshot().getNamespace( tableName.names.get( 1 ) ).id;
             tableOldName = tableName.names.get( 2 );
-        } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
+        } else if ( tableName.names.size() == 2 ) { // NamespaceName.TableName
             schemaId = context.getSnapshot().getNamespace( tableName.names.get( 0 ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            schemaId = context.getSnapshot().getNamespace( context.getDefaultSchemaName() ).id;
+            schemaId = context.getSnapshot().getNamespace( context.getDefaultNamespaceName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
         return context.getSnapshot().rel().getTable( schemaId, tableOldName ).orElseThrow();

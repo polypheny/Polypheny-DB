@@ -33,7 +33,7 @@ public abstract class SqlAlterMaterializedView extends SqlAlter {
 
 
     /**
-     * Creates a SqlAlterSchema.
+     * Creates a SqlAlterMaterializedView.
      */
     public SqlAlterMaterializedView( ParserPos pos ) {
         super( OPERATOR, pos );

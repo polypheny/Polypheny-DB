@@ -28,35 +28,35 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * A <code>SqlDescribeSchema</code> is a node of a parse tree that represents a {@code DESCRIBE SCHEMA} statement.
+ * A <code>SqlDescribeNamespace</code> is a node of a parse tree that represents a {@code DESCRIBE NAMESPACE} statement.
  */
-public class SqlDescribeSchema extends SqlCall {
+public class SqlDescribeNamespace extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR =
-            new SqlSpecialOperator( "DESCRIBE_SCHEMA", Kind.DESCRIBE_SCHEMA ) {
+            new SqlSpecialOperator( "DESCRIBE_NAMESPACE", Kind.DESCRIBE_NAMESPACE ) {
                 @Override
                 public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
-                    return new SqlDescribeSchema( pos, (SqlIdentifier) operands[0] );
+                    return new SqlDescribeNamespace( pos, (SqlIdentifier) operands[0] );
                 }
             };
 
-    SqlIdentifier schema;
+    SqlIdentifier namespace;
 
 
     /**
-     * Creates a SqlDescribeSchema.
+     * Creates a SqlDescribeNamespace.
      */
-    public SqlDescribeSchema( ParserPos pos, SqlIdentifier schema ) {
+    public SqlDescribeNamespace( ParserPos pos, SqlIdentifier namespace ) {
         super( pos );
-        this.schema = schema;
+        this.namespace = namespace;
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "DESCRIBE" );
-        writer.keyword( "SCHEMA" );
-        schema.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "NAMESPACE" );
+        namespace.unparse( writer, leftPrec, rightPrec );
     }
 
 
@@ -64,7 +64,7 @@ public class SqlDescribeSchema extends SqlCall {
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
-                schema = (SqlIdentifier) operand;
+                namespace = (SqlIdentifier) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -80,18 +80,18 @@ public class SqlDescribeSchema extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( schema );
+        return ImmutableNullableList.of( namespace );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( schema );
+        return ImmutableNullableList.of( namespace );
     }
 
 
-    public SqlIdentifier getSchema() {
-        return schema;
+    public SqlIdentifier getNamespace() {
+        return namespace;
     }
 
 }

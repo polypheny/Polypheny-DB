@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.language.ddl.alterschema;
+package org.polypheny.db.sql.language.ddl.alternamespace;
 
 
 import java.util.List;
@@ -26,47 +26,47 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
-import org.polypheny.db.sql.language.ddl.SqlAlterSchema;
+import org.polypheny.db.sql.language.ddl.SqlAlterNamespace;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER SCHEMA name OWNER TO} statement.
+ * Parse tree for {@code ALTER NAMESPACE name OWNER TO} statement (has alias for ALTER SCHEMA).
  */
-public class SqlAlterSchemaOwner extends SqlAlterSchema {
+public class SqlAlterNamespaceOwner extends SqlAlterNamespace {
 
-    private final SqlIdentifier schema;
+    private final SqlIdentifier namespace;
     private final SqlIdentifier owner;
 
 
     /**
-     * Creates a SqlAlterSchemaOwner.
+     * Creates a SqlAlterNamespaceOwner.
      */
-    public SqlAlterSchemaOwner( ParserPos pos, SqlIdentifier schema, SqlIdentifier owner ) {
+    public SqlAlterNamespaceOwner( ParserPos pos, SqlIdentifier namespace, SqlIdentifier owner ) {
         super( pos );
-        this.schema = Objects.requireNonNull( schema );
+        this.namespace = Objects.requireNonNull( namespace );
         this.owner = Objects.requireNonNull( owner );
     }
 
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( schema, owner );
+        return ImmutableNullableList.of( namespace, owner );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( schema, owner );
+        return ImmutableNullableList.of( namespace, owner );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "SCHEMA" );
-        schema.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "NAMESPACE" );
+        namespace.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "OWNER" );
         writer.keyword( "TO" );
         owner.unparse( writer, leftPrec, rightPrec );
@@ -75,9 +75,7 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        // DdlManager.getInstance().alterSchemaOwner( schema.getSimple(), owner.getSimple(), context.getDatabaseId() );
-        throw new UnsupportedOperationException( "This functionality is at the moment not supported" );
+        throw new UnsupportedOperationException( "This functionality is not yet supported." );
     }
 
 }
-

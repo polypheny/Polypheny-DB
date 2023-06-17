@@ -52,16 +52,14 @@ public class SqlDropTable extends SqlDropObject {
 
         if ( table == null ) {
             if ( ifExists ) {
-                // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
+                // It is ok that there is no table with this name because "IF EXISTS" was specified
                 return;
             } else {
-                throw new GenericRuntimeException( "There exists no table with the name %s and 'IF EXISTS' was not used", name );
+                throw new GenericRuntimeException( "There exists no table with the name %s and 'IF EXISTS' was not specified", name );
             }
         }
 
         DdlManager.getInstance().dropTable( table, statement );
-
     }
 
 }
-

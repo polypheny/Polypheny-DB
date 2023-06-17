@@ -97,17 +97,16 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         String viewName;
-        long schemaId;
+        long namespaceId;
 
-        if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            schemaId = snapshot.getNamespace( name.names.get( 1 ) ).id;
-            viewName = name.names.get( 2 );
-        } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = snapshot.getNamespace( name.names.get( 0 ) ).id;
+        if ( name.names.size() == 2 ) { // NamespaceName.ViewName
+            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).id;
             viewName = name.names.get( 1 );
-        } else { // TableName
-            schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
+        } else if ( name.names.size() == 1 ) { // ViewName
+            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).id;
             viewName = name.names.get( 0 );
+        } else {
+            throw new RuntimeException( "Invalid view name: " + name );
         }
 
         PlacementType placementType = PlacementType.AUTOMATIC;
@@ -128,7 +127,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
         DdlManager.getInstance().createView(
                 viewName,
-                schemaId,
+                namespaceId,
                 algNode,
                 algCollation,
                 replace,
@@ -201,4 +200,3 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
     } */
 
 }
-

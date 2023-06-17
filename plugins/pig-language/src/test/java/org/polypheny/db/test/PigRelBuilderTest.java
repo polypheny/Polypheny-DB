@@ -55,7 +55,7 @@ public class PigRelBuilderTest {
         final SchemaPlus rootSchema = transaction.getSnapshot().plus();
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
-                .defaultSnapshot( rootSchema.getSubNamespace( transaction.getDefaultSchema().name ) )
+                .defaultSnapshot( rootSchema.getSubNamespace( transaction.getDefaultNamespace().name ) )
                 .traitDefs( (List<AlgTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(
@@ -264,4 +264,3 @@ public class PigRelBuilderTest {
     }
 
 }
-

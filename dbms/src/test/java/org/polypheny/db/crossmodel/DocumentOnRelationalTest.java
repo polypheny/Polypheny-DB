@@ -30,11 +30,11 @@ import org.polypheny.db.TestHelper;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class DocumentOnRelationalTest extends CrossModelTestTemplate {
 
-    private static final String SCHEMA_NAME = "crossRelational";
+    private static final String NAMESPACE_NAME = "crossRelational";
 
     private static final String TABLE_NAME = "crossRelationalTable";
 
-    private static final String FULL_TABLE_NAME = format( "%s.%s", SCHEMA_NAME, TABLE_NAME );
+    private static final String FULL_TABLE_NAME = format( "%s.%s", NAMESPACE_NAME, TABLE_NAME );
 
     private static final String[] ROW_IDS = new String[]{ "id", "name", "foo" };
 
@@ -78,7 +78,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
 
     private static void initStructure() {
         executeStatements( ( s, c ) -> {
-            s.executeUpdate( format( "CREATE SCHEMA %s", SCHEMA_NAME ) );
+            s.executeUpdate( format( "CREATE NAMESPACE %s", NAMESPACE_NAME ) );
             s.executeUpdate( format( "CREATE TABLE %s( id INTEGER NOT NULL, name VARCHAR(39), foo INTEGER, PRIMARY KEY (id))", FULL_TABLE_NAME ) );
 
             for ( Object[] row : DATA ) {
@@ -93,7 +93,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     private static void destroyStructure() {
         executeStatements( ( s, c ) -> {
             s.executeUpdate( format( "DROP TABLE %s", FULL_TABLE_NAME ) );
-            s.executeUpdate( format( "DROP SCHEMA %s", SCHEMA_NAME ) );
+            s.executeUpdate( format( "DROP SCHEMA %s", NAMESPACE_NAME ) );
 
             c.commit();
         } );
@@ -103,7 +103,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     @Test
     public void simpleFindTest() {
         TestHelper.MongoConnection.checkDocResultSet(
-                execute( String.format( "db.%s.find({})", TABLE_NAME ), SCHEMA_NAME ),
+                execute( String.format( "db.%s.find({})", TABLE_NAME ), NAMESPACE_NAME ),
                 asDocument( 1, 2, 3 ),
                 true,
                 true );
@@ -113,7 +113,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     @Test
     public void simpleProjectTest() {
         TestHelper.MongoConnection.checkDocResultSet(
-                execute( String.format( "db.%s.find({},{id: 1})", TABLE_NAME ), SCHEMA_NAME ),
+                execute( String.format( "db.%s.find({},{id: 1})", TABLE_NAME ), NAMESPACE_NAME ),
                 asDocument( 1 ),
                 true,
                 true );
@@ -123,7 +123,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     @Test
     public void simpleFilterTest() {
         TestHelper.MongoConnection.checkDocResultSet(
-                execute( String.format( "db.%s.find({id: 1},{})", TABLE_NAME ), SCHEMA_NAME ),
+                execute( String.format( "db.%s.find({id: 1},{})", TABLE_NAME ), NAMESPACE_NAME ),
                 List.of( asDocument( 1, 2, 3 ).get( 0 ) ),
                 true,
                 true );

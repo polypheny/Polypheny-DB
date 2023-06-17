@@ -48,14 +48,43 @@ public class DdlParserTest extends SqlParserTest {
 
 
     @Test
-    public void testCreateSchema() {
-        sql( "create schema x" ).ok( "CREATE SCHEMA `X`" );
+    public void testCreateSchema() { // Alias for create namespace
+        sql( "create schema x" ).ok( "CREATE NAMESPACE `X`" );
     }
 
 
     @Test
-    public void testCreateOrReplaceSchema() {
+    public void testCreateNamespace() {
+        sql( "create namespace x" ).ok( "CREATE NAMESPACE `X`" );
+    }
+
+
+    @Test
+    public void testCreateDocumentNamespace() {
+        sql( "create document namespace x" ).ok( "CREATE DOCUMENT NAMESPACE `X`" );
+    }
+
+
+    @Test
+    public void testCreateGraphNamespace() {
+        sql( "create graph namespace x" ).ok( "CREATE GRAPH NAMESPACE `X`" );
+    }
+
+
+    @Test
+    public void testCreateRelationalNamespace() {
+        sql( "create relational namespace x" ).ok( "CREATE RELATIONAL NAMESPACE `X`" );
+    }
+
+
+    @Test
+    public void testCreateOrReplaceSchema() { // Alias for create namespace
         sql( "create or replace schema x" ).ok( "CREATE OR REPLACE SCHEMA `X`" );
+    }
+
+
+    public void testCreateOrReplaceNamespace() {
+        sql( "create or replace namespace x" ).ok( "CREATE OR REPLACE NAMESPACE `X`" );
     }
 
 
@@ -197,14 +226,26 @@ public class DdlParserTest extends SqlParserTest {
 
 
     @Test
-    public void testDropSchema() {
-        sql( "drop schema x" ).ok( "DROP SCHEMA `X`" );
+    public void testDropSchema() { // Alias for create namespace
+        sql( "drop schema x" ).ok( "DROP NAMESPACE `X`" );
     }
 
 
     @Test
-    public void testDropSchemaIfExists() {
-        sql( "drop schema if exists x" ).ok( "DROP SCHEMA IF EXISTS `X`" );
+    public void testDropNamespace() {
+        sql( "drop namespace x" ).ok( "DROP NAMESPACE `X`" );
+    }
+
+
+    @Test
+    public void testDropSchemaIfExists() { // Alias for create namespace
+        sql( "drop schema if exists x" ).ok( "DROP NAMESPACE IF EXISTS `X`" );
+    }
+
+
+    @Test
+    public void testDropNamespaceIfExists() {
+        sql( "drop namespace if exists x" ).ok( "DROP NAMESPACE IF EXISTS `X`" );
     }
 
 
@@ -266,4 +307,3 @@ public class DdlParserTest extends SqlParserTest {
     }
 
 }
-

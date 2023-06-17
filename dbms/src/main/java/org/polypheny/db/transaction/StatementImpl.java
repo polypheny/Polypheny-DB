@@ -104,7 +104,7 @@ public class StatementImpl implements Statement {
             prepareContext = new ContextImpl(
                     transaction.getSnapshot(),
                     getDataContext(),
-                    transaction.getDefaultSchema().name,
+                    transaction.getDefaultNamespace().name,
                     transaction.getUser().id,
                     this );
         }
