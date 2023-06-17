@@ -117,7 +117,6 @@ public abstract class PolyNumber extends PolyValue {
     }
 
 
-
     public abstract PolyNumber increment();
 
     @NotNull

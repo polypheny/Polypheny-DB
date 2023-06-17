@@ -37,9 +37,9 @@ import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
-import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
@@ -166,7 +166,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
             } else {
                 // print without prefix
                 if ( rand.getTypeName() == PolyType.BINARY ) {
-                    BitString bs = (BitString) rand.getValue();
+                    PolyBinary bs = rand.getValue().asBinary();
                     writer.literal( "'" + bs.toHexString() + "'" );
                 } else {
                     writer.literal( "'" + rand.toValue() + "'" );

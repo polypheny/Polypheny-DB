@@ -30,6 +30,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
@@ -88,7 +89,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
      * @return Modified call
      */
     public static SqlCall replaceTimeUnitOperand( SqlCall call, String literal, ParserPos pos ) {
-        SqlLiteral literalNode = SqlLiteral.createCharString( literal, null, pos );
+        SqlLiteral literalNode = SqlLiteral.createCharString( PolyString.of( literal ), pos );
         return (SqlCall) call.getOperator().createCall( call.getFunctionQuantifier(), pos, call.getOperandList().get( 0 ), literalNode );
     }
 

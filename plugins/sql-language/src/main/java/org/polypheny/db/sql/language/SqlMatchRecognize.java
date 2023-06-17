@@ -31,6 +31,7 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
+import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -112,7 +113,7 @@ public class SqlMatchRecognize extends SqlCall {
         this.measureList = Objects.requireNonNull( measureList );
         this.after = after;
         this.subsetList = subsetList;
-        Preconditions.checkArgument( rowsPerMatch == null || rowsPerMatch.value instanceof RowsPerMatchOption );
+        Preconditions.checkArgument( rowsPerMatch == null || rowsPerMatch.value instanceof PolySymbol );
         this.rowsPerMatch = rowsPerMatch;
         this.partitionList = Objects.requireNonNull( partitionList );
         this.orderList = Objects.requireNonNull( orderList );
@@ -186,7 +187,7 @@ public class SqlMatchRecognize extends SqlCall {
                 break;
             case OPERAND_ROWS_PER_MATCH:
                 rowsPerMatch = (SqlLiteral) operand;
-                Preconditions.checkArgument( rowsPerMatch == null || rowsPerMatch.value instanceof RowsPerMatchOption );
+                Preconditions.checkArgument( rowsPerMatch == null || rowsPerMatch.value instanceof PolySymbol );//rowsPerMatch.value instanceof RowsPerMatchOption );
                 break;
             case OPERAND_PARTITION_BY:
                 partitionList = (SqlNodeList) operand;

@@ -21,6 +21,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.util.DateString;
 
 
@@ -32,7 +33,7 @@ import org.polypheny.db.util.DateString;
 public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
 
 
-    SqlDateLiteral( DateString d, ParserPos pos ) {
+    SqlDateLiteral( PolyDate d, ParserPos pos ) {
         super( d, false, PolyType.DATE, 0, pos );
     }
 
@@ -41,13 +42,13 @@ public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
      * Converts this literal to a {@link DateString}.
      */
     protected DateString getDate() {
-        return (DateString) value;
+        return DateString.fromCalendarFields( value.asTemporal().toCalendar() );
     }
 
 
     @Override
     public SqlDateLiteral clone( ParserPos pos ) {
-        return new SqlDateLiteral( (DateString) value, pos );
+        return new SqlDateLiteral( (PolyDate) value, pos );
     }
 
 

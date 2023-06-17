@@ -139,7 +139,7 @@ public class SqlTrimFunction extends SqlFunction implements TrimFunction {
                 };
                 break;
             case 3:
-                assert operands[0] instanceof SqlLiteral && ((SqlLiteral) operands[0]).getValue() instanceof Flag;
+                assert operands[0] instanceof SqlLiteral && ((SqlLiteral) operands[0]).value.asSymbol().value instanceof Flag;
                 if ( operands[1] == null ) {
                     operands[1] = SqlLiteral.createCharString( " ", pos );
                 }

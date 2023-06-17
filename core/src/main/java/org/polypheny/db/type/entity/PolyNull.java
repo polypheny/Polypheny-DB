@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity;
 
 import java.math.BigDecimal;
 import lombok.NonNull;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -118,7 +119,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyBinary asBinary() {
-        return PolyBinary.of( null );
+        return PolyBinary.of( (ByteString) null );
     }
 
 

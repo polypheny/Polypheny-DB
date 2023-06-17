@@ -201,8 +201,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 break;
 
             case EXTRACT:
-                if ( call.getOperandList().get( 0 ) instanceof SqlLiteral && ((SqlLiteral) call.getOperandList().get( 0 )).getValue() instanceof TimeUnitRange ) {
-                    TimeUnitRange unitRange = (TimeUnitRange) ((SqlLiteral) call.getOperandList().get( 0 )).getValue();
+                if ( call.getOperandList().get( 0 ) instanceof SqlLiteral && ((SqlLiteral) call.getOperandList().get( 0 )).value.asSymbol().value instanceof TimeUnitRange ) {
+                    TimeUnitRange unitRange = (TimeUnitRange) ((SqlLiteral) call.getOperandList().get( 0 )).value.asSymbol().value;
                     if ( unitRange == TimeUnitRange.DOW ) {
                         SqlFunction func = new SqlFunction(
                                 "DOW_SUNDAY",

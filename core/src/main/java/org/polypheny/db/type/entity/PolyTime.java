@@ -51,7 +51,7 @@ public class PolyTime extends PolyTemporal {
     }
 
 
-    public static PolyValue of( Number value ) {
+    public static PolyTime of( Number value ) {
         return new PolyTime( value.intValue(), TimeUnit.MILLISECOND );
     }
 

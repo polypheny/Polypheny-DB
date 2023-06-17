@@ -197,7 +197,7 @@ public class MysqlSqlDialect extends SqlDialect {
      */
     private void unparseFloor( SqlWriter writer, SqlCall call ) {
         SqlLiteral node = call.operand( 1 );
-        TimeUnitRange unit = (TimeUnitRange) node.getValue();
+        TimeUnitRange unit = (TimeUnitRange) node.value.asSymbol().value;
 
         if ( unit == TimeUnitRange.WEEK ) {
             writer.print( "STR_TO_DATE" );

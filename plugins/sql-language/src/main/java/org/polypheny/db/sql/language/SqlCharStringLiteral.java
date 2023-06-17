@@ -24,6 +24,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -42,7 +43,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
      * @return the underlying NlsString
      */
     public NlsString getNlsString() {
-        return (NlsString) value;
+        return new NlsString( value.asString().value, Util.getDefaultCharset().name(), Collation.COERCIBLE );
     }
 
 
@@ -50,7 +51,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
      * @return the collation
      */
     public Collation getCollation() {
-        return getNlsString().getCollation();
+        return Util.getDefaultCollation();
     }
 
 

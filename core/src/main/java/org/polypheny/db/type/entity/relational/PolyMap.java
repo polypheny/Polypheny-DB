@@ -117,8 +117,8 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
                 public void encode( BinaryOutput out, PolyMap<? extends PolyValue, ? extends PolyValue> item ) {
                     out.writeLong( item.size() );
                     for ( Entry<? extends PolyValue, ? extends PolyValue> entry : item.entrySet() ) {
-                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getKey() ) );
-                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getValue() ) );
+                        out.writeUTF16( PolySerializable.serialize( serializer, entry.getKey() ) );
+                        out.writeUTF16( PolySerializable.serialize( serializer, entry.getValue() ) );
                     }
                 }
 
@@ -129,8 +129,8 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
                     long size = in.readLong();
                     for ( long i = 0; i < size; i++ ) {
                         map.put(
-                                PolySerializable.deserialize( in.readUTF8(), serializer ),
-                                PolySerializable.deserialize( in.readUTF8(), serializer ) );
+                                PolySerializable.deserialize( in.readUTF16(), serializer ),
+                                PolySerializable.deserialize( in.readUTF16(), serializer ) );
                     }
                     return PolyMap.of( map );
                 }

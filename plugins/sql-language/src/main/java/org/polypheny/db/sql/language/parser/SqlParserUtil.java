@@ -50,11 +50,11 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator.TokenSequence;
 import org.polypheny.db.sql.language.SqlTimeLiteral;
 import org.polypheny.db.sql.language.SqlTimestampLiteral;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.PrecedenceClimbingParser;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -78,8 +78,8 @@ public final class SqlParserUtil {
         if ( cal == null ) {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "DATE", s, RESOURCE.badFormat( DateTimeUtils.DATE_FORMAT_STRING ).str() ) );
         }
-        final DateString d = DateString.fromCalendarFields( cal );
-        return SqlLiteral.createDate( d, pos );
+        //final DateString d = DateString.fromCalendarFields( cal );
+        return SqlLiteral.createDate( PolyDate.of( cal.getTime().getTime() ), pos );
     }
 
 
@@ -89,8 +89,8 @@ public final class SqlParserUtil {
         if ( pt == null ) {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIME", s, RESOURCE.badFormat( DateTimeUtils.TIME_FORMAT_STRING ).str() ) );
         }
-        final TimeString t = TimeString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
-        return SqlLiteral.createTime( t, pt.getPrecision(), pos );
+        //final TimeString t = TimeString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
+        return SqlLiteral.createTime( PolyTime.of( pt.getCalendar().getTime().getTime() ), pt.getPrecision(), pos );
     }
 
 
@@ -100,8 +100,8 @@ public final class SqlParserUtil {
         if ( pt == null ) {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIMESTAMP", s, RESOURCE.badFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING ).str() ) );
         }
-        final TimestampString ts = TimestampString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
-        return SqlLiteral.createTimestamp( ts, pt.getPrecision(), pos );
+        //final TimestampString ts = TimestampString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
+        return SqlLiteral.createTimestamp( PolyTimeStamp.of( pt.getCalendar().getTime() ), pt.getPrecision(), pos );
     }
 
 

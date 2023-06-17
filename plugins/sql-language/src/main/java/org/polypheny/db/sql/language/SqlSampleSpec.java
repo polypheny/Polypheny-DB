@@ -17,8 +17,13 @@
 package org.polypheny.db.sql.language;
 
 
+import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -35,9 +40,10 @@ import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
  * A sample is not a {@link SqlNode}. To include it in a parse tree, wrap it as a literal, viz:
  * {@link SqlLiteral#createSample(SqlSampleSpec, ParserPos)}.
  */
-public abstract class SqlSampleSpec {
+public abstract class SqlSampleSpec extends PolyValue {
 
     protected SqlSampleSpec() {
+        super( null );
     }
 
 
@@ -72,6 +78,24 @@ public abstract class SqlSampleSpec {
     }
 
 
+    @Override
+    public int compareTo( @NotNull PolyValue o ) {
+        throw new GenericRuntimeException( "Not allowed" );
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        throw new GenericRuntimeException( "Not allowed" );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        throw new GenericRuntimeException( "Not allowed" );
+    }
+
+
     /**
      * Sample specification that orders substitution.
      */
@@ -93,6 +117,7 @@ public abstract class SqlSampleSpec {
         public String toString() {
             return "SUBSTITUTE(" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( name ) + ")";
         }
+
 
     }
 

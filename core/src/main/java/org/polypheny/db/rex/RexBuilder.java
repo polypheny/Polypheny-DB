@@ -1057,12 +1057,25 @@ public class RexBuilder {
     }
 
 
+    public RexLiteral makeDateLiteral( PolyDate date ) {
+        return makeLiteral( date, typeFactory.createPolyType( PolyType.DATE ), PolyType.DATE );
+    }
+
+
     /**
      * Creates a Time literal.
      */
     public RexLiteral makeTimeLiteral( TimeString time, int precision ) {
         return makeLiteral(
                 PolyTime.of( (long) time.getMillisOfDay() ),
+                typeFactory.createPolyType( PolyType.TIME, precision ),
+                PolyType.TIME );
+    }
+
+
+    public RexLiteral makeTimeLiteral( PolyTime time, int precision ) {
+        return makeLiteral(
+                PolyTime.of( time.getSinceEpoch() ),
                 typeFactory.createPolyType( PolyType.TIME, precision ),
                 PolyType.TIME );
     }
@@ -1085,6 +1098,14 @@ public class RexBuilder {
     public RexLiteral makeTimestampLiteral( TimestampString timestamp, int precision ) {
         return makeLiteral(
                 PolyTimeStamp.of( timestamp.getMillisSinceEpoch() ),
+                typeFactory.createPolyType( PolyType.TIMESTAMP, precision ),
+                PolyType.TIMESTAMP );
+    }
+
+
+    public RexLiteral makeTimestampLiteral( PolyTimeStamp timestamp, int precision ) {
+        return makeLiteral(
+                PolyTimeStamp.of( timestamp.sinceEpoch ),
                 typeFactory.createPolyType( PolyType.TIMESTAMP, precision ),
                 PolyType.TIMESTAMP );
     }

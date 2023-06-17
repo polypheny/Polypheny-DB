@@ -1317,7 +1317,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 // If there is a limit with 0 or 1, it is ensured to produce a single value
                 if ( select.getFetch() != null && select.getFetch() instanceof SqlNumericLiteral ) {
                     SqlNumericLiteral limitNum = (SqlNumericLiteral) select.getFetch();
-                    if ( ((BigDecimal) limitNum.getValue()).intValue() < 2 ) {
+                    if ( limitNum.getValue().asNumber().intValue() < 2 ) {
                         return plan;
                     }
                 }
@@ -1747,7 +1747,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             // Walk over the tree and apply 'over' to all agg functions. This is necessary because the returned expression is not necessarily a call to an agg function. For example, AVG(x) becomes SUM(x) / COUNT(x).
 
             final SqlLiteral q = aggCall.getFunctionQuantifier();
-            final boolean isDistinct = q != null && q.getValue() == SqlSelectKeyword.DISTINCT;
+            final boolean isDistinct = q != null && q.value.asSymbol().value == SqlSelectKeyword.DISTINCT;
 
             final RexShuttle visitor =
                     new HistogramShuttle(
@@ -2091,7 +2091,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
 
         final SqlLiteral rowsPerMatch = matchRecognize.getRowsPerMatch();
-        final boolean allRows = rowsPerMatch != null && rowsPerMatch.getValue() == SqlMatchRecognize.RowsPerMatchOption.ALL_ROWS;
+        final boolean allRows = rowsPerMatch != null && rowsPerMatch.value.asSymbol().value == SqlMatchRecognize.RowsPerMatchOption.ALL_ROWS;
 
         matchBb.setPatternVarRef( false );
 
@@ -4662,7 +4662,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             final AlgDataType type = validator.deriveType( bb.scope, call );
             boolean distinct = false;
             SqlLiteral quantifier = call.getFunctionQuantifier();
-            if ( (null != quantifier) && (quantifier.getValue() == SqlSelectKeyword.DISTINCT) ) {
+            if ( (null != quantifier) && (quantifier.value.asSymbol().value == SqlSelectKeyword.DISTINCT) ) {
                 distinct = true;
             }
             boolean approximate = false;
@@ -4681,7 +4681,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                 .stream()
                                 .map( order ->
                                         bb.convertSortExpression(
-                                                (SqlNode) order,
+                                                order,
                                                 AlgFieldCollation.Direction.ASCENDING,
                                                 AlgFieldCollation.NullDirection.UNSPECIFIED ) )
                                 .map( fieldCollation ->

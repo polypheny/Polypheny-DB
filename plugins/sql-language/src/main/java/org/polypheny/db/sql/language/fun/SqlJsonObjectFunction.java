@@ -143,7 +143,7 @@ public class SqlJsonObjectFunction extends SqlFunction {
 
 
     private <E extends Enum<E>> E getEnumValue( SqlNode operand ) {
-        return (E) ((SqlLiteral) operand).getValue();
+        return (E) ((SqlLiteral) operand).value.asSymbol().value;
     }
 
 }

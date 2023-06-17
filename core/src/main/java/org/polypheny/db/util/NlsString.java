@@ -65,7 +65,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
             DECODE_MAP = CacheBuilder.newBuilder()
             .softValues()
             .build(
-                    new CacheLoader<Pair<ByteString, Charset>, String>() {
+                    new CacheLoader<>() {
                         @Override
                         public String load( @Nonnull Pair<ByteString, Charset> key ) {
                             final Charset charset = key.right;

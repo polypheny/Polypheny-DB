@@ -31,9 +31,10 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.ConversionUtil;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
+@Value
 public class PolyBinary extends PolyValue {
 
     public ByteString value;
@@ -45,9 +46,45 @@ public class PolyBinary extends PolyValue {
     }
 
 
+    public static PolyBinary of( ByteString value ) {
+        return new PolyBinary( value );
+    }
+
+
+    public static PolyBinary of( byte[] value ) {
+        return new PolyBinary( new ByteString( value ) );
+    }
+
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         return 0;
+    }
+
+
+    /**
+     * Converts this bit string to a hex string, such as "7AB".
+     */
+    public String toHexString() {
+        byte[] bytes = value.getBytes();
+        String s = ConversionUtil.toStringFromByteArray( bytes, 16 );
+        switch ( value.getBytes().length % 8 ) {
+            case 1: // B'1' -> X'1'
+            case 2: // B'10' -> X'2'
+            case 3: // B'100' -> X'4'
+            case 4: // B'1000' -> X'8'
+                return s.substring( 1 );
+            case 5: // B'10000' -> X'10'
+            case 6: // B'100000' -> X'20'
+            case 7: // B'1000000' -> X'40'
+            case 0: // B'10000000' -> X'80', and B'' -> X''
+                return s;
+        }
+        if ( (value.getBytes().length % 8) == 4 ) {
+            return s.substring( 1 );
+        } else {
+            return s;
+        }
     }
 
 
@@ -66,6 +103,11 @@ public class PolyBinary extends PolyValue {
     @Override
     public String toString() {
         return value.toBase64String();
+    }
+
+
+    public int getBitCount() {
+        return value.getBytes().length;
     }
 
 

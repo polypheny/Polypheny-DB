@@ -18,8 +18,13 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.Objects;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Litmus;
 
 
@@ -73,7 +78,7 @@ public class SqlIntervalLiteral extends SqlLiteral {
     /**
      * A Interval value.
      */
-    public static class IntervalValue {
+    public static class IntervalValue extends PolyValue {
 
         private final SqlIntervalQualifier intervalQualifier;
         private final String intervalStr;
@@ -88,6 +93,7 @@ public class SqlIntervalLiteral extends SqlLiteral {
          * @param intervalStr Interval string
          */
         IntervalValue( SqlIntervalQualifier intervalQualifier, int sign, String intervalStr ) {
+            super( null );
             assert (sign == -1) || (sign == 1);
             assert intervalQualifier != null;
             assert intervalStr != null;
@@ -142,6 +148,24 @@ public class SqlIntervalLiteral extends SqlLiteral {
 
         public String toString() {
             return intervalStr;
+        }
+
+
+        @Override
+        public int compareTo( @NotNull PolyValue o ) {
+            throw new GenericRuntimeException( "Not allowed" );
+        }
+
+
+        @Override
+        public Expression asExpression() {
+            throw new GenericRuntimeException( "Not allowed" );
+        }
+
+
+        @Override
+        public PolySerializable copy() {
+            throw new GenericRuntimeException( "Not allowed" );
         }
 
     }

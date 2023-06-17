@@ -87,8 +87,8 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
                 public void encode( BinaryOutput out, PolyDictionary item ) {
                     out.writeLong( item.size() );
                     for ( Entry<PolyString, PolyValue> entry : item.entrySet() ) {
-                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getKey() ) );
-                        out.writeUTF8( PolySerializable.serialize( serializer, entry.getValue() ) );
+                        out.writeUTF16( PolySerializable.serialize( serializer, entry.getKey() ) );
+                        out.writeUTF16( PolySerializable.serialize( serializer, entry.getValue() ) );
                     }
                 }
 

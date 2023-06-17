@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity.category;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -32,6 +34,13 @@ public abstract class PolyTemporal extends PolyValue {
 
     public PolyTemporal( PolyType type ) {
         super( type );
+    }
+
+
+    public Calendar toCalendar() {
+        GregorianCalendar cal = new GregorianCalendar();
+        cal.setTimeInMillis( getSinceEpoch() );
+        return cal;
     }
 
 }

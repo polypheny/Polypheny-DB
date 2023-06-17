@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import com.google.common.base.Preconditions;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.util.TimeString;
 
 
@@ -31,7 +32,7 @@ import org.polypheny.db.util.TimeString;
 public class SqlTimeLiteral extends SqlAbstractDateTimeLiteral {
 
 
-    SqlTimeLiteral( TimeString t, int precision, boolean hasTimeZone, ParserPos pos ) {
+    SqlTimeLiteral( PolyTime t, int precision, boolean hasTimeZone, ParserPos pos ) {
         super( t, hasTimeZone, PolyType.TIME, precision, pos );
         Preconditions.checkArgument( this.precision >= 0 );
     }
@@ -41,13 +42,13 @@ public class SqlTimeLiteral extends SqlAbstractDateTimeLiteral {
      * Converts this literal to a {@link TimeString}.
      */
     protected TimeString getTime() {
-        return (TimeString) value;
+        return TimeString.fromCalendarFields( value.asTime().toCalendar() );
     }
 
 
     @Override
     public SqlTimeLiteral clone( ParserPos pos ) {
-        return new SqlTimeLiteral( (TimeString) value, precision, hasTimeZone, pos );
+        return new SqlTimeLiteral( (PolyTime) value, precision, hasTimeZone, pos );
     }
 
 

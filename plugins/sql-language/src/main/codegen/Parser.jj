@@ -6681,7 +6681,7 @@ SqlCall JsonObjectAggFunctionCall() :
     }
     [
         e = JsonConstructorNullClause() {
-            nullClause = (JsonConstructorNullClause) ((SqlLiteral) e).getValue();
+            nullClause = (JsonConstructorNullClause) ((SqlLiteral) e).value.asSymbol().value;
         }
     ]
     <RPAREN> {
@@ -6739,7 +6739,7 @@ SqlCall JsonArrayAggFunctionCall() :
     }
     [
         e = JsonConstructorNullClause() {
-            nullClause = (JsonConstructorNullClause) ((SqlLiteral) e).getValue();
+            nullClause = (JsonConstructorNullClause) ((SqlLiteral) e).value.asSymbol().value;
         }
     ]
     <RPAREN> {

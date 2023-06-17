@@ -24,7 +24,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
-import java.time.LocalDate;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -62,7 +61,7 @@ public class PolyDate extends PolyTemporal {
 
 
     public java.sql.Date asSqlDate() {
-        return java.sql.Date.valueOf( LocalDate.ofEpochDay( sinceEpoch ) );
+        return new java.sql.Date( sinceEpoch );
     }
 
 

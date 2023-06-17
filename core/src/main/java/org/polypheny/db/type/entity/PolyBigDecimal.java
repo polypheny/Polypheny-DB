@@ -81,7 +81,7 @@ public class PolyBigDecimal extends PolyNumber {
 
     public static PolyBigDecimal convert( Object value ) {
         if ( value instanceof PolyNumber ) {
-            return PolyBigDecimal.of( ((PolyNumber) value).longValue() );
+            return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );
         } else if ( value instanceof PolyValue ) {
             return null;
         }
@@ -162,8 +162,8 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
-    public PolyNumber negate() {
-        return PolyLong.of( value.negate() );
+    public PolyBigDecimal negate() {
+        return PolyBigDecimal.of( value.negate() );
     }
 
 

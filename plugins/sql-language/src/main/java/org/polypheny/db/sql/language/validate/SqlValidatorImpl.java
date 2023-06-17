@@ -24,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
@@ -147,10 +146,10 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.AssignableOperandTypeChecker;
 import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.AccessType;
-import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.CoreUtil;
@@ -2842,8 +2841,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 break;
 
             case BINARY:
-                final BitString bitString = (BitString) literal.getValue();
-                if ( (bitString.getBitCount() % 8) != 0 ) {
+                if ( (literal.getValue().asBinary().getBitCount() % 8) != 0 ) {
                     throw newValidationError( literal, RESOURCE.binaryLiteralOdd() );
                 }
                 break;
@@ -2891,11 +2889,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     private void validateLiteralAsDouble( SqlLiteral literal ) {
-        BigDecimal bd = (BigDecimal) literal.getValue();
-        double d = bd.doubleValue();
+        double d = literal.getValue().asNumber().doubleValue();
         if ( Double.isInfinite( d ) || Double.isNaN( d ) ) {
             // overflow
-            throw newValidationError( literal, RESOURCE.numberLiteralOutOfRange( Util.toScientificNotation( bd ) ) );
+            throw newValidationError( literal, RESOURCE.numberLiteralOutOfRange( Util.toScientificNotation( literal.getValue().asBigDecimal().BigDecimalValue() ) ) );
         }
 
         // REVIEW jvs: what about underflow?
@@ -4664,8 +4661,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         assert ns.rowType == null;
 
         // rows per match
-        final SqlLiteral rowsPerMatch = matchRecognize.getRowsPerMatch();
-        final boolean allRows = rowsPerMatch != null && rowsPerMatch.getValue() == SqlMatchRecognize.RowsPerMatchOption.ALL_ROWS;
+        final Enum<?> rowsPerMatch = matchRecognize.getRowsPerMatch().value.asSymbol().value;
+        final boolean allRows = rowsPerMatch == SqlMatchRecognize.RowsPerMatchOption.ALL_ROWS;
 
         final AlgDataTypeFactory.Builder typeBuilder = typeFactory.builder();
 
@@ -5517,7 +5514,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 // Convert a column ref into ITEM(*, 'col_name') for a dynamic star field in dynTable's rowType.
                 SqlNode[] inputs = new SqlNode[2];
                 inputs[0] = fqId;
-                inputs[1] = SqlLiteral.createCharString( Util.last( id.names ), id.getPos() );
+                inputs[1] = SqlLiteral.createCharString( PolyString.of( Util.last( id.names ) ), id.getPos() );
                 return new SqlBasicCall( OperatorRegistry.get( OperatorName.ITEM, SqlOperator.class ), inputs, id.getPos() );
             }
             return fqId;

@@ -34,9 +34,6 @@ import org.polypheny.db.sql.language.SqlTimestampLiteral;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 
 
@@ -106,7 +103,7 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
             case CHAR:
                 return rexBuilder.makeLiteral( literal.getPolyValue(), literal.createSqlType( typeFactory ), PolyType.CHAR );
             case BOOLEAN:
-                return rexBuilder.makeLiteral( literal.getValueAs( Boolean.class ) );
+                return rexBuilder.makeLiteral( literal.value.asBoolean().value );
             case BINARY:
                 bitString = literal.getValueAs( BitString.class );
                 Preconditions.checkArgument(
@@ -120,14 +117,14 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
                 return rexBuilder.makeFlag( literal.getValueAs( Enum.class ) );
             case TIMESTAMP:
                 return rexBuilder.makeTimestampLiteral(
-                        literal.getValueAs( TimestampString.class ),
+                        literal.value.asTimeStamp(),
                         ((SqlTimestampLiteral) literal).getPrec() );
             case TIME:
                 return rexBuilder.makeTimeLiteral(
-                        literal.getValueAs( TimeString.class ),
+                        literal.value.asTime(),
                         ((SqlTimeLiteral) literal).getPrec() );
             case DATE:
-                return rexBuilder.makeDateLiteral( literal.getValueAs( DateString.class ) );
+                return rexBuilder.makeDateLiteral( literal.value.asDate() );
 
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:

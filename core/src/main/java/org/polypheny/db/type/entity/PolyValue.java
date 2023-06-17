@@ -689,14 +689,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 @Override
                 public void encode( BinaryOutput out, PolyValue item ) {
                     out.writeUTF8( item.type.getTypeName() );
-                    out.writeUTF8( item.serialize() );
+                    out.writeUTF16( item.serialize() );
                 }
 
 
                 @Override
                 public PolyValue decode( BinaryInput in ) throws CorruptedDataException {
                     PolyType type = PolyType.valueOf( in.readUTF8() );
-                    return PolySerializable.deserialize( in.readUTF8(), PolySerializable.builder.get().build( PolyValue.classFrom( type ) ) );
+                    return PolySerializable.deserialize( in.readUTF16(), PolySerializable.builder.get().build( PolyValue.classFrom( type ) ) );
                 }
             };
         }

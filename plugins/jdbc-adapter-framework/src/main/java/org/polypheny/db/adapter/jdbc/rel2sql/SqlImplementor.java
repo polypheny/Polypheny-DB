@@ -119,9 +119,7 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 
@@ -567,16 +565,16 @@ public abstract class SqlImplementor {
                             final boolean negative = literal.value.asInterval().value.signum() < 0;
                             return SqlLiteral.createInterval( negative ? -1 : 1, literal.intervalString( literal.value.asInterval().value.abs() ), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
                         case DATE:
-                            return SqlDateLiteral.createDate( DateString.fromDaysSinceEpoch( literal.value.asDate().sinceEpoch.intValue() ), POS );
+                            return SqlDateLiteral.createDate( literal.value.asDate(), POS );
                         case TIME:
-                            return SqlLiteral.createTime( TimeString.fromMillisOfDay( literal.value.asTime().ofDay ), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTime( literal.value.asTime(), literal.getType().getPrecision(), POS );
                         case TIMESTAMP:
-                            return SqlLiteral.createTimestamp( TimestampString.fromMillisSinceEpoch( literal.value.asTimeStamp().sinceEpoch ), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTimestamp( literal.value.asTimeStamp(), literal.getType().getPrecision(), POS );
                         case BINARY:
-                            return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary().toString(), POS );
+                            return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary(), POS );
                         case ARRAY:
                             if ( dialect.supportsNestedArrays() ) {
-                                List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );
+                                List<PolyValue> array = literal.getRexList().stream().map( e -> e.value ).collect( Collectors.toList() );//toSql( program, e ) ).collect( Collectors.toList() );
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
                                 return SqlLiteral.createCharString( literal.value.serialize(), POS );

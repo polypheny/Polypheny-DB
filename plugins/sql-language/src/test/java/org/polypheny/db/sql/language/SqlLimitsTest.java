@@ -38,9 +38,8 @@ import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 
 
@@ -202,17 +201,17 @@ public class SqlLimitsTest {
             s = o.toString();
         }
         pw.print( s );
-        SqlLiteral literal = createLiteral( type.getPolyType(), o, ParserPos.ZERO );
+        SqlLiteral literal = createLiteral( type.getPolyType(), PolyString.of( (String) o ), ParserPos.ZERO );
         pw.print( "; as SQL: " );
         pw.print( literal.toSqlString( AnsiSqlDialect.DEFAULT ) );
         pw.println();
     }
 
 
-    public SqlLiteral createLiteral( PolyType polyType, Object o, ParserPos pos ) {
+    public SqlLiteral createLiteral( PolyType polyType, PolyValue o, ParserPos pos ) {
         switch ( polyType ) {
             case BOOLEAN:
-                return SqlLiteral.createBoolean( (Boolean) o, pos );
+                return SqlLiteral.createBoolean( o.asBoolean(), pos );
             case TINYINT:
             case SMALLINT:
             case INTEGER:
@@ -222,28 +221,22 @@ public class SqlLimitsTest {
             case JSON:
             case VARCHAR:
             case CHAR:
-                return SqlLiteral.createCharString( (String) o, pos );
+                return SqlLiteral.createCharString( o.asString(), pos );
             case VARBINARY:
             case BINARY:
-                return SqlLiteral.createBinaryString( (byte[]) o, pos );
+                return SqlLiteral.createBinaryString( o.asBinary(), pos );
             case DATE:
                 return SqlLiteral.createDate(
-                        o instanceof Calendar
-                                ? DateString.fromCalendarFields( (Calendar) o )
-                                : (DateString) o,
+                        o.asDate(),
                         pos );
             case TIME:
                 return SqlLiteral.createTime(
-                        o instanceof Calendar
-                                ? TimeString.fromCalendarFields( (Calendar) o )
-                                : (TimeString) o,
+                        o.asTime(),
                         0 /* todo */,
                         pos );
             case TIMESTAMP:
                 return SqlLiteral.createTimestamp(
-                        o instanceof Calendar
-                                ? TimestampString.fromCalendarFields( (Calendar) o )
-                                : (TimestampString) o,
+                        o.asTimeStamp(),
                         0 /* todo */,
                         pos );
             default:

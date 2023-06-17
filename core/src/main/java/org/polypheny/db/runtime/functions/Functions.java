@@ -119,7 +119,6 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
-import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -1499,13 +1498,16 @@ public class Functions {
     /**
      * SQL <code>EXP</code> operator applied to double values.
      */
-    public static double exp( double b0 ) {
+    /*public static double exp( double b0 ) {
         return Math.exp( b0 );
     }
 
 
     public static double exp( BigDecimal b0 ) {
         return Math.exp( b0.doubleValue() );
+    }*/
+    public static PolyNumber exp( PolyNumber number ) {
+        return PolyBigDecimal.of( Math.exp( number.doubleValue() ) );
     }
 
     // POWER
@@ -1542,7 +1544,7 @@ public class Functions {
     /**
      * SQL {@code LN(number)} function applied to double values.
      */
-    public static double ln( double d ) {
+    /*public static double ln( double d ) {
         return Math.log( d );
     }
 
@@ -1550,8 +1552,11 @@ public class Functions {
     /**
      * SQL {@code LN(number)} function applied to BigDecimal values.
      */
-    public static double ln( BigDecimal d ) {
+    /*public static double ln( BigDecimal d ) {
         return Math.log( d.doubleValue() );
+    }*/
+    public static PolyNumber ln( PolyNumber number ) {
+        return PolyBigDecimal.of( Math.log( number.doubleValue() ) );
     }
 
     // LOG10
@@ -1560,7 +1565,7 @@ public class Functions {
     /**
      * SQL <code>LOG10(numeric)</code> operator applied to double values.
      */
-    public static double log10( double b0 ) {
+    /*public static double log10( double b0 ) {
         return Math.log10( b0 );
     }
 
@@ -1568,8 +1573,11 @@ public class Functions {
     /**
      * SQL {@code LOG10(number)} function applied to BigDecimal values.
      */
-    public static double log10( BigDecimal d ) {
+    /*public static double log10( BigDecimal d ) {
         return Math.log10( d.doubleValue() );
+    }*/
+    public static PolyNumber log10( PolyNumber number ) {
+        return PolyBigDecimal.of( Math.log10( number.doubleValue() ) );
     }
 
     // MOD
@@ -2049,11 +2057,10 @@ public class Functions {
 
     // SQL ROUND
 
-
     /**
      * SQL <code>ROUND</code> operator applied to int values.
      */
-    public static int sround( int b0 ) {
+    /*public static int sround( int b0 ) {
         return sround( b0, 0 );
     }
 
@@ -2061,7 +2068,7 @@ public class Functions {
     /**
      * SQL <code>ROUND</code> operator applied to int values.
      */
-    public static int sround( int b0, int b1 ) {
+    /*public static int sround( int b0, int b1 ) {
         return sround( BigDecimal.valueOf( b0 ), b1 ).intValue();
     }
 
@@ -2069,7 +2076,7 @@ public class Functions {
     /**
      * SQL <code>ROUND</code> operator applied to long values.
      */
-    public static long sround( long b0 ) {
+    /*public static long sround( long b0 ) {
         return sround( b0, 0 );
     }
 
@@ -2077,15 +2084,15 @@ public class Functions {
     /**
      * SQL <code>ROUND</code> operator applied to long values.
      */
-    public static long sround( long b0, int b1 ) {
+    /*public static long sround( long b0, int b1 ) {
         return sround( BigDecimal.valueOf( b0 ), b1 ).longValue();
-    }
+    }*/
 
 
     /**
      * SQL <code>ROUND</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal sround( BigDecimal b0 ) {
+    /*public static BigDecimal sround( BigDecimal b0 ) {
         return sround( b0, 0 );
     }
 
@@ -2093,15 +2100,18 @@ public class Functions {
     /**
      * SQL <code>ROUND</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal sround( BigDecimal b0, int b1 ) {
+    /*public static BigDecimal sround( BigDecimal b0, int b1 ) {
         return b0.movePointRight( b1 ).setScale( 0, RoundingMode.HALF_UP ).movePointLeft( b1 );
+    }*/
+    public static PolyNumber sround( PolyNumber b0, PolyNumber b1 ) {
+        return PolyBigDecimal.of( b0.bigDecimalValue().movePointRight( b1.intValue() ).setScale( 0, RoundingMode.HALF_UP ).movePointLeft( b1.intValue() ) );
     }
 
 
     /**
      * SQL <code>ROUND</code> operator applied to double values.
      */
-    public static double sround( double b0 ) {
+    /*public static double sround( double b0 ) {
         return sround( b0, 0 );
     }
 
@@ -2109,7 +2119,7 @@ public class Functions {
     /**
      * SQL <code>ROUND</code> operator applied to double values.
      */
-    public static double sround( double b0, int b1 ) {
+    /*public static double sround( double b0, int b1 ) {
         return sround( BigDecimal.valueOf( b0 ), b1 ).doubleValue();
     }
 
@@ -3136,7 +3146,7 @@ public class Functions {
         if ( stringValue == null ) {
             return null;
         }*/
-        return PolyList.deserialize( stringValue ).asList();
+        return PolyValue.deserialize( stringValue ).asList();
     }
 
 

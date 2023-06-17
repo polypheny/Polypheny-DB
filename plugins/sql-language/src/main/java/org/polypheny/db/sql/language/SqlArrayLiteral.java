@@ -16,20 +16,21 @@
 
 package org.polypheny.db.sql.language;
 
-import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlWriter.Frame;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class SqlArrayLiteral extends SqlLiteral {
 
-    private final List<SqlNode> nodes;
+    private final PolyList<?> nodes;
 
 
     /**
      * Creates a <code>SqlLiteral</code>.
      */
-    protected SqlArrayLiteral( List<SqlNode> value, AlgDataType type, ParserPos pos ) {
+    protected SqlArrayLiteral( PolyList<?> value, AlgDataType type, ParserPos pos ) {
         super( value, type.getPolyType(), pos );
         this.nodes = value;
     }
@@ -38,9 +39,9 @@ public class SqlArrayLiteral extends SqlLiteral {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         Frame frame = writer.startList( "ARRAY[", "]" );
-        for ( SqlNode node : nodes ) {
+        for ( PolyValue node : nodes ) {
             writer.sep( "," );
-            node.unparse( writer, 0, 0 );
+            SqlLiteral.unparsePoly( node.type, node, writer );
         }
         writer.endList( frame );
     }

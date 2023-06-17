@@ -185,7 +185,7 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     private void unparseEnum( SqlWriter writer, SqlLiteral literal ) {
-        writer.keyword( ((Enum) literal.getValue()).name() );
+        writer.keyword( literal.value.asSymbol().value.name() );
     }
 
 

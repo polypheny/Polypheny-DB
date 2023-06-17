@@ -2037,6 +2037,11 @@ public class Util {
     }
 
 
+    public static Collation getDefaultCollation() {
+        return Collation.COERCIBLE;
+    }
+
+
     /**
      * Exception used to interrupt a tree walk of any kind.
      */
