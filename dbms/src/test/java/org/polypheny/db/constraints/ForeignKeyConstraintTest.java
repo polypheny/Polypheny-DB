@@ -104,7 +104,6 @@ public class ForeignKeyConstraintTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Create schema
                 statement.executeUpdate( "ALTER CONFIG 'runtime/uniqueConstraintEnforcement' SET true" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/foreignKeyEnforcement' SET true" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/polystoreIndexesSimplify' SET true" );
@@ -118,7 +117,6 @@ public class ForeignKeyConstraintTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Create schema
                 statement.executeUpdate( "ALTER CONFIG 'runtime/uniqueConstraintEnforcement' SET false" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/foreignKeyEnforcement' SET false" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/polystoreIndexesSimplify' SET false" );

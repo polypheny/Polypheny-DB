@@ -51,7 +51,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE SCHEMA test" );
+                statement.executeUpdate( "CREATE NAMESPACE test" );
                 statement.executeUpdate( "CREATE TABLE foo( id INTEGER NOT NULL, name VARCHAR(20) NULL, bar VARCHAR(33) COLLATE CASE SENSITIVE, PRIMARY KEY (id) )" );
                 statement.executeUpdate( "CREATE TABLE test.foo2( id INTEGER NOT NULL, name VARCHAR(20) NOT NULL, foobar VARCHAR(33) NULL, PRIMARY KEY (id, name) )" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT u_foo1 UNIQUE (name, foobar)" );
@@ -59,7 +59,7 @@ public class JdbcMetaTest {
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT fk_foo_2 FOREIGN KEY (id) REFERENCES public.foo(id)" );
                 statement.executeUpdate( "ALTER TABLE foo ADD UNIQUE INDEX i_foo ON id ON STORE hsqldb" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD INDEX i_foo2 ON (name, foobar) USING \"default\" ON STORE hsqldb" );
-                statement.executeUpdate( "CREATE DOCUMENT SCHEMA doc" );
+                statement.executeUpdate( "CREATE DOCUMENT SCHEMA doc" ); // There should be an alias to use the SQL default term SCHEMA instead of NAMESPACE
                 connection.commit();
             }
         }
@@ -73,8 +73,8 @@ public class JdbcMetaTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "ALTER TABLE test.foo2 DROP FOREIGN KEY fk_foo_2 " );
                 statement.executeUpdate( "DROP TABLE foo" );
-                statement.executeUpdate( "DROP SCHEMA test" );
-                statement.executeUpdate( "DROP SCHEMA doc" );
+                statement.executeUpdate( "DROP SCHEMA test" ); // There should be an alias to use the SQL default term SCHEMA instead of NAMESPACE
+                statement.executeUpdate( "DROP NAMESPACE doc" );
                 connection.commit();
             }
         }

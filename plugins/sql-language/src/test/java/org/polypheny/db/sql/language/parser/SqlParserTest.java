@@ -259,7 +259,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "FRAME_ROW", "2014", "c",
             "FREE", "99", "2003", "2011", "2014", "c",
             "FREQUENCY", "99", "2003", "2011", "2014", "c",
-            "FRESHNESS", "c",                                   //IG: Added for Materialized Views
+            "FRESHNESS", "c",                                   // IG: Added for Materialized Views
             "FROM", "92", "99", "2003", "2011", "2014", "c",
             "FULL", "92", "99", "2003", "2011", "2014", "c",
             "FUNCTION", "92", "99", "2003", "2011", "2014", "c",
@@ -270,6 +270,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "GO", "92", "99",
             "GOTO", "92", "99",
             "GRANT", "92", "99", "2003", "2011", "2014", "c",
+            "GRAPH", "c",  // MV: Added for parsing DDLs
             "GROUP", "92", "99", "2003", "2011", "2014", "c",
             "GROUPING", "99", "2003", "2011", "2014", "c",
             "GROUPS", "2014", "c",
@@ -356,6 +357,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "MONTH", "92", "99", "2003", "2011", "2014", "c",
             "MULTISET", "2003", "2011", "2014", "c",
             "NAMES", "92", "99",
+            "NAMESPACE", "c",   // MV: Added for parsing DDLs
             "NATIONAL", "92", "99", "2003", "2011", "2014", "c",
             "NATURAL", "92", "99", "2003", "2011", "2014", "c",
             "NCHAR", "92", "99", "2003", "2011", "2014", "c",
@@ -439,6 +441,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "REGR_SXY", "2011", "2014", "c",
             "REGR_SYY", "2011", "2014", "c",
             "RELATIVE", "92", "99",
+            "RELATIONAL", "c",  // MV: Added for parsing DDLs
             "RELEASE", "99", "2003", "2011", "2014", "c",
             "REPEAT", "92", "99", "2003",
             "RESET", "c",
@@ -7985,4 +7988,3 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 }
-

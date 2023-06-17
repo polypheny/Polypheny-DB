@@ -63,7 +63,7 @@ public interface Transaction {
 
     AtomicBoolean getCancelFlag();
 
-    LogicalNamespace getDefaultSchema();
+    LogicalNamespace getDefaultNamespace();
 
     void addChangedTable( String qualifiedTableName );
 

@@ -17,8 +17,6 @@
 package org.polypheny.db.webui;
 
 
-import static org.polypheny.db.adapter.ConnectionMethod.LINK;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -360,15 +358,15 @@ public class Crud implements InformationObserver {
             ctx.json( new ArrayList<>() );
         }
 
-        List<LogicalNamespace> schemas = catalog.getSnapshot().getNamespaces( null );
+        List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( null );
         // remove unwanted namespaces
-        schemas = schemas.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
-        for ( LogicalNamespace schema : schemas ) {
-            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
+        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
+        for ( LogicalNamespace namespace : namespaces ) {
+            SidebarElement schemaTree = new SidebarElement( namespace.name, namespace.name, namespace.namespaceType, "", getIconName( namespace.namespaceType ) );
 
-            if ( request.depth > 1 && schema.namespaceType != NamespaceType.GRAPH ) {
+            if ( request.depth > 1 && namespace.namespaceType != NamespaceType.GRAPH ) {
                 ArrayList<SidebarElement> collectionTree = new ArrayList<>();
-                List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( schema.id, null );
+                List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( namespace.id, null );
                 for ( LogicalTable table : tables ) {
                     String icon = "fa fa-table";
                     if ( table.entityType == EntityType.SOURCE ) {
@@ -376,15 +374,15 @@ public class Crud implements InformationObserver {
                     } else if ( table.entityType == EntityType.VIEW ) {
                         icon = "icon-eye";
                     }
-                    if ( table.entityType != EntityType.VIEW && schema.namespaceType == NamespaceType.DOCUMENT ) {
+                    if ( table.entityType != EntityType.VIEW && namespace.namespaceType == NamespaceType.DOCUMENT ) {
                         icon = "cui-description";
                     }
 
-                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, schema.namespaceType, request.routerLinkRoot, icon );
+                    SidebarElement tableElement = new SidebarElement( namespace.name + "." + table.name, table.name, namespace.namespaceType, request.routerLinkRoot, icon );
                     if ( request.depth > 2 ) {
                         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
                         for ( LogicalColumn column : columns ) {
-                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
+                            tableElement.addChild( new SidebarElement( namespace.name + "." + table.name + "." + column.name, column.name, namespace.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
                         }
                     }
 
@@ -402,13 +400,13 @@ public class Crud implements InformationObserver {
                 }
 
                 if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", schema.namespaceType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+                    schemaTree.addChild( new SidebarElement( namespace.name + ".tables", "tables", namespace.namespaceType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
             }
-            if ( schema.namespaceType == NamespaceType.GRAPH ) {
-                schemaTree.setRouterLink( request.routerLinkRoot + "/" + schema.name );
+            if ( namespace.namespaceType == NamespaceType.GRAPH ) {
+                schemaTree.setRouterLink( request.routerLinkRoot + "/" + namespace.name );
             }
 
             result.add( schemaTree );
@@ -432,7 +430,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Get all tables of a schema
+     * Get all tables of a namespace
      */
     void getTables( final Context ctx ) {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
@@ -1252,8 +1250,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    private LogicalTable getLogicalTable( String schema, String table ) {
-        return catalog.getSnapshot().rel().getTable( schema, table ).orElseThrow();
+    private LogicalTable getLogicalTable( String namespace, String table ) {
+        return catalog.getSnapshot().rel().getTable( namespace, table ).orElseThrow();
     }
 
 
@@ -1864,11 +1862,11 @@ public class Crud implements InformationObserver {
 
 
     private Placement getPlacements( final Index index ) {
-        String schemaName = index.getSchema();
+        String namespaceName = index.getSchema();
         String tableName = index.getTable();
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
-        LogicalTable table = getLogicalTable( schemaName, tableName );
+        LogicalTable table = getLogicalTable( namespaceName, tableName );
         Placement p = new Placement( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
         if ( table.entityType != EntityType.VIEW ) {
             long pkid = table.primaryKey;
@@ -2637,8 +2635,8 @@ public class Crud implements InformationObserver {
                 List<String> columns = new ArrayList<>();
                 root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
 
-                //default Schema
-                long schemaId = transaction.getDefaultSchema().id;
+                // Default Namespace
+                long namespaceId = transaction.getDefaultNamespace().id;
 
                 MaterializedCriteria materializedCriteria;
                 if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.INTERVAL.toString() ) ) {
@@ -2655,7 +2653,7 @@ public class Crud implements InformationObserver {
 
                 DdlManager.getInstance().createMaterializedView(
                         viewName,
-                        schemaId,
+                        namespaceId,
                         root,
                         replace,
                         statement,
@@ -2679,14 +2677,14 @@ public class Crud implements InformationObserver {
                 List<String> columns = new ArrayList<>();
                 root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
 
-                // Default Schema
-                long schemaId = transaction.getDefaultSchema().id;
+                // Default Namespace
+                long namespaceId = transaction.getDefaultNamespace().id;
 
                 Gson gson = new Gson();
 
                 DdlManager.getInstance().createView(
                         viewName,
-                        schemaId,
+                        namespaceId,
                         root.alg,
                         root.collation,
                         replace,
@@ -2777,7 +2775,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Create or drop a schema
+     * Create or drop a namespace
      */
     void schemaRequest( final Context ctx ) {
         Schema schema = ctx.bodyAsClass( Schema.class );
@@ -2790,14 +2788,14 @@ public class Crud implements InformationObserver {
             return;
         }
 
-        // create schema
+        // create namespace
         if ( schema.isCreate() && !schema.isDrop() ) {
 
             StringBuilder query = new StringBuilder( "CREATE " );
             if ( schema.getType() == NamespaceType.DOCUMENT ) {
                 query.append( "DOCUMENT " );
             }
-            query.append( "SCHEMA " );
+            query.append( "NAMESPACE " );
 
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.getAuthorization() != null && !schema.getAuthorization().equals( "" ) ) {
@@ -2808,7 +2806,7 @@ public class Crud implements InformationObserver {
                 transaction.commit();
                 ctx.json( Result.builder().affectedRows( rows ).build() );
             } catch ( QueryExecutionException | TransactionException e ) {
-                log.error( "Caught exception while creating a schema", e );
+                log.error( "Caught exception while creating a namespace", e );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -2817,7 +2815,7 @@ public class Crud implements InformationObserver {
                 ctx.json( Result.builder().error( e.getMessage() ).build() );
             }
         }
-        // drop schema
+        // drop namespace
         else if ( !schema.isCreate() && schema.isDrop() ) {
             if ( type == null ) {
                 List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( new org.polypheny.db.catalog.logistic.Pattern( schema.getName() ) );
@@ -2830,7 +2828,7 @@ public class Crud implements InformationObserver {
                 }
             }
 
-            StringBuilder query = new StringBuilder( "DROP SCHEMA " );
+            StringBuilder query = new StringBuilder( "DROP NAMESPACE " );
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.isCascade() ) {
                 query.append( " CASCADE" );
@@ -2840,7 +2838,7 @@ public class Crud implements InformationObserver {
                 transaction.commit();
                 ctx.json( Result.builder().affectedRows( rows ).build() );
             } catch ( TransactionException | QueryExecutionException e ) {
-                log.error( "Caught exception while dropping a schema", e );
+                log.error( "Caught exception while dropping a namespace", e );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -3052,7 +3050,6 @@ public class Crud implements InformationObserver {
 
         return f;
     }
-
 
     void getDirectory( File dir, Context ctx ) {
         ctx.header( "Content-ExpressionType", "application/zip" );
@@ -3502,14 +3499,14 @@ public class Crud implements InformationObserver {
     /**
      * Get the data types of each column of a table
      *
-     * @param schemaName name of the schema
+     * @param namespaceName name of the namespace
      * @param tableName name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql ExpressionType (java.sql.Types).
      */
-    private Map<String, LogicalColumn> getCatalogColumns( String schemaName, String tableName ) {
+    private Map<String, LogicalColumn> getCatalogColumns( String namespaceName, String tableName ) {
         Map<String, LogicalColumn> dataTypes = new HashMap<>();
 
-        LogicalTable table = getLogicalTable( schemaName, tableName );
+        LogicalTable table = getLogicalTable( namespaceName, tableName );
         List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( table.id );
         for ( LogicalColumn logicalColumn : logicalColumns ) {
             dataTypes.put( logicalColumn.name, logicalColumn );
@@ -3519,7 +3516,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getTypeSchemas( final Context ctx ) {
+    void getTypeNamespaces( final Context ctx ) {
         ctx.json( catalog
                 .getSnapshot().
                 getNamespaces( null )

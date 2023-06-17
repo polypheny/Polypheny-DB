@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.language.ddl.alterschema;
+package org.polypheny.db.sql.language.ddl.alternamespace;
 
 
 import java.util.List;
@@ -27,44 +27,44 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
-import org.polypheny.db.sql.language.ddl.SqlAlterSchema;
+import org.polypheny.db.sql.language.ddl.SqlAlterNamespace;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER SCHEMA name RENAME TO} statement.
+ * Parse tree for {@code ALTER NAMESPACE name RENAME TO} statement (has alias for ALTER SCHEMA).
  */
-public class SqlAlterSchemaRename extends SqlAlterSchema {
+public class SqlAlterNamespaceRename extends SqlAlterNamespace {
 
-    private final SqlIdentifier oldName;
+    private final SqlIdentifier currentName;
     private final SqlIdentifier newName;
 
 
-    public SqlAlterSchemaRename( ParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
+    public SqlAlterNamespaceRename( ParserPos pos, SqlIdentifier currentName, SqlIdentifier newName ) {
         super( pos );
-        this.oldName = Objects.requireNonNull( oldName );
+        this.currentName = Objects.requireNonNull( currentName );
         this.newName = Objects.requireNonNull( newName );
     }
 
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( oldName, newName );
+        return ImmutableNullableList.of( currentName, newName );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( oldName, newName );
+        return ImmutableNullableList.of( currentName, newName );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "SCHEMA" );
-        oldName.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "NAMESPACE" );
+        currentName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "RENAME" );
         writer.keyword( "TO" );
         newName.unparse( writer, leftPrec, rightPrec );
@@ -73,8 +73,7 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        DdlManager.getInstance().renameNamespace( newName.getSimple(), oldName.getSimple() );
+        DdlManager.getInstance().renameNamespace( newName.getSimple(), currentName.getSimple() );
     }
 
 }
-

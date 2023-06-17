@@ -83,12 +83,12 @@ public abstract class DdlManager {
 
 
     /**
-     * Creates a schema with the provided options.
+     * Creates a namespace with the provided options.
      *
-     * @param name name of the new schema
-     * @param type the schema type, RELATIONAL, DOCUMENT, etc.
-     * @param ifNotExists whether to silently ignore if the schema does already exist
-     * @param replace whether the replace a existing schema
+     * @param name name of the new namespace
+     * @param type the namespace type, RELATIONAL, DOCUMENT, etc.
+     * @param ifNotExists whether to silently ignore if a namespace with this name does already exist
+     * @param replace whether to replace an existing namespace with this name
      */
     public abstract long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace );
 
@@ -111,12 +111,12 @@ public abstract class DdlManager {
     public abstract void dropAdapter( String name, Statement statement );
 
     /**
-     * Change the name of a schema
+     * Change the name of a namespace
      *
-     * @param newName the new name for the schema
-     * @param oldName the old name current name of the schema
+     * @param newName the new name for the namespace
+     * @param currentName the current name of the namespace
      */
-    public abstract void renameNamespace( String newName, String oldName );
+    public abstract void renameNamespace( String newName, String currentName );
 
     /**
      * Adds a column to an existing source table
@@ -467,13 +467,13 @@ public abstract class DdlManager {
     public abstract void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId );
 
     /**
-     * Drop a schema
+     * Drop a NAMESPACE
      *
-     * @param schemaName the name of the schema to drop
-     * @param ifExists whether to silently ignore if the schema does not exist
+     * @param namespaceName the name of the namespace to drop
+     * @param ifExists whether to silently ignore if there is no namespace with this name
      * @param statement the used statement
      */
-    public abstract void dropNamespace( String schemaName, boolean ifExists, Statement statement );
+    public abstract void dropNamespace( String namespaceName, boolean ifExists, Statement statement );
 
     /**
      * Drop a table

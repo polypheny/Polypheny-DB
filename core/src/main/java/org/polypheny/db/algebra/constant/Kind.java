@@ -130,7 +130,7 @@ public enum Kind {
     /**
      * DESCRIBE SCHEMA statement
      */
-    DESCRIBE_SCHEMA,
+    DESCRIBE_NAMESPACE,
 
     /**
      * DESCRIBE TABLE statement
@@ -1101,9 +1101,9 @@ public enum Kind {
     ALTER_SESSION,
 
     /**
-     * {@code CREATE SCHEMA} DDL statement.
+     * {@code CREATE NAMESPACE} DDL statement.
      */
-    CREATE_SCHEMA,
+    CREATE_NAMESPACE,
 
     /**
      * {@code CREATE FOREIGN SCHEMA} DDL statement.
@@ -1111,14 +1111,14 @@ public enum Kind {
     CREATE_FOREIGN_SCHEMA,
 
     /**
-     * {@code ALTER SCHEMA} DDL statement.
+     * {@code ALTER NAMESPACE} DDL statement.
      */
-    ALTER_SCHEMA,
+    ALTER_NAMESPACE,
 
     /**
-     * {@code DROP SCHEMA} DDL statement.
+     * {@code DROP NAMESPACE} DDL statement.
      */
-    DROP_SCHEMA,
+    DROP_NAMESPACE,
 
     /**
      * {@code CREATE TABLE} DDL statement.
@@ -1400,9 +1400,9 @@ public enum Kind {
             COMMIT,
             ROLLBACK,
             ALTER_SESSION,
-            CREATE_SCHEMA,
+            CREATE_NAMESPACE,
             CREATE_FOREIGN_SCHEMA,
-            DROP_SCHEMA,
+            DROP_NAMESPACE,
             CREATE_TABLE,
             ALTER_TABLE,
             DROP_TABLE,
@@ -1422,7 +1422,7 @@ public enum Kind {
             DROP_TYPE,
             SET_OPTION,
             TRUNCATE,
-            ALTER_SCHEMA,
+            ALTER_NAMESPACE,
             OTHER_DDL );
 
     /**
@@ -1715,4 +1715,3 @@ public enum Kind {
         return set;
     }
 }
-

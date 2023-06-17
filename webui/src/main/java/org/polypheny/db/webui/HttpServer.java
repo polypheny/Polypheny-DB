@@ -213,7 +213,7 @@ public class HttpServer implements Runnable {
     private void crudRoutes( Javalin webuiServer, Crud crud ) {
         webuiServer.post( "/getSchemaTree", crud::getSchemaTree );
 
-        webuiServer.get( "/getTypeSchemas", crud::getTypeSchemas );
+        webuiServer.get( "/getTypeSchemas", crud::getTypeNamespaces );
 
         webuiServer.post( "/insertRow", crud::insertRow );
 

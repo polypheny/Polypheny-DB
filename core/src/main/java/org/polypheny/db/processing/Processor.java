@@ -73,7 +73,7 @@ public abstract class Processor {
                 parameters.getNamespaceType(),
                 new ExecutionTimeMonitor(),
                 null,
-                Kind.CREATE_SCHEMA, // technically correct, maybe change
+                Kind.CREATE_NAMESPACE, // technically correct, maybe change
                 statement,
                 null );
     }

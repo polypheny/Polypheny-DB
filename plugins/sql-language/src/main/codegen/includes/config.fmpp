@@ -32,7 +32,7 @@ data: {
             "org.polypheny.db.sql.language.SqlCreate"
             "org.polypheny.db.sql.language.SqlDataTypeSpec"
             "org.polypheny.db.sql.language.SqlDelete"
-            "org.polypheny.db.sql.language.SqlDescribeSchema"
+            "org.polypheny.db.sql.language.SqlDescribeNamespace"
             "org.polypheny.db.sql.language.SqlDescribeTable"
             "org.polypheny.db.sql.language.SqlDrop"
             "org.polypheny.db.sql.language.SqlDynamicParam"
@@ -70,7 +70,7 @@ data: {
             "org.polypheny.db.sql.language.ddl.SqlAlterInterfacesAdd"
             "org.polypheny.db.sql.language.ddl.SqlAlterInterfacesDrop"
             "org.polypheny.db.sql.language.ddl.SqlAlterMaterializedView"
-            "org.polypheny.db.sql.language.ddl.SqlAlterSchema"
+            "org.polypheny.db.sql.language.ddl.SqlAlterNamespace"
             "org.polypheny.db.sql.language.ddl.SqlAlterTable"
             "org.polypheny.db.sql.language.ddl.SqlAlterView"
             "org.polypheny.db.sql.language.ddl.SqlDdlNodes"
@@ -80,8 +80,8 @@ data: {
             "org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewFreshnessManual"
             "org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewRename"
             "org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewRenameColumn"
-            "org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaOwner"
-            "org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaRename"
+            "org.polypheny.db.sql.language.ddl.alternamespace.SqlAlterNamespaceOwner"
+            "org.polypheny.db.sql.language.ddl.alternamespace.SqlAlterNamespaceRename"
             "org.polypheny.db.sql.language.ddl.altertable.SqlAlterSourceTableAddColumn"
             "org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddColumn"
             "org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddForeignKey"
@@ -524,4 +524,3 @@ data: {
 freemarkerLinks: {
     includes: includes/
 }
-

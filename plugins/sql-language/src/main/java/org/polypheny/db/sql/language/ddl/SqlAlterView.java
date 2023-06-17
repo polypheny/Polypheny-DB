@@ -33,7 +33,7 @@ public abstract class SqlAlterView extends SqlAlter {
 
 
     /**
-     * Creates a SqlAlterSchema.
+     * Creates a SqlAlterView.
      */
     public SqlAlterView( ParserPos pos ) {
         super( OPERATOR, pos );

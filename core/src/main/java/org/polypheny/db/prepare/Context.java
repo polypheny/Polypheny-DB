@@ -37,7 +37,7 @@ public interface Context {
      */
     Snapshot getSnapshot();
 
-    String getDefaultSchemaName();
+    String getDefaultNamespaceName();
 
     List<String> getDefaultSchemaPath();
 

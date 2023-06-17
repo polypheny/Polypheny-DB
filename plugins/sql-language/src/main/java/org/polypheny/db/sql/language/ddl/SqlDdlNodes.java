@@ -41,10 +41,10 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a CREATE SCHEMA.
+     * Creates a CREATE NAMESPACE.
      */
-    public static SqlCreateSchema createSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
-        return new SqlCreateSchema( pos, replace, ifNotExists, name, namespaceType );
+    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
+        return new SqlCreateNamespace( pos, replace, ifNotExists, name, namespaceType );
     }
 
 
@@ -89,10 +89,10 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a DROP SCHEMA.
+     * Creates a DROP NAMESPACE.
      */
-    public static SqlDropSchema dropSchema( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
-        return new SqlDropSchema( pos, ifExists, name );
+    public static SqlDropNamespace dropNamespace( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropNamespace( pos, ifExists, name );
     }
 
 

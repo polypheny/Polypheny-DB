@@ -40,16 +40,16 @@ public class ContextImpl implements Context {
     @Getter
     private final Statement statement;
     @Getter
-    private final String defaultSchemaName;
+    private final String defaultNamespaceName;
     @Getter
     private final long currentUserId;
 
 
-    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultSchemaName, long currentUserId, Statement statement ) {
+    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultNamespaceName, long currentUserId, Statement statement ) {
         this.snapshot = snapshot;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
-        this.defaultSchemaName = defaultSchemaName;
+        this.defaultNamespaceName = defaultNamespaceName;
         this.statement = statement;
         this.currentUserId = currentUserId;
     }
@@ -57,9 +57,9 @@ public class ContextImpl implements Context {
 
     @Override
     public List<String> getDefaultSchemaPath() {
-        return defaultSchemaName == null
+        return defaultNamespaceName == null
                 ? ImmutableList.of()
-                : ImmutableList.of( defaultSchemaName );
+                : ImmutableList.of( defaultNamespaceName );
     }
 
 

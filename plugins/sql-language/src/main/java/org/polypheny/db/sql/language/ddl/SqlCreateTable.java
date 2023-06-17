@@ -190,19 +190,21 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         if ( query != null ) {
-            throw new RuntimeException( "Not supported yet" );
+            throw new RuntimeException( "Not yet supported" );
         }
 
         String tableName;
-        long schemaId;
+        long namespaceId;
 
         // Cannot use getTable() here since table does not yet exist
-        if ( name.names.size() == 2 ) { // SchemaName.TableName
-            schemaId = snapshot.getNamespace( name.names.get( 0 ) ).id;
+        if ( name.names.size() == 2 ) { // NamespaceName.TableName
+            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).id;
             tableName = name.names.get( 1 );
-        } else { // TableName
-            schemaId = snapshot.getNamespace( context.getDefaultSchemaName() ).id;
+        } else if ( name.names.size() == 1 ) { // TableName
+            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).id;
             tableName = name.names.get( 0 );
+        } else {
+            throw new RuntimeException( "Invalid table name: " + name );
         }
 
         List<DataStore<?>> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
@@ -220,7 +222,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
         try {
             DdlManager.getInstance().createTable(
-                    schemaId,
+                    namespaceId,
                     tableName,
                     columns,
                     constraints,
@@ -293,4 +295,3 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
 
 }
-

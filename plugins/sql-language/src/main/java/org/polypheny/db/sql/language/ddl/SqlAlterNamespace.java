@@ -25,18 +25,18 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 
 
 /**
- * Parse tree for {@code ALTER SCHEMA} statement.
+ * Parse tree for {@code ALTER NAMESPACE} statement.
  */
-public abstract class SqlAlterSchema extends SqlAlter {
+public abstract class SqlAlterNamespace extends SqlAlter {
 
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER SCHEMA", Kind.ALTER_SCHEMA );
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER NAMESPACE", Kind.ALTER_NAMESPACE );
 
 
     /**
-     * Creates a SqlAlterSchema.
+     * Creates a SqlAlterNamespace.
      */
-    public SqlAlterSchema( ParserPos pos ) {
+    public SqlAlterNamespace( ParserPos pos ) {
         super( OPERATOR, pos );
     }
 

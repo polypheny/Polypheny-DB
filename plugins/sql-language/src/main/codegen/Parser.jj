@@ -52,7 +52,7 @@ import org.polypheny.db.sql.language.SqlCollation;
 import org.polypheny.db.sql.language.SqlCreate;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDelete;
-import org.polypheny.db.sql.language.SqlDescribeSchema;
+import org.polypheny.db.sql.language.SqlDescribeNamespace;
 import org.polypheny.db.sql.language.SqlDescribeTable;
 import org.polypheny.db.sql.language.SqlDrop;
 import org.polypheny.db.sql.language.SqlDynamicParam;
@@ -90,7 +90,7 @@ import org.polypheny.db.sql.language.ddl.SqlAlterConfig;
 import org.polypheny.db.sql.language.ddl.SqlAlterInterfacesAdd;
 import org.polypheny.db.sql.language.ddl.SqlAlterInterfacesDrop;
 import org.polypheny.db.sql.language.ddl.SqlAlterMaterializedView;
-import org.polypheny.db.sql.language.ddl.SqlAlterSchema;
+import org.polypheny.db.sql.language.ddl.SqlAlterNamespace;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.sql.language.ddl.SqlAlterView;
 import org.polypheny.db.sql.language.ddl.SqlDdlNodes;
@@ -100,8 +100,8 @@ import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMateriali
 import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewFreshnessManual;
 import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewRename;
 import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewRenameColumn;
-import org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaOwner;
-import org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaRename;
+import org.polypheny.db.sql.language.ddl.alternamespace.SqlAlterNamespaceOwner;
+import org.polypheny.db.sql.language.ddl.alternamespace.SqlAlterNamespaceRename;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterSourceTableAddColumn;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddColumn;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddForeignKey;
@@ -1078,28 +1078,28 @@ SqlTruncate SqlTruncateTable() :
 
 
 /**
-* Parses a ALTER SCHEMA statement.
+* Parses a ALTER NAMESPACE statement.
 */
-SqlAlterSchema SqlAlterSchema(Span s) :
+SqlAlterNamespace SqlAlterNamespace(Span s) :
 {
     final SqlIdentifier namespace;
     final SqlIdentifier name;
     final SqlIdentifier owner;
 }
 {
-    <SCHEMA>
+    (<NAMESPACE>|<SCHEMA>)
     namespace = CompoundIdentifier()
     (
         <RENAME> <TO>
         name = CompoundIdentifier()
         {
-            return new SqlAlterSchemaRename(s.end(this), namespace, name);
+            return new SqlAlterNamespaceRename(s.end(this), namespace, name);
         }
     |
         <OWNER> <TO>
         owner = SimpleIdentifier()
         {
-            return new SqlAlterSchemaOwner(s.end(this), namespace, owner);
+            return new SqlAlterNamespaceOwner(s.end(this), namespace, owner);
         }
     )
 }
@@ -1846,7 +1846,7 @@ boolean IfExistsOpt() :
 }
 
 
-SqlCreate SqlCreateSchema(Span s, boolean replace) :
+SqlCreate SqlCreateNamespace(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
@@ -1854,14 +1854,18 @@ SqlCreate SqlCreateSchema(Span s, boolean replace) :
 }
 {
     (
+        <RELATIONAL> { namespaceType = NamespaceType.RELATIONAL; }
+        |
         <DOCUMENT> { namespaceType = NamespaceType.DOCUMENT; }
+        |
+        <GRAPH> { namespaceType = NamespaceType.GRAPH; }
         |
         { namespaceType = NamespaceType.RELATIONAL; }
     )
-    <SCHEMA> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    (<NAMESPACE> | <SCHEMA>) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     {
-        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id, namespaceType);
-    }
+    return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, namespaceType);
+}
 }
 
 SqlNodeList Options() :
@@ -2291,14 +2295,14 @@ SqlCreate SqlCreateFunction(Span s, boolean replace) :
     }
 }
 
-SqlDrop SqlDropSchema(Span s, boolean replace) :
+SqlDrop SqlDropNamespace(Span s, boolean replace) :
 {
     final boolean ifExists;
     final SqlIdentifier id;
 }
 {
-    <SCHEMA> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return SqlDdlNodes.dropSchema(s.end(this), ifExists, id);
+    (<NAMESPACE>|<SCHEMA>) ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropNamespace(s.end(this), ifExists, id);
     }
 }
 
@@ -2552,12 +2556,12 @@ SqlNode SqlDescribe() :
 {
     <DESCRIBE> { s = span(); }
     (
-        (<DATABASE> | <CATALOG> | <SCHEMA>)
+        (<DATABASE> | <CATALOG> | <SCHEMA> | <NAMESPACE>)
         id = CompoundIdentifier() {
             // DESCRIBE DATABASE and DESCRIBE CATALOG currently do the same as
-            // DESCRIBE SCHEMA but should be different. See
+            // DESCRIBE NAMESPACE but should be different. See
             //   [POLYPHENYDB-1221] Implement DESCRIBE DATABASE, CATALOG, STATEMENT
-            return new SqlDescribeSchema(s.end(id), id);
+            return new SqlDescribeNamespace(s.end(id), id);
         }
     |
         // Use syntactic lookahead to determine whether a table name is coming.
@@ -4863,7 +4867,7 @@ SqlAlter SqlAlter() :
     (
         alterNode = SqlSetOption(s)
         |
-        alterNode = SqlAlterSchema(s)
+        alterNode = SqlAlterNamespace(s)
         |
         alterNode = SqlAlterView(s)
         |
@@ -4903,7 +4907,7 @@ SqlCreate SqlCreate() :
         }
     ]
     (
-        create = SqlCreateSchema(s, replace)
+        create = SqlCreateNamespace(s, replace)
         |
         create = SqlCreateTable(s, replace)
         |
@@ -4933,7 +4937,7 @@ SqlDrop SqlDrop() :
 {
     <DROP> { s = span(); }
     (
-        drop = SqlDropSchema(s, replace)
+        drop = SqlDropNamespace(s, replace)
         |
         drop = SqlDropTable(s, replace)
         |
@@ -7654,6 +7658,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < GOTO: "GOTO" >
 |   < GRANT: "GRANT" >
 |   < GRANTED: "GRANTED" >
+|   < GRAPH: "GRAPH" >
 |   < GROUP: "GROUP" >
 |   < GROUPING: "GROUPING" >
 |   < GROUPS: "GROUPS" >
@@ -7765,6 +7770,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MUMPS: "MUMPS" >
 |   < NAME: "NAME" >
 |   < NAMES: "NAMES" >
+|   < NAMESPACE: "NAMESPACE" >
 |   < NANOSECOND: "NANOSECOND" >
 |   < NATIONAL: "NATIONAL" >
 |   < NATURAL: "NATURAL" >
@@ -7875,6 +7881,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < REGR_SXX: "REGR_SXX" >
 |   < REGR_SXY: "REGR_SXY" >
 |   < REGR_SYY: "REGR_SYY" >
+|   < RELATIONAL: "RELATIONAL" >
 |   < RELATIVE: "RELATIVE" >
 |   < RELEASE: "RELEASE" >
 |   < RENAME: "RENAME" >

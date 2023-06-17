@@ -48,7 +48,7 @@ public class SqlAlterConfig extends SqlAlter {
 
 
     /**
-     * Creates a SqlAlterSchemaOwner.
+     * Creates a SqlAlterConfig.
      */
     public SqlAlterConfig( ParserPos pos, SqlNode key, SqlNode value ) {
         super( OPERATOR, pos );
