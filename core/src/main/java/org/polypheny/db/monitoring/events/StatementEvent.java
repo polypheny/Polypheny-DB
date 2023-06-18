@@ -63,7 +63,7 @@ public abstract class StatementEvent extends BaseEvent {
     // Only used for ddl events
     protected long tableId;
     // Only used for ddl events
-    protected long schemaId;
+    protected long namespaceId;
     // Only used for ddl events
     protected long columnId;
 

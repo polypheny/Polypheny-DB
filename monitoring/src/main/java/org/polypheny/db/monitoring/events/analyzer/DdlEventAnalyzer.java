@@ -30,7 +30,7 @@ public class DdlEventAnalyzer {
                 .isCommitted( ddlEvent.isCommitted() )
                 .tableId( ddlEvent.getTableId() )
                 .monitoringType( ddlEvent.getMonitoringType() )
-                .schemaId( ddlEvent.getSchemaId() )
+                .namespaceId( ddlEvent.getNamespaceId() )
                 .columnId( ddlEvent.getColumnId() )
                 .build();
     }

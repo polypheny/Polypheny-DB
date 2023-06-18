@@ -102,9 +102,9 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         final ClassDeclaration expr = algImplementor.implementRoot( alg, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
-        if ( RuntimeConfig.DEBUG.getBoolean() ) {
-            Util.debugCode( System.out, s );
-        }
+       if ( RuntimeConfig.DEBUG.getBoolean() ) {
+           Util.debugCode( System.out, s );
+       }
 
         Hook.JAVA_PLAN.run( s );
 

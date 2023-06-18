@@ -87,9 +87,9 @@ public class RexToLixTranslator {
     public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
             Util.mapOf(
                     findMethod( String.class, "toUpperCase" ), OperatorRegistry.get( OperatorName.UPPER ),
-                    findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), OperatorRegistry.get( OperatorName.SUBSTRING ),
-                    findMethod( Functions.class, "charLength", String.class ), OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
-                    findMethod( Functions.class, "charLength", String.class ), OperatorRegistry.get( OperatorName.CHAR_LENGTH ),
+                    findMethod( Functions.class, "substring", PolyString.class, PolyNumber.class, PolyNumber.class ), OperatorRegistry.get( OperatorName.SUBSTRING ),
+                    findMethod( Functions.class, "charLength", PolyString.class ), OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
+                    findMethod( Functions.class, "charLength", PolyString.class ), OperatorRegistry.get( OperatorName.CHAR_LENGTH ),
                     findMethod( Functions.class, "translate3", String.class, String.class, String.class ), OperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ) );
 
     final JavaTypeFactory typeFactory;

@@ -175,9 +175,6 @@ public class PolyBigDecimal extends PolyNumber {
         if ( o == null || getClass() != o.getClass() ) {
             return false;
         }
-        if ( !super.equals( o ) ) {
-            return false;
-        }
         PolyBigDecimal that = (PolyBigDecimal) o;
         return Objects.equals( value.stripTrailingZeros(), that.value.stripTrailingZeros() );
     }
@@ -218,13 +215,13 @@ public class PolyBigDecimal extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyBigDecimal item ) {
-                    out.writeUTF8( item.value.toString() );
+                    out.writeUTF16( item.value.toString() );
                 }
 
 
                 @Override
                 public PolyBigDecimal decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyBigDecimal( new BigDecimal( in.readUTF8() ) );
+                    return new PolyBigDecimal( new BigDecimal( in.readUTF16() ) );
                 }
             };
         }

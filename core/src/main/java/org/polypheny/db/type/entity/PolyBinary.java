@@ -37,6 +37,7 @@ import org.polypheny.db.util.ConversionUtil;
 @Value
 public class PolyBinary extends PolyValue {
 
+    public static final PolyBinary EMPTY = new PolyBinary( ByteString.EMPTY );
     public ByteString value;
 
 

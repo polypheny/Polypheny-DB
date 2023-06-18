@@ -29,7 +29,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
@@ -273,7 +275,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
 
         Transaction transaction = getTransactionManager().startTransaction(
-                Catalog.defaultUserId,
+                catalog.getSnapshot().getUser( Catalog.defaultUserId ),
+                catalog.getSnapshot().getNamespace( Catalog.defaultNamespaceId ),
                 false,
                 "Materialized View" );
 
@@ -300,7 +303,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * Is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
      */
     @Override
-    public void addData( Transaction transaction, List<DataStore<?>> stores, AlgRoot algRoot, LogicalMaterializedView materializedView ) {
+    public void addData( Transaction transaction, @Nullable List<DataStore<?>> stores, @NonNull AlgRoot algRoot, @NonNull LogicalMaterializedView materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         DataMigrator dataMigrator = transaction.getDataMigrator();
@@ -339,7 +342,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         Map<Long, List<LogicalColumn>> columns = new HashMap<>();
 
         //List<Long> ids = new ArrayList<>();
-        if ( transaction.getSnapshot().getLogicalEntity( materializedId ) != null && materializedInfo.containsKey( materializedId ) ) {
+        if ( transaction.getSnapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
             LogicalMaterializedView catalogMaterializedView = transaction.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ) ).orElseThrow();
             /*List<CatalogDataPlacement> dataPlacements = snapshot.alloc().getDataPlacements( catalogMaterializedView.id );
             for ( AllocationEntity allocation :  ) {
@@ -352,12 +355,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                                 logicalColumns.add( snapshot.rel().getColumn( col ) ) );
                 columns.put( placement.adapterId, logicalColumns );
             }*/
+            transaction.getSnapshot().rel().getColumns( materializedId );
 
             for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedId ) ) {
-                Statement sourceStatement = transaction.createStatement();
+                //Statement sourceStatement = transaction.createStatement();
                 Statement deleteStatement = transaction.createStatement();
-                Statement insertStatement = transaction.createStatement();
-                prepareSourceRel( sourceStatement, catalogMaterializedView.getAlgCollation(), catalogMaterializedView.getDefinition() );
+                //Statement insertStatement = transaction.createStatement();
+                //prepareSourceRel( sourceStatement, catalogMaterializedView.getAlgCollation(), catalogMaterializedView.getDefinition() );
 
                 // columnPlacements.clear();
 
@@ -365,11 +369,11 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
                 // Build {@link AlgNode} to build delete Statement from materialized view
                 AlgBuilder deleteAlgBuilder = AlgBuilder.create( deleteStatement );
-                AlgNode deleteRel = deleteAlgBuilder.scan( catalogMaterializedView.name ).build();
+                AlgNode deleteRel = deleteAlgBuilder.scan( catalogMaterializedView ).build();
 
                 // Build {@link AlgNode} to build insert Statement from materialized view
-                AlgBuilder insertAlgBuilder = AlgBuilder.create( insertStatement );
-                AlgNode insertRel = insertAlgBuilder.push( catalogMaterializedView.getDefinition() ).build();
+                //AlgBuilder insertAlgBuilder = AlgBuilder.create( insertStatement );
+                //AlgNode insertRel = insertAlgBuilder.push( catalogMaterializedView.getDefinition() ).build();
 
                 Statement targetStatementDelete = transaction.createStatement();
                 // Delete all data
@@ -386,10 +390,10 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                         true,
                         catalogMaterializedView.isOrdered() );
 
-                Statement targetStatementInsert = transaction.createStatement();
+                //Statement targetStatementInsert = transaction.createStatement();
 
                 // Insert new data
-                targetRel = dataMigrator.buildInsertStatement(
+                /*targetRel = dataMigrator.buildInsertStatement(
                         targetStatementInsert,
                         columnPlacements,
                         allocation );
@@ -400,8 +404,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                         targetStatementInsert,
                         targetRel,
                         true,
-                        catalogMaterializedView.isOrdered() );
+                        catalogMaterializedView.isOrdered() );*/
             }
+            addData(
+                    transaction,
+                    List.of(),
+                    AlgRoot.of( transaction.getSnapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
+                    transaction.getSnapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ) );
         }
     }
 

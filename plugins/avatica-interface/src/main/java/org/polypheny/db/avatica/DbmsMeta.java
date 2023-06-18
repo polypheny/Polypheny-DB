@@ -115,6 +115,8 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
@@ -1206,15 +1208,7 @@ public class DbmsMeta implements ProtobufMeta {
         long index = 0;
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {
-                PolyValue o;
-                if ( v.type == Rep.ARRAY ) {
-                    o = (PolyValue) convertList( (List<TypedValue>) v.toLocal() );
-                } else {
-                    o = (PolyValue) v.toJdbc( calendar );
-                }
-                List<PolyValue> list = new LinkedList<>();
-                list.add( o );
-                statementHandle.getStatement().getDataContext().addParameterValues( index++, null, list );
+                statementHandle.getStatement().getDataContext().addParameterValues( index++, null, List.of( toPolyValue( v ) ) );
             }
         }
 
@@ -1243,22 +1237,27 @@ public class DbmsMeta implements ProtobufMeta {
     private PolyList<PolyValue> convertList( List<TypedValue> list ) {
         List<PolyValue> newList = new LinkedList<>();
         for ( TypedValue o : list ) {
-            if ( o instanceof List ) {
-                newList.add( convertList( list ) );
-            } else if ( o != null ) {
-                newList.add( toPolyValue( o ) );
-            }
+            newList.add( toPolyValue( o ) );
         }
         return PolyList.of( newList );
     }
 
 
     private PolyValue toPolyValue( TypedValue value ) {
+        if ( value.type == Rep.ARRAY ) {
+            return convertList( (List<TypedValue>) value.toLocal() );
+        }
+
+        Object jdbc = value.toJdbc( calendar );
         switch ( value.type ) {
             case FLOAT:
-                return PolyFloat.of( (Number) value.toJdbc( calendar ) );
+                return PolyFloat.of( (Number) jdbc );
             case INTEGER:
-                return PolyInteger.of( (Number) value.toJdbc( calendar ) );
+                return PolyInteger.of( (Number) jdbc );
+            case LONG:
+                return PolyLong.of( (Number) jdbc );
+            case STRING:
+                return PolyString.of( (String) jdbc );
         }
         throw new NotImplementedException( "dbms to poly" );
     }

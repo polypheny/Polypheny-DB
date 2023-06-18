@@ -96,6 +96,7 @@ class BackgroundTaskHandle implements Runnable {
                 maxExecTime = stopWatch.getTime();
             }
         } catch ( Exception e ) {
+
             log.error( "Caught exception in background task", e );
         }
     }

@@ -115,6 +115,7 @@ import org.polypheny.db.runtime.Like;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -124,7 +125,6 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.TimeWithTimeZoneString;
@@ -476,74 +476,76 @@ public class Functions {
     /**
      * SQL SUBSTRING(string FROM ... FOR ...) function.
      */
-    public static String substring( String c, int s, int l ) {
-        int lc = c.length();
-        if ( s < 0 ) {
-            s += lc + 1;
+    public static PolyString substring( PolyString c, PolyNumber s, PolyNumber l ) {
+        int lc = c.value.length();
+        int start = s.intValue();
+        if ( start < 0 ) {
+            start += lc + 1;
         }
-        int e = s + l;
-        if ( e < s ) {
+        int e = start + l.intValue();
+        if ( e < start ) {
             throw Static.RESOURCE.illegalNegativeSubstringLength().ex();
         }
-        if ( s > lc || e < 1 ) {
-            return "";
+        if ( start > lc || e < 1 ) {
+            return PolyString.of( "" );
         }
-        int s1 = Math.max( s, 1 );
+        int s1 = Math.max( start, 1 );
         int e1 = Math.min( e, lc + 1 );
-        return c.substring( s1 - 1, e1 - 1 );
+        return PolyString.of( c.value.substring( s1 - 1, e1 - 1 ) );
     }
 
 
     /**
      * SQL SUBSTRING(string FROM ...) function.
      */
-    public static String substring( String c, int s ) {
-        return substring( c, s, c.length() + 1 );
+    public static PolyString substring( PolyString c, PolyNumber s ) {
+        return substring( c, s, PolyInteger.of( c.value.length() + 1 ) );
     }
 
 
     /**
      * SQL SUBSTRING(binary FROM ... FOR ...) function.
      */
-    public static ByteString substring( ByteString c, int s, int l ) {
-        int lc = c.length();
-        if ( s < 0 ) {
-            s += lc + 1;
+    public static PolyBinary substring( PolyBinary c, PolyNumber s, PolyNumber l ) {
+        int lc = c.value.length();
+        int start = s.intValue();
+        if ( start < 0 ) {
+            start += lc + 1;
         }
-        int e = s + l;
-        if ( e < s ) {
+        int e = start + l.intValue();
+        if ( e < start ) {
             throw Static.RESOURCE.illegalNegativeSubstringLength().ex();
         }
-        if ( s > lc || e < 1 ) {
-            return ByteString.EMPTY;
+        if ( start > lc || e < 1 ) {
+            return PolyBinary.EMPTY;
         }
-        int s1 = Math.max( s, 1 );
+        int s1 = Math.max( start, 1 );
         int e1 = Math.min( e, lc + 1 );
-        return c.substring( s1 - 1, e1 - 1 );
+        return PolyBinary.of( c.value.substring( s1 - 1, e1 - 1 ) );
     }
 
 
     /**
      * SQL SUBSTRING(binary FROM ...) function.
      */
-    public static ByteString substring( ByteString c, int s ) {
-        return substring( c, s, c.length() + 1 );
+    public static PolyBinary substring( PolyBinary c, PolyNumber s ) {
+        return substring( c, s, PolyInteger.of( c.value.length() + 1 ) );
     }
 
 
     /**
      * SQL UPPER(string) function.
      */
-    public static String upper( String s ) {
-        return s.toUpperCase( Locale.ROOT );
+    public static PolyString upper( PolyString s ) {
+        return PolyString.of( s.value.toUpperCase( Locale.ROOT ) );
     }
 
 
     /**
      * SQL LOWER(string) function.
      */
-    public static String lower( String s ) {
-        return s.toLowerCase( Locale.ROOT );
+    public static PolyString lower( PolyString s ) {
+        return PolyString.of( s.value.toLowerCase( Locale.ROOT ) );
     }
 
 
@@ -589,24 +591,24 @@ public class Functions {
     /**
      * SQL CHARACTER_LENGTH(string) function.
      */
-    public static int charLength( String s ) {
-        return s.length();
+    public static PolyNumber charLength( PolyString s ) {
+        return PolyInteger.of( s.value.length() );
     }
 
 
     /**
      * SQL {@code string || string} operator.
      */
-    public static String concat( String s0, String s1 ) {
-        return s0 + s1;
+    public static PolyString concat( PolyString s0, PolyString s1 ) {
+        return PolyString.of( s0.value + s1.value );
     }
 
 
     /**
      * SQL {@code binary || binary} operator.
      */
-    public static ByteString concat( ByteString s0, ByteString s1 ) {
-        return s0.concat( s1 );
+    public static PolyBinary concat( PolyBinary s0, PolyBinary s1 ) {
+        return PolyBinary.of( s0.value.concat( s1.value ) );
     }
 
 
@@ -1901,15 +1903,15 @@ public class Functions {
     /**
      * SQL <code>ACOS</code> operator applied to BigDecimal values.
      */
-    public static double acos( BigDecimal b0 ) {
-        return Math.acos( b0.doubleValue() );
+    public static PolyNumber acos( PolyNumber b0 ) {
+        return PolyDouble.of( Math.acos( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>ACOS</code> operator applied to double values.
      */
-    public static double acos( double b0 ) {
+    /*public static double acos( double b0 ) {
         return Math.acos( b0 );
     }
 
@@ -1919,15 +1921,15 @@ public class Functions {
     /**
      * SQL <code>ASIN</code> operator applied to BigDecimal values.
      */
-    public static double asin( BigDecimal b0 ) {
-        return Math.asin( b0.doubleValue() );
+    public static PolyNumber asin( PolyNumber b0 ) {
+        return PolyDouble.of( Math.asin( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>ASIN</code> operator applied to double values.
      */
-    public static double asin( double b0 ) {
+    /*public static double asin( double b0 ) {
         return Math.asin( b0 );
     }
 
@@ -1937,15 +1939,15 @@ public class Functions {
     /**
      * SQL <code>ATAN</code> operator applied to BigDecimal values.
      */
-    public static double atan( BigDecimal b0 ) {
-        return Math.atan( b0.doubleValue() );
+    public static PolyNumber atan( PolyNumber b0 ) {
+        return PolyDouble.of( Math.atan( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>ATAN</code> operator applied to double values.
      */
-    public static double atan( double b0 ) {
+    /*public static double atan( double b0 ) {
         return Math.atan( b0 );
     }
 
@@ -1955,15 +1957,15 @@ public class Functions {
     /**
      * SQL <code>ATAN2</code> operator applied to double/BigDecimal values.
      */
-    public static double atan2( double b0, BigDecimal b1 ) {
-        return Math.atan2( b0, b1.doubleValue() );
+    public static PolyNumber atan2( PolyNumber b0, PolyNumber b1 ) {
+        return PolyDouble.of( Math.atan2( b0.doubleValue(), b1.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>ATAN2</code> operator applied to BigDecimal/double values.
      */
-    public static double atan2( BigDecimal b0, double b1 ) {
+    /*public static double atan2( BigDecimal b0, double b1 ) {
         return Math.atan2( b0.doubleValue(), b1 );
     }
 
@@ -1971,7 +1973,7 @@ public class Functions {
     /**
      * SQL <code>ATAN2</code> operator applied to BigDecimal values.
      */
-    public static double atan2( BigDecimal b0, BigDecimal b1 ) {
+    /*public static double atan2( BigDecimal b0, BigDecimal b1 ) {
         return Math.atan2( b0.doubleValue(), b1.doubleValue() );
     }
 
@@ -1979,7 +1981,7 @@ public class Functions {
     /**
      * SQL <code>ATAN2</code> operator applied to double values.
      */
-    public static double atan2( double b0, double b1 ) {
+    /*public static double atan2( double b0, double b1 ) {
         return Math.atan2( b0, b1 );
     }
 
@@ -1989,15 +1991,15 @@ public class Functions {
     /**
      * SQL <code>COS</code> operator applied to BigDecimal values.
      */
-    public static double cos( BigDecimal b0 ) {
-        return Math.cos( b0.doubleValue() );
+    public static PolyNumber cos( PolyNumber b0 ) {
+        return PolyDouble.of( Math.cos( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>COS</code> operator applied to double values.
      */
-    public static double cos( double b0 ) {
+    /*public static double cos( double b0 ) {
         return Math.cos( b0 );
     }
 
@@ -2007,15 +2009,15 @@ public class Functions {
     /**
      * SQL <code>COT</code> operator applied to BigDecimal values.
      */
-    public static double cot( BigDecimal b0 ) {
-        return 1.0d / Math.tan( b0.doubleValue() );
+    public static PolyNumber cot( PolyNumber b0 ) {
+        return PolyDouble.of( 1.0d / Math.tan( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>COT</code> operator applied to double values.
      */
-    public static double cot( double b0 ) {
+    /*public static double cot( double b0 ) {
         return 1.0d / Math.tan( b0 );
     }
 
@@ -2025,15 +2027,15 @@ public class Functions {
     /**
      * SQL <code>DEGREES</code> operator applied to BigDecimal values.
      */
-    public static double degrees( BigDecimal b0 ) {
-        return Math.toDegrees( b0.doubleValue() );
+    public static PolyNumber degrees( PolyNumber b0 ) {
+        return PolyDouble.of( Math.toDegrees( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>DEGREES</code> operator applied to double values.
      */
-    public static double degrees( double b0 ) {
+    /*public static double degrees( double b0 ) {
         return Math.toDegrees( b0 );
     }
 
@@ -2043,15 +2045,15 @@ public class Functions {
     /**
      * SQL <code>RADIANS</code> operator applied to BigDecimal values.
      */
-    public static double radians( BigDecimal b0 ) {
-        return Math.toRadians( b0.doubleValue() );
+    public static PolyDouble radians( PolyNumber b0 ) {
+        return PolyDouble.of( Math.toRadians( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>RADIANS</code> operator applied to double values.
      */
-    public static double radians( double b0 ) {
+    /*public static double radians( double b0 ) {
         return Math.toRadians( b0 );
     }
 
@@ -2129,20 +2131,20 @@ public class Functions {
     /**
      * SQL <code>TRUNCATE</code> operator applied to int values.
      */
-    public static int struncate( int b0 ) {
-        return struncate( b0, 0 );
+    public static PolyNumber struncate( PolyNumber b0 ) {
+        return struncate( b0, PolyInteger.ZERO );
     }
 
 
-    public static int struncate( int b0, int b1 ) {
-        return struncate( BigDecimal.valueOf( b0 ), b1 ).intValue();
+    public static PolyNumber struncate( PolyNumber b0, PolyNumber b1 ) {
+        return PolyBigDecimal.of( b0.bigDecimalValue().movePointRight( b1.intValue() ).setScale( 0, RoundingMode.DOWN ).movePointLeft( b1.intValue() ) );
     }
 
 
     /**
      * SQL <code>TRUNCATE</code> operator applied to long values.
      */
-    public static long struncate( long b0 ) {
+    /*public static long struncate( long b0 ) {
         return struncate( b0, 0 );
     }
 
@@ -2155,7 +2157,7 @@ public class Functions {
     /**
      * SQL <code>TRUNCATE</code> operator applied to BigDecimal values.
      */
-    public static BigDecimal struncate( BigDecimal b0 ) {
+    /*public static BigDecimal struncate( BigDecimal b0 ) {
         return struncate( b0, 0 );
     }
 
@@ -2168,7 +2170,7 @@ public class Functions {
     /**
      * SQL <code>TRUNCATE</code> operator applied to double values.
      */
-    public static double struncate( double b0 ) {
+    /*public static double struncate( double b0 ) {
         return struncate( b0, 0 );
     }
 
@@ -2217,15 +2219,15 @@ public class Functions {
     /**
      * SQL <code>SIN</code> operator applied to BigDecimal values.
      */
-    public static double sin( BigDecimal b0 ) {
-        return Math.sin( b0.doubleValue() );
+    public static PolyNumber sin( PolyNumber b0 ) {
+        return PolyDouble.of( Math.sin( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>SIN</code> operator applied to double values.
      */
-    public static double sin( double b0 ) {
+    /*public static double sin( double b0 ) {
         return Math.sin( b0 );
     }
 
@@ -2235,15 +2237,15 @@ public class Functions {
     /**
      * SQL <code>TAN</code> operator applied to BigDecimal values.
      */
-    public static double tan( BigDecimal b0 ) {
-        return Math.tan( b0.doubleValue() );
+    public static PolyNumber tan( PolyNumber b0 ) {
+        return PolyDouble.of( Math.tan( b0.doubleValue() ) );
     }
 
 
     /**
      * SQL <code>TAN</code> operator applied to double values.
      */
-    public static double tan( double b0 ) {
+    /*public static double tan( double b0 ) {
         return Math.tan( b0 );
     }
 
@@ -2258,14 +2260,14 @@ public class Functions {
     }
 
 
-    public static PolyValue lesser( int number, PolyInteger poly ) {
+    /*public static PolyValue lesser( int number, PolyInteger poly ) {
         return number < poly.asNumber().intValue() ? PolyInteger.of( number ) : poly;
     }
 
 
     public static PolyValue lesser( PolyInteger poly, int number ) {
         return poly.asNumber().intValue() < number ? poly : PolyInteger.of( number );
-    }
+    }*/
 
 
     /**
@@ -2911,48 +2913,46 @@ public class Functions {
     /**
      * SQL {@code POSITION(seek IN string)} function.
      */
-    public static int position( PolyString seek, PolyString s ) {
-        return s.value.indexOf( seek.value ) + 1;
+    public static PolyNumber position( PolyString seek, PolyString s ) {
+        return PolyInteger.of( s.value.indexOf( seek.value ) + 1 );
     }
 
 
     /**
      * SQL {@code POSITION(seek IN string)} function for byte strings.
      */
-    public static int position( ByteString seek, ByteString s ) {
-        return s.indexOf( seek ) + 1;
+    public static PolyNumber position( PolyBinary seek, PolyBinary s ) {
+        return PolyInteger.of( s.value.indexOf( seek.value ) + 1 );
     }
 
 
     /**
      * SQL {@code POSITION(seek IN string FROM integer)} function.
      */
-    public static int position( PolyString seek, PolyString s, PolyNumber from ) {
+    public static PolyNumber position( PolyString seek, PolyString s, PolyNumber from ) {
         final int from0 = from.intValue() - 1; // 0-based
         if ( from0 > s.value.length() || from0 < 0 ) {
-            return 0;
+            return PolyInteger.of( 0 );
         }
 
-        return s.value.indexOf( seek.value, from0 ) + 1;
+        return PolyInteger.of( s.value.indexOf( seek.value, from0 ) + 1 );
     }
 
 
     /**
      * SQL {@code POSITION(seek IN string FROM integer)} function for byte strings.
      */
-    public static int position( ByteString seek, ByteString s, int from ) {
-        final int from0 = from - 1;
-        if ( from0 > s.length() || from0 < 0 ) {
-            return 0;
+    public static PolyNumber position( PolyBinary seek, PolyBinary s, PolyNumber from ) {
+        final int from0 = from.intValue() - 1;
+        if ( from0 > s.value.length() || from0 < 0 ) {
+            return PolyInteger.of( 0 );
         }
 
-        // ByteString doesn't have indexOf(ByteString, int) until avatica-1.9 (see [POLYPHENYDB-1423]), so apply substring and find from there.
-        Bug.upgrade( "in avatica-1.9, use ByteString.substring(ByteString, int)" );
-        final int p = s.substring( from0 ).indexOf( seek );
+        final int p = s.value.indexOf( seek.value, from0 );
         if ( p < 0 ) {
-            return 0;
+            return PolyInteger.of( 0 );
         }
-        return p + from;
+        return PolyInteger.of( p + from.intValue() );
     }
 
 
@@ -3142,10 +3142,10 @@ public class Functions {
 
 
     public static List<?> reparse( PolyType innerType, Long dimension, String stringValue ) {
-        /*Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+        //Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
         if ( stringValue == null ) {
             return null;
-        }*/
+        }
         return PolyValue.deserialize( stringValue ).asList();
     }
 

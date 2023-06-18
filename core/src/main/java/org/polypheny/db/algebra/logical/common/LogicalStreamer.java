@@ -122,7 +122,7 @@ public class LogicalStreamer extends Streamer {
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            assert input.getRowType().getFieldCount() == modify.getEntity().getRowType().getFieldCount();
+            assert input.getRowType().getFieldCount() == modify.getEntity().getRowType().getFieldCount() : input.getRowType().getFieldCount() + " not equal to " + modify.getEntity().getRowType().getFieldCount();
             // attach a projection, so the values can be inserted on execution
             algBuilder.push( getCollector( rexBuilder, input ) );
         }

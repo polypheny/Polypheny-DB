@@ -64,7 +64,7 @@ public class StatisticRepository implements MonitoringRepository {
                     dataPoint.getTableId(),
                     null,
                     dataPoint.getMonitoringType(),
-                    dataPoint.getSchemaId() );
+                    dataPoint.getNamespaceId() );
         }
         if ( dataPoint.getMonitoringType() == MonitoringType.DROP_TABLE ) {
             statisticsManager.deleteTableToUpdate( dataPoint.getTableId() );
@@ -74,7 +74,7 @@ public class StatisticRepository implements MonitoringRepository {
                     dataPoint.getTableId(),
                     Collections.singletonMap( dataPoint.getColumnId(), null ),
                     dataPoint.getMonitoringType(),
-                    dataPoint.getSchemaId() );
+                    dataPoint.getNamespaceId() );
         }
     }
 

@@ -19,6 +19,8 @@ package org.polypheny.db.view;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import lombok.NonNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -62,9 +64,9 @@ public abstract class MaterializedViewManager {
 
     public abstract void addData(
             Transaction transaction,
-            List<DataStore<?>> stores,
-            AlgRoot algRoot,
-            LogicalMaterializedView materializedView );
+            @Nullable List<DataStore<?>> stores,
+            @NonNull AlgRoot algRoot,
+            @NonNull LogicalMaterializedView materializedView );
 
     public abstract void addTables( Transaction transaction, List<Long> ids );
 

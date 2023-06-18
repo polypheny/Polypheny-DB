@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type;
 
+import com.drew.lang.Charsets;
 import io.activej.codegen.DefiningClassLoader;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.SerializerBuilder;
@@ -42,19 +43,19 @@ public interface PolySerializable {
     default String serialize() {
         byte[] buffer = new byte[BUFFER_SIZE];
         int i = getSerializer().encode( buffer, 0, this );
-        return new String( buffer, 0, i, CHARSET );
+        return new String( buffer, 0, i, Charsets.UTF_8 );
     }
 
     static <T> String serialize( BinarySerializer<T> serializer, T item ) {
         byte[] buffer = new byte[BUFFER_SIZE];
         int i = serializer.encode( buffer, 0, item );
-        return new String( buffer, 0, i, CHARSET );
+        return new String( buffer, 0, i, Charsets.UTF_8 );
     }
 
 
     static <T extends PolySerializable> T deserialize( String serialized, Class<T> clazz ) {
         try {
-            return PolySerializable.deserialize( serialized.getBytes( CHARSET ), clazz );
+            return PolySerializable.deserialize( serialized.getBytes(), clazz );
         } catch ( Throwable throwable ) {
             throw new GenericRuntimeException( throwable.getMessage() );
         }
@@ -62,7 +63,7 @@ public interface PolySerializable {
 
     static <T extends PolySerializable> T deserialize( String serialized, BinarySerializer<T> serializer ) {
         try {
-            return serializer.decode( serialized.getBytes( CHARSET ), 0 );
+            return serializer.decode( serialized.getBytes(), 0 );
         } catch ( Throwable throwable ) {
             throw new GenericRuntimeException( throwable.getMessage() );
         }

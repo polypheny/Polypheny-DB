@@ -35,7 +35,7 @@ public class DdlDataPoint implements MonitoringDataPoint, Serializable {
     boolean isCommitted;
     long tableId;
     MonitoringType monitoringType;
-    long schemaId;
+    long namespaceId;
     long columnId;
 
 

@@ -47,6 +47,7 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 @Value
 public class PolyInteger extends PolyNumber {
 
+    public static final PolyInteger ZERO = PolyInteger.of( 0 );
     @Serialize
     public Integer value;
 

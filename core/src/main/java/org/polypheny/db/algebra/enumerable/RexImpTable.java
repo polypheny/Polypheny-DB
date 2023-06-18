@@ -50,6 +50,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -93,6 +94,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.BuiltInMethod;
@@ -102,6 +104,7 @@ import org.polypheny.db.util.Util;
 /**
  * Contains implementations of Rex operators as Java code.
  */
+@Slf4j
 public class RexImpTable {
 
     public static final ConstantExpression NULL_EXPR = Expressions.constant( null );
@@ -207,7 +210,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.DISTANCE ), "distance", NullPolicy.ANY );
         defineMethod( OperatorRegistry.get( OperatorName.META ), "meta", NullPolicy.ANY );
 
-        map.put( OperatorRegistry.get( OperatorName.PI ), ( translator, call, nullAs ) -> Expressions.constant( Math.PI ) );
+        map.put( OperatorRegistry.get( OperatorName.PI ), ( translator, call, nullAs ) -> PolyDouble.of( Math.PI ).asExpression() );
 
         // datetime
         defineImplementor( OperatorRegistry.get( OperatorName.DATETIME_PLUS ), NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
@@ -2058,12 +2061,14 @@ public class RexImpTable {
                 final Primitive primitive = Primitive.ofBoxOr( type0 );
                 if ( primitive == null
                         || type1 == BigDecimal.class
+                        || Types.isAssignableFrom( PolyValue.class, type0 )
+                        || Types.isAssignableFrom( PolyValue.class, type1 )
                         || COMPARISON_OPERATORS.contains( op )
                         && !COMP_OP_TYPES.contains( primitive ) ) {
                     return Expressions.call( Functions.class, backupMethodName, expressions );
                 }
             }
-
+            log.warn( "this should not happen" );
             final Type returnType = translator.typeFactory.getJavaClass( call.getType() );
             return Types.castIfNecessary( returnType, Expressions.makeBinary( expressionType, expressions.get( 0 ), expressions.get( 1 ) ) );
         }

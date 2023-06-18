@@ -1697,7 +1697,7 @@ public class DdlManagerImpl extends DdlManager {
         // Sets previously created primary key
         //catalog.getLogicalRel( namespaceId ).addPrimaryKey( view.id, columnIds );
 
-        catalog.updateSnapshot();
+        //catalog.updateSnapshot();
 
         for ( DataStore<?> store : stores ) {
             AllocationTable alloc = catalog.getAllocRel( namespaceId ).addAllocation( store.getAdapterId(), view.id );
@@ -1705,12 +1705,12 @@ public class DdlManagerImpl extends DdlManager {
 
             int i = 0;
             for ( LogicalColumn column : ids.values() ) {
-                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, i ) );
-                i++;
+                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.id, column.id, PlacementType.AUTOMATIC, i++ ) );
             }
-            catalog.updateSnapshot();
 
-            store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( view, null ), AllocationTableWrapper.of( alloc, null ) );
+            buildNamespace( namespaceId, view, store );
+
+            store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( view, List.copyOf( ids.values() ) ), AllocationTableWrapper.of( alloc, columns ) );
         }
         catalog.updateSnapshot();
 
@@ -2968,7 +2968,7 @@ public class DdlManagerImpl extends DdlManager {
         StatementEvent event = new DdlEvent();
         event.setMonitoringType( MonitoringType.from( kind ) );
         event.setTableId( catalogTable.id );
-        event.setSchemaId( catalogTable.namespaceId );
+        event.setNamespaceId( catalogTable.namespaceId );
         if ( kind == Kind.DROP_COLUMN ) {
             event.setColumnId( logicalColumn.id );
         }
