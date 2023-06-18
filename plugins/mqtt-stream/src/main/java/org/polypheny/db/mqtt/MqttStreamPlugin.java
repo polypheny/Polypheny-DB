@@ -37,10 +37,12 @@ import org.pf4j.PluginWrapper;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.transaction.TransactionManager;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
@@ -315,11 +317,12 @@ public class MqttStreamPlugin extends Plugin {
                 InformationManager im = InformationManager.getInstance();
 
                 informationPage = new InformationPage(uniqueName, INTERFACE_NAME).fullWidth().setLabel("Interfaces");
-                informationGroupTopics = new InformationGroup(informationPage, "Subscribed Topics");
+                informationGroupTopics = new InformationGroup(informationPage, "Subscribed Topics").setOrder(1);
 
                 im.addPage( informationPage );
                 im.addGroup( informationGroupTopics );
 
+                // table to display topics
                 topicsTable = new InformationTable(
                         informationGroupTopics,
                         List.of("Topics")
