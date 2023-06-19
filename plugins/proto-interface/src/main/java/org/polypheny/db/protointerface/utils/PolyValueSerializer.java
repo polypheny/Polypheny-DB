@@ -61,9 +61,9 @@ public class PolyValueSerializer {
             case SMALLINT:
                 return serialize( polyValue.asInteger() );
             case BIGINT:
-                throw new NotImplementedException( "serialization of type BIGINT as PolyBigDecimal is not supported" );
+                return serialize(polyValue.asLong());
             case DECIMAL:
-                throw new NotImplementedException( "serialization of type DECIMAL as PolyBigDecimal is not supported" );
+                return serialize(polyValue.asBigDecimal());
             case FLOAT:
             case REAL:
                 return serialize( polyValue.asFloat() );
