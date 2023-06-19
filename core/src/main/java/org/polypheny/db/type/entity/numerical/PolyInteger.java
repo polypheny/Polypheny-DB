@@ -99,6 +99,9 @@ public class PolyInteger extends PolyNumber {
 
 
     public static PolyInteger of( Number value ) {
+        if ( value == null ) {
+            return null;
+        }
         return new PolyInteger( value.intValue() );
     }
 

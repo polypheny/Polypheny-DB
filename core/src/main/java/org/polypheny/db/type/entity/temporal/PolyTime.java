@@ -92,7 +92,7 @@ public class PolyTime extends PolyTemporal {
 
 
     public static PolyTime of( Time value ) {
-        return new PolyTime( value.getTime(), TimeUnit.MILLISECOND );
+        return new PolyTime( (int) value.getTime(), TimeUnit.MILLISECOND );
     }
 
 
