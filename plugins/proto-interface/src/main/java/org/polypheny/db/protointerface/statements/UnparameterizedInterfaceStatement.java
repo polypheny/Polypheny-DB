@@ -19,11 +19,11 @@ package org.polypheny.db.protointerface.statements;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -116,14 +116,14 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             if ( log.isTraceEnabled() ) {
                 log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
             }
-            Iterator iterator = getOrCreateIterator();
+            Iterator<Object> iterator = getOrCreateIterator();
             Meta.CursorFactory cursorFactory = currentImplementation.getCursorFactory();
-            Iterator<Object> sectionIterator = (Iterator<Object>) LimitIterator.of( iterator, maxRowCount );
+            Iterator<Object> sectionIterator = LimitIterator.of( iterator, maxRowCount );
             startOrResumeStopwatch();
-            List<List<PolyValue>> rows = (List<List<PolyValue>>) MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
+            // TODO TH: clean up this mess
+            List<List<PolyValue>> rows = (List<List<PolyValue>>)(List<?>)MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
             executionStopWatch.suspend();
-            boolean isDone = !iterator.hasNext();
-            System.out.println( "Fetch from " + offset + "is last:" + rows.size() );
+            boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
             if ( isDone ) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
