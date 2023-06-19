@@ -19,7 +19,7 @@ message ColumnMeta {
   string column_label = 4;
   string column_name = 5;
   int32 precision = 6;
-  string table_name = 7;
+  string entity_name = 7;
   string schema_name = 8;
   TypeMeta type_meta = 9;
   int32 scale = 10;
