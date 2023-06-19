@@ -40,12 +40,13 @@ public class RelationalUtils {
 
 
     public static Frame buildRelationalFrame( long offset, boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas ) {
-        RelationalFrame relationalFrame =  RelationalFrame.newBuilder()
+        RelationalFrame relationalFrame = RelationalFrame.newBuilder()
                 .addAllColumnMeta( metas )
                 .addAllRows( serializeToRows( rows ) )
                 .build();
         return Frame.newBuilder()
                 .setIsLast( isLast )
+                .setOffset( offset )
                 .setRelationalFrame( relationalFrame )
                 .setRelationalFrame( relationalFrame )
                 .build();
