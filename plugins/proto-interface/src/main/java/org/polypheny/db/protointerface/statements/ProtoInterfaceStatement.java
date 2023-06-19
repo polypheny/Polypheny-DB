@@ -16,27 +16,37 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.util.Iterator;
+import java.util.List;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public abstract class ProtoInterfaceStatement {
 
-    @Getter
-    protected boolean isRunning;
+    private static final int DEFAULT_FETCH_ROW_COUNT = 100;
+
     @Getter
     protected final int statementId;
     protected final ProtoInterfaceClient protoInterfaceClient;
     protected final StopWatch executionStopWatch;
+    protected PolyImplementation currentImplementation;
     protected final QueryLanguage queryLanguage;
     protected final String query;
+    @Setter
+    protected int maxRowCount;
 
-
-    public abstract StatementResult execute() throws Exception;
+    protected Iterator resultIterator;
 
 
     public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
@@ -53,8 +63,28 @@ public abstract class ProtoInterfaceStatement {
         this.protoInterfaceClient = protoInterfaceClient;
         this.queryLanguage = queryLanguage;
         this.query = query;
-        this.isRunning = false;
         this.executionStopWatch = new StopWatch();
+        this.maxRowCount = DEFAULT_FETCH_ROW_COUNT;
+    }
+
+
+    public abstract StatementResult execute() throws Exception;
+
+    public abstract Frame fetch( long offset );
+
+
+    public Frame fetchFirst() {
+        return fetch( 0 );
+    }
+
+
+    protected Iterator getOrCreateIterator() {
+        if ( resultIterator != null ) {
+            return resultIterator;
+        }
+        Statement statement = currentImplementation.getStatement();
+        final Enumerable enumerable = currentImplementation.getBindable().bind( statement.getDataContext() );
+        return enumerable.iterator();
     }
 
 

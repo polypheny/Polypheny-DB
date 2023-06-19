@@ -16,10 +16,14 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -37,13 +41,11 @@ import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.protointerface.relational.RelationalUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
-
-    protected PolyImplementation currentImplementation;
-
 
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
@@ -77,44 +79,51 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             return resultBuilder.build();
         }
         // TODO TH: replace hardcoded value with cont from the request
-        resultBuilder.setFrame( fetch( 0, 100 ) );
+        resultBuilder.setFrame( fetchFirst() );
         return resultBuilder.build();
     }
 
 
-    public Frame fetch( long offset, final int maxRowCount ) {
+    @Override
+    public Frame fetch( long offset ) {
         switch ( queryLanguage.getNamespaceType() ) {
             case RELATIONAL:
-                return relationalFetch( offset, maxRowCount );
+                return relationalFetch( offset );
             case GRAPH:
-                return graphFetch( offset, maxRowCount );
+                return graphFetch( offset );
             case DOCUMENT:
-                return documentFetch( offset, maxRowCount );
+                return documentFetch( offset );
         }
         throw new ProtoInterfaceServiceException( "Should never be thrown." );
     }
 
 
-    private Frame documentFetch( long offset, int maxRowCount ) {
+    private Frame documentFetch( long offset ) {
         throw new NotImplementedException( "Doument fetching is no yet implemented." );
     }
 
 
-    private Frame graphFetch( long offset, int maxRowCount ) {
+    private Frame graphFetch( long offset ) {
         throw new NotImplementedException( "Graph Fetching is not yet implmented." );
     }
 
 
-    public Frame relationalFetch( long offset, final int maxRowCount ) {
+    public Frame relationalFetch( long offset ) {
+        if (currentImplementation == null) {
+            throw new ProtoInterfaceServiceException( "Can't fetch frames of an unexecuted statement" );
+        }
         synchronized ( protoInterfaceClient ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
             }
+            Iterator iterator = getOrCreateIterator();
+            Meta.CursorFactory cursorFactory = currentImplementation.getCursorFactory();
+            Iterator<Object> sectionIterator = (Iterator<Object>) LimitIterator.of( iterator, maxRowCount );
             startOrResumeStopwatch();
-            List<List<PolyValue>> rows = currentImplementation.getRows( currentImplementation.getStatement(), maxRowCount );
-            //List<String> column_labels = TODO get row names
+            List<List<PolyValue>> rows = (List<List<PolyValue>>) MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
             executionStopWatch.suspend();
-            boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
+            boolean isDone = !iterator.hasNext();
+            System.out.println( "Fetch from " + offset + "is last:" + rows.size() );
             if ( isDone ) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
@@ -123,4 +132,5 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             return RelationalUtils.buildRelationalFrame( offset, isDone, rows, columnMetas );
         }
     }
+
 }

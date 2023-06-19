@@ -48,7 +48,6 @@ public class RelationalUtils {
                 .setIsLast( isLast )
                 .setOffset( offset )
                 .setRelationalFrame( relationalFrame )
-                .setRelationalFrame( relationalFrame )
                 .build();
     }
 }

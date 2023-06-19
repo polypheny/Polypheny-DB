@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(path: ':core')
     testImplementation project(path: ':core')
     compileOnly project(":core")
     compileOnly project(":monitoring")

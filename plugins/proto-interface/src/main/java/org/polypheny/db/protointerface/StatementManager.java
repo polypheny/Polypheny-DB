@@ -76,7 +76,16 @@ public class StatementManager {
         if (toClose == null) {
             return;
         }
-        return;
+        // TODO: implement closing of statements
+    }
+
+    public ProtoInterfaceStatement getStatement(ProtoInterfaceClient client, int statementId) {
+        String statementKey = getStatementKey( client.getClientUUID(), statementId );
+        ProtoInterfaceStatement statement = openStatments.get(statementKey);
+        if (statement == null) {
+            throw new ProtoInterfaceServiceException( "A statement with id " + statementId + " does not exist for that client" );
+        }
+        return statement;
     }
 
     public boolean isSupportedLanguage( String statementLanguageName ) {
