@@ -203,7 +203,7 @@ public class PolyValueSerializer {
 
     public static ProtoValue serialize( PolyDate polyDate ) {
         ProtoDate protoDate = ProtoDate.newBuilder()
-                .setDate( polyDate.getValue() )
+                .setDate( polyDate.getSinceEpoch() )
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )
@@ -247,7 +247,7 @@ public class PolyValueSerializer {
 
     public static ProtoValue serialize( PolyTime polyTime ) {
         ProtoTime protoTime = ProtoTime.newBuilder()
-                .setValue( polyTime.getValue() )
+                .setValue( polyTime.getSinceEpoch() )
                 .setTimeUnit( TimeUnit.valueOf( polyTime.getTimeUnit().name() ) )
                 .build();
         return ProtoValue.newBuilder()
