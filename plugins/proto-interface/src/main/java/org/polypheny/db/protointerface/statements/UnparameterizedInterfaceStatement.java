@@ -16,10 +16,14 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -44,9 +48,6 @@ import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
-
-    protected PolyImplementation currentImplementation;
-
 
     public UnparameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
@@ -85,7 +86,8 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     }
 
 
-@Override    public Frame fetch( long offset) {
+    @Override
+    public Frame fetch( long offset ) {
         switch ( queryLanguage.getNamespaceType() ) {
             case RELATIONAL:
                 return relationalFetch( offset );
@@ -124,7 +126,8 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             List<List<PolyValue>> rows = (List<List<PolyValue>>)(List<?>)MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
             //List<String> column_labels = TODO get row names
             executionStopWatch.suspend();
-            boolean isDone = maxRowCount == 0 || rows.size() < maxRowCount;
+            boolean isDone = !iterator.hasNext();
+            System.out.println( "Fetch from " + offset + "is last:" + rows.size() );
             if ( isDone ) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
@@ -133,4 +136,5 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             return RelationalUtils.buildRelationalFrame( offset, isDone, rows , columnMetas );
         }
     }
+
 }
