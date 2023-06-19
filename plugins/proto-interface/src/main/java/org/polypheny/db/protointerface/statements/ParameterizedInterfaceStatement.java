@@ -18,12 +18,19 @@ package org.polypheny.db.protointerface.statements;
 
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 
 public class ParameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
     @Override
     public StatementResult execute() throws Exception {
+        return null;
+    }
+
+
+    @Override
+    public Frame fetch( long offset ) {
         return null;
     }
 
