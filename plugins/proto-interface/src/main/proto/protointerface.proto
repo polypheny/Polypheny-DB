@@ -59,14 +59,14 @@ message UnparameterizedStatement {
 }
 
 message CloseStatementRequest {
-  int32 statementId = 1;
+  int32 statement_id = 1;
 }
 
 message CloseStatementResponse {
 }
 
 message StatementProperties{
-  int32 statementId = 1;
+  int32 statement_id = 1;
   map<string, string> properties = 2;
 }
 
