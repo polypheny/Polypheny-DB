@@ -19,6 +19,7 @@ package org.polypheny.db.protointerface.relational;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.PolyImplementation;
@@ -71,20 +72,33 @@ public class RelationalMetaRetriever {
             AlgDataType type,
             List<String> origins ) {
         TypeMeta typeMeta = retrieveTypeMeta( type );
-        return ColumnMeta.newBuilder()
+        ColumnMeta.Builder columnMetaBuilder = ColumnMeta.newBuilder();
+        applyIfNotNull( columnMetaBuilder::setEntityName, QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ));
+        applyIfNotNull( columnMetaBuilder::setSchemaName, QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ));
+        return columnMetaBuilder
                 .setColumnIndex( index )
-                .setColumnLabel( fieldName )
+                .setColumnName( fieldName ) // designated column name
+                .setColumnAlias( getColumnLabel( origins, type, fieldName ) ) // alias as specified in sql AS clause
                 .setIsNullable( type.isNullable() )
                 .setLength( type.getPrecision() )
                 .setPrecision( QueryProcessorHelpers.getPrecision( type ) ) // <- same as type.getPrecision() but returns 0 if not applicable
-                .setColumnName( QueryProcessorHelpers.origin( origins, ORIGIN_COLUMN_NAME_OFFSET ) )
-                .setTableName( QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_NAME_OFFSET ) )
-                .setSchemaName( QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_NAME_OFFSET ) )
                 .setScale( type.getScale() )
                 .setTypeMeta( typeMeta )
                 //.setNamespace()
                 //TODO TH: find out how to get namespace form here
                 .build();
+    }
+
+    private static <R> R applyIfNotNull( Function<String, R> function, String value) {
+        if (value == null) {
+            return null;
+        }
+        return function.apply( value );
+    }
+
+    private static String getColumnLabel( List<String> origins, AlgDataType type, String fieldName ) {
+        String columnLabel = QueryProcessorHelpers.origin( origins, ORIGIN_COLUMN_INDEX );
+        return columnLabel == null ? fieldName : columnLabel;
     }
 
 
@@ -136,6 +150,7 @@ public class RelationalMetaRetriever {
         }
     }
 
+
     private static AlgDataType retrieveAlgDataType( PolyImplementation polyImplementation ) {
         switch ( polyImplementation.getKind() ) {
             case INSERT:
@@ -145,10 +160,10 @@ public class RelationalMetaRetriever {
                 // FIXME: getValidatedNodeType is wrong for DML
                 Kind kind = polyImplementation.getKind();
                 JavaTypeFactory typeFactory = polyImplementation.getStatement().getTransaction().getTypeFactory();
-                ;
                 return AlgOptUtil.createDmlRowType( kind, typeFactory );
             default:
                 return polyImplementation.getRowType();
         }
     }
+
 }
