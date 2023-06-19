@@ -40,16 +40,16 @@ import org.polypheny.db.type.PolyType;
 public class RelationalMetaRetriever {
 
     private static final String PROTO_VALUE_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
-    private static final int ORIGIN_COLUMN_NAME_OFFSET = 0;
-    private static final int ORIGIN_TABLE_NAME_OFFSET = 1;
-    private static final int ORIGIN_SCHEMA_NAME_OFFSET = 2;
+    private static final int ORIGIN_COLUMN_INDEX = 3;
+    private static final int ORIGIN_TABLE_INDEX = 2;
+    private static final int ORIGIN_SCHEMA_INDEX = 1;
+    private static final int ORIGIN_DATABASE_INDEX = 0;
 
 
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
-        AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getPrepareContext().getTypeFactory(), algDataType );
-        List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
-
+        AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
+        List<List<String>> origins = (List<List<String>>)polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();
         int index = 0;
         for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFieldList() ) ) {
