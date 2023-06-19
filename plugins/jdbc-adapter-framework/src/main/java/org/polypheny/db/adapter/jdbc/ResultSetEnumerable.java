@@ -35,6 +35,7 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import java.sql.Array;
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
