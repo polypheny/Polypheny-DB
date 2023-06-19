@@ -46,7 +46,7 @@ public abstract class ProtoInterfaceStatement {
     @Setter
     protected int maxRowCount;
 
-    protected Iterator resultIterator;
+    protected Iterator<Object> resultIterator;
 
 
     public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
@@ -78,13 +78,14 @@ public abstract class ProtoInterfaceStatement {
     }
 
 
-    protected Iterator getOrCreateIterator() {
+    protected Iterator<Object> getOrCreateIterator() {
         if ( resultIterator != null ) {
             return resultIterator;
         }
         Statement statement = currentImplementation.getStatement();
-        final Enumerable enumerable = currentImplementation.getBindable().bind( statement.getDataContext() );
-        return enumerable.iterator();
+        final Enumerable<Object> enumerable = currentImplementation.getBindable().bind( statement.getDataContext() );
+        resultIterator = enumerable.iterator();
+        return resultIterator;
     }
 
 
