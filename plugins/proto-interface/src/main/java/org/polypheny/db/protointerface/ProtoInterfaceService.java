@@ -24,12 +24,15 @@ import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.ConnectionReply;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.db.protointerface.proto.FetchRequest;
+import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.proto.SupportedLanguages;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
+import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 
@@ -90,6 +93,15 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onNext( ProtoUtils.createStatus( statement ) );
         StatementResult result = statement.execute();
         responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
+        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
+        ProtoInterfaceStatement statement = statementManager.getStatement( client, fetchRequest.getStatementId() );
+        Frame frame = statement.fetch( fetchRequest.getOffset() );
+        responseObserver.onNext( frame );
         responseObserver.onCompleted();
     }
 
