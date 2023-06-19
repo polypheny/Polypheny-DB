@@ -182,7 +182,8 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
-                .item( "table", entity.id )
+                .item( "entity", entity.id )
+                .item( "layer", entity.getCatalogType() )
                 .item( "operation", getOperation() )
                 .itemIf( "updateColumnList", updateColumnList, updateColumnList != null )
                 .itemIf( "sourceExpressionList", sourceExpressionList, sourceExpressionList != null )

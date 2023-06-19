@@ -102,7 +102,9 @@ public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
 
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
-        return super.explainTerms( pw ).item( "table", id );
+        return super.explainTerms( pw )
+                .item( "table", entity.id )
+                .item( "layer", entity.getCatalogType() );
     }
 
 

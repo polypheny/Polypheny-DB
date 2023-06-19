@@ -994,7 +994,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             AlgNode alg,
             boolean allowInfiniteCostConverters,
             AlgTraitSet toTraits,
-            Expressions.FluentList<AlgTraitDef> usedTraits ) {
+            Expressions.FluentList<AlgTraitDef<?>> usedTraits ) {
         if ( true ) {
             return alg;
         }
@@ -1191,7 +1191,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         }
 
         // Add the algebra expression into the correct set and subset.
-        AlgSubset subset2 = addRelToSet( alg, set );
+        AlgSubset subset2 = addAlgToSet( alg, set );
     }
 
 
@@ -1440,7 +1440,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
         registerCount++;
         final int subsetBeforeCount = set.subsets.size();
-        AlgSubset subset = addRelToSet( alg, set );
+        AlgSubset subset = addAlgToSet( alg, set );
 
         final AlgNode xx = mapDigestToRel.put( key, alg );
         assert xx == null || xx == alg : alg.getDigest();
@@ -1491,7 +1491,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private AlgSubset addRelToSet( AlgNode alg, AlgSet set ) {
+    private AlgSubset addAlgToSet( AlgNode alg, AlgSet set ) {
         AlgSubset subset = set.add( alg );
         mapRel2Subset.put( alg, subset );
 
