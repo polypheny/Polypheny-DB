@@ -76,6 +76,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             commitElseRollback();
             return resultBuilder.build();
         }
+        // TODO TH: replace hardcoded value with cont from the request
         resultBuilder.setFrame( fetch( 0, 100 ) );
         return resultBuilder.build();
     }
