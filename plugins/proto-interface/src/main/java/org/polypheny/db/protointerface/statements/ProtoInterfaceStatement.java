@@ -45,6 +45,9 @@ public abstract class ProtoInterfaceStatement {
     protected final String query;
     @Setter
     protected int maxRowCount;
+    @Setter
+    @Getter
+    protected boolean isAutoCommit;
 
     protected Iterator<Object> resultIterator;
 
@@ -67,6 +70,7 @@ public abstract class ProtoInterfaceStatement {
         this.query = query;
         this.executionStopWatch = new StopWatch();
         this.maxRowCount = DEFAULT_FETCH_ROW_COUNT;
+        this.isAutoCommit = true;
     }
 
 
