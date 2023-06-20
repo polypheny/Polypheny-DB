@@ -16,6 +16,7 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 import lombok.Getter;
@@ -45,9 +46,6 @@ public abstract class ProtoInterfaceStatement {
     protected final String query;
     @Setter
     protected int maxRowCount;
-    @Setter
-    @Getter
-    protected boolean isAutoCommit;
 
     protected Iterator<Object> resultIterator;
 
@@ -70,7 +68,6 @@ public abstract class ProtoInterfaceStatement {
         this.query = query;
         this.executionStopWatch = new StopWatch();
         this.maxRowCount = DEFAULT_FETCH_ROW_COUNT;
-        this.isAutoCommit = true;
     }
 
 
@@ -92,6 +89,13 @@ public abstract class ProtoInterfaceStatement {
         final Enumerable<Object> enumerable = currentImplementation.getBindable().bind( statement.getDataContext() );
         resultIterator = enumerable.iterator();
         return resultIterator;
+    }
+
+    protected void commitIfAuto() throws IllegalArgumentException {
+        if (!protoInterfaceClient.isAutocommit()) {
+            return;
+        }
+        protoInterfaceClient.commitCurrentTransaction();
     }
 
 
