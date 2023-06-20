@@ -59,7 +59,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
  *
  * @param <T> Trait that this trait definition is based upon
  */
-public abstract class AlgTraitDef<T extends AlgTrait> {
+public abstract class AlgTraitDef<T extends AlgTrait<?>> {
 
     /**
      * Cache of traits.
@@ -95,12 +95,12 @@ public abstract class AlgTraitDef<T extends AlgTrait> {
 
 
     /**
-     * Takes an arbitrary RelTrait and returns the canonical representation of that RelTrait. Canonized RelTrait objects may always be compared using the equality operator (<code>==</code>).
+     * Takes an arbitrary Trait and returns the canonical representation of that Trait. Canonized Trait objects may always be compared using the equality operator (<code>==</code>).
      *
-     * If an equal RelTrait has already been canonized and is still in use, it will be returned. Otherwise, the given RelTrait is made canonical and returned.
+     * If an equal RelTrait has already been canonized and is still in use, it will be returned. Otherwise, the given Trait is made canonical and returned.
      *
-     * @param trait a possibly non-canonical RelTrait
-     * @return a canonical RelTrait.
+     * @param trait a possibly non-canonical Trait
+     * @return a canonical Trait.
      */
     public final T canonize( T trait ) {
         assert trait instanceof AlgCompositeTrait || getTraitClass().isInstance( trait ) : getClass().getName() + " cannot canonize a " + trait.getClass().getName();

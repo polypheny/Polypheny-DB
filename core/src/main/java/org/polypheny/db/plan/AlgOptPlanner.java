@@ -77,9 +77,9 @@ public interface AlgOptPlanner {
     boolean addAlgTraitDef( AlgTraitDef<?> algTraitDef );
 
     /**
-     * Clear all the registered RelTraitDef.
+     * Clear all the registered AlgTraitDef.
      */
-    void clearRelTraitDefs();
+    void clearAlgTraitDefs();
 
     /**
      * Returns the list of active trait types.
@@ -100,7 +100,7 @@ public interface AlgOptPlanner {
      * Registers a rule.
      *
      * If the rule has already been registered, does nothing. This method determines if the given rule is a {@link ConverterRule} and pass the
-     * ConverterRule to all {@link #addAlgTraitDef(AlgTraitDef) registered} RelTraitDef instances.
+     * ConverterRule to all {@link #addAlgTraitDef(AlgTraitDef) registered} AlgTraitDef instances.
      *
      * @return whether the rule was added, as per {@link java.util.Collection#add}
      */
@@ -129,7 +129,7 @@ public interface AlgOptPlanner {
 
 
     /**
-     * Changes a relational expression to an equivalent one with a different set of traits.
+     * Changes a algebraic expression to an equivalent one with a different set of traits.
      *
      * @param alg Relational expression (may or may not have been registered; must not have the desired traits)
      * @param toTraits Trait set to convert the relational expression to
@@ -204,6 +204,8 @@ public interface AlgOptPlanner {
      */
     void registerSchema( AlgOptSchema schema );
 
+    void addRuleOnRuntime( AlgOptRule operands );
+
     /**
      * Adds a listener to this planner.
      *
@@ -226,7 +228,7 @@ public interface AlgOptPlanner {
      * @param alg alg of interest
      * @return timestamp of last change which might affect metadata derivation
      */
-    long getRelMetadataTimestamp( AlgNode alg );
+    long getAlgMetadataTimestamp( AlgNode alg );
 
     /**
      * Sets the importance of a relational expression.

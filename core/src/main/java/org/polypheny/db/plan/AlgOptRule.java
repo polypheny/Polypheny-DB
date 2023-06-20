@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.convert.ConverterRule;
@@ -439,8 +440,8 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Receives notification about a rule match. At the time that this method is called, {@link AlgOptRuleCall#algs call.rels} holds the set of relational expressions which
-     * match the operands to the rule; <code>call.rels[0]</code> is the root expression.
+     * Receives notification about a rule match. At the time that this method is called, {@link AlgOptRuleCall#algs call.algs} holds the set of algebra expressions which
+     * match the operands to the rule; <code>call.algs[0]</code> is the root expression.
      *
      * Typically a rule would check that the nodes are valid matches, creates a new expression, then calls back {@link AlgOptRuleCall#transformTo} to register the expression.
      *
@@ -465,7 +466,7 @@ public abstract class AlgOptRule {
      *
      * @return Trait which will be modified as a result of firing this rule, or null if the rule is not a converter rule
      */
-    public AlgTrait getOutTrait() {
+    public AlgTrait<?> getOutTrait() {
         return null;
     }
 
@@ -496,7 +497,7 @@ public abstract class AlgOptRule {
 
         AlgTraitSet outTraits = alg.getTraitSet();
         for ( int i = 0; i < toTraits.size(); i++ ) {
-            AlgTrait toTrait = toTraits.getTrait( i );
+            AlgTrait<?> toTrait = toTraits.getTrait( i );
             if ( toTrait != null ) {
                 outTraits = outTraits.replace( i, toTrait );
             }
@@ -517,7 +518,7 @@ public abstract class AlgOptRule {
      * @param toTrait Desired trait
      * @return a relational expression with the desired trait; never null
      */
-    public static AlgNode convert( AlgNode alg, AlgTrait toTrait ) {
+    public static AlgNode convert( AlgNode alg, AlgTrait<?> toTrait ) {
         AlgOptPlanner planner = alg.getCluster().getPlanner();
         AlgTraitSet outTraits = alg.getTraitSet();
         if ( toTrait != null ) {
@@ -539,8 +540,8 @@ public abstract class AlgOptRule {
      * @param trait Trait to add to each relational expression
      * @return List of converted relational expressions, never null
      */
-    protected static List<AlgNode> convertList( List<AlgNode> algs, final AlgTrait trait ) {
-        return Lists.transform( algs, alg -> convert( alg, alg.getTraitSet().replace( trait ) ) );
+    protected static List<AlgNode> convertList( List<AlgNode> algs, final AlgTrait<?> trait ) {
+        return algs.stream().map( alg -> convert( alg, alg.getTraitSet().replace( trait ) ) ).collect( Collectors.toList() );
     }
 
 
@@ -578,7 +579,7 @@ public abstract class AlgOptRule {
      */
     private static class ConverterAlgOptRuleOperand extends AlgOptRuleOperand {
 
-        <R extends AlgNode> ConverterAlgOptRuleOperand( Class<R> clazz, AlgTrait in, Predicate<? super R> predicate ) {
+        <R extends AlgNode> ConverterAlgOptRuleOperand( Class<R> clazz, AlgTrait<?> in, Predicate<? super R> predicate ) {
             super( clazz, in, predicate, AlgOptRuleOperandChildPolicy.ANY, ImmutableList.of() );
         }
 

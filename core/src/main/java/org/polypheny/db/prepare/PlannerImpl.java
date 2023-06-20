@@ -153,7 +153,7 @@ public class PlannerImpl implements Planner {
         // If user specify own traitDef, instead of default default trait, first, clear the default trait def registered with planner then,
         // register the trait def specified in traitDefs.
         if ( this.traitDefs != null ) {
-            planner.clearRelTraitDefs();
+            planner.clearAlgTraitDefs();
             for ( AlgTraitDef def : this.traitDefs ) {
                 planner.addAlgTraitDef( def );
             }

@@ -132,7 +132,7 @@ class AlgSet {
     /**
      * Removes all references to a specific {@link AlgNode} in both the subsets and their parent relationships.
      */
-    void obliterateRelNode( AlgNode alg ) {
+    void obliterateAlgNode( AlgNode alg ) {
         parents.remove( alg );
     }
 
@@ -150,7 +150,7 @@ class AlgSet {
     }
 
 
-    private void addAbstractConverters( VolcanoPlanner planner, AlgOptCluster cluster, AlgSubset subset, boolean subsetToOthers ) {
+    private <T extends AlgTraitDef<?>> void addAbstractConverters( VolcanoPlanner planner, AlgOptCluster cluster, AlgSubset subset, boolean subsetToOthers ) {
         // Converters from newly introduced subset to all the remaining one (vice versa), only if we can convert.  No point adding converters if it is not possible.
         for ( AlgSubset other : subsets ) {
             assert other.getTraitSet().size() == subset.getTraitSet().size();
@@ -180,8 +180,8 @@ class AlgSet {
                     break;
                 }
 
-                boolean canConvert = false;
-                boolean needConvert = false;
+                boolean canConvert;
+                boolean needConvert;
                 if ( subsetToOthers ) {
                     // We can convert from subset to other.  So, add converter with subset as child and traitset as the other's traitset.
                     canConvert = traitDef.canConvert( cluster.getPlanner(), curRelTrait, curOtherTrait, subset );

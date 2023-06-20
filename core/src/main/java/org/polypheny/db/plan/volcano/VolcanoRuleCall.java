@@ -88,11 +88,11 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
     }
 
 
-    // implement RelOptRuleCall
+    // implement AlgOptRuleCall
     @Override
     public void transformTo( AlgNode alg, Map<AlgNode, AlgNode> equiv ) {
         if ( LOGGER.isDebugEnabled() ) {
-            LOGGER.debug( "Transform to: rel#{} via {}{}", alg.getId(), getRule(), equiv.isEmpty() ? "" : " with equivalences " + equiv );
+            LOGGER.debug( "Transform to: alg#{} via {}{}", alg.getId(), getRule(), equiv.isEmpty() ? "" : " with equivalences " + equiv );
             if ( generatedAlgList != null ) {
                 generatedAlgList.add( alg );
             }
@@ -107,7 +107,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
 
             if ( LOGGER.isTraceEnabled() ) {
                 // Cannot call AlgNode.toString() yet, because alg has not been registered. For now, let's make up something similar.
-                String algDesc = "rel#" + alg.getId() + ":" + alg.getAlgTypeName();
+                String algDesc = "alg#" + alg.getId() + ":" + alg.getAlgTypeName();
                 LOGGER.trace( "call#{}: Rule {} arguments {} created {}", id, getRule(), Arrays.toString( algs ), algDesc );
             }
 
@@ -160,7 +160,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                 }
 
                 final Double importance = volcanoPlanner.algImportances.get( alg );
-                if ( (importance != null) && (importance == 0d) ) {
+                if ( importance != null && importance == 0d ) {
                     LOGGER.debug( "Rule [{}] not fired because operand #{} ({}) has importance=0", getRule(), i, alg );
                     return;
                 }
@@ -201,7 +201,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
 
 
     /**
-     * Applies this rule, with a given relational expression in the first slot.
+     * Applies this rule, with a given algebraic expression in the first slot.
      */
     void match( AlgNode alg ) {
         assert getOperand0().matches( alg ) : "precondition";
@@ -273,7 +273,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                     }
                 }
 
-                // Assign "childRels" if the operand is UNORDERED.
+                // Assign "childAlgs" if the operand is UNORDERED.
                 switch ( parentOperand.childPolicy ) {
                     case UNORDERED:
                         if ( ascending ) {

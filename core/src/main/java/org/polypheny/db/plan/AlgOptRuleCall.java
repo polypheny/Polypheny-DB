@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 
 
 /**
- * A <code>RelOptRuleCall</code> is an invocation of a {@link AlgOptRule} with a set of {@link AlgNode relational expression}s as arguments.
+ * A <code>RelOptRuleCall</code> is an invocation of a {@link AlgOptRule} with a set of {@link AlgNode algebra expression}s as arguments.
  */
 public abstract class AlgOptRuleCall {
 
@@ -193,22 +193,22 @@ public abstract class AlgOptRuleCall {
 
 
     /**
-     * Registers that a rule has produced an equivalent relational expression.
+     * Registers that a rule has produced an equivalent algebraic expression.
      *
-     * Called by the rule whenever it finds a match. The implementation of this method guarantees that the original relational expression (that is, <code>this.rels[0]</code>)
-     * has its traits propagated to the new relational expression (<code>rel</code>) and its unregistered children. Any trait not specifically set in the RelTraitSet returned by
-     * <code>alg.getTraits()</code> will be copied from <code>this.rels[0].getTraitSet()</code>.
+     * Called by the rule whenever it finds a match. The implementation of this method guarantees that the original algebraic expression (that is, <code>this.algs[0]</code>)
+     * has its traits propagated to the new algebraic expression (<code>alg</code>) and its unregistered children. Any trait not specifically set in the AlgTraitSet returned by
+     * <code>alg.getTraits()</code> will be copied from <code>this.algs[0].getTraitSet()</code>.
      *
-     * @param alg Relational expression equivalent to the root relational expression of the rule call, {@code call.rels(0)}
+     * @param alg Algebraic expression equivalent to the root algebraic expression of the rule call, {@code call.algs(0)}
      * @param equiv Map of other equivalences
      */
     public abstract void transformTo( AlgNode alg, Map<AlgNode, AlgNode> equiv );
 
 
     /**
-     * Registers that a rule has produced an equivalent relational expression, but no other equivalences.
+     * Registers that a rule has produced an equivalent algebraic expression, but no other equivalences.
      *
-     * @param alg Relational expression equivalent to the root relational expression of the rule call, {@code call.rels(0)}
+     * @param alg Algebraic expression equivalent to the root algebraic expression of the rule call, {@code call.algs(0)}
      */
     public final void transformTo( AlgNode alg ) {
         transformTo( alg, ImmutableMap.of() );

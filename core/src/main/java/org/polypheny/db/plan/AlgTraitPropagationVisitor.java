@@ -40,8 +40,8 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * RelTraitPropagationVisitor traverses a {@link AlgNode} and its <i>unregistered</i> children, making sure that each has a full complement of traits. When a {@link AlgNode} is found to be missing one or
- * more traits, they are copied from a RelTraitSet given during construction.
+ * AlgTraitPropagationVisitor traverses a {@link AlgNode} and its <i>unregistered</i> children, making sure that each has a full complement of traits. When a {@link AlgNode} is found to be missing one or
+ * more traits, they are copied from a AlgTraitSet given during construction.
  */
 public class AlgTraitPropagationVisitor extends AlgVisitor {
 

@@ -81,7 +81,7 @@ public abstract class ConverterRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      * @param description Description of rule
      */
-    public <R extends AlgNode> ConverterRule( Class<R> clazz, Predicate<? super R> predicate, AlgTrait in, AlgTrait out, AlgBuilderFactory algBuilderFactory, String description ) {
+    public <R extends AlgNode> ConverterRule( Class<R> clazz, Predicate<? super R> predicate, AlgTrait<?> in, AlgTrait<?> out, AlgBuilderFactory algBuilderFactory, String description ) {
         super(
                 convertOperand( clazz, predicate, in ),
                 algBuilderFactory,

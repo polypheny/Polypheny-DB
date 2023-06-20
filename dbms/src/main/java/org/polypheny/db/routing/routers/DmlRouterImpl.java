@@ -73,7 +73,6 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -124,12 +123,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         AllocationEntity allocation = allocs.get( 0 );
 
         AlgNode input = buildDmlNew( super.recursiveCopy( modify.getInput( 0 ) ), statement, RoutedAlgBuilder.create( statement, modify.getCluster() ) ).build();
-
-        Convention convention = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getCurrentNamespace().getConvention();
-        if ( convention != null ) {
-            // register the convention rules
-            convention.register( modify.getCluster().getPlanner() );
-        }
         return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumnList(), modify.getSourceExpressionList(), modify.isFlattened() );
 
     }

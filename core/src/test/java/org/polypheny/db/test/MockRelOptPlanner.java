@@ -208,7 +208,7 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public long getRelMetadataTimestamp( AlgNode alg ) {
+    public long getAlgMetadataTimestamp( AlgNode alg ) {
         return metadataTimestamp;
     }
 

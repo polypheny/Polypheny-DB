@@ -47,12 +47,12 @@ import org.polypheny.db.util.Pair;
 /**
  * RelTraitSet represents an ordered set of {@link AlgTrait}s.
  */
-public final class AlgTraitSet extends AbstractList<AlgTrait> {
+public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
 
-    private static final AlgTrait[] EMPTY_TRAITS = new AlgTrait[0];
+    private static final AlgTrait<?>[] EMPTY_TRAITS = new AlgTrait[0];
 
     private final Cache cache;
-    private final AlgTrait[] traits;
+    private final AlgTrait<? extends AlgTraitDef<?>>[] traits;
     private final String string;
 
 
@@ -62,7 +62,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param cache Trait set cache (and indirectly cluster) that this set belongs to
      * @param traits Traits
      */
-    private AlgTraitSet( Cache cache, AlgTrait[] traits ) {
+    private AlgTraitSet( Cache cache, AlgTrait<?>[] traits ) {
         // NOTE: We do not copy the array. It is important that the array is not shared. However, since this constructor is private, we assume that the caller has made a copy.
         this.cache = cache;
         this.traits = traits;
@@ -87,7 +87,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @return the RelTrait
      * @throws ArrayIndexOutOfBoundsException if index greater than or equal to {@link #size()} or less than 0.
      */
-    public AlgTrait getTrait( int index ) {
+    public AlgTrait<?> getTrait( int index ) {
         return traits[index];
     }
 
@@ -99,10 +99,9 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @return the RelTrait
      * @throws ArrayIndexOutOfBoundsException if index greater than or equal to {@link #size()} or less than 0.
      */
-    public <E extends AlgMultipleTrait> List<E> getTraits( int index ) {
-        final AlgTrait trait = traits[index];
+    public <E extends AlgMultipleTrait<?>> List<E> getTraits( int index ) {
+        final AlgTrait<?> trait = traits[index];
         if ( trait instanceof AlgCompositeTrait ) {
-            //noinspection unchecked
             return ((AlgCompositeTrait<E>) trait).traitList();
         } else {
             //noinspection unchecked
@@ -112,7 +111,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
 
 
     @Override
-    public AlgTrait get( int index ) {
+    public AlgTrait<?> get( int index ) {
         return getTrait( index );
     }
 
@@ -120,7 +119,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
     /**
      * Returns whether a given kind of trait is enabled.
      */
-    public <T extends AlgTrait> boolean isEnabled( AlgTraitDef<T> traitDef ) {
+    public <T extends AlgTrait<?>> boolean isEnabled( AlgTraitDef<T> traitDef ) {
         return getTrait( traitDef ) != null;
     }
 
@@ -131,7 +130,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param traitDef the type of RelTrait to retrieve
      * @return the RelTrait, or null if not found
      */
-    public <T extends AlgTrait> T getTrait( AlgTraitDef<T> traitDef ) {
+    public <T extends AlgTrait<?>> T getTrait( AlgTraitDef<T> traitDef ) {
         int index = findIndex( traitDef );
         if ( index >= 0 ) {
             //noinspection unchecked
@@ -150,11 +149,10 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param traitDef the type of RelTrait to retrieve
      * @return the RelTrait, or null if not found
      */
-    public <T extends AlgMultipleTrait> List<T> getTraits( AlgTraitDef<T> traitDef ) {
+    public <T extends AlgMultipleTrait<?>> List<T> getTraits( AlgTraitDef<T> traitDef ) {
         int index = findIndex( traitDef );
         if ( index >= 0 ) {
-            //noinspection unchecked
-            return (List<T>) getTraits( index );
+            return getTraits( index );
         }
 
         return null;
@@ -168,14 +166,14 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param trait the new RelTrait
      * @return the old RelTrait at the index
      */
-    public AlgTraitSet replace( int index, AlgTrait trait ) {
+    public AlgTraitSet replace( int index, AlgTrait<?> trait ) {
         assert traits[index].getTraitDef() == trait.getTraitDef() : "RelTrait has different RelTraitDef than replacement";
 
-        AlgTrait canonizedTrait = canonize( trait );
+        AlgTrait<?> canonizedTrait = canonize( trait );
         if ( traits[index] == canonizedTrait ) {
             return this;
         }
-        AlgTrait[] newTraits = traits.clone();
+        AlgTrait<?>[] newTraits = traits.clone();
         newTraits[index] = canonizedTrait;
         return cache.getOrAdd( new AlgTraitSet( cache, newTraits ) );
     }
@@ -190,7 +188,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @return New set
      * @see #plus(AlgTrait)
      */
-    public AlgTraitSet replace( AlgTrait trait ) {
+    public AlgTraitSet replace( AlgTrait<?> trait ) {
         // Quick check for common case
         if ( containsShallow( traits, trait ) ) {
             return this;
@@ -211,7 +209,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      *
      * Uses {@code ==}, not {@link #equals}. Nulls are allowed.
      */
-    private static <T> boolean containsShallow( T[] ts, AlgTrait seek ) {
+    private static <T> boolean containsShallow( T[] ts, AlgTrait<?> seek ) {
         for ( T t : ts ) {
             if ( t == seek ) {
                 return true;
@@ -226,9 +224,9 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      *
      * The list must not be empty, and all traits must be of the same type.
      */
-    public <T extends AlgMultipleTrait> AlgTraitSet replace( List<T> traits ) {
+    public <T extends AlgMultipleTrait<?>> AlgTraitSet replace( List<T> traits ) {
         assert !traits.isEmpty();
-        final AlgTraitDef def = traits.get( 0 ).getTraitDef();
+        final AlgTraitDef<?> def = traits.get( 0 ).getTraitDef();
         return replace( AlgCompositeTrait.of( def, traits ) );
     }
 
@@ -238,7 +236,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      *
      * The list must not be empty, and all traits must be of the same type.
      */
-    public <T extends AlgMultipleTrait> AlgTraitSet replace( AlgTraitDef<T> def, List<T> traits ) {
+    public <T extends AlgMultipleTrait<?>> AlgTraitSet replace( AlgTraitDef<T> def, List<T> traits ) {
         return replace( AlgCompositeTrait.of( def, traits ) );
     }
 
@@ -246,7 +244,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
     /**
      * If a given multiple trait is enabled, replaces it by calling the given function.
      */
-    public <T extends AlgMultipleTrait> AlgTraitSet replaceIfs( AlgTraitDef<T> def, Supplier<List<T>> traitSupplier ) {
+    public <T extends AlgMultipleTrait<?>> AlgTraitSet replaceIfs( AlgTraitDef<T> def, Supplier<List<T>> traitSupplier ) {
         int index = findIndex( def );
         if ( index < 0 ) {
             return this; // trait is not enabled; ignore it
@@ -259,7 +257,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
     /**
      * If a given trait is enabled, replaces it by calling the given function.
      */
-    public <T extends AlgTrait> AlgTraitSet replaceIf( AlgTraitDef<T> def, Supplier<T> traitSupplier ) {
+    public <T extends AlgTrait<?>> AlgTraitSet replaceIf( AlgTraitDef<T> def, Supplier<T> traitSupplier ) {
         int index = findIndex( def );
         if ( index < 0 ) {
             return this; // trait is not enabled; ignore it
@@ -338,7 +336,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @see AlgTrait#satisfies(AlgTrait)
      */
     public boolean satisfies( AlgTraitSet that ) {
-        for ( Pair<AlgTrait, AlgTrait> pair : Pair.zip( traits, that.traits ) ) {
+        for ( Pair<AlgTrait<?>, AlgTrait<?>> pair : Pair.zip( traits, that.traits ) ) {
             if ( !pair.left.satisfies( pair.right ) ) {
                 return false;
             }
@@ -359,8 +357,8 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
         final int n = Math.min( this.size(), that.size() );
 
         for ( int i = 0; i < n; i++ ) {
-            AlgTrait thisTrait = this.traits[i];
-            AlgTrait thatTrait = that.traits[i];
+            AlgTrait<?> thisTrait = this.traits[i];
+            AlgTrait<?> thatTrait = that.traits[i];
 
             if ( (thisTrait == null) || (thatTrait == null) ) {
                 continue;
@@ -381,8 +379,8 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param trait Sought trait
      * @return Whether set contains given trait
      */
-    public boolean contains( AlgTrait trait ) {
-        for ( AlgTrait algTrait : traits ) {
+    public boolean contains( AlgTrait<?> trait ) {
+        for ( AlgTrait<?> algTrait : traits ) {
             if ( trait == algTrait ) {
                 return true;
             }
@@ -398,9 +396,9 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param trait Trait
      * @return Whether trait is present, or is absent because disabled
      */
-    public boolean containsIfApplicable( AlgTrait trait ) {
+    public boolean containsIfApplicable( AlgTrait<?> trait ) {
         // Note that '==' is sufficient, because trait should be canonized.
-        final AlgTrait trait1 = getTrait( trait.getTraitDef() );
+        final AlgTrait<?> trait1 = getTrait( trait.getTraitDef() );
         return trait1 == null || trait1.equals( trait );
     }
 
@@ -411,7 +409,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param algTraits Traits
      * @return Whether this trait set's traits are the same as the argument
      */
-    public boolean comprises( AlgTrait... algTraits ) {
+    public boolean comprises( AlgTrait<?>... algTraits ) {
         return Arrays.equals( traits, algTraits );
     }
 
@@ -425,10 +423,10 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
     /**
      * Outputs the traits of this set as a String. Traits are output in order, separated by periods.
      */
-    protected String computeString() {
+    private String computeString() {
         StringBuilder s = new StringBuilder();
         for ( int i = 0; i < traits.length; i++ ) {
-            final AlgTrait trait = traits[i];
+            final AlgTrait<?> trait = traits[i];
             if ( i > 0 ) {
                 s.append( '.' );
             }
@@ -449,9 +447,9 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param traitDef Sought trait definition
      * @return index of trait, or -1 if not found
      */
-    private int findIndex( AlgTraitDef traitDef ) {
+    private int findIndex( AlgTraitDef<?> traitDef ) {
         for ( int i = 0; i < traits.length; i++ ) {
-            AlgTrait trait = traits[i];
+            AlgTrait<?> trait = traits[i];
             if ( (trait != null) && (trait.getTraitDef() == traitDef) ) {
                 return i;
             }
@@ -467,7 +465,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @param trait Trait
      * @return Trait set with given trait
      */
-    public AlgTraitSet plus( AlgTrait trait ) {
+    public AlgTraitSet plus( AlgTrait<?> trait ) {
         if ( contains( trait ) ) {
             return this;
         }
@@ -478,9 +476,9 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
         // Optimize time & space to represent a trait set key.
         //
         // Don't build a trait set until we're sure there isn't an equivalent one. Then we can justify the cost of computing RelTraitSet.string in the constructor.
-        final AlgTrait canonizedTrait = canonize( trait );
+        final AlgTrait<?> canonizedTrait = canonize( trait );
         assert canonizedTrait != null;
-        List<AlgTrait> newTraits;
+        List<AlgTrait<?>> newTraits;
         switch ( traits.length ) {
             case 0:
                 newTraits = ImmutableList.of( canonizedTrait );
@@ -492,15 +490,15 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
                 newTraits = List.of( traits[0], traits[1], canonizedTrait );
                 break;
             default:
-                newTraits = ImmutableList.<AlgTrait>builder().add( traits ).add( canonizedTrait ).build();
+                newTraits = ImmutableList.<AlgTrait<?>>builder().add( traits ).add( canonizedTrait ).build();
         }
         return cache.getOrAdd( newTraits );
     }
 
 
-    public AlgTraitSet plusAll( AlgTrait[] traits ) {
+    public AlgTraitSet plusAll( AlgTrait<?>[] traits ) {
         AlgTraitSet t = this;
-        for ( AlgTrait trait : traits ) {
+        for ( AlgTrait<?> trait : traits ) {
             t = t.plus( trait );
         }
         return t;
@@ -517,7 +515,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      */
     public ImmutableList<AlgTrait> difference( AlgTraitSet traitSet ) {
         final ImmutableList.Builder<AlgTrait> builder = ImmutableList.builder();
-        for ( Pair<AlgTrait, AlgTrait> pair : Pair.zip( traits, traitSet.traits ) ) {
+        for ( Pair<AlgTrait<?>, AlgTrait<?>> pair : Pair.zip( traits, traitSet.traits ) ) {
             if ( pair.left != pair.right ) {
                 builder.add( pair.right );
             }
@@ -530,7 +528,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * Returns whether there are any composite traits in this set.
      */
     public boolean allSimple() {
-        for ( AlgTrait trait : traits ) {
+        for ( AlgTrait<?> trait : traits ) {
             if ( trait instanceof AlgCompositeTrait ) {
                 return false;
             }
@@ -546,12 +544,12 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
     public AlgTraitSet simplify() {
         AlgTraitSet x = this;
         for ( int i = 0; i < traits.length; i++ ) {
-            final AlgTrait trait = traits[i];
+            final AlgTrait<?> trait = traits[i];
             if ( trait instanceof AlgCompositeTrait ) {
                 x = x.replace(
                         i,
-                        ((AlgCompositeTrait) trait).size() == 1
-                                ? ((AlgCompositeTrait) trait).trait( 0 )
+                        ((AlgCompositeTrait<?>) trait).size() == 1
+                                ? ((AlgCompositeTrait<?>) trait).trait( 0 )
                                 : trait.getTraitDef().getDefault() );
             }
         }
@@ -564,14 +562,14 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      */
     private static class Cache {
 
-        final Map<List<AlgTrait>, AlgTraitSet> map = new HashMap<>();
+        final Map<List<AlgTrait<?>>, AlgTraitSet> map = new HashMap<>();
 
 
         Cache() {
         }
 
 
-        AlgTraitSet getOrAdd( List<AlgTrait> traits ) {
+        AlgTraitSet getOrAdd( List<AlgTrait<?>> traits ) {
             AlgTraitSet traitSet1 = map.get( traits );
             if ( traitSet1 != null ) {
                 return traitSet1;

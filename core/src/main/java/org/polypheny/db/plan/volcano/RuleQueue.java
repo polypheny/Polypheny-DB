@@ -102,9 +102,9 @@ class RuleQueue {
     private final VolcanoPlanner planner;
 
     /**
-     * Compares relexps according to their cached 'importance'.
+     * Compares algebra expressions according to their cached 'importance'.
      */
-    private final Ordering<AlgSubset> algImportanceOrdering = Ordering.from( new RelImportanceComparator() );
+    private final Ordering<AlgSubset> algImportanceOrdering = Ordering.from( new AlgImportanceComparator() );
 
     /**
      * Maps a {@link VolcanoPlannerPhase} to a set of rule names.  Named rules may be invoked in their corresponding phase.
@@ -172,9 +172,9 @@ class RuleQueue {
 
 
     /**
-     * Recomputes the importance of the given RelSubset.
+     * Recomputes the importance of the given AlgSubset.
      *
-     * @param subset RelSubset whose importance is to be recomputed
+     * @param subset AlgSubset whose importance is to be recomputed
      * @param force if true, forces an importance update even if the subset has not been registered
      */
     public void recompute( AlgSubset subset, boolean force ) {
@@ -227,7 +227,7 @@ class RuleQueue {
             }
         }
 
-        boostRemovals.sort( new Comparator<AlgSubset>() {
+        boostRemovals.sort( new Comparator<>() {
             @Override
             public int compare( AlgSubset o1, AlgSubset o2 ) {
                 int o1children = countChildren( o1 );
@@ -573,7 +573,7 @@ class RuleQueue {
     /**
      * Compares {@link AlgNode} objects according to their cached 'importance'.
      */
-    private class RelImportanceComparator implements Comparator<AlgSubset> {
+    private class AlgImportanceComparator implements Comparator<AlgSubset> {
 
         @Override
         public int compare( AlgSubset alg1, AlgSubset alg2 ) {

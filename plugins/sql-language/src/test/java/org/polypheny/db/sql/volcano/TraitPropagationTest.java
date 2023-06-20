@@ -453,7 +453,7 @@ public class TraitPropagationTest {
             final AlgOptPlanner planner = new VolcanoPlanner( config.getCostFactory(), config.getContext() );
 
             // set up rules before we generate cluster
-            planner.clearRelTraitDefs();
+            planner.clearAlgTraitDefs();
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
             planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 

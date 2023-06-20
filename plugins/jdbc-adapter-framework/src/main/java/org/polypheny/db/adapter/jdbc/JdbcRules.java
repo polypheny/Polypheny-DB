@@ -65,6 +65,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -147,7 +148,7 @@ public class JdbcRules {
         <R extends AlgNode> JdbcConverterRule(
                 Class<R> clazz,
                 Predicate<? super R> predicate,
-                AlgTrait in,
+                AlgTrait<?> in,
                 JdbcConvention out,
                 AlgBuilderFactory algBuilderFactory,
                 String description ) {
@@ -548,7 +549,7 @@ public class JdbcRules {
          */
         public JdbcFilterRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
             super( Filter.class,
-                    (Predicate<Filter>) filter -> (
+                    filter -> (
                             !userDefinedFunctionInFilter( filter )
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
@@ -1007,9 +1008,7 @@ public class JdbcRules {
             final RelModify<?> modify = call.alg( 0 );
             if ( modify.getEntity().unwrap( JdbcEntity.class ) != null ) {
                 JdbcEntity table = modify.getEntity().unwrap( JdbcEntity.class );
-                if ( out.getJdbcSchema() == table.getSchema() ) {
-                    return true;
-                }
+                return out.getJdbcSchema() == table.getSchema();
             }
             return false;
         }
@@ -1106,7 +1105,7 @@ public class JdbcRules {
          * Creates a JdbcValuesRule.
          */
         private JdbcValuesRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Values.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcValuesRule." + out );
+            super( LogicalValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcValuesRule." + out );
         }
 
 

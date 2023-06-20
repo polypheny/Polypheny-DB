@@ -324,7 +324,7 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     /**
-     * Checks whether a algexp has made its subset cheaper, and if it so, recursively checks whether that subset's parents have gotten cheaper.
+     * Checks whether an algexp has made its subset cheaper, and if it so, recursively checks whether that subset's parents have gotten cheaper.
      *
      * @param planner Planner
      * @param mq Metadata query

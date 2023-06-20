@@ -217,7 +217,7 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public long getRelMetadataTimestamp( AlgNode alg ) {
+    public long getAlgMetadataTimestamp( AlgNode alg ) {
         return 0;
     }
 
@@ -262,6 +262,15 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
+    public void addRuleOnRuntime( AlgOptRule operands ) {
+
+    }
+
+
+    ;
+
+
+    @Override
     public void addListener( AlgOptListener newListener ) {
         if ( listener == null ) {
             listener = new MulticastAlgOptListener();
@@ -282,7 +291,7 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public void clearRelTraitDefs() {
+    public void clearAlgTraitDefs() {
     }
 
 

@@ -131,7 +131,7 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
             }
             List<Object> key = builder.build();
 
-            long timestamp = planner.getRelMetadataTimestamp( metadata.alg() );
+            long timestamp = planner.getAlgMetadataTimestamp( metadata.alg() );
 
             // Perform cache lookup.
             CacheEntry entry = cache.get( key );

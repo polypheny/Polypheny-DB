@@ -66,7 +66,7 @@ public class AlgOptRuleOperand {
     public int[] solveOrder;
     public int ordinalInParent;
     public int ordinalInRule;
-    private final AlgTrait trait;
+    private final AlgTrait<?> trait;
     private final Class<? extends AlgNode> clazz;
     private final ImmutableList<AlgOptRuleOperand> children;
 
@@ -83,7 +83,7 @@ public class AlgOptRuleOperand {
      *
      * The other constructor is deprecated; when it is removed, make fields {@link #parent}, {@link #ordinalInParent} and {@link #solveOrder} final, and add constructor parameters for them.
      */
-    <R extends AlgNode> AlgOptRuleOperand( Class<R> clazz, AlgTrait trait, Predicate<? super R> predicate, AlgOptRuleOperandChildPolicy childPolicy, ImmutableList<AlgOptRuleOperand> children ) {
+    <R extends AlgNode> AlgOptRuleOperand( Class<R> clazz, AlgTrait<?> trait, Predicate<? super R> predicate, AlgOptRuleOperandChildPolicy childPolicy, ImmutableList<AlgOptRuleOperand> children ) {
         assert clazz != null;
         switch ( childPolicy ) {
             case ANY:

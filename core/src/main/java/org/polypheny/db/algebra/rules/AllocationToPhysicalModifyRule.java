@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.refactor.CatalogType.State;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.Convention;
@@ -41,7 +42,7 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
 
     private static boolean canApply( Modify<?> r ) {
-        return r.entity.unwrap( AllocationEntity.class ) != null;
+        return r.entity.getCatalogType() == State.ALLOCATION;
     }
 
 

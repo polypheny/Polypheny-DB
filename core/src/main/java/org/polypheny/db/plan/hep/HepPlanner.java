@@ -938,7 +938,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public long getRelMetadataTimestamp( AlgNode alg ) {
+    public long getAlgMetadataTimestamp( AlgNode alg ) {
         // TODO jvs 20-Apr-2006: This is overly conservative.  Better would be to keep a timestamp per HepAlgVertex, and update only affected vertices and all ancestors on each transformation.
         return nTransformations;
     }

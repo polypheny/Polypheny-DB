@@ -48,7 +48,7 @@ import java.util.Objects;
  *
  * @param <T> Member trait
  */
-class AlgCompositeTrait<T extends AlgMultipleTrait> implements AlgTrait {
+class AlgCompositeTrait<T extends AlgMultipleTrait<?> & AlgTrait<?>> implements AlgTrait {
 
     private final AlgTraitDef<T> traitDef;
     private final T[] traits;

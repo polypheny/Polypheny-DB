@@ -74,7 +74,7 @@ public abstract class SqlDdl extends SqlCall {
             schemaId = context.getSnapshot().getNamespace( context.getDefaultNamespaceName() ).id;
             tableOldName = tableName.names.get( 0 );
         }
-        return context.getSnapshot().rel().getTable( schemaId, tableOldName ).orElseThrow();
+        return context.getSnapshot().rel().getTable( schemaId, tableOldName ).orElse( null );
     }
 
 
