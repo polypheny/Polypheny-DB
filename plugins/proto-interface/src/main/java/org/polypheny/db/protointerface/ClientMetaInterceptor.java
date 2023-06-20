@@ -19,7 +19,7 @@ package org.polypheny.db.protointerface;
 import io.grpc.*;
 
 public class ClientMetaInterceptor implements ServerInterceptor {
-    public static final Context.Key<ProtoInterfaceClient> CLIENT = Context.key("protoInterfaceClient");
+    public static final Context.Key<String> CLIENT = Context.key("protoInterfaceClient");
     private ClientManager clientManager;
     public ClientMetaInterceptor(ClientManager clientManager) {
         this.clientManager = clientManager;
@@ -28,8 +28,7 @@ public class ClientMetaInterceptor implements ServerInterceptor {
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
         final String clientUUID = headers.get(Metadata.Key.of("clientUUID", Metadata.ASCII_STRING_MARSHALLER));
-        ProtoInterfaceClient protoInterfaceClient = clientManager.getClient(clientUUID);
-        Context context = Context.current().withValue(CLIENT, protoInterfaceClient);
+        Context context = Context.current().withValue(CLIENT, clientUUID);
         return Contexts.interceptCall(context, call, headers, next);
     }
 }
