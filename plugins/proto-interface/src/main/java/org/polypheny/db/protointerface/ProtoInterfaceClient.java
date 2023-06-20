@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface;
 
+import java.sql.SQLException;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +28,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
-import java.util.Map;
-
 @Slf4j
 public class ProtoInterfaceClient {
 
@@ -37,6 +37,7 @@ public class ProtoInterfaceClient {
     private LogicalNamespace logicalNamespace;
     private Transaction currentTransaction;
     private TransactionManager transactionManager;
+
     @Setter
     @Getter
     private Map<String, String> statementProperties;
@@ -126,6 +127,15 @@ public class ProtoInterfaceClient {
     }
 
 
+    public boolean isAutocommit() throws IllegalArgumentException{
+        String isAutocommit = connectionProperties.get( PropertyKeys.AUTOOOMMIT );
+        if ( isAutocommit == null ) {
+            isAutocommit = PropertyKeys.getDefaultOf( PropertyKeys.AUTOOOMMIT );
+        }
+        return Boolean.parseBoolean( isAutocommit );
+    }
+
+
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -141,6 +151,7 @@ public class ProtoInterfaceClient {
         private Map<String, String> connectionProperties;
         private int minorApiVersion;
         private int majorApiVersion;
+        private boolean isAutocommit;
 
 
         private Builder() {

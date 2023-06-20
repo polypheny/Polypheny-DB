@@ -33,9 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class ClientManager {
-
-    private final String USERNAME_KEY = "user";
-    private final String PASSWORD_KEY = "password";
     private ConcurrentHashMap<String, ProtoInterfaceClient> openConnections;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
@@ -67,8 +64,7 @@ public class ClientManager {
                 .setClientUUID( connectionRequest.getClientUuid() )
                 .setConnectionProperties( properties )
                 .setTransactionManager( transactionManager );
-
-        final CatalogUser user = authenticateUser( properties.get( USERNAME_KEY ), properties.get( PASSWORD_KEY ) );
+        final CatalogUser user = authenticateUser( properties.get( PropertyKeys.USERNAME ), properties.get( PropertyKeys.PASSWORD ) );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
         if ( properties.containsKey( "namespace" )) {
@@ -97,7 +93,7 @@ public class ClientManager {
 
 
     private boolean credentialsPresent( Map<String, String> properties ) {
-        return properties.containsKey( USERNAME_KEY ) && properties.containsKey( PASSWORD_KEY );
+        return properties.containsKey( PropertyKeys.USERNAME ) && properties.containsKey( PropertyKeys.PASSWORD );
     }
 
 
