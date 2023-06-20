@@ -29,12 +29,12 @@ import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.FetchRequest;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
+import org.polypheny.db.protointerface.proto.LanguageResponse;
 import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
-import org.polypheny.db.protointerface.proto.SupportedLanguages;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
@@ -80,8 +80,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
 
     @Override
-    public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<SupportedLanguages> responseObserver ) {
-        SupportedLanguages supportedLanguages = SupportedLanguages.newBuilder()
+    public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<LanguageResponse> responseObserver ) {
+        LanguageResponse supportedLanguages = LanguageResponse.newBuilder()
                 .addAllLanguageNames( new LinkedList<>() )
                 .build();
         responseObserver.onNext( supportedLanguages );
