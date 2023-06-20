@@ -72,21 +72,15 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
             resultBuilder.setScalar( 1 );
-            if (isAutoCommit) {
-                commitElseRollback();
-            }
+            commitIfAuto();
             return resultBuilder.build();
         }
         if ( Kind.DML.contains( currentImplementation.getKind() ) ) {
             resultBuilder.setScalar( currentImplementation.getRowsChanged( currentStatement ) );
-            if (isAutoCommit) {
-                commitElseRollback();
-            }
+            commitIfAuto();
             return resultBuilder.build();
         }
-        if (isAutoCommit) {
-            commitElseRollback();
-        }
+        commitIfAuto();
         resultBuilder.setFrame( fetchFirst() );
         return resultBuilder.build();
     }
