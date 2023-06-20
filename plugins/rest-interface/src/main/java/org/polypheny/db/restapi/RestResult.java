@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -57,7 +58,7 @@ import org.polypheny.db.util.Pair;
 public class RestResult {
 
     private final Kind kind;
-    private final Iterator<Object> iterator;
+    private final Iterator<PolyValue> iterator;
     private final AlgDataType dataType;
     List<ColumnMetaData> columns;
     private List<Map<String, Object>> result;
@@ -70,7 +71,7 @@ public class RestResult {
     ZipOutputStream zipOut;
 
 
-    public RestResult( Kind Kind, Iterator<Object> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
+    public RestResult( Kind Kind, Iterator<PolyValue> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
         this.kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
@@ -95,10 +96,10 @@ public class RestResult {
             object = iterator.next();
             int num;
             if ( object != null && object.getClass().isArray() ) {
-                Object[] o = (Object[]) object;
-                num = ((Number) o[0]).intValue();
+                PolyValue[] o = (PolyValue[]) object;
+                num = o[0].asNumber().intValue();
             } else if ( object != null ) {
-                num = ((Number) object).intValue();
+                num = ((PolyValue) object).asNumber().intValue();
             } else {
                 throw new RuntimeException( "Result is null" );
             }

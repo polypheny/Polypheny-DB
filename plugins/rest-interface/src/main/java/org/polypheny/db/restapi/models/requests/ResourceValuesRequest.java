@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.restapi.RequestColumn;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -29,7 +30,7 @@ public abstract class ResourceValuesRequest {
 
     public final List<LogicalTable> tables;
     public final List<RequestColumn> requestColumns;
-    public final List<List<Pair<RequestColumn, Object>>> values;
+    public final List<List<Pair<RequestColumn, PolyValue>>> values;
     public boolean useDynamicParams;
 
 }

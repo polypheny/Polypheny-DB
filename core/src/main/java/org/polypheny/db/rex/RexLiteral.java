@@ -353,9 +353,9 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case INTEGER: // not allowed -- use Decimal
             case TINYINT:
             case SMALLINT:
-                if ( strict ) {
+                /*if ( strict ) {
                     throw Util.unexpected( typeName );
-                }
+                }*/
                 // fall through
             case DECIMAL:
             case DOUBLE:
@@ -396,9 +396,9 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case BINARY:
                 return value.isBinary();
             case VARCHAR: // not allowed -- use Char
-                if ( strict ) {
+                /*if ( strict ) {
                     throw Util.unexpected( typeName );
-                }
+                }*/
                 // fall through
             case CHAR:
                 // A SqlLiteral's charset and collation are optional; not so a RexLiteral.

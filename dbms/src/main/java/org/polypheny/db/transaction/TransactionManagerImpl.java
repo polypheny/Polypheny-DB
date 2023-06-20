@@ -78,19 +78,19 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, LogicalNamespace defaultSchema, boolean analyze, String origin, MultimediaFlavor flavor ) {
+    public Transaction startTransaction( CatalogUser user, LogicalNamespace defaultNamespace, boolean analyze, String origin, MultimediaFlavor flavor ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, analyze, origin, flavor ) );
+        transactions.put( xid, new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor ) );
         return transactions.get( xid );
     }
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, LogicalNamespace defaultSchema, boolean analyze, String origin ) {
-        return startTransaction( user, defaultSchema, analyze, origin, MultimediaFlavor.DEFAULT );
+    public Transaction startTransaction( CatalogUser user, LogicalNamespace defaultNamespace, boolean analyze, String origin ) {
+        return startTransaction( user, defaultNamespace, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 
 

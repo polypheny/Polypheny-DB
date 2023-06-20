@@ -42,6 +42,7 @@ import org.apache.calcite.linq4j.tree.ExpressionType;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
@@ -69,6 +70,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
@@ -1062,15 +1064,18 @@ public class RexToLixTranslator {
                         RexImpTable.NULL_EXPR,
                         Expressions.call( operand, "toString" ) );
             }
-        } else if ( toType == PolyNumber.class ) {
-            // due to refactor
-            return Expressions.call( PolyBigDecimal.class, "convert", operand );
-        }else if ( toType == PolyString.class ){
-            return Expressions.call( PolyString.class, "convert", operand );
-        }else if ( toType == PolyBoolean.class ){
-            return Expressions.call( PolyBoolean.class, "convert", operand );
         }
-        log.warn( "Converter missing" );
+        if ( Types.isAssignableFrom( PolyValue.class, toType ) ) {
+            if ( toType == PolyNumber.class && !Types.isAssignableFrom( toType, operand.type ) ) {
+                return Expressions.call( PolyBigDecimal.class, "convert", operand );
+            } else if ( toType == PolyString.class ) {
+                return Expressions.call( PolyString.class, "convert", operand );
+            } else if ( toType == PolyBoolean.class ) {
+                return Expressions.call( PolyBoolean.class, "convert", operand );
+            }
+            log.warn( "Converter missing" );
+        }
+
         return Expressions.convert_( operand, toType );
     }
 

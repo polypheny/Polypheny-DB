@@ -124,6 +124,7 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Static;
@@ -957,6 +958,10 @@ public class Functions {
         return PolyBoolean.of( b0.compareTo( b1 ) < 0 );
     }
 
+
+    public static PolyBoolean lt( PolyTemporal b0, PolyTemporal b1 ) {
+        return lt( PolyLong.of( b0.getSinceEpoch() ), PolyLong.of( b1.getSinceEpoch() ) );
+    }
     // <=
 
 
@@ -1116,6 +1121,11 @@ public class Functions {
     }*/
     public static PolyBoolean ge( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) >= 0 );
+    }
+
+
+    public static PolyBoolean ge( PolyTemporal b0, PolyTemporal b1 ) {
+        return ge( PolyLong.of( b0.getSinceEpoch() ), PolyLong.of( b1.getSinceEpoch() ) );
     }
 
 

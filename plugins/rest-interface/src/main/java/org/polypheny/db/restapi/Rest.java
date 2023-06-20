@@ -376,10 +376,10 @@ public class Rest {
     }
 
 
-    List<String> valuesColumnNames( List<List<Pair<RequestColumn, Object>>> values ) {
+    List<String> valuesColumnNames( List<List<Pair<RequestColumn, PolyValue>>> values ) {
         List<String> valueColumnNames = new ArrayList<>();
-        List<Pair<RequestColumn, Object>> rowsToInsert = values.get( 0 );
-        for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
+        List<Pair<RequestColumn, PolyValue>> rowsToInsert = values.get( 0 );
+        for ( Pair<RequestColumn, PolyValue> insertValue : rowsToInsert ) {
             valueColumnNames.add( insertValue.left.getColumn().name );
         }
 
@@ -388,12 +388,12 @@ public class Rest {
 
 
     List<List<RexNode>> valuesNode( Statement statement, AlgBuilder algBuilder, RexBuilder rexBuilder, ResourceValuesRequest request, List<AlgDataTypeField> tableRows, Map<String, InputStream> inputStreams ) {
-        List<List<Pair<RequestColumn, Object>>> values = request.values;
+        List<List<Pair<RequestColumn, PolyValue>>> values = request.values;
         List<List<RexNode>> wrapperList = new ArrayList<>();
         int index = 0;
-        for ( List<Pair<RequestColumn, Object>> rowsToInsert : values ) {
+        for ( List<Pair<RequestColumn, PolyValue>> rowsToInsert : values ) {
             List<RexNode> rexValues = new ArrayList<>();
-            for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
+            for ( Pair<RequestColumn, PolyValue> insertValue : rowsToInsert ) {
                 int columnPosition = insertValue.left.getLogicalIndex();
                 AlgDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
@@ -402,7 +402,7 @@ public class Rest {
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;
                 } else {
-                    rexValues.add( rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
+                    rexValues.add( rexBuilder.makeLiteral( insertValue.right, typeField.getType(), typeField.getType().getPolyType() ) );
                 }
             }
             wrapperList.add( rexValues );
@@ -545,7 +545,7 @@ public class Rest {
 
 
     private Transaction getTransaction() {
-        return transactionManager.startTransaction( userId, false, "REST Interface", MultimediaFlavor.FILE );
+        return transactionManager.startTransaction( Catalog.snapshot().getUser( Catalog.defaultUserId ), Catalog.snapshot().getNamespace( Catalog.defaultNamespaceId ), false, "REST Interface", MultimediaFlavor.FILE );
     }
 
 
@@ -553,11 +553,11 @@ public class Rest {
         RestResult restResult;
         try {
             // Prepare
-            PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyImplementation<PolyValue> result = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
-            final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );
-            Iterator<Object> iterator = iterable.iterator();
+            final Iterable<PolyValue> iterable = result.enumerable( statement.getDataContext() );
+            Iterator<PolyValue> iterator = iterable.iterator();
             restResult = new RestResult( algRoot.kind, iterator, result.rowType, result.getColumns() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();

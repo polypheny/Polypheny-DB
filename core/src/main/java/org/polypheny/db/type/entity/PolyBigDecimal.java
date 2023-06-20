@@ -215,13 +215,13 @@ public class PolyBigDecimal extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyBigDecimal item ) {
-                    out.writeUTF16( item.value.toString() );
+                    out.writeUTF8( item.value.toString() );
                 }
 
 
                 @Override
                 public PolyBigDecimal decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyBigDecimal( new BigDecimal( in.readUTF16() ) );
+                    return new PolyBigDecimal( new BigDecimal( in.readUTF8() ) );
                 }
             };
         }

@@ -47,7 +47,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -89,7 +88,6 @@ public class RequestParser {
 
     private final static Pattern SORTING_ENTRY_PATTERN = Pattern.compile(
             "^(?<column>[a-zA-Z]\\w*(?:\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)?)(?:@(?<dir>ASC|DESC))?$" );
-    private final Snapshot snapshop;
 
 
     public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String userName, final String databaseName ) {
@@ -99,7 +97,6 @@ public class RequestParser {
 
     @VisibleForTesting
     RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String userName, String databaseName ) {
-        this.snapshop = catalog.getSnapshot();
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
         this.userName = userName;
@@ -168,7 +165,7 @@ public class RequestParser {
         List<LogicalTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
-        List<List<Pair<RequestColumn, Object>>> values = this.parseValues( ctx, gson, nameMapping );
+        List<List<Pair<RequestColumn, PolyValue>>> values = this.parseValues( ctx, gson, nameMapping );
 
         return new ResourcePostRequest( tables, requestColumns, nameMapping, values, false );
     }
@@ -178,7 +175,7 @@ public class RequestParser {
         List<LogicalTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
-        List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
+        List<List<Pair<RequestColumn, PolyValue>>> values = parseInsertStatementBody( insertValues, nameMapping );
 
         return new ResourcePostRequest( tables, requestColumns, nameMapping, values, true );
     }
@@ -193,7 +190,7 @@ public class RequestParser {
 
         Filters filters = this.parseFilters( getFilterMap( ctx.req ), nameMapping );
 
-        List<List<Pair<RequestColumn, Object>>> values = this.parseValues( ctx, gson, nameMapping );
+        List<List<Pair<RequestColumn, PolyValue>>> values = this.parseValues( ctx, gson, nameMapping );
 
         return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters, false );
     }
@@ -204,7 +201,7 @@ public class RequestParser {
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         Filters filters = this.parseFilters( filterMap, nameMapping );
-        List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
+        List<List<Pair<RequestColumn, PolyValue>>> values = parseInsertStatementBody( insertValues, nameMapping );
         return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters, true );
     }
 
@@ -265,7 +262,7 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.TABLE_LIST_MALFORMED_TABLE, tableName );
         }
 
-        LogicalTable table = snapshop.rel().getTable( tableElements[1], tableElements[1] ).orElseThrow();
+        LogicalTable table = Catalog.snapshot().rel().getTable( tableElements[0], tableElements[1] ).orElseThrow();
         if ( log.isDebugEnabled() ) {
             log.debug( "Finished parsing table \"{}\".", tableName );
         }
@@ -356,7 +353,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = snapshop.getNamespaces( null ).stream().map( n -> this.snapshop.rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
+            LogicalColumn column = Catalog.snapshot().getNamespaces( null ).stream().map( n -> Catalog.snapshot().rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -413,9 +410,9 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, name );
         }
 
-        LogicalNamespace namespace = snapshop.getNamespace( splitString[0] );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( splitString[0] );
 
-        return snapshop.rel().getColumn( namespace.id, splitString[1], splitString[2] ).orElseThrow();
+        return Catalog.snapshot().rel().getColumn( namespace.id, splitString[1], splitString[2] ).orElseThrow();
 
     }
 
@@ -630,11 +627,20 @@ public class RequestParser {
     @VisibleForTesting
     PolyValue parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
         if ( !(objectLiteral instanceof String) ) {
-            if ( objectLiteral instanceof Double && type == PolyType.DECIMAL ) {
-                return PolyBigDecimal.of( BigDecimal.valueOf( (Double) objectLiteral ) );
+            if ( PolyType.APPROX_TYPES.contains( type ) ) {
+                if ( objectLiteral instanceof Number ) {
+                    return PolyBigDecimal.of( BigDecimal.valueOf( ((Number) objectLiteral).doubleValue() ) );
+                }
+            } else if ( PolyType.EXACT_TYPES.contains( type ) ) {
+                if ( objectLiteral instanceof Number ) {
+                    return PolyBigDecimal.of( BigDecimal.valueOf( ((Number) objectLiteral).longValue() ) );
+                }
+            } else if ( PolyType.BOOLEAN_TYPES.contains( type ) ) {
+                if ( objectLiteral instanceof Boolean ) {
+                    return PolyBoolean.of( (Boolean) objectLiteral );
+                }
             }
             throw new NotImplementedException();
-            //return objectLiteral;
         } else {
             PolyValue parsedLiteral;
             String literal = (String) objectLiteral;
@@ -681,13 +687,13 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<List<Pair<RequestColumn, Object>>> parseValues( Context ctx, Gson gson, Map<String, RequestColumn> nameMapping ) throws ParserException {
+    List<List<Pair<RequestColumn, PolyValue>>> parseValues( Context ctx, Gson gson, Map<String, RequestColumn> nameMapping ) throws ParserException {
         // FIXME: Verify stuff like applications/json, so on, so forth
         Object bodyObject = ctx.bodyAsClass( Object.class );
-        Map bodyMap = (Map) bodyObject;
-        List valuesList = (List) bodyMap.get( "data" );
+        Map<?, ?> bodyMap = (Map<?, ?>) bodyObject;
+        List<Object> valuesList = (List<Object>) bodyMap.get( "data" );
         if ( valuesList == null ) {
-            log.warn( "Missing values statement. Body: {}", bodyMap.toString() );
+            log.warn( "Missing values statement. Body: {}", bodyMap );
             throw new ParserException( ParserErrorCode.VALUE_MISSING, "" );
         }
         return this.parseInsertStatementBody( valuesList, nameMapping );
@@ -695,12 +701,12 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<List<Pair<RequestColumn, Object>>> parseInsertStatementBody( List<Object> bodyInsertValues, Map<String, RequestColumn> nameMapping ) throws ParserException {
-        List<List<Pair<RequestColumn, Object>>> returnValue = new ArrayList<>();
+    List<List<Pair<RequestColumn, PolyValue>>> parseInsertStatementBody( List<Object> bodyInsertValues, Map<String, RequestColumn> nameMapping ) throws ParserException {
+        List<List<Pair<RequestColumn, PolyValue>>> returnValue = new ArrayList<>();
 
         for ( Object rowObject : bodyInsertValues ) {
             Map rowMap = (Map) rowObject;
-            List<Pair<RequestColumn, Object>> rowValue = this.parseInsertStatementValues( rowMap, nameMapping );
+            List<Pair<RequestColumn, PolyValue>> rowValue = this.parseInsertStatementValues( rowMap, nameMapping );
             returnValue.add( rowValue );
         }
 
@@ -708,8 +714,8 @@ public class RequestParser {
     }
 
 
-    private List<Pair<RequestColumn, Object>> parseInsertStatementValues( Map rowValuesMap, Map<String, RequestColumn> nameMapping ) throws ParserException {
-        List<Pair<RequestColumn, Object>> result = new ArrayList<>();
+    private List<Pair<RequestColumn, PolyValue>> parseInsertStatementValues( Map rowValuesMap, Map<String, RequestColumn> nameMapping ) throws ParserException {
+        List<Pair<RequestColumn, PolyValue>> result = new ArrayList<>();
 
         for ( Object objectColumnName : rowValuesMap.keySet() ) {
             String stringColumnName = (String) objectColumnName;
@@ -727,7 +733,7 @@ public class RequestParser {
             log.debug( "Fetched catalog column for filter key: {}", stringColumnName );
 
             Object litVal = rowValuesMap.get( objectColumnName );
-            Object parsedValue = this.parseLiteralValue( column.getColumn().type, litVal );
+            PolyValue parsedValue = this.parseLiteralValue( column.getColumn().type, litVal );
             result.add( new Pair<>( column, parsedValue ) );
         }
 
@@ -741,7 +747,7 @@ public class RequestParser {
     public Map<String, LogicalColumn> generateNameMapping( List<LogicalTable> tables ) {
         Map<String, LogicalColumn> nameMapping = new HashMap<>();
         for ( LogicalTable table : tables ) {
-            for ( LogicalColumn column : snapshop.rel().getColumns( table.id ) ) {
+            for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( table.id ) ) {
                 nameMapping.put( column.getNamespaceName() + "." + column.getTableName() + "." + column.name, column );
             }
         }

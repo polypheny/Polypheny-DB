@@ -120,8 +120,15 @@ public class TemporalFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyTimeStamp addMonths( PolyTimeStamp timeStamp, PolyInterval m ) {
         return addMonths( timeStamp, PolyLong.of( m.getMonths() ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyDate addMonths( PolyDate date, PolyInterval m ) {
+        return addMonths( date, PolyLong.of( m.getMonths() ) );
     }
 
 

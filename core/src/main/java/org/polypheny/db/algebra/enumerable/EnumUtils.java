@@ -41,6 +41,7 @@ import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.Node;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.SemiJoinType;
@@ -395,8 +396,12 @@ public class EnumUtils {
 
 
     @NotNull
-    public static MethodCallExpression convertPolyValue( PolyType outputType, Expression operand ) {
-        return Expressions.call( PolyValue.classFrom( outputType ), "convert", operand );
+    public static Expression convertPolyValue( PolyType outputType, Expression operand ) {
+        Class<?> clazz = PolyValue.classFrom( outputType );
+        if ( Types.isAssignableFrom( operand.type, clazz ) ) {
+            return operand;
+        }
+        return Expressions.call( clazz, "convert", operand );
     }
 
 

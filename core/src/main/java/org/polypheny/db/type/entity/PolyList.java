@@ -124,7 +124,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                 public void encode( BinaryOutput out, PolyList<?> item ) {
                     out.writeLong( item.size() );
                     for ( PolyValue entry : item ) {
-                        out.writeUTF16( PolySerializable.serialize( serializer, entry ) );
+                        out.writeUTF8( PolySerializable.serialize( serializer, entry ) );
                     }
                 }
 
@@ -134,7 +134,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                     List<PolyValue> list = new ArrayList<>();
                     long size = in.readLong();
                     for ( long i = 0; i < size; i++ ) {
-                        list.add( PolySerializable.deserialize( in.readUTF16(), serializer ) );
+                        list.add( PolySerializable.deserialize( in.readUTF8(), serializer ) );
                     }
                     return PolyList.of( list );
                 }
