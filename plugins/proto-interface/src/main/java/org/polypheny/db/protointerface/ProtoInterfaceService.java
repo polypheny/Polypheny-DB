@@ -24,6 +24,8 @@ import lombok.SneakyThrows;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
+import org.polypheny.db.protointerface.proto.CommitRequest;
+import org.polypheny.db.protointerface.proto.CommitResponse;
 import org.polypheny.db.protointerface.proto.ConnectionReply;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.FetchRequest;
@@ -111,6 +113,14 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         Frame frame = statement.fetch( fetchRequest.getOffset() );
         responseObserver.onNext( frame );
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void commitTransaction( CommitRequest commitRequest, StreamObserver<CommitResponse> responseStreamObserver) {
+        ProtoInterfaceClient client = getClient();
+        client.commitCurrentTransaction();
+        responseStreamObserver.onNext( CommitResponse.newBuilder().build() );
+        responseStreamObserver.onCompleted();
     }
 
 
