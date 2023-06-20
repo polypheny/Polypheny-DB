@@ -88,8 +88,10 @@ public class ClientManager {
     }
 
 
-
-    public ProtoInterfaceClient getClient( String clientUUID ) {
+    public ProtoInterfaceClient getClient( String clientUUID ) throws ProtoInterfaceServiceException{
+        if (!openConnections.contains( clientUUID )) {
+            throw new ProtoInterfaceServiceException( "Client not registered" );
+        }
         return openConnections.get( clientUUID );
     }
 
