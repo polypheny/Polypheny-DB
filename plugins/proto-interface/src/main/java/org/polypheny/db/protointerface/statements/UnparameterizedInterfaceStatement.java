@@ -72,15 +72,21 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
             resultBuilder.setScalar( 1 );
-            commitElseRollback();
+            if (isAutoCommit) {
+                commitElseRollback();
+            }
             return resultBuilder.build();
         }
         if ( Kind.DML.contains( currentImplementation.getKind() ) ) {
             resultBuilder.setScalar( currentImplementation.getRowsChanged( currentStatement ) );
-            commitElseRollback();
+            if (isAutoCommit) {
+                commitElseRollback();
+            }
             return resultBuilder.build();
         }
-        // TODO TH: replace hardcoded value with cont from the request
+        if (isAutoCommit) {
+            commitElseRollback();
+        }
         resultBuilder.setFrame( fetchFirst() );
         return resultBuilder.build();
     }
