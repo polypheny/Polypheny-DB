@@ -71,8 +71,9 @@ public class JupyterClient {
         }
     }
 
+
     public HttpResponse<String> getStatus() throws JupyterServerException {
-        return  sendGET( "status" );
+        return sendGET( "status" );
     }
 
 
@@ -415,9 +416,11 @@ public class JupyterClient {
 
     private void updateKernels( JsonArray kernels ) {
         Set<String> validKernelIds = new HashSet<>();
-        for ( JsonElement kernel : kernels ) {
-            String id = kernel.getAsJsonObject().get( "id" ).getAsString();
-            sessionManager.addKernel( id, kernel.getAsJsonObject().get( "name" ).getAsString(), webSocketBuilder, host );
+        for ( JsonElement kernelElem : kernels ) {
+            JsonObject kernel = kernelElem.getAsJsonObject();
+            String id = kernel.get( "id" ).getAsString();
+            String name = kernel.get( "name" ).getAsString();
+            sessionManager.addKernel( id, name, webSocketBuilder, host );
             validKernelIds.add( id );
         }
         sessionManager.retainValidKernels( validKernelIds );

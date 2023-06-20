@@ -16,7 +16,6 @@
 
 package org.polypheny.db.jupyter;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.javalin.http.Context;
 import java.io.File;
@@ -53,6 +52,8 @@ public class JupyterPlugin extends Plugin {
     private DockerManager.Container container;
     private File rootPath;
     private JupyterProxy proxy;
+
+    public static TransactionManager transactionManager;
 
 
     /**
@@ -109,26 +110,23 @@ public class JupyterPlugin extends Plugin {
         DockerInstance.getInstance().destroyAll( adapterId );
     }
 
-    public void restartContainer(Context ctx, Crud crud) {
-        log.warn( "stopping container" );
-        log.warn( container.getStatus().toString());
+
+    public void restartContainer( Context ctx, Crud crud ) {
         stopContainer();
         JupyterSessionManager.getInstance().reset();
-        log.warn( "restarting container" );
+        log.warn( "Restarting Jupyter Server container" );
         startContainer();
         proxy.setClient( new JupyterClient( token, host, PORT ) );
-        log.warn( "finished restart" );
-        ctx.status(200).json("restart ok");
+        ctx.status( 200 ).json( "restart ok" );
     }
 
-    public void containerStatus(Context ctx, Crud crud) {
+
+    public void containerStatus( Context ctx, Crud crud ) {
         JsonObject status = new JsonObject();
         status.addProperty( "status", container.getStatus().toString() );
         status.addProperty( "host", container.getHost() );
         status.addProperty( "ip", container.getIpAddress() );
-
-        log.warn( "container status: {}", container.getStatus().toString() );
-        ctx.status(200).json( status );
+        ctx.status( 200 ).json( status );
     }
 
 
@@ -145,7 +143,6 @@ public class JupyterPlugin extends Plugin {
         server.addSerializedRoute( REST_PATH + "/file/<path>", proxy::file, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/container/status", this::containerStatus, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/status", proxy::connectionStatus, HandlerType.GET );
-
 
         server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", proxy::createFile, HandlerType.POST );
         server.addSerializedRoute( REST_PATH + "/sessions", proxy::createSession, HandlerType.POST );
@@ -205,6 +202,7 @@ public class JupyterPlugin extends Plugin {
             log.info( "Initializing Jupyter Extension" );
             plugin.startContainer();
             plugin.onContainerRunning();
+            JupyterPlugin.transactionManager = manager;
         }
 
     }

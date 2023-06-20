@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jupyter.model;
+package org.polypheny.db.jupyter.model.language;
 
-public class JupyterExecutionRequest {
+public class JupyterLanguageFactory {
 
-    public String uuid; // a unique identifier for the request
-    public String type;
+    public static JupyterKernelLanguage getKernelLanguage(String kernelName) {
+        if ( kernelName.equalsIgnoreCase( "python3" ) ) {
+            return new IPythonKernelLanguage();
+        }
+        // add supported kernels here
 
-    public String content;
-    public String language;
-    public String namespace;
-    public String variable; // variable to store the result in
-    public boolean expand; // whether to expand parameters indicated with ${}
+        return null;
+    }
 
 }

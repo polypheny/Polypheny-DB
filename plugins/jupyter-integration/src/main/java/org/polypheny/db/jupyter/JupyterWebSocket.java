@@ -68,7 +68,10 @@ public class JupyterWebSocket implements Consumer<WsConfig> {
                 }
                 break;
             case "poly":
-                log.error( "TODO: Handle Polypheny Cells" );
+                if (kernel != null && kernel.isSupportsPolyCells()) {
+                    kernel.executePolyCell( request.content, request.uuid, request.language, request.namespace,
+                            request.variable, request.expand );
+                }
                 break;
             case "status":
                 try {
