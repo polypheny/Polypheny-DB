@@ -20,17 +20,14 @@ package org.polypheny.db.mqtt;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -44,8 +41,8 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.transaction.TransactionManager;
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
+
+import static org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamServer.client;
 
 
 public class MqttStreamPlugin extends Plugin {
@@ -63,10 +60,10 @@ public class MqttStreamPlugin extends Plugin {
     @Override
     public void start() {
         // Add MQTT stream
-        Map<String, String> mqttSettings = new HashMap<>();
-        mqttSettings.put( "broker", "localhost" );
-        mqttSettings.put( "brokerPort", "1883" );
-        QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamServer.class, mqttSettings );
+        Map<String, String> mqttDefaultSettings = new HashMap<>();
+        mqttDefaultSettings.put( "broker", "localhost" );
+        mqttDefaultSettings.put( "brokerPort", "1883" );
+        QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamServer.class, mqttDefaultSettings );
     }
 
 
@@ -83,7 +80,7 @@ public class MqttStreamPlugin extends Plugin {
         @SuppressWarnings("WeakerAccess")
         public static final String INTERFACE_NAME = "MQTT Interface";
         @SuppressWarnings("WeakerAccess")
-        public static final String INTERFACE_DESCRIPTION = "Connection establishment to MQTT broker.";
+        public static final String INTERFACE_DESCRIPTION = "Connection establishment to a MQTT broker.";
         @SuppressWarnings("WeakerAccess")
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingString( "broker", false, true, false, "localhost" ),
@@ -95,11 +92,12 @@ public class MqttStreamPlugin extends Plugin {
 
         private final String broker;
 
-        private final String brokerPort;
+        private final int brokerPort;
 
-        private ArrayList<String> topics = new ArrayList<String>();
+        private List<String> topics = new ArrayList<String>();
 
-        private MqttAsyncClient client;
+        public static Mqtt3AsyncClient client;
+        //private MqttAsyncClient client;
 
         private final MonitoringPage monitoringPage;
 
@@ -111,75 +109,38 @@ public class MqttStreamPlugin extends Plugin {
             // Add information page
             monitoringPage = new MonitoringPage();
             broker = settings.get( "broker" );
-            brokerPort = settings.get( "brokerPort" );
-            //subscribe(settings.get("topics"));
+            brokerPort = Integer.parseInt(settings.get( "brokerPort" ));
         }
 
 
         @Override
         public void run() {
-            String serverURI = String.format( "tcp://%s:%s", broker, brokerPort);
-            // creating fileStore to store all messages in this directory folder
-            //won't be needed later, when data is stored in data store
-            MqttDefaultFilePersistence fileStore = new MqttDefaultFilePersistence("C:\\Users\\Public\\UniProjekte\\BA_MQTT_Messages");
-            try {
-                fileStore.open(uniqueName, serverURI);
-            } catch (MqttPersistenceException e) {
-                log.error( "There is a problem reading or writing persistence data." );
-            }
-            try {
-                client = new MqttAsyncClient(serverURI, uniqueName, fileStore);
-                MqttCallback callback = new MqttCallback() {
-                    @Override
-                    public void connectionLost(Throwable cause) {
-                        log.error( "Lost connection to the broker!" );
-                        //TODO: show this on UI!
-                    }
 
-                    @Override
-                    public void messageArrived(String topic, MqttMessage message) throws Exception {
-                        log.info( "Message: {}", message.toString());
-                        MqttDocumentStore store = new MqttDocumentStore();
-                        store.saveMessage(topic, message);
-                        //TODO: extract the important content of the message
-                        // AND send it to StreamProcessor as PolyStream.
-                    }
+            // commented code used for SSL connection
+            client = MqttClient.builder()
+                               .useMqttVersion3()
+                               .identifier( uniqueName )
+                               .serverHost( broker )
+                               .serverPort( brokerPort )
+                               //.useSslWithDefaultConfig()
+                               .buildAsync();
 
-                    @Override
-                    public void deliveryComplete(IMqttDeliveryToken token) {
-                        log.info( "Delivery of Message was successful!" );
-                    }
-                };
+            client.connectWith()
+                  //.simpleAuth()
+                  //.username("my-user")
+                  //.password("my-password".getBytes())
+                  //.applySimpleAuth()
+                  .send()
+                  .whenComplete((connAck, throwable) -> {
+                      if (throwable != null) {
+                          log.error( "Connection to broker could not be established. Please delete and recreate the Plug-In." );
+                      } else {
+                          log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, broker, brokerPort );
+                          subscribeToAllTopics(Arrays.asList(settings.get( "topics" ).split( ", " )));
+                      }
+                  }
+            );
 
-                client.setCallback(callback);
-                IMqttActionListener connectionListener = new IMqttActionListener() {
-                    @Override
-                    public void onSuccess(IMqttToken asyncActionToken) {
-                        //TODO: show on UI
-                        log.info( "{} started and is listening to broker {}:{}", INTERFACE_NAME, broker, brokerPort );
-                    }
-
-                    @Override
-                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        //TODO: show on UI
-                        log.error( "Connection to broker could not be established. Please delete and recreate the Plug-In." );
-                    }
-                };
-                IMqttToken connToken = client.connect(null, connectionListener);
-                connToken.waitForCompletion();
-
-
-                // Testing the connection:
-                //String str = "Hello, I am the Polypheny-Client!";
-                //MqttMessage msg = new MqttMessage(str.getBytes());
-                //IMqttToken pubToken= client.publish("testTopic", msg);
-
-                // Testing subscribtion:
-                //IMqttToken subToken= client.subscribe("testTopic", 1);
-
-            } catch (MqttException e) {
-                log.error( "An error occurred while communicating to the server.");
-            }
         }
 
         @Override
@@ -190,106 +151,88 @@ public class MqttStreamPlugin extends Plugin {
 
         @Override
         public void shutdown() {
-            IMqttActionListener shutDownListener = new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    //TODO: show on UI
-                    log.info( "{} stopped.", INTERFACE_NAME);
-                }
 
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    //TODO: show on UI
-                    log.info( "{} could not disconnected from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
-                }
-            };
-
-            try {
-                client.disconnect(null, shutDownListener);
-            } catch (MqttException e) {
-                log.error( "An error occurred while disconnecting from the broker {}:{}. Please try again.", broker, brokerPort );
-            }
-
-            monitoringPage.remove();
+            client.disconnect().whenComplete((disconn, throwable)-> {
+                        if(throwable != null) {
+                            log.info( "{} could not disconnected from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
+                        } else {
+                            log.info( "{} stopped." , INTERFACE_NAME);
+                            monitoringPage.remove();
+                        }
+                    }
+            );
 
         }
 
-
-        public void subscribe(String topic){
-            //TODO: trigger from UI.
-            if (topics.isEmpty() || !topics.contains(topic)) {
-                IMqttActionListener subListener = new IMqttActionListener() {
-                    @Override
-                    public void onSuccess(IMqttToken asyncActionToken) {
-                        topics.add(topic);
-                        log.info( "Successfull subscription to {}.", topic );
-                    }
-
-                    @Override
-                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        log.info( "Subscription was not successfull. Please try again." );
-                    }
-                };
-                try {
-                    IMqttToken subToken= client.subscribe(topic, 1, null, subListener);
-                    subToken.waitForCompletion();
-                } catch (MqttException e) {
-                    log.error( "An error occurred while subscribing to {}. Please try again.", topic );
-                }
+        void subscribeToAllTopics(List<String> newTopics) {
+            for ( String t : newTopics) {
+                subscribe( t );
             }
+        }
+
+        /**
+         * subcribes to one given topic and adds it to the List topics.
+         * @param topic the topic the client should subscribe to.
+         */
+        public void subscribe(String topic) {
+
+            if ( !topics.contains(topic) ) {
+
+                client.subscribeWith()
+                     .topicFilter(topic)
+                     .callback(publish -> {
+                         // TODO:Process the received message
+                         log.info(String.format("Received Message from topic %s : %s.", topic, publish.getPayload()));
+                     })
+                     .send()
+                     .whenComplete((subAck, throwable) -> {
+                         if (throwable != null) {
+                             log.info("Subscription was not successfull. Please try again.");
+                         } else {
+                             topics.add(topic);
+                             log.info("Successfull subscription to {}.", topic);
+                         }
+                     }).notifyAll(); /** notifys that subscription is finished. Now publish can be started.**/
+
+            }
+
         }
 
         public void unsubscribe(String topic) {
-            //TODO: trigger from UI.
-            if (topics.contains(topic)) {
-                IMqttActionListener unsubListener = new IMqttActionListener() {
-                    @Override
-                    public void onSuccess(IMqttToken asyncActionToken) {
-                        topics.remove(topic);
-                        log.info( "Successfull unsubscription from {}.", topic );
-                    }
 
-                    @Override
-                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        log.info( "Unsubscription was not successfull. Please try again." );
-                    }
-                };
-                try {
-                    IMqttToken subToken= client.unsubscribe(topic, null, unsubListener);
-                } catch (MqttException e) {
-                    log.error( "An error occurred while unsubscribing from {}. Please try again.", topic );
-                }
+            if ( topics.contains(topic) ) {
+                client.unsubscribeWith().topicFilter(topic).send().whenComplete((unsub, throwable) -> {
+                            if (throwable != null) {
+                                log.error(String.format("Topic %s could not be unsubscribed.", topic));
+                            } else {
+                                topics.remove(topic);
+                                log.info( String.format("Unsubscribed from %s.", topic));
+                            }
+                        }
+                );
             }
         }
 
-        public void publish(String topic, String msg) {
-            //TODO: trigger from UI.
-            if (topics.contains(topic)) {
-                IMqttActionListener pubListener = new IMqttActionListener() {
-                    @Override
-                    public void onSuccess(IMqttToken asyncActionToken) {
-                        log.info( "Message was published successfully.");
-                    }
-
-                    @Override
-                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        log.info( "Unsubscription was not successfull. Please try again." );
-                    }
-                };
-                MqttMessage message = new MqttMessage(msg.getBytes());
-                try {
-                    IMqttToken subToken= client.publish(topic, message, null, pubListener);
-                } catch (MqttException e) {
-                    log.error( "An error occurred while unsubscribing from {}. Please try again.", topic );
-                }
-            }
-        }
-
-
-
+        
         @Override
         protected void reloadSettings( List<String> updatedSettings ) {
-            // There is no modifiable setting for this query interface
+            // updatedSettings only has the name of field that has been changed!
+            if (updatedSettings.contains("topics")) {
+                List<String> newTopicsList = Arrays.asList(this.getCurrentSettings().get("topics").split( ", " ));
+
+                for ( String newTopic : newTopicsList) {
+                    if(!topics.contains(newTopic)) {
+                        subscribe(newTopic);
+                    }
+                }
+
+                for (String oldTopic : topics) {
+                    if(!newTopicsList.contains(oldTopic)) {
+                        unsubscribe(oldTopic);
+                    }
+                }
+            }
+
         }
 
 

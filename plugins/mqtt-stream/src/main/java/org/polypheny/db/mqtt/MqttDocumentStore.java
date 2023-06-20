@@ -16,7 +16,7 @@
 
 package org.polypheny.db.mqtt;
 
-import org.eclipse.paho.client.mqttv3.MqttMessage;
+//import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class MqttDocumentStore {
     // should save the message in a document in the collection named as per the topic
@@ -26,7 +26,7 @@ public class MqttDocumentStore {
 
     }
 
-    public void saveMessage(String topic, MqttMessage message) {
+    public void saveMessage(String topic, String msg) {
         // TODO: implementation!
             // insert message in Document
             // and insert Document into Collection
