@@ -92,7 +92,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
-        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
+        ProtoInterfaceClient client = getClient();
         String languageName = unparameterizedStatement.getStatementLanguageName();
         if ( !statementManager.isSupportedLanguage( languageName ) ) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
@@ -106,7 +106,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
-        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
+        ProtoInterfaceClient client = getClient();
         ProtoInterfaceStatement statement = statementManager.getStatement( client, fetchRequest.getStatementId() );
         Frame frame = statement.fetch( fetchRequest.getOffset() );
         responseObserver.onNext( frame );
@@ -116,9 +116,13 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
-        ProtoInterfaceClient client = ClientMetaInterceptor.CLIENT.get();
+        ProtoInterfaceClient client = getClient();
         statementManager.closeStatement( client, closeStatementRequest.getStatementId() );
         responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
+    }
+
+    private ProtoInterfaceClient getClient() throws ProtoInterfaceServiceException{
+        return clientManager.getClient(ClientMetaInterceptor.CLIENT.get());
     }
 
 
