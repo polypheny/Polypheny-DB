@@ -13,13 +13,14 @@ package polypheny.protointerface;
 // Functions provided by the proto interface
 service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
-  rpc GetSupportedLanguages(LanguageRequest) returns (SupportedLanguages) {}
+  rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
-  rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
-  rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
-  rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
   rpc FetchResult(FetchRequest) returns (Frame) {}
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
+  rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
+
+  rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
+  rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
   rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
 }
 
@@ -38,9 +39,12 @@ message ConnectionReply {
 
 message LanguageRequest {}
 
-message SupportedLanguages {
+message LanguageResponse {
   repeated string language_names = 1;
 }
+
+message CommitRequest {}
+message CommitResponse{}
 
 message StatementStatus {
   int32 statementId = 1;
