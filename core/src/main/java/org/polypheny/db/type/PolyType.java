@@ -338,6 +338,13 @@ public enum PolyType {
             Types.OTHER,
             null ),
 
+    USER_DEFINED_TYPE(
+            PrecScale.NO_NO,
+            true,
+            Types.OTHER,
+            null
+    ),
+
     CURSOR(
             PrecScale.NO_NO,
             false,

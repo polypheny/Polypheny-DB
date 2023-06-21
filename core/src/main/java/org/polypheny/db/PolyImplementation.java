@@ -413,10 +413,10 @@ public class PolyImplementation<T> {
     }
 
 
-    public List<List<T>> getArrayRows( Statement statement, boolean noLimit ) {
+    public List<PolyValue[]> getArrayRows( Statement statement, boolean noLimit ) {
         cursorFactory = CursorFactory.ARRAY;
 
-        return getRows( statement, rowType.getFieldCount() == 1 ? List::of : null );
+        return getRows( statement, rowType.getFieldCount() == 1 ? e -> new PolyValue[]{ (PolyValue) e } : null );
 
     }
 

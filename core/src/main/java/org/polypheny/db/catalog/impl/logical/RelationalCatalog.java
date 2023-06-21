@@ -110,6 +110,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     boolean openChanges = false;
 
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
     List<Long> tablesFlaggedForDeletion = new ArrayList<>();
 
 

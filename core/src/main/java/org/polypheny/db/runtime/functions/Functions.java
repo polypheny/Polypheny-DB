@@ -955,7 +955,7 @@ public class Functions {
 
 
     public static PolyBoolean lt( PolyNumber b0, PolyNumber b1 ) {
-        return PolyBoolean.of( b0.compareTo( b1 ) < 0 );
+        return PolyBoolean.of( PolyNumber.compareTo( b0, b1 ) < 0 );
     }
 
 

@@ -20,7 +20,6 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -40,12 +39,6 @@ public class LogicalLpgFilter extends LpgFilter {
     @Override
     protected AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new LogicalLpgFilter( getCluster(), traitSet, input, condition );
-    }
-
-
-    @Override
-    protected AlgDataType deriveRowType() {
-        return input.getRowType();
     }
 
 

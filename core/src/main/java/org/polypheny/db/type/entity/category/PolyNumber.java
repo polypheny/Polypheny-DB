@@ -31,6 +31,17 @@ public abstract class PolyNumber extends PolyValue {
     }
 
 
+    public static int compareTo( PolyNumber b0, PolyNumber b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return -1;
+        }
+        if ( PolyType.APPROX_TYPES.contains( b0.type ) || PolyType.APPROX_TYPES.contains( b1.type ) ) {
+            return b0.DoubleValue().compareTo( b1.DoubleValue() );
+        }
+        return b0.LongValue().compareTo( b1.LongValue() );
+    }
+
+
     @Override
     public boolean equals( Object o ) {
         return super.equals( o );

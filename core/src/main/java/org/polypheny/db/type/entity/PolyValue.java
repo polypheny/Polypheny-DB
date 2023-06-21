@@ -655,9 +655,23 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NonNull
     public PolyBlob asBlob() {
         if ( isBlob() ) {
             return (PolyBlob) this;
+        }
+        throw new GenericRuntimeException( "Cannot parse " + this );
+    }
+
+
+    public boolean isUserDefinedValue() {
+        return PolyType.USER_DEFINED_TYPE == type;
+    }
+
+
+    public PolyUserDefinedValue asUserDefinedValue() {
+        if ( isUserDefinedValue() ) {
+            return (PolyUserDefinedValue) this;
         }
         throw new GenericRuntimeException( "Cannot parse " + this );
     }

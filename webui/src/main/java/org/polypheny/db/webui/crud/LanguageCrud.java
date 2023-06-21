@@ -19,6 +19,7 @@ package org.polypheny.db.webui.crud;
 import io.javalin.http.Context;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -244,10 +245,10 @@ public class LanguageCrud {
 
     private static GraphResult getGraphResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
 
-        List<List<PolyValue>> data = implementation.getArrayRows( statement, noLimit );
+        List<PolyValue[]> data = implementation.getArrayRows( statement, noLimit );
 
         return GraphResult.builder()
-                .data( data.stream().map( r -> r.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
+                .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
                 .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).collect( Collectors.toList() ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )

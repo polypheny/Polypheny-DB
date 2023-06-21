@@ -56,7 +56,7 @@ public class JdbcToEnumerableConverterRule extends ConverterRule {
                 out,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,
-                "JdbcToEnumerableConverterRule:" + out );
+                JdbcToEnumerableConverterRule.class.getSimpleName() + ":" + out );
     }
 
 

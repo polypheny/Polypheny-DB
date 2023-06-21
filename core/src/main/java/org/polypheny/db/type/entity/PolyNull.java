@@ -322,7 +322,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public PolyBlob asBlob() {
+    public @NonNull PolyBlob asBlob() {
         return new PolyBlob( null );
     }
 

@@ -74,7 +74,7 @@ public class CypherAggregate extends CypherExpression {
                 alias != null ? alias : String.format( "%s(%s)", op.name(), name )
         );
 
-        context.addAgg( Pair.of( name.value, call ) );
+        context.addAgg( Pair.of( name != null ? name.value : null, call ) );
 
         if ( namedNode != null ) {
             return Pair.of( namedNode.left, typeAndValue.left );

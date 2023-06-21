@@ -623,7 +623,7 @@ public class MqlFunctions {
      * @return if the provided elements fit the provided condition
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static PolyBoolean compNullExecute( Object b0, Object b1, Supplier<Boolean> predicate ) {
+    private static PolyBoolean compNullExecute( PolyValue b0, PolyValue b1, Supplier<Boolean> predicate ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }

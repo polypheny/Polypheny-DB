@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity.logical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import io.activej.serializer.annotations.SerializeVarLength;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -67,6 +68,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
     public PolyType collectionsType;
 
     @Serialize
+    @SerializeVarLength // fixes bug with 255 length
     @SerializeNullable
     public Integer length; // JDBC length or precision depending on type
 
@@ -113,7 +115,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
             @Deserialize("cardinality") final Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final Collation collation,
-            @Deserialize("defaultValue") CatalogDefaultValue defaultValue ) {
+            @Deserialize("defaultValue") final CatalogDefaultValue defaultValue ) {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
