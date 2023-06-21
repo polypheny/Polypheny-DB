@@ -114,7 +114,7 @@ public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
      * The default implementation assumes that tables cannot do either of these operations, therefore it adds a {@link Project} that projects {@code NULL} values for the extra fields,
      * using the {@link AlgBuilder#project(Iterable)} method.
      *
-     * Sub-classes, representing table types that have these capabilities, should override.
+     * Subclasses, representing table types that have these capabilities, should override.
      *
      * @param fieldsUsed Bitmap of the fields desired by the consumer
      * @param extraFields Extra fields, not advertised in the table's row-type, wanted by the consumer
@@ -138,7 +138,7 @@ public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
             nameList.add( field.getName() );
         }
 
-        // Project nulls for the extra fields. (Maybe a sub-class table has extra fields, but we don't.)
+        // Project nulls for the extra fields. (Maybe a subclass table has extra fields, but we don't.)
         for ( AlgDataTypeField extraField : extraFields ) {
             exprList.add( rexBuilder.ensureType( extraField.getType(), rexBuilder.constantNull(), true ) );
             nameList.add( extraField.getName() );

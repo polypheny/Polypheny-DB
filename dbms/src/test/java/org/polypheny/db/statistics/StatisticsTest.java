@@ -201,18 +201,17 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                            NATION_TEST_DATA
-                    );
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                            REGION_TEST_DATA
-                    );
-                } finally {
-                    connection.rollback();
-                }
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
+                        NATION_TEST_DATA
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.region" ),
+                        REGION_TEST_DATA
+                );
+            } finally {
+                connection.rollback();
             }
         }
     }
@@ -223,13 +222,13 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( DATE_TABLE );
-                    statement.executeUpdate( "INSERT INTO statisticschema.nulldate VALUES(0, null)" );
 
-                } finally {
-                    connection.rollback();
-                }
+                statement.executeUpdate( DATE_TABLE );
+                statement.executeUpdate( "INSERT INTO statisticschema.nulldate VALUES(0, null)" );
+
+            } finally {
+                connection.rollback();
+
             }
         }
     }
@@ -240,33 +239,33 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                            NATION_TEST_DATA
-                    );
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                            REGION_TEST_DATA
-                    );
-                    waiter.await( 20, TimeUnit.SECONDS );
-                    Snapshot snapshot = Catalog.getInstance().getSnapshot();
-                    LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();
-                    LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" ).orElseThrow();
 
-                    Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                    Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
+                        NATION_TEST_DATA
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.region" ),
+                        REGION_TEST_DATA
+                );
+                waiter.await( 20, TimeUnit.SECONDS );
+                Snapshot snapshot = Catalog.getInstance().getSnapshot();
+                LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();
+                LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" ).orElseThrow();
 
-                    Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
-                    Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
+                Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
-                    connection.commit();
-                } catch ( InterruptedException e ) {
-                    log.error( "Caught exception test", e );
-                } finally {
-                    connection.rollback();
-                }
+                Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
+                Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
+
+                connection.commit();
+            } catch ( InterruptedException e ) {
+                log.error( "Caught exception test", e );
+            } finally {
+                connection.rollback();
             }
+
         }
     }
 
@@ -276,22 +275,22 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    assertStatisticsConvertTo( 180, 3 );
-                    statement.executeUpdate( "DELETE FROM statisticschema.nationdelete" );
-                    connection.commit();
 
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
-                            ImmutableList.of()
-                    );
-                    assertStatisticsConvertTo( 320, 0 ); // normally the system is a lot faster, but in some edge-cases this seems necessary
+                assertStatisticsConvertTo( 180, 3 );
+                statement.executeUpdate( "DELETE FROM statisticschema.nationdelete" );
+                connection.commit();
 
-                    connection.commit();
-                } finally {
-                    connection.rollback();
-                }
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
+                        ImmutableList.of()
+                );
+                assertStatisticsConvertTo( 320, 0 ); // normally the system is a lot faster, but in some edge-cases this seems necessary
+
+                connection.commit();
+            } finally {
+                connection.rollback();
             }
+
         }
     }
 
@@ -300,34 +299,26 @@ public class StatisticsTest {
         try {
             boolean successfull = false;
             int count = 0;
-            boolean inCatalog = true;
             while ( !successfull && count < maxSeconds ) {
                 waiter.await( 1, TimeUnit.SECONDS );
-                Snapshot snapshot = Catalog.getInstance().getSnapshot();
-                if ( snapshot.rel().getTable( "statisticschema", "nationdelete" ) == null ) {
+                if ( Catalog.snapshot().rel().getTable( "statisticschema", "nationdelete" ).isEmpty() ) {
                     count++;
-                    inCatalog = false;
                     continue;
                 }
-                inCatalog = true;
-                LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nationdelete" ).orElseThrow();
+                LogicalTable catalogTableNation = Catalog.snapshot().rel().getTable( "statisticschema", "nationdelete" ).orElseThrow();
                 Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {
                     successfull = true;
-
                 }
                 count++;
             }
 
-            if ( !successfull && inCatalog ) {
+            if ( !successfull ) {
                 Assert.fail( String.format( "RowCount did not diverge to the correct number: %d.", target ) );
             }
 
-            if ( inCatalog ) {
-                // collection was removed too fast, so the count was already removed -> returns null
-                log.warn( "Collection was already removed from the catalog, therefore the count will be null, which is correct" );
-            }
+            // collection was removed too fast, so the count was already removed -> returns null
 
         } catch ( InterruptedException e ) {
             log.error( "Caught exception test", e );

@@ -29,6 +29,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -151,14 +154,20 @@ public class IdentifierNamespace extends AbstractNamespace {
             }
         }
         List<String> ns = id.names;
+
         if ( ns.size() == 1 ) {
-            return new EntityNamespace( validator, validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, ns.get( 0 ) ).orElseThrow() );
+            List<LogicalTable> tables = validator.snapshot.rel().getTables( Catalog.defaultNamespaceId, Pattern.of( ns.get( 0 ) ) );
+            if ( tables.size() > 1 ) {
+                throw new GenericRuntimeException( "Too many tables" );
+            } else if ( tables.size() == 1 ) {
+                return new EntityNamespace( validator, tables.get( 0 ) );
+            } else if ( !validator.snapshot.rel().getTables( null, Pattern.of( ns.get( 0 ) ) ).isEmpty() ) {
+                return new EntityNamespace( validator, validator.snapshot.rel().getTables( null, Pattern.of( ns.get( 0 ) ) ).get( 0 ) );
+            }
         } else if ( ns.size() == 2 ) {
             return new EntityNamespace( validator, validator.snapshot.rel().getTable( ns.get( 0 ), ns.get( 1 ) ).orElseThrow() );
-        } else {
-            throw new RuntimeException();
         }
-
+        throw new GenericRuntimeException( "Table not found" );
     }
 
 

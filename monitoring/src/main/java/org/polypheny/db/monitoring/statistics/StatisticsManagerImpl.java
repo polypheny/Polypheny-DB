@@ -754,6 +754,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             long tableId = this.tablesToUpdate.poll();
             if ( Catalog.getInstance().getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
                 reevaluateTable( tableId );
+                return;
             }
             tableStatistic.remove( tableId );
         }

@@ -160,4 +160,16 @@ public class LogicalTable extends LogicalEntity {
 
     }
 
+
+    @Override
+    public String toString() {
+        return "LogicalTable{" +
+                "primaryKey=" + primaryKey +
+                ", id=" + id +
+                ", entityType=" + entityType +
+                ", namespaceType=" + namespaceType +
+                ", name='" + name + '\'' +
+                '}';
+    }
+
 }
