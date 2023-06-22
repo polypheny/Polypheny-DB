@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -160,13 +161,15 @@ public class PolyDouble extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyDouble item ) {
-                    out.writeDouble( item.value );
+                    out.writeUTF8Nullable( item.value == null ? null : item.value.toString() );
+                    ;
                 }
 
 
                 @Override
                 public PolyDouble decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyDouble( in.readDouble() );
+                    @Nullable String d = in.readUTF8Nullable();
+                    return new PolyDouble( d == null ? null : Double.valueOf( d ) );
                 }
             };
         }

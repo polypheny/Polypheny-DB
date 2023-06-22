@@ -18,10 +18,8 @@ package org.polypheny.db.runtime.functions;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +32,7 @@ import org.bson.BsonValue;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -56,44 +55,6 @@ public class MqlFunctions {
         // empty on purpose
     }
 
-
-    /**
-     * This method extracts the provided the filter from the input.
-     *
-     * @param input an arbitrary object, from which the value is extracted
-     * @param filters a filter, in the form key1.key2.key3 {@code ->} [key1, key2, key3]
-     * @return the extracted value or null if no value was matched
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static Object docQueryValue( Object input, List<String> filters ) {
-        input = deserializeBsonIfNecessary( input );
-        ArrayList<String> filtersCopy = new ArrayList<>( filters );
-        while ( filtersCopy.size() != 0 && input != null ) {
-            if ( input instanceof Map ) {
-                if ( ((Map<?, ?>) input).containsKey( filtersCopy.get( 0 ) ) ) {
-                    input = ((Map<?, ?>) input).get( filtersCopy.get( 0 ) );
-                    filtersCopy.remove( 0 );
-                } else {
-                    input = null;
-                }
-            } else if ( input instanceof List && filtersCopy.get( 0 ).matches( "[0-9]*" ) ) {
-                int pos = Integer.parseInt( filtersCopy.get( 0 ) );
-                if ( ((List<?>) input).size() >= pos ) {
-                    input = ((List<?>) input).get( pos );
-                    filtersCopy.remove( 0 );
-                } else {
-                    input = null;
-                }
-            } else {
-                input = null;
-            }
-        }
-        if ( filtersCopy.size() > 0 ) {
-            return null;
-        }
-
-        return input;
-    }
 
 
     @SuppressWarnings("UnusedDeclaration")
@@ -333,40 +294,16 @@ public class MqlFunctions {
      * @return a filtered object/document
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static BsonValue docQueryExclude( Object input, List<List<String>> excluded ) {
-        if ( !(input instanceof String) ) {
+    public static PolyValue docQueryExclude( PolyValue input, List<List<String>> excluded ) {
+        if ( !(input.isDocument()) ) {
             return null;
         }
 
-        BsonValue doc = BsonDocument.parse( (String) input );
-
-        if ( excluded.size() == 0 ) {
-            return doc;
-        }
-
-        excludeBson( doc, excluded );
-        return doc;
-    }
-
-
-    /**
-     * Scans the object/document and removes matching filters
-     *
-     * @param input the object/document, form which the filters are removed
-     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] {@code ->} [[key1, key2, key3],[key1, key2]]
-     * @return a filtered object/document
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static BsonValue docQueryExclude( BsonValue input, List<List<String>> excluded ) {
-        if ( !input.isDocument() ) {
-            return input;
-        }
-
         if ( excluded.size() == 0 ) {
             return input;
         }
 
-        excludeBson( input, excluded );
+        excludeBson( input.asDocument(), excluded );
         return input;
     }
 
@@ -404,9 +341,9 @@ public class MqlFunctions {
      * @return if the provided object/document conforms to the regex
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docRegexMatch( Object input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
-        if ( input instanceof String ) {
-            String comp = (String) input;
+    public static PolyBoolean docRegexMatch( PolyValue input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
+        if ( input.isString() ) {
+            String comp = (String) input.asString().value;
             int flags = 0;
             flags |= Pattern.DOTALL;
             if ( isInsensitive ) {
@@ -423,14 +360,14 @@ public class MqlFunctions {
                 flags |= Pattern.DOTALL;
             }
 
-            return Pattern.compile( ".*" + regex + ".*", flags ).matcher( comp ).matches();
+            return PolyBoolean.of( Pattern.compile( ".*" + regex + ".*", flags ).matcher( comp ).matches() );
         }
-        return false;
+        return PolyBoolean.FALSE;
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docJsonMatch( Object input, String json ) {
+    public static PolyBoolean docJsonMatch( PolyValue input, String json ) {
         // TODO use schema validator library
         throw new RuntimeException( "NOT IMPLEMENTED" );
     }
@@ -443,12 +380,12 @@ public class MqlFunctions {
      * @return the array
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static List docGetArray( Object input ) {
-        input = deserializeBsonIfNecessary( input );
-        if ( input instanceof List ) {
-            return (List) input;
+    public static PolyList<?> docGetArray( PolyValue input ) {
+        // input = deserializeBsonIfNecessary( input );
+        if ( input.isList() ) {
+            return input.asList();
         }
-        return Collections.emptyList();
+        return PolyList.of();
     }
 
 
@@ -460,7 +397,7 @@ public class MqlFunctions {
      * @return the element at the specified position, else null
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static Object docItemAny( List input, int index ) {
+    private static PolyValue docItemAny( List<PolyValue> input, int index ) {
         // mongo starts at 0 and allows retrieving from behind with negative
         if ( input.size() > Math.abs( index ) ) {
             if ( index < 0 ) {
@@ -480,11 +417,8 @@ public class MqlFunctions {
      * @return the element at the specified position, else null
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docItemAny( PolyValue input, Object index ) {
-        if ( index instanceof BigDecimal ) {
-            return docItem( input, ((BigDecimal) index).intValue() );
-        }
-        return docItem( input, (Integer) index );
+    public static PolyValue docItemAny( PolyValue input, Object index ) {
+        return docItem( input, ((Number) index).intValue() );
     }
 
 
@@ -513,9 +447,9 @@ public class MqlFunctions {
      * @return if the size matches
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docSizeMatch( Object input, int size ) {
-        if ( input instanceof List ) {
-            return PolyBoolean.of( ((List<?>) input).size() == size );
+    public static PolyBoolean docSizeMatch( PolyValue input, int size ) {
+        if ( input.isList() ) {
+            return PolyBoolean.of( input.asList().size() == size );
         }
         return PolyBoolean.FALSE;
     }
@@ -644,11 +578,11 @@ public class MqlFunctions {
      * @return the sliced elements
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docSlice( Object input, int skip, int elements ) {
-        if ( !(input instanceof List) ) {
+    public static PolyValue docSlice( PolyValue input, int skip, int elements ) {
+        if ( !(input.isList()) ) {
             return null;
         } else {
-            List<?> list = ((List<?>) input);
+            PolyList<?> list = input.asList();
             // if elements is negative the selection starts from the end
             int end;
             int start;
@@ -659,7 +593,7 @@ public class MqlFunctions {
                 end = Math.max( 0, list.size() - skip );
                 start = Math.max( 0, end + elements );
             }
-            return list.subList( start, end );
+            return (PolyValue) list.subList( start, end );
         }
     }
 
@@ -670,16 +604,16 @@ public class MqlFunctions {
      * @param doc the document to scan
      * @param excluded the element to exclude
      */
-    private static void excludeBson( BsonValue doc, List<List<String>> excluded ) {
+    private static void excludeBson( PolyValue doc, List<List<String>> excluded ) {
         if ( doc.isDocument() ) {
             List<String> firsts = excluded.stream().map( e -> e.get( 0 ) ).collect( Collectors.toList() );
-            List<String> toRemove = new ArrayList<>();
+            List<PolyString> toRemove = new ArrayList<>();
             doc.asDocument().forEach( ( key, value ) -> {
                 int pos = 0;
                 List<Integer> matches = new ArrayList<>();
                 boolean remove = false;
                 for ( String first : firsts ) {
-                    if ( key.equals( first ) ) {
+                    if ( key.value.equals( first ) ) {
                         if ( excluded.get( pos ).size() > 1 ) {
                             // the matching goes deeper
                             matches.add( pos );
@@ -691,7 +625,7 @@ public class MqlFunctions {
                     pos++;
                 }
                 if ( !remove && matches.size() > 0 ) {
-                    excludeBson( value, matches.stream().map( i -> excluded.get( i ).subList( 1, excluded.get( i ).size() ) ).collect( Collectors.toList() ) );
+                    excludeBson( value.asDocument(), matches.stream().map( i -> excluded.get( i ).subList( 1, excluded.get( i ).size() ) ).collect( Collectors.toList() ) );
                 } else if ( remove ) {
                     toRemove.add( key );
                 }

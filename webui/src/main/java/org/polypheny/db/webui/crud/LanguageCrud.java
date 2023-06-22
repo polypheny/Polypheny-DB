@@ -270,8 +270,12 @@ public class LanguageCrud {
     }
 
 
-    private static String toJson( PolyValue src ) {
-        return src.isString() ? src.asString().value : PolyValue.GSON.toJson( src );
+    private static String toJson( @Nullable PolyValue src ) {
+        return src == null
+                ? PolyValue.GSON.toJson( (Object) null )
+                : src.isString()
+                        ? src.asString().value
+                        : PolyValue.GSON.toJson( src );
     }
 
 

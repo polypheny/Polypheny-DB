@@ -36,6 +36,7 @@ package org.polypheny.db.runtime;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -52,7 +53,7 @@ import org.jetbrains.annotations.NotNull;
 public class ComparableList<T extends Comparable<T>> implements Comparable<ComparableList<T>>, List<T> {
 
     // used by BuiltInMethod
-    public static final ComparableList<?> COMPARABLE_EMPTY_LIST = ComparableList.of();
+    public static final ComparableList<?> COMPARABLE_EMPTY_LIST = (ComparableList<?>) ComparableList.of();
 
     @Delegate
     List<T> list;
@@ -66,6 +67,36 @@ public class ComparableList<T extends Comparable<T>> implements Comparable<Compa
     @SafeVarargs
     public static <T extends Comparable<T>> ComparableList<T> of( T... elements ) {
         return new ComparableList<>( Arrays.asList( elements ) );
+    }
+
+
+    public static <T extends Comparable<T>> ComparableList<T> of( Object e0 ) {
+        return new ComparableList<>( Collections.singletonList( (T) e0 ) );
+    }
+
+
+    public static <T extends Comparable<T>> ComparableList<T> of( Object e0, Object e1 ) {
+        return new ComparableList<>( Arrays.asList( (T) e0, (T) e1 ) );
+    }
+
+
+    public static <T extends Comparable<T>> ComparableList<T> of( Object e0, Object e1, Object e2 ) {
+        return new ComparableList<>( Arrays.asList( (T) e0, (T) e1, (T) e2 ) );
+    }
+
+
+    public static <T extends Comparable<T>> ComparableList<T> of( Object e0, Object e1, Object e2, Object e3 ) {
+        return new ComparableList<>( Arrays.asList( (T) e0, (T) e1, (T) e2, (T) e3 ) );
+    }
+
+
+    public static <T extends Comparable<T>> ComparableList<T> of( Object e0, Object e1, Object e2, Object e3, Object e4 ) {
+        return new ComparableList<>( Arrays.asList( (T) e0, (T) e1, (T) e2, (T) e3, (T) e4 ) );
+    }
+
+
+    public static <T extends Comparable<T>> ComparableList<T> of( Object e0, Object e1, Object e2, Object e3, Object e4, Object e5 ) {
+        return new ComparableList<>( Arrays.asList( (T) e0, (T) e1, (T) e2, (T) e3, (T) e4, (T) e5 ) );
     }
 
 
