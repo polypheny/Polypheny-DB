@@ -130,8 +130,8 @@ public class CypherFunctions {
             PolyString key = (PolyString) o[5];
             PolyString val = (PolyString) o[6];
 
-            if ( id != null && !id.equals( oldId ) ) {
-                if ( oldId != null ) {
+            if ( id != null && !id.isNull() && !id.equals( oldId ) ) {
+                if ( oldId != null && !oldId.isNull() ) {
                     edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
                 }
                 oldId = id;
@@ -142,14 +142,14 @@ public class CypherFunctions {
             }
             oldLabels.add( label );
 
-            if ( key != null ) {
+            if ( key != null && !key.isNull() ) {
                 // id | key | value | source | target
                 // 13 | null| null | 12      | 10 ( no key value present )
                 oldProps.put( key, val );
             }
         }
 
-        if ( oldId != null ) {
+        if ( oldId != null && !oldId.isNull() ) {
             edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
         }
 
@@ -178,7 +178,7 @@ public class CypherFunctions {
             PolyString key = (PolyString) o[3];
             PolyString val = (PolyString) o[4];
 
-            if ( id != null && !id.equals( oldId ) ) {
+            if ( id != null && !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null ) {
                     nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) );
                 }
@@ -186,17 +186,17 @@ public class CypherFunctions {
                 oldLabels = new HashSet<>();
                 oldProps = new HashMap<>();
             }
-            if ( label != null && !label.value.equals( "$" ) ) {
+            if ( label != null && !label.isNull() && !label.value.equals( "$" ) ) {
                 // eventually no labels
                 oldLabels.add( label );
             }
-            if ( key != null ) {
+            if ( key != null && !key.isNull() ) {
                 // eventually no properties present
                 oldProps.put( key, val );
             }
         }
 
-        if ( oldId != null ) {
+        if ( oldId != null && !oldId.isNull() ) {
             nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) );
         }
 

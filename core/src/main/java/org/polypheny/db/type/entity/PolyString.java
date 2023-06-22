@@ -20,6 +20,7 @@ import com.google.common.base.Charsets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
@@ -135,6 +136,12 @@ public class PolyString extends PolyValue {
 
 
     @Override
+    public boolean isNull() {
+        return value == null;
+    }
+
+
+    @Override
     public PolySerializable copy() {
         return null;
     }
@@ -171,7 +178,7 @@ public class PolyString extends PolyValue {
 
         @Override
         public JsonElement serialize( PolyString src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
+            return src.value == null ? JsonNull.INSTANCE : new JsonPrimitive( src.value );
         }
 
     }
