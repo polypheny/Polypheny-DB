@@ -117,7 +117,7 @@ public class TestGraphObject implements TestObject {
         }
 
         if ( labels != null ) {
-            matches &= labels.containsAll( other.labels );
+            matches &= other.labels.containsAll( labels );
         }
 
         return matches;

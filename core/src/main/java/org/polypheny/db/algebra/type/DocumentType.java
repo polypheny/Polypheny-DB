@@ -34,6 +34,8 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static final String DOCUMENT_ID = "_id";
     public static final String DOCUMENT_DATA = "_data";
+    public static final Integer ID_SIZE = 2024;
+    public static final Integer DATA_SIZE = 2024;
     public StructKind structKind;
 
     public final List<AlgDataTypeField> fixedFields;

@@ -22,6 +22,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -275,7 +276,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyGraph asGraph() {
-        return new PolyGraph( null, null, null );
+        return new PolyGraph( null, new FlatMap<>(), new FlatMap<>() );
     }
 
 
@@ -287,7 +288,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public PolyNumber asNumber() {
-        return PolyInteger.of( (Integer) null );
+        return PolyInteger.of( null );
     }
 
 

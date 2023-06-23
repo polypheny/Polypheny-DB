@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.helper;
 
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -32,12 +33,12 @@ public class TestNode extends TestGraphObject {
 
     @SafeVarargs
     public static TestNode from( Pair<String, Object>... properties ) {
-        return from( null, properties );
+        return from( List.of(), properties );
     }
 
 
     @SafeVarargs
-    public static TestNode from( List<String> labels, Pair<String, Object>... properties ) {
+    public static TestNode from( @NotNull List<String> labels, Pair<String, Object>... properties ) {
         return new TestNode( null, getProps( properties ), getLabels( labels ) );
     }
 

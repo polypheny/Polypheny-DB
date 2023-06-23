@@ -36,6 +36,7 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -61,6 +62,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -145,6 +147,8 @@ public class TestHelper {
             return PolyDouble.of( (Double) value );
         } else if ( value instanceof String ) {
             return PolyString.of( (String) value );
+        } else if ( value instanceof Collection ) {
+            return PolyList.of( ((List<?>) value).stream().map( TestHelper::toPolyValue ).collect( Collectors.toList() ) );
         }
 
         throw new NotImplementedException();

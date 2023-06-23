@@ -29,6 +29,10 @@ import org.polypheny.db.util.Collation;
 public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
 
     public static final String GRAPH_ID = "_id";
+    public static final int ID_SIZE = 36;
+    public static final int LABEL_SIZE = 255;
+    public static final int KEY_SIZE = 2024;
+    public static final int VALUE_SIZE = 2024;
 
     public final List<AlgDataTypeField> fixedFields;
 

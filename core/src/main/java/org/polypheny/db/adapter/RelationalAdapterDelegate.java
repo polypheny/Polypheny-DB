@@ -97,6 +97,7 @@ import org.polypheny.db.util.Pair;
 @AllArgsConstructor
 public class RelationalAdapterDelegate implements Modifiable {
 
+
     public final Adapter<RelStoreCatalog> callee;
 
     public final RelStoreCatalog catalog;
@@ -230,15 +231,15 @@ public class RelationalAdapterDelegate implements Modifiable {
                     inputs.addAll( ((LogicalLpgValues) raw).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), Catalog.snapshot() ) );
                 }
                 if ( raw instanceof LpgProject ) {
-                    return attachRelationalRelatedInsert( (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                    return attachRelationalRelatedInsert( raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
                 }
 
                 break;
             case UPDATE:
-                return attachRelationalGraphUpdate( (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                return attachRelationalGraphUpdate( raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
 
             case DELETE:
-                return attachRelationalGraphDelete( (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                return attachRelationalGraphDelete( raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
             case MERGE:
                 break;
         }
@@ -322,26 +323,38 @@ public class RelationalAdapterDelegate implements Modifiable {
     @Override
     public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
 
-        PhysicalTable node = createSubstitution( context, logical, allocation, "_node_", List.of( "id", "label" ) );
+        PhysicalTable node = createSubstitution( context, logical, allocation, "_node_", List.of(
+                Pair.of( "id", GraphType.ID_SIZE ),
+                Pair.of( "label", GraphType.LABEL_SIZE ) ) );
 
-        PhysicalTable nProperties = createSubstitution( context, logical, allocation, "_nProperties_", List.of( "id", "key", "value" ) );
+        PhysicalTable nProperties = createSubstitution( context, logical, allocation, "_nProperties_", List.of(
+                Pair.of( "id", GraphType.ID_SIZE ),
+                Pair.of( "key", GraphType.KEY_SIZE ),
+                Pair.of( "value", GraphType.VALUE_SIZE ) ) );
 
-        PhysicalTable edge = createSubstitution( context, logical, allocation, "_edge_", List.of( "id", "label", "_l_id_", "_r_id_" ) );
+        PhysicalTable edge = createSubstitution( context, logical, allocation, "_edge_", List.of(
+                Pair.of( "id", GraphType.ID_SIZE ),
+                Pair.of( "label", GraphType.LABEL_SIZE ),
+                Pair.of( "_l_id_", GraphType.ID_SIZE ),
+                Pair.of( "_r_id_", GraphType.ID_SIZE ) ) );
 
-        PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_eProperties_", List.of( "id", "key", "value" ) );
+        PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_eProperties_", List.of(
+                Pair.of( "id", GraphType.ID_SIZE ),
+                Pair.of( "key", GraphType.KEY_SIZE ),
+                Pair.of( "value", GraphType.VALUE_SIZE ) ) );
 
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( node.id, nProperties.id, edge.id, eProperties.id ) ) );
     }
 
 
-    private PhysicalTable createSubstitution( Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<String> names ) {
+    private PhysicalTable createSubstitution( Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<Pair<String, Integer>> nameLength ) {
         IdBuilder builder = IdBuilder.getInstance();
         LogicalTable table = new LogicalTable( builder.getNewLogicalId(), name + logical.id, logical.namespaceId, logical.entityType, null, logical.modifiable );
         List<LogicalColumn> columns = new ArrayList<>();
 
         int i = 0;
-        for ( String col : names ) {
-            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col, table.id, table.namespaceId, i, PolyType.VARCHAR, null, 2024, null, null, null, false, Collation.getDefaultCollation(), null );
+        for ( Pair<String, Integer> col : nameLength ) {
+            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.getLeft(), table.id, table.namespaceId, i, PolyType.VARCHAR, null, col.right, null, null, null, false, Collation.getDefaultCollation(), null );
             columns.add( column );
             i++;
         }
@@ -378,7 +391,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( DocumentType.DOCUMENT_ID, DocumentType.DOCUMENT_DATA ) );
+        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( Pair.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE ), Pair.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE ) ) );
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( physical.id ) ) );
     }
 
@@ -529,7 +542,7 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private AlgNode attachRelationalGraphUpdate( LogicalLpgModify alg, AlgBuilder builder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
+    private AlgNode attachRelationalGraphUpdate( AlgNode input, LogicalLpgModify alg, AlgBuilder builder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
@@ -553,12 +566,12 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private AlgNode attachRelationalGraphDelete( LogicalLpgModify alg, AlgBuilder algBuilder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
-        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
+    private AlgNode attachRelationalGraphDelete( AlgNode input, LogicalLpgModify alg, AlgBuilder algBuilder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
+        //AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyDelete( alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -570,7 +583,7 @@ public class RelationalAdapterDelegate implements Modifiable {
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.DELETE );
-        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
+        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), input, transformer );
 
     }
 
@@ -586,8 +599,8 @@ public class RelationalAdapterDelegate implements Modifiable {
                 .scan( nodesTable )
                 .filter(
                         algBuilder.equals(
-                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
+                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
+                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ) ) );
 
         inputs.add( getModify( nodesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
 
@@ -596,8 +609,8 @@ public class RelationalAdapterDelegate implements Modifiable {
                 .scan( nodePropertiesTable )
                 .filter(
                         algBuilder.equals(
-                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
+                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
+                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ) ) );
 
         inputs.add( getModify( nodePropertiesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
 
@@ -605,12 +618,11 @@ public class RelationalAdapterDelegate implements Modifiable {
     }
 
 
-    private AlgNode attachRelationalRelatedInsert( LogicalLpgModify alg, AlgBuilder algBuilder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
-        AlgNode project = alg;
+    private AlgNode attachRelationalRelatedInsert( AlgNode input, LogicalLpgModify alg, AlgBuilder algBuilder, CatalogEntity nodesTable, CatalogEntity nodePropertiesTable, CatalogEntity edgesTable, CatalogEntity edgePropertiesTable ) {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyInsert( alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -622,7 +634,7 @@ public class RelationalAdapterDelegate implements Modifiable {
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.INSERT );
-        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
+        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), alg, transformer );
     }
 
 
@@ -634,8 +646,8 @@ public class RelationalAdapterDelegate implements Modifiable {
         LogicalProject preparedNodes = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ) ), // label
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.LABEL_SIZE ), 1 ) ), // label
                 nodesTable.getRowType() );
 
         inputs.add( getModify( nodesTable, preparedNodes, Modify.Operation.INSERT, null, null ) );
@@ -643,9 +655,9 @@ public class RelationalAdapterDelegate implements Modifiable {
         LogicalProject preparedNProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.KEY_SIZE ), 1 ), // key
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.VALUE_SIZE ), 2 ) ), // value
                 nodePropertiesTable.getRowType() );
 
         inputs.add( getModify( nodePropertiesTable, preparedNProperties, Modify.Operation.INSERT, null, null ) );
@@ -664,8 +676,8 @@ public class RelationalAdapterDelegate implements Modifiable {
         algBuilder
                 .scan( edgesTable )
                 .filter( algBuilder.equals(
-                        rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
+                        rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ) ) );
 
         inputs.add( getModify( edgesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
 
@@ -674,8 +686,8 @@ public class RelationalAdapterDelegate implements Modifiable {
                 .scan( edgePropertiesTable )
                 .filter(
                         algBuilder.equals(
-                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ),
-                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ) ) );
+                                rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
+                                rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ) ) );
 
         return inputs;
     }
@@ -689,10 +701,10 @@ public class RelationalAdapterDelegate implements Modifiable {
         LogicalProject preparedEdges = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // label
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 2 ), // source
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 3 ) ), // target
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.LABEL_SIZE ), 1 ), // label
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 2 ), // source
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 3 ) ), // target
                 edgesTable.getRowType() );
 
         inputs.add( getModify( edgesTable, preparedEdges, Modify.Operation.INSERT, null, null ) );
@@ -700,9 +712,9 @@ public class RelationalAdapterDelegate implements Modifiable {
         LogicalProject preparedEProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.KEY_SIZE ), 1 ), // key
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.VALUE_SIZE ), 2 ) ), // value
                 edgePropertiesTable.getRowType() );
 
         inputs.add( getModify( edgePropertiesTable, preparedEProperties, Modify.Operation.INSERT, null, null ) );

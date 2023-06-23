@@ -749,7 +749,7 @@ public class CypherToAlgConverter {
 
                 AtomicLong id = new AtomicLong(); // todo dl maybe move into values
                 List<PolyString> adjustedNames = Pair.left( nodesAndEdges ).stream()
-                        .map( n -> Objects.requireNonNullElseGet( n, () -> "EXPR$" + id.getAndIncrement() ) )
+                        .map( n -> Objects.requireNonNullElseGet( n.value, () -> "EXPR$" + id.getAndIncrement() ) )
                         .map( Object::toString )
                         .map( PolyString::of )
                         .collect( Collectors.toList() );

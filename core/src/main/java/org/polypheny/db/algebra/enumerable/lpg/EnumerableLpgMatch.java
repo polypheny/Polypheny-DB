@@ -39,9 +39,10 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -172,16 +173,16 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
                 if ( i == 0 ) {
                     enumerable = enumerable.hashJoin(
                             iter.next(),
-                            a0 -> ComparableList.of(),
-                            a0 -> ComparableList.of(),
-                            ( a0, a1 ) -> new Object[]{ a0, a1 } );
+                            a0 -> PolyList.of(),
+                            a0 -> PolyList.of(),
+                            ( a0, a1 ) -> new PolyValue[]{ (PolyValue) a0, (PolyValue) a1 } );
                 } else {
                     int index = i;
                     enumerable = enumerable.hashJoin(
                             iter.next(),
-                            a0 -> ComparableList.of(),
-                            a0 -> ComparableList.of(),
-                            ( a0, a1 ) -> asObjectArray( (Object[]) a0, a1, index ) );
+                            a0 -> PolyList.of(),
+                            a0 -> PolyList.of(),
+                            ( a0, a1 ) -> asObjectArray( (PolyValue[]) a0, (PolyValue) a1, index ) );
                 }
                 i++;
             }
@@ -192,8 +193,8 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
     }
 
 
-    public static Object[] asObjectArray( Object[] a0, Object a1, int index ) {
-        Object[] array = new Object[index + 2];
+    public static PolyValue[] asObjectArray( PolyValue[] a0, PolyValue a1, int index ) {
+        PolyValue[] array = new PolyValue[index + 2];
         if ( index + 1 >= 0 ) {
             System.arraycopy( a0, 0, array, 0, index + 1 );
         }
