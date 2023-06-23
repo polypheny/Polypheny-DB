@@ -68,8 +68,8 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
                                 .stream()
                                 .map( p -> Expressions.call(
                                         BuiltInMethod.PAIR_OF.method,
-                                        Expressions.constant( p.getKey(), String.class ),
-                                        EnumUtils.getExpression( p.getValue(), Object.class ) ) ).collect( Collectors.toList() ) ) ) );
+                                        p.getKey().asExpression(),
+                                        p.getValue().asExpression() ) ).collect( Collectors.toList() ) ) ) );
     }
 
 

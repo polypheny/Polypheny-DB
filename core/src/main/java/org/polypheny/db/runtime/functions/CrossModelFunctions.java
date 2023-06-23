@@ -34,7 +34,9 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -104,7 +106,7 @@ public class CrossModelFunctions {
         context.setParameterValues( List.of( values ) );
         context.setParameterTypes( typeBackup );
 
-        return Linq4j.singletonEnumerable( 1 );
+        return Linq4j.singletonEnumerable( PolyInteger.of( 1 ) );
     }
 
 
@@ -284,7 +286,7 @@ public class CrossModelFunctions {
         context.setParameterValues( List.of( values ) );
         context.setParameterTypes( typeBackup );
 
-        return Linq4j.singletonEnumerable( values.size() );
+        return Linq4j.singletonEnumerable( PolyLong.of( values.size() ) );
 
     }
 
@@ -404,7 +406,7 @@ public class CrossModelFunctions {
         context.setParameterValues( List.of( values ) );
         context.setParameterTypes( typeBackup );
 
-        return Linq4j.singletonEnumerable( values.size() );
+        return Linq4j.singletonEnumerable( PolyLong.of( values.size() ) );
 
     }
 
