@@ -24,9 +24,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
+import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -88,8 +90,6 @@ public class MqttStreamPlugin extends Plugin {
                 new QueryInterfaceSettingList( "topics", false, true, true, null )
         );
 
-        private final String uniqueName;
-
         private final String broker;
 
         private final int brokerPort;
@@ -105,7 +105,6 @@ public class MqttStreamPlugin extends Plugin {
         public MqttStreamServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
             //this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
-            this.uniqueName = uniqueName;
             // Add information page
             monitoringPage = new MonitoringPage();
             broker = settings.get( "broker" );
@@ -119,7 +118,7 @@ public class MqttStreamPlugin extends Plugin {
             // commented code used for SSL connection
             client = MqttClient.builder()
                                .useMqttVersion3()
-                               .identifier( uniqueName )
+                               .identifier( getUniqueName() )
                                .serverHost( broker )
                                .serverPort( brokerPort )
                                //.useSslWithDefaultConfig()
@@ -154,9 +153,10 @@ public class MqttStreamPlugin extends Plugin {
 
             client.disconnect().whenComplete((disconn, throwable)-> {
                         if(throwable != null) {
-                            log.info( "{} could not disconnected from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
+                            log.info( "{} could not disconnect from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
                         } else {
                             log.info( "{} stopped." , INTERFACE_NAME);
+                            topics.clear();
                             monitoringPage.remove();
                         }
                     }
@@ -177,12 +177,12 @@ public class MqttStreamPlugin extends Plugin {
         public void subscribe(String topic) {
 
             if ( !topics.contains(topic) ) {
-
                 client.subscribeWith()
                      .topicFilter(topic)
-                     .callback(publish -> {
+                     .callback(subMsg -> {
                          // TODO:Process the received message
-                         log.info(String.format("Received Message from topic %s : %s.", topic, publish.getPayload()));
+                         log.info("Received Message from topic {} : {}.", subMsg.getTopic().toString(), subMsg.getPayload());
+                         processMsg(subMsg);
                      })
                      .send()
                      .whenComplete((subAck, throwable) -> {
@@ -190,9 +190,10 @@ public class MqttStreamPlugin extends Plugin {
                              log.info("Subscription was not successfull. Please try again.");
                          } else {
                              topics.add(topic);
-                             log.info("Successfull subscription to {}.", topic);
+                             log.info("Successful subscription to topic {}.", topic);
                          }
-                     }).notifyAll(); /** notifys that subscription is finished. Now publish can be started.**/
+                     });
+                //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
 
             }
 
@@ -213,27 +214,50 @@ public class MqttStreamPlugin extends Plugin {
             }
         }
 
-        
+
         @Override
         protected void reloadSettings( List<String> updatedSettings ) {
-            // updatedSettings only has the name of field that has been changed!
+            // updatedSettings only has the name of fields that has been changed!
             if (updatedSettings.contains("topics")) {
                 List<String> newTopicsList = Arrays.asList(this.getCurrentSettings().get("topics").split( ", " ));
 
                 for ( String newTopic : newTopicsList) {
                     if(!topics.contains(newTopic)) {
                         subscribe(newTopic);
+                        log.info(String.format("subscribed to new topic: %s", newTopic));
                     }
                 }
 
                 for (String oldTopic : topics) {
                     if(!newTopicsList.contains(oldTopic)) {
                         unsubscribe(oldTopic);
+                        log.info(String.format("unsubscribed form old topic: %s", oldTopic));
                     }
                 }
             }
 
         }
+
+        void processMsg(Mqtt3Publish subMsg) {
+            String msg = StreamProcessing.processMsg(subMsg);
+
+
+        }
+
+        /**
+        @Override
+        protected List<String> applySettings( Map<String, String> newSettings ) {
+            List<String> updatedSettings = new ArrayList<>();
+            for ( Map.Entry<String, String> newSetting : newSettings.entrySet() ) {
+                if ( !Objects.equals( this.settings.get( newSetting.getKey() ), newSetting.getValue() ) ) {
+                    this.settings.put( newSetting.getKey(), newSetting.getValue() );
+                    updatedSettings.add( newSetting.getKey() );
+                }
+            }
+
+            return updatedSettings;
+        }
+         **/
 
 
         @Override
@@ -259,7 +283,7 @@ public class MqttStreamPlugin extends Plugin {
             public MonitoringPage() {
                 InformationManager im = InformationManager.getInstance();
 
-                informationPage = new InformationPage(uniqueName, INTERFACE_NAME).fullWidth().setLabel("Interfaces");
+                informationPage = new InformationPage(getUniqueName(), INTERFACE_NAME).fullWidth().setLabel("Interfaces");
                 informationGroupTopics = new InformationGroup(informationPage, "Subscribed Topics").setOrder(1);
 
                 im.addPage( informationPage );
