@@ -28,14 +28,12 @@ import java.util.NoSuchElementException;
 
 @Slf4j
 public class StreamProcessing {
-    private Byte message;
-    // Message printed: Optional[java.nio.HeapByteBufferR[pos=0 lim=5 cap=5]].
-    //new String( new byte[]{info}, "US-ASCII" )
+
     public static String processMsg(Mqtt3Publish subMsg) {
         String msg = toString(subMsg);
         String info = extractInfo(msg);
-        if (validateMsg(msg)) {
-            return msg;
+        if (validateMsg(info)) {
+            return info;
         } else {
             log.error( "Message is not valid!" );
             return null;
