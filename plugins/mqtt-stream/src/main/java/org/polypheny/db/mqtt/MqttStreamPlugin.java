@@ -181,7 +181,7 @@ public class MqttStreamPlugin extends Plugin {
                      .topicFilter(topic)
                      .callback(subMsg -> {
                          // TODO:Process the received message
-                         log.info("Received Message from topic {} : {}.", subMsg.getTopic().toString(), subMsg.getPayload());
+                         log.info("Received message from topic {}.", subMsg.getTopic().toString());
                          processMsg(subMsg);
                      })
                      .send()
@@ -239,8 +239,9 @@ public class MqttStreamPlugin extends Plugin {
         }
 
         void processMsg(Mqtt3Publish subMsg) {
+            //TODO: attention: return values, not correct, might need a change of type.
             String msg = StreamProcessing.processMsg(subMsg);
-
+            StreamCapture.saveMsgInDocument(getUniqueName(), subMsg.getTopic().toString(), msg);
 
         }
 
