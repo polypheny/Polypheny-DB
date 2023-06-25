@@ -28,8 +28,8 @@ import org.polypheny.db.util.Pair;
 
 public class RefactorFunctions {
 
-    public static PolyValue get( PolyDocument map, String key ) {
-        return map.get( PolyString.of( key ) );
+    public static PolyValue get( PolyDocument map, PolyString key ) {
+        return map.get( key );
     }
 
 

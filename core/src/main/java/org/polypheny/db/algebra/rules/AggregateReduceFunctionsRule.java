@@ -52,6 +52,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
@@ -720,6 +721,10 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
      * @param exprs The expressions to compute the original agg calls.
      */
     protected void newCalcAlg( AlgBuilder algBuilder, AlgDataType rowType, List<RexNode> exprs ) {
+        if ( algBuilder.peek().getModel() == NamespaceType.DOCUMENT ) {
+            algBuilder.documentProject( exprs, rowType.getFieldNames() );
+            return;
+        }
         algBuilder.project( exprs, rowType.getFieldNames() );
     }
 

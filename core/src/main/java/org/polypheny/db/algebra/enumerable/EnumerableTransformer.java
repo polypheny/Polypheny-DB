@@ -55,7 +55,6 @@ import org.polypheny.db.runtime.functions.RefactorFunctions;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -367,8 +366,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                 raw = Expressions.convert_( raw, PolyDocument.class );
             } else {
                 UnaryExpression element = Expressions.convert_( target, PolyDocument.class );
-                raw = Expressions.call( RefactorFunctions.class, "get", element, Expressions.constant( field.getName() ) );
-                raw = Expressions.convert_( raw, PolyValue.class );
+                raw = Expressions.call( RefactorFunctions.class, "get", element, PolyString.of( field.getName() ).asExpression() );
             }
             // serialize
             expressions.add( Expressions.call( RefactorFunctions.class, "fromDocument", raw ) );

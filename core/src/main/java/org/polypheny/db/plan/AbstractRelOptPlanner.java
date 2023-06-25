@@ -262,12 +262,9 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public void addRuleOnRuntime( AlgOptRule operands ) {
+    public void addRuleDuringRuntime( AlgOptRule operands ) {
 
     }
-
-
-    ;
 
 
     @Override

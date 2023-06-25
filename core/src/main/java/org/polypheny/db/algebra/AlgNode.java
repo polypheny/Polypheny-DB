@@ -35,6 +35,7 @@ package org.polypheny.db.algebra;
 
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -43,8 +44,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptNode;
@@ -53,6 +54,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Litmus;
 
@@ -371,7 +373,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
     default NamespaceType getModel() {
-        return NamespaceType.RELATIONAL;
+        return Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel();
     }
 
     /**

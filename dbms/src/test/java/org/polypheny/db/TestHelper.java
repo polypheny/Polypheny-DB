@@ -444,7 +444,7 @@ public class TestHelper {
         public static List<String> arrayToDoc( List<Object[]> values, String... names ) {
             List<String> docs = new ArrayList<>();
             for ( Object[] doc : values ) {
-                docs.add( "{" + Pair.zip( Arrays.asList( names ), Arrays.asList( doc ) ).stream().map( p -> p.left + ":" + ((p.right != null ? "\"" + p.right + "\"" : null)) ).collect( Collectors.joining( "," ) ) + "}" );
+                docs.add( "{" + Pair.zip( Arrays.asList( names ), Arrays.asList( doc ) ).stream().map( p -> p.left + ":" + ((p.right != null ? (p.right instanceof String ? "\"" + p.right + "\"" : p.right.toString()) : null)) ).collect( Collectors.joining( "," ) ) + "}" );
             }
             return docs;
 

@@ -87,7 +87,7 @@ public class JdbcConvention extends Convention.Impl {
     @Override
     public void register( AlgOptPlanner planner ) {
         for ( AlgOptRule rule : JdbcRules.rules( this ) ) {
-            planner.addRuleOnRuntime( rule );
+            planner.addRuleDuringRuntime( rule );
         }
         planner.addRule( FilterSetOpTransposeRule.INSTANCE );
         //planner.addRule( ProjectRemoveRule.INSTANCE );

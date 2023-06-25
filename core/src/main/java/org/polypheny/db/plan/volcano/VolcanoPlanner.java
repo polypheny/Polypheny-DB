@@ -1232,7 +1232,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public void addRuleOnRuntime( AlgOptRule rule ) {
+    public void addRuleDuringRuntime( AlgOptRule rule ) {
         if ( !addRule( rule ) ) {
             return;
         }

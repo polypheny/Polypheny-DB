@@ -859,11 +859,11 @@ public class MqlToAlgConverter {
                         .stream()
                         .map( el -> {
                             RexInputRef ref = new RexInputRef( el.getIndex(), finalNode.getRowType().getFieldList().get( el.getIndex() ).getType() );
-                            if ( !el.getName().equals( "_id" ) ) {
+                            /*if ( !el.getName().equals( "_id" ) ) {
                                 return DocumentUtil.createJsonify( ref, jsonType );
-                            } else {
+                            } else {*/
                                 return ref;
-                            }
+                            //}
                         } )
                         .collect( Collectors.toList() ), node.getRowType().getFieldNames() );
         return node;
@@ -2320,10 +2320,10 @@ public class MqlToAlgConverter {
         } else if ( includes.size() > 0 ) {
             List<RexNode> values = includesOrder.stream().map( includes::get ).collect( Collectors.toList() );
 
-            /*if ( !includes.containsKey( "_id" ) && !excludedId ) {
-                includesOrder.add( 0, "_id" );
-                values.add( 0, RexInputRef.of( 0, rowType ) );
-            }*/
+            if ( !includes.containsKey( DocumentType.DOCUMENT_ID ) && !excludes.contains( DocumentType.DOCUMENT_ID ) ) {
+                includesOrder.add( 0, DocumentType.DOCUMENT_ID );
+                values.add( 0, translateDocValue( 0, rowType, DocumentType.DOCUMENT_ID, false ) );
+            }
 
             if ( isAddFields ) {
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
@@ -2334,7 +2334,7 @@ public class MqlToAlgConverter {
                 }
             }
 
-            // the _data field does not longer exist, as we made a projection "out" of it
+            // the _data field does no longer exist, as we made a projection "out" of it
             this._dataExists = false;
 
             return LogicalDocumentProject.create( node, values, includesOrder );

@@ -70,6 +70,7 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializer;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionarySerializer;
@@ -128,6 +129,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .registerTypeAdapter( PolyNode.class, new PolyNodeSerializer() )
             .registerTypeAdapter( PolyEdge.class, new PolyEdgeSerializer() )
             .registerTypeAdapter( PolyDictionary.class, new PolyDictionarySerializer() )
+            .registerTypeAdapter( PolyDocument.class, new PolyDocumentSerializer() )
             .registerTypeAdapter( PolyBigDecimal.class, new PolyBigDecimalSerializer() )
             .registerTypeAdapter( PolyList.class, new PolyListSerializer<>() )
             .registerTypeAdapter( PolyString.class, new PolyStringSerializer() )
@@ -145,8 +147,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() );
 
 
-    public static final Gson GSON = GSON_BUILDER
-            .create();
+    public static final Gson GSON = GSON_BUILDER.create();
 
 
     @Serialize
@@ -716,6 +717,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         }
 
     }
+
 
     public static class PolyValueTypeAdapter extends TypeAdapter<PolyValue> {
 

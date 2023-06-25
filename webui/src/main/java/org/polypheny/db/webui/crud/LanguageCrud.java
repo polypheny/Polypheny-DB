@@ -55,7 +55,9 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
@@ -259,10 +261,10 @@ public class LanguageCrud {
 
     private static DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
 
-        List<PolyValue> data = implementation.getSingleRows( statement, noLimit );
+        List<PolyValue[]> data = implementation.getArrayRows( statement, noLimit );
 
         return DocResult.builder()
-                .data( data.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) )
+                .data( data.stream().map( src -> toJson( src, implementation.rowType.getFieldNames().stream().map( PolyString::of ).collect( Collectors.toList() ) ) ).toArray( String[]::new ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )
                 .namespaceName( request.database )
@@ -270,12 +272,20 @@ public class LanguageCrud {
     }
 
 
+    private static String toJson( @Nullable PolyValue[] src, List<PolyString> fieldNames ) {
+        Map<PolyString, PolyValue> map = new HashMap<>();
+        // Correct way is to always return only one document
+        for ( int i = 0; i < src.length; i++ ) {
+            map.put( fieldNames.get( i ), src[i] );
+        }
+        return toJson( new PolyDocument( map ) );
+    }
+
+
     private static String toJson( @Nullable PolyValue src ) {
         return src == null
                 ? null
-                : src.isString()
-                        ? src.asString().value
-                        : PolyValue.GSON.toJson( src );
+                : src.toJson();
     }
 
 

@@ -204,7 +204,7 @@ public interface AlgOptPlanner {
      */
     void registerSchema( AlgOptSchema schema );
 
-    void addRuleOnRuntime( AlgOptRule operands );
+    void addRuleDuringRuntime( AlgOptRule operands );
 
     /**
      * Adds a listener to this planner.

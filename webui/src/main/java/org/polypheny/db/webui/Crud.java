@@ -155,7 +155,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
@@ -3318,7 +3317,7 @@ public class Crud implements InformationObserver {
                         }
                     }
                     if ( header.get( counter ).dataType.contains( "Path" ) ) {
-                        temp[counter] = ((GraphObject) o).toJson();
+                        temp[counter] = o.toJson();
                     }
                 }
                 counter++;

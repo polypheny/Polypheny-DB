@@ -339,7 +339,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
 
 
     public static <K, V> List<V> right( final List<? extends Map.Entry<K, V>> pairs ) {
-        return new AbstractList<V>() {
+        return new AbstractList<>() {
             @Override
             public V get( int index ) {
                 return pairs.get( index ).getValue();

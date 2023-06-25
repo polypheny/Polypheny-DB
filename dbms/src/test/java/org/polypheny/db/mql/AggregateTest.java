@@ -62,7 +62,7 @@ public class AggregateTest extends MqlTestTemplate {
         List<String> expected = Arrays.asList(
                 "{test: 1}",
                 "{test: 1.3}",
-                "{test: test}" );
+                "{test: \"test\"}" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $project( "{\"test\":1}" ) );
@@ -221,10 +221,9 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void groupAvgTest() {
         List<String> expected = MongoConnection.arrayToDoc( List.of(
-                        new Object[]{ "val2", "5.0" },
-                        new Object[]{ "val1", "7.0" } ),
-                "test",
-                "avgValue" );
+                        new Object[]{ "val2", 5 },
+                        new Object[]{ "val1", 7 } ),
+                "test", "avgValue" );
         insertMany( DATA_1 );
 
         DocResult result = aggregate( $group( "{\"_id\":\"$test\", \"avgValue\": {\"$avg\":\"$key\"}}" ) );

@@ -110,6 +110,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -576,6 +577,9 @@ public class AlgBuilder {
         final AlgDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
         final int offset = inputOffset( inputCount, inputOrdinal );
         final RexInputRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
+        if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
+            return ref;
+        }
         final AlgDataTypeField aliasField = frame.relFields().get( fieldOrdinal );
         if ( !alias || field.getName().equals( aliasField.getName() ) ) {
             return ref;
@@ -1878,7 +1882,7 @@ public class AlgBuilder {
                                 .collect( Collectors.toList() ) );
                 aggregateCall =
                         AggregateCall.create(
-                                (Operator & AggFunction) aggCall1.aggFunction,
+                                aggCall1.aggFunction,
                                 aggCall1.distinct,
                                 aggCall1.approximate,
                                 args,
@@ -1908,15 +1912,17 @@ public class AlgBuilder {
         for ( Integer groupField : groupSet.asList() ) {
             RexNode node = registrar.extraNodes.get( groupField );
             final Kind kind = node.getKind();
-            switch ( kind ) {
-                case INPUT_REF:
+            if ( Objects.requireNonNull( kind ) == Kind.INPUT_REF ) {
+                if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
+                    fields.add( frame.unstructured.get( ((RexInputRef) node).getIndex() ) );
+                } else {
                     fields.add( frame.structured.get( ((RexInputRef) node).getIndex() ) );
-                    break;
-                default:
-                    String name = aggregateFields.get( i ).getName();
-                    AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( name, i, node.getType() );
-                    fields.add( new RelField( ImmutableSet.of(), fieldType ) );
-                    break;
+                }
+
+            } else {
+                String name = aggregateFields.get( i ).getName();
+                AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( name, i, node.getType() );
+                fields.add( new RelField( ImmutableSet.of(), fieldType ) );
             }
             i++;
         }
