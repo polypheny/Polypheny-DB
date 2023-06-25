@@ -626,7 +626,7 @@ public class CypherToAlgConverter {
             String adjustedRight = adjustingFunction.apply( ((RexLiteral) right).value.asString().value );
             return rexBuilder.makeCall(
                     booleanType,
-                    OperatorRegistry.get( OperatorName.LIKE ),
+                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LIKE ),
                     List.of( left, rexBuilder.makeLiteral( adjustedRight ) ) );
         }
 

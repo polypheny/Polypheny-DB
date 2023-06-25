@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
@@ -217,7 +218,7 @@ public class CrossModelFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).collect( Collectors.toList() ) ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }
@@ -369,9 +370,9 @@ public class CrossModelFunctions {
         Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
-        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
-        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
-        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
+        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
+        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.LABEL_SIZE );
+        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.VALUE_SIZE );
 
         context.resetParameterValues();
         for ( PolyType polyType : order ) {

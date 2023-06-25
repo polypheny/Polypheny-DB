@@ -29,7 +29,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @Getter
 public abstract class GraphPropertyHolder extends GraphObject {
 
-    // every parameter in a PolyValue, which is used during quering needs to be wrapped
+    // every parameter in a PolyValue, which is used during querying needs to be wrapped
     @Expose
     public final PolyDictionary properties;
     @Expose

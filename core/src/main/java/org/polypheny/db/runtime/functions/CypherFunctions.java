@@ -348,8 +348,8 @@ public class CypherFunctions {
      * @return the adjusted graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<PolyString> labels, boolean replace ) {
-        if ( replace ) {
+    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<PolyString> labels, PolyBoolean replace ) {
+        if ( replace.value ) {
             target.labels.clear();
         }
         target.setLabels( PolyList.of( labels ) );
@@ -367,8 +367,8 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<PolyString> keys, List<PolyValue> values, boolean replace ) {
-        if ( replace ) {
+    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<PolyString> keys, List<PolyValue> values, PolyBoolean replace ) {
+        if ( replace.value ) {
             target.properties.clear();
         }
 
@@ -406,6 +406,14 @@ public class CypherFunctions {
     public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, String key ) {
         target.properties.remove( key );
         return target;
+    }
+
+
+    public static PolyBoolean like( PolyValue b0, PolyValue b1 ) {
+        if ( b0.isString() && b1.isString() ) {
+            return Functions.like( b0.asString(), b1.asString() );
+        }
+        return PolyBoolean.FALSE;
     }
 
 

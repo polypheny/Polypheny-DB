@@ -35,10 +35,15 @@ public abstract class PolyNumber extends PolyValue {
         if ( b0 == null || b1 == null ) {
             return -1;
         }
-        if ( PolyType.APPROX_TYPES.contains( b0.type ) || PolyType.APPROX_TYPES.contains( b1.type ) ) {
+        if ( b0.isApprox() || b1.isApprox() ) {
             return b0.DoubleValue().compareTo( b1.DoubleValue() );
         }
         return b0.LongValue().compareTo( b1.LongValue() );
+    }
+
+
+    private boolean isApprox() {
+        return PolyType.APPROX_TYPES.contains( type );
     }
 
 
@@ -172,5 +177,11 @@ public abstract class PolyNumber extends PolyValue {
 
 
     public abstract PolyNumber negate();
+
+
+    @Override
+    public String toJson() {
+        return BigDecimalValue() == null ? null : BigDecimalValue().toEngineeringString();
+    }
 
 }

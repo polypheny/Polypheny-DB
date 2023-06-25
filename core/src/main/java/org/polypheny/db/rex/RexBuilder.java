@@ -681,6 +681,10 @@ public class RexBuilder {
      * @return Call to CAST operator
      */
     public RexNode makeAbstractCast( AlgDataType type, RexNode exp ) {
+        if ( exp.getType().equals( type ) ) {
+            return exp;
+        }
+
         return new RexCall( type, OperatorRegistry.get( OperatorName.CAST ), ImmutableList.of( exp ) );
     }
 
@@ -1465,6 +1469,14 @@ public class RexBuilder {
                 } else {
                     return PolyTimeStamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
                 }
+            case ARRAY:
+                ArrayType arrayType = (ArrayType) type;
+                List<PolyValue> list = new ArrayList<>();
+                List<Object> objects = (List<Object>) o;
+                for ( Object object : objects ) {
+                    list.add( clean( object, arrayType.getComponentType() ) );
+                }
+                return PolyList.copyOf( list );
             default:
                 if ( o instanceof PolyValue ) {
                     return (PolyValue) o;

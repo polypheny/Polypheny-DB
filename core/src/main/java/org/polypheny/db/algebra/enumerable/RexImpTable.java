@@ -374,6 +374,7 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ANY_MATCH ), implementor );
         map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SINGLE_MATCH ), implementor );
         map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NONE_MATCH ), implementor );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.GRAPH_PATH_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.GRAPH_NODE_EXTRACT.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.GRAPH_EXTRACT_FROM_PATH.method, NullPolicy.NONE );

@@ -127,8 +127,8 @@ public class MatchTest extends CypherTestTemplate {
     public void simpleMultiplePropertyTest() {
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res = execute( "MATCH (n:Animal) RETURN n.name, n.age" );
-        assert is( res, Type.STRING, 0 );
-        assert is( res, Type.STRING, 1 );
+        assert is( res, Type.ANY, 0 ); // we never have guaranties for the types
+        assert is( res, Type.ANY, 1 );
         assert containsIn( res, true, 0, "n.name", TestLiteral.from( "Kira" ) );
         assert containsIn( res, true, 1, "n.age", TestLiteral.from( "3" ) );
     }
@@ -139,7 +139,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_NODE_ANIMAL );
         GraphResult res = execute( "MATCH (n:Person) RETURN n, n.age" );
         assertNode( res, 0 );
-        assert is( res, Type.STRING, 1 );
+        assert is( res, Type.ANY, 1 );
     }
 
     ///////////////////////////////////////////////

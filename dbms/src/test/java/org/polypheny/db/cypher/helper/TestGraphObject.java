@@ -97,7 +97,6 @@ public class TestGraphObject implements TestObject {
                     if ( entry.getValue().isList() ) {
                         int i = 0;
                         PolyList<PolyString> list = entry.getValue().asList();
-                        PolyValue property = other.properties.get( entry.getKey() );
 
                         for ( PolyValue o : list ) {
                             matches &= o.equals( ((List<?>) properties.get( entry.getKey() )).get( i ) );

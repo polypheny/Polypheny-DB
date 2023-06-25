@@ -2695,7 +2695,7 @@ public class Functions {
         return number instanceof BigDecimal ? (BigDecimal) number
                 : number instanceof BigInteger ? new BigDecimal( (BigInteger) number )
                         : number instanceof Long ? new BigDecimal( number.longValue() )
-                                : new BigDecimal( number.doubleValue() );
+                                : BigDecimal.valueOf( number.doubleValue() );
     }
 
 

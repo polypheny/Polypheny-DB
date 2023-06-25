@@ -1420,6 +1420,8 @@ public enum OperatorName {
 
     CYPHER_REMOVE_PROPERTIES( LangFunctionOperator.class ),
 
+    CYPHER_LIKE( LangFunctionOperator.class ),
+
     // CROSS MODEL FUNCTION
 
     CROSS_MODEL_ITEM( LangFunctionOperator.class ),
