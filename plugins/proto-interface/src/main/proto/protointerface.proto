@@ -16,8 +16,10 @@ service ProtoInterface {
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc FetchResult(FetchRequest) returns (Frame) {}
+
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
   rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
+  rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
 
   rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
   rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
@@ -45,6 +47,9 @@ message LanguageResponse {
 
 message CommitRequest {}
 message CommitResponse{}
+
+message RollbackRequest {}
+message RollbackResponse{}
 
 message StatementStatus {
   int32 statementId = 1;
