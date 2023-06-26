@@ -1146,7 +1146,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( root.alg.getCluster().getTypeFactory(), root.validatedRowType );
-        List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
+        //TODO DL: get metadata instead of null
+        List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null);
 
         final Prefer prefer = Prefer.ARRAY;
         final Convention resultConvention =
