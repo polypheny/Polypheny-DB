@@ -112,7 +112,11 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
         ProtoInterfaceClient client = getClient();
         ProtoInterfaceStatement statement = statementManager.getStatement( client, fetchRequest.getStatementId() );
-        Frame frame = statement.fetch( fetchRequest.getOffset() );
+        Frame frame;
+        if (fetchRequest.hasFetchSize() ) {
+             frame = statement.fetch( fetchRequest.getOffset() , fetchRequest.getFetchSize());
+        }
+        frame = statement.fetch( fetchRequest.getOffset());
         responseObserver.onNext( frame );
         responseObserver.onCompleted();
     }
