@@ -111,7 +111,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
 
     public Frame relationalFetch( long offset ) {
-        if (currentImplementation == null) {
+        if ( currentImplementation == null ) {
             throw new ProtoInterfaceServiceException( "Can't fetch frames of an unexecuted statement" );
         }
         synchronized ( protoInterfaceClient ) {
@@ -123,7 +123,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             Iterator<Object> sectionIterator = LimitIterator.of( iterator, maxRowCount );
             startOrResumeStopwatch();
             // TODO TH: clean up this mess
-            List<List<PolyValue>> rows = (List<List<PolyValue>>)(List<?>)MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
+            List<List<PolyValue>> rows = (List<List<PolyValue>>) (List<?>) MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
             //List<String> column_labels = TODO get row names
             executionStopWatch.suspend();
             boolean isDone = !iterator.hasNext();
