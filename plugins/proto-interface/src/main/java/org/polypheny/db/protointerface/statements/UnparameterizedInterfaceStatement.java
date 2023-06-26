@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgRoot;
@@ -32,6 +33,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.protointerface.PropertyKeys;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
@@ -87,47 +89,51 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
 
     @Override
-    public Frame fetch( long offset ) {
+    public Frame fetch( long offset, int fetchSize) {
         switch ( queryLanguage.getNamespaceType() ) {
             case RELATIONAL:
-                return relationalFetch( offset );
+                return relationalFetch( offset, fetchSize );
             case GRAPH:
-                return graphFetch( offset );
+                return graphFetch( offset, fetchSize );
             case DOCUMENT:
-                return documentFetch( offset );
+                return documentFetch( offset, fetchSize );
         }
         throw new ProtoInterfaceServiceException( "Should never be thrown." );
     }
 
+    @Override
+    public Frame fetch( long offset ) {
+        int fetchSize = Integer.parseInt( PropertyKeys.getDefaultOf( PropertyKeys.FETCH_SIZE ) );
+        return fetch( offset,  fetchSize);
+    }
 
-    private Frame documentFetch( long offset ) {
+    private Frame documentFetch( long offset, int fetchSize ) {
         throw new NotImplementedException( "Doument fetching is no yet implemented." );
     }
 
 
-    private Frame graphFetch( long offset ) {
+    private Frame graphFetch( long offset, int fetchSize ) {
         throw new NotImplementedException( "Graph Fetching is not yet implmented." );
     }
 
 
-    public Frame relationalFetch( long offset ) {
+    public Frame relationalFetch( long offset, int fetchSize ) {
         if ( currentImplementation == null ) {
             throw new ProtoInterfaceServiceException( "Can't fetch frames of an unexecuted statement" );
         }
         synchronized ( protoInterfaceClient ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "fetch(long {}, int {} )", offset, maxRowCount );
+                log.trace( "fetch(long {}, int {} )", offset, fetchSize );
             }
             Iterator<Object> iterator = getOrCreateIterator();
-            Meta.CursorFactory cursorFactory = currentImplementation.getCursorFactory();
-            Iterator<Object> sectionIterator = LimitIterator.of( iterator, maxRowCount );
+            CursorFactory cursorFactory = currentImplementation.getCursorFactory();
+            Iterator<Object> sectionIterator = LimitIterator.of( iterator, fetchSize );
             startOrResumeStopwatch();
             // TODO TH: clean up this mess
             List<List<PolyValue>> rows = (List<List<PolyValue>>) (List<?>) MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
             //List<String> column_labels = TODO get row names
             executionStopWatch.suspend();
-            boolean isDone = !iterator.hasNext();
-            System.out.println( "Fetch from " + offset + "is last:" + rows.size() );
+            boolean isDone = fetchSize == 0 || rows.size() < fetchSize;
             if ( isDone ) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
