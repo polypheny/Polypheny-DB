@@ -24,10 +24,12 @@ public class PropertyKeys {
     public static final String USERNAME = "user";
     public static final String PASSWORD = "password";
     public static final String AUTOCOMMIT = "autocommit";
+    public static final String FETCH_SIZE = "fetchSize";
 
     private static final Map<String, String> DEFAULT_VALUES =
             ImmutableMap.<String, String>builder()
                     .put(AUTOCOMMIT, "true")
+                    .put(FETCH_SIZE, "100")
                     .build();
 
 
