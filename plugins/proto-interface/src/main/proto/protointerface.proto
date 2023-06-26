@@ -26,6 +26,15 @@ service ProtoInterface {
   rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
 }
 
+message Property {
+  oneof value {
+    string string_value = 1;
+    int32 int_value = 2;
+    int64 long_value = 3;
+    bool boolean_value = 4;
+  }
+}
+
 message ConnectionRequest {
   int32 major_api_version = 1;
   int32 minor_api_version = 2;
@@ -59,6 +68,7 @@ message StatementStatus {
 message FetchRequest {
   int32 statement_id = 1;
   int64 offset = 2;
+  optional int32 fetch_size = 3;
 }
 
 message UnparameterizedStatement {
