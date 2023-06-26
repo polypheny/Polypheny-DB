@@ -63,7 +63,7 @@ public class ClientManager {
                 .setClientUUID( connectionRequest.getClientUuid() )
                 .setConnectionProperties( properties )
                 .setTransactionManager( transactionManager );
-        final CatalogUser user = authenticateUser( properties.get( PropertyKeys.USERNAME ), properties.get( PropertyKeys.PASSWORD ) );
+        final CatalogUser user = authenticateUser( properties.get( PropertyDefaults.USERNAME ), properties.get( PropertyDefaults.PASSWORD ) );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
         if ( properties.containsKey( "namespace" ) ) {
@@ -92,7 +92,7 @@ public class ClientManager {
 
 
     private boolean credentialsPresent( Map<String, String> properties ) {
-        return properties.containsKey( PropertyKeys.USERNAME ) && properties.containsKey( PropertyKeys.PASSWORD );
+        return properties.containsKey( PropertyDefaults.USERNAME ) && properties.containsKey( PropertyDefaults.PASSWORD );
     }
 
 
