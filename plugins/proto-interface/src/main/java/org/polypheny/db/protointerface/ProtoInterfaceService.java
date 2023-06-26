@@ -33,6 +33,8 @@ import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.LanguageResponse;
 import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
+import org.polypheny.db.protointerface.proto.RollbackRequest;
+import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
@@ -120,6 +122,14 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         ProtoInterfaceClient client = getClient();
         client.commitCurrentTransaction();
         responseStreamObserver.onNext( CommitResponse.newBuilder().build() );
+        responseStreamObserver.onCompleted();
+    }
+
+    @Override
+    public void rollbackTransaction( RollbackRequest rollbackRequest, StreamObserver<RollbackResponse> responseStreamObserver ) {
+        ProtoInterfaceClient client = getClient();
+        client.rollbackCurrentTransaction();
+        responseStreamObserver.onNext( RollbackResponse.newBuilder().build() );
         responseStreamObserver.onCompleted();
     }
 
