@@ -16,6 +16,8 @@
 
 package org.polypheny.db.jupyter.model.language;
 
+import java.util.List;
+
 /**
  * Represents a translator for a given Jupyter Kernel Implementation.
  * Its purpose is to transform a query into kernel-language specific code, which can be sent and executed by the kernel.
@@ -24,11 +26,13 @@ package org.polypheny.db.jupyter.model.language;
 public interface JupyterKernelLanguage {
 
     /**
-     * Returns code that can be used to initialize the
-     * connection to polypheny. It is executed exactly once per running kernel and is guaranteed to take place before
+     * Returns code that can be used to initialize the connection to polypheny.
+     * It is executed exactly once per running kernel and is guaranteed to take place before
      * any query is sent.
+     *
+     * @return a list of code fragments that will be executed one after another or null if no initialization code is needed.
      */
-    String getInitCode();
+    List<String> getInitCode();
 
     /**
      * Transforms the specified query into code (possibly split up in several cells) to be executed by the kernel.
@@ -44,8 +48,41 @@ public interface JupyterKernelLanguage {
      * @param namespace the namespace to be used
      * @param varName the name of the variable the result of the query should be assigned to
      * @param expandParams whether the pattern ${variable} should be replaced with the value of the variable
-     * @return the query transformed into code to be executed by the kernel
+     * @return the query transformed into code (possibly multiple parts) to be executed by the kernel
      */
-    String[] transformToQuery( String query, String language, String namespace, String varName, boolean expandParams );
+    List<JupyterQueryPart> transformToQuery( String query, String language, String namespace, String varName, boolean expandParams );
+
+    /**
+     * Similar to getInitCode(), this returns code that can be used to initialize the connection to Polypheny,
+     * but from a notebook running in an arbitrary Jupyter Frontend. It can be assumed that the http interface of Polypheny
+     * is reachable under <a href="http://localhost:13137">...</a>.
+     *
+     * @return a list of code fragments that initializes the connection
+     */
+    List<String> getExportedInitCode();
+
+    /**
+     * Similar to transformToQuery(), this transforms a Polypheny cell into possibly multiple code cells that runs
+     * in any Jupyter Frontend.
+     *
+     * @return a list of code fragments that perform the query and store it in varName
+     */
+    List<String> exportedQuery( String query, String language, String namespace, String varName, boolean expandParams );
+
+
+    class JupyterQueryPart {
+
+        public final boolean silent, allowStdin;
+        public final String code;
+
+
+        public JupyterQueryPart( String code, boolean silent, boolean allowStdin ) {
+            this.silent = silent;
+            this.allowStdin = allowStdin;
+            this.code = code;
+        }
+
+    }
 
 }
+

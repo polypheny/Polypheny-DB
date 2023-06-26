@@ -14,20 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jupyter.model.language;
+package org.polypheny.db.jupyter.model.response;
 
-public class JupyterLanguageFactory {
+import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-    public static JupyterKernelLanguage getKernelLanguage( String kernelName ) {
-        if ( kernelName == null ) {
-            return null;
-        }
-        if ( kernelName.equalsIgnoreCase( "python3" ) ) {
-            return new IPythonKernelLanguage();
-        }
-        // add supported kernels here
+@NoArgsConstructor
+public class NotebookContentModel {
+    // see https://jupyter-server.readthedocs.io/en/latest/developers/rest-api.html
 
-        return null;
-    }
+    @Getter
+    private String name, path, created, format, mimetype, size, writable, type;
+
+    @Getter
+    @SerializedName("last_modified")
+    private String lastModified;
+
+    @Getter
+    private NotebookModel content;
 
 }

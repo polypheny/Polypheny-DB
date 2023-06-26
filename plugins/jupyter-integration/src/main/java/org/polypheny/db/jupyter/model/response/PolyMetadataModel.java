@@ -14,20 +14,33 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jupyter.model.language;
+package org.polypheny.db.jupyter.model.response;
 
-public class JupyterLanguageFactory {
+import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-    public static JupyterKernelLanguage getKernelLanguage( String kernelName ) {
-        if ( kernelName == null ) {
-            return null;
-        }
-        if ( kernelName.equalsIgnoreCase( "python3" ) ) {
-            return new IPythonKernelLanguage();
-        }
-        // add supported kernels here
+@NoArgsConstructor
 
-        return null;
-    }
+public class PolyMetadataModel {
+
+    @Getter
+    @SerializedName("cell_type")
+    private String cellType;
+
+    @Getter
+    private String namespace, language;
+
+    @Getter
+    @SerializedName("result_variable")
+    private String resultVariable;
+
+    @Getter
+    @SerializedName("manual_execution")
+    private Boolean manualExecution;
+
+    @Getter
+    @SerializedName("expand_params")
+    private Boolean expandParams;
 
 }

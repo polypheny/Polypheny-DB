@@ -53,8 +53,6 @@ public class JupyterPlugin extends Plugin {
     private File rootPath;
     private JupyterProxy proxy;
 
-    public static TransactionManager transactionManager;
-
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
@@ -143,6 +141,7 @@ public class JupyterPlugin extends Plugin {
         server.addSerializedRoute( REST_PATH + "/file/<path>", proxy::file, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/container/status", this::containerStatus, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/status", proxy::connectionStatus, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/export/<path>", proxy::export, HandlerType.GET );
 
         server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", proxy::createFile, HandlerType.POST );
         server.addSerializedRoute( REST_PATH + "/sessions", proxy::createSession, HandlerType.POST );
@@ -200,9 +199,9 @@ public class JupyterPlugin extends Plugin {
         @Override
         public void initExtension( TransactionManager manager, Authenticator authenticator ) {
             log.info( "Initializing Jupyter Extension" );
+            JupyterSessionManager.getInstance().setTransactionManager( manager );
             plugin.startContainer();
             plugin.onContainerRunning();
-            JupyterPlugin.transactionManager = manager;
         }
 
     }

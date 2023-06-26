@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.transaction.TransactionManager;
 
 public class JupyterSessionManager {
 
@@ -35,6 +36,10 @@ public class JupyterSessionManager {
     @Getter
     @Setter
     private String defaultKernel;
+
+    @Getter
+    @Setter
+    private TransactionManager transactionManager;
 
 
     public static JupyterSessionManager getInstance() {

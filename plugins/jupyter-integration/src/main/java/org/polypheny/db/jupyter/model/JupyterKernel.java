@@ -39,12 +39,18 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.jupyter.JupyterPlugin;
 import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage;
+import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage.JupyterQueryPart;
 import org.polypheny.db.jupyter.model.language.JupyterLanguageFactory;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 
+/**
+ * Instances correspond to running Kernels in the Jupyter Server docker container.
+ * Handles messaging from and to the Kernel, adhering to the
+ * <a href="https://jupyter-client.readthedocs.io/en/stable/messaging.html">Jupyter message specification</a> (v5.4).
+ */
 @Slf4j
 public class JupyterKernel {
 
@@ -60,6 +66,7 @@ public class JupyterKernel {
     private final JsonObject statusMsg;
     private boolean isRestarting = false;
     private final Map<String, ActivePolyCell> activePolyCells = new ConcurrentHashMap<>();
+    private final JupyterSessionManager jsm = JupyterSessionManager.getInstance();
 
 
     public JupyterKernel( String kernelId, String name, WebSocket.Builder builder, String host ) {
@@ -107,24 +114,9 @@ public class JupyterKernel {
                 if ( msgType.equals( "status" ) ) {
                     statusMsg.add( "content", json.getAsJsonObject( "content" ) );
                 } else if ( msgType.equals( "shutdown_reply" ) ) {
-                    JsonObject content = json.getAsJsonObject( "content" );
-                    String status = content.get( "status" ).getAsString();
-                    boolean restart = content.get( "restart" ).getAsBoolean();
-                    activePolyCells.clear();
-                    if ( status.equals( "ok" ) && restart ) {
-                        isRestarting = true;
-                    }
+                    handleShutdownReply( json );
                 } else if ( !activePolyCells.isEmpty() && msgType.equals( "input_request" ) ) {
-                    String query = json.getAsJsonObject( "content" ).get( "prompt" ).getAsString();
-                    JsonObject parentHeader = json.getAsJsonObject( "parent_header" );
-                    ActivePolyCell apc = activePolyCells.remove( parentHeader.get( "msg_id" ).getAsString() );
-                    if ( apc == null ) {
-                        return;
-                    }
-                    String result = anyQuery( query, apc.language, apc.namespace );
-                    log.warn( "sending query result: {}", result );
-                    ByteBuffer request = buildInputReply( result, parentHeader );
-                    webSocket.sendBinary( request, true );
+                    handleInputRequest( json );
                     return;
                 }
             } catch ( JsonSyntaxException ignored ) {
@@ -139,6 +131,36 @@ public class JupyterKernel {
                 s.close();
             }
         } );
+    }
+
+
+    private void handleShutdownReply( JsonObject json ) {
+        JsonObject content = json.getAsJsonObject( "content" );
+        String status = content.get( "status" ).getAsString();
+        boolean restart = content.get( "restart" ).getAsBoolean();
+        activePolyCells.clear();
+        if ( status.equals( "ok" ) && restart ) {
+            isRestarting = true;
+        }
+    }
+
+
+    /**
+     * We use input_request messages to execute queries. If an ActivePolyCell exists with the corresponding parent msg_id,
+     * the query specified in the prompt field is executed, else the request is ignored.
+     * The serialized result is sent back as an input_reply message.
+     */
+    private void handleInputRequest( JsonObject json ) {
+        String query = json.getAsJsonObject( "content" ).get( "prompt" ).getAsString();
+        JsonObject parentHeader = json.getAsJsonObject( "parent_header" );
+        ActivePolyCell apc = activePolyCells.remove( parentHeader.get( "msg_id" ).getAsString() );
+        if ( apc == null ) {
+            return;
+        }
+        String result = anyQuery( query, apc.language, apc.namespace );
+        log.warn( "sending query result: {}", result );
+        ByteBuffer request = buildInputReply( result, parentHeader );
+        webSocket.sendBinary( request, true );
     }
 
 
@@ -165,15 +187,13 @@ public class JupyterKernel {
             isRestarting = false;
         }
         try {
-            String[] queries = kernelLanguage.transformToQuery( query, language, namespace, variable, expandParams );
+            List<JupyterQueryPart> queries = kernelLanguage.transformToQuery( query, language, namespace, variable, expandParams );
             activePolyCells.put( uuid, new ActivePolyCell( language, namespace ) );
 
-            for ( String code : queries ) {
-                // TODO: correctly silence cells
-                ByteBuffer request = buildExecutionRequest( code, uuid, false, true, true );
+            for ( JupyterQueryPart part : queries ) {
+                ByteBuffer request = buildExecutionRequest( part.code, uuid, part.silent, part.allowStdin, true );
                 webSocket.sendBinary( request, true );
-                log.error( "sending query code: {}", code );
-
+                log.error( "sending query code: {}", part.code );
             }
         } catch ( Exception e ) {
             e.printStackTrace();
@@ -188,7 +208,7 @@ public class JupyterKernel {
                 QueryLanguage.from( language ),
                 null,
                 queryRequest,
-                JupyterPlugin.transactionManager,
+                jsm.getTransactionManager(),
                 Catalog.defaultUserId,
                 Catalog.defaultDatabaseId,
                 null );
@@ -198,9 +218,12 @@ public class JupyterKernel {
 
     private void sendInitCode() {
         if ( supportsPolyCells ) {
-            String initCode = kernelLanguage.getInitCode();
-            if ( initCode != null ) {
-                ByteBuffer request = buildExecutionRequest( initCode, true, false, true );
+            List<String> initCode = kernelLanguage.getInitCode();
+            if ( initCode == null ) {
+                return;
+            }
+            for ( String code : initCode ) {
+                ByteBuffer request = buildExecutionRequest( code, true, false, true );
                 webSocket.sendBinary( request, true );
             }
         }
@@ -302,7 +325,7 @@ public class JupyterKernel {
         @Override
         public CompletionStage<?> onClose( WebSocket webSocket, int statusCode, String reason ) {
             log.error( "closed websocket to {}", kernelId );
-            JupyterSessionManager.getInstance().removeKernel( kernelId );
+            jsm.removeKernel( kernelId );
             return Listener.super.onClose( webSocket, statusCode, reason );
         }
 
@@ -311,7 +334,7 @@ public class JupyterKernel {
         public void onError( WebSocket webSocket, Throwable error ) {
             log.error( "error in websocket to {}:\n{}", kernelId, error.getMessage() );
             error.printStackTrace();
-            JupyterSessionManager.getInstance().removeKernel( kernelId );
+            jsm.removeKernel( kernelId );
             Listener.super.onError( webSocket, error );
         }
 

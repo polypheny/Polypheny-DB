@@ -16,23 +16,45 @@
 
 package org.polypheny.db.jupyter.model.language;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
 public class IPythonKernelLanguage implements JupyterKernelLanguage {
 
     @Override
-    public String getInitCode() {
-        return "%load_ext poly";
+    public List<String> getInitCode() {
+        return Collections.singletonList( "%load_ext poly" );
     }
 
 
     @Override
-    public String[] transformToQuery( String query, String language, String namespace, String varName, boolean expandParams ) {
-        String[] queries = new String[2];
+    public List<JupyterQueryPart> transformToQuery( String query, String language, String namespace, String varName, boolean expandParams ) {
+        List<JupyterQueryPart> queries = new LinkedList<>();
         String cleanQuery = query.strip();
 
         // -i: use stdin, -j: output json, -t: query is template
-        queries[0] = (expandParams ? "%%poly -i -j -t load\n" : "%%poly -i -j load\n") + cleanQuery;
-        queries[1] = varName + " = _";
+        queries.add( new JupyterQueryPart(
+                (expandParams ? "%%poly -i -j -t load\n" : "%%poly -i -j load\n") + cleanQuery,
+                false, true ) );
+        queries.add( new JupyterQueryPart( varName + " = _", true, false ) );
         return queries;
+    }
+
+
+    @Override
+    public List<String> getExportedInitCode() {
+        return Collections.singletonList( "%load_ext poly\n%poly db: http://localhost:13137" );
+    }
+
+
+    @Override
+    public List<String> exportedQuery( String query, String language, String namespace, String varName, boolean expandParams ) {
+        List<String> code = new LinkedList<>();
+        String cleanQuery = query.strip();
+        code.add( (expandParams ? "%%poly -t " : "%%poly ") + language + " " + namespace + "\n" + cleanQuery );
+        code.add( varName + " = _" );
+        return code;
     }
 
 }

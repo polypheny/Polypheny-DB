@@ -24,6 +24,10 @@ import java.util.Base64;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.jupyter.JupyterClient.JupyterServerException;
+import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage;
+import org.polypheny.db.jupyter.model.language.JupyterLanguageFactory;
+import org.polypheny.db.jupyter.model.response.NotebookContentModel;
+import org.polypheny.db.jupyter.model.response.NotebookModel;
 import org.polypheny.db.webui.Crud;
 import io.javalin.http.Context;
 
@@ -93,6 +97,32 @@ public class JupyterProxy {
 
     public void connectionStatus( final Context ctx, Crud crud ) {
         forward( ctx, client::getStatus );
+    }
+
+
+    public void export( final Context ctx, Crud crud ) {
+        String path = ctx.pathParam( "path" );
+        String language = ctx.queryParam( "language" );
+        JupyterKernelLanguage exporter = JupyterLanguageFactory.getKernelLanguage( language );
+        if ( exporter == null ) {
+            ctx.status( 404 ).result( "Unknown language: " + language );
+            return;
+        }
+        log.error( "exporting {} with language {}", path, language );
+        try {
+            HttpResponse<String> response = client.getContents( path, "1", null );
+            log.warn( "got response {}", response.body() );
+            NotebookContentModel content = gson.fromJson( response.body(), NotebookContentModel.class );
+            NotebookModel nb = content.getContent();
+            if ( nb == null ) {
+                ctx.status( 404 ).result( "Target must be a notebook" );
+                return;
+            }
+            nb.exportCells( exporter );
+            ctx.json( content );
+        } catch ( JupyterServerException e ) {
+            ctx.status( e.getStatus() ).result( e.getMsg() );
+        }
     }
 
 

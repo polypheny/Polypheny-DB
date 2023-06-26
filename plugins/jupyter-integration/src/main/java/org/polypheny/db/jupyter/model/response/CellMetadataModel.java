@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jupyter.model.language;
+package org.polypheny.db.jupyter.model.response;
 
-public class JupyterLanguageFactory {
+import java.util.List;
+import java.util.Map;
+import lombok.Getter;
 
-    public static JupyterKernelLanguage getKernelLanguage( String kernelName ) {
-        if ( kernelName == null ) {
-            return null;
-        }
-        if ( kernelName.equalsIgnoreCase( "python3" ) ) {
-            return new IPythonKernelLanguage();
-        }
-        // add supported kernels here
+public class CellMetadataModel {
 
-        return null;
-    }
+    private Boolean collapsed, scrolled, deletable, editable;
+    private String format, name;
+    private List<String> tags;
+    private Map<String, Object> jupyter;
+    private Map<String, Object> execution;
+    @Getter
+    private PolyMetadataModel polypheny;
 
 }
