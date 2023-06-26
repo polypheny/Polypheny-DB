@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang3.NotImplementedException;
@@ -33,7 +32,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.protointerface.PropertyKeys;
+import org.polypheny.db.protointerface.PropertyDefaults;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
@@ -103,7 +102,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
     @Override
     public Frame fetch( long offset ) {
-        int fetchSize = Integer.parseInt( PropertyKeys.getDefaultOf( PropertyKeys.FETCH_SIZE ) );
+        int fetchSize = Integer.parseInt( PropertyDefaults.getDefaultOf( PropertyDefaults.FETCH_SIZE ) );
         return fetch( offset,  fetchSize);
     }
 
