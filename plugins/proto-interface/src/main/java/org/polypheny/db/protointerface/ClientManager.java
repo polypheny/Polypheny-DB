@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -23,16 +25,13 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
-import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Slf4j
 public class ClientManager {
+
     private ConcurrentHashMap<String, ProtoInterfaceClient> openConnections;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
@@ -67,7 +66,7 @@ public class ClientManager {
         final CatalogUser user = authenticateUser( properties.get( PropertyKeys.USERNAME ), properties.get( PropertyKeys.PASSWORD ) );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
-        if ( properties.containsKey( "namespace" )) {
+        if ( properties.containsKey( "namespace" ) ) {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.get( "namespace" ) );
         } else {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( Catalog.defaultNamespaceName );
@@ -84,8 +83,8 @@ public class ClientManager {
     }
 
 
-    public ProtoInterfaceClient getClient( String clientUUID ) throws ProtoInterfaceServiceException{
-        if (!openConnections.contains( clientUUID )) {
+    public ProtoInterfaceClient getClient( String clientUUID ) throws ProtoInterfaceServiceException {
+        if ( !openConnections.containsKey( clientUUID ) ) {
             throw new ProtoInterfaceServiceException( "Client not registered" );
         }
         return openConnections.get( clientUUID );
