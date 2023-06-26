@@ -128,9 +128,9 @@ public class ProtoInterfaceClient {
 
 
     public boolean isAutocommit() throws IllegalArgumentException{
-        String isAutocommit = connectionProperties.get( PropertyKeys.AUTOOOMMIT );
+        String isAutocommit = connectionProperties.get( PropertyKeys.AUTOCOMMIT );
         if ( isAutocommit == null ) {
-            isAutocommit = PropertyKeys.getDefaultOf( PropertyKeys.AUTOOOMMIT );
+            isAutocommit = PropertyKeys.getDefaultOf( PropertyKeys.AUTOCOMMIT );
         }
         return Boolean.parseBoolean( isAutocommit );
     }
