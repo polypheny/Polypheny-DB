@@ -394,7 +394,7 @@ public class PolyImplementation<T> {
 
 
     @NotNull
-    private <D> List<D> getRows( Statement statement, Function<T, D> transformer ) {
+    private <D> List<D> getRows( Statement statement, @Nullable Function<T, D> transformer ) {
         bindable = preparedResult.getBindable( cursorFactory );
 
         Iterator<T> iterator = createIterator( bindable, statement, true );

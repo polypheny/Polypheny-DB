@@ -59,13 +59,13 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
-        if ( !input.isDocument() ) {
+        if ( input == null || !input.isDocument() ) {
             return null;
         }
         PolyValue temp = input;
         for ( PolyString filter : filters ) {
             if ( !temp.isDocument() ) {
-                return null;
+                return temp;
             }
             temp = temp.asDocument().get( filter );
             if ( temp == null ) {
@@ -549,7 +549,7 @@ public class MqlFunctions {
 
 
     /**
-     * Helper function, which exectues different provided suppliers and compares the two elements
+     * Helper function, which executes different provided suppliers and compares the two elements
      *
      * @param b0 the left element
      * @param b1 the right element

@@ -19,6 +19,7 @@ package org.polypheny.db.type.entity.document;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
@@ -130,7 +131,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @Override
     public String toJson() {
-        return "{" + map.entrySet().stream().map( e -> String.format( (e.getValue().isString() ? "%s:\"%s\"" : "%s:%s"), e.getKey().toJson(), e.getValue().toJson() ) ).collect( Collectors.joining( "," ) ) + "}";
+        return "{" + map.entrySet().stream().map( e -> String.format( (e.getValue() != null && e.getValue().isString() ? "%s:\"%s\"" : "%s:%s"), e.getKey().toJson(), e.getValue() == null ? JsonNull.INSTANCE.toString() : e.getValue().toJson() ) ).collect( Collectors.joining( "," ) ) + "}";
     }
 
 

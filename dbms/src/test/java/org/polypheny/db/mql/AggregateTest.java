@@ -74,12 +74,10 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void projectMultipleTest() {
         List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
-                        new String[]{ null, "1", "1" },
-                        new String[]{ "{\"key\":\"val\"}", "1.3", "1.3" },
-                        new String[]{ "13", "test", "test" } ),
-                "newName2",
-                "newName1",
-                "test" );
+                        new Object[]{ null, 1, 1 },
+                        new Object[]{ "{\"key\":\"val\"}", 1.3, 1.3 },
+                        new Object[]{ 13, "test", "test" } ),
+                "newName2", "newName1", "test" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $project( "{\"test\":1,\"key\":1}" ), $project( "{\"newName2\":\"$key\",\"newName1\":\"$test\",\"test\":1}" ) );
