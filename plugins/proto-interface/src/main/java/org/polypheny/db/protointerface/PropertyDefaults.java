@@ -19,7 +19,7 @@ package org.polypheny.db.protointerface;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
-public class PropertyKeys {
+public class PropertyDefaults {
 
     public static final String USERNAME = "user";
     public static final String PASSWORD = "password";

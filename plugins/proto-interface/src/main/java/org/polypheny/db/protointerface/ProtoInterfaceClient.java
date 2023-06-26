@@ -16,7 +16,6 @@
 
 package org.polypheny.db.protointerface;
 
-import java.sql.SQLException;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
@@ -128,9 +127,9 @@ public class ProtoInterfaceClient {
 
 
     public boolean isAutocommit() throws IllegalArgumentException{
-        String isAutocommit = connectionProperties.get( PropertyKeys.AUTOCOMMIT );
+        String isAutocommit = connectionProperties.get( PropertyDefaults.AUTOCOMMIT );
         if ( isAutocommit == null ) {
-            isAutocommit = PropertyKeys.getDefaultOf( PropertyKeys.AUTOCOMMIT );
+            isAutocommit = PropertyDefaults.getDefaultOf( PropertyDefaults.AUTOCOMMIT );
         }
         return Boolean.parseBoolean( isAutocommit );
     }
