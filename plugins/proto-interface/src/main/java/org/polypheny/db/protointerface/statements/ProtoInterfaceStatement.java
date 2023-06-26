@@ -35,7 +35,6 @@ import org.polypheny.db.type.entity.PolyValue;
 @Slf4j
 public abstract class ProtoInterfaceStatement {
 
-    private static final int DEFAULT_FETCH_ROW_COUNT = 100;
 
     @Getter
     protected final int statementId;
@@ -44,8 +43,6 @@ public abstract class ProtoInterfaceStatement {
     protected PolyImplementation currentImplementation;
     protected final QueryLanguage queryLanguage;
     protected final String query;
-    @Setter
-    protected int maxRowCount;
 
     protected Iterator<Object> resultIterator;
 
@@ -67,7 +64,6 @@ public abstract class ProtoInterfaceStatement {
         this.queryLanguage = queryLanguage;
         this.query = query;
         this.executionStopWatch = new StopWatch();
-        this.maxRowCount = DEFAULT_FETCH_ROW_COUNT;
     }
 
 
@@ -75,6 +71,7 @@ public abstract class ProtoInterfaceStatement {
 
     public abstract Frame fetch( long offset );
 
+    public abstract Frame fetch( long offset, int fetchSize );
 
     public Frame fetchFirst() {
         return fetch( 0 );
