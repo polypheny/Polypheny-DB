@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime.functions;
+package org.polypheny.db.functions;
 
 import java.util.ArrayList;
 import java.util.Collections;

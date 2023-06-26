@@ -16,7 +16,7 @@
 
 package org.polypheny.db.cypher.helper;
 
-import static org.polypheny.db.runtime.functions.Functions.toBigDecimal;
+import static org.polypheny.db.functions.Functions.toBigDecimal;
 
 import java.util.HashMap;
 import java.util.List;

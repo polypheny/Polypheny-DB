@@ -102,10 +102,10 @@ import org.hamcrest.StringDescription;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.test.Matchers;
 
 

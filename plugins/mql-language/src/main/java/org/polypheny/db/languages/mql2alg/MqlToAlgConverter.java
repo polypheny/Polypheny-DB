@@ -862,7 +862,7 @@ public class MqlToAlgConverter {
                             /*if ( !el.getName().equals( "_id" ) ) {
                                 return DocumentUtil.createJsonify( ref, jsonType );
                             } else {*/
-                                return ref;
+                            return ref;
                             //}
                         } )
                         .collect( Collectors.toList() ), node.getRowType().getFieldNames() );
@@ -2335,11 +2335,16 @@ public class MqlToAlgConverter {
             }
 
             // the _data field does no longer exist, as we made a projection "out" of it
-            this._dataExists = false;
+            // this._dataExists = false;
 
-            return LogicalDocumentProject.create( node, values, includesOrder );
+            return LogicalDocumentProject.create( node, List.of( mergeDocument( values, includesOrder ) ), List.of( "d" ) );
         }
         return node;
+    }
+
+
+    private RexNode mergeDocument( List<RexNode> values, List<String> includesOrder ) {
+        return cluster.getRexBuilder().makeLiteral( null, new DocumentType(), true );
     }
 
 

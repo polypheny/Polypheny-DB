@@ -27,9 +27,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.functions.Functions.FlatProductInputType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.util.BuiltInMethod;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime.functions;
+package org.polypheny.db.functions;
 
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;

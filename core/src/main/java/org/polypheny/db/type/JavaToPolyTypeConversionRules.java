@@ -43,7 +43,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.avatica.util.ArrayImpl;
-import org.polypheny.db.runtime.functions.GeoFunctions;
+import org.polypheny.db.functions.GeoFunctions;
 
 
 /**

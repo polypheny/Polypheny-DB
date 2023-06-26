@@ -948,9 +948,9 @@ public class BsonUtil {
                 PolyList<PolyValue> list = new PolyList<>();
 
                 for ( BsonValue value : input.asArray() ) {
-                    if ( !value.isDocument() ) {
+                    /*if ( !value.isDocument() ) {
                         throw new NotImplementedException();
-                    }
+                    }*/
 
                     list.add( toPolyValue( value ) );
                 }

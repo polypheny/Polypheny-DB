@@ -114,6 +114,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
+    @Override
+    public String toJson() {
+        return value == null ? "null" : value.stream().map( e -> e == null ? "null" : e.isString() ? String.format( "\"%s\"", e.asString().value ) : e.toJson() ).collect( Collectors.joining( ",", "[", "]" ) );
+    }
+
+
     public static class PolyListSerializerDef extends SimpleSerializerDef<PolyList<?>> {
 
         @Override

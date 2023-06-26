@@ -56,7 +56,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyDouble;

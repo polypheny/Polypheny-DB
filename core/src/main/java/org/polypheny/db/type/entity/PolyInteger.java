@@ -98,7 +98,7 @@ public class PolyInteger extends PolyNumber {
         PolyValue val = (PolyValue) o;
 
         if ( val.isNumber() ) {
-            return Objects.equals( value, val.asNumber().intValue() );
+            return PolyNumber.compareTo( this, val.asNumber() ) == 0;
         }
 
         return false;
@@ -117,7 +117,7 @@ public class PolyInteger extends PolyNumber {
             return -1;
         }
 
-        return this.value.compareTo( o.asNumber().intValue() );
+        return PolyNumber.compareTo( this, o.asNumber() );
     }
 
 

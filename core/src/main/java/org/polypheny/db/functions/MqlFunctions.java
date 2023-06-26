@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime.functions;
+package org.polypheny.db.functions;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.schema.document.DocumentUtil;
@@ -65,7 +65,7 @@ public class MqlFunctions {
         PolyValue temp = input;
         for ( PolyString filter : filters ) {
             if ( !temp.isDocument() ) {
-                return temp;
+                return null;
             }
             temp = temp.asDocument().get( filter );
             if ( temp == null ) {
@@ -74,11 +74,6 @@ public class MqlFunctions {
         }
 
         return temp;
-    }
-
-
-    public static Collection<?> docUpdate( Collection<?> sink ) {
-        return null;
     }
 
 
@@ -343,7 +338,7 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docRegexMatch( PolyValue input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
         if ( input.isString() ) {
-            String comp = (String) input.asString().value;
+            String comp = input.asString().value;
             int flags = 0;
             flags |= Pattern.DOTALL;
             if ( isInsensitive ) {
@@ -476,7 +471,7 @@ public class MqlFunctions {
             }
         }
 
-        return PolyBoolean.of( b0.equals( b1 ) );
+        return PolyBoolean.of( b0.compareTo( b1 ) == 0 );
     }
 
 
@@ -664,28 +659,27 @@ public class MqlFunctions {
      * @return if the path exists
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static boolean docExists( Object obj, List<String> path ) {
-        obj = deserializeBsonIfNecessary( obj );
-        if ( !(obj instanceof Map) ) {
-            return false;
+    public static PolyBoolean docExists( PolyValue obj, List<PolyString> path ) {
+        if ( obj == null || !obj.isDocument() ) {
+            return PolyBoolean.FALSE;
         }
-        Map<String, ?> map = ((Map<String, ?>) obj);
-        Iterator<String> iter = path.iterator();
-        String current = iter.next();
+        @NonNull PolyDocument map = obj.asDocument();
+        Iterator<PolyString> iter = path.iterator();
+        PolyString current = iter.next();
 
         while ( map.containsKey( current ) ) {
             obj = map.get( current );
             if ( !iter.hasNext() ) {
-                return true;
+                return PolyBoolean.TRUE;
             }
             if ( !(obj instanceof Map) ) {
-                return false;
+                return PolyBoolean.FALSE;
             }
-            map = (Map<String, ?>) map.get( current );
+            map = map.get( current ).asDocument();
             current = iter.next();
         }
 
-        return false;
+        return PolyBoolean.FALSE;
     }
 
 
