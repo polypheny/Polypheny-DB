@@ -23,10 +23,11 @@ public class PropertyKeys {
 
     public static final String USERNAME = "user";
     public static final String PASSWORD = "password";
-    public static final String AUTOOOMMIT = "autocommit";
+    public static final String AUTOCOMMIT = "autocommit";
 
     private static final Map<String, String> DEFAULT_VALUES =
             ImmutableMap.<String, String>builder()
+                    .put(AUTOCOMMIT, "true")
                     .build();
 
 
