@@ -17,22 +17,18 @@
 package org.polypheny.db.mqtt;
 
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
-import lombok.extern.slf4j.Slf4j;
-
-import java.io.UnsupportedEncodingException;
-import java.nio.Buffer;
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class StreamProcessing {
 
-    public static String processMsg(Mqtt3Publish subMsg) {
-        String msg = toString(subMsg);
-        String info = extractInfo(msg);
-        if (validateMsg(info)) {
+    public static String processMsg( Mqtt3Publish subMsg ) {
+        String msg = toString( subMsg );
+
+        String info = extractInfo( msg );
+        if ( validateMsg( info ) ) {
+            log.info( "Extracted and validated message: {}", msg);
             return info;
         } else {
             log.error( "Message is not valid!" );
@@ -40,16 +36,19 @@ public class StreamProcessing {
         }
     }
 
-    private static String toString(Mqtt3Publish subMsg) {
-        return new String(subMsg.getPayloadAsBytes(), Charset.defaultCharset());
+
+    private static String toString( Mqtt3Publish subMsg ) {
+        return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
     }
 
-    private static boolean validateMsg(String msg) {
+
+    private static boolean validateMsg( String msg ) {
         //TODO: Implement
         return true;
     }
 
-    private static String extractInfo(String msg) {
+
+    private static String extractInfo( String msg ) {
         //TODO: extract the needed Info only -> based on topic attribut on right side!!};
         return msg;
     }
