@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
@@ -274,6 +273,9 @@ public class MqlToAlgConverter {
         switch ( kind ) {
             case FIND:
                 AlgNode find = convertFind( (MqlFind) query, rowType, node );
+                if ( !_dataExists ) {
+                    find = LogicalDocumentProject.create( find, List.of( mergeDocument( find ) ), List.of( "d" ) );
+                }
                 root = AlgRoot.of( find, find.getRowType(), Kind.SELECT );
                 break;
             case COUNT:
@@ -282,6 +284,9 @@ public class MqlToAlgConverter {
                 break;
             case AGGREGATE:
                 AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, node );
+                if ( !_dataExists ) {
+                    aggregate = LogicalDocumentProject.create( aggregate, List.of( mergeDocument( aggregate ) ), List.of( "d" ) );
+                }
                 root = AlgRoot.of( aggregate, Kind.SELECT );
                 break;
             /// dmls
@@ -2337,17 +2342,22 @@ public class MqlToAlgConverter {
             }
 
             // the _data field does no longer exist, as we made a projection "out" of it
-            // this._dataExists = false;
+            this._dataExists = false;
 
-            return LogicalDocumentProject.create( node, List.of( mergeDocument( values, includesOrder ) ), List.of( "d" ) );
+            return LogicalDocumentProject.create( node, values, includesOrder );
         }
         return node;
     }
 
 
-    private RexNode mergeDocument( List<RexNode> values, List<String> includesOrder ) {
-        DocumentType returnType = new DocumentType( IntStream.range( 0, includesOrder.size() ).mapToObj( i -> new AlgDataTypeFieldImpl( includesOrder.get( i ), i, new DocumentType() ) ).collect( Collectors.toList() ) );
-        return cluster.getRexBuilder().makeCall( returnType, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), values );
+    private RexNode mergeDocument( AlgNode node ) {
+        DocumentType returnType = new DocumentType( node.getRowType().getFieldList() );
+        List<RexNode> nodes = new ArrayList<>();
+        nodes.add( getStringArray( node.getRowType().getFieldNames() ) );
+        for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
+            nodes.add( cluster.getRexBuilder().makeInputRef( node.getRowType(), field.getIndex() ) );
+        }
+        return cluster.getRexBuilder().makeCall( returnType, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
     }
 
 
@@ -2378,7 +2388,7 @@ public class MqlToAlgConverter {
                 // we have a renaming; [new name]: $[old name] ( this counts as a inclusion projection
                 String oldName = value.asString().getValue().substring( 1 );
 
-                includes.put( entry.getKey(), getRename( getIdentifier( oldName, rowType ), oldName, entry.getKey() ) );
+                includes.put( entry.getKey(), getIdentifier( oldName, rowType ) );
                 includesOrder.add( entry.getKey() );
             } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
                 String func = value.asDocument().getFirstKey();

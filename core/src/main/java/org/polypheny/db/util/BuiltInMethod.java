@@ -136,6 +136,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
@@ -462,7 +463,7 @@ public enum BuiltInMethod {
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     DOC_JSONIZE( MqlFunctions.class, "docJsonify", Object.class ),
     DOC_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, List.class ),
-    DOC_MERGE( MqlFunctions.class, "mergeDocument", PolyValue[].class ),
+    DOC_MERGE( MqlFunctions.class, "mergeDocument", PolyList.class, PolyValue[].class ),
     DOC_RENAME( MqlFunctions.class, "renameDocument", PolyValue.class, PolyString.class, PolyString.class ),
     CYPHER_LIKE( CypherFunctions.class, "like", PolyValue.class, PolyValue.class ),
     GRAPH_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),

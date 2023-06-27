@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -59,22 +58,21 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
-        PolyString combined = PolyString.of( filters.stream().map( f -> f.value ).collect( Collectors.joining( "." ) ) );
         if ( input == null || !input.isDocument() ) {
-            return new PolyDocument( combined, null );
+            return null;
         }
         PolyValue temp = input;
         for ( PolyString filter : filters ) {
             if ( !temp.isDocument() ) {
-                return new PolyDocument( combined, null );
+                return null;
             }
             temp = temp.asDocument().get( filter );
             if ( temp == null ) {
-                return new PolyDocument( combined, null );
+                return null;
             }
         }
 
-        return new PolyDocument( combined, temp );
+        return temp;
     }
 
 
@@ -442,14 +440,13 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyDocument mergeDocument( PolyValue... documents ) {
+    public static PolyDocument mergeDocument( PolyList<PolyString> names, PolyValue... documents ) {
+        assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
-        for ( PolyValue value : documents ) {
-            if ( !value.isDocument() ) {
-                throw new GenericRuntimeException( "Error while merging document" );
-            }
-            doc.putAll( value.asDocument() );
+        for ( int i = 0; i < documents.length; i++ ) {
+            doc.put( names.get( i ), documents[i] );
         }
+
         return PolyDocument.ofDocument( doc );
     }
 
