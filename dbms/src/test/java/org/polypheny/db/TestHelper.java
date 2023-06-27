@@ -393,9 +393,9 @@ public class TestHelper {
 
                     if ( excludeId && !doc.containsKey( DocumentType.DOCUMENT_ID ) ) {
                         fail();
-                        throw new RuntimeException( "Should contain _id field." );
+                        throw new RuntimeException( "Should contain " + DocumentType.DOCUMENT_ID + " field." );
                     }
-                    doc.remove( "_id" );
+                    doc.remove( DocumentType.DOCUMENT_ID );
                 }
                 parsedResults.add( doc );
             }

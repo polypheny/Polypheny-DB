@@ -202,9 +202,9 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectMultipleTest() {
         List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
-                        new String[]{ "1", null },
-                        new String[]{ "1.3", "val" },
-                        new String[]{ "test", "13" } ),
+                        new Object[]{ 1, null },
+                        new Object[]{ 1.3, "val" },
+                        new Object[]{ "test", 13 } ),
                 "test",
                 "key" );
         insertMany( DATA_0 );
@@ -218,9 +218,9 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectRenameTest() {
         List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
-                new String[]{ "1", null, "1" },
-                new String[]{ "1.3", "val", "1.3" },
-                new String[]{ "test", "13", "test" } ), "test", "key", "newName" );
+                new Object[]{ 1, null, 1 },
+                new Object[]{ 1.3, "val", 1.3 },
+                new Object[]{ "test", 13, "test" } ), "test", "key", "newName" );
         insertMany( DATA_0 );
 
         DocResult result = find( "{}", "{\"test\":1,\"key\":1,\"newName\":\"$test\"}" );

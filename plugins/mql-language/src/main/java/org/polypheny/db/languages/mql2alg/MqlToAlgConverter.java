@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
@@ -60,6 +61,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -1827,13 +1829,13 @@ public class MqlToAlgConverter {
         if ( value.isBoolean() ) {
             List<String> keys = Arrays.asList( parentKey.split( "\\." ) );
 
-            String key = keys.get( 0 );
-            keys = keys.subList( 1, keys.size() );
+            //String key = keys.get( 0 );
+            //keys = keys.subList( 1, keys.size() );
 
             RexCall exists = new RexCall(
                     cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXISTS ),
-                    Arrays.asList( getIdentifier( key, rowType ), getStringArray( keys ) ) );
+                    Arrays.asList( RexInputRef.of( 0, rowType ), getStringArray( keys ) ) );
 
             if ( !value.asBoolean().getValue() ) {
                 return negate( exists );
@@ -2344,7 +2346,8 @@ public class MqlToAlgConverter {
 
 
     private RexNode mergeDocument( List<RexNode> values, List<String> includesOrder ) {
-        return cluster.getRexBuilder().makeLiteral( null, new DocumentType(), true );
+        DocumentType returnType = new DocumentType( IntStream.range( 0, includesOrder.size() ).mapToObj( i -> new AlgDataTypeFieldImpl( includesOrder.get( i ), i, new DocumentType() ) ).collect( Collectors.toList() ) );
+        return cluster.getRexBuilder().makeCall( returnType, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), values );
     }
 
 
@@ -2375,7 +2378,7 @@ public class MqlToAlgConverter {
                 // we have a renaming; [new name]: $[old name] ( this counts as a inclusion projection
                 String oldName = value.asString().getValue().substring( 1 );
 
-                includes.put( entry.getKey(), getIdentifier( oldName, rowType ) );
+                includes.put( entry.getKey(), getRename( getIdentifier( oldName, rowType ), oldName, entry.getKey() ) );
                 includesOrder.add( entry.getKey() );
             } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
                 String func = value.asDocument().getFirstKey();
@@ -2425,6 +2428,17 @@ public class MqlToAlgConverter {
                 throw new RuntimeException( msg );
             }
         }
+    }
+
+
+    private RexNode getRename( RexNode identifier, String oldName, String newName ) {
+        DocumentType returnType = new DocumentType( Collections.singletonList( new AlgDataTypeFieldImpl( newName, 0, new DocumentType() ) ) );
+        return cluster.getRexBuilder().makeCall(
+                returnType,
+                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_RENAME ),
+                identifier,
+                new RexLiteral( PolyString.of( oldName ), cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), PolyType.CHAR ),
+                new RexLiteral( PolyString.of( newName ), cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), PolyType.CHAR ) );
     }
 
 

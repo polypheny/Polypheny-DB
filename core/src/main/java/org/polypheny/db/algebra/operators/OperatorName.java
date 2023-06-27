@@ -1358,6 +1358,10 @@ public enum OperatorName {
 
     MQL_JSONIFY( LangFunctionOperator.class ),
 
+    MQL_MERGE( LangFunctionOperator.class ),
+
+    MQL_RENAME( LangFunctionOperator.class ),
+
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
     //-------------------------------------------------------------

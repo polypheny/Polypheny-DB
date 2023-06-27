@@ -107,7 +107,6 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
        }
 
         Hook.JAVA_PLAN.run( s );
-
         try {
             return new Pair<>( getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
         } catch ( Exception e ) {

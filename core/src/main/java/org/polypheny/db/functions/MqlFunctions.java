@@ -19,6 +19,7 @@ package org.polypheny.db.functions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +27,9 @@ import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -56,24 +57,24 @@ public class MqlFunctions {
     }
 
 
-
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
+        PolyString combined = PolyString.of( filters.stream().map( f -> f.value ).collect( Collectors.joining( "." ) ) );
         if ( input == null || !input.isDocument() ) {
-            return null;
+            return new PolyDocument( combined, null );
         }
         PolyValue temp = input;
         for ( PolyString filter : filters ) {
             if ( !temp.isDocument() ) {
-                return null;
+                return new PolyDocument( combined, null );
             }
             temp = temp.asDocument().get( filter );
             if ( temp == null ) {
-                return null;
+                return new PolyDocument( combined, null );
             }
         }
 
-        return temp;
+        return new PolyDocument( combined, temp );
     }
 
 
@@ -281,6 +282,12 @@ public class MqlFunctions {
     }
 
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyDocument renameDocument( PolyValue doc, PolyString key, PolyString rename ) {
+        return new PolyDocument( rename, doc.asDocument().map.get( key ) );
+    }
+
+
     /**
      * Scans the object/document and removes matching filters
      *
@@ -431,6 +438,19 @@ public class MqlFunctions {
         }
 
         return null;
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyDocument mergeDocument( PolyValue... documents ) {
+        Map<PolyString, PolyValue> doc = new HashMap<>();
+        for ( PolyValue value : documents ) {
+            if ( !value.isDocument() ) {
+                throw new GenericRuntimeException( "Error while merging document" );
+            }
+            doc.putAll( value.asDocument() );
+        }
+        return PolyDocument.ofDocument( doc );
     }
 
 
@@ -663,7 +683,7 @@ public class MqlFunctions {
         if ( obj == null || !obj.isDocument() ) {
             return PolyBoolean.FALSE;
         }
-        @NonNull PolyDocument map = obj.asDocument();
+        PolyDocument map = obj.asDocument();
         Iterator<PolyString> iter = path.iterator();
         PolyString current = iter.next();
 

@@ -420,6 +420,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), BuiltInMethod.DOC_MERGE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_RENAME ), BuiltInMethod.DOC_RENAME.method, NullPolicy.STRICT );
         map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
         map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UNWIND ), new UnwindImplementor() );
 

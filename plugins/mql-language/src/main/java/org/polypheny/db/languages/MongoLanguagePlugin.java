@@ -231,6 +231,10 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_JSONIFY, new LangFunctionOperator( "MQL_JSONIFY", Kind.MQL_JSONIFY ) );
 
+        register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
+
+        register( OperatorName.MQL_RENAME, new LangFunctionOperator( OperatorName.MQL_RENAME.name(), Kind.OTHER ) );
+
         register( OperatorName.DESERIALIZE, new DeserializeFunctionOperator( "DESERIALIZE_DOC" ) );
 
         register( OperatorName.EXTRACT_NAME, new LangFunctionOperator( "EXTRACT_NAME", Kind.EXTRACT ) );

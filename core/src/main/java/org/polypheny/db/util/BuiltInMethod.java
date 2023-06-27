@@ -462,7 +462,8 @@ public enum BuiltInMethod {
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     DOC_JSONIZE( MqlFunctions.class, "docJsonify", Object.class ),
     DOC_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, List.class ),
-
+    DOC_MERGE( MqlFunctions.class, "mergeDocument", PolyValue[].class ),
+    DOC_RENAME( MqlFunctions.class, "renameDocument", PolyValue.class, PolyString.class, PolyString.class ),
     CYPHER_LIKE( CypherFunctions.class, "like", PolyValue.class, PolyValue.class ),
     GRAPH_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
     CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, PolyString.class ),

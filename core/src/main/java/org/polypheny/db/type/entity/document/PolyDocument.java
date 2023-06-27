@@ -58,7 +58,9 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     public PolyDocument( PolyString key, PolyValue value ) {
-        this( Map.of( key, value ) );
+        this( new HashMap<>() {{
+            put( key, value );
+        }} );
     }
 
 
