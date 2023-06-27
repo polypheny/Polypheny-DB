@@ -19,11 +19,9 @@ package org.polypheny.db.iface;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
@@ -61,9 +59,14 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         this.authenticator = authenticator;
         this.queryInterfaceId = queryInterfaceId;
         this.uniqueName = uniqueName;
-        this.settings = settings;
+        //this.settings = settings;
         this.supportsDml = supportsDml;
         this.supportsDdl = supportsDdl;
+
+        this.settings = new HashMap<>(settings.size());
+        for ( Map.Entry<String, String> entry : settings.entrySet()) {
+            this.settings.put(entry.getKey(), entry.getValue());
+        }
 
         LanguageManager.getINSTANCE().addObserver( this );
     }
