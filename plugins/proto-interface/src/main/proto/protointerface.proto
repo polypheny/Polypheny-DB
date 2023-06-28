@@ -63,7 +63,7 @@ message RollbackResponse{}
 
 message StatementBatchStatus {
   int32 batchId = 1;
-  repeated int64 scalar = 2;
+  repeated int64 scalars = 2;
 }
 
 message StatementStatus {

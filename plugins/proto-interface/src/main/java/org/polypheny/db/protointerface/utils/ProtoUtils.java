@@ -49,7 +49,7 @@ public class ProtoUtils {
     public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch, List<Long> updateCounts ) {
         return StatementBatchStatus.newBuilder()
                 .setBatchId( protoInterfaceStatementBatch.getBatchId() )
-                .addAllScalar( updateCounts )
+                .addAllScalars( updateCounts )
                 .build();
     }
 
