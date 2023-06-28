@@ -20,7 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
-import org.polypheny.db.protointerface.proto.StatementBatchStatus;
 
 public class UnparameterizedInterfaceStatementBatch extends ProtoInterfaceStatementBatch {
 
@@ -42,7 +41,6 @@ public class UnparameterizedInterfaceStatementBatch extends ProtoInterfaceStatem
         return updateCounts;
     }
 
-    
 
     @Override
     public List<ProtoInterfaceStatement> getStatements() {
