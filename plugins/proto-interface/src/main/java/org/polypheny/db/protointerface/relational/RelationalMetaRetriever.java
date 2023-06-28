@@ -16,12 +16,15 @@
 
 package org.polypheny.db.protointerface.relational;
 
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
+import org.checkerframework.checker.units.qual.A;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -32,6 +35,7 @@ import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.protointerface.proto.ArrayMeta;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.FieldMeta;
+import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.ProtoValueType;
 import org.polypheny.db.protointerface.proto.StructMeta;
 import org.polypheny.db.protointerface.proto.TypeMeta;
@@ -46,10 +50,31 @@ public class RelationalMetaRetriever {
     private static final int ORIGIN_DATABASE_INDEX = 0;
 
 
+    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType, ImmutableBiMap<String, Integer> namedIndexes) {
+        int index = 0;
+        return parameterRowType.getFieldList().stream()
+                .map( p -> retrieveParameterMeta(p, namedIndexes.inverse().get( index )) )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static ParameterMeta retrieveParameterMeta( AlgDataTypeField algDataTypeField, String parameterName ) {
+        AlgDataType algDataType = algDataTypeField.getType();
+        return ParameterMeta.newBuilder()
+                .setName( algDataTypeField.getName() )
+                .setTypeName( algDataType.getPolyType().getTypeName())
+                .setPrecision( QueryProcessorHelpers.getPrecision( algDataType ) )
+                .setScale( QueryProcessorHelpers.getScale( algDataType ) )
+                .setParameterName( parameterName )
+                .build();
+    }
+
+
+
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
-        List<List<String>> origins = (List<List<String>>)polyImplementation.getPreparedResult().getFieldOrigins();
+        List<List<String>> origins = (List<List<String>>) polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();
         int index = 0;
         for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFieldList() ) ) {
@@ -73,8 +98,8 @@ public class RelationalMetaRetriever {
             List<String> origins ) {
         TypeMeta typeMeta = retrieveTypeMeta( type );
         ColumnMeta.Builder columnMetaBuilder = ColumnMeta.newBuilder();
-        applyIfNotNull( columnMetaBuilder::setEntityName, QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ));
-        applyIfNotNull( columnMetaBuilder::setSchemaName, QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ));
+        applyIfNotNull( columnMetaBuilder::setEntityName, QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ) );
+        applyIfNotNull( columnMetaBuilder::setSchemaName, QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ) );
         return columnMetaBuilder
                 .setColumnIndex( index )
                 .setColumnName( fieldName ) // designated column name
@@ -89,12 +114,14 @@ public class RelationalMetaRetriever {
                 .build();
     }
 
-    private static <R> R applyIfNotNull( Function<String, R> function, String value) {
-        if (value == null) {
+
+    private static <R> R applyIfNotNull( Function<String, R> function, String value ) {
+        if ( value == null ) {
             return null;
         }
         return function.apply( value );
     }
+
 
     private static String getColumnLabel( List<String> origins, AlgDataType type, String fieldName ) {
         String columnLabel = QueryProcessorHelpers.origin( origins, ORIGIN_COLUMN_INDEX );
