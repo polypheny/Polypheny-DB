@@ -34,7 +34,7 @@ public class UnparameterizedInterfaceStatementBatch extends ProtoInterfaceStatem
 
 
     @Override
-    List<Long> execute() throws Exception {
+    public List<Long> execute() throws Exception {
         List<Long> updateCounts = new LinkedList<>();
         for ( UnparameterizedInterfaceStatement statement : statements ) {
             updateCounts.add( statement.execute().getScalar() );
