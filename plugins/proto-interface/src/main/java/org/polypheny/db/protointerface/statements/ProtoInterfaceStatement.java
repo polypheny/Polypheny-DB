@@ -16,21 +16,37 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.Meta.CursorFactory;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.Processor;
+import org.polypheny.db.protointerface.PropertyDefaults;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
+import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.LimitIterator;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public abstract class ProtoInterfaceStatement {
@@ -40,10 +56,9 @@ public abstract class ProtoInterfaceStatement {
     protected final int statementId;
     protected final ProtoInterfaceClient protoInterfaceClient;
     protected final StopWatch executionStopWatch;
-    protected PolyImplementation currentImplementation;
     protected final QueryLanguage queryLanguage;
     protected final String query;
-
+    protected PolyImplementation currentImplementation;
     protected Iterator<Object> resultIterator;
 
     protected Iterator resultIterator;
@@ -69,12 +84,104 @@ public abstract class ProtoInterfaceStatement {
 
     public abstract StatementResult execute() throws Exception;
 
-    public abstract Frame fetch( long offset ) throws Exception;
 
-    public abstract Frame fetch( long offset, int fetchSize ) throws Exception;
+    protected StatementResult execute( Statement statement ) throws Exception {
+        Processor queryProcessor = statement.getTransaction().getProcessor( queryLanguage );
+        Node parsedStatement = queryProcessor.parse( query ).get( 0 );
+        if ( parsedStatement.isA( Kind.DDL ) ) {
+            currentImplementation = queryProcessor.prepareDdl( statement, parsedStatement,
+                    new QueryParameters( query, queryLanguage.getNamespaceType() ) );
+        } else {
+            Pair<Node, AlgDataType> validated = queryProcessor.validate( protoInterfaceClient.getCurrentTransaction(),
+                    parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            AlgRoot logicalRoot = queryProcessor.translate( statement, validated.left, null );
+            AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
+            currentImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
+        }
+
+        StatementResult.Builder resultBuilder = StatementResult.newBuilder();
+        if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
+            resultBuilder.setScalar( 1 );
+            commitIfAuto();
+            return resultBuilder.build();
+        }
+        if ( Kind.DML.contains( currentImplementation.getKind() ) ) {
+            resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
+            commitIfAuto();
+            return resultBuilder.build();
+        }
+        resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
+        commitIfAuto();
+        resultBuilder.setFrame( fetchFirst() );
+        return resultBuilder.build();
+    }
+
+
+    protected void commitIfAuto() throws IllegalArgumentException {
+        if ( !protoInterfaceClient.isAutocommit() ) {
+            return;
+        }
+        protoInterfaceClient.commitCurrentTransaction();
+    }
+
 
     public Frame fetchFirst() throws Exception {
         return fetch( 0 );
+    }
+
+
+    public Frame fetch( long offset ) throws Exception {
+        int fetchSize = Integer.parseInt( PropertyDefaults.getDefaultOf( PropertyDefaults.FETCH_SIZE ) );
+        return fetch( offset, fetchSize );
+    }
+
+
+    public Frame fetch( long offset, int fetchSize ) throws Exception {
+        switch ( queryLanguage.getNamespaceType() ) {
+            case RELATIONAL:
+                return relationalFetch( offset, fetchSize );
+            case GRAPH:
+                return graphFetch( offset, fetchSize );
+            case DOCUMENT:
+                return documentFetch( offset, fetchSize );
+        }
+        throw new ProtoInterfaceServiceException( "Should never be thrown." );
+    }
+
+
+    public Frame relationalFetch( long offset, int fetchSize ) throws Exception {
+        if ( currentImplementation == null ) {
+            throw new ProtoInterfaceServiceException( "Can't fetch frames of an unexecuted statement" );
+        }
+        synchronized ( protoInterfaceClient ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "fetch(long {}, int {} )", offset, fetchSize );
+            }
+            Iterator<Object> iterator = getOrCreateIterator();
+            CursorFactory cursorFactory = currentImplementation.getCursorFactory();
+            Iterator<Object> sectionIterator = LimitIterator.of( iterator, fetchSize );
+            startOrResumeStopwatch();
+            // TODO TH: clean up this mess
+            List<List<PolyValue>> rows = (List<List<PolyValue>>) (List<?>) MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
+            executionStopWatch.suspend();
+            boolean isDone = fetchSize == 0 || rows.size() < fetchSize;
+            if ( isDone ) {
+                executionStopWatch.stop();
+                currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+            }
+            List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
+            return ProtoUtils.buildRelationalFrame( offset, isDone, rows, columnMetas );
+        }
+    }
+
+
+    private Frame graphFetch( long offset, int fetchSize ) {
+        throw new NotImplementedException( "Graph Fetching is not yet implmented." );
+    }
+
+
+    private Frame documentFetch( long offset, int fetchSize ) {
+        throw new NotImplementedException( "Doument fetching is no yet implemented." );
     }
 
 
@@ -88,22 +195,6 @@ public abstract class ProtoInterfaceStatement {
         return resultIterator;
     }
 
-    protected void commitIfAuto() throws IllegalArgumentException {
-        if (!protoInterfaceClient.isAutocommit()) {
-            return;
-        }
-        protoInterfaceClient.commitCurrentTransaction();
-    }
-
-
-    protected void commitElseRollback() {
-        try {
-            protoInterfaceClient.commitCurrentTransaction();
-        } catch ( Exception e ) {
-            protoInterfaceClient.rollbackCurrentTransaction();
-        }
-    }
-
 
     protected void startOrResumeStopwatch() {
         if ( executionStopWatch.isSuspended() ) {
@@ -112,6 +203,15 @@ public abstract class ProtoInterfaceStatement {
         }
         if ( executionStopWatch.isStopped() ) {
             executionStopWatch.start();
+        }
+    }
+
+
+    protected void commitElseRollback() {
+        try {
+            protoInterfaceClient.commitCurrentTransaction();
+        } catch ( Exception e ) {
+            protoInterfaceClient.rollbackCurrentTransaction();
         }
     }
 
