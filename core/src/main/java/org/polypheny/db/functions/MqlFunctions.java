@@ -341,22 +341,23 @@ public class MqlFunctions {
      * @return if the provided object/document conforms to the regex
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docRegexMatch( PolyValue input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
+    public static PolyBoolean docRegexMatch( PolyValue input, PolyString regex, PolyBoolean isInsensitive, PolyBoolean isMultiline, PolyBoolean doesIgnoreWhitespace, PolyBoolean allowsDot ) {
+        String adjusted = regex.value;
         if ( input.isString() ) {
             String comp = input.asString().value;
             int flags = 0;
             flags |= Pattern.DOTALL;
-            if ( isInsensitive ) {
+            if ( isInsensitive.value ) {
                 flags |= Pattern.CASE_INSENSITIVE;
             }
-            if ( isMultiline ) {
+            if ( isMultiline.value ) {
                 flags |= Pattern.MULTILINE;
             }
-            if ( doesIgnoreWhitespace ) {
-                regex = regex.replaceAll( "\\s", "" );
+            if ( doesIgnoreWhitespace.value ) {
+                adjusted = adjusted.replaceAll( "\\s", "" );
                 comp = comp.replaceAll( "\\s", "" );
             }
-            if ( allowsDot ) {
+            if ( allowsDot.value ) {
                 flags |= Pattern.DOTALL;
             }
 

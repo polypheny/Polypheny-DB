@@ -113,12 +113,13 @@ public class MqlToAlgConverter {
     private final Snapshot snapshot;
     private final AlgOptCluster cluster;
     private RexBuilder builder;
+    public static final String MONGO = "mongo";
     private final static Map<String, Operator> mappings = new HashMap<>() {{
-        put( "$lt", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LT ) );
-        put( "$gt", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GT ) );
-        put( "$lte", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ) );
-        put( "$gte", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ) );
-        put( "$eq", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ) );
+        put( "$lt", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_LT ) );
+        put( "$gt", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GT ) );
+        put( "$lte", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_LTE ) );
+        put( "$gte", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GTE ) );
+        put( "$eq", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) );
         put( "$ne", OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
         put( "$in", OperatorRegistry.get( OperatorName.IN ) );
         put( "$nin", OperatorRegistry.get( OperatorName.NOT_IN ) );
@@ -385,11 +386,11 @@ public class MqlToAlgConverter {
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$min":
-                    temp = translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_MIN ) );
+                    temp = translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_UPDATE_MIN ) );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$max":
-                    temp = translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_MAX ) );
+                    temp = translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_UPDATE_MAX ) );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$mul":
@@ -538,7 +539,7 @@ public class MqlToAlgConverter {
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType );
             RexNode value = convertLiteral( entry.getValue() );
-            RexCall addToSet = new RexCall( jsonType, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_ADD_TO_SET ), Arrays.asList( id, value ) );
+            RexCall addToSet = new RexCall( jsonType, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_UPDATE_ADD_TO_SET ), Arrays.asList( id, value ) );
 
             updates.put( entry.getKey(), addToSet );
         }
@@ -954,7 +955,7 @@ public class MqlToAlgConverter {
 
         RexNode id = getIdentifier( path, node.getRowType() );
 
-        RexCall call = new RexCall( any, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UNWIND ), Collections.singletonList( id ) );
+        RexCall call = new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_UNWIND ), Collections.singletonList( id ) );
 
         List<String> names = new ArrayList<>();
         List<RexNode> values = new ArrayList<>();
@@ -1371,7 +1372,7 @@ public class MqlToAlgConverter {
                     RexNode node = convertMath( key, null, bsonValue, rowType, false );
                     if ( losesContext && id != null ) {
                         AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
-                        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ), Arrays.asList( id, node ) );
+                        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), Arrays.asList( id, node ) );
                     } else {
                         return node;
                     }
@@ -1435,7 +1436,7 @@ public class MqlToAlgConverter {
 
         AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
 
-        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ), Arrays.asList( node, rexRemainder ) );
+        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), Arrays.asList( node, rexRemainder ) );
     }
 
 
@@ -1472,7 +1473,7 @@ public class MqlToAlgConverter {
             throw new RuntimeException( "After a $slice projection a number or an array of 2 is needed" );
         }
 
-        return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_SLICE ), Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
+        return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_SLICE ), Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
     }
 
 
@@ -1494,7 +1495,7 @@ public class MqlToAlgConverter {
             if ( nodes.size() > 2 ) {
                 throw new RuntimeException( msg );
             }
-            return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ITEM ), Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
+            return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ITEM ), Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
 
         } else {
             throw new RuntimeException( msg );
@@ -1633,7 +1634,7 @@ public class MqlToAlgConverter {
                 nodes.add( convertLiteral( bsonValue ) );
             }
 
-            return getFixedCall( nodes, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ), PolyType.BOOLEAN );
+            return getFixedCall( nodes, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), PolyType.BOOLEAN );
         }
     }
 
@@ -1645,7 +1646,7 @@ public class MqlToAlgConverter {
 
     private RexNode getIdentifier( String parentKey, AlgDataType rowType, boolean useAccess ) {
         List<String> rowNames = rowType.getFieldNames();
-        if ( rowNames.contains( parentKey ) && rowType.getPolyType() != PolyType.DOCUMENT ) {
+        if ( rowNames.contains( parentKey ) ) {
             if ( useAccess ) {
                 return attachAccess( parentKey, rowType );
             } else {
@@ -1806,7 +1807,7 @@ public class MqlToAlgConverter {
     private RexCall getRegex( String stringRegex, String options, String parentKey, AlgDataType rowType ) {
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REGEX_MATCH ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_REGEX_MATCH ),
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
                         convertLiteral( new BsonString( stringRegex ) ),
@@ -1839,7 +1840,7 @@ public class MqlToAlgConverter {
 
             RexCall exists = new RexCall(
                     cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXISTS ),
+                    OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXISTS ),
                     Arrays.asList( RexInputRef.of( 0, rowType ), getStringArray( keys ) ) );
 
             if ( !value.asBoolean().getValue() ) {
@@ -1892,7 +1893,7 @@ public class MqlToAlgConverter {
      */
     private RexNode convertJsonSchema( BsonValue bsonValue, AlgDataType rowType ) {
         if ( bsonValue.isDocument() ) {
-            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexInputRef.of( getIndexOfParentField( "d", rowType ), rowType ) ) );
+            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexInputRef.of( getIndexOfParentField( "d", rowType ), rowType ) ) );
         } else {
             throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
         }
@@ -1913,7 +1914,7 @@ public class MqlToAlgConverter {
     private RexNode convertSize( BsonValue bsonValue, String parentKey, AlgDataType rowType ) {
         if ( bsonValue.isNumber() ) {
             RexNode id = getIdentifier( parentKey, rowType );
-            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_SIZE_MATCH ), Arrays.asList( id, convertLiteral( bsonValue ) ) );
+            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_SIZE_MATCH ), Arrays.asList( id, convertLiteral( bsonValue ) ) );
         } else {
             throw new RuntimeException( "After $size there needs to follow a number" );
         }
@@ -1944,7 +1945,7 @@ public class MqlToAlgConverter {
 
         RexNode op = getFixedCall( nodes, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
 
-        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ELEM_MATCH ), Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ELEM_MATCH ), Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
     }
 
 
@@ -1967,7 +1968,7 @@ public class MqlToAlgConverter {
 
             List<RexNode> operands = new ArrayList<>();
             for ( RexNode rexNode : arr ) {
-                operands.add( new RexCall( type, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ), Arrays.asList( id, rexNode ) ) );
+                operands.add( new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), Arrays.asList( id, rexNode ) ) );
             }
 
             return getFixedCall( operands, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
@@ -2013,7 +2014,7 @@ public class MqlToAlgConverter {
         }
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_TYPE_MATCH ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_TYPE_MATCH ),
                 Arrays.asList( getIdentifier( parentKey, rowType ), types ) );
 
     }
@@ -2061,7 +2062,7 @@ public class MqlToAlgConverter {
 
         return new RexCall(
                 new DocumentType(),
-                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_QUERY_VALUE ),
                 Arrays.asList(
                         RexInputRef.of( index, rowType ),
                         filter ) );
@@ -2070,7 +2071,7 @@ public class MqlToAlgConverter {
 
     private RexNode translateJsonQuery( int index, AlgDataType rowType, List<String> excludes ) {
         RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
-        return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXCLUDE ), Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
+        return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXCLUDE ), Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
     }
 
 
@@ -2152,7 +2153,7 @@ public class MqlToAlgConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, isIn ? OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS ), Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, isIn ? OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS ), Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
 
@@ -2312,7 +2313,7 @@ public class MqlToAlgConverter {
                         // we attach the new values to the input bson
                         values.add( new RexCall(
                                 any,
-                                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
+                                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ADD_FIELDS ),
                                 Arrays.asList(
                                         RexInputRef.of( dataIndex, rowType ),
                                         convertLiteral( new BsonString( entry.getKey() ) ),
@@ -2357,7 +2358,7 @@ public class MqlToAlgConverter {
         for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
             nodes.add( cluster.getRexBuilder().makeInputRef( node.getRowType(), field.getIndex() ) );
         }
-        return cluster.getRexBuilder().makeCall( returnType, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
+        return cluster.getRexBuilder().makeCall( returnType, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_MERGE ), nodes );
     }
 
 
@@ -2445,7 +2446,7 @@ public class MqlToAlgConverter {
         DocumentType returnType = new DocumentType( Collections.singletonList( new AlgDataTypeFieldImpl( newName, 0, new DocumentType() ) ) );
         return cluster.getRexBuilder().makeCall(
                 returnType,
-                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_RENAME ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_RENAME ),
                 identifier,
                 new RexLiteral( PolyString.of( oldName ), cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), PolyType.CHAR ),
                 new RexLiteral( PolyString.of( newName ), cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), PolyType.CHAR ) );
