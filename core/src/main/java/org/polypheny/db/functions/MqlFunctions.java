@@ -294,7 +294,7 @@ public class MqlFunctions {
      * @return a filtered object/document
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyValue docQueryExclude( PolyValue input, List<List<String>> excluded ) {
+    public static PolyValue docQueryExclude( PolyValue input, List<List<PolyString>> excluded ) {
         if ( !(input.isDocument()) ) {
             return null;
         }
@@ -617,9 +617,9 @@ public class MqlFunctions {
      * @param doc the document to scan
      * @param excluded the element to exclude
      */
-    private static void excludeBson( PolyValue doc, List<List<String>> excluded ) {
+    private static void excludeBson( PolyValue doc, List<List<PolyString>> excluded ) {
         if ( doc.isDocument() ) {
-            List<String> firsts = excluded.stream().map( e -> e.get( 0 ) ).collect( Collectors.toList() );
+            List<String> firsts = excluded.stream().map( e -> e.get( 0 ).value ).collect( Collectors.toList() );
             List<PolyString> toRemove = new ArrayList<>();
             doc.asDocument().forEach( ( key, value ) -> {
                 int pos = 0;

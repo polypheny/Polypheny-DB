@@ -150,7 +150,7 @@ public abstract class AlgOptRuleCall {
      * @param alg Relational expression
      * @return Children of relational expression
      */
-    public List<AlgNode> getChildRels( AlgNode alg ) {
+    public List<AlgNode> getChildAlgs( AlgNode alg ) {
         return nodeInputs.get( alg );
     }
 
@@ -158,7 +158,7 @@ public abstract class AlgOptRuleCall {
     /**
      * Assigns the input relational expressions of a given relational expression, as seen by this particular call. Is only called when the operand is {@link AlgOptRule#any()}.
      */
-    protected void setChildRels( AlgNode alg, List<AlgNode> inputs ) {
+    protected void setChildAlgs( AlgNode alg, List<AlgNode> inputs ) {
         if ( nodeInputs.isEmpty() ) {
             nodeInputs = new HashMap<>();
         }

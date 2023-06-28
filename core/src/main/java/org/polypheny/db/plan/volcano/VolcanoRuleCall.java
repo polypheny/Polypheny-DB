@@ -279,14 +279,14 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                         if ( ascending ) {
                             final List<AlgNode> inputs = Lists.newArrayList( alg.getInputs() );
                             inputs.set( previousOperand.ordinalInParent, previous );
-                            setChildRels( alg, inputs );
+                            setChildAlgs( alg, inputs );
                         } else {
-                            List<AlgNode> inputs = getChildRels( previous );
+                            List<AlgNode> inputs = getChildAlgs( previous );
                             if ( inputs == null ) {
                                 inputs = Lists.newArrayList( previous.getInputs() );
                             }
                             inputs.set( operand.ordinalInParent, alg );
-                            setChildRels( previous, inputs );
+                            setChildAlgs( previous, inputs );
                         }
                 }
 

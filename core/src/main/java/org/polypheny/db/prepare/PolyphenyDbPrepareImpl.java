@@ -220,7 +220,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
                     DocumentProjectToCalcRule.INSTANCE,
-                    DocumentFilterToCalcRule.INSTANCE
+                    DocumentFilterToCalcRule.INSTANCE,
+                    DocumentAggregateToAggregateRule.INSTANCE
             );
 
     public static final List<AlgOptRule> DEFAULT_RULES =

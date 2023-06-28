@@ -448,7 +448,7 @@ public enum BuiltInMethod {
     DOC_LTE( MqlFunctions.class, "docLte", PolyValue.class, PolyValue.class ),
     DOC_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", PolyValue.class, int.class ),
     DOC_JSON_MATCH( MqlFunctions.class, "docJsonMatch", PolyValue.class, String.class ),
-    DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", PolyValue.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
+    DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", PolyValue.class, PolyString.class, PolyBoolean.class, PolyBoolean.class, PolyBoolean.class, PolyBoolean.class ),
     DOC_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", PolyValue.class, List.class ),
     DOC_SLICE( MqlFunctions.class, "docSlice", PolyValue.class, int.class, int.class ),
     DOC_QUERY_VALUE( MqlFunctions.class, "docQueryValue", PolyValue.class, List.class ),

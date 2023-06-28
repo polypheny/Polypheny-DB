@@ -89,6 +89,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
+                    DocumentAggregateToAggregateRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_RULE,
                     EnumerableRules.ENUMERABLE_AGGREGATE_RULE,

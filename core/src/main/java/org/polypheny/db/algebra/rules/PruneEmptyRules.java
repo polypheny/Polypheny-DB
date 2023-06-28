@@ -95,7 +95,7 @@ public abstract class PruneEmptyRules {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final LogicalUnion union = call.alg( 0 );
-                    final List<AlgNode> inputs = call.getChildRels( union );
+                    final List<AlgNode> inputs = call.getChildAlgs( union );
                     assert inputs != null;
                     final List<AlgNode> newInputs = new ArrayList<>();
                     for ( AlgNode input : inputs ) {
@@ -137,7 +137,7 @@ public abstract class PruneEmptyRules {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final LogicalMinus minus = call.alg( 0 );
-                    final List<AlgNode> inputs = call.getChildRels( minus );
+                    final List<AlgNode> inputs = call.getChildAlgs( minus );
                     assert inputs != null;
                     final List<AlgNode> newInputs = new ArrayList<>();
                     for ( AlgNode input : inputs ) {
