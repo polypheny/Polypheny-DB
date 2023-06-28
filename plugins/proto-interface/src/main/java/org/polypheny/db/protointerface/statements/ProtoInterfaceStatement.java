@@ -69,11 +69,11 @@ public abstract class ProtoInterfaceStatement {
 
     public abstract StatementResult execute() throws Exception;
 
-    public abstract Frame fetch( long offset );
+    public abstract Frame fetch( long offset ) throws Exception;
 
-    public abstract Frame fetch( long offset, int fetchSize );
+    public abstract Frame fetch( long offset, int fetchSize ) throws Exception;
 
-    public Frame fetchFirst() {
+    public Frame fetchFirst() throws Exception {
         return fetch( 0 );
     }
 
