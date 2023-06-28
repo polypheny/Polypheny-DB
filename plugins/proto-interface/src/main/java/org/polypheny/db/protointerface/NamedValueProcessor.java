@@ -16,9 +16,12 @@
 
 package org.polypheny.db.protointerface;
 
-import java.util.LinkedList;
+import com.google.common.collect.ImmutableBiMap;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
@@ -30,29 +33,45 @@ public class NamedValueProcessor {
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile( "(?<!')(:[\\w]*)(?!')" );
     private static final String REPLACEMENT_CHARACTER = "?";
     @Getter
-    private String statement;
+    private String processedQuery;
     @Getter
-    private List<PolyValue> values;
+    private ImmutableBiMap<String, Integer> namedIndexes;
 
 
-    public void
-    process( String statement, Map<String, PolyValue> valueMap ) {
-        values = new LinkedList<>();
+    public static NamedValueProcessor forStatement( String statement ) {
+        NamedValueProcessor processor = new NamedValueProcessor();
+        processor.processStatement( statement );
+        return processor;
+    }
+
+
+    private NamedValueProcessor() {
+    }
+
+
+    public void processStatement( String statement ) {
+        HashMap<String, Integer> indexByName = new HashMap<>();
+        AtomicInteger valueIndex = new AtomicInteger();
         Matcher matcher = PLACEHOLDER_PATTERN.matcher( statement );
         if ( !matcher.find() ) {
-            this.statement = statement;
+            this.processedQuery = statement;
         }
         StringBuilder stringBuilder = new StringBuilder();
         String currentGroup = matcher.group( 1 );
         do {
-            if ( !valueMap.containsKey( currentGroup ) ) {
-                throw new ProtoInterfaceServiceException( "Missing value for named parameter:" + currentGroup );
-            }
             matcher.appendReplacement( stringBuilder, REPLACEMENT_CHARACTER );
-            values.add( valueMap.get( currentGroup ) );
+            indexByName.put( currentGroup, valueIndex.getAndIncrement() );
         } while ( matcher.find() );
         matcher.appendTail( stringBuilder );
-        this.statement = stringBuilder.toString();
+        this.processedQuery = stringBuilder.toString();
+        this.namedIndexes = ImmutableBiMap.copyOf( indexByName );
+    }
+
+
+    public List<PolyValue> transformValueMap( Map<String, PolyValue> values ) {
+        List<PolyValue> image = new ArrayList<>();
+        values.forEach( ( key, value ) -> image.set( namedIndexes.get( key ), value ) );
+        return image;
     }
 
 }
