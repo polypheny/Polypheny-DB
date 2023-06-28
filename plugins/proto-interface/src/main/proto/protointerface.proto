@@ -15,6 +15,7 @@ service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
+  rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
   rpc FetchResult(FetchRequest) returns (Frame) {}
 
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
@@ -60,6 +61,11 @@ message CommitResponse{}
 message RollbackRequest {}
 message RollbackResponse{}
 
+message StatementBatchStatus {
+  int32 batchId = 1;
+  repeated int64 scalar = 2;
+}
+
 message StatementStatus {
   int32 statementId = 1;
   optional StatementResult result = 2;
@@ -74,7 +80,10 @@ message FetchRequest {
 message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  bool expects_result = 4;
+}
+
+message UnparameterizedStatementBatch {
+  repeated UnparameterizedStatement statements = 1;
 }
 
 message CloseStatementRequest {

@@ -16,30 +16,12 @@
 
 package org.polypheny.db.protointerface.utils;
 
-import java.sql.DatabaseMetaData;
-import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.protointerface.proto.StatementResult;
-import java.util.stream.Collectors;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.processing.QueryProcessorHelpers;
-import org.polypheny.db.protointerface.proto.ArrayMeta;
-import org.polypheny.db.protointerface.proto.ColumnMeta;
-import org.polypheny.db.protointerface.proto.FieldMeta;
-import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.ProtoValueType;
-import org.polypheny.db.protointerface.proto.Row;
+import org.polypheny.db.protointerface.proto.StatementBatchStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
+import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
 
 public class ProtoUtils {
 
@@ -55,6 +37,19 @@ public class ProtoUtils {
         return StatementStatus.newBuilder()
                 .setStatementId( protoInterfaceStatement.getStatementId() )
                 .setResult( result )
+                .build();
+    }
+
+    public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch) {
+        return StatementBatchStatus.newBuilder()
+                .setBatchId( protoInterfaceStatementBatch.getBatchId() )
+                .build();
+    }
+
+    public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch, List<Long> updateCounts ) {
+        return StatementBatchStatus.newBuilder()
+                .setBatchId( protoInterfaceStatementBatch.getBatchId() )
+                .addAllScalar( updateCounts )
                 .build();
     }
 

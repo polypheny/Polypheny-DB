@@ -17,12 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.HashSet;
-import org.polypheny.db.languages.LanguageManager;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,13 +25,11 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
+import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
+import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatementBatch;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
-import org.polypheny.db.protointerface.utils.ProtoUtils;
-import org.polypheny.db.protointerface.proto.ParameterizedStatement;
-import org.polypheny.db.protointerface.proto.ParameterizedStatementBatch;
-import org.polypheny.db.protointerface.statements.OldPIStatement;
-import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class StatementManager {
@@ -44,6 +37,7 @@ public class StatementManager {
     private final AtomicInteger statementIdGenerator;
     private Set<String> supportedLanguages;
     private ConcurrentHashMap<String, ProtoInterfaceStatement> openStatments;
+    private ConcurrentHashMap<String, ProtoInterfaceStatementBatch> openBatches;
 
 
     public StatementManager() {
@@ -53,11 +47,12 @@ public class StatementManager {
         updateSupportedLanguages();
     }
 
+
     public void updateSupportedLanguages() {
         supportedLanguages = LanguageManager.getLanguages()
                 .stream()
                 .map( QueryLanguage::getSerializedName )
-                .collect( Collectors.toSet());
+                .collect( Collectors.toSet() );
     }
 
 
@@ -66,73 +61,92 @@ public class StatementManager {
     }
 
 
-    public synchronized UnparameterizedInterfaceStatement createUnparameterizedStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+    public UnparameterizedInterfaceStatement createUnparameterizedStatement( ProtoInterfaceClient protoInterfaceClient, UnparameterizedStatement statement ) {
+        String languageName = statement.getStatementLanguageName();
+        if ( !isSupportedLanguage( languageName ) ) {
+            throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
+        }
+        return createUnparameterizedStatement( protoInterfaceClient, QueryLanguage.from( languageName ), statement.getStatement() );
+    }
+
+
+    private synchronized UnparameterizedInterfaceStatement createUnparameterizedStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         if ( log.isTraceEnabled() ) {
             log.trace( "createStatement( Connection {} )", protoInterfaceClient );
         }
         final int statementId = statementIdGenerator.getAndIncrement();
-        final String statementKey = getStatementKey( protoInterfaceClient.getClientUUID(), statementId );
-        final UnparameterizedInterfaceStatement unparameterizedInterfaceStatement = new UnparameterizedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
-        openStatments.put( statementKey, unparameterizedInterfaceStatement );
+        final String statementKey = getId( protoInterfaceClient.getClientUUID(), statementId );
+        final UnparameterizedInterfaceStatement unparameterizedinterfaceStatement = new UnparameterizedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
+        openStatments.put( statementKey, unparameterizedinterfaceStatement );
         if ( log.isTraceEnabled() ) {
-            log.trace( "created statement {}", unparameterizedInterfaceStatement );
+            log.trace( "created statement {}", unparameterizedinterfaceStatement );
         }
-        return unparameterizedInterfaceStatement;
+        return unparameterizedinterfaceStatement;
     }
 
-    public void closeStatement(ProtoInterfaceClient client, int statementId) {
-        String statementKey = getStatementKey( client.getClientUUID(), statementId );
-        ProtoInterfaceStatement toClose = openStatments.remove(statementKey);
-        if (toClose == null) {
+
+    public synchronized UnparameterizedInterfaceStatementBatch createUnparameterizedStatementBatch( ProtoInterfaceClient protoInterfaceClient, List<UnparameterizedStatement> statements ) {
+        List<UnparameterizedInterfaceStatement> unparameterizedInterfaceStatements = statements.stream()
+                .map( s -> createUnparameterizedStatement( protoInterfaceClient, s ) )
+                .collect( Collectors.toList() );
+        final int batchId = statementIdGenerator.getAndIncrement();
+        final String batchKey = getId( protoInterfaceClient.getClientUUID(), batchId );
+        final UnparameterizedInterfaceStatementBatch batch = new UnparameterizedInterfaceStatementBatch( batchId, protoInterfaceClient, unparameterizedInterfaceStatements );
+        openBatches.put( batchKey, batch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "created batch {}", batch );
+        }
+        return batch;
+    }
+
+
+    public void closeBatch( ProtoInterfaceClient client, ProtoInterfaceStatementBatch toClose ) {
+        toClose.getStatements().forEach( s -> closeStatementOrBatch( client, s.getStatementId() ) );
+    }
+
+
+    private void closeStatement( ProtoInterfaceClient client, int statementId ) {
+        String statementKey = getId( client.getClientUUID(), statementId );
+        closeStatement( statementKey );
+    }
+
+
+    private void closeStatement( String statementKey ) {
+        ProtoInterfaceStatement statementToClose = openStatments.remove( statementKey );
+        if ( statementToClose == null ) {
             return;
         }
         // TODO: implement closing of statements
     }
 
-    public ProtoInterfaceStatement getStatement(ProtoInterfaceClient client, int statementId) {
-        String statementKey = getStatementKey( client.getClientUUID(), statementId );
-        ProtoInterfaceStatement statement = openStatments.get(statementKey);
-        if (statement == null) {
+
+    public void closeStatementOrBatch( ProtoInterfaceClient client, int statementId ) {
+        String statementKey = getId( client.getClientUUID(), statementId );
+        ProtoInterfaceStatementBatch batchToClose = openBatches.remove( statementKey );
+        if ( batchToClose != null ) {
+            closeBatch( client, batchToClose );
+            return;
+        }
+        closeStatement( statementKey );
+    }
+
+
+    public ProtoInterfaceStatement getStatement( ProtoInterfaceClient client, int statementId ) {
+        String statementKey = getId( client.getClientUUID(), statementId );
+        ProtoInterfaceStatement statement = openStatments.get( statementKey );
+        if ( statement == null ) {
             throw new ProtoInterfaceServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
         return statement;
     }
 
+
     public boolean isSupportedLanguage( String statementLanguageName ) {
-        return getSupportedLanguages().contains(statementLanguageName);
+        return getSupportedLanguages().contains( statementLanguageName );
     }
 
 
-
-    public ProtoInterfaceStatementBatch createStatementBatch( ParameterizedStatementBatch pStatementBatch, ProtoInterfaceClient protoInterfaceClient ) {
-        List<ParameterizedStatement> statements = pStatementBatch.getParameterizedStatementList();
-        ProtoInterfaceStatementBatch statementBatch = new ProtoInterfaceStatementBatch( pStatementBatch.getStatementPropertiesMap() );
-
-        QueryLanguage queryLanguage;
-        OldPIStatement protoInterfaceStatement;
-        List<Map<String, PolyValue>> valuesMaps;
-
-        for ( ParameterizedStatement statement : statements ) {
-            // check if valid language
-            if ( !isSupportedLanguage( statement.getStatementLanguageName() ) ) {
-                throw new ProtoInterfaceServiceException( "Language " + statement.getStatementLanguageName() + " not supported." );
-            }
-            queryLanguage = QueryLanguage.from( statement.getStatementLanguageName() );
-            protoInterfaceStatement = createStatement( protoInterfaceClient, queryLanguage, statement.getStatement() );
-            valuesMaps = PolyValueDeserializer.deserializeValueMapBatch( statement.getValueMapBatch() );
-            protoInterfaceStatement.addValues( valuesMaps );
-            statementBatch.addStatement( protoInterfaceStatement );
-        }
-        return statementBatch;
-    }
-
-
-    private boolean isSupportedLanguage( String statementLanguageName ) {
-        return getSupportedLanguages().contains(statementLanguageName);
-    }
-
-
-    private String getStatementKey( String clientUUID, int statementId ) {
+    private String getId( String clientUUID, int statementId ) {
         return clientUUID + "::" + statementId;
     }
 

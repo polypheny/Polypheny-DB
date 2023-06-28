@@ -18,10 +18,8 @@ package org.polypheny.db.protointerface;
 
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
+import java.util.List;
 import lombok.SneakyThrows;
-import java.util.LinkedList;
-import lombok.SneakyThrows;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
@@ -35,17 +33,14 @@ import org.polypheny.db.protointerface.proto.LanguageResponse;
 import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
+import org.polypheny.db.protointerface.proto.StatementBatchStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
-import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.proto.StatementStatus;
-import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
+import org.polypheny.db.protointerface.proto.UnparameterizedStatementBatch;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
+import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
-import org.polypheny.db.protointerface.utils.ProtoUtils;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
@@ -58,7 +53,6 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public ProtoInterfaceService( ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
-        PolyValue value = new PolyString( "hi ;)" );
     }
 
 
@@ -95,19 +89,31 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @SneakyThrows
     @Override
-    public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
+    public void executeUnparameterizedStatement( org.polypheny.db.protointerface.proto.UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
         ProtoInterfaceClient client = getClient();
         String languageName = unparameterizedStatement.getStatementLanguageName();
         if ( !statementManager.isSupportedLanguage( languageName ) ) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
         }
-        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, QueryLanguage.from( languageName ), unparameterizedStatement.getStatement() );
+        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, unparameterizedStatement );
         responseObserver.onNext( ProtoUtils.createStatus( statement ) );
         StatementResult result = statement.execute();
         responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
         responseObserver.onCompleted();
     }
 
+    @SneakyThrows
+    @Override
+    public void executeUnparameterizedStatementBatch( UnparameterizedStatementBatch unparameterizedStatementBatch, StreamObserver<StatementBatchStatus> responseObserver ) {
+        ProtoInterfaceClient client = getClient();
+        ProtoInterfaceStatementBatch batch = statementManager.createUnparameterizedStatementBatch( client, unparameterizedStatementBatch.getStatementsList() );
+        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch) );
+        List<Long> updateCounts = batch.execute();
+        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch, updateCounts ) );
+        responseObserver.onCompleted();
+    }
+
+    @SneakyThrows
     @Override
     public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
         ProtoInterfaceClient client = getClient();
@@ -141,7 +147,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @Override
     public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
         ProtoInterfaceClient client = getClient();
-        statementManager.closeStatement( client, closeStatementRequest.getStatementId() );
+        statementManager.closeStatementOrBatch( client, closeStatementRequest.getStatementId() );
         responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
     }
 

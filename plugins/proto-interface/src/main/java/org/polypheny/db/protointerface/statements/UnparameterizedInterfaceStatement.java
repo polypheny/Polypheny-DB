@@ -81,6 +81,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             commitIfAuto();
             return resultBuilder.build();
         }
+        resultBuilder.setScalar( currentImplementation.getRowsChanged( currentStatement ) );
         commitIfAuto();
         resultBuilder.setFrame( fetchFirst() );
         return resultBuilder.build();
@@ -88,7 +89,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
 
     @Override
-    public Frame fetch( long offset, int fetchSize) {
+    public Frame fetch( long offset, int fetchSize) throws Exception {
         switch ( queryLanguage.getNamespaceType() ) {
             case RELATIONAL:
                 return relationalFetch( offset, fetchSize );
@@ -101,7 +102,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     }
 
     @Override
-    public Frame fetch( long offset ) {
+    public Frame fetch( long offset ) throws Exception {
         int fetchSize = Integer.parseInt( PropertyDefaults.getDefaultOf( PropertyDefaults.FETCH_SIZE ) );
         return fetch( offset,  fetchSize);
     }
@@ -116,7 +117,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     }
 
 
-    public Frame relationalFetch( long offset, int fetchSize ) {
+    public Frame relationalFetch( long offset, int fetchSize ) throws Exception {
         if ( currentImplementation == null ) {
             throw new ProtoInterfaceServiceException( "Can't fetch frames of an unexecuted statement" );
         }
