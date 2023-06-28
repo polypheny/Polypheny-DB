@@ -17,11 +17,19 @@
 package org.polypheny.db.protointerface.utils;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
+import org.polypheny.db.protointerface.proto.RelationalFrame;
+import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StatementBatchStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
+import org.polypheny.db.protointerface.statements.ParameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
 
@@ -40,16 +48,51 @@ public class ProtoUtils {
                 .build();
     }
 
-    public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch) {
+
+    public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch ) {
         return StatementBatchStatus.newBuilder()
                 .setBatchId( protoInterfaceStatementBatch.getBatchId() )
                 .build();
     }
 
+
     public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch, List<Long> updateCounts ) {
         return StatementBatchStatus.newBuilder()
                 .setBatchId( protoInterfaceStatementBatch.getBatchId() )
                 .addAllScalars( updateCounts )
+                .build();
+    }
+
+
+    public static PreparedStatementSignature createPreparedStatementSignature( ParameterizedInterfaceStatement parameterizedInterfaceStatement ) {
+        return PreparedStatementSignature.newBuilder()
+                .setStatementId( parameterizedInterfaceStatement.getStatementId() )
+                .addAllParameterMetas( parameterizedInterfaceStatement.determineParameterMeta() )
+                .build();
+    }
+
+
+    public static Row serializeToRow( List<PolyValue> row ) {
+        return Row.newBuilder()
+                .addAllValues( PolyValueSerializer.serializeList( row ) )
+                .build();
+    }
+
+
+    public static List<Row> serializeToRows( List<List<PolyValue>> rows ) {
+        return rows.stream().map( ProtoUtils::serializeToRow ).collect( Collectors.toList() );
+    }
+
+
+    public static Frame buildRelationalFrame( long offset, boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas ) {
+        RelationalFrame relationalFrame = RelationalFrame.newBuilder()
+                .addAllColumnMeta( metas )
+                .addAllRows( serializeToRows( rows ) )
+                .build();
+        return Frame.newBuilder()
+                .setIsLast( isLast )
+                .setOffset( offset )
+                .setRelationalFrame( relationalFrame )
                 .build();
     }
 
