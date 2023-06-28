@@ -63,13 +63,14 @@ message ProtoString {
 }
 
 message ProtoTime {
-  int64 value = 1;
+  int32 value = 1;
   TimeUnit timeUnit = 2;
 }
 
 message ProtoTimeStamp {
   int64 time_stamp = 1;
 }
+
 
 message ProtoBigDecimal {
   uint32 scale = 1;
