@@ -17,6 +17,8 @@
 package org.polypheny.db.protointerface.utils;
 
 import com.google.protobuf.ByteString;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoBinary;
@@ -40,6 +42,7 @@ import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
@@ -50,6 +53,10 @@ import org.polypheny.db.type.entity.PolyValue;
 public class PolyValueSerializer {
 
     private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
+
+    public static List<ProtoValue> serializeList(List<PolyValue> valuesList) {
+        return valuesList.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList());
+    }
 
 
     public static ProtoValue serialize( PolyValue polyValue ) {
@@ -421,7 +428,7 @@ private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
 
     public static ProtoValue serialize( PolyTime polyTime ) {
         ProtoTime protoTime = ProtoTime.newBuilder()
-                .setValue( polyTime.getSinceEpoch() )
+                .setValue( polyTime.ofDay )
                 .setTimeUnit( TimeUnit.valueOf( polyTime.getTimeUnit().name() ) )
                 .build();
         return ProtoValue.newBuilder()
@@ -461,5 +468,4 @@ private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
                 .setType( getType( polyBigDecimal ) )
                 .build();
     }
-
 }
