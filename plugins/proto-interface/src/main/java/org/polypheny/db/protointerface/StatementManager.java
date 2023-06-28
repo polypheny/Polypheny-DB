@@ -25,11 +25,14 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.proto.ParameterizedStatement;
+import org.polypheny.db.protointerface.proto.PreparedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
+import org.polypheny.db.protointerface.statements.ParameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
-import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatementBatch;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
+import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatementBatch;
 
 @Slf4j
 public class StatementManager {
@@ -76,12 +79,12 @@ public class StatementManager {
         }
         final int statementId = statementIdGenerator.getAndIncrement();
         final String statementKey = getId( protoInterfaceClient.getClientUUID(), statementId );
-        final UnparameterizedInterfaceStatement unparameterizedinterfaceStatement = new UnparameterizedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
-        openStatments.put( statementKey, unparameterizedinterfaceStatement );
+        final UnparameterizedInterfaceStatement statement = new UnparameterizedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
+        openStatments.put( statementKey, statement );
         if ( log.isTraceEnabled() ) {
-            log.trace( "created statement {}", unparameterizedinterfaceStatement );
+            log.trace( "created statement {}", statement );
         }
-        return unparameterizedinterfaceStatement;
+        return statement;
     }
 
 
@@ -97,6 +100,36 @@ public class StatementManager {
             log.trace( "created batch {}", batch );
         }
         return batch;
+    }
+
+
+    public ParameterizedInterfaceStatement createParameterizedStatement( ProtoInterfaceClient protoInterfaceClient, PreparedStatement statement ) {
+        String languageName = statement.getStatementLanguageName();
+        if ( !isSupportedLanguage( languageName ) ) {
+            throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
+        }
+        return createParameterizedStatement( protoInterfaceClient, QueryLanguage.from( languageName ), statement.getStatement() );
+    }
+
+
+    public ParameterizedInterfaceStatement createParameterizedStatement( ProtoInterfaceClient protoInterfaceClient, ParameterizedStatement statement ) {
+        String languageName = statement.getStatementLanguageName();
+        if ( !isSupportedLanguage( languageName ) ) {
+            throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
+        }
+        return createParameterizedStatement( protoInterfaceClient, QueryLanguage.from( languageName ), statement.getStatement() );
+    }
+
+
+    private synchronized ParameterizedInterfaceStatement createParameterizedStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+        final int statementId = statementIdGenerator.getAndIncrement();
+        final String statementKey = getId( protoInterfaceClient.getClientUUID(), statementId );
+        final ParameterizedInterfaceStatement statement = new ParameterizedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
+        openStatments.put( statementKey, statement );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "created prepared statement {}", statement );
+        }
+        return statement;
     }
 
 
@@ -138,6 +171,18 @@ public class StatementManager {
             throw new ProtoInterfaceServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
         return statement;
+    }
+
+    public ParameterizedInterfaceStatement getParameterizedStatement(ProtoInterfaceClient client, int statementId) {
+        String statementKey = getId( client.getClientUUID(), statementId );
+        ProtoInterfaceStatement statement = openStatments.get( statementKey );
+        if ( statement == null ) {
+            throw new ProtoInterfaceServiceException( "A statement with id " + statementId + " does not exist for that client" );
+        }
+        if (!(statement instanceof ParameterizedInterfaceStatement)) {
+            throw new ProtoInterfaceServiceException( "A prepared statement with id " + statementId + " does not exist for that client" );
+        }
+        return (ParameterizedInterfaceStatement)statement;
     }
 
 
